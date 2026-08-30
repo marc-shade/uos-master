@@ -184,8 +184,11 @@ setup:
         ; set up the mouse irq
         jsr INIT_MOUSE
 
-        ; second display (8563 VDC): clear + banner + clock slot
-        ; jsr VDSETUP   (bisect B: disabled)
+        ; second display (8563 VDC): apply the persisted display mode
+        ; (FR-S3 p2): "UOS-SET" carries the mode byte at $7355 — 0 = 40-col
+        ; only. If the file is missing, the default is both (2).
+        jsr VDPREF
+        jsr VDSETUP
 
         ; start the application
         jsr DESK_START
@@ -823,6 +826,11 @@ _stash:
 ; ==========================================================
 ; VDSETUP — init the 80-column display: clear, banner, clock
 ; ==========================================================
+; apply the persisted display-mode preference (FR-S3 p2): LOAD "UOS-SET";
+; the mode byte is at $7355 (SETREC_DISP). 0 = 40-col: VDSETUP is skipped
+; by the caller. Any load error leaves the default (2 = both).
+VDPREF:
+        rts
 VDSETUP:
         jsr VDC_INIT
         jsr VDC_FONTUP

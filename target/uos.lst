@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos.prg -L target/uos.lst src/uos.asm
-; Sun Aug 30 18:48:19 2026
+; Sun Aug 30 19:03:51 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -293,17 +293,17 @@
 >0806	20 32 30 36 32			.text " 2062"       ; SYS address in ASCII
 >080b	00 00 00			.byte $00, $00, $00 ; end-of-program
 .080e	4c 32 08	jmp $0832	        jmp START
-.0811	4c 45 09	jmp $0945	        jmp main_loop   ; main loop entry
-.0814	4c 92 09	jmp $0992	        jmp find_control
-.0817	4c 85 0e	jmp $0e85	        jmp FETCH_STASH_APP
-.081a	4c 56 0e	jmp $0e56	        jmp FETCH_STASH_SCREEN
-.081d	4c b8 0e	jmp $0eb8	        jmp FETCH_STASH_RECT
-.0820	4c 2f 0e	jmp $0e2f	        jmp CLEAR_RECT
-.0823	4c 48 0a	jmp $0a48	        jmp LOADIMM
-.0826	4c e6 09	jmp $09e6	        jmp LOADER
-.0829	4c 29 0a	jmp $0a29	        jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
-.082c	4c 44 0a	jmp $0a44	        jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
-.082f	4c b0 0f	jmp $0fb0	        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
+.0811	4c 4b 09	jmp $094b	        jmp main_loop   ; main loop entry
+.0814	4c 98 09	jmp $0998	        jmp find_control
+.0817	4c 8b 0e	jmp $0e8b	        jmp FETCH_STASH_APP
+.081a	4c 5c 0e	jmp $0e5c	        jmp FETCH_STASH_SCREEN
+.081d	4c be 0e	jmp $0ebe	        jmp FETCH_STASH_RECT
+.0820	4c 35 0e	jmp $0e35	        jmp CLEAR_RECT
+.0823	4c 4e 0a	jmp $0a4e	        jmp LOADIMM
+.0826	4c ec 09	jmp $09ec	        jmp LOADER
+.0829	4c 2f 0a	jmp $0a2f	        jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
+.082c	4c 4a 0a	jmp $0a4a	        jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
+.082f	4c b7 0f	jmp $0fb7	        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
 .0832					START:
 .0832	a9 12		lda #$12	        LDA #$12	; Load clock registers with inital time
 .0834	8d 0b dc	sta $dc0b		STA TODHRS	; Store 12 in hour  (Bit 7=PM)
@@ -336,40 +336,40 @@
 >086f	42 4f 4f 54 49 4e 47 20		msg1:   .text "booting system...", $0d, $00
 >0877	53 59 53 54 45 4d 2e 2e 2e 0d 00
 .0882					loadfiles:
-.0882	20 48 0a	jsr $0a48	        JSR LOADIMM
+.0882	20 4e 0a	jsr $0a4e	        JSR LOADIMM
 >0885	55 4f 53 2d 47 46 58 00			    .text "uos-gfx",$00
-.088d	20 e6 09	jsr $09e6	        jsr LOADER
-.0890	20 48 0a	jsr $0a48	        JSR LOADIMM
+.088d	20 ec 09	jsr $09ec	        jsr LOADER
+.0890	20 4e 0a	jsr $0a4e	        JSR LOADIMM
 >0893	55 4f 53 2d 56 44 43 00			    .text "uos-vdc",$00
-.089b	20 e6 09	jsr $09e6	        jsr LOADER
-.089e	20 48 0a	jsr $0a48	        JSR LOADIMM
+.089b	20 ec 09	jsr $09ec	        jsr LOADER
+.089e	20 4e 0a	jsr $0a4e	        JSR LOADIMM
 >08a1	55 4f 53 2d 44 52 56 31			    .text "uos-drv1351",$00
 >08a9	33 35 31 00
-.08ad	20 e6 09	jsr $09e6	        jsr LOADER
-.08b0	20 48 0a	jsr $0a48	        JSR LOADIMM
+.08ad	20 ec 09	jsr $09ec	        jsr LOADER
+.08b0	20 4e 0a	jsr $0a4e	        JSR LOADIMM
 >08b3	55 4f 53 2d 53 50 52 49			    .text "uos-sprites",$00
 >08bb	54 45 53 00
-.08bf	20 e6 09	jsr $09e6	        jsr LOADER
-.08c2	20 48 0a	jsr $0a48	        JSR LOADIMM
+.08bf	20 ec 09	jsr $09ec	        jsr LOADER
+.08c2	20 4e 0a	jsr $0a4e	        JSR LOADIMM
 >08c5	55 4f 53 2d 52 45 55 00			    .text "uos-reu",$00
-.08cd	20 e6 09	jsr $09e6	        jsr LOADER
-.08d0	20 48 0a	jsr $0a48	        JSR LOADIMM
+.08cd	20 ec 09	jsr $09ec	        jsr LOADER
+.08d0	20 4e 0a	jsr $0a4e	        JSR LOADIMM
 >08d3	55 4f 53 2d 44 45 53 4b			    .text "uos-desktop",$00
 >08db	54 4f 50 00
-.08df	20 e6 09	jsr $09e6	        jsr LOADER
+.08df	20 ec 09	jsr $09ec	        jsr LOADER
 .08e2					setup:
 .08e2	20 00 c0	jsr $c000	    JSR GFX_INIT
 .08e5	a9 03		lda #$03	    LDA #(VIC_COLOR_BLACK * 16 + VIC_COLOR_CYAN)
 .08e7	20 06 c0	jsr $c006	    JSR GFX_ON
 .08ea	78		sei		        sei
-.08eb	a9 13		lda #$13	        lda #<SYSERR
+.08eb	a9 19		lda #$19	        lda #<SYSERR
 .08ed	8d 16 03	sta $0316	        sta brkVectorlo
 .08f0	a9 0b		lda #$0b	        lda #>SYSERR
 .08f2	8d 17 03	sta $0317	        sta brkVectorhi
 .08f5	58		cli		        cli
 .08f6	a9 ff		lda #$ff	        lda #$ff
 .08f8	8d 00 9b	sta $9b00	        sta APP_ID_TBL
-.08fb	20 bc 0d	jsr $0dbc	        jsr SETUP_CTL_BUF
+.08fb	20 c2 0d	jsr $0dc2	        jsr SETUP_CTL_BUF
 .08fe	a9 01		lda #$01	        lda #$01
 .0900	8d 15 d0	sta $d015	        sta VIC_BASE + VIC_SPR_ENBL
 .0903	a9 01		lda #$01	        lda #VIC_COLOR_WHITE
@@ -397,858 +397,862 @@
 .0939	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
 .093c	20 03 9c	jsr $9c03	        jsr REU_STASH
 .093f	20 00 9f	jsr $9f00	        jsr INIT_MOUSE
-.0942	20 00 10	jsr $1000	        jsr DESK_START
-.0945					main_loop:
-.0945	20 fb 0a	jsr $0afb	        jsr TICK
-.0948	ad 01 dc	lda $dc01	        lda $dc01
-.094b	29 10		and #$10	        and #$10
-.094d	f0 03		beq $0952	        beq btnclick
-.094f	4c 45 09	jmp $0945	        jmp main_loop
-.0952					btnclick:
-.0952	ee 90 09	inc $0990	        inc mousedowntime
-.0955	d0 0d		bne $0964	        bne _keepwaiting
-.0957	ee 91 09	inc $0991	        inc mousedowntime+1
-.095a	ad 91 09	lda $0991	        lda mousedowntime+1
-.095d	c9 20		cmp #$20	        cmp #$20                ; just check if mouse down for a certain length of time
-.095f	d0 03		bne $0964	        bne _keepwaiting
-.0961	20 7c 09	jsr $097c	        jsr dragmode
-.0964					_keepwaiting:
-.0964	ad 01 dc	lda $dc01	        lda $dc01
-.0967	29 10		and #$10	        and #$10
-.0969	f0 e7		beq $0952	        beq btnclick
-.096b	20 82 09	jsr $0982	        jsr normalmode
-.096e	20 7e 0a	jsr $0a7e	        jsr TESTCLICK
-.0971	d0 03		bne $0976	        bne goodclick
-.0973	4c 79 09	jmp $0979	        jmp next
-.0976					goodclick:
-.0976	6c 0a 00	jmp ($000a)	        jmp (r4L)
-.0979					next:
-.0979	4c 45 09	jmp $0945	        jmp main_loop
-.097c					dragmode:
-.097c	a9 01		lda #$01	        lda #$01        ; $8000 = sprite table
-.097e	8d f8 87	sta $87f8	        sta $87f8
-.0981	60		rts		        rts
-.0982					normalmode:
-.0982	a9 00		lda #$00	        lda #$00
-.0984	8d 90 09	sta $0990	        sta mousedowntime
-.0987	8d 91 09	sta $0991	        sta mousedowntime + 1
-.098a	a9 00		lda #$00	        lda #$00        ; $8000 = sprite table
-.098c	8d f8 87	sta $87f8	        sta $87f8
-.098f	60		rts		        rts
-.0990					mousedowntime:
->0990	00 00				        .byte $00, $00
-.0992					find_control:
-.0992	a9 01		lda #$01	        lda #<APP_CTL_BUF
-.0994	85 08		sta $08		        sta r3L
-.0996	a9 90		lda #$90	        lda #>APP_CTL_BUF
-.0998	85 09		sta $09		        sta r3H
-.099a	a0 00		ldy #$00	        ldy #$00
-.099c	a2 00		ldx #$00	        ldx #$00
-.099e					 _loop:
-.099e	a5 09		lda $09		        lda r3H
-.09a0	c9 9b		cmp #$9b	        cmp #>APP_ID_TBL
-.09a2	f0 2d		beq $09d1	        beq _notfound
-.09a4					_skip:
-.09a4	b1 08		lda ($08),y	        lda (r3),y
-.09a6	c5 04		cmp $04		        cmp r1         ; check app id
-.09a8	f0 02		beq $09ac	        beq _foundappid
-.09aa	d0 16		bne $09c2	        bne _skip9
-.09ac					_foundappid:
-.09ac	c8		iny		        iny
-.09ad	b1 08		lda ($08),y	        lda (r3),y      ; get 1st byte
-.09af	c5 06		cmp $06		        cmp r2         ; compare to the id we want
-.09b1	f0 1d		beq $09d0	        beq _foundctlid
-.09b3	88		dey		        dey             ; not same app id
-.09b4	a5 08		lda $08		        lda r3L
-.09b6	18		clc		        clc
-.09b7	69 0a		adc #$0a	        adc #$0a        ; skip 10 bytes
-.09b9	90 02		bcc $09bd	        bcc _cont
-.09bb	e6 09		inc $09		        inc r3H         ; if so, increase hi byte
-.09bd					_cont:
-.09bd	85 08		sta $08		        sta r3L         ; increase lo byte
-.09bf	4c 9e 09	jmp $099e	        jmp _loop       ; do it again
-.09c2					_skip9:
-.09c2	a5 08		lda $08		        lda r3L
-.09c4	18		clc		        clc
-.09c5	69 0a		adc #$0a	        adc #$0a
-.09c7	90 02		bcc $09cb	        bcc _cont2
-.09c9	e6 09		inc $09		        inc r3H         ; if so, increase hi byte
-.09cb					_cont2:
-.09cb	85 08		sta $08		        sta r3L         ; increase lo byte
-.09cd	4c 9e 09	jmp $099e	        jmp _loop       ; do checks again
-.09d0					_foundctlid:
-.09d0	60		rts		        rts
-.09d1					_notfound:
-.09d1	a9 00		lda #$00	        lda #$00
-.09d3	85 09		sta $09		        sta r3H
-.09d5	85 08		sta $08		        sta r3L
-.09d7	60		rts		        rts
-.09d8					TOBASIC:
-.09d8	a9 93		lda #$93	    lda #$93
-.09da	20 d2 ff	jsr $ffd2	    jsr CHROUT
-.09dd	20 09 c0	jsr $c009	    jsr GFX_OFF
-.09e0	a9 01		lda #$01	        lda #$01
-.09e2	8d 15 d0	sta $d015	        sta VIC_BASE + VIC_SPR_ENBL
-.09e5	60		rts		        RTS
-.09e6					LOADER:
-.09e6	a0 00		ldy #$00	        LDY #$00        ; print file name being loaded
-.09e8					_prloop:
-.09e8	b9 1a 0a	lda $0a1a,y	        LDA file,Y
-.09eb	f0 07		beq $09f4	        BEQ _prdone
-.09ed	20 d2 ff	jsr $ffd2	        JSR CHROUT
-.09f0	c8		iny		        INY
-.09f1	4c e8 09	jmp $09e8	        JMP _prloop
-.09f4					_prdone:
-.09f4	a9 0d		lda #$0d	        LDA #$0D
-.09f6	20 d2 ff	jsr $ffd2	        JSR CHROUT
-.09f9	ad 19 0a	lda $0a19	        LDA ftmp
-.09fc	a2 1a		ldx #$1a	        LDX #<file
-.09fe	a0 0a		ldy #$0a	        LDY #>file
-.0a00	20 bd ff	jsr $ffbd	        JSR $FFBD     ; call SETNAM
-.0a03	a9 01		lda #$01	        LDA #$01
-.0a05	a6 ba		ldx $ba		        LDX $BA       ; last used device number
-.0a07	d0 02		bne $0a0b	        BNE _skip
-.0a09	a2 08		ldx #$08	        LDX #$08      ; default to device 8
-.0a0b	a0 01		ldy #$01	_skip   LDY #$01      ; not $01 means: load to address stored in file
-.0a0d	20 ba ff	jsr $ffba	        JSR $FFBA     ; call SETLFS
-.0a10	a9 00		lda #$00	        LDA #$00      ; $00 means: load to memory (not verify)
-.0a12	20 d5 ff	jsr $ffd5	        JSR $FFD5     ; call LOAD
-.0a15	b0 01		bcs $0a18	        BCS _error    ; if carry set, a load error has happened
-.0a17	60		rts		        RTS
-.0a18					_error
-.0a18	60		rts		        RTS
->0a19	00				ftmp:   .byte $00
->0a1a	00 00 00 00 00 00 00 00		file:   .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
->0a22	00 00 00 00 00 00 00
-.0a29					FILLFILE_RT:
-.0a29	a0 00		ldy #$00	        ldy #$00
-.0a2b	a2 00		ldx #$00	        ldx #$00
-.0a2d					_ffloop:
-.0a2d	b1 02		lda ($02),y	        lda (r0),y
-.0a2f	f0 09		beq $0a3a	        beq _ffdone
-.0a31	9d 1a 0a	sta $0a1a,x	        sta file,x
-.0a34	e8		inx		        inx
-.0a35	c8		iny		        iny
-.0a36	e0 10		cpx #$10	        cpx #$10                ; 1541 filenames cap at 16 chars
-.0a38	d0 f3		bne $0a2d	        bne _ffloop
-.0a3a					_ffdone:
-.0a3a	8a		txa		        txa
-.0a3b	8d 19 0a	sta $0a19	        sta ftmp
-.0a3e	a9 00		lda #$00	        lda #$00
-.0a40	9d 1a 0a	sta $0a1a,x	        sta file,x
-.0a43	60		rts		        rts
-.0a44					KEYIN_RT:
-.0a44	20 e4 ff	jsr $ffe4	        jsr $ffe4               ; KERNAL GETIN
-.0a47	60		rts		        rts
-.0a48					LOADIMM:
-.0a48	48		pha			PHA     		; save A
-.0a49	98		tya			TYA			; copy Y
-.0a4a	48		pha			PHA  			; save Y
-.0a4b	8a		txa			TXA			; copy X
-.0a4c	48		pha			PHA  			; save X
-.0a4d	ba		tsx			TSX			; get stack pointer
-.0a4e	bd 04 01	lda $0104,x		LDA $0104,X		; get return address low byte (+4 to correct pointer)
-.0a51	85 bc		sta $bc			STA $BC			; save in page zero
-.0a53	bd 05 01	lda $0105,x		LDA $0105,X		; get return address high byte (+5 to correct pointer)
-.0a56	85 bd		sta $bd			STA $BD			; save in page zero
-.0a58	a0 01		ldy #$01		LDY #$01		; set index (+1 to allow for return address offset)
-.0a5a					LOADIMM2:
-.0a5a	b1 bc		lda ($bc),y		LDA ($BC),Y		; get byte from string
-.0a5c	f0 0c		beq $0a6a		BEQ LOADIMM3	        ; exit if null (end of text)
-.0a5e	88		dey		        DEY
-.0a5f	99 1a 0a	sta $0a1a,y		STA file,Y
-.0a62	c8		iny		        INY
-.0a63	98		tya		        TYA
-.0a64	8d 19 0a	sta $0a19	        STA ftmp
-.0a67	c8		iny		        INY			; increment index
-.0a68	d0 f0		bne $0a5a		BNE LOADIMM2	        ; loop (exit if 256th character)
-.0a6a					LOADIMM3:
-.0a6a	98		tya			TYA                     ; copy index
-.0a6b	18		clc			CLC			; clear carry
-.0a6c	65 bc		adc $bc			ADC $BC			; add string pointer low byte to index
-.0a6e	9d 04 01	sta $0104,x		STA $0104,X		; put on stack as return address low byte
-.0a71	a9 00		lda #$00		LDA #$00		; clear A
-.0a73	65 bd		adc $bd			ADC $BD		        ; add string pointer high byte
-.0a75	9d 05 01	sta $0105,x		STA $0105,X		; put on stack as return address high byte
-.0a78	68		pla			PLA			; pull value
-.0a79	aa		tax			TAX  			; restore X
-.0a7a	68		pla			PLA			; pull value
-.0a7b	a8		tay			TAY  			; restore Y
-.0a7c	68		pla			PLA  			; restore A
-.0a7d	60		rts			RTS
-.0a7e					TESTCLICK:
-.0a7e	a2 00		ldx #$00	        ldx #$00
-.0a80	ad 00 90	lda $9000	        lda APP_CTL_CTR
-.0a83	85 04		sta $04		        sta r1
-.0a85					_loopbtns:
-.0a85	d0 03		bne $0a8a	        bne _storemeta
-.0a87	4c f8 0a	jmp $0af8	        jmp _badclick
-.0a8a					_storemeta:
-.0a8a	bd 01 90	lda $9001,x	        lda APP_CTL_BUF,x
-.0a8d	85 06		sta $06		        sta r2
-.0a8f	bd 02 90	lda $9002,x	        lda APP_CTL_BUF+1,x
-.0a92	85 08		sta $08		        sta r3
-.0a94	bd 03 90	lda $9003,x	        lda APP_CTL_BUF+2, x
-.0a97	85 0a		sta $0a		        sta r4L
-.0a99	bd 04 90	lda $9004,x	        lda APP_CTL_BUF+3, x
-.0a9c	85 0b		sta $0b		        sta r4H
-.0a9e					_x1a:
-.0a9e	ad 00 d0	lda $d000	        lda VIC_BASE + VIC_SPR0_X
-.0aa1	38		sec		        sec
-.0aa2	e9 18		sbc #$18	        sbc #$18
-.0aa4	18		clc		        clc
-.0aa5	dd 05 90	cmp $9005,x	        cmp APP_CTL_BUF+4,x
-.0aa8	90 0a		bcc $0ab4	        bcc _fardone1
-.0aaa					_x1b:
-.0aaa	ad 10 d0	lda $d010	        lda VIC_BASE + VIC_SPR_XMSb
-.0aad	29 01		and #$01	        and #%00000001
-.0aaf	dd 06 90	cmp $9006,x	        cmp APP_CTL_BUF+5,x
-.0ab2	f0 03		beq $0ab7	        beq _y1
-.0ab4					_fardone1:
-.0ab4	4c eb 0a	jmp $0aeb	        jmp _checknextbtn
-.0ab7					_y1:
-.0ab7	ad 01 d0	lda $d001	        lda VIC_BASE + VIC_SPR0_Y
-.0aba	38		sec		        sec
-.0abb	e9 32		sbc #$32	        sbc #$32
-.0abd	18		clc		        clc
-.0abe	dd 07 90	cmp $9007,x	        cmp APP_CTL_BUF+6,x
-.0ac1	b0 03		bcs $0ac6	        bcs _x2a
-.0ac3	4c eb 0a	jmp $0aeb	        jmp _checknextbtn
-.0ac6					_x2a:
-.0ac6	ad 00 d0	lda $d000	        lda VIC_BASE + VIC_SPR0_X
-.0ac9	38		sec		        sec
-.0aca	e9 18		sbc #$18	        sbc #$18
-.0acc	38		sec		        sec
-.0acd	dd 08 90	cmp $9008,x	        cmp APP_CTL_BUF+7,x
-.0ad0	b0 0a		bcs $0adc	        bcs _fardone2
-.0ad2					_x2b:
-.0ad2	ad 10 d0	lda $d010	        lda VIC_BASE + VIC_SPR_XMSb
-.0ad5	29 01		and #$01	        and #%00000001
-.0ad7	dd 09 90	cmp $9009,x	        cmp APP_CTL_BUF+8,x
-.0ada	f0 03		beq $0adf	        beq _y2
-.0adc					_fardone2:
-.0adc	4c eb 0a	jmp $0aeb	        jmp _checknextbtn
-.0adf					_y2:
-.0adf	ad 01 d0	lda $d001	        lda VIC_BASE + VIC_SPR0_Y
-.0ae2	38		sec		        sec
-.0ae3	e9 32		sbc #$32	        sbc #$32
-.0ae5	38		sec		        sec
-.0ae6	dd 0a 90	cmp $900a,x	        cmp APP_CTL_BUF+9,x
-.0ae9	90 0a		bcc $0af5	        bcc _goodclick
-.0aeb					_checknextbtn
-.0aeb	8a		txa		        txa
-.0aec	18		clc		        clc
-.0aed	69 0a		adc #$0a	        adc #$0a
-.0aef	aa		tax		        tax
-.0af0	c6 04		dec $04		        dec r1
-.0af2	4c 85 0a	jmp $0a85	        jmp _loopbtns
-.0af5					_goodclick:
-.0af5	a9 01		lda #$01	        lda #$01
-.0af7	60		rts		        rts
-.0af8					_badclick:
-.0af8	a9 00		lda #$00	        lda #$00
-.0afa	60		rts		        rts
-.0afb					TICK:
-.0afb	a5 22		lda $22		        lda r16
-.0afd	cd 09 dc	cmp $dc09	        cmp $DC09
-.0b00	d0 03		bne $0b05	        bne _tick
-.0b02	4c 12 0b	jmp $0b12	        jmp _skip
-.0b05					_tick:
-.0b05	ad 09 dc	lda $dc09	        lda $DC09
-.0b08	85 22		sta $22		        sta r16
-.0b0a	ad 3d 03	lda $033d	        lda $033d
-.0b0d	f0 03		beq $0b12	        beq _skip
-.0b0f	6c 3c 03	jmp ($033c)	        jmp ($033c)
-.0b12					_skip:
-.0b12	60		rts		        rts
-.0b13					SYSERR:
-.0b13	68		pla		        pla
-.0b14	68		pla		        pla
-.0b15	68		pla		        pla
-.0b16	68		pla		        pla
-.0b17	68		pla			pla
-.0b18	85 02		sta $02			sta r0+0
-.0b1a	68		pla			pla
-.0b1b	85 03		sta $03			sta r0+1
-.0b1d	38		sec			sec
-.0b1e	a5 02		lda $02			lda r0+0
-.0b20	e9 02		sbc #$02		sbc #<(2)
-.0b22	85 02		sta $02			sta r0+0
-.0b24	a5 03		lda $03			lda r0+1
-.0b26	e9 00		sbc #$00		sbc #>(2)
-.0b28	85 03		sta $03			sta r0+1
-.0b2a	a5 03		lda $03		        lda r0H
-.0b2c	a2 00		ldx #$00	        ldx #0
-.0b2e	20 37 0d	jsr $0d37		jsr er1
-.0b31	a5 02		lda $02		        lda r0L
-.0b33	20 37 0d	jsr $0d37		jsr er1
-.0b36	a9 00		lda #$00	        lda #$00
-.0b38	85 03		sta $03		        sta X1+1
-.0b3a	a9 64		lda #$64	        lda #100
-.0b3c	85 02		sta $02		        sta X1
-.0b3e	a9 00		lda #$00	        lda #$00
-.0b40	85 07		sta $07		        sta X2+1
-.0b42	a9 db		lda #$db	        lda #100 + 119
-.0b44	85 06		sta $06		        sta X2
-.0b46	a9 46		lda #$46	        lda #70
-.0b48	85 04		sta $04		        sta Y1
-.0b4a	a9 46		lda #$46	        lda #70
-.0b4c	85 08		sta $08		        sta Y2
-.0b4e	a9 00		lda #$00	        lda #$00
-.0b50	85 05		sta $05		        sta Y1+1
-.0b52	85 09		sta $09		        sta Y2+1
-.0b54	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0b57	a9 00		lda #$00	        lda #$00
-.0b59	85 03		sta $03		        sta X1+1
-.0b5b	a9 64		lda #$64	        lda #100
-.0b5d	85 02		sta $02		        sta X1
-.0b5f	a9 00		lda #$00	        lda #$00
-.0b61	85 07		sta $07		        sta X2+1
-.0b63	a9 db		lda #$db	        lda #100 + 119
-.0b65	85 06		sta $06		        sta X2
-.0b67	a9 8c		lda #$8c	        lda #70 + 70
-.0b69	85 04		sta $04		        sta Y1
-.0b6b	a9 8c		lda #$8c	        lda #70 + 70
-.0b6d	85 08		sta $08		        sta Y2
-.0b6f	a9 00		lda #$00	        lda #$00
-.0b71	85 05		sta $05		        sta Y1+1
-.0b73	85 09		sta $09		        sta Y2+1
-.0b75	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0b78	a9 00		lda #$00	        lda #$00
-.0b7a	85 03		sta $03		        sta X1+1
-.0b7c	a9 64		lda #$64	        lda #100
-.0b7e	85 02		sta $02		        sta X1
-.0b80	a9 00		lda #$00	        lda #$00
-.0b82	85 07		sta $07		        sta X2+1
-.0b84	a9 64		lda #$64	        lda #100
-.0b86	85 06		sta $06		        sta X2
-.0b88	a9 46		lda #$46	        lda #70
-.0b8a	85 04		sta $04		        sta Y1
-.0b8c	a9 8c		lda #$8c	        lda #70 + 70
-.0b8e	85 08		sta $08		        sta Y2
-.0b90	a9 00		lda #$00	        lda #$00
-.0b92	85 05		sta $05		        sta Y1+1
-.0b94	85 09		sta $09		        sta Y2+1
-.0b96	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0b99	a9 00		lda #$00	        lda #$00
-.0b9b	85 03		sta $03		        sta X1+1
-.0b9d	a9 db		lda #$db	        lda #100 + 119
-.0b9f	85 02		sta $02		        sta X1
-.0ba1	a9 00		lda #$00	        lda #$00
-.0ba3	85 07		sta $07		        sta X2+1
-.0ba5	a9 db		lda #$db	        lda #100 + 119
-.0ba7	85 06		sta $06		        sta X2
-.0ba9	a9 46		lda #$46	        lda #70
-.0bab	85 04		sta $04		        sta Y1
-.0bad	a9 8c		lda #$8c	        lda #70 + 70
-.0baf	85 08		sta $08		        sta Y2
-.0bb1	a9 00		lda #$00	        lda #$00
-.0bb3	85 05		sta $05		        sta Y1+1
-.0bb5	85 09		sta $09		        sta Y2+1
-.0bb7	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0bba	a9 00		lda #$00	        lda #$00
-.0bbc	85 03		sta $03		        sta X1+1
-.0bbe	a9 69		lda #$69	        lda #100+5
-.0bc0	85 02		sta $02		        sta X1
-.0bc2	a9 00		lda #$00	        lda #$00
-.0bc4	85 07		sta $07		        sta X2+1
-.0bc6	a9 e0		lda #$e0	        lda #100+119+5
-.0bc8	85 06		sta $06		        sta X2
-.0bca	a9 8d		lda #$8d	        lda #70+70+1
-.0bcc	85 04		sta $04		        sta Y1
-.0bce	a9 8d		lda #$8d	        lda #70+70+1
-.0bd0	85 08		sta $08		        sta Y2
-.0bd2	a9 00		lda #$00	        lda #$00
-.0bd4	85 05		sta $05		        sta Y1+1
-.0bd6	85 09		sta $09		        sta Y2+1
-.0bd8	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0bdb	a9 00		lda #$00	        lda #$00
-.0bdd	85 03		sta $03		        sta X1+1
-.0bdf	a9 69		lda #$69	        lda #100+5
-.0be1	85 02		sta $02		        sta X1
-.0be3	a9 00		lda #$00	        lda #$00
-.0be5	85 07		sta $07		        sta X2+1
-.0be7	a9 e0		lda #$e0	        lda #100+119+5
-.0be9	85 06		sta $06		        sta X2
-.0beb	a9 8e		lda #$8e	        lda #70+70+2
-.0bed	85 04		sta $04		        sta Y1
-.0bef	a9 8e		lda #$8e	        lda #70+70+2
-.0bf1	85 08		sta $08		        sta Y2
-.0bf3	a9 00		lda #$00	        lda #$00
-.0bf5	85 05		sta $05		        sta Y1+1
-.0bf7	85 09		sta $09		        sta Y2+1
-.0bf9	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0bfc	a9 00		lda #$00	        lda #$00
-.0bfe	85 03		sta $03		        sta X1+1
-.0c00	a9 69		lda #$69	        lda #100+5
-.0c02	85 02		sta $02		        sta X1
-.0c04	a9 00		lda #$00	        lda #$00
-.0c06	85 07		sta $07		        sta X2+1
-.0c08	a9 e0		lda #$e0	        lda #100+119+5
-.0c0a	85 06		sta $06		        sta X2
-.0c0c	a9 8f		lda #$8f	        lda #70+70+3
-.0c0e	85 04		sta $04		        sta Y1
-.0c10	a9 8f		lda #$8f	        lda #70+70+3
-.0c12	85 08		sta $08		        sta Y2
-.0c14	a9 00		lda #$00	        lda #$00
-.0c16	85 05		sta $05		        sta Y1+1
-.0c18	85 09		sta $09		        sta Y2+1
-.0c1a	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0c1d	a9 00		lda #$00	        lda #$00
-.0c1f	85 03		sta $03		        sta X1+1
-.0c21	a9 69		lda #$69	        lda #100+5
-.0c23	85 02		sta $02		        sta X1
-.0c25	a9 00		lda #$00	        lda #$00
-.0c27	85 07		sta $07		        sta X2+1
-.0c29	a9 e0		lda #$e0	        lda #100+119+5
-.0c2b	85 06		sta $06		        sta X2
-.0c2d	a9 90		lda #$90	        lda #70+70+4
-.0c2f	85 04		sta $04		        sta Y1
-.0c31	a9 90		lda #$90	        lda #70+70+4
-.0c33	85 08		sta $08		        sta Y2
-.0c35	a9 00		lda #$00	        lda #$00
-.0c37	85 05		sta $05		        sta Y1+1
-.0c39	85 09		sta $09		        sta Y2+1
-.0c3b	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0c3e	a9 00		lda #$00	        lda #$00
-.0c40	85 03		sta $03		        sta X1+1
-.0c42	a9 69		lda #$69	        lda #100+5
-.0c44	85 02		sta $02		        sta X1
-.0c46	a9 00		lda #$00	        lda #$00
-.0c48	85 07		sta $07		        sta X2+1
-.0c4a	a9 e0		lda #$e0	        lda #100+119+5
-.0c4c	85 06		sta $06		        sta X2
-.0c4e	a9 91		lda #$91	        lda #70+70+5
-.0c50	85 04		sta $04		        sta Y1
-.0c52	a9 91		lda #$91	        lda #70+70+5
-.0c54	85 08		sta $08		        sta Y2
-.0c56	a9 00		lda #$00	        lda #$00
-.0c58	85 05		sta $05		        sta Y1+1
-.0c5a	85 09		sta $09		        sta Y2+1
-.0c5c	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0c5f	a9 00		lda #$00	        lda #$00
-.0c61	85 03		sta $03		        sta X1+1
-.0c63	a9 dc		lda #$dc	        lda #100+119+1
-.0c65	85 02		sta $02		        sta X1
-.0c67	a9 00		lda #$00	        lda #$00
-.0c69	85 07		sta $07		        sta X2+1
-.0c6b	a9 dc		lda #$dc	        lda #100+119+1
-.0c6d	85 06		sta $06		        sta X2
-.0c6f	a9 4b		lda #$4b	        lda #70+5
-.0c71	85 04		sta $04		        sta Y1
-.0c73	a9 91		lda #$91	        lda #70+70+5
-.0c75	85 08		sta $08		        sta Y2
-.0c77	a9 00		lda #$00	        lda #$00
-.0c79	85 05		sta $05		        sta Y1+1
-.0c7b	85 09		sta $09		        sta Y2+1
-.0c7d	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0c80	a9 00		lda #$00	        lda #$00
-.0c82	85 03		sta $03		        sta X1+1
-.0c84	a9 dd		lda #$dd	        lda #100+119+2
-.0c86	85 02		sta $02		        sta X1
-.0c88	a9 00		lda #$00	        lda #$00
-.0c8a	85 07		sta $07		        sta X2+1
-.0c8c	a9 dd		lda #$dd	        lda #100+119+2
-.0c8e	85 06		sta $06		        sta X2
-.0c90	a9 4b		lda #$4b	        lda #70+5
-.0c92	85 04		sta $04		        sta Y1
-.0c94	a9 91		lda #$91	        lda #70+70+5
-.0c96	85 08		sta $08		        sta Y2
-.0c98	a9 00		lda #$00	        lda #$00
-.0c9a	85 05		sta $05		        sta Y1+1
-.0c9c	85 09		sta $09		        sta Y2+1
-.0c9e	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0ca1	a9 00		lda #$00	        lda #$00
-.0ca3	85 03		sta $03		        sta X1+1
-.0ca5	a9 de		lda #$de	        lda #100+119+3
-.0ca7	85 02		sta $02		        sta X1
-.0ca9	a9 00		lda #$00	        lda #$00
-.0cab	85 07		sta $07		        sta X2+1
-.0cad	a9 de		lda #$de	        lda #100+119+3
-.0caf	85 06		sta $06		        sta X2
-.0cb1	a9 4b		lda #$4b	        lda #70+5
-.0cb3	85 04		sta $04		        sta Y1
-.0cb5	a9 91		lda #$91	        lda #70+70+5
-.0cb7	85 08		sta $08		        sta Y2
-.0cb9	a9 00		lda #$00	        lda #$00
-.0cbb	85 05		sta $05		        sta Y1+1
-.0cbd	85 09		sta $09		        sta Y2+1
-.0cbf	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0cc2	a9 00		lda #$00	        lda #$00
-.0cc4	85 03		sta $03		        sta X1+1
-.0cc6	a9 df		lda #$df	        lda #100+119+4
-.0cc8	85 02		sta $02		        sta X1
-.0cca	a9 00		lda #$00	        lda #$00
-.0ccc	85 07		sta $07		        sta X2+1
-.0cce	a9 df		lda #$df	        lda #100+119+4
-.0cd0	85 06		sta $06		        sta X2
-.0cd2	a9 4b		lda #$4b	        lda #70+5
-.0cd4	85 04		sta $04		        sta Y1
-.0cd6	a9 91		lda #$91	        lda #70+70+5
-.0cd8	85 08		sta $08		        sta Y2
-.0cda	a9 00		lda #$00	        lda #$00
-.0cdc	85 05		sta $05		        sta Y1+1
-.0cde	85 09		sta $09		        sta Y2+1
-.0ce0	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0ce3	a9 00		lda #$00	        lda #$00
-.0ce5	85 03		sta $03		        sta X1+1
-.0ce7	a9 e0		lda #$e0	        lda #100+119+5
-.0ce9	85 02		sta $02		        sta X1
-.0ceb	a9 00		lda #$00	        lda #$00
-.0ced	85 07		sta $07		        sta X2+1
-.0cef	a9 e0		lda #$e0	        lda #100+119+5
-.0cf1	85 06		sta $06		        sta X2
-.0cf3	a9 4b		lda #$4b	        lda #70+5
-.0cf5	85 04		sta $04		        sta Y1
-.0cf7	a9 91		lda #$91	        lda #70+70+5
-.0cf9	85 08		sta $08		        sta Y2
-.0cfb	a9 00		lda #$00	        lda #$00
-.0cfd	85 05		sta $05		        sta Y1+1
-.0cff	85 09		sta $09		        sta Y2+1
-.0d01	20 15 c0	jsr $c015	        jsr GFX_LINE
-.0d04	a9 70		lda #$70	    lda #112
-.0d06	85 02		sta $02		    sta X1
-.0d08	a9 00		lda #$00	    lda #$00
-.0d0a	85 03		sta $03		    sta X1+1
-.0d0c	c8		iny		    iny
-.0d0d	a9 55		lda #$55	    lda #85
-.0d0f	85 04		sta $04		    sta Y1
-.0d11	a9 58		lda #$58	    lda #<oops
-.0d13	85 14		sta $14		    sta r9L
-.0d15	a9 0d		lda #$0d	    lda #>oops
-.0d17	85 15		sta $15		    sta r9H
-.0d19	20 1e c0	jsr $c01e	    jsr GPUTS
-.0d1c	a9 70		lda #$70	    lda #112
-.0d1e	85 02		sta $02		    sta X1
-.0d20	a9 00		lda #$00	    lda #$00
-.0d22	85 03		sta $03		    sta X1+1
-.0d24	c8		iny		    iny
-.0d25	a9 69		lda #$69	    lda #105
-.0d27	85 04		sta $04		    sta Y1
-.0d29	a9 69		lda #$69	    lda #<panicstr
-.0d2b	85 14		sta $14		    sta r9L
-.0d2d	a9 0d		lda #$0d	    lda #>panicstr
-.0d2f	85 15		sta $15		    sta r9H
-.0d31	20 1e c0	jsr $c01e	    jsr GPUTS
-.0d34					_forever:
-.0d34	4c 34 0d	jmp $0d34	        jmp _forever
-.0d37	48		pha		er1:	pha
-.0d38	4a		lsr a			lsr
-.0d39	4a		lsr a			lsr
-.0d3a	4a		lsr a			lsr
-.0d3b	4a		lsr a			lsr
-.0d3c	20 48 0d	jsr $0d48		jsr er2
-.0d3f	e8		inx			inx
-.0d40	68		pla			pla
-.0d41	29 0f		and #$0f		and #%00001111
-.0d43	20 48 0d	jsr $0d48		jsr er2
-.0d46	e8		inx			inx
-.0d47	60		rts			rts
-.0d48	c9 0a		cmp #$0a	er2:	cmp #10
-.0d4a	b0 05		bcs $0d51		bcs er3
-.0d4c	18		clc			clc
-.0d4d	69 30		adc #$30		adc #'0'
-.0d4f	d0 03		bne $0d54		bne er4
-.0d51					er3:
-.0d51	18		clc			clc
-.0d52	69 37		adc #$37		adc #'0'+7
-.0d54	9d 75 0d	sta $0d75,x	er4:	sta panicaddr,x
-.0d57	60		rts			rts
-.0d58					oops:
->0d58	d3 d9 d3 d4 c5 cd 20 d3		        .text "SYSTEM SUSPENDED", $00
->0d60	d5 d3 d0 c5 ce c4 c5 c4 00
-.0d69					panicstr:
->0d69	c5 52 52 4f 52 20 4e 45		        .text "Error near "
->0d71	41 52 20
->0d74	24				        .byte "$"
-.0d75					panicaddr:
->0d75	58 58 58 58				.text "xxxx"
->0d79	00					.byte $00
-.0d7a					img_stop:
->0d7a	00 00 00			.byte %00000000,%00000000,%00000000
->0d7d	00 00 00			.byte %00000000,%00000000,%00000000
+.0942	20 ed 0e	jsr $0eed	        jsr VDPREF
+.0945	20 ee 0e	jsr $0eee	        jsr VDSETUP
+.0948	20 00 10	jsr $1000	        jsr DESK_START
+.094b					main_loop:
+.094b	20 01 0b	jsr $0b01	        jsr TICK
+.094e	ad 01 dc	lda $dc01	        lda $dc01
+.0951	29 10		and #$10	        and #$10
+.0953	f0 03		beq $0958	        beq btnclick
+.0955	4c 4b 09	jmp $094b	        jmp main_loop
+.0958					btnclick:
+.0958	ee 96 09	inc $0996	        inc mousedowntime
+.095b	d0 0d		bne $096a	        bne _keepwaiting
+.095d	ee 97 09	inc $0997	        inc mousedowntime+1
+.0960	ad 97 09	lda $0997	        lda mousedowntime+1
+.0963	c9 20		cmp #$20	        cmp #$20                ; just check if mouse down for a certain length of time
+.0965	d0 03		bne $096a	        bne _keepwaiting
+.0967	20 82 09	jsr $0982	        jsr dragmode
+.096a					_keepwaiting:
+.096a	ad 01 dc	lda $dc01	        lda $dc01
+.096d	29 10		and #$10	        and #$10
+.096f	f0 e7		beq $0958	        beq btnclick
+.0971	20 88 09	jsr $0988	        jsr normalmode
+.0974	20 84 0a	jsr $0a84	        jsr TESTCLICK
+.0977	d0 03		bne $097c	        bne goodclick
+.0979	4c 7f 09	jmp $097f	        jmp next
+.097c					goodclick:
+.097c	6c 0a 00	jmp ($000a)	        jmp (r4L)
+.097f					next:
+.097f	4c 4b 09	jmp $094b	        jmp main_loop
+.0982					dragmode:
+.0982	a9 01		lda #$01	        lda #$01        ; $8000 = sprite table
+.0984	8d f8 87	sta $87f8	        sta $87f8
+.0987	60		rts		        rts
+.0988					normalmode:
+.0988	a9 00		lda #$00	        lda #$00
+.098a	8d 96 09	sta $0996	        sta mousedowntime
+.098d	8d 97 09	sta $0997	        sta mousedowntime + 1
+.0990	a9 00		lda #$00	        lda #$00        ; $8000 = sprite table
+.0992	8d f8 87	sta $87f8	        sta $87f8
+.0995	60		rts		        rts
+.0996					mousedowntime:
+>0996	00 00				        .byte $00, $00
+.0998					find_control:
+.0998	a9 01		lda #$01	        lda #<APP_CTL_BUF
+.099a	85 08		sta $08		        sta r3L
+.099c	a9 90		lda #$90	        lda #>APP_CTL_BUF
+.099e	85 09		sta $09		        sta r3H
+.09a0	a0 00		ldy #$00	        ldy #$00
+.09a2	a2 00		ldx #$00	        ldx #$00
+.09a4					 _loop:
+.09a4	a5 09		lda $09		        lda r3H
+.09a6	c9 9b		cmp #$9b	        cmp #>APP_ID_TBL
+.09a8	f0 2d		beq $09d7	        beq _notfound
+.09aa					_skip:
+.09aa	b1 08		lda ($08),y	        lda (r3),y
+.09ac	c5 04		cmp $04		        cmp r1         ; check app id
+.09ae	f0 02		beq $09b2	        beq _foundappid
+.09b0	d0 16		bne $09c8	        bne _skip9
+.09b2					_foundappid:
+.09b2	c8		iny		        iny
+.09b3	b1 08		lda ($08),y	        lda (r3),y      ; get 1st byte
+.09b5	c5 06		cmp $06		        cmp r2         ; compare to the id we want
+.09b7	f0 1d		beq $09d6	        beq _foundctlid
+.09b9	88		dey		        dey             ; not same app id
+.09ba	a5 08		lda $08		        lda r3L
+.09bc	18		clc		        clc
+.09bd	69 0a		adc #$0a	        adc #$0a        ; skip 10 bytes
+.09bf	90 02		bcc $09c3	        bcc _cont
+.09c1	e6 09		inc $09		        inc r3H         ; if so, increase hi byte
+.09c3					_cont:
+.09c3	85 08		sta $08		        sta r3L         ; increase lo byte
+.09c5	4c a4 09	jmp $09a4	        jmp _loop       ; do it again
+.09c8					_skip9:
+.09c8	a5 08		lda $08		        lda r3L
+.09ca	18		clc		        clc
+.09cb	69 0a		adc #$0a	        adc #$0a
+.09cd	90 02		bcc $09d1	        bcc _cont2
+.09cf	e6 09		inc $09		        inc r3H         ; if so, increase hi byte
+.09d1					_cont2:
+.09d1	85 08		sta $08		        sta r3L         ; increase lo byte
+.09d3	4c a4 09	jmp $09a4	        jmp _loop       ; do checks again
+.09d6					_foundctlid:
+.09d6	60		rts		        rts
+.09d7					_notfound:
+.09d7	a9 00		lda #$00	        lda #$00
+.09d9	85 09		sta $09		        sta r3H
+.09db	85 08		sta $08		        sta r3L
+.09dd	60		rts		        rts
+.09de					TOBASIC:
+.09de	a9 93		lda #$93	    lda #$93
+.09e0	20 d2 ff	jsr $ffd2	    jsr CHROUT
+.09e3	20 09 c0	jsr $c009	    jsr GFX_OFF
+.09e6	a9 01		lda #$01	        lda #$01
+.09e8	8d 15 d0	sta $d015	        sta VIC_BASE + VIC_SPR_ENBL
+.09eb	60		rts		        RTS
+.09ec					LOADER:
+.09ec	a0 00		ldy #$00	        LDY #$00        ; print file name being loaded
+.09ee					_prloop:
+.09ee	b9 20 0a	lda $0a20,y	        LDA file,Y
+.09f1	f0 07		beq $09fa	        BEQ _prdone
+.09f3	20 d2 ff	jsr $ffd2	        JSR CHROUT
+.09f6	c8		iny		        INY
+.09f7	4c ee 09	jmp $09ee	        JMP _prloop
+.09fa					_prdone:
+.09fa	a9 0d		lda #$0d	        LDA #$0D
+.09fc	20 d2 ff	jsr $ffd2	        JSR CHROUT
+.09ff	ad 1f 0a	lda $0a1f	        LDA ftmp
+.0a02	a2 20		ldx #$20	        LDX #<file
+.0a04	a0 0a		ldy #$0a	        LDY #>file
+.0a06	20 bd ff	jsr $ffbd	        JSR $FFBD     ; call SETNAM
+.0a09	a9 01		lda #$01	        LDA #$01
+.0a0b	a6 ba		ldx $ba		        LDX $BA       ; last used device number
+.0a0d	d0 02		bne $0a11	        BNE _skip
+.0a0f	a2 08		ldx #$08	        LDX #$08      ; default to device 8
+.0a11	a0 01		ldy #$01	_skip   LDY #$01      ; not $01 means: load to address stored in file
+.0a13	20 ba ff	jsr $ffba	        JSR $FFBA     ; call SETLFS
+.0a16	a9 00		lda #$00	        LDA #$00      ; $00 means: load to memory (not verify)
+.0a18	20 d5 ff	jsr $ffd5	        JSR $FFD5     ; call LOAD
+.0a1b	b0 01		bcs $0a1e	        BCS _error    ; if carry set, a load error has happened
+.0a1d	60		rts		        RTS
+.0a1e					_error
+.0a1e	60		rts		        RTS
+>0a1f	00				ftmp:   .byte $00
+>0a20	00 00 00 00 00 00 00 00		file:   .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+>0a28	00 00 00 00 00 00 00
+.0a2f					FILLFILE_RT:
+.0a2f	a0 00		ldy #$00	        ldy #$00
+.0a31	a2 00		ldx #$00	        ldx #$00
+.0a33					_ffloop:
+.0a33	b1 02		lda ($02),y	        lda (r0),y
+.0a35	f0 09		beq $0a40	        beq _ffdone
+.0a37	9d 20 0a	sta $0a20,x	        sta file,x
+.0a3a	e8		inx		        inx
+.0a3b	c8		iny		        iny
+.0a3c	e0 10		cpx #$10	        cpx #$10                ; 1541 filenames cap at 16 chars
+.0a3e	d0 f3		bne $0a33	        bne _ffloop
+.0a40					_ffdone:
+.0a40	8a		txa		        txa
+.0a41	8d 1f 0a	sta $0a1f	        sta ftmp
+.0a44	a9 00		lda #$00	        lda #$00
+.0a46	9d 20 0a	sta $0a20,x	        sta file,x
+.0a49	60		rts		        rts
+.0a4a					KEYIN_RT:
+.0a4a	20 e4 ff	jsr $ffe4	        jsr $ffe4               ; KERNAL GETIN
+.0a4d	60		rts		        rts
+.0a4e					LOADIMM:
+.0a4e	48		pha			PHA     		; save A
+.0a4f	98		tya			TYA			; copy Y
+.0a50	48		pha			PHA  			; save Y
+.0a51	8a		txa			TXA			; copy X
+.0a52	48		pha			PHA  			; save X
+.0a53	ba		tsx			TSX			; get stack pointer
+.0a54	bd 04 01	lda $0104,x		LDA $0104,X		; get return address low byte (+4 to correct pointer)
+.0a57	85 bc		sta $bc			STA $BC			; save in page zero
+.0a59	bd 05 01	lda $0105,x		LDA $0105,X		; get return address high byte (+5 to correct pointer)
+.0a5c	85 bd		sta $bd			STA $BD			; save in page zero
+.0a5e	a0 01		ldy #$01		LDY #$01		; set index (+1 to allow for return address offset)
+.0a60					LOADIMM2:
+.0a60	b1 bc		lda ($bc),y		LDA ($BC),Y		; get byte from string
+.0a62	f0 0c		beq $0a70		BEQ LOADIMM3	        ; exit if null (end of text)
+.0a64	88		dey		        DEY
+.0a65	99 20 0a	sta $0a20,y		STA file,Y
+.0a68	c8		iny		        INY
+.0a69	98		tya		        TYA
+.0a6a	8d 1f 0a	sta $0a1f	        STA ftmp
+.0a6d	c8		iny		        INY			; increment index
+.0a6e	d0 f0		bne $0a60		BNE LOADIMM2	        ; loop (exit if 256th character)
+.0a70					LOADIMM3:
+.0a70	98		tya			TYA                     ; copy index
+.0a71	18		clc			CLC			; clear carry
+.0a72	65 bc		adc $bc			ADC $BC			; add string pointer low byte to index
+.0a74	9d 04 01	sta $0104,x		STA $0104,X		; put on stack as return address low byte
+.0a77	a9 00		lda #$00		LDA #$00		; clear A
+.0a79	65 bd		adc $bd			ADC $BD		        ; add string pointer high byte
+.0a7b	9d 05 01	sta $0105,x		STA $0105,X		; put on stack as return address high byte
+.0a7e	68		pla			PLA			; pull value
+.0a7f	aa		tax			TAX  			; restore X
+.0a80	68		pla			PLA			; pull value
+.0a81	a8		tay			TAY  			; restore Y
+.0a82	68		pla			PLA  			; restore A
+.0a83	60		rts			RTS
+.0a84					TESTCLICK:
+.0a84	a2 00		ldx #$00	        ldx #$00
+.0a86	ad 00 90	lda $9000	        lda APP_CTL_CTR
+.0a89	85 04		sta $04		        sta r1
+.0a8b					_loopbtns:
+.0a8b	d0 03		bne $0a90	        bne _storemeta
+.0a8d	4c fe 0a	jmp $0afe	        jmp _badclick
+.0a90					_storemeta:
+.0a90	bd 01 90	lda $9001,x	        lda APP_CTL_BUF,x
+.0a93	85 06		sta $06		        sta r2
+.0a95	bd 02 90	lda $9002,x	        lda APP_CTL_BUF+1,x
+.0a98	85 08		sta $08		        sta r3
+.0a9a	bd 03 90	lda $9003,x	        lda APP_CTL_BUF+2, x
+.0a9d	85 0a		sta $0a		        sta r4L
+.0a9f	bd 04 90	lda $9004,x	        lda APP_CTL_BUF+3, x
+.0aa2	85 0b		sta $0b		        sta r4H
+.0aa4					_x1a:
+.0aa4	ad 00 d0	lda $d000	        lda VIC_BASE + VIC_SPR0_X
+.0aa7	38		sec		        sec
+.0aa8	e9 18		sbc #$18	        sbc #$18
+.0aaa	18		clc		        clc
+.0aab	dd 05 90	cmp $9005,x	        cmp APP_CTL_BUF+4,x
+.0aae	90 0a		bcc $0aba	        bcc _fardone1
+.0ab0					_x1b:
+.0ab0	ad 10 d0	lda $d010	        lda VIC_BASE + VIC_SPR_XMSb
+.0ab3	29 01		and #$01	        and #%00000001
+.0ab5	dd 06 90	cmp $9006,x	        cmp APP_CTL_BUF+5,x
+.0ab8	f0 03		beq $0abd	        beq _y1
+.0aba					_fardone1:
+.0aba	4c f1 0a	jmp $0af1	        jmp _checknextbtn
+.0abd					_y1:
+.0abd	ad 01 d0	lda $d001	        lda VIC_BASE + VIC_SPR0_Y
+.0ac0	38		sec		        sec
+.0ac1	e9 32		sbc #$32	        sbc #$32
+.0ac3	18		clc		        clc
+.0ac4	dd 07 90	cmp $9007,x	        cmp APP_CTL_BUF+6,x
+.0ac7	b0 03		bcs $0acc	        bcs _x2a
+.0ac9	4c f1 0a	jmp $0af1	        jmp _checknextbtn
+.0acc					_x2a:
+.0acc	ad 00 d0	lda $d000	        lda VIC_BASE + VIC_SPR0_X
+.0acf	38		sec		        sec
+.0ad0	e9 18		sbc #$18	        sbc #$18
+.0ad2	38		sec		        sec
+.0ad3	dd 08 90	cmp $9008,x	        cmp APP_CTL_BUF+7,x
+.0ad6	b0 0a		bcs $0ae2	        bcs _fardone2
+.0ad8					_x2b:
+.0ad8	ad 10 d0	lda $d010	        lda VIC_BASE + VIC_SPR_XMSb
+.0adb	29 01		and #$01	        and #%00000001
+.0add	dd 09 90	cmp $9009,x	        cmp APP_CTL_BUF+8,x
+.0ae0	f0 03		beq $0ae5	        beq _y2
+.0ae2					_fardone2:
+.0ae2	4c f1 0a	jmp $0af1	        jmp _checknextbtn
+.0ae5					_y2:
+.0ae5	ad 01 d0	lda $d001	        lda VIC_BASE + VIC_SPR0_Y
+.0ae8	38		sec		        sec
+.0ae9	e9 32		sbc #$32	        sbc #$32
+.0aeb	38		sec		        sec
+.0aec	dd 0a 90	cmp $900a,x	        cmp APP_CTL_BUF+9,x
+.0aef	90 0a		bcc $0afb	        bcc _goodclick
+.0af1					_checknextbtn
+.0af1	8a		txa		        txa
+.0af2	18		clc		        clc
+.0af3	69 0a		adc #$0a	        adc #$0a
+.0af5	aa		tax		        tax
+.0af6	c6 04		dec $04		        dec r1
+.0af8	4c 8b 0a	jmp $0a8b	        jmp _loopbtns
+.0afb					_goodclick:
+.0afb	a9 01		lda #$01	        lda #$01
+.0afd	60		rts		        rts
+.0afe					_badclick:
+.0afe	a9 00		lda #$00	        lda #$00
+.0b00	60		rts		        rts
+.0b01					TICK:
+.0b01	a5 22		lda $22		        lda r16
+.0b03	cd 09 dc	cmp $dc09	        cmp $DC09
+.0b06	d0 03		bne $0b0b	        bne _tick
+.0b08	4c 18 0b	jmp $0b18	        jmp _skip
+.0b0b					_tick:
+.0b0b	ad 09 dc	lda $dc09	        lda $DC09
+.0b0e	85 22		sta $22		        sta r16
+.0b10	ad 3d 03	lda $033d	        lda $033d
+.0b13	f0 03		beq $0b18	        beq _skip
+.0b15	6c 3c 03	jmp ($033c)	        jmp ($033c)
+.0b18					_skip:
+.0b18	60		rts		        rts
+.0b19					SYSERR:
+.0b19	68		pla		        pla
+.0b1a	68		pla		        pla
+.0b1b	68		pla		        pla
+.0b1c	68		pla		        pla
+.0b1d	68		pla			pla
+.0b1e	85 02		sta $02			sta r0+0
+.0b20	68		pla			pla
+.0b21	85 03		sta $03			sta r0+1
+.0b23	38		sec			sec
+.0b24	a5 02		lda $02			lda r0+0
+.0b26	e9 02		sbc #$02		sbc #<(2)
+.0b28	85 02		sta $02			sta r0+0
+.0b2a	a5 03		lda $03			lda r0+1
+.0b2c	e9 00		sbc #$00		sbc #>(2)
+.0b2e	85 03		sta $03			sta r0+1
+.0b30	a5 03		lda $03		        lda r0H
+.0b32	a2 00		ldx #$00	        ldx #0
+.0b34	20 3d 0d	jsr $0d3d		jsr er1
+.0b37	a5 02		lda $02		        lda r0L
+.0b39	20 3d 0d	jsr $0d3d		jsr er1
+.0b3c	a9 00		lda #$00	        lda #$00
+.0b3e	85 03		sta $03		        sta X1+1
+.0b40	a9 64		lda #$64	        lda #100
+.0b42	85 02		sta $02		        sta X1
+.0b44	a9 00		lda #$00	        lda #$00
+.0b46	85 07		sta $07		        sta X2+1
+.0b48	a9 db		lda #$db	        lda #100 + 119
+.0b4a	85 06		sta $06		        sta X2
+.0b4c	a9 46		lda #$46	        lda #70
+.0b4e	85 04		sta $04		        sta Y1
+.0b50	a9 46		lda #$46	        lda #70
+.0b52	85 08		sta $08		        sta Y2
+.0b54	a9 00		lda #$00	        lda #$00
+.0b56	85 05		sta $05		        sta Y1+1
+.0b58	85 09		sta $09		        sta Y2+1
+.0b5a	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0b5d	a9 00		lda #$00	        lda #$00
+.0b5f	85 03		sta $03		        sta X1+1
+.0b61	a9 64		lda #$64	        lda #100
+.0b63	85 02		sta $02		        sta X1
+.0b65	a9 00		lda #$00	        lda #$00
+.0b67	85 07		sta $07		        sta X2+1
+.0b69	a9 db		lda #$db	        lda #100 + 119
+.0b6b	85 06		sta $06		        sta X2
+.0b6d	a9 8c		lda #$8c	        lda #70 + 70
+.0b6f	85 04		sta $04		        sta Y1
+.0b71	a9 8c		lda #$8c	        lda #70 + 70
+.0b73	85 08		sta $08		        sta Y2
+.0b75	a9 00		lda #$00	        lda #$00
+.0b77	85 05		sta $05		        sta Y1+1
+.0b79	85 09		sta $09		        sta Y2+1
+.0b7b	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0b7e	a9 00		lda #$00	        lda #$00
+.0b80	85 03		sta $03		        sta X1+1
+.0b82	a9 64		lda #$64	        lda #100
+.0b84	85 02		sta $02		        sta X1
+.0b86	a9 00		lda #$00	        lda #$00
+.0b88	85 07		sta $07		        sta X2+1
+.0b8a	a9 64		lda #$64	        lda #100
+.0b8c	85 06		sta $06		        sta X2
+.0b8e	a9 46		lda #$46	        lda #70
+.0b90	85 04		sta $04		        sta Y1
+.0b92	a9 8c		lda #$8c	        lda #70 + 70
+.0b94	85 08		sta $08		        sta Y2
+.0b96	a9 00		lda #$00	        lda #$00
+.0b98	85 05		sta $05		        sta Y1+1
+.0b9a	85 09		sta $09		        sta Y2+1
+.0b9c	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0b9f	a9 00		lda #$00	        lda #$00
+.0ba1	85 03		sta $03		        sta X1+1
+.0ba3	a9 db		lda #$db	        lda #100 + 119
+.0ba5	85 02		sta $02		        sta X1
+.0ba7	a9 00		lda #$00	        lda #$00
+.0ba9	85 07		sta $07		        sta X2+1
+.0bab	a9 db		lda #$db	        lda #100 + 119
+.0bad	85 06		sta $06		        sta X2
+.0baf	a9 46		lda #$46	        lda #70
+.0bb1	85 04		sta $04		        sta Y1
+.0bb3	a9 8c		lda #$8c	        lda #70 + 70
+.0bb5	85 08		sta $08		        sta Y2
+.0bb7	a9 00		lda #$00	        lda #$00
+.0bb9	85 05		sta $05		        sta Y1+1
+.0bbb	85 09		sta $09		        sta Y2+1
+.0bbd	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0bc0	a9 00		lda #$00	        lda #$00
+.0bc2	85 03		sta $03		        sta X1+1
+.0bc4	a9 69		lda #$69	        lda #100+5
+.0bc6	85 02		sta $02		        sta X1
+.0bc8	a9 00		lda #$00	        lda #$00
+.0bca	85 07		sta $07		        sta X2+1
+.0bcc	a9 e0		lda #$e0	        lda #100+119+5
+.0bce	85 06		sta $06		        sta X2
+.0bd0	a9 8d		lda #$8d	        lda #70+70+1
+.0bd2	85 04		sta $04		        sta Y1
+.0bd4	a9 8d		lda #$8d	        lda #70+70+1
+.0bd6	85 08		sta $08		        sta Y2
+.0bd8	a9 00		lda #$00	        lda #$00
+.0bda	85 05		sta $05		        sta Y1+1
+.0bdc	85 09		sta $09		        sta Y2+1
+.0bde	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0be1	a9 00		lda #$00	        lda #$00
+.0be3	85 03		sta $03		        sta X1+1
+.0be5	a9 69		lda #$69	        lda #100+5
+.0be7	85 02		sta $02		        sta X1
+.0be9	a9 00		lda #$00	        lda #$00
+.0beb	85 07		sta $07		        sta X2+1
+.0bed	a9 e0		lda #$e0	        lda #100+119+5
+.0bef	85 06		sta $06		        sta X2
+.0bf1	a9 8e		lda #$8e	        lda #70+70+2
+.0bf3	85 04		sta $04		        sta Y1
+.0bf5	a9 8e		lda #$8e	        lda #70+70+2
+.0bf7	85 08		sta $08		        sta Y2
+.0bf9	a9 00		lda #$00	        lda #$00
+.0bfb	85 05		sta $05		        sta Y1+1
+.0bfd	85 09		sta $09		        sta Y2+1
+.0bff	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c02	a9 00		lda #$00	        lda #$00
+.0c04	85 03		sta $03		        sta X1+1
+.0c06	a9 69		lda #$69	        lda #100+5
+.0c08	85 02		sta $02		        sta X1
+.0c0a	a9 00		lda #$00	        lda #$00
+.0c0c	85 07		sta $07		        sta X2+1
+.0c0e	a9 e0		lda #$e0	        lda #100+119+5
+.0c10	85 06		sta $06		        sta X2
+.0c12	a9 8f		lda #$8f	        lda #70+70+3
+.0c14	85 04		sta $04		        sta Y1
+.0c16	a9 8f		lda #$8f	        lda #70+70+3
+.0c18	85 08		sta $08		        sta Y2
+.0c1a	a9 00		lda #$00	        lda #$00
+.0c1c	85 05		sta $05		        sta Y1+1
+.0c1e	85 09		sta $09		        sta Y2+1
+.0c20	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c23	a9 00		lda #$00	        lda #$00
+.0c25	85 03		sta $03		        sta X1+1
+.0c27	a9 69		lda #$69	        lda #100+5
+.0c29	85 02		sta $02		        sta X1
+.0c2b	a9 00		lda #$00	        lda #$00
+.0c2d	85 07		sta $07		        sta X2+1
+.0c2f	a9 e0		lda #$e0	        lda #100+119+5
+.0c31	85 06		sta $06		        sta X2
+.0c33	a9 90		lda #$90	        lda #70+70+4
+.0c35	85 04		sta $04		        sta Y1
+.0c37	a9 90		lda #$90	        lda #70+70+4
+.0c39	85 08		sta $08		        sta Y2
+.0c3b	a9 00		lda #$00	        lda #$00
+.0c3d	85 05		sta $05		        sta Y1+1
+.0c3f	85 09		sta $09		        sta Y2+1
+.0c41	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c44	a9 00		lda #$00	        lda #$00
+.0c46	85 03		sta $03		        sta X1+1
+.0c48	a9 69		lda #$69	        lda #100+5
+.0c4a	85 02		sta $02		        sta X1
+.0c4c	a9 00		lda #$00	        lda #$00
+.0c4e	85 07		sta $07		        sta X2+1
+.0c50	a9 e0		lda #$e0	        lda #100+119+5
+.0c52	85 06		sta $06		        sta X2
+.0c54	a9 91		lda #$91	        lda #70+70+5
+.0c56	85 04		sta $04		        sta Y1
+.0c58	a9 91		lda #$91	        lda #70+70+5
+.0c5a	85 08		sta $08		        sta Y2
+.0c5c	a9 00		lda #$00	        lda #$00
+.0c5e	85 05		sta $05		        sta Y1+1
+.0c60	85 09		sta $09		        sta Y2+1
+.0c62	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c65	a9 00		lda #$00	        lda #$00
+.0c67	85 03		sta $03		        sta X1+1
+.0c69	a9 dc		lda #$dc	        lda #100+119+1
+.0c6b	85 02		sta $02		        sta X1
+.0c6d	a9 00		lda #$00	        lda #$00
+.0c6f	85 07		sta $07		        sta X2+1
+.0c71	a9 dc		lda #$dc	        lda #100+119+1
+.0c73	85 06		sta $06		        sta X2
+.0c75	a9 4b		lda #$4b	        lda #70+5
+.0c77	85 04		sta $04		        sta Y1
+.0c79	a9 91		lda #$91	        lda #70+70+5
+.0c7b	85 08		sta $08		        sta Y2
+.0c7d	a9 00		lda #$00	        lda #$00
+.0c7f	85 05		sta $05		        sta Y1+1
+.0c81	85 09		sta $09		        sta Y2+1
+.0c83	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c86	a9 00		lda #$00	        lda #$00
+.0c88	85 03		sta $03		        sta X1+1
+.0c8a	a9 dd		lda #$dd	        lda #100+119+2
+.0c8c	85 02		sta $02		        sta X1
+.0c8e	a9 00		lda #$00	        lda #$00
+.0c90	85 07		sta $07		        sta X2+1
+.0c92	a9 dd		lda #$dd	        lda #100+119+2
+.0c94	85 06		sta $06		        sta X2
+.0c96	a9 4b		lda #$4b	        lda #70+5
+.0c98	85 04		sta $04		        sta Y1
+.0c9a	a9 91		lda #$91	        lda #70+70+5
+.0c9c	85 08		sta $08		        sta Y2
+.0c9e	a9 00		lda #$00	        lda #$00
+.0ca0	85 05		sta $05		        sta Y1+1
+.0ca2	85 09		sta $09		        sta Y2+1
+.0ca4	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0ca7	a9 00		lda #$00	        lda #$00
+.0ca9	85 03		sta $03		        sta X1+1
+.0cab	a9 de		lda #$de	        lda #100+119+3
+.0cad	85 02		sta $02		        sta X1
+.0caf	a9 00		lda #$00	        lda #$00
+.0cb1	85 07		sta $07		        sta X2+1
+.0cb3	a9 de		lda #$de	        lda #100+119+3
+.0cb5	85 06		sta $06		        sta X2
+.0cb7	a9 4b		lda #$4b	        lda #70+5
+.0cb9	85 04		sta $04		        sta Y1
+.0cbb	a9 91		lda #$91	        lda #70+70+5
+.0cbd	85 08		sta $08		        sta Y2
+.0cbf	a9 00		lda #$00	        lda #$00
+.0cc1	85 05		sta $05		        sta Y1+1
+.0cc3	85 09		sta $09		        sta Y2+1
+.0cc5	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0cc8	a9 00		lda #$00	        lda #$00
+.0cca	85 03		sta $03		        sta X1+1
+.0ccc	a9 df		lda #$df	        lda #100+119+4
+.0cce	85 02		sta $02		        sta X1
+.0cd0	a9 00		lda #$00	        lda #$00
+.0cd2	85 07		sta $07		        sta X2+1
+.0cd4	a9 df		lda #$df	        lda #100+119+4
+.0cd6	85 06		sta $06		        sta X2
+.0cd8	a9 4b		lda #$4b	        lda #70+5
+.0cda	85 04		sta $04		        sta Y1
+.0cdc	a9 91		lda #$91	        lda #70+70+5
+.0cde	85 08		sta $08		        sta Y2
+.0ce0	a9 00		lda #$00	        lda #$00
+.0ce2	85 05		sta $05		        sta Y1+1
+.0ce4	85 09		sta $09		        sta Y2+1
+.0ce6	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0ce9	a9 00		lda #$00	        lda #$00
+.0ceb	85 03		sta $03		        sta X1+1
+.0ced	a9 e0		lda #$e0	        lda #100+119+5
+.0cef	85 02		sta $02		        sta X1
+.0cf1	a9 00		lda #$00	        lda #$00
+.0cf3	85 07		sta $07		        sta X2+1
+.0cf5	a9 e0		lda #$e0	        lda #100+119+5
+.0cf7	85 06		sta $06		        sta X2
+.0cf9	a9 4b		lda #$4b	        lda #70+5
+.0cfb	85 04		sta $04		        sta Y1
+.0cfd	a9 91		lda #$91	        lda #70+70+5
+.0cff	85 08		sta $08		        sta Y2
+.0d01	a9 00		lda #$00	        lda #$00
+.0d03	85 05		sta $05		        sta Y1+1
+.0d05	85 09		sta $09		        sta Y2+1
+.0d07	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0d0a	a9 70		lda #$70	    lda #112
+.0d0c	85 02		sta $02		    sta X1
+.0d0e	a9 00		lda #$00	    lda #$00
+.0d10	85 03		sta $03		    sta X1+1
+.0d12	c8		iny		    iny
+.0d13	a9 55		lda #$55	    lda #85
+.0d15	85 04		sta $04		    sta Y1
+.0d17	a9 5e		lda #$5e	    lda #<oops
+.0d19	85 14		sta $14		    sta r9L
+.0d1b	a9 0d		lda #$0d	    lda #>oops
+.0d1d	85 15		sta $15		    sta r9H
+.0d1f	20 1e c0	jsr $c01e	    jsr GPUTS
+.0d22	a9 70		lda #$70	    lda #112
+.0d24	85 02		sta $02		    sta X1
+.0d26	a9 00		lda #$00	    lda #$00
+.0d28	85 03		sta $03		    sta X1+1
+.0d2a	c8		iny		    iny
+.0d2b	a9 69		lda #$69	    lda #105
+.0d2d	85 04		sta $04		    sta Y1
+.0d2f	a9 6f		lda #$6f	    lda #<panicstr
+.0d31	85 14		sta $14		    sta r9L
+.0d33	a9 0d		lda #$0d	    lda #>panicstr
+.0d35	85 15		sta $15		    sta r9H
+.0d37	20 1e c0	jsr $c01e	    jsr GPUTS
+.0d3a					_forever:
+.0d3a	4c 3a 0d	jmp $0d3a	        jmp _forever
+.0d3d	48		pha		er1:	pha
+.0d3e	4a		lsr a			lsr
+.0d3f	4a		lsr a			lsr
+.0d40	4a		lsr a			lsr
+.0d41	4a		lsr a			lsr
+.0d42	20 4e 0d	jsr $0d4e		jsr er2
+.0d45	e8		inx			inx
+.0d46	68		pla			pla
+.0d47	29 0f		and #$0f		and #%00001111
+.0d49	20 4e 0d	jsr $0d4e		jsr er2
+.0d4c	e8		inx			inx
+.0d4d	60		rts			rts
+.0d4e	c9 0a		cmp #$0a	er2:	cmp #10
+.0d50	b0 05		bcs $0d57		bcs er3
+.0d52	18		clc			clc
+.0d53	69 30		adc #$30		adc #'0'
+.0d55	d0 03		bne $0d5a		bne er4
+.0d57					er3:
+.0d57	18		clc			clc
+.0d58	69 37		adc #$37		adc #'0'+7
+.0d5a	9d 7b 0d	sta $0d7b,x	er4:	sta panicaddr,x
+.0d5d	60		rts			rts
+.0d5e					oops:
+>0d5e	d3 d9 d3 d4 c5 cd 20 d3		        .text "SYSTEM SUSPENDED", $00
+>0d66	d5 d3 d0 c5 ce c4 c5 c4 00
+.0d6f					panicstr:
+>0d6f	c5 52 52 4f 52 20 4e 45		        .text "Error near "
+>0d77	41 52 20
+>0d7a	24				        .byte "$"
+.0d7b					panicaddr:
+>0d7b	58 58 58 58				.text "xxxx"
+>0d7f	00					.byte $00
+.0d80					img_stop:
 >0d80	00 00 00			.byte %00000000,%00000000,%00000000
 >0d83	00 00 00			.byte %00000000,%00000000,%00000000
->0d86	00 7e 00			.byte %00000000,%01111110,%00000000
->0d89	00 ff 00			.byte %00000000,%11111111,%00000000
->0d8c	01 ff 80			.byte %00000001,%11111111,%10000000
->0d8f	03 ff c0			.byte %00000011,%11111111,%11000000
->0d92	07 0a 60			.byte %00000111,%00001010,%01100000
->0d95	06 d4 a0			.byte %00000110,%11010100,%10100000
->0d98	07 54 60			.byte %00000111,%01010100,%01100000
->0d9b	06 da e0			.byte %00000110,%11011010,%11100000
->0d9e	03 ff c0			.byte %00000011,%11111111,%11000000
->0da1	01 ff 80			.byte %00000001,%11111111,%10000000
->0da4	00 ff 00			.byte %00000000,%11111111,%00000000
->0da7	00 7e 00			.byte %00000000,%01111110,%00000000
->0daa	00 00 00			.byte %00000000,%00000000,%00000000
->0dad	00 00 00			.byte %00000000,%00000000,%00000000
+>0d86	00 00 00			.byte %00000000,%00000000,%00000000
+>0d89	00 00 00			.byte %00000000,%00000000,%00000000
+>0d8c	00 7e 00			.byte %00000000,%01111110,%00000000
+>0d8f	00 ff 00			.byte %00000000,%11111111,%00000000
+>0d92	01 ff 80			.byte %00000001,%11111111,%10000000
+>0d95	03 ff c0			.byte %00000011,%11111111,%11000000
+>0d98	07 0a 60			.byte %00000111,%00001010,%01100000
+>0d9b	06 d4 a0			.byte %00000110,%11010100,%10100000
+>0d9e	07 54 60			.byte %00000111,%01010100,%01100000
+>0da1	06 da e0			.byte %00000110,%11011010,%11100000
+>0da4	03 ff c0			.byte %00000011,%11111111,%11000000
+>0da7	01 ff 80			.byte %00000001,%11111111,%10000000
+>0daa	00 ff 00			.byte %00000000,%11111111,%00000000
+>0dad	00 7e 00			.byte %00000000,%01111110,%00000000
 >0db0	00 00 00			.byte %00000000,%00000000,%00000000
 >0db3	00 00 00			.byte %00000000,%00000000,%00000000
 >0db6	00 00 00			.byte %00000000,%00000000,%00000000
 >0db9	00 00 00			.byte %00000000,%00000000,%00000000
-.0dbc					SETUP_CTL_BUF:
-.0dbc	a9 01		lda #$01	        lda #<APP_CTL_BUF
-.0dbe	85 04		sta $04		        sta r1L
-.0dc0	a9 90		lda #$90	        lda #>APP_CTL_BUF
-.0dc2	85 05		sta $05		        sta r1H
-.0dc4	a9 9b		lda #$9b	        lda #>APP_ID_TBL
-.0dc6	85 06		sta $06		        sta r2
-.0dc8	a0 00		ldy #$00	        ldy #$00
-.0dca	a2 00		ldx #$00	        ldx #$00
-.0dcc					 _loop:
-.0dcc					_skip:
-.0dcc	a9 ff		lda #$ff	        lda #$ff        ; set app id to $ff
-.0dce	91 04		sta ($04),y	        sta (r1L),y
-.0dd0	e6 04		inc $04		        inc r1L
-.0dd2	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0dd5	a9 ff		lda #$ff	        lda #$ff        ; set ctl id to $ff
-.0dd7	91 04		sta ($04),y	        sta (r1L),y
-.0dd9	e6 04		inc $04		        inc r1L
-.0ddb	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0dde	a9 00		lda #$00	        lda #$00
-.0de0	91 04		sta ($04),y	        sta (r1L),y
-.0de2	e6 04		inc $04		        inc r1L
-.0de4	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0de7	91 04		sta ($04),y	        sta (r1L),y
-.0de9	e6 04		inc $04		        inc r1L
-.0deb	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0dee	91 04		sta ($04),y	        sta (r1L),y
-.0df0	e6 04		inc $04		        inc r1L
-.0df2	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0df5	91 04		sta ($04),y	        sta (r1L),y
-.0df7	e6 04		inc $04		        inc r1L
-.0df9	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0dfc	91 04		sta ($04),y	        sta (r1L),y
-.0dfe	e6 04		inc $04		        inc r1L
-.0e00	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0e03	91 04		sta ($04),y	        sta (r1L),y
-.0e05	e6 04		inc $04		        inc r1L
-.0e07	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0e0a	91 04		sta ($04),y	        sta (r1L),y
-.0e0c	e6 04		inc $04		        inc r1L
-.0e0e	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0e11	91 04		sta ($04),y	        sta (r1L),y
-.0e13	e6 04		inc $04		        inc r1L
-.0e15	20 1d 0e	jsr $0e1d	        jsr _addhi
-.0e18	91 04		sta ($04),y	        sta (r1L),y
-.0e1a	4c cc 0d	jmp $0dcc	        jmp _loop
-.0e1d					 _addhi:
-.0e1d	d0 0c		bne $0e2b	        bne _cont
-.0e1f	e6 05		inc $05		        inc r1H
-.0e21	a5 05		lda $05		        lda r1H        ; if we have reached the end
-.0e23	c5 06		cmp $06		        cmp r2         ; of control table, exit
-.0e25	f0 05		beq $0e2c	        beq _return
-.0e27	a9 00		lda #$00	        lda #$00
-.0e29	85 04		sta $04		        sta r1L
-.0e2b					_cont:
-.0e2b	60		rts		        rts
-.0e2c					_return:
-.0e2c	68		pla		        pla             ; break out of inner loop
-.0e2d	68		pla		        pla
-.0e2e	60		rts		        rts
-.0e2f					CLEAR_RECT:
-.0e2f	a5 02		lda $02		        lda r0L                 ; source addr
-.0e31	8d 09 9c	sta $9c09	        sta REU_PARAMS
-.0e34	a5 03		lda $03		        lda r0H
-.0e36	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
-.0e39	a5 04		lda $04		        lda r1L                        ; expanson ram addr
-.0e3b	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
-.0e3e	a5 05		lda $05		        lda r1H
-.0e40	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
-.0e43	a9 00		lda #$00	        lda #$00                        ; bank 0
-.0e45	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
-.0e48	a5 06		lda $06		        lda r2L                        ; bytes to move
-.0e4a	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
-.0e4d	a5 07		lda $07		        lda r2H
-.0e4f	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
-.0e52	20 06 9c	jsr $9c06	        jsr REU_FETCH
-.0e55	60		rts		        rts
-.0e56					FETCH_STASH_SCREEN:
-.0e56	48		pha		        pha
-.0e57	a9 00		lda #$00	        lda #<BITMAP_START              ; source addr
-.0e59	8d 09 9c	sta $9c09	        sta REU_PARAMS
-.0e5c	a9 a0		lda #$a0	        lda #>BITMAP_START
-.0e5e	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
-.0e61	a9 00		lda #$00	        lda #<$2000                     ; expanson ram addr
-.0e63	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2                ; $2000 - $3fff
-.0e66	a9 20		lda #$20	        lda #>$2000
-.0e68	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
-.0e6b	a9 00		lda #$00	        lda #$00                        ; bank 0
-.0e6d	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
-.0e70	a9 00		lda #$00	        lda #<$2000                     ; bytes to move  (8192)
-.0e72	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
-.0e75	a9 20		lda #$20	        lda #>$2000
-.0e77	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
-.0e7a	68		pla		        pla
-.0e7b	f0 04		beq $0e81	        beq _stash
-.0e7d	20 06 9c	jsr $9c06	        jsr REU_FETCH
-.0e80	60		rts		        rts
-.0e81					_stash:
-.0e81	20 03 9c	jsr $9c03	        jsr REU_STASH
-.0e84	60		rts		        rts
-.0e85					FETCH_STASH_APP:
-.0e85	48		pha		        pha
-.0e86	a9 00		lda #$00	        lda #<APP_START                 ; source addr
-.0e88	8d 09 9c	sta $9c09	        sta REU_PARAMS
-.0e8b	a9 50		lda #$50	        lda #>APP_START
-.0e8d	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
-.0e90	a9 00		lda #$00	        lda #$00                        ; expanson ram addr
-.0e92	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
-.0e95	a9 00		lda #$00	        lda #$00
-.0e97	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
-.0e9a	a9 01		lda #$01	        lda #$01                        ; bank 1
-.0e9c	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
-.0e9f	a9 ff		lda #$ff	        lda #<(APP_END-APP_START)    ; bytes to move
-.0ea1	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
-.0ea4	a9 3f		lda #$3f	        lda #>(APP_END-APP_START)
-.0ea6	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
-.0ea9	68		pla		        pla
-.0eaa	f0 06		beq $0eb2	        beq _stash
-.0eac	20 06 9c	jsr $9c06	        jsr REU_FETCH
-.0eaf	4c 11 08	jmp $0811	        jmp MAINLOOP
-.0eb2					_stash:
-.0eb2	20 03 9c	jsr $9c03	        jsr REU_STASH
+>0dbc	00 00 00			.byte %00000000,%00000000,%00000000
+>0dbf	00 00 00			.byte %00000000,%00000000,%00000000
+.0dc2					SETUP_CTL_BUF:
+.0dc2	a9 01		lda #$01	        lda #<APP_CTL_BUF
+.0dc4	85 04		sta $04		        sta r1L
+.0dc6	a9 90		lda #$90	        lda #>APP_CTL_BUF
+.0dc8	85 05		sta $05		        sta r1H
+.0dca	a9 9b		lda #$9b	        lda #>APP_ID_TBL
+.0dcc	85 06		sta $06		        sta r2
+.0dce	a0 00		ldy #$00	        ldy #$00
+.0dd0	a2 00		ldx #$00	        ldx #$00
+.0dd2					 _loop:
+.0dd2					_skip:
+.0dd2	a9 ff		lda #$ff	        lda #$ff        ; set app id to $ff
+.0dd4	91 04		sta ($04),y	        sta (r1L),y
+.0dd6	e6 04		inc $04		        inc r1L
+.0dd8	20 23 0e	jsr $0e23	        jsr _addhi
+.0ddb	a9 ff		lda #$ff	        lda #$ff        ; set ctl id to $ff
+.0ddd	91 04		sta ($04),y	        sta (r1L),y
+.0ddf	e6 04		inc $04		        inc r1L
+.0de1	20 23 0e	jsr $0e23	        jsr _addhi
+.0de4	a9 00		lda #$00	        lda #$00
+.0de6	91 04		sta ($04),y	        sta (r1L),y
+.0de8	e6 04		inc $04		        inc r1L
+.0dea	20 23 0e	jsr $0e23	        jsr _addhi
+.0ded	91 04		sta ($04),y	        sta (r1L),y
+.0def	e6 04		inc $04		        inc r1L
+.0df1	20 23 0e	jsr $0e23	        jsr _addhi
+.0df4	91 04		sta ($04),y	        sta (r1L),y
+.0df6	e6 04		inc $04		        inc r1L
+.0df8	20 23 0e	jsr $0e23	        jsr _addhi
+.0dfb	91 04		sta ($04),y	        sta (r1L),y
+.0dfd	e6 04		inc $04		        inc r1L
+.0dff	20 23 0e	jsr $0e23	        jsr _addhi
+.0e02	91 04		sta ($04),y	        sta (r1L),y
+.0e04	e6 04		inc $04		        inc r1L
+.0e06	20 23 0e	jsr $0e23	        jsr _addhi
+.0e09	91 04		sta ($04),y	        sta (r1L),y
+.0e0b	e6 04		inc $04		        inc r1L
+.0e0d	20 23 0e	jsr $0e23	        jsr _addhi
+.0e10	91 04		sta ($04),y	        sta (r1L),y
+.0e12	e6 04		inc $04		        inc r1L
+.0e14	20 23 0e	jsr $0e23	        jsr _addhi
+.0e17	91 04		sta ($04),y	        sta (r1L),y
+.0e19	e6 04		inc $04		        inc r1L
+.0e1b	20 23 0e	jsr $0e23	        jsr _addhi
+.0e1e	91 04		sta ($04),y	        sta (r1L),y
+.0e20	4c d2 0d	jmp $0dd2	        jmp _loop
+.0e23					 _addhi:
+.0e23	d0 0c		bne $0e31	        bne _cont
+.0e25	e6 05		inc $05		        inc r1H
+.0e27	a5 05		lda $05		        lda r1H        ; if we have reached the end
+.0e29	c5 06		cmp $06		        cmp r2         ; of control table, exit
+.0e2b	f0 05		beq $0e32	        beq _return
+.0e2d	a9 00		lda #$00	        lda #$00
+.0e2f	85 04		sta $04		        sta r1L
+.0e31					_cont:
+.0e31	60		rts		        rts
+.0e32					_return:
+.0e32	68		pla		        pla             ; break out of inner loop
+.0e33	68		pla		        pla
+.0e34	60		rts		        rts
+.0e35					CLEAR_RECT:
+.0e35	a5 02		lda $02		        lda r0L                 ; source addr
+.0e37	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0e3a	a5 03		lda $03		        lda r0H
+.0e3c	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0e3f	a5 04		lda $04		        lda r1L                        ; expanson ram addr
+.0e41	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
+.0e44	a5 05		lda $05		        lda r1H
+.0e46	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0e49	a9 00		lda #$00	        lda #$00                        ; bank 0
+.0e4b	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0e4e	a5 06		lda $06		        lda r2L                        ; bytes to move
+.0e50	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0e53	a5 07		lda $07		        lda r2H
+.0e55	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0e58	20 06 9c	jsr $9c06	        jsr REU_FETCH
+.0e5b	60		rts		        rts
+.0e5c					FETCH_STASH_SCREEN:
+.0e5c	48		pha		        pha
+.0e5d	a9 00		lda #$00	        lda #<BITMAP_START              ; source addr
+.0e5f	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0e62	a9 a0		lda #$a0	        lda #>BITMAP_START
+.0e64	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0e67	a9 00		lda #$00	        lda #<$2000                     ; expanson ram addr
+.0e69	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2                ; $2000 - $3fff
+.0e6c	a9 20		lda #$20	        lda #>$2000
+.0e6e	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0e71	a9 00		lda #$00	        lda #$00                        ; bank 0
+.0e73	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0e76	a9 00		lda #$00	        lda #<$2000                     ; bytes to move  (8192)
+.0e78	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0e7b	a9 20		lda #$20	        lda #>$2000
+.0e7d	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0e80	68		pla		        pla
+.0e81	f0 04		beq $0e87	        beq _stash
+.0e83	20 06 9c	jsr $9c06	        jsr REU_FETCH
+.0e86	60		rts		        rts
+.0e87					_stash:
+.0e87	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0e8a	60		rts		        rts
+.0e8b					FETCH_STASH_APP:
+.0e8b	48		pha		        pha
+.0e8c	a9 00		lda #$00	        lda #<APP_START                 ; source addr
+.0e8e	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0e91	a9 50		lda #$50	        lda #>APP_START
+.0e93	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0e96	a9 00		lda #$00	        lda #$00                        ; expanson ram addr
+.0e98	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
+.0e9b	a9 00		lda #$00	        lda #$00
+.0e9d	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0ea0	a9 01		lda #$01	        lda #$01                        ; bank 1
+.0ea2	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0ea5	a9 ff		lda #$ff	        lda #<(APP_END-APP_START)    ; bytes to move
+.0ea7	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0eaa	a9 3f		lda #$3f	        lda #>(APP_END-APP_START)
+.0eac	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0eaf	68		pla		        pla
+.0eb0	f0 06		beq $0eb8	        beq _stash
+.0eb2	20 06 9c	jsr $9c06	        jsr REU_FETCH
 .0eb5	4c 11 08	jmp $0811	        jmp MAINLOOP
-.0eb8					FETCH_STASH_RECT:
-.0eb8	48		pha		        pha
-.0eb9	a5 02		lda $02		        lda r0L                 ; source addr
-.0ebb	8d 09 9c	sta $9c09	        sta REU_PARAMS
-.0ebe	a5 03		lda $03		        lda r0H
-.0ec0	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
-.0ec3	a5 04		lda $04		        lda r1L                        ; expanson ram addr
-.0ec5	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
-.0ec8	a5 05		lda $05		        lda r1H
-.0eca	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
-.0ecd	a9 02		lda #$02	        lda #$02                        ; bank 2
-.0ecf	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
-.0ed2	a5 06		lda $06		        lda r2L                        ; bytes to move
-.0ed4	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
-.0ed7	a5 07		lda $07		        lda r2H
-.0ed9	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
-.0edc	68		pla		        pla
-.0edd	f0 04		beq $0ee3	        beq _stash
-.0edf	20 06 9c	jsr $9c06	        jsr REU_FETCH
-.0ee2	60		rts		        rts
-.0ee3					_stash:
-.0ee3	20 03 9c	jsr $9c03	        jsr REU_STASH
-.0ee6	60		rts		        rts
-.0ee7					VDSETUP:
-.0ee7	20 1b cd	jsr $cd1b	        jsr VDC_INIT
-.0eea	20 e4 cc	jsr $cce4	        jsr VDC_FONTUP
-.0eed	20 88 cc	jsr $cc88	        jsr VDC_CLS
-.0ef0	a2 00		ldx #$00	        ldx #$00
-.0ef2	a9 00		lda #$00	dgl1:   lda #0
-.0ef4	9d 40 05	sta $0540,x	        sta $0400+320,x      ; row 8 blank
-.0ef7	e8		inx		        inx
-.0ef8	e0 50		cpx #$50	        cpx #80
-.0efa	d0 f6		bne $0ef2	        bne dgl1
-.0efc	a2 00		ldx #$00	        ldx #$00
-.0efe	a9 00		lda #$00	dreg:   lda #0
-.0f00	48		pha		        pha
-.0f01	bd 67 0f	lda $0f67,x	        lda dregs,x
-.0f04	8d 00 d6	sta $d600	        sta $d600
-.0f07	ad 00 d6	lda $d600	dgl2:   lda $d600
-.0f0a	10 fb		bpl $0f07	        bpl dgl2
-.0f0c	ad 01 d6	lda $d601	        lda $d601
-.0f0f	9d 68 05	sta $0568,x	        sta $0400+360,x      ; row 9: raw reg values
-.0f12	e8		inx		        inx
-.0f13	e0 08		cpx #$08	        cpx #$08
-.0f15	d0 e7		bne $0efe	        bne dreg
-.0f17	a9 12		lda #$12	        lda #$12
-.0f19	8d 00 d6	sta $d600	        sta $d600
-.0f1c	a9 00		lda #$00	        lda #$00
-.0f1e	8d 01 d6	sta $d601	        sta $d601
-.0f21	a9 13		lda #$13	        lda #$13
-.0f23	8d 00 d6	sta $d600	        sta $d600
-.0f26	a9 00		lda #$00	        lda #$00
-.0f28	8d 01 d6	sta $d601	        sta $d601
-.0f2b	a9 1f		lda #$1f	        lda #$1f
-.0f2d	8d 00 d6	sta $d600	        sta $d600
-.0f30	a2 00		ldx #$00	        ldx #$00
-.0f32	ad 01 d6	lda $d601	dc0:    lda $d601
-.0f35	9d 90 05	sta $0590,x	        sta $0400+400,x      ; row 10: cell readback
-.0f38	e8		inx		        inx
-.0f39	e0 08		cpx #$08	        cpx #$08
-.0f3b	d0 f5		bne $0f32	        bne dc0
-.0f3d	4c 3d 0f	jmp $0f3d	dvwait: jmp dvwait
-.0f40	a9 6f		lda #$6f	        lda #<vdcline1
-.0f42	85 23		sta $23		        sta vdcbpL
-.0f44	a9 0f		lda #$0f	        lda #>vdcline1
-.0f46	85 24		sta $24		        sta vdcbpH
-.0f48	a9 00		lda #$00	        lda #0
-.0f4a	85 25		sta $25		        sta vdcdpL
-.0f4c	a9 00		lda #$00	        lda #0
-.0f4e	85 26		sta $26		        sta vdcdpH
-.0f50	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0f53	a9 87		lda #$87	        lda #<vdcline2
-.0f55	85 23		sta $23		        sta vdcbpL
-.0f57	a9 0f		lda #$0f	        lda #>vdcline2
-.0f59	85 24		sta $24		        sta vdcbpH
-.0f5b	a9 50		lda #$50	        lda #80             ; row 1 start cell
-.0f5d	85 25		sta $25		        sta vdcdpL
-.0f5f	a9 00		lda #$00	        lda #0
-.0f61	85 26		sta $26		        sta vdcdpH
-.0f63	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0f66	60		rts		        rts
->0f67	00 01 02 03 12 13 1f 28		dregs:   .byte $00,$01,$02,$03,$12,$13,$1f,$28
->0f6f	d5 4c 54 cf d3 20 38 30		vdcline1: .text "UltOS 80-column display", $00
->0f77	2d 43 4f 4c 55 4d 4e 20 44 49 53 50 4c 41 59 00
->0f87	53 45 43 4f 4e 44 20 44		vdcline2: .text "second display online", 0
->0f8f	49 53 50 4c 41 59 20 4f 4e 4c 49 4e 45 00
-.0f9d					VDCPUTROW:
-.0f9d	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0fa0	60		rts		        rts
+.0eb8					_stash:
+.0eb8	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0ebb	4c 11 08	jmp $0811	        jmp MAINLOOP
+.0ebe					FETCH_STASH_RECT:
+.0ebe	48		pha		        pha
+.0ebf	a5 02		lda $02		        lda r0L                 ; source addr
+.0ec1	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0ec4	a5 03		lda $03		        lda r0H
+.0ec6	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0ec9	a5 04		lda $04		        lda r1L                        ; expanson ram addr
+.0ecb	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
+.0ece	a5 05		lda $05		        lda r1H
+.0ed0	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0ed3	a9 02		lda #$02	        lda #$02                        ; bank 2
+.0ed5	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0ed8	a5 06		lda $06		        lda r2L                        ; bytes to move
+.0eda	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0edd	a5 07		lda $07		        lda r2H
+.0edf	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0ee2	68		pla		        pla
+.0ee3	f0 04		beq $0ee9	        beq _stash
+.0ee5	20 06 9c	jsr $9c06	        jsr REU_FETCH
+.0ee8	60		rts		        rts
+.0ee9					_stash:
+.0ee9	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0eec	60		rts		        rts
+.0eed					VDPREF:
+.0eed	60		rts		        rts
+.0eee					VDSETUP:
+.0eee	20 1b cd	jsr $cd1b	        jsr VDC_INIT
+.0ef1	20 e4 cc	jsr $cce4	        jsr VDC_FONTUP
+.0ef4	20 88 cc	jsr $cc88	        jsr VDC_CLS
+.0ef7	a2 00		ldx #$00	        ldx #$00
+.0ef9	a9 00		lda #$00	dgl1:   lda #0
+.0efb	9d 40 05	sta $0540,x	        sta $0400+320,x      ; row 8 blank
+.0efe	e8		inx		        inx
+.0eff	e0 50		cpx #$50	        cpx #80
+.0f01	d0 f6		bne $0ef9	        bne dgl1
+.0f03	a2 00		ldx #$00	        ldx #$00
+.0f05	a9 00		lda #$00	dreg:   lda #0
+.0f07	48		pha		        pha
+.0f08	bd 6e 0f	lda $0f6e,x	        lda dregs,x
+.0f0b	8d 00 d6	sta $d600	        sta $d600
+.0f0e	ad 00 d6	lda $d600	dgl2:   lda $d600
+.0f11	10 fb		bpl $0f0e	        bpl dgl2
+.0f13	ad 01 d6	lda $d601	        lda $d601
+.0f16	9d 68 05	sta $0568,x	        sta $0400+360,x      ; row 9: raw reg values
+.0f19	e8		inx		        inx
+.0f1a	e0 08		cpx #$08	        cpx #$08
+.0f1c	d0 e7		bne $0f05	        bne dreg
+.0f1e	a9 12		lda #$12	        lda #$12
+.0f20	8d 00 d6	sta $d600	        sta $d600
+.0f23	a9 00		lda #$00	        lda #$00
+.0f25	8d 01 d6	sta $d601	        sta $d601
+.0f28	a9 13		lda #$13	        lda #$13
+.0f2a	8d 00 d6	sta $d600	        sta $d600
+.0f2d	a9 00		lda #$00	        lda #$00
+.0f2f	8d 01 d6	sta $d601	        sta $d601
+.0f32	a9 1f		lda #$1f	        lda #$1f
+.0f34	8d 00 d6	sta $d600	        sta $d600
+.0f37	a2 00		ldx #$00	        ldx #$00
+.0f39	ad 01 d6	lda $d601	dc0:    lda $d601
+.0f3c	9d 90 05	sta $0590,x	        sta $0400+400,x      ; row 10: cell readback
+.0f3f	e8		inx		        inx
+.0f40	e0 08		cpx #$08	        cpx #$08
+.0f42	d0 f5		bne $0f39	        bne dc0
+.0f44	4c 44 0f	jmp $0f44	dvwait: jmp dvwait
+.0f47	a9 76		lda #$76	        lda #<vdcline1
+.0f49	85 23		sta $23		        sta vdcbpL
+.0f4b	a9 0f		lda #$0f	        lda #>vdcline1
+.0f4d	85 24		sta $24		        sta vdcbpH
+.0f4f	a9 00		lda #$00	        lda #0
+.0f51	85 25		sta $25		        sta vdcdpL
+.0f53	a9 00		lda #$00	        lda #0
+.0f55	85 26		sta $26		        sta vdcdpH
+.0f57	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0f5a	a9 8e		lda #$8e	        lda #<vdcline2
+.0f5c	85 23		sta $23		        sta vdcbpL
+.0f5e	a9 0f		lda #$0f	        lda #>vdcline2
+.0f60	85 24		sta $24		        sta vdcbpH
+.0f62	a9 50		lda #$50	        lda #80             ; row 1 start cell
+.0f64	85 25		sta $25		        sta vdcdpL
+.0f66	a9 00		lda #$00	        lda #0
+.0f68	85 26		sta $26		        sta vdcdpH
+.0f6a	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0f6d	60		rts		        rts
+>0f6e	00 01 02 03 12 13 1f 28		dregs:   .byte $00,$01,$02,$03,$12,$13,$1f,$28
+>0f76	d5 4c 54 cf d3 20 38 30		vdcline1: .text "UltOS 80-column display", $00
+>0f7e	2d 43 4f 4c 55 4d 4e 20 44 49 53 50 4c 41 59 00
+>0f8e	53 45 43 4f 4e 44 20 44		vdcline2: .text "second display online", 0
+>0f96	49 53 50 4c 41 59 20 4f 4e 4c 49 4e 45 00
+.0fa4					VDCPUTROW:
+.0fa4	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0fa7	60		rts		        rts
 =$01					CAP_GFX         = $01
 =$02					CAP_VDC         = $02
 =$03					CAP_REU         = $03
 =$04					CAP_KEYIN       = $04
 =$05					CAP_FILLFILE    = $05
-.0fa1					CAPTBL:
->0fa1	01				        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
->0fa2	00 c0				        .word $c000
->0fa4	02				        .byte CAP_VDC
->0fa5	00 cc				        .word $cc00
->0fa7	03				        .byte CAP_REU
->0fa8	00 9c				        .word $9c00
->0faa	04				        .byte CAP_KEYIN
->0fab	2c 08				        .word $082c
->0fad	05				        .byte CAP_FILLFILE
->0fae	29 08				        .word $0829
-.0fb0					CAPTBLEND:
-.0fb0					GETCAP_RT:
-.0fb0	a9 00		lda #$00	        lda #$00                ; default: base = 0 (absent)
-.0fb2	8d ef 0f	sta $0fef	        sta retval
-.0fb5	8d f0 0f	sta $0ff0	        sta retval+1
-.0fb8	a2 00		ldx #$00	        ldx #0
-.0fba	bd a1 0f	lda $0fa1,x	gc_l:   lda CAPTBL,x
-.0fbd	c9 ff		cmp #$ff	        cmp #$ff
-.0fbf	f0 21		beq $0fe2	        beq gc_none
-.0fc1	e0 0d		cpx #$0d	        cpx #13
-.0fc3	b0 1d		bcs $0fe2	        bcs gc_none
-.0fc5	cd ee 0f	cmp $0fee	        cmp capid
-.0fc8	d0 11		bne $0fdb	        bne gc_next3
-.0fca	e8		inx		        inx
-.0fcb	bd a1 0f	lda $0fa1,x	        lda CAPTBL,x
-.0fce	8d ef 0f	sta $0fef	        sta retval              ; lo
+.0fa8					CAPTBL:
+>0fa8	01				        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
+>0fa9	00 c0				        .word $c000
+>0fab	02				        .byte CAP_VDC
+>0fac	00 cc				        .word $cc00
+>0fae	03				        .byte CAP_REU
+>0faf	00 9c				        .word $9c00
+>0fb1	04				        .byte CAP_KEYIN
+>0fb2	2c 08				        .word $082c
+>0fb4	05				        .byte CAP_FILLFILE
+>0fb5	29 08				        .word $0829
+.0fb7					CAPTBLEND:
+.0fb7					GETCAP_RT:
+.0fb7	a9 00		lda #$00	        lda #$00                ; default: base = 0 (absent)
+.0fb9	8d f6 0f	sta $0ff6	        sta retval
+.0fbc	8d f7 0f	sta $0ff7	        sta retval+1
+.0fbf	a2 00		ldx #$00	        ldx #0
+.0fc1	bd a8 0f	lda $0fa8,x	gc_l:   lda CAPTBL,x
+.0fc4	c9 ff		cmp #$ff	        cmp #$ff
+.0fc6	f0 21		beq $0fe9	        beq gc_none
+.0fc8	e0 0d		cpx #$0d	        cpx #13
+.0fca	b0 1d		bcs $0fe9	        bcs gc_none
+.0fcc	cd f5 0f	cmp $0ff5	        cmp capid
+.0fcf	d0 11		bne $0fe2	        bne gc_next3
 .0fd1	e8		inx		        inx
-.0fd2	bd a1 0f	lda $0fa1,x	        lda CAPTBL,x
-.0fd5	8d f0 0f	sta $0ff0	        sta retval+1            ; hi
-.0fd8	4c ea 0f	jmp $0fea	        jmp gc_done
-.0fdb					gc_next3:
-.0fdb	e8		inx		        inx
-.0fdc	e8		inx		        inx
-.0fdd	e8		inx		        inx
-.0fde	e8		inx		        inx
-.0fdf	4c ba 0f	jmp $0fba	        jmp gc_l
-.0fe2					gc_none:
-.0fe2	a9 00		lda #$00	        lda #$00
-.0fe4	8d ef 0f	sta $0fef	        sta retval
-.0fe7	8d f0 0f	sta $0ff0	        sta retval+1
-.0fea					gc_done:
-.0fea	ad ef 0f	lda $0fef	        lda retval
-.0fed	60		rts		        rts
->0fee	00				capid:  .byte $00
->0fef	00 00				retval: .byte $00, $00
+.0fd2	bd a8 0f	lda $0fa8,x	        lda CAPTBL,x
+.0fd5	8d f6 0f	sta $0ff6	        sta retval              ; lo
+.0fd8	e8		inx		        inx
+.0fd9	bd a8 0f	lda $0fa8,x	        lda CAPTBL,x
+.0fdc	8d f7 0f	sta $0ff7	        sta retval+1            ; hi
+.0fdf	4c f1 0f	jmp $0ff1	        jmp gc_done
+.0fe2					gc_next3:
+.0fe2	e8		inx		        inx
+.0fe3	e8		inx		        inx
+.0fe4	e8		inx		        inx
+.0fe5	e8		inx		        inx
+.0fe6	4c c1 0f	jmp $0fc1	        jmp gc_l
+.0fe9					gc_none:
+.0fe9	a9 00		lda #$00	        lda #$00
+.0feb	8d f6 0f	sta $0ff6	        sta retval
+.0fee	8d f7 0f	sta $0ff7	        sta retval+1
+.0ff1					gc_done:
+.0ff1	ad f6 0f	lda $0ff6	        lda retval
+.0ff4	60		rts		        rts
+>0ff5	00				capid:  .byte $00
+>0ff6	00 00				retval: .byte $00, $00
 
 ;******  End of listing
