@@ -31,6 +31,7 @@ LOAD_IMM        = $0823
 APP_LOADER      = $0826
 FILLFILE        = $0829
 KEYIN           = $082c
+GETCAP          = $082f
 ; uVDC second-display driver (origin $cc00)
 VDC_GETREG      = $cc00
 VDC_SETREG      = $cc07

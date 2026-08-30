@@ -47,6 +47,7 @@
         jmp LOADER
         jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
         jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
+        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
 
 ; ==========================================================
 ; START
@@ -893,3 +894,65 @@ vdcline2: .text "second display online", 0
 VDCPUTROW:
         jsr VDC_PUTS
         rts
+
+; ==========================================================
+; Driver Registry (FR-A2)
+; Capability ids: 1=gfx(VIC), 2=vdc, 3=reu, 4=keyin, 5=fillfile
+; GETCAP: X = capability id -> X/A = base lo/hi, or 0/0 = absent.
+; Modules self-register by being present; the registry is the OS-side
+; dispatch point for future dynamic modules (file-based drivers).
+; ==========================================================
+CAP_GFX         = $01
+CAP_VDC         = $02
+CAP_REU         = $03
+CAP_KEYIN       = $04
+CAP_FILLFILE    = $05
+
+CAPTBL:
+        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
+        .word $c000
+        .byte CAP_VDC
+        .word $cc00
+        .byte CAP_REU
+        .word $9c00
+        .byte CAP_KEYIN
+        .word $082c
+        .byte CAP_FILLFILE
+        .word $0829
+CAPTBLEND:
+
+GETCAP_RT:
+        lda #$00                ; default: base = 0 (absent)
+        sta retval
+        sta retval+1
+        ldx #0
+gc_l:   lda CAPTBL,x
+        cmp #$ff
+        beq gc_none
+        cpx #13
+        bcs gc_none
+        cmp capid
+        bne gc_next3
+        inx
+        lda CAPTBL,x
+        sta retval              ; lo
+        inx
+        lda CAPTBL,x
+        sta retval+1            ; hi
+        jmp gc_done
+gc_next3:
+        inx
+        inx
+        inx
+        inx
+        jmp gc_l
+gc_none:
+        lda #$00
+        sta retval
+        sta retval+1
+gc_done:
+        lda retval
+        rts
+
+capid:  .byte $00
+retval: .byte $00, $00
