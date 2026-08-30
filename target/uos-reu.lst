@@ -1,0 +1,126 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o target/uos-reu.prg -L target/uos-reu.lst src/uos-reu.asm
+; Sun Aug 30 14:25:46 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: src/uos-reu.asm
+
+=$9e00					buffer	        = $9e00
+=$fb					numbank         = $fb
+=$df00					ramexp          = $df00
+=$d506					rcr             = $d506
+=$a000					BITMAP          = $A000
+=$2000					BITMAPSZ        = $2000
+=$0000					REUSTART        = $0000
+.9c00	4c 13 9c	jmp $9c13	start   jmp GETSIZE
+.9c03	4c 7e 9c	jmp $9c7e	        jmp STASH
+.9c06	4c 7b 9c	jmp $9c7b	        jmp FETCH
+>9c09	00 00				params	.word $0000	; Host address, lo, hi
+>9c0b	00 00					.word $0000	; Exp  address, lo, hi
+>9c0d	00				expbank .byte $00	; Expansion  bank no.
+>9c0e	00 01					.word $0100	; # bytes to move, lo, hi
+>9c10	00					.byte $00	; Interrupt mask reg.
+>9c11	00					.byte $00	; Adress control reg.
+>9c12	00				bnk128  .byte $00       ; Bank of 128 to work with
+.9c13					pend
+.9c13					GETSIZE:
+.9c13	a2 9e		ldx #$9e	        ldx #>buffer            ; must set for stash and fetch:
+.9c15	8e 0a 9c	stx $9c0a	        stx params+1            ; First, set up the hi bytes of
+.9c18	8e 0c 9c	stx $9c0c	        stx params+3            ; the cpu and expansion address.
+.9c1b	a2 01		ldx #$01	        ldx #$01
+.9c1d	8e 0f 9c	stx $9c0f	        stx params+6            ; Set up the byte count hi
+.9c20	ca		dex		        dex                     ; and the byte count lo.
+.9c21	8e 0e 9c	stx $9c0e	        stx params+5
+.9c24	8e 0d 9c	stx $9c0d		stx expbank             ;  Set up the expansion bank to
+.9c27	8e 09 9c	stx $9c09	        stx params+0            ; use and the lo bytes of the
+.9c2a	8e 0b 9c	stx $9c0b	        stx params+2            ; cpu and expansion address.
+.9c2d	8e 12 9c	stx $9c12	        stx bnk128              ; Set the 128 bank to work with.
+.9c30	8a		txa		_20	txa		        ; Generate a 1 block
+.9c31	49 5a		eor #$5a		eor #$5a                ; test pattern in
+.9c33	9d 00 9e	sta $9e00,x		sta buffer,x            ; buffer.
+.9c36	ca		dex			dex
+.9c37	d0 f7		bne $9c30		bne _20
+.9c39	20 7e 9c	jsr $9c7e	_30	jsr stash	        ; Now write the test
+.9c3c	ee 0d 9c	inc $9c0d		inc expbank             ; pattern in buffer
+.9c3f	ad 0d 9c	lda $9c0d	        lda expbank             ; to each of the 8
+.9c42	c9 08		cmp #$08		cmp #8                  ; possible exp. banks.
+.9c44	d0 f3		bne $9c39	        bne _30
+.9c46	a2 00		ldx #$00		ldx #0
+.9c48	8e 0d 9c	stx $9c0d		stx expbank
+.9c4b	a2 00		ldx #$00	_40     ldx #0		        ; OK, now change
+.9c4d	8a		txa		_50 	txa		        ; the 1 block test
+.9c4e	49 3c		eor #$3c		eor #$3c                ; pattern in the buffer
+.9c50	9d 00 9e	sta $9e00,x		sta buffer,x            ; to a new pattern.
+.9c53	ca		dex			dex
+.9c54	d0 f7		bne $9c4d		bne _50
+.9c56	20 7e 9c	jsr $9c7e		jsr stash	        ; Now write the new
+.9c59	ee 0d 9c	inc $9c0d		inc expbank             ; pattern to bank (x)...
+.9c5c	ad 0d 9c	lda $9c0d		lda expbank             ; (check to see
+.9c5f	c9 08		cmp #$08	        cmp #8                  ;  if we are done)
+.9c61	f0 12		beq $9c75		beq _90
+.9c63	20 7b 9c	jsr $9c7b		jsr fetch	        ; ...and read the pattern
+.9c66	a2 00		ldx #$00		ldx #0                  ;    from bank (x+1).
+.9c68	8a		txa		_60	txa		        ;
+.9c69	49 5a		eor #$5a		eor #$5a                ; We should see the old pattern
+.9c6b	dd 00 9e	cmp $9e00,x		cmp buffer,x            ; here.  If we don't then the data
+.9c6e	d0 05		bne $9c75		bne _90		        ; changed and we have found the end.
+.9c70	ca		dex			dex
+.9c71	d0 f5		bne $9c68		bne _60                 ; Bytes match so all is well.
+.9c73	f0 d6		beq $9c4b		beq _40 		; Loop back for next bank.
+.9c75	ad 0d 9c	lda $9c0d	_90	lda expbank	        ; Number of banks is returned in
+.9c78	85 fb		sta $fb			sta numbank             ; the accumulator and in numbank.
+.9c7a	60		rts			rts
+.9c7b					FETCH:
+.9c7b	a0 ed		ldy #$ed	        ldy #$ed                ; Command to read from expander
+>9c7d	2c				        .byte $2c               ; with FF00 option enabled.
+.9c7e					STASH:
+.9c7e	a0 ec		ldy #$ec	        ldy #$ec                ; Command to write to expander
+.9c80	a2 08		ldx #$08		ldx #pend-params-2
+.9c82	bd 09 9c	lda $9c09,x	_10 	lda params,x	        ; Initialize the DMA
+.9c85	9d 02 df	sta $df02,x		sta $df02,x             ; contoller with our
+.9c88	ca		dex			dex                     ; parameters,
+.9c89	e0 ff		cpx #$ff	        cpx #$ff
+.9c8b	d0 f5		bne $9c82	        bne _10
+.9c8d	8c 01 df	sty $df01		sty $df01	        ; and issue command.
+.9c90	ac 12 9c	ldy $9c12	        ldy bnk128              ;  Set the .y register to the
+.9c93					c64or128:
+.9c93	a9 37		lda #$37	        lda #$37
+.9c95	85 01		sta $01		        sta $01
+.9c97	ad fd ff	lda $fffd	        lda $fffd   ; The high byte of the
+.9c9a	c9 fc		cmp #$fc	        cmp #$fc    ; reset vector on all C64s
+.9c9c	f0 2a		beq $9cc8	        beq xfer64  ; is equal to $fc.
+.9c9e					xfer128:
+.9c9e	78		sei		       sei
+.9c9f	ad 06 d5	lda $d506	       lda rcr       ;   Save the old value of
+.9ca2	48		pha		       pha           ; the 128 rcr.  Now convert
+.9ca3	98		tya		       tya           ; the 128 bank number to a
+.9ca4	f0 07		beq $9cad	       beq bk0128    ; mask for the VIC/DMA
+.9ca6	a9 40		lda #$40	       lda #$40      ; pointer in the rcr.
+.9ca8	0d 06 d5	ora $d506	       ora rcr       ;   This allows a stash or
+.9cab	d0 05		bne $9cb2	       bne bangit    ; fetch to bank 0 or bank 1
+.9cad	a9 3f		lda #$3f	bk0128 lda #$3f      ; of the 128.  When using
+.9caf	2d 06 d5	and $d506	       and rcr       ; bank 1, be sure to make a copy
+.9cb2	8d 06 d5	sta $d506	bangit sta rcr       ; of this code in both banks.
+.9cb5	ad 00 ff	lda $ff00	       lda $ff00     ;  Save the 128 configuration
+.9cb8	48		pha		       pha           ; now kill ROMs and I/O.
+.9cb9	09 3f		ora #$3f	       ora #$3f      ; When we write to FF00
+.9cbb	8d 00 ff	sta $ff00	       sta $ff00     ; DMA execution begins.
+.9cbe	68		pla		       pla
+.9cbf	8d 00 ff	sta $ff00	       sta $ff00     ;  Restore the old
+.9cc2	68		pla		       pla           ; configuration and
+.9cc3	8d 06 d5	sta $d506	       sta rcr       ; restore the old VIC
+.9cc6	58		cli		       cli           ; pointer in the rcr.
+.9cc7	60		rts		       rts
+.9cc8					xfer64:
+.9cc8	78		sei		        sei             ;  Save the value of the
+.9cc9	a9 36		lda #$36	        lda #$36       ; turn off basic so reu can access bitmap
+.9ccb	85 01		sta $01		        sta $01
+.9ccd	8d 00 ff	sta $ff00	        sta $ff00       ; start delayed transfer by writing anything to $ff00
+.9cd0	a9 37		lda #$37	        lda #$37        ; restore basic (dont really care since drawing routines are underneath basic)
+.9cd2	85 01		sta $01		        sta $01         ; configuration
+.9cd4	58		cli		        cli             ; and return.
+.9cd5	60		rts		        rts
+
+;******  End of listing

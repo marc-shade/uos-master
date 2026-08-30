@@ -1,0 +1,1441 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o target/uos-gfx.prg -L target/uos-gfx.lst src/uos-gfx.asm
+; Sun Aug 30 14:25:46 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: src/uos-gfx.asm
+
+
+;******  Processing file: src/equates.inc
+
+=$02					r0              =       $02
+=$02					r0L             =       $02
+=$03					r0H             =       $03
+=$04					r1              =       $04
+=$04					r1L             =       $04
+=$05					r1H             =       $05
+=$06					r2              =       $06
+=$06					r2L             =       $06
+=$07					r2H             =       $07
+=$08					r3              =       $08
+=$08					r3L             =       $08
+=$09					r3H             =       $09
+=$0a					r4              =       $0a
+=$0a					r4L             =       $0a
+=$0b					r4H             =       $0b
+=$0c					r5              =       $0c
+=$0c					r5L             =       $0c
+=$0d					r5H             =       $0d
+=$0e					r6              =       $0e
+=$0e					r6L             =       $0e
+=$0f					r6H             =       $0f
+=$10					r7              =       $10
+=$10					r7L             =       $10
+=$11					r7H             =       $11
+=$12					r8              =       $12
+=$12					r8L             =       $12
+=$13					r8H             =       $13
+=$14					r9              =       $14
+=$14					r9L             =       $14
+=$15					r9H             =       $15
+=$16					r10             =       $16
+=$16					r10L            =       $16
+=$17					r10H            =       $17
+=$18					r11             =       $18
+=$18					r11L            =       $18
+=$19					r11H            =       $19
+=$1a					r12             =       $1a
+=$1a					r12L            =       $1a
+=$1b					r12H            =       $1b
+=$1c					r13             =       $1c
+=$1c					r13L            =       $1c
+=$1d					r13H            =       $1d
+=$1e					r14             =       $1e
+=$1e					r14L            =       $1e
+=$1f					r14H            =       $1f
+=$20					r15             =       $20
+=$20					r15L            =       $20
+=$21					r15H            =       $21
+=$22					r16             =       $22
+=$02					X1              =       $02
+=$04					Y1              =       $04
+=$06					X2              =       $06
+=$08					Y2              =       $08
+=$fb					a0              =       $fb
+=$fb					a0L             =       $fb
+=$fc					a0H             =       $fc
+=$fd					a1              =       $fd
+=$fd					a1L             =       $fd
+=$fe					a1H             =       $fe
+=$70					a2              =       $70
+=$70					a2L             =       $70
+=$71					a2H             =       $71
+=$72					a3              =       $72
+=$72					a3L             =       $72
+=$73					a3H             =       $73
+=$74					a4              =       $74
+=$74					a4L             =       $74
+=$75					a4H             =       $75
+=$76					a5              =       $76
+=$76					a5L             =       $76
+=$77					a5H             =       $77
+=$78					a6              =       $78
+=$78					a6L             =       $78
+=$79					a6H             =       $79
+=$7a					a7              =       $7a
+=$7a					a7L             =       $7a
+=$7b					a7H             =       $7b
+=$7c					a8              =       $7c
+=$7c					a8L             =       $7c
+=$7d					a8H             =       $7d
+=$7e					a9              =       $7e
+=$7e					a9L             =       $7e
+=$7f					a9H             =       $7f
+
+;******  Return to file: src/uos-gfx.asm
+
+
+;******  Processing file: src/macros.inc
+
+
+;******  Return to file: src/uos-gfx.asm
+
+
+;******  Processing file: src/vic-ii.inc
+
+=$d000					VIC_BASE        = $d000
+=$d800					VIC_COLOR_RAM   = $d800
+=$0400					VIC_HIRES_COLOR = $0400
+=$00					VIC_SPR0_X      = $00     ; Sprite x / y screen position registers
+=$01					VIC_SPR0_Y      = $01
+=$02					VIC_SPR1_X      = $02
+=$03					VIC_SPR1_Y      = $03
+=$04					VIC_SPR2_X      = $04
+=$05					VIC_SPR2_Y      = $05
+=$06					VIC_SPR3_X      = $06
+=$07					VIC_SPR3_Y      = $07
+=$08					VIC_SPR4_X      = $08
+=$09					VIC_SPR4_Y      = $09
+=$0a					VIC_SPR5_X      = $0A
+=$0b					VIC_SPR5_Y      = $0B
+=$0c					VIC_SPR6_X      = $0C
+=$0d					VIC_SPR6_Y      = $0D
+=$0e					VIC_SPR7_X      = $0E
+=$0f					VIC_SPR7_Y      = $0F
+=$10					VIC_SPR_XMSb    = $10     ; MSB of the X coordinate (since 320 > 255). Bit 7 = sprite 7, 6 = sprite 6, etc
+=$11					VIC_CTRL_1      = $11
+=$11					SCROLY			= $11     ; Control register 1
+=$12					VIC_RASTER      = $12     ; Number of raster GFX_LINE at which a raster IRQ should be generated.
+=$13					VIC_LTPEN_X     = $13     ; X-portion of the screen position at which the beam was found when a strobe was generated (light pen)
+=$14					VIC_LTPEN_Y     = $14     ; Y-portion of the screen position at which the beam was found when a strobe was generated (light pen)
+=$15					VIC_SPR_ENBL    = $15     ; Sprite enable (bit 7= sprite 7, bit 6 = sprite 6 etc)
+=$16					VIC_CTRL_2      = $16     ; Control register 2
+=$17					VIC_SPR_XPND_X  = $17     ; Sprite expand (bit 7= sprite 7, bit 6 = sprite 6 etc)
+=$18					VIC_RAM_BASE    = $18     ; Base address of the character generator and video RAM
+=$19					VIC_IRR         = $19     ; IRR:Interrupt Request Register
+=$1a					VIC_IMR         = $1a     ; IMR:Interrupt Mask Register
+=$1b					VIC_SPR_PRI     = $1b     ; Priority register(sprites)
+=$1c					VIC_SPR_MULTI   = $1c     ; Multi-color register (sprites)
+=$1d					VIC_SPR_XPND_Y  = $1d     ; Sprite expand Y The sprites can be doubled in the Y-direction by setting
+=$1e					VIC_SPSP_COL    = $1e     ; Sprite/sprite collision
+=$1f					VIC_SPBK_COL    = $1f     ; Sprite/background collision
+=$20					VIC_BORDER_COL  = $20     ; Exterior color(border color) The border color is set in this register (0-15).
+=$21					VIC_BG_COL0     = $21     ; Background color registers 0-3
+=$22					VIC_BG_COL1     = $22     ; Background color register 0 determines the background color in
+=$23					VIC_BG_COL2     = $23     ; the "normal" text mode. If the multi-color mode is enabled, it
+=$24					VIC_BG_COL3     = $24     ; accesses registers 1-3
+=$25					VIC_SPR_MCOL0   = $25     ; Spritemulti-colorcolor0/1
+=$26					VIC_SPR_MCOL1   = $26     ; Sprites which are represented in multi-color can assume the back
+=$27					VIC_SPR_COL0    = $27     ; Color sprite 0-8
+=$28					VIC_SPR_COL1    = $28     ; The colors for the individual sprites are placed in these registers.
+=$29					VIC_SPR_COL2    = $29
+=$2a					VIC_SPR_COL3    = $2a
+=$2b					VIC_SPR_COL4    = $2b
+=$2c					VIC_SPR_COL5    = $2c
+=$2d					VIC_SPR_COL6    = $2d
+=$2e					VIC_SPR_COL7    = $2e
+=$2f					VIC_KYBRD_CTRL  = $2f     ; Keyboard control register
+=$30					VIC_CLOCK       = $30     ; 2MHz bit
+=$00					VIC_COLOR_BLACK   = $00
+=$01					VIC_COLOR_WHITE   = $01
+=$02					VIC_COLOR_RED     = $02
+=$03					VIC_COLOR_CYAN    = $03
+=$04					VIC_COLOR_PURPLE  = $04
+=$05					VIC_COLOR_GREEN   = $05
+=$06					VIC_COLOR_BLUE    = $06
+=$07					VIC_COLOR_YELLOW  = $07
+=$08					VIC_COLOR_ORANGE  = $08
+=$09					VIC_COLOR_BROWN   = $09
+=$0a					VIC_COLOR_LRED    = $0A
+=$0b					VIC_COLOR_DGREY   = $0B
+=$0c					VIC_COLOR_MGREY   = $0C
+=$0d					VIC_COLOR_LGREEN  = $0D
+=$0e					VIC_COLOR_LBLUE   = $0E
+=$0f					VIC_COLOR_LGREY   = $0F
+
+;******  Return to file: src/uos-gfx.asm
+
+
+;******  Processing file: src/kernal.inc
+
+=$ff81					CINT   = $FF81;  ----  FF5B  init VIC & screen editor                                                  - - -  - - -  A X Y
+=$ff84					IOINIT = $FF84;  ----  FDA3  initialize CIA & IRQ                                                      - - -  - - -  A X Y
+=$ff87					RAMTAS = $FF87;  ----  FD50  RAM test & search RAM end                                                 - - -  - - -  A X Y
+=$ff8a					RESTOR = $FF8A;  ----  FD15  restore default I/O vectors                                               - - -  - - -  A - Y
+=$ff8d					VECTOR = $FF8D;  ----  FD1A  read/set I/O vectors               in: C=0 moves from Y/X to vectors      - X Y  - X -  A - Y
+=$ff90					SETMSG = $FF90;  ----  FE18  enable/disable KERNAL messages     in: A bit7=1 error msgs on             A - -  - - -  A - -
+=$ff93					SECOND = $FF93;  ----  EDB9  send secondary addr after listen   in: A=secondary address                A - -  - - -  A - -
+=$ff96					TKSA   = $FF96;  ----  EDC7  send secondary addr after talk     in: A=secondary address                A - -  - - -  A - -
+=$ff99					MEMTOP = $FF99;  ----  FE25  read/set top of memory             in: C=0; Y/X address                   - X Y  - X Y  - - -
+=$ff9c					MEMBOT = $FF9C;  ----  FE34  read/set bottom of memory          in: C=0; Y/X address                   - X Y  - X Y  - - -
+=$ff9f					SCNKEY = $FF9F;  ----  EA87  scan keyboard                                                             - - -  - - -  A X Y
+=$ffa2					SETTMO = $FFA2;  ----  FE21  set IEEE timeout                   in: A bit7=1 disable, bit7=0 enable    A - -  A - -  - - -
+=$ffa5					ACPTR  = $FFA5;  ----  EE13  input byte from SERIAL             out:A=byte, C=1 and ST=2 if timeout    - - -  A - -  A - -
+=$ffa8					CIOUT  = $FFA8;  ----  EDDD  output byte to SERIAL              in: A=byte, C=1 and ST=3 if timeout    A - -  A - -  - - -
+=$ffab					UNTLK  = $FFAB;  ----  EDEF  untalk all SERIAL devices                                                 - - -  - - -  A - -
+=$ffae					UNLSN  = $FFAE;  ----  EDFE  unlisten all SERIAL devices                                               - - -  - - -  A - -
+=$ffb1					LISTEN = $FFB1;  ----  ED0C  make SERIAL device listen          in: A=device number                    A - -  - - -  A - -
+=$ffb4					TALK   = $FFB4;  ----  ED09  make SERIAL device talk            in: A=device number                    A - -  - - -  A - -
+=$ffb7					READST = $FFB7;  ----  FE07  read I/O status byte               out:A=status byte                      - - -  A - -  A - -
+=$ffba					SETLFS = $FFBA;  ----  FE00  set file parameters                in: A=logical file number              A X Y  A X Y  - - -
+=$ffbd					SETNAM = $FFBD;  ----  FDF9  set file name                      in: A=length of filename               A X Y  A X Y  - - -
+=$ffc0					OPEN   = $FFC0;  031A  F34A  open log.file after SETLFS,SETNAM  out:A=error# if C=1                    - - -  - - -  A X Y
+=$ffc3					CLOSE  = $FFC3;  031C  F291  close a logical file               in: A=logical file number              A - -  - - -  A X Y
+=$ffc6					CHKIN  = $FFC6;  031E  F20E  open channel for input             in: X=logical file number              - X -  - - -  A X -
+=$ffc9					CHKOUT = $FFC9;  0320  F250  open channel for output            in: X=logical file number              - X -  - - -  A X -
+=$ffcc					CLRCHN = $FFCC;  0322  F333  restore default devices                                                   - - -  - - -  A X -
+=$ffcf					CHRIN  = $FFCF;  0324  F157  input character                    out:A=character, C=1 and ST=error      - - -  A - -  A - -
+=$ffd2					CHROUT = $FFD2;  0326  F1CA  output character                   in: A=character, C=1 and ST=error      A - -  A - -  - - -
+=$ffd5					LOAD   = $FFD5;  0330  F49E  load after call SETLFS,SETNAM      in: A=0 load, a=1 verify               A X Y  A X Y  A X Y
+=$ffd8					SAVE   = $FFD8;  0332  F5DD  save after call SETLFS,SETNAM      in: A=zero page pointer to start.addr  A X Y  - - -  A X Y
+=$ffdb					SETTIM = $FFDB;  ----  F6E4  set jiffy clock                    in: A=MSB, X=middle, Y=LSB             A X Y  - - -  - - -
+=$ffde					RDTIM  = $FFDE;  ----  F6DD  read jiffy clock                   out:A=MSB, X=middle, Y=LSB             - - -  A X Y  A X Y
+=$ffe1					STOP   = $FFE1;  0328  F6ED  check stop key                     out:Z=0 if STOP not used; X unchanged  - - -  A - -  A - -
+=$ffe4					GETIN  = $FFE4;  032A  F13E  get a byte from channel            out:keyboard:A=0 if puffer empty       - - -  A - -  A X Y
+=$ffe7					CLALL  = $FFE7;  032C  F32F  close or abort all files                                                  - - -  - - -  A X -
+=$ffea					UDTIM  = $FFEA;  ----  F69B  update jiffy clock                                                        - - -  - - -  A X -
+=$ffed					SCREEN = $FFED;  ----  E505  return screen size                 out:X=columns, Y=rows                  - - -  - X Y  - X Y
+=$fff0					PLOT   = $FFF0;  ----  E50A  read/set cursor position           in: C=0, X=row, Y=column               - X Y  - X Y  - - -
+=$fff3					IOBASE = $FFF3;  ----  E500  returns the addr of I/O devices    out:Y/X=addr($DC00)                    - - -  - X Y  - X Y
+
+;******  Return to file: src/uos-gfx.asm
+
+=$0a					DX       = $0A
+=$0c					DY       = $0C
+=$0d					ROW      = $0D            ;Bitmap row
+=$0e					COL      = $0E            ;and column
+=$0f					INRANGE  = $0F            ;Range check flag
+=$10					RADIUS   = $10
+=$11					CHUNK1   = $11            ;GFX_CIRCLE routine stuff
+=$12					OLDCH1   = $12
+=$13					CHUNK2   = $13
+=$14					OLDCH2   = $14
+=$15					DISPLAY  = $15
+=$0a					CX       = DX
+=$0c					CY       = DY
+=$15					X        = $15
+=$16					Y        = $16
+=$17					LCOL     = $17            ;Left column
+=$18					RCOL     = $18
+=$19					TROW     = $19            ;Top row
+=$1a					BROW     = $1A            ;Bottom row
+=$1b					RANGE1   = $1B
+=$0f					RANGE2   = INRANGE
+=$1c					POINT    = $1C
+=$1e					TEMP2    = $1E
+=$20					TEMP     = $20            ;1 byte
+.c000	4c 24 c0	jmp $c024	         JMP GFX_INIT
+.c003	4c 37 c0	jmp $c037	         JMP GFX_SETORG
+.c006	4c d2 c0	jmp $c0d2	         JMP GFX_ON
+.c009	4c 7b c1	jmp $c17b	         JMP GFX_OFF
+.c00c	4c 96 c1	jmp $c196	         JMP GFX_SETCOLOR
+.c00f	4c 3f c0	jmp $c03f	         JMP GFX_SETPIXEL
+.c012	4c 57 c0	jmp $c057	         JMP GFX_PLOTABS
+.c015	4c b5 c1	jmp $c1b5	         JMP GFX_LINE
+.c018	4c 82 c3	jmp $c382	         JMP GFX_CIRCLE
+.c01b	4c 8c c5	jmp $c58c	         JMP GPUTC
+.c01e	4c 0a c7	jmp $c70a	         JMP GPUTS
+.c021	4c 32 c7	jmp $c732	         JMP GFX_DRAWBYTEPATTERN
+.c024					GFX_INIT:
+.c024	a9 00		lda #$00	         LDA #00
+.c026	8d 35 c0	sta $c035	         STA ORGX
+.c029	8d 36 c0	sta $c036	         STA ORGY
+.c02c	a9 ff		lda #$ff	         LDA #$FF
+.c02e	8d 3e c0	sta $c03e	         STA DONTPLOT
+.c031	8d a4 c1	sta $c1a4	         STA BITMASK
+.c034	60		rts		         RTS
+>c035	00				ORGX:     .byte $00
+>c036	00				ORGY:     .byte $00
+.c037					GFX_SETORG:
+.c037	8e 35 c0	stx $c035	         STX ORGX
+.c03a	8c 36 c0	sty $c036	         STY ORGY
+.c03d	60		rts		         RTS
+>c03e	01				DONTPLOT: .byte $01           ;0=Don't plot point, just compute
+.c03f					GFX_SETPIXEL:
+.c03f	a5 04		lda $04		         LDA Y1
+.c041	38		sec		         SEC
+.c042	ed 36 c0	sbc $c036	         SBC ORGY
+.c045	85 04		sta $04		         STA Y1
+.c047	b0 03		bcs $c04c	         BCS _C1
+.c049	c6 05		dec $05		         DEC Y1+1
+.c04b	38		sec		         SEC
+.c04c	a5 02		lda $02		_C1      LDA X1
+.c04e	ed 35 c0	sbc $c035	         SBC ORGX
+.c051	85 02		sta $02		         STA X1
+.c053	b0 02		bcs $c057	         BCS GFX_PLOTABS
+.c055	c6 03		dec $03		         DEC X1+1
+.c057					GFX_PLOTABS:
+.c057	a5 04		lda $04		         LDA Y1
+.c059	85 0d		sta $0d		         STA ROW
+.c05b	29 07		and #$07	         AND #7
+.c05d	a8		tay		         TAY
+.c05e	a5 05		lda $05		         LDA Y1+1
+.c060	4a		lsr a		         LSR              ;Neg is possible
+.c061	66 0d		ror $0d		         ROR ROW
+.c063	4a		lsr a		         LSR
+.c064	66 0d		ror $0d		         ROR ROW
+.c066	4a		lsr a		         LSR
+.c067	66 0d		ror $0d		         ROR ROW
+.c069	a9 00		lda #$00	         LDA #00
+.c06b	85 1c		sta $1c		         STA POINT
+.c06d	a5 0d		lda $0d		         LDA ROW
+.c06f	c9 80		cmp #$80	         CMP #$80
+.c071	6a		ror a		         ROR
+.c072	66 1c		ror $1c		         ROR POINT
+.c074	c9 80		cmp #$80	         CMP #$80
+.c076	6a		ror a		         ROR
+.c077	66 1c		ror $1c		         ROR POINT        ;row*64
+.c079	65 0d		adc $0d		         ADC ROW          ;+row*256
+.c07b	18		clc		         CLC
+.c07c	6d d1 c0	adc $c0d1	         ADC BASE         ;+bitmap base
+.c07f	85 1d		sta $1d		         STA POINT+1
+.c081	a5 02		lda $02		         LDA X1
+.c083	aa		tax		         TAX
+.c084	85 0e		sta $0e		         STA COL
+.c086	a5 03		lda $03		         LDA X1+1
+.c088	4a		lsr a		         LSR
+.c089	66 0e		ror $0e		         ROR COL
+.c08b	4a		lsr a		         LSR
+.c08c	66 0e		ror $0e		         ROR COL
+.c08e	4a		lsr a		         LSR
+.c08f	66 0e		ror $0e		         ROR COL
+.c091	8a		txa		         TXA
+.c092	29 f8		and #$f8	         AND #$F8
+.c094	18		clc		         CLC
+.c095	65 1c		adc $1c		         ADC POINT        ;+(X AND #$F8)
+.c097	85 1c		sta $1c		         STA POINT
+.c099	a5 03		lda $03		         LDA X1+1
+.c09b	65 1d		adc $1d		         ADC POINT+1
+.c09d	85 1d		sta $1d		         STA POINT+1
+.c09f	8a		txa		         TXA
+.c0a0	29 07		and #$07	         AND #7
+.c0a2	aa		tax		         TAX
+.c0a3	a5 0d		lda $0d		         LDA ROW
+.c0a5	c9 19		cmp #$19	         CMP #25
+.c0a7	b0 25		bcs $c0ce	         BCS _rts
+.c0a9	a5 0e		lda $0e		         LDA COL
+.c0ab	c9 28		cmp #$28	         CMP #40
+.c0ad	b0 1f		bcs $c0ce	         BCS _rts
+.c0af	ad 3e c0	lda $c03e	         LDA DONTPLOT
+.c0b2	f0 1a		beq $c0ce	         BEQ _rts
+.c0b4	78		sei		         SEI              ;Get underneath ROM
+.c0b5	a5 01		lda $01		         LDA $01
+.c0b7	48		pha		         PHA
+.c0b8	a9 34		lda #$34	         LDA #$34
+.c0ba	85 01		sta $01		         STA $01
+.c0bc	b1 1c		lda ($1c),y	         LDA (POINT),Y
+.c0be	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c0c1	3d a5 c1	and $c1a5,x	         AND BITTAB,X
+.c0c4	51 1c		eor ($1c),y	         EOR (POINT),Y
+.c0c6	91 1c		sta ($1c),y	         STA (POINT),Y
+.c0c8	68		pla		         PLA
+.c0c9	85 01		sta $01		         STA $01
+.c0cb	58		cli		         CLI
+.c0cc	a9 00		lda #$00	         LDA #00
+.c0ce	85 0f		sta $0f		_rts     STA INRANGE
+.c0d0	60		rts		         RTS
+>c0d1	a0				BASE:   .byte $A0          ;Address of bitmap, hi byte
+.c0d2					GFX_ON:
+.c0d2	aa		tax		        TAX
+.c0d3	ad 11 d0	lda $d011	        LDA $D011        ;Skip if bitmap is already on.
+.c0d6	29 20		and #$20	        AND #%00100000
+.c0d8	d0 24		bne $c0fe	        BNE CLEAR
+.c0da	ad 02 dd	lda $dd02	        LDA $DD02        ;Set the data direction regs
+.c0dd	09 03		ora #$03	        ORA #$03
+.c0df	8d 02 dd	sta $dd02	        STA $DD02
+.c0e2	ad 00 dd	lda $dd00	 lda $dd00
+.c0e5	29 fc		and #$fc	 and #%11111100
+.c0e7	09 01		ora #$01	 ora #3-2
+.c0e9	8d 00 dd	sta $dd00	 sta $dd00
+.c0ec	ad 18 d0	lda $d018	        LDA $D018       ; Set bitmap offset
+.c0ef	29 f7		and #$f7	        and #%11110111
+.c0f1	09 08		ora #$08	        ORA #%00001000  ; bit 3 : 0 = 0 offset (1st 8k)  1 = 8192K offset (2nd 8k)  ($A000)
+.c0f3	8d 18 d0	sta $d018	        STA $D018
+.c0f6	ad 11 d0	lda $d011	        LDA $D011        ;And turn on bitmap
+.c0f9	09 20		ora #$20	        ORA #%00100000
+.c0fb	8d 11 d0	sta $d011	        STA $D011
+.c0fe					CLEAR:
+.c0fe	8a		txa		        TXA
+.c0ff	f0 79		beq $c17a	        BEQ GFX_ONDONE
+.c101					CLEARCOLOR:
+.c101	a0 00		ldy #$00	         LDY #$00
+.c103	8a		txa		         TXA
+.c104	99 00 84	sta $8400,y	_l1:     STA $8400,Y
+.c107	99 00 85	sta $8500,y	         STA $8500,Y
+.c10a	99 00 86	sta $8600,y	         STA $8600,Y
+.c10d	99 00 87	sta $8700,y	         STA $8700,Y
+.c110	c8		iny		         INY
+.c111	d0 f1		bne $c104	         BNE _l1
+.c113					CLEARBITMAP:
+.c113	a9 00		lda #$00	         lda #$00
+.c115	a0 00		ldy #$00	         ldy #$00
+.c117	99 00 a0	sta $a000,y	_l2:     STA $A000,Y
+.c11a	99 00 a1	sta $a100,y	         STA $A100,Y
+.c11d	99 00 a2	sta $a200,y	         STA $A200,Y
+.c120	99 00 a3	sta $a300,y	         STA $A300,Y
+.c123	99 00 a4	sta $a400,y	         STA $A400,Y
+.c126	99 00 a5	sta $a500,y	         STA $A500,Y
+.c129	99 00 a6	sta $a600,y	         STA $A600,Y
+.c12c	99 00 a7	sta $a700,y	         STA $A700,Y
+.c12f	99 00 a8	sta $a800,y	         STA $A800,Y
+.c132	99 00 a9	sta $a900,y	         STA $A900,Y
+.c135	99 00 aa	sta $aa00,y	         STA $AA00,Y
+.c138	99 00 ab	sta $ab00,y	         STA $AB00,Y
+.c13b	99 00 ac	sta $ac00,y	         STA $AC00,Y
+.c13e	99 00 ad	sta $ad00,y	         STA $AD00,Y
+.c141	99 00 ae	sta $ae00,y	         STA $AE00,Y
+.c144	99 00 af	sta $af00,y	         STA $AF00,Y
+.c147	99 00 b0	sta $b000,y	         STA $B000,Y
+.c14a	99 00 b1	sta $b100,y	         STA $B100,Y
+.c14d	99 00 b2	sta $b200,y	         STA $B200,Y
+.c150	99 00 b3	sta $b300,y	         STA $B300,Y
+.c153	99 00 b4	sta $b400,y	         STA $B400,Y
+.c156	99 00 b5	sta $b500,y	         STA $B500,Y
+.c159	99 00 b6	sta $b600,y	         STA $B600,Y
+.c15c	99 00 b7	sta $b700,y	         STA $B700,Y
+.c15f	99 00 b8	sta $b800,y	         STA $B800,Y
+.c162	99 00 b9	sta $b900,y	         STA $B900,Y
+.c165	99 00 ba	sta $ba00,y	         STA $BA00,Y
+.c168	99 00 bb	sta $bb00,y	         STA $BB00,Y
+.c16b	99 00 bc	sta $bc00,y	         STA $BC00,Y
+.c16e	99 00 bd	sta $bd00,y	         STA $BD00,Y
+.c171	99 00 be	sta $be00,y	         STA $BE00,Y
+.c174	99 00 bf	sta $bf00,y	         STA $BF00,Y
+.c177	c8		iny		         INY
+.c178	d0 9d		bne $c117	         BNE _l2
+.c17a	60		rts		GFX_ONDONE: RTS
+.c17b					GFX_OFF:
+.c17b	ad 02 dd	lda $dd02	        LDA $DD02        ;Set the data direction regs
+.c17e	09 03		ora #$03	        ORA #$03
+.c180	8d 02 dd	sta $dd02	        STA $DD02
+.c183	ad 00 dd	lda $dd00	        LDA $DD00       ; Set VIC Bank 0 - ($0000 - $3fff)
+.c186	09 03		ora #$03	        ORA #%00000011
+.c188	8d 00 dd	sta $dd00	        STA $DD00
+.c18b	a9 15		lda #$15	        LDA #$15        ; Set memory control register to default
+.c18d	8d 18 d0	sta $d018	        STA $D018
+.c190	a9 1b		lda #$1b	        LDA #$1b        ; set control register to default
+.c192	8d 11 d0	sta $d011	        STA $D011
+.c195	60		rts		GDONE:    RTS
+.c196					GFX_SETCOLOR:
+.c196	c9 00		cmp #$00	COLENT:   CMP #00          ;MODE enters here
+.c198	f0 06		beq $c1a0	         BEQ _C2
+.c19a	c9 01		cmp #$01	_C1      CMP #01
+.c19c	d0 05		bne $c1a3	         BNE _RTS
+.c19e	a9 ff		lda #$ff	         LDA #$FF
+.c1a0	8d a4 c1	sta $c1a4	_C2      STA BITMASK
+.c1a3	60		rts		_RTS     RTS
+>c1a4	ff				BITMASK:  .byte $FF         ;Set point
+>c1a5	80 40 20 10 08 04 02 01		BITTAB:   .byte $80,$40,$20,$10,$08,$04,$02,$01
+>c1ad	ff 7f 3f 1f 0f 07 03 01		BITCHUNK: .byte $FF, $7F, $3F, $1F, $0F, $07, $03, $01
+=$06					CHUNK    = X2
+=7					OLDCHUNK = X2+1
+.c1b5					GFX_LINE:
+.c1b5	a5 06		lda $06		_CHECK   LDA X2           ;Make sure x1<x2
+.c1b7	38		sec		         SEC
+.c1b8	e5 02		sbc $02		         SBC X1
+.c1ba	aa		tax		         TAX
+.c1bb	a5 07		lda $07		         LDA X2+1
+.c1bd	e5 03		sbc $03		         SBC X1+1
+.c1bf	10 22		bpl $c1e3	         BPL _CONT
+.c1c1	a5 08		lda $08		         LDA Y2           ;If not, swap P1 and P2
+.c1c3	a4 04		ldy $04		         LDY Y1
+.c1c5	85 04		sta $04		         STA Y1
+.c1c7	84 08		sty $08		         STY Y2
+.c1c9	a5 09		lda $09		         LDA Y2+1
+.c1cb	a4 05		ldy $05		         LDY Y1+1
+.c1cd	85 05		sta $05		         STA Y1+1
+.c1cf	84 09		sty $09		         STY Y2+1
+.c1d1	a5 02		lda $02		         LDA X1
+.c1d3	a4 06		ldy $06		         LDY X2
+.c1d5	84 02		sty $02		         STY X1
+.c1d7	85 06		sta $06		         STA X2
+.c1d9	a5 07		lda $07		         LDA X2+1
+.c1db	a4 03		ldy $03		         LDY X1+1
+.c1dd	85 03		sta $03		         STA X1+1
+.c1df	84 07		sty $07		         STY X2+1
+.c1e1	90 d2		bcc $c1b5	         BCC _CHECK
+.c1e3	85 0b		sta $0b		_CONT    STA DX+1
+.c1e5	86 0a		stx $0a		         STX DX
+.c1e7	a2 c8		ldx #$c8	         LDX #$C8         ;INY
+.c1e9	a5 08		lda $08		         LDA Y2           ;Calculate dy
+.c1eb	38		sec		         SEC
+.c1ec	e5 04		sbc $04		         SBC Y1
+.c1ee	a8		tay		         TAY
+.c1ef	a5 09		lda $09		         LDA Y2+1
+.c1f1	e5 05		sbc $05		         SBC Y1+1
+.c1f3	10 08		bpl $c1fd	         BPL _DYPOS       ;Is y2>=y1?
+.c1f5	a5 04		lda $04		         LDA Y1           ;Otherwise dy=y1-y2
+.c1f7	38		sec		         SEC
+.c1f8	e5 08		sbc $08		         SBC Y2
+.c1fa	a8		tay		         TAY
+.c1fb	a2 88		ldx #$88	         LDX #$88         ;DEY
+.c1fd	84 0c		sty $0c		_DYPOS   STY DY           ;8-bit DY -- FIX ME?
+.c1ff	8e 47 c2	stx $c247	         STX YINCDEC
+.c202	8e 11 c3	stx $c311	         STX XINCDEC
+.c205	a9 00		lda #$00	         LDA #00
+.c207	8d 3e c0	sta $c03e	         STA DONTPLOT
+.c20a	20 3f c0	jsr $c03f	         JSR GFX_SETPIXEL         ;Set up .X,.Y,POINT, and INRANGE
+.c20d	ee 3e c0	inc $c03e	         INC DONTPLOT
+.c210	bd ad c1	lda $c1ad,x	         LDA BITCHUNK,X
+.c213	85 07		sta $07		         STA OLDCHUNK
+.c215	85 06		sta $06		         STA CHUNK
+.c217	78		sei		         SEI              ;Get underneath ROM
+.c218	a9 34		lda #$34	         LDA #$34
+.c21a	85 01		sta $01		         STA $01
+.c21c	a6 0c		ldx $0c		         LDX DY
+.c21e	e4 0a		cpx $0a		         CPX DX           ;Who's bigger: dy or dx?
+.c220	90 7a		bcc $c29c	         BCC STEPINX      ;If dx, then...
+.c222	a5 0b		lda $0b		         LDA DX+1
+.c224	d0 76		bne $c29c	         BNE STEPINX
+.c226					STEPINY:
+.c226	a9 00		lda #$00	         LDA #00
+.c228	85 07		sta $07		         STA OLDCHUNK     ;So plotting routine will work right
+.c22a	a5 06		lda $06		         LDA CHUNK
+.c22c	4a		lsr a		         LSR              ;Strip the bit
+.c22d	45 06		eor $06		         EOR CHUNK
+.c22f	85 06		sta $06		         STA CHUNK
+.c231	8a		txa		         TXA
+.c232	d0 01		bne $c235	         BNE _CONT        ;If dy=0 it's just a point
+.c234	e8		inx		         INX
+.c235	4a		lsr a		_CONT    LSR              ;Init counter to dy/2
+.c236	85 20		sta $20		YLOOP:    STA TEMP
+.c238	a5 0f		lda $0f		         LDA INRANGE      ;Range check
+.c23a	d0 0b		bne $c247	         BNE _SKIP
+.c23c	b1 1c		lda ($1c),y	         LDA (POINT),Y    ;Otherwise plot
+.c23e	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c241	25 06		and $06		         AND CHUNK
+.c243	51 1c		eor ($1c),y	         EOR (POINT),Y
+.c245	91 1c		sta ($1c),y	         STA (POINT),Y
+.c247					_SKIP
+.c247	c8		iny		YINCDEC:  INY              ;Advance Y coordinate
+.c248	c0 08		cpy #$08	         CPY #8
+.c24a	90 03		bcc $c24f	         BCC _CONT        ;No prob if Y=0..7
+.c24c	20 34 c3	jsr $c334	         JSR FIXY
+.c24f	a5 20		lda $20		_CONT    LDA TEMP         ;Restore A
+.c251	38		sec		         SEC
+.c252	e5 0a		sbc $0a		         SBC DX
+.c254	90 14		bcc $c26a	         BCC YFIXX
+.c256	ca		dex		YCONT:    DEX              ;X is counter
+.c257	d0 dd		bne $c236	         BNE YLOOP
+.c259	b1 1c		lda ($1c),y	YCONT2:   LDA (POINT),Y    ;Plot endpoint
+.c25b	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c25e	25 06		and $06		         AND CHUNK
+.c260	51 1c		eor ($1c),y	         EOR (POINT),Y
+.c262	91 1c		sta ($1c),y	         STA (POINT),Y
+.c264					YDONE:
+.c264	a9 37		lda #$37	         LDA #$37
+.c266	85 01		sta $01		         STA $01
+.c268	58		cli		         CLI
+.c269	60		rts		         RTS
+.c26a					YFIXX:
+.c26a	65 0c		adc $0c		         ADC DY
+.c26c	46 06		lsr $06		         LSR CHUNK
+.c26e	d0 e6		bne $c256	         BNE YCONT        ;If we pass a column boundary...
+.c270	66 06		ror $06		         ROR CHUNK        ;then reset CHUNK to $80
+.c272	85 1e		sta $1e		         STA TEMP2
+.c274	a5 0e		lda $0e		         LDA COL
+.c276	30 04		bmi $c27c	         BMI _C1          ;Skip if column is negative
+.c278	c9 27		cmp #$27	         CMP #39          ;End if move past end of screen
+.c27a	b0 e8		bcs $c264	         BCS YDONE
+.c27c					_C1
+.c27c	a5 1c		lda $1c		         LDA POINT        ;And add 8 to POINT
+.c27e	69 08		adc #$08	         ADC #8
+.c280	85 1c		sta $1c		         STA POINT
+.c282	90 02		bcc $c286	         BCC _CONT
+.c284	e6 1d		inc $1d		         INC POINT+1
+.c286	e6 0e		inc $0e		_CONT    INC COL          ;Increment column
+.c288	d0 0a		bne $c294	         BNE _C2
+.c28a	a5 0d		lda $0d		         LDA ROW          ;Range check
+.c28c	c9 19		cmp #$19	         CMP #25
+.c28e	b0 04		bcs $c294	         BCS _C2
+.c290	a9 00		lda #$00	         LDA #00          ;Passed into col 0
+.c292	85 0f		sta $0f		         STA INRANGE
+.c294	a5 1e		lda $1e		_C2      LDA TEMP2
+.c296	ca		dex		         DEX
+.c297	d0 9d		bne $c236	         BNE YLOOP
+.c299	f0 be		beq $c259	         BEQ YCONT2
+>c29b	00				COUNTHI:  .byte  $00           ;Temporary counter
+.c29c					STEPINX:
+.c29c	a6 0a		ldx $0a		         LDX DX
+.c29e	a5 0b		lda $0b		         LDA DX+1
+.c2a0	8d 9b c2	sta $c29b	         STA COUNTHI
+.c2a3	c9 80		cmp #$80	         CMP #$80
+.c2a5	6a		ror a		         ROR              ;Need bit for initialization
+.c2a6	85 04		sta $04		         STA Y1           ;High byte of counter
+.c2a8	8a		txa		         TXA
+.c2a9	d0 03		bne $c2ae	         BNE _CONT        ;Could be $100
+.c2ab	ce 9b c2	dec $c29b	         DEC COUNTHI
+.c2ae	6a		ror a		_CONT    ROR
+.c2af					XLOOP:
+.c2af	46 06		lsr $06		         LSR CHUNK
+.c2b1	f0 17		beq $c2ca	         BEQ XFIXC        ;If we pass a column boundary...
+.c2b3	e5 0c		sbc $0c		XCONT1:   SBC DY
+.c2b5	90 43		bcc $c2fa	         BCC XFIXY        ;Time to step in Y?
+.c2b7	ca		dex		XCONT2:   DEX
+.c2b8	d0 f5		bne $c2af	         BNE XLOOP
+.c2ba	ce 9b c2	dec $c29b	         DEC COUNTHI      ;High bits set?
+.c2bd	10 f0		bpl $c2af	         BPL XLOOP
+.c2bf					XDONE:
+.c2bf	46 06		lsr $06		         LSR CHUNK        ;Advance to last point
+.c2c1	20 20 c3	jsr $c320	         JSR GFX_LINEPLOT     ;Plot the last chunk
+.c2c4					EXIT:
+.c2c4	a9 37		lda #$37	        LDA #$37
+.c2c6	85 01		sta $01		         STA $01
+.c2c8	58		cli		         CLI
+.c2c9	60		rts		         RTS
+.c2ca					XFIXC:
+.c2ca	85 20		sta $20		         STA TEMP
+.c2cc	20 20 c3	jsr $c320	         JSR GFX_LINEPLOT
+.c2cf	a9 ff		lda #$ff	         LDA #$FF
+.c2d1	85 06		sta $06		         STA CHUNK
+.c2d3	85 07		sta $07		         STA OLDCHUNK
+.c2d5	a5 0e		lda $0e		         LDA COL
+.c2d7	30 04		bmi $c2dd	         BMI _C1          ;Skip if column is negative
+.c2d9	c9 27		cmp #$27	         CMP #39          ;End if move past end of screen
+.c2db	b0 e7		bcs $c2c4	         BCS EXIT
+.c2dd					_C1
+.c2dd	a5 1c		lda $1c		         LDA POINT
+.c2df	69 08		adc #$08	         ADC #8
+.c2e1	85 1c		sta $1c		         STA POINT
+.c2e3	90 02		bcc $c2e7	         BCC _CONT
+.c2e5	e6 1d		inc $1d		         INC POINT+1
+.c2e7	e6 0e		inc $0e		_CONT    INC COL
+.c2e9	d0 0a		bne $c2f5	         BNE _C2
+.c2eb	a5 0d		lda $0d		         LDA ROW
+.c2ed	c9 19		cmp #$19	         CMP #25
+.c2ef	b0 04		bcs $c2f5	         BCS _C2
+.c2f1	a9 00		lda #$00	         LDA #00
+.c2f3	85 0f		sta $0f		         STA INRANGE
+.c2f5	a5 20		lda $20		_C2      LDA TEMP
+.c2f7	38		sec		         SEC
+.c2f8	b0 b9		bcs $c2b3	         BCS XCONT1
+.c2fa					XFIXY:
+.c2fa	c6 04		dec $04		         DEC Y1           ;Maybe high bit set
+.c2fc	10 b9		bpl $c2b7	         BPL XCONT2
+.c2fe	65 0a		adc $0a		         ADC DX
+.c300	85 20		sta $20		         STA TEMP
+.c302	a5 0b		lda $0b		         LDA DX+1
+.c304	69 ff		adc #$ff	         ADC #$FF         ;Hi byte
+.c306	85 04		sta $04		         STA Y1
+.c308	20 20 c3	jsr $c320	         JSR GFX_LINEPLOT     ;Plot chunk
+.c30b	a5 06		lda $06		         LDA CHUNK
+.c30d	85 07		sta $07		         STA OLDCHUNK
+.c30f	a5 20		lda $20		         LDA TEMP
+.c311	c8		iny		XINCDEC:  INY              ;Y-coord
+.c312	c0 08		cpy #$08	         CPY #8           ;0..7 is ok
+.c314	90 a1		bcc $c2b7	         BCC XCONT2
+.c316	85 20		sta $20		         STA TEMP
+.c318	20 34 c3	jsr $c334	         JSR FIXY
+.c31b	a5 20		lda $20		         LDA TEMP
+.c31d	4c b7 c2	jmp $c2b7	         JMP XCONT2
+.c320					GFX_LINEPLOT:
+.c320	a5 0f		lda $0f		         LDA INRANGE
+.c322	d0 0f		bne $c333	         BNE _SKIP
+.c324	b1 1c		lda ($1c),y	         LDA (POINT),Y    ;Otherwise plot
+.c326	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c329	05 06		ora $06		         ORA CHUNK
+.c32b	25 07		and $07		         AND OLDCHUNK
+.c32d	45 06		eor $06		         EOR CHUNK
+.c32f	51 1c		eor ($1c),y	         EOR (POINT),Y
+.c331	91 1c		sta ($1c),y	         STA (POINT),Y
+.c333					_SKIP
+.c333	60		rts		         RTS
+.c334	c0 ff		cpy #$ff	FIXY:     CPY #255         ;Y=255 or Y=8
+.c336	f0 23		beq $c35b	         BEQ _DECPTR
+.c338					_INCPTR
+.c338	a0 00		ldy #$00	         LDY #0           ;Y increased through 7
+.c33a	a5 0d		lda $0d		         LDA ROW
+.c33c	30 04		bmi $c342	         BMI _C1          ;If negative, then don't update
+.c33e	c9 18		cmp #$18	         CMP #24
+.c340	b0 3b		bcs $c37d	         BCS _TOAST       ;If at bottom of screen then quit
+.c342					_C1
+.c342	a5 1c		lda $1c		         LDA POINT
+.c344	69 40		adc #$40	         ADC #<320
+.c346	85 1c		sta $1c		         STA POINT
+.c348	a5 1d		lda $1d		         LDA POINT+1
+.c34a	69 01		adc #$01	         ADC #>320
+.c34c	85 1d		sta $1d		         STA POINT+1
+.c34e	e6 0d		inc $0d		_CONT1   INC ROW
+.c350	d0 08		bne $c35a	         BNE _RTS
+.c352	a5 0e		lda $0e		         LDA COL
+.c354	30 04		bmi $c35a	         BMI _RTS
+.c356	a9 00		lda #$00	         LDA #00
+.c358	85 0f		sta $0f		         STA INRANGE
+.c35a	60		rts		_RTS     RTS
+.c35b					_DECPTR
+.c35b	a0 07		ldy #$07	         LDY #7           ;Y decreased through 0
+.c35d	a5 1c		lda $1c		         LDA POINT
+.c35f	38		sec		         SEC
+.c360	e9 40		sbc #$40	         SBC #<320
+.c362	85 1c		sta $1c		         STA POINT
+.c364	a5 1d		lda $1d		         LDA POINT+1
+.c366	e9 01		sbc #$01	         SBC #>320
+.c368	85 1d		sta $1d		         STA POINT+1
+.c36a	c6 0d		dec $0d		_CONT2   DEC ROW
+.c36c	30 0f		bmi $c37d	         BMI _TOAST
+.c36e	a5 0d		lda $0d		         LDA ROW
+.c370	c9 18		cmp #$18	         CMP #24
+.c372	d0 e6		bne $c35a	         BNE _RTS
+.c374	a5 0e		lda $0e		         LDA COL
+.c376	30 e2		bmi $c35a	         BMI _RTS
+.c378	a9 00		lda #$00	         LDA #00
+.c37a	85 0f		sta $0f		         STA INRANGE
+.c37c	60		rts		         RTS
+.c37d	68		pla		_TOAST   PLA              ;Remove old return address
+.c37e	68		pla		         PLA
+.c37f	4c c4 c2	jmp $c2c4	         JMP EXIT         ;Restore interrupts, etc.
+.c382					GFX_CIRCLE:
+.c382	a5 10		lda $10		         LDA RADIUS
+.c384	85 16		sta $16		         STA Y
+.c386	d0 03		bne $c38b	         BNE _c1
+.c388	4c 3f c0	jmp $c03f	         JMP GFX_SETPIXEL         ;Plot as a point
+.c38b					_c1
+.c38b	18		clc		         CLC
+.c38c	65 04		adc $04		         ADC Y1
+.c38e	85 04		sta $04		         STA Y1
+.c390	90 02		bcc $c394	         BCC _c2
+.c392	e6 05		inc $05		         INC Y1+1
+.c394	a9 00		lda #$00	_c2      LDA #00
+.c396	8d 3e c0	sta $c03e	         STA DONTPLOT
+.c399	20 3f c0	jsr $c03f	         JSR GFX_SETPIXEL         ;Compute XC, YC+R
+.c39c	a5 0f		lda $0f		         LDA INRANGE      ;Track row/col separately
+.c39e	85 1b		sta $1b		         STA RANGE1
+.c3a0	a5 0d		lda $0d		         LDA ROW
+.c3a2	85 1a		sta $1a		         STA BROW
+.c3a4	a5 0e		lda $0e		         LDA COL
+.c3a6	85 17		sta $17		         STA LCOL
+.c3a8	85 18		sta $18		         STA RCOL
+.c3aa	84 08		sty $08		         STY Y2           ;Y AND 07
+.c3ac	bd ad c1	lda $c1ad,x	         LDA BITCHUNK,X
+.c3af	85 11		sta $11		         STA CHUNK1       ;Forwards chunk
+.c3b1	85 12		sta $12		         STA OLDCH1
+.c3b3	4a		lsr a		         LSR
+.c3b4	49 ff		eor #$ff	         EOR #$FF
+.c3b6	85 13		sta $13		         STA CHUNK2       ;Backwards chunk
+.c3b8	85 14		sta $14		         STA OLDCH2
+.c3ba	a5 1c		lda $1c		         LDA POINT
+.c3bc	85 1e		sta $1e		         STA TEMP2        ;TEMP2 = forwards high pointer
+.c3be	85 06		sta $06		         STA X2           ;X2 = backwards high pointer
+.c3c0	a5 1d		lda $1d		         LDA POINT+1
+.c3c2	85 1f		sta $1f		         STA TEMP2+1
+.c3c4	85 07		sta $07		         STA X2+1
+.c3c6	a5 04		lda $04		         LDA Y1
+.c3c8	38		sec		         SEC
+.c3c9	e5 10		sbc $10		         SBC RADIUS
+.c3cb	b0 03		bcs $c3d0	         BCS _C3
+.c3cd	c6 05		dec $05		         DEC Y1+1
+.c3cf	38		sec		         SEC
+.c3d0	e5 10		sbc $10		_C3      SBC RADIUS
+.c3d2	b0 02		bcs $c3d6	         BCS _C4
+.c3d4	c6 05		dec $05		         DEC Y1+1
+.c3d6	85 04		sta $04		_C4      STA Y1
+.c3d8	20 57 c0	jsr $c057	         JSR GFX_PLOTABS      ;Compute new coords
+.c3db	84 04		sty $04		         STY Y1
+.c3dd	a5 1c		lda $1c		         LDA POINT
+.c3df	85 02		sta $02		         STA X1           ;X1 will be the backwards
+.c3e1	a5 1d		lda $1d		         LDA POINT+1      ;low-pointer
+.c3e3	85 03		sta $03		         STA X1+1         ;POINT will be forwards
+.c3e5	a5 0d		lda $0d		         LDA ROW
+.c3e7	85 19		sta $19		         STA TROW
+.c3e9	ee 3e c0	inc $c03e	         INC DONTPLOT
+.c3ec	78		sei		         SEI              ;Get underneath ROM
+.c3ed	a9 34		lda #$34	         LDA #$34
+.c3ef	85 01		sta $01		         STA $01
+.c3f1	a5 10		lda $10		         LDA RADIUS
+.c3f3	4a		lsr a		         LSR              ;A=r/2
+.c3f4	a2 00		ldx #$00	         LDX #00
+.c3f6	86 15		stx $15		         STX X            ;y=0
+.c3f8					_LOOP
+.c3f8	e6 15		inc $15		         INC X            ;x=x+1
+.c3fa	46 11		lsr $11		         LSR CHUNK1       ;Right chunk
+.c3fc	d0 03		bne $c401	         BNE _CONT1
+.c3fe	20 e2 c4	jsr $c4e2	         JSR UPCHUNK1     ;Update if we move past a column
+.c401	06 13		asl $13		_CONT1   ASL CHUNK2
+.c403	d0 03		bne $c408	         BNE _CONT2
+.c405	20 06 c5	jsr $c506	         JSR UPCHUNK2
+.c408					_CONT2
+.c408	38		sec		         SEC
+.c409	e5 15		sbc $15		         SBC X            ;a=a-x
+.c40b	b0 eb		bcs $c3f8	         BCS _LOOP
+.c40d	65 16		adc $16		         ADC Y            ;if a<0 then a=a+y; y=y-1
+.c40f	aa		tax		         TAX
+.c410	20 2a c5	jsr $c52a	         JSR PCHUNK1
+.c413	20 5b c5	jsr $c55b	         JSR PCHUNK2
+.c416	a5 11		lda $11		         LDA CHUNK1
+.c418	85 12		sta $12		         STA OLDCH1
+.c41a	a5 13		lda $13		         LDA CHUNK2
+.c41c	85 14		sta $14		         STA OLDCH2
+.c41e	8a		txa		         TXA
+.c41f	c6 16		dec $16		         DEC Y            ;(y=y-1)
+.c421	c6 08		dec $08		         DEC Y2           ;Decrement y-offest for upper
+.c423	10 03		bpl $c428	         BPL _CONT3       ;points
+.c425	20 8d c4	jsr $c48d	         JSR DECYOFF
+.c428	a4 04		ldy $04		_CONT3   LDY Y1
+.c42a	c8		iny		         INY
+.c42b	84 04		sty $04		         STY Y1
+.c42d	c0 08		cpy #$08	         CPY #8
+.c42f	90 03		bcc $c434	         BCC _CONT4
+.c431	20 b7 c4	jsr $c4b7	         JSR INCYOFF
+.c434					_CONT4
+.c434	a4 15		ldy $15		         LDY X
+.c436	c4 16		cpy $16		         CPY Y            ;if y<=x then punt
+.c438	90 be		bcc $c3f8	         BCC _LOOP        ;Now draw the other half
+.c43a					NEXTHALF:
+.c43a	46 12		lsr $12		         LSR OLDCH1       ;Only plot a bit at a time
+.c43c	06 14		asl $14		         ASL OLDCH2
+.c43e	a5 10		lda $10		         LDA RADIUS       ;A=-R/2-1
+.c440	4a		lsr a		         LSR
+.c441	49 ff		eor #$ff	         EOR #$FF
+.c443					_LOOP
+.c443	aa		tax		         TAX
+.c444	20 2a c5	jsr $c52a	         JSR PCHUNK1      ;Plot points
+.c447	20 5b c5	jsr $c55b	         JSR PCHUNK2
+.c44a	8a		txa		         TXA
+.c44b	c6 08		dec $08		         DEC Y2           ;Y2=bottom
+.c44d	10 03		bpl $c452	         BPL _CONT1
+.c44f	20 8d c4	jsr $c48d	         JSR DECYOFF
+.c452	e6 04		inc $04		_CONT1   INC Y1
+.c454	a4 04		ldy $04		         LDY Y1
+.c456	c0 08		cpy #$08	         CPY #8
+.c458	90 03		bcc $c45d	         BCC _CONT2
+.c45a	20 b7 c4	jsr $c4b7	         JSR INCYOFF
+.c45d					_CONT2
+.c45d	a6 16		ldx $16		         LDX Y
+.c45f	f0 21		beq $c482	         BEQ _DONE
+.c461	18		clc		         CLC
+.c462	65 16		adc $16		         ADC Y            ;a=a+y
+.c464	c6 16		dec $16		         DEC Y            ;y=y-1
+.c466	90 db		bcc $c443	         BCC _LOOP
+.c468	e6 15		inc $15		         INC X
+.c46a	e5 15		sbc $15		         SBC X            ;if a<0 then x=x+1; a=a+x
+.c46c	46 11		lsr $11		         LSR CHUNK1
+.c46e	d0 04		bne $c474	         BNE _CONT3
+.c470	aa		tax		         TAX
+.c471	20 e6 c4	jsr $c4e6	         JSR UPCH1        ;Upchunk, but no plot
+.c474	46 12		lsr $12		_CONT3   LSR OLDCH1       ;Only the bits...
+.c476	06 13		asl $13		         ASL CHUNK2       ;Fix chunks
+.c478	d0 04		bne $c47e	         BNE _CONT4
+.c47a	aa		tax		         TAX
+.c47b	20 0a c5	jsr $c50a	         JSR UPCH2
+.c47e	06 14		asl $14		_CONT4   ASL OLDCH2
+.c480	b0 c1		bcs $c443	         BCS _LOOP
+.c482					_DONE
+.c482					CIRCEXIT:
+.c482	a9 37		lda #$37	         LDA #$37
+.c484	85 01		sta $01		         STA $01
+.c486	58		cli		         CLI
+.c487	a9 01		lda #$01	         LDA #1           ;Re-enable plotting
+.c489	8d 3e c0	sta $c03e	         STA DONTPLOT
+.c48c	60		rts		         RTS
+.c48d					DECYOFF:
+.c48d	a8		tay		         TAY
+.c48e	a9 07		lda #$07	         LDA #7
+.c490	85 08		sta $08		         STA Y2
+.c492	a5 06		lda $06		         LDA X2           ;If we pass through zero, then
+.c494	38		sec		         SEC
+.c495	e9 40		sbc #$40	         SBC #<320        ;subtract 320
+.c497	85 06		sta $06		         STA X2
+.c499	a5 07		lda $07		         LDA X2+1
+.c49b	e9 01		sbc #$01	         SBC #>320
+.c49d	85 07		sta $07		         STA X2+1
+.c49f	a5 1e		lda $1e		         LDA TEMP2
+.c4a1	38		sec		         SEC
+.c4a2	e9 40		sbc #$40	         SBC #<320
+.c4a4	85 1e		sta $1e		         STA TEMP2
+.c4a6	a5 1f		lda $1f		         LDA TEMP2+1
+.c4a8	e9 01		sbc #$01	         SBC #>320
+.c4aa	85 1f		sta $1f		         STA TEMP2+1
+.c4ac	98		tya		         TYA
+.c4ad	c6 1a		dec $1a		         DEC BROW
+.c4af	30 01		bmi $c4b2	         BMI EXIT2
+.c4b1	60		rts		         RTS
+.c4b2	68		pla		EXIT2:    PLA              ;Grab return address
+.c4b3	68		pla		         PLA
+.c4b4	4c 82 c4	jmp $c482	         JMP CIRCEXIT     ;Restore interrupts, etc.
+.c4b7					INCYOFF:
+.c4b7	a8		tay		         TAY
+.c4b8	a9 00		lda #$00	         LDA #00
+.c4ba	85 04		sta $04		         STA Y1
+.c4bc	a5 02		lda $02		         LDA X1
+.c4be	18		clc		         CLC
+.c4bf	69 40		adc #$40	         ADC #<320
+.c4c1	85 02		sta $02		         STA X1
+.c4c3	a5 03		lda $03		         LDA X1+1
+.c4c5	69 01		adc #$01	         ADC #>320
+.c4c7	85 03		sta $03		         STA X1+1
+.c4c9	a5 1c		lda $1c		         LDA POINT
+.c4cb	18		clc		         CLC
+.c4cc	69 40		adc #$40	         ADC #<320
+.c4ce	85 1c		sta $1c		         STA POINT
+.c4d0	a5 1d		lda $1d		         LDA POINT+1
+.c4d2	69 01		adc #$01	         ADC #>320
+.c4d4	85 1d		sta $1d		         STA POINT+1
+.c4d6					_ISKIP
+.c4d6	e6 19		inc $19		         INC TROW
+.c4d8	30 06		bmi $c4e0	         BMI _RTS
+.c4da	a5 19		lda $19		         LDA TROW
+.c4dc	c9 19		cmp #$19	         CMP #25
+.c4de	b0 d2		bcs $c4b2	         BCS EXIT2
+.c4e0	98		tya		_RTS     TYA
+.c4e1	60		rts		         RTS
+.c4e2					UPCHUNK1:
+.c4e2	aa		tax		         TAX
+.c4e3	20 2a c5	jsr $c52a	         JSR PCHUNK1
+.c4e6	a9 ff		lda #$ff	UPCH1:    LDA #$FF         ;Alternative entry point
+.c4e8	85 11		sta $11		         STA CHUNK1
+.c4ea	85 12		sta $12		         STA OLDCH1
+.c4ec	a5 1e		lda $1e		         LDA TEMP2
+.c4ee	18		clc		         CLC
+.c4ef	69 08		adc #$08	         ADC #8
+.c4f1	85 1e		sta $1e		         STA TEMP2
+.c4f3	90 03		bcc $c4f8	         BCC _CONT
+.c4f5	e6 1f		inc $1f		         INC TEMP2+1
+.c4f7	18		clc		         CLC
+.c4f8	a5 1c		lda $1c		_CONT    LDA POINT
+.c4fa	69 08		adc #$08	         ADC #8
+.c4fc	85 1c		sta $1c		         STA POINT
+.c4fe	90 02		bcc $c502	         BCC _DONE
+.c500	e6 1d		inc $1d		         INC POINT+1
+.c502	8a		txa		_DONE    TXA
+.c503	e6 18		inc $18		         INC RCOL
+.c505	60		rts		         RTS
+.c506					UPCHUNK2:
+.c506	aa		tax		         TAX
+.c507	20 5b c5	jsr $c55b	         JSR PCHUNK2
+.c50a	a9 ff		lda #$ff	UPCH2:    LDA #$FF
+.c50c	85 13		sta $13		         STA CHUNK2
+.c50e	85 14		sta $14		         STA OLDCH2
+.c510	a5 06		lda $06		         LDA X2
+.c512	38		sec		         SEC
+.c513	e9 08		sbc #$08	         SBC #8
+.c515	85 06		sta $06		         STA X2
+.c517	b0 03		bcs $c51c	         BCS _CONT
+.c519	c6 07		dec $07		         DEC X2+1
+.c51b	38		sec		         SEC
+.c51c	a5 02		lda $02		_CONT    LDA X1
+.c51e	e9 08		sbc #$08	         SBC #8
+.c520	85 02		sta $02		         STA X1
+.c522	b0 02		bcs $c526	         BCS _DONE
+.c524	c6 03		dec $03		         DEC X1+1
+.c526	8a		txa		_DONE    TXA
+.c527	c6 17		dec $17		         DEC LCOL
+.c529	60		rts		         RTS
+.c52a					PCHUNK1:
+.c52a	a5 18		lda $18		         LDA RCOL         ;Make sure we're in range
+.c52c	c9 28		cmp #$28	         CMP #40
+.c52e	b0 2a		bcs $c55a	         BCS _SKIP2
+.c530	a5 11		lda $11		         LDA CHUNK1       ;Otherwise plot
+.c532	45 12		eor $12		         EOR OLDCH1
+.c534	85 20		sta $20		         STA TEMP
+.c536	a5 19		lda $19		         LDA TROW         ;Check for underflow
+.c538	30 0d		bmi $c547	         BMI _SKIP
+.c53a	a4 04		ldy $04		         LDY Y1
+.c53c	b1 1c		lda ($1c),y	         LDA (POINT),Y
+.c53e	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c541	25 20		and $20		         AND TEMP
+.c543	51 1c		eor ($1c),y	         EOR (POINT),Y
+.c545	91 1c		sta ($1c),y	         STA (POINT),Y
+.c547	a5 1a		lda $1a		_SKIP    LDA BROW         ;If CY+Y >= 200...
+.c549	c9 19		cmp #$19	         CMP #25
+.c54b	b0 0d		bcs $c55a	         BCS _SKIP2
+.c54d	a4 08		ldy $08		         LDY Y2
+.c54f	b1 1e		lda ($1e),y	         LDA (TEMP2),Y
+.c551	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c554	25 20		and $20		         AND TEMP
+.c556	51 1e		eor ($1e),y	         EOR (TEMP2),Y
+.c558	91 1e		sta ($1e),y	         STA (TEMP2),Y
+.c55a					_SKIP2
+.c55a	60		rts		         RTS
+.c55b					PCHUNK2:
+.c55b	a5 17		lda $17		         LDA LCOL         ;Range check in X
+.c55d	c9 28		cmp #$28	         CMP #40
+.c55f	b0 2a		bcs $c58b	         BCS _SKIP2
+.c561	a5 13		lda $13		         LDA CHUNK2       ;Otherwise plot
+.c563	45 14		eor $14		         EOR OLDCH2
+.c565	85 20		sta $20		         STA TEMP
+.c567	a5 19		lda $19		         LDA TROW         ;Check for underflow
+.c569	30 0d		bmi $c578	         BMI _SKIP
+.c56b	a4 04		ldy $04		         LDY Y1
+.c56d	b1 02		lda ($02),y	         LDA (X1),Y
+.c56f	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c572	25 20		and $20		         AND TEMP
+.c574	51 02		eor ($02),y	         EOR (X1),Y
+.c576	91 02		sta ($02),y	         STA (X1),Y
+.c578	a5 1a		lda $1a		_SKIP    LDA BROW         ;If CY+Y >= 200...
+.c57a	c9 19		cmp #$19	         CMP #25
+.c57c	b0 0d		bcs $c58b	         BCS _SKIP2
+.c57e	a4 08		ldy $08		         LDY Y2
+.c580	b1 06		lda ($06),y	         LDA (X2),Y
+.c582	4d a4 c1	eor $c1a4	         EOR BITMASK
+.c585	25 20		and $20		         AND TEMP
+.c587	51 06		eor ($06),y	         EOR (X2),Y
+.c589	91 06		sta ($06),y	         STA (X2),Y
+.c58b					_SKIP2
+.c58b	60		rts		         RTS
+.c58c					GPUTC:
+.c58c	c9 c1		cmp #$c1	    cmp #$c1
+.c58e	b0 09		bcs $c599	    bcs _fixlower
+.c590	38		sec		    sec
+.c591	e9 20		sbc #$20	    sbc #$20
+.c593	8d fc c6	sta $c6fc	    sta tempchar
+.c596	4c 9f c5	jmp $c59f	    jmp _stash
+.c599					_fixlower:
+.c599	38		sec		    sec
+.c59a	e9 80		sbc #$80	    sbc #$80
+.c59c	8d fc c6	sta $c6fc	    sta tempchar
+.c59f					_stash:
+.c59f	a5 02		lda $02		    lda X1
+.c5a1	8d ff c6	sta $c6ff	    sta orginalX
+.c5a4	a5 03		lda $03		    lda X1+1
+.c5a6	8d 00 c7	sta $c700	    sta orginalX+1
+.c5a9	a5 02		lda $02		    lda X1
+.c5ab	8d fd c6	sta $c6fd	    sta tempx
+.c5ae	a5 03		lda $03		    lda X1+1
+.c5b0	8d fe c6	sta $c6fe	    sta tempx+1
+.c5b3	a5 04		lda $04		    lda Y1
+.c5b5	8d 01 c7	sta $c701	    sta orginalY
+.c5b8	a5 05		lda $05		    lda Y1+1
+.c5ba	8d 02 c7	sta $c702	    sta orginalY+1
+.c5bd	a5 04		lda $04		    lda Y1
+.c5bf	8d 03 c7	sta $c703	    sta tempy
+.c5c2	a5 05		lda $05		    lda Y1+1
+.c5c4	8d 04 c7	sta $c704	    sta tempy+1
+.c5c7					_getoffset:
+.c5c7	ad fc c6	lda $c6fc	    lda tempchar
+.c5ca	c9 20		cmp #$20	    cmp #32
+.c5cc	90 07		bcc $c5d5	    bcc _srch1         ; less than 32?
+.c5ce	c9 3f		cmp #$3f	    cmp #63
+.c5d0	90 0e		bcc $c5e0	    bcc _srch2         ; less than 63?
+.c5d2	4c f4 c5	jmp $c5f4	    jmp _srch3
+.c5d5					_srch1:
+.c5d5	a9 6b		lda #$6b	    lda #<font1
+.c5d7	85 fb		sta $fb		    sta $fb
+.c5d9	a9 c7		lda #$c7	    lda #>font1
+.c5db	85 fc		sta $fc		    sta $fc
+.c5dd	4c 05 c6	jmp $c605	    jmp _srchagain
+.c5e0					_srch2:
+.c5e0	ad fc c6	lda $c6fc	    lda tempchar
+.c5e3	38		sec		    sec
+.c5e4	e9 1f		sbc #$1f	    sbc #$1f
+.c5e6	8d fc c6	sta $c6fc	    sta tempchar
+.c5e9	a9 c0		lda #$c0	    lda #<font2
+.c5eb	85 fb		sta $fb		    sta $fb
+.c5ed	a9 c8		lda #$c8	    lda #>font2
+.c5ef	85 fc		sta $fc		    sta $fc
+.c5f1	4c 05 c6	jmp $c605	    jmp _srchagain
+.c5f4					_srch3:
+.c5f4	ad fc c6	lda $c6fc	    lda tempchar
+.c5f7	38		sec		    sec
+.c5f8	e9 3e		sbc #$3e	    sbc #$3e
+.c5fa	8d fc c6	sta $c6fc	    sta tempchar
+.c5fd	a9 15		lda #$15	    lda #<font3
+.c5ff	85 fb		sta $fb		    sta $fb
+.c601	a9 ca		lda #$ca	    lda #>font3
+.c603	85 fc		sta $fc		    sta $fc
+.c605					_srchagain:
+.c605	a0 00		ldy #$00	    ldy #$00
+.c607					_srchloop:
+.c607	cc fc c6	cpy $c6fc	    cpy tempchar
+.c60a	f0 12		beq $c61e	    beq _haveoffset
+.c60c	c8		iny		    iny
+.c60d	a5 fb		lda $fb		    lda $fb
+.c60f	18		clc		    clc
+.c610	69 0b		adc #$0b	    adc #$0b
+.c612	85 fb		sta $fb		    sta $fb
+.c614	b0 03		bcs $c619	    bcs _srchskip
+.c616	4c 07 c6	jmp $c607	    jmp _srchloop
+.c619					_srchskip:
+.c619	e6 fc		inc $fc		    inc $fc
+.c61b	4c 07 c6	jmp $c607	    jmp _srchloop
+.c61e					_haveoffset:
+.c61e	a0 00		ldy #$00	    ldy #$00
+.c620	b1 fb		lda ($fb),y	    lda ($fb),y
+.c622	8d 07 c7	sta $c707	    sta widthctr
+.c625	8d 06 c7	sta $c706	    sta orgWidth
+.c628	e6 fb		inc $fb		    inc $fb
+.c62a	d0 02		bne $c62e	    bne _skipfc1
+.c62c	e6 fc		inc $fc		    inc $fc
+.c62e					_skipfc1:
+.c62e	b1 fb		lda ($fb),y	    lda ($fb),y
+.c630	8d 09 c7	sta $c709	    sta tempheight
+.c633	e6 fb		inc $fb		    inc $fb
+.c635	d0 02		bne $c639	    bne _skipfc2
+.c637	e6 fc		inc $fc		    inc $fc
+.c639					_skipfc2
+.c639	b1 fb		lda ($fb),y	    lda ($fb),y
+.c63b	8d 08 c7	sta $c708	    sta tempbase
+.c63e	e6 fb		inc $fb		    inc $fb
+.c640	d0 02		bne $c644	    bne _skipfc3
+.c642	e6 fc		inc $fc		    inc $fc
+.c644					_skipfc3:
+.c644	a9 00		lda #$00	    lda #$00
+.c646	8d 05 c7	sta $c705	    sta temprow             ; start with the 0th row
+.c649	a5 04		lda $04		    lda Y1                  ; set the Y location for plotting
+.c64b	8d 03 c7	sta $c703	    sta tempy
+.c64e	ad 09 c7	lda $c709	    lda tempheight          ; calculate the actual Y position
+.c651	38		sec		    sec
+.c652	ed 08 c7	sbc $c708	    sbc tempbase            ; based on height and the baseGFX_LINE
+.c655	85 12		sta $12		    sta r8
+.c657	a9 07		lda #$07	    lda #$07
+.c659	38		sec		    sec
+.c65a	e5 12		sbc $12		    sbc r8
+.c65c	18		clc		    clc
+.c65d	6d 03 c7	adc $c703	    adc tempy
+.c660	8d 03 c7	sta $c703	    sta tempy
+.c663					_again:
+.c663	ac 05 c7	ldy $c705	    ldy temprow
+.c666	b1 fb		lda ($fb),y	    lda ($fb),y             ; each byte is one row
+.c668	2d fa c6	and $c6fa	    and bitcompare          ; check the bit
+.c66b	cd fa c6	cmp $c6fa	    cmp bitcompare
+.c66e	d0 3a		bne $c6aa	    bne _nextbit            ; if not set, skip this pixel
+.c670	ad fd c6	lda $c6fd	    lda tempx               ; get ready to plot the pixel
+.c673	18		clc		    clc                     ; by calculating the offset (bit #) + 0-319
+.c674	6d fb c6	adc $c6fb	    adc xoffset             ; in X1, X1+1
+.c677	b0 06		bcs $c67f	    bcs _incx
+.c679	8d fd c6	sta $c6fd	    sta tempx
+.c67c	4c 87 c6	jmp $c687	    jmp _skiphi
+.c67f					_incx:
+.c67f	8d fd c6	sta $c6fd	    sta tempx               ; if X > 255, set tempx+1 to zero 1 to indicate this
+.c682	a9 01		lda #$01	    lda #$01
+.c684	8d fe c6	sta $c6fe	    sta tempx+1
+.c687					_skiphi:
+.c687	ad fd c6	lda $c6fd	    lda tempx
+.c68a	85 02		sta $02		    sta X1
+.c68c	ad fe c6	lda $c6fe	    lda tempx+1
+.c68f	85 03		sta $03		    sta X1+1
+.c691	ad 03 c7	lda $c703	    lda tempy
+.c694	85 04		sta $04		    sta Y1
+.c696	ad 04 c7	lda $c704	    lda tempy+1
+.c699	85 05		sta $05		    sta Y1+1
+.c69b	20 3f c0	jsr $c03f	    jsr GFX_SETPIXEL               ; plot the pixel
+.c69e	ad ff c6	lda $c6ff	    lda orginalX
+.c6a1	8d fd c6	sta $c6fd	    sta tempx
+.c6a4	ad 00 c7	lda $c700	    lda orginalX+1
+.c6a7	8d fe c6	sta $c6fe	    sta tempx+1
+.c6aa					_nextbit:
+.c6aa	18		clc		    clc
+.c6ab	6e fa c6	ror $c6fa	    ror bitcompare          ; rotate the next bit into position for testing
+.c6ae	ce 07 c7	dec $c707	    dec widthctr           ; decrease the width counter
+.c6b1	f0 06		beq $c6b9	    beq _endrow
+.c6b3	ee fb c6	inc $c6fb	    inc xoffset             ; increase the plotting xoffset value since each bit represents the next pixel
+.c6b6	4c 63 c6	jmp $c663	    jmp _again              ; go again for next bit
+.c6b9					_endrow:
+.c6b9	a9 80		lda #$80	    lda #$80                ; done with this row...reset the data
+.c6bb	8d fa c6	sta $c6fa	    sta bitcompare
+.c6be	a9 00		lda #$00	    lda #$00
+.c6c0	8d fb c6	sta $c6fb	    sta xoffset
+.c6c3	ad 06 c7	lda $c706	    lda orgWidth        ; reset the width counter
+.c6c6	8d 07 c7	sta $c707	    sta widthctr
+.c6c9	ee 05 c7	inc $c705	    inc temprow             ; increase the row counter
+.c6cc	ad 05 c7	lda $c705	    lda temprow
+.c6cf	c9 08		cmp #$08	    cmp #$08                ; if 8, then we are at the end / bottom of this character
+.c6d1	f0 12		beq $c6e5	    beq _end                ; get out
+.c6d3	ee 03 c7	inc $c703	    inc tempy               ; move to next row
+.c6d6	ad ff c6	lda $c6ff	    lda orginalX
+.c6d9	8d fd c6	sta $c6fd	    sta tempx
+.c6dc	ad 00 c7	lda $c700	    lda orginalX+1
+.c6df	8d fe c6	sta $c6fe	    sta tempx+1
+.c6e2	4c 63 c6	jmp $c663	    jmp _again              ; do the next row
+.c6e5					_end:
+.c6e5	ad 01 c7	lda $c701	    lda orginalY
+.c6e8	85 04		sta $04		    sta Y1
+.c6ea	ad 02 c7	lda $c702	    lda orginalY+1
+.c6ed	85 05		sta $05		    sta Y1+1
+.c6ef	ad ff c6	lda $c6ff	    lda orginalX
+.c6f2	85 02		sta $02		    sta X1
+.c6f4	ad 00 c7	lda $c700	    lda orginalX+1
+.c6f7	85 03		sta $03		    sta X1+1
+.c6f9	60		rts		    rts
+.c6fa					bitcompare:
+>c6fa	80				    .byte $80
+.c6fb					xoffset:
+>c6fb	00				    .byte $00
+.c6fc					tempchar:
+>c6fc	00				    .byte $00
+.c6fd					tempx:
+>c6fd	00 00				    .byte $00, $00
+.c6ff					orginalX:
+>c6ff	00 00				    .byte $00, $00
+.c701					orginalY:
+>c701	00 00				    .byte $00, $00
+.c703					tempy:
+>c703	00 00				    .byte $00, $00
+.c705					temprow:
+>c705	00				    .byte $00
+.c706					orgWidth:
+>c706	00				    .byte $00
+.c707					widthctr:
+>c707	00				    .byte $00
+.c708					tempbase:
+>c708	00				    .byte $00
+.c709					tempheight:
+>c709	00				    .byte $00
+.c70a					GPUTS:
+.c70a	a0 00		ldy #$00	    ldy #$00
+.c70c					_loop:
+.c70c	b1 14		lda ($14),y	    lda (r9L),y
+.c70e	f0 1d		beq $c72d	    beq _done
+.c710	aa		tax		    TAX
+.c711	98		tya		    TYA
+.c712	48		pha		    pha
+.c713	8a		txa		    txa
+.c714	20 8c c5	jsr $c58c	    jsr GPUTC
+.c717	68		pla		    PLA
+.c718	a8		tay		    tay
+.c719	ee 06 c7	inc $c706	    inc orgWidth
+.c71c					_moveright:
+.c71c	e6 02		inc $02		    inc X1
+.c71e	d0 04		bne $c724	    bne _skip
+.c720	a9 01		lda #$01	    lda #$01
+.c722	85 03		sta $03		    sta X1+1
+.c724					_skip:
+.c724	ce 06 c7	dec $c706	    dec orgWidth
+.c727	d0 f3		bne $c71c	    bne _moveright
+.c729	c8		iny		    iny                 ; go to next character
+.c72a	4c 0c c7	jmp $c70c	    jmp _loop
+.c72d					_done:
+.c72d	60		rts		    rts
+.c72e					cursorx:
+>c72e	00 00				    .byte $00, $00
+.c730					cursory:
+>c730	00 00				    .byte $00, $00
+.c732					GFX_DRAWBYTEPATTERN:
+.c732	a0 00		ldy #$00	    ldy #$00
+.c734	a2 00		ldx #$00	    ldx #$00
+.c736					_loop:
+.c736	c0 08		cpy #$08	    cpy #$08
+.c738	f0 27		beq $c761	    beq _done
+.c73a	8c 6a c7	sty $c76a	    sty tsttmp
+.c73d	a0 00		ldy #$00	    ldy #$00
+.c73f	b1 0a		lda ($0a),y	    lda (r4),y
+.c741	ac 6a c7	ldy $c76a	    ldy tsttmp
+.c744	39 62 c7	and $c762,y	    and tstbit,y
+.c747	d9 62 c7	cmp $c762,y	    cmp tstbit,y
+.c74a	d0 06		bne $c752	    bne _skppixl
+.c74c	20 3f c0	jsr $c03f	    jsr GFX_SETPIXEL
+.c74f	ac 6a c7	ldy $c76a	    ldy tsttmp
+.c752					_skppixl:
+.c752	a5 02		lda $02		    lda X1
+.c754	18		clc		    clc
+.c755	69 01		adc #$01	    adc #$01
+.c757	85 02		sta $02		    sta X1
+.c759	90 02		bcc $c75d	    bcc _cont
+.c75b	e6 06		inc $06		    inc X2
+.c75d					_cont:
+.c75d	c8		iny		    iny
+.c75e	4c 36 c7	jmp $c736	    jmp _loop
+.c761					_done:
+.c761	60		rts		    rts
+>c762	80 40 20 10 08 04 02 01		tstbit: .byte $80, $40, $20, $10, $08, $04, $02, $01
+>c76a	00				tsttmp: .byte $00
+.c76b					font1:
+>c76b	04 07 00 00 00 00 00 00		.byte $04, $07, $00, $00, $00, $00, $00, $00, $00, $00, $00 ;space
+>c773	00 00 00
+>c776	01 07 00 80 80 80 80 00		.byte $01, $07, $00, $80, $80, $80, $80, $00, $80, $80, $00 ; !
+>c77e	80 80 00
+>c781	03 02 00 a0 a0 00 00 00		.byte $03, $02, $00, $A0, $A0, $00, $00, $00, $00, $00, $00 ; "
+>c789	00 00 00
+>c78c	05 07 00 50 50 f8 50 f8		.byte $05, $07, $00, $50, $50, $F8, $50, $F8, $50, $50, $00 ; #
+>c794	50 50 00
+>c797	05 08 00 78 a0 60 20 30		.byte $05, $08, $00, $78, $A0, $60, $20, $30, $28, $F0, $20 ; $
+>c79f	28 f0 20
+>c7a2	05 07 00 c0 c8 10 20 40		.byte $05, $07, $00, $C0, $C8, $10, $20, $40, $98, $18, $00 ; %
+>c7aa	98 18 00
+>c7ad	05 07 00 60 80 90 78 90		.byte $05, $07, $00, $60, $80, $90, $78, $90, $90, $70, $00 ; &
+>c7b5	90 70 00
+>c7b8	02 07 00 40 40 80 00 00		.byte $02, $07, $00, $40, $40, $80, $00, $00, $00, $00, $00 ; '
+>c7c0	00 00 00
+>c7c3	03 08 01 20 40 80 80 80		.byte $03, $08, $01, $20, $40, $80, $80, $80, $80, $40, $20 ; (
+>c7cb	80 40 20
+>c7ce	03 08 01 80 40 20 20 20		.byte $03, $08, $01, $80, $40, $20, $20, $20, $20, $40, $80 ; )
+>c7d6	20 40 80
+>c7d9	05 07 00 20 a8 70 f8 70		.byte $05, $07, $00, $20, $A8, $70, $F8, $70, $A8, $20, $00 ; *
+>c7e1	a8 20 00
+>c7e4	05 07 00 00 20 20 f8 20		.byte $05, $07, $00, $00, $20, $20, $F8, $20, $20, $00, $00 ; +
+>c7ec	20 00 00
+>c7ef	02 02 01 40 80 00 00 00		.byte $02, $02, $01, $40, $80, $00, $00, $00, $00, $00, $00 ; ,
+>c7f7	00 00 00
+>c7fa	04 07 00 00 00 00 f0 00		.byte $04, $07, $00, $00, $00, $00, $F0, $00, $00, $00, $00 ; -
+>c802	00 00 00
+>c805	01 01 00 80 00 00 00 00		.byte $01, $01, $00, $80, $00, $00, $00, $00, $00, $00, $00 ; .
+>c80d	00 00 00
+>c810	06 07 00 00 04 08 10 20		.byte $06, $07, $00, $00, $04, $08, $10, $20, $40, $80, $00 ; /
+>c818	40 80 00
+>c81b	04 07 00 60 90 b0 d0 90		.byte $04, $07, $00, $60, $90, $B0, $D0, $90, $90, $60, $00 ; 0
+>c823	90 60 00
+>c826	02 07 00 40 c0 40 40 40		.byte $02, $07, $00, $40, $C0, $40, $40, $40, $40, $40, $00 ; 1
+>c82e	40 40 00
+>c831	03 07 00 c0 20 20 40 80		.byte $03, $07, $00, $C0, $20, $20, $40, $80, $80, $E0, $00 ; 2
+>c839	80 e0 00
+>c83c	03 07 00 c0 20 20 40 20		.byte $03, $07, $00, $C0, $20, $20, $40, $20, $20, $C0, $00 ; 3
+>c844	20 c0 00
+>c847	04 07 00 10 30 50 90 f0		.byte $04, $07, $00, $10, $30, $50, $90, $F0, $10, $10, $00 ; 4
+>c84f	10 10 00
+>c852	03 07 00 e0 80 c0 20 20		.byte $03, $07, $00, $E0, $80, $C0, $20, $20, $20, $C0, $00 ; 5
+>c85a	20 c0 00
+>c85d	04 07 00 20 40 80 e0 90		.byte $04, $07, $00, $20, $40, $80, $E0, $90, $90, $60, $00 ; 6
+>c865	90 60 00
+>c868	04 07 00 f0 10 20 40 40		.byte $04, $07, $00, $F0, $10, $20, $40, $40, $40, $40, $00 ; 7
+>c870	40 40 00
+>c873	04 07 00 60 90 90 60 90		.byte $04, $07, $00, $60, $90, $90, $60, $90, $90, $60, $00 ; 8
+>c87b	90 60 00
+>c87e	04 07 00 60 90 90 70 10		.byte $04, $07, $00, $60, $90, $90, $70, $10, $20, $40, $00 ; 9
+>c886	20 40 00
+>c889	01 04 00 80 00 00 80 00		.byte $01, $04, $00, $80, $00, $00, $80, $00, $00, $00, $00 ; :
+>c891	00 00 00
+>c894	02 05 01 40 00 00 40 80		.byte $02, $05, $01, $40, $00, $00, $40, $80, $00, $00, $00 ; ;
+>c89c	00 00 00
+>c89f	03 06 00 00 20 40 80 40		.byte $03, $06, $00, $00, $20, $40, $80, $40, $20, $00, $00 ; <
+>c8a7	20 00 00
+>c8aa	04 06 00 00 f0 00 f0 00		.byte $04, $06, $00, $00, $F0, $00, $F0, $00, $00, $00, $00 ; =
+>c8b2	00 00 00
+>c8b5	03 06 00 00 80 40 20 40		.byte $03, $06, $00, $00, $80, $40, $20, $40, $80, $00, $00 ; >
+>c8bd	80 00 00
+.c8c0					font2:
+>c8c0	05 07 00 70 88 10 20 20		.byte $05, $07, $00, $70, $88, $10, $20, $20, $00, $20, $00 ; ?
+>c8c8	00 20 00
+>c8cb	05 07 00 70 88 b8 a8 b8		.byte $05, $07, $00, $70, $88, $B8, $A8, $B8, $80, $70, $00 ; @
+>c8d3	80 70 00
+>c8d6	04 05 00 70 90 90 90 50		.byte $04, $05, $00, $70, $90, $90, $90, $50, $00, $00, $00 ;a
+>c8de	00 00 00
+>c8e1	04 07 00 80 80 e0 90 90		.byte $04, $07, $00, $80, $80, $E0, $90, $90, $90, $E0, $00 ;b
+>c8e9	90 e0 00
+>c8ec	04 05 00 60 90 80 80 70		.byte $04, $05, $00, $60, $90, $80, $80, $70, $00, $00, $00 ;c
+>c8f4	00 00 00
+>c8f7	04 07 00 10 10 70 90 90		.byte $04, $07, $00, $10, $10, $70, $90, $90, $90, $70, $00 ;d
+>c8ff	90 70 00
+>c902	04 05 00 60 90 f0 80 70		.byte $04, $05, $00, $60, $90, $F0, $80, $70, $00, $00, $00 ;e
+>c90a	00 00 00
+>c90d	02 07 00 40 80 c0 80 80		.byte $02, $07, $00, $40, $80, $C0, $80, $80, $80, $80, $00 ;f
+>c915	80 80 00
+>c918	04 07 02 70 90 90 90 70		.byte $04, $07, $02, $70, $90, $90, $90, $70, $10, $20, $00 ;g
+>c920	10 20 00
+>c923	04 07 00 80 80 e0 90 90		.byte $04, $07, $00, $80, $80, $E0, $90, $90, $90, $90, $00 ;h
+>c92b	90 90 00
+>c92e	01 07 00 80 00 80 80 80		.byte $01, $07, $00, $80, $00, $80, $80, $80, $80, $80, $00 ;i
+>c936	80 80 00
+>c939	02 07 02 40 00 40 40 40		.byte $02, $07, $02, $40, $00, $40, $40, $40, $40, $80, $00 ;j
+>c941	40 80 00
+>c944	04 07 00 80 80 90 a0 c0		.byte $04, $07, $00, $80, $80, $90, $A0, $C0, $A0, $90, $00 ;k
+>c94c	a0 90 00
+>c94f	01 07 00 80 80 80 80 80		.byte $01, $07, $00, $80, $80, $80, $80, $80, $80, $80, $00 ;l
+>c957	80 80 00
+>c95a	07 05 00 ec 92 92 92 92		.byte $07, $05, $00, $EC, $92, $92, $92, $92, $00, $00, $00 ;m
+>c962	00 00 00
+>c965	04 05 00 e0 90 90 90 90		.byte $04, $05, $00, $E0, $90, $90, $90, $90, $00, $00, $00 ;n
+>c96d	00 00 00
+>c970	05 05 00 70 88 88 88 70		.byte $05, $05, $00, $70, $88, $88, $88, $70, $00, $00, $00 ;o
+>c978	00 00 00
+>c97b	04 07 02 e0 90 90 90 e0		.byte $04, $07, $02, $E0, $90, $90, $90, $E0, $80, $80, $00 ;p
+>c983	80 80 00
+>c986	04 07 02 70 90 90 90 70		.byte $04, $07, $02, $70, $90, $90, $90, $70, $10, $10, $00 ;q
+>c98e	10 10 00
+>c991	02 05 00 40 80 80 80 80		.byte $02, $05, $00, $40, $80, $80, $80, $80, $00, $00, $00 ;r
+>c999	00 00 00
+>c99c	03 05 00 60 80 40 20 c0		.byte $03, $05, $00, $60, $80, $40, $20, $C0, $00, $00, $00 ;s
+>c9a4	00 00 00
+>c9a7	02 07 00 80 c0 80 80 80		.byte $02, $07, $00, $80, $C0, $80, $80, $80, $80, $40, $00 ;t
+>c9af	80 40 00
+>c9b2	04 05 00 90 90 90 90 70		.byte $04, $05, $00, $90, $90, $90, $90, $70, $00, $00, $00 ;u
+>c9ba	00 00 00
+>c9bd	05 05 00 88 88 88 50 20		.byte $05, $05, $00, $88, $88, $88, $50, $20, $00, $00, $00 ;v
+>c9c5	00 00 00
+>c9c8	07 05 00 92 92 92 92 6c		.byte $07, $05, $00, $92, $92, $92, $92, $6C, $00, $00, $00 ;w
+>c9d0	00 00 00
+>c9d3	05 05 00 88 50 20 50 88		.byte $05, $05, $00, $88, $50, $20, $50, $88, $00, $00, $00 ;x
+>c9db	00 00 00
+>c9de	04 07 02 90 90 90 90 70		.byte $04, $07, $02, $90, $90, $90, $90, $70, $10, $20, $00 ;y
+>c9e6	10 20 00
+>c9e9	04 05 00 f0 20 40 80 f0		.byte $04, $05, $00, $F0, $20, $40, $80, $F0, $00, $00, $00 ;z
+>c9f1	00 00 00
+>c9f4	02 07 00 c0 80 80 80 80		.byte $02, $07, $00, $C0, $80, $80, $80, $80, $80, $C0, $00 ; [
+>c9fc	80 c0 00
+>c9ff	07 07 00 80 40 20 10 08		.byte $07, $07, $00, $80, $40, $20, $10, $08, $04, $02, $00 ; slash
+>ca07	04 02 00
+>ca0a	02 07 00 c0 40 40 40 40		.byte $02, $07, $00, $C0, $40, $40, $40, $40, $40, $C0, $00 ; ]
+>ca12	40 c0 00
+.ca15					font3:
+>ca15	05 07 00 20 50 88 00 00		.byte $05, $07, $00, $20, $50, $88, $00, $00, $00, $00, $00 ; ^
+>ca1d	00 00 00
+>ca20	05 01 00 f8 00 00 00 00		.byte $05, $01, $00, $F8, $00, $00, $00, $00, $00, $00, $00 ; _
+>ca28	00 00 00
+>ca2b	02 07 00 80 80 40 00 00		.byte $02, $07, $00, $80, $80, $40, $00, $00, $00, $00, $00 ; `
+>ca33	00 00 00
+>ca36	05 07 00 20 50 88 88 f8		.byte $05, $07, $00, $20, $50, $88, $88, $F8, $88, $88, $00 ;A
+>ca3e	88 88 00
+>ca41	04 07 00 e0 90 90 e0 90		.byte $04, $07, $00, $E0, $90, $90, $E0, $90, $90, $E0, $00 ;B
+>ca49	90 e0 00
+>ca4c	04 07 00 60 90 80 80 80		.byte $04, $07, $00, $60, $90, $80, $80, $80, $80, $70, $00 ;C
+>ca54	80 70 00
+>ca57	04 07 00 e0 90 90 90 90		.byte $04, $07, $00, $E0, $90, $90, $90, $90, $90, $E0, $00 ;D
+>ca5f	90 e0 00
+>ca62	03 07 00 e0 80 80 e0 80		.byte $03, $07, $00, $E0, $80, $80, $E0, $80, $80, $E0, $00 ;E
+>ca6a	80 e0 00
+>ca6d	03 07 00 e0 80 80 e0 80		.byte $03, $07, $00, $E0, $80, $80, $E0, $80, $80, $80, $00 ;F
+>ca75	80 80 00
+>ca78	04 07 00 60 90 80 80 b0		.byte $04, $07, $00, $60, $90, $80, $80, $B0, $90, $70, $00 ;G
+>ca80	90 70 00
+>ca83	05 07 00 88 88 88 f8 88		.byte $05, $07, $00, $88, $88, $88, $F8, $88, $88, $88, $00 ;H
+>ca8b	88 88 00
+>ca8e	01 07 00 80 80 80 80 80		.byte $01, $07, $00, $80, $80, $80, $80, $80, $80, $80, $00 ;I
+>ca96	80 80 00
+>ca99	03 07 00 20 20 20 20 20		.byte $03, $07, $00, $20, $20, $20, $20, $20, $20, $C0, $00 ;J
+>caa1	20 c0 00
+>caa4	05 07 00 88 90 a0 c0 a0		.byte $05, $07, $00, $88, $90, $A0, $C0, $A0, $90, $88, $00 ;K
+>caac	90 88 00
+>caaf	03 07 00 80 80 80 80 80		.byte $03, $07, $00, $80, $80, $80, $80, $80, $80, $E0, $00 ;L
+>cab7	80 e0 00
+>caba	07 07 00 82 c6 aa 92 82		.byte $07, $07, $00, $82, $C6, $AA, $92, $82, $82, $82, $00 ;M
+>cac2	82 82 00
+>cac5	05 07 00 88 c8 a8 98 88		.byte $05, $07, $00, $88, $C8, $A8, $98, $88, $88, $88, $00 ;N
+>cacd	88 88 00
+>cad0	05 07 00 70 88 88 88 88		.byte $05, $07, $00, $70, $88, $88, $88, $88, $88, $70, $00 ;O
+>cad8	88 70 00
+>cadb	04 07 00 e0 90 90 90 e0		.byte $04, $07, $00, $E0, $90, $90, $90, $E0, $80, $80, $00 ;P
+>cae3	80 80 00
+>cae6	05 08 01 70 88 88 88 88		.byte $05, $08, $01, $70, $88, $88, $88, $88, $98, $78, $04 ;Q
+>caee	98 78 04
+>caf1	04 07 00 e0 90 90 90 e0		.byte $04, $07, $00, $E0, $90, $90, $90, $E0, $A0, $90, $00 ;R
+>caf9	a0 90 00
+>cafc	04 07 00 70 80 c0 20 10		.byte $04, $07, $00, $70, $80, $C0, $20, $10, $10, $E0, $00 ;S
+>cb04	10 e0 00
+>cb07	03 07 00 e0 40 40 40 40		.byte $03, $07, $00, $E0, $40, $40, $40, $40, $40, $40, $00 ;T
+>cb0f	40 40 00
+>cb12	04 07 00 90 90 90 90 90		.byte $04, $07, $00, $90, $90, $90, $90, $90, $90, $70, $00 ;U
+>cb1a	90 70 00
+>cb1d	05 07 00 88 88 88 88 88		.byte $05, $07, $00, $88, $88, $88, $88, $88, $50, $20, $00 ;V
+>cb25	50 20 00
+>cb28	07 07 00 82 82 82 92 aa		.byte $07, $07, $00, $82, $82, $82, $92, $AA, $C6, $82, $00 ;W
+>cb30	c6 82 00
+>cb33	05 07 00 88 88 50 20 50		.byte $05, $07, $00, $88, $88, $50, $20, $50, $88, $88, $00 ;X
+>cb3b	88 88 00
+>cb3e	05 07 00 88 88 88 50 20		.byte $05, $07, $00, $88, $88, $88, $50, $20, $20, $20, $00 ;Y
+>cb46	20 20 00
+>cb49	07 07 00 f8 08 10 20 40		.byte $07, $07, $00, $F8, $08, $10, $20, $40, $80, $F8, $00 ;Z
+>cb51	80 f8 00
+>cb54	04 07 00 ff ff ff ff ff		.byte $04, $07, $00, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff ; rvs space
+>cb5c	ff ff ff
+
+;******  End of listing
