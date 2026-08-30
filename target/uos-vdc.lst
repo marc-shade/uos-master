@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-vdc.prg -L target/uos-vdc.lst src/uos-vdc.asm
-; Sun Aug 30 16:45:58 2026
+; Sun Aug 30 18:34:48 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -22,6 +22,8 @@
 =$29					srcL            = $29
 =$2a					srcH            = $2a
 =$2b					vdcbaseHi       = $2b
+=$2d					vdclo           = $2d
+=$2e					vdchi           = $2e
 =$2c					vdcval          = $2c
 .cc00					VDC_GETREG:
 .cc00	8e 00 d6	stx $d600	        stx VDC_ADDR
@@ -49,151 +51,154 @@
 .cc2d	10 fb		bpl $cc2a	        bpl swf
 .cc2f	60		rts		        rts
 .cc30					VDC_SEEK:
-.cc30	85 2c		sta $2c		        sta vdcval
-.cc32	48		pha		        pha
-.cc33	a2 12		ldx #$12	        ldx #VDC_R_HSTART               ; HIGH register first
-.cc35	20 0c cc	jsr $cc0c	        jsr VDC_SETREG                  ; value in vdcval
-.cc38	68		pla		        pla
-.cc39	a2 13		ldx #$13	        ldx #VDC_R_LSTART
-.cc3b	20 0c cc	jsr $cc0c	        jsr VDC_SETREG                  ; value = lo
-.cc3e	a9 1f		lda #$1f	        lda #VDC_R_DATA
-.cc40	8d 00 d6	sta $d600	        sta VDC_ADDR
-.cc43	2c 00 d6	bit $d600	sw4:    bit VDC_ADDR
-.cc46	10 fb		bpl $cc43	        bpl sw4                         ; settle before any data store
-.cc48	60		rts		        rts
-.cc49					VDC_PUTS:
-.cc49	a5 26		lda $26		        lda vdcdpH
-.cc4b	c9 08		cmp #$08	        cmp #$08                        ; screen plane $0000-$07cf
-.cc4d	b0 29		bcs $cc78	        bcs vps_done
-.cc4f	a0 00		ldy #$00	        ldy #$00
-.cc51	b1 23		lda ($23),y	vps_l:  lda (vdcbpL),y
-.cc53	f0 23		beq $cc78	        beq vps_done
-.cc55	85 2c		sta $2c		        sta vdcval
-.cc57	a5 25		lda $25		        lda vdcdpL
-.cc59	a6 26		ldx $26		        ldx vdcdpH
-.cc5b	20 30 cc	jsr $cc30	        jsr VDC_SEEK
-.cc5e	a5 2c		lda $2c		        lda vdcval
-.cc60	20 1c cc	jsr $cc1c	        jsr vdcpush                     ; char into screen cell
-.cc63	a5 25		lda $25		        lda vdcdpL
-.cc65	a6 26		ldx $26		        ldx vdcdpH
-.cc67	20 30 cc	jsr $cc30	        jsr VDC_SEEK
-.cc6a	a9 81		lda #$81	        lda #$81
-.cc6c	20 1c cc	jsr $cc1c	        jsr vdcpush                     ; attribute into attr plane
-.cc6f	e6 25		inc $25		        inc vdcdpL
-.cc71	d0 02		bne $cc75	        bne vps_c
-.cc73	e6 26		inc $26		        inc vdcdpH
-.cc75	c8		iny		vps_c:  iny
-.cc76	d0 d9		bne $cc51	        bne vps_l
-.cc78					vps_done:
-.cc78	60		rts		        rts
-.cc79					VDC_PUTCHR:
-.cc79	85 2c		sta $2c		        sta vdcval
-.cc7b	a5 25		lda $25		        lda vdcdpL
-.cc7d	a6 26		ldx $26		        ldx vdcdpH
-.cc7f	20 30 cc	jsr $cc30	        jsr VDC_SEEK
-.cc82	a5 2c		lda $2c		        lda vdcval
-.cc84	20 1c cc	jsr $cc1c	        jsr vdcpush
-.cc87	60		rts		        rts
-.cc88					VDC_CLS:
-.cc88	a9 00		lda #$00	        lda #$00
-.cc8a	a2 00		ldx #$00	        ldx #$00
-.cc8c	20 30 cc	jsr $cc30	        jsr VDC_SEEK
-.cc8f	a2 00		ldx #$00	        ldx #$00
-.cc91					cls_chn:
-.cc91	a9 20		lda #$20	        lda #$20
-.cc93	20 1c cc	jsr $cc1c	        jsr vdcpush
-.cc96	e8		inx		        inx
-.cc97	e0 08		cpx #$08	        cpx #$08
-.cc99	d0 f6		bne $cc91	        bne cls_chn
-.cc9b	a9 00		lda #$00	        lda #$00
-.cc9d	a2 08		ldx #$08	        ldx #$08
-.cc9f	20 30 cc	jsr $cc30	        jsr VDC_SEEK
-.cca2	a2 00		ldx #$00	        ldx #$00
-.cca4					cls_atn:
-.cca4	a9 81		lda #$81	        lda #$81
-.cca6	20 1c cc	jsr $cc1c	        jsr vdcpush
-.cca9	e8		inx		        inx
-.ccaa	e0 08		cpx #$08	        cpx #$08
-.ccac	d0 f6		bne $cca4	        bne cls_atn
-.ccae	60		rts		        rts
-.ccaf					VDC_FONTUP:
-.ccaf	a5 01		lda $01		        lda $01
-.ccb1	48		pha		        pha
-.ccb2	29 fd		and #$fd	        and #%11111101
-.ccb4	85 01		sta $01		        sta $01
-.ccb6	a2 1c		ldx #$1c	        ldx #VDC_R_CHARBASE
-.ccb8	20 00 cc	jsr $cc00	        jsr VDC_GETREG                  ; A = R28
-.ccbb	29 e0		and #$e0	        and #$e0                        ; def base high byte
-.ccbd	18		clc		        clc
-.ccbe	69 10		adc #$10	        adc #$10                        ; + $1000 -> lowercase bank
-.ccc0	85 2b		sta $2b		        sta vdcbaseHi
-.ccc2	a9 00		lda #$00	        lda #$00
-.ccc4	85 28		sta $28		        sta glyphn
-.ccc6	a5 28		lda $28		fll:    lda glyphn
-.ccc8	0a		asl a		        asl
-.ccc9	0a		asl a		        asl
-.ccca	0a		asl a		        asl
-.cccb	0a		asl a		        asl                             ; glyph<<4 (low byte)
-.cccc	85 25		sta $25		        sta vdcdpL
-.ccce	a5 28		lda $28		        lda glyphn
-.ccd0	4a		lsr a		        lsr
-.ccd1	4a		lsr a		        lsr
-.ccd2	4a		lsr a		        lsr
-.ccd3	4a		lsr a		        lsr                             ; glyph>>4
-.ccd4	18		clc		        clc
-.ccd5	65 2b		adc $2b		        adc vdcbaseHi
-.ccd7	85 26		sta $26		        sta vdcdpH
-.ccd9	a5 25		lda $25		        lda vdcdpL
-.ccdb	a6 26		ldx $26		        ldx vdcdpH
-.ccdd	20 30 cc	jsr $cc30	        jsr VDC_SEEK
-.cce0	a9 00		lda #$00	        lda #<$d000
-.cce2	85 29		sta $29		        sta srcL
-.cce4	a9 d0		lda #$d0	        lda #>$d000
-.cce6	85 2a		sta $2a		        sta srcH
-.cce8	a5 28		lda $28		        lda glyphn
-.ccea	0a		asl a		        asl
-.cceb	0a		asl a		        asl
-.ccec	0a		asl a		        asl
-.cced	18		clc		        clc
-.ccee	65 29		adc $29		        adc srcL
-.ccf0	85 29		sta $29		        sta srcL
-.ccf2	90 02		bcc $ccf6	        bcc fno
-.ccf4	e6 2a		inc $2a		        inc srcH
-.ccf6					fno:
-.ccf6	20 25 cc	jsr $cc25	        jsr VDC_ST0                     ; select r31, guarded
-.ccf9	a0 00		ldy #$00	        ldy #0
-.ccfb	b1 29		lda ($29),y	fpat:   lda (srcL),y
-.ccfd	20 1c cc	jsr $cc1c	        jsr vdcpush
-.cd00	c8		iny		        iny
-.cd01	c0 08		cpy #$08	        cpy #8
-.cd03	d0 f6		bne $ccfb	        bne fpat
-.cd05	a9 00		lda #$00	        lda #0                          ; 8 zero rows: defs are 16 cells
-.cd07	a0 08		ldy #$08	        ldy #8
-.cd09	20 1c cc	jsr $cc1c	fz0:    jsr vdcpush
-.cd0c	c8		iny		        iny
-.cd0d	c0 10		cpy #$10	        cpy #16
-.cd0f	d0 f8		bne $cd09	        bne fz0
-.cd11	e6 28		inc $28		        inc glyphn
-.cd13	d0 b1		bne $ccc6	        bne fll
-.cd15	68		pla		        pla
-.cd16	85 01		sta $01		        sta $01
-.cd18	60		rts		        rts
-.cd19					VDC_INIT:
-.cd19	a2 24		ldx #$24	        ldx #36
-.cd1b					vinit_l:
-.cd1b	bd 29 cd	lda $cd29,x	        lda VDC_INIT_TABLE,x
-.cd1e	c9 ff		cmp #$ff	        cmp #$ff
-.cd20	f0 03		beq $cd25	        beq vinit_n
-.cd22	20 0c cc	jsr $cc0c	        jsr VDC_SETREG
-.cd25					vinit_n:
-.cd25	ca		dex		        dex
-.cd26	10 f3		bpl $cd1b	        bpl vinit_l
-.cd28	60		rts		        rts
-.cd29					VDC_INIT_TABLE:
->cd29	7e 50 66 49 ff e0 ff 20		        .byte $7e,$50,$66,$49,$ff,$e0,$ff,$20,$fc,$ff,$a0,$e7,$00,$00,$00,$00
->cd31	fc ff a0 e7 00 00 00 00
->cd39	ff ff ff ff ff ff 78 e8		        .byte $ff,$ff,$ff,$ff,$ff,$ff,$78,$e8,$ff,$ff,$ff,$00,$ff,$f8,$ff,$ff
->cd41	ff ff ff 00 ff f8 ff ff
->cd49	ff ff 7d 64 ff			        .byte $ff,$ff,$7d,$64,$ff
+.cc30	85 2d		sta $2d		        sta vdclo
+.cc32	86 2e		stx $2e		        stx vdchi
+.cc34	a5 2e		lda $2e		        lda vdchi
+.cc36	85 2c		sta $2c		        sta vdcval
+.cc38	a2 12		ldx #$12	        ldx #VDC_R_HSTART
+.cc3a	20 0c cc	jsr $cc0c	        jsr VDC_SETREG                  ; HIGH -> r18
+.cc3d	a5 2d		lda $2d		        lda vdclo
+.cc3f	85 2c		sta $2c		        sta vdcval
+.cc41	a2 13		ldx #$13	        ldx #VDC_R_LSTART
+.cc43	20 0c cc	jsr $cc0c	        jsr VDC_SETREG                  ; LOW -> r19
+.cc46	a9 1f		lda #$1f	        lda #VDC_R_DATA
+.cc48	8d 00 d6	sta $d600	        sta VDC_ADDR
+.cc4b	2c 00 d6	bit $d600	sw4:    bit VDC_ADDR
+.cc4e	10 fb		bpl $cc4b	        bpl sw4                         ; settle before any data store
+.cc50	60		rts		        rts
+.cc51					VDC_PUTS:
+.cc51	a5 26		lda $26		        lda vdcdpH
+.cc53	c9 08		cmp #$08	        cmp #$08                        ; screen plane $0000-$07cf
+.cc55	b0 29		bcs $cc80	        bcs vps_done
+.cc57	a0 00		ldy #$00	        ldy #$00
+.cc59	b1 23		lda ($23),y	vps_l:  lda (vdcbpL),y
+.cc5b	f0 23		beq $cc80	        beq vps_done
+.cc5d	85 2c		sta $2c		        sta vdcval
+.cc5f	a5 25		lda $25		        lda vdcdpL
+.cc61	a6 26		ldx $26		        ldx vdcdpH
+.cc63	20 30 cc	jsr $cc30	        jsr VDC_SEEK
+.cc66	a5 2c		lda $2c		        lda vdcval
+.cc68	20 1c cc	jsr $cc1c	        jsr vdcpush                     ; char into screen cell
+.cc6b	a5 25		lda $25		        lda vdcdpL
+.cc6d	a6 26		ldx $26		        ldx vdcdpH
+.cc6f	20 30 cc	jsr $cc30	        jsr VDC_SEEK
+.cc72	a9 81		lda #$81	        lda #$81
+.cc74	20 1c cc	jsr $cc1c	        jsr vdcpush                     ; attribute into attr plane
+.cc77	e6 25		inc $25		        inc vdcdpL
+.cc79	d0 02		bne $cc7d	        bne vps_c
+.cc7b	e6 26		inc $26		        inc vdcdpH
+.cc7d	c8		iny		vps_c:  iny
+.cc7e	d0 d9		bne $cc59	        bne vps_l
+.cc80					vps_done:
+.cc80	60		rts		        rts
+.cc81					VDC_PUTCHR:
+.cc81	85 2c		sta $2c		        sta vdcval
+.cc83	a5 25		lda $25		        lda vdcdpL
+.cc85	a6 26		ldx $26		        ldx vdcdpH
+.cc87	20 30 cc	jsr $cc30	        jsr VDC_SEEK
+.cc8a	a5 2c		lda $2c		        lda vdcval
+.cc8c	20 1c cc	jsr $cc1c	        jsr vdcpush
+.cc8f	60		rts		        rts
+.cc90					VDC_CLS:
+.cc90	a9 00		lda #$00	        lda #$00
+.cc92	a2 00		ldx #$00	        ldx #$00
+.cc94	20 30 cc	jsr $cc30	        jsr VDC_SEEK
+.cc97	a2 00		ldx #$00	        ldx #$00
+.cc99					cls_chn:
+.cc99	a9 20		lda #$20	        lda #$20
+.cc9b	20 1c cc	jsr $cc1c	        jsr vdcpush
+.cc9e	e8		inx		        inx
+.cc9f	e0 08		cpx #$08	        cpx #$08
+.cca1	d0 f6		bne $cc99	        bne cls_chn
+.cca3	a9 00		lda #$00	        lda #$00
+.cca5	a2 08		ldx #$08	        ldx #$08
+.cca7	20 30 cc	jsr $cc30	        jsr VDC_SEEK
+.ccaa	a2 00		ldx #$00	        ldx #$00
+.ccac					cls_atn:
+.ccac	a9 81		lda #$81	        lda #$81
+.ccae	20 1c cc	jsr $cc1c	        jsr vdcpush
+.ccb1	e8		inx		        inx
+.ccb2	e0 08		cpx #$08	        cpx #$08
+.ccb4	d0 f6		bne $ccac	        bne cls_atn
+.ccb6	60		rts		        rts
+.ccb7					VDC_FONTUP:
+.ccb7	a5 01		lda $01		        lda $01
+.ccb9	48		pha		        pha
+.ccba	29 fd		and #$fd	        and #%11111101
+.ccbc	85 01		sta $01		        sta $01
+.ccbe	a2 1c		ldx #$1c	        ldx #VDC_R_CHARBASE
+.ccc0	20 00 cc	jsr $cc00	        jsr VDC_GETREG                  ; A = R28
+.ccc3	29 e0		and #$e0	        and #$e0                        ; def base high byte
+.ccc5	18		clc		        clc
+.ccc6	69 10		adc #$10	        adc #$10                        ; + $1000 -> lowercase bank
+.ccc8	85 2b		sta $2b		        sta vdcbaseHi
+.ccca	a9 00		lda #$00	        lda #$00
+.cccc	85 28		sta $28		        sta glyphn
+.ccce	a5 28		lda $28		fll:    lda glyphn
+.ccd0	0a		asl a		        asl
+.ccd1	0a		asl a		        asl
+.ccd2	0a		asl a		        asl
+.ccd3	0a		asl a		        asl                             ; glyph<<4 (low byte)
+.ccd4	85 25		sta $25		        sta vdcdpL
+.ccd6	a5 28		lda $28		        lda glyphn
+.ccd8	4a		lsr a		        lsr
+.ccd9	4a		lsr a		        lsr
+.ccda	4a		lsr a		        lsr
+.ccdb	4a		lsr a		        lsr                             ; glyph>>4
+.ccdc	18		clc		        clc
+.ccdd	65 2b		adc $2b		        adc vdcbaseHi
+.ccdf	85 26		sta $26		        sta vdcdpH
+.cce1	a5 25		lda $25		        lda vdcdpL
+.cce3	a6 26		ldx $26		        ldx vdcdpH
+.cce5	20 30 cc	jsr $cc30	        jsr VDC_SEEK
+.cce8	a9 00		lda #$00	        lda #<$d000
+.ccea	85 29		sta $29		        sta srcL
+.ccec	a9 d0		lda #$d0	        lda #>$d000
+.ccee	85 2a		sta $2a		        sta srcH
+.ccf0	a5 28		lda $28		        lda glyphn
+.ccf2	0a		asl a		        asl
+.ccf3	0a		asl a		        asl
+.ccf4	0a		asl a		        asl
+.ccf5	18		clc		        clc
+.ccf6	65 29		adc $29		        adc srcL
+.ccf8	85 29		sta $29		        sta srcL
+.ccfa	90 02		bcc $ccfe	        bcc fno
+.ccfc	e6 2a		inc $2a		        inc srcH
+.ccfe					fno:
+.ccfe	20 25 cc	jsr $cc25	        jsr VDC_ST0                     ; select r31, guarded
+.cd01	a0 00		ldy #$00	        ldy #0
+.cd03	b1 29		lda ($29),y	fpat:   lda (srcL),y
+.cd05	20 1c cc	jsr $cc1c	        jsr vdcpush
+.cd08	c8		iny		        iny
+.cd09	c0 08		cpy #$08	        cpy #8
+.cd0b	d0 f6		bne $cd03	        bne fpat
+.cd0d	a9 00		lda #$00	        lda #0                          ; 8 zero rows: defs are 16 cells
+.cd0f	a0 08		ldy #$08	        ldy #8
+.cd11	20 1c cc	jsr $cc1c	fz0:    jsr vdcpush
+.cd14	c8		iny		        iny
+.cd15	c0 10		cpy #$10	        cpy #16
+.cd17	d0 f8		bne $cd11	        bne fz0
+.cd19	e6 28		inc $28		        inc glyphn
+.cd1b	d0 b1		bne $ccce	        bne fll
+.cd1d	68		pla		        pla
+.cd1e	85 01		sta $01		        sta $01
+.cd20	60		rts		        rts
+.cd21					VDC_INIT:
+.cd21	a2 24		ldx #$24	        ldx #36
+.cd23					vinit_l:
+.cd23	bd 31 cd	lda $cd31,x	        lda VDC_INIT_TABLE,x
+.cd26	c9 ff		cmp #$ff	        cmp #$ff
+.cd28	f0 03		beq $cd2d	        beq vinit_n
+.cd2a	20 0c cc	jsr $cc0c	        jsr VDC_SETREG
+.cd2d					vinit_n:
+.cd2d	ca		dex		        dex
+.cd2e	10 f3		bpl $cd23	        bpl vinit_l
+.cd30	60		rts		        rts
+.cd31					VDC_INIT_TABLE:
+>cd31	7e 50 66 49 ff e0 ff 20		        .byte $7e,$50,$66,$49,$ff,$e0,$ff,$20,$fc,$ff,$a0,$e7,$00,$00,$00,$00
+>cd39	fc ff a0 e7 00 00 00 00
+>cd41	ff ff ff ff ff ff 78 e8		        .byte $ff,$ff,$ff,$ff,$ff,$ff,$78,$e8,$ff,$ff,$ff,$00,$ff,$f8,$ff,$ff
+>cd49	ff ff ff 00 ff f8 ff ff
+>cd51	ff ff 7d 64 ff			        .byte $ff,$ff,$7d,$64,$ff
 
 ;******  End of listing

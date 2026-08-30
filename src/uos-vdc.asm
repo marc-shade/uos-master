@@ -32,6 +32,8 @@ glyphn          = $28
 srcL            = $29
 srcH            = $2a
 vdcbaseHi       = $2b
+vdclo           = $2d
+vdchi           = $2e
 vdcval          = $2c
 
 * = $cc00
@@ -70,14 +72,18 @@ swf:    bit VDC_ADDR
         rts
 
 ; ---------- seek update address: A = lo, X = hi ----------
+; r18 takes the HIGH byte, r19 the LOW byte; settle after.
 VDC_SEEK:
+        sta vdclo
+        stx vdchi
+        lda vdchi
         sta vdcval
-        pha
-        ldx #VDC_R_HSTART               ; HIGH register first
-        jsr VDC_SETREG                  ; value in vdcval
-        pla
+        ldx #VDC_R_HSTART
+        jsr VDC_SETREG                  ; HIGH -> r18
+        lda vdclo
+        sta vdcval
         ldx #VDC_R_LSTART
-        jsr VDC_SETREG                  ; value = lo
+        jsr VDC_SETREG                  ; LOW -> r19
         lda #VDC_R_DATA
         sta VDC_ADDR
 sw4:    bit VDC_ADDR
