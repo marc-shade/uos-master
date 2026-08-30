@@ -46,6 +46,7 @@
         jmp LOADIMM
         jmp LOADER
         jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
+        jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
 
 ; ==========================================================
 ; START
@@ -382,6 +383,15 @@ _ffdone:
         sta file,x
         rts
 
+; ==========================================================
+; Key In
+; Returns the next keyboard event from the KERNAL's keyboard
+; buffer (the KERNAL IRQ scans and decodes the matrix); A = 0
+; when nothing is pending. This is the OS keyboard driver path.
+; ==========================================================
+KEYIN_RT:
+        jsr $ffe4               ; KERNAL GETIN
+        rts
 ; ==========================================================
 ; Load Immediate
 ; Like a PRIMM subroutine, this will load the file
