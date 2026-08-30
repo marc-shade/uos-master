@@ -1,0 +1,281 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UltOS Product Requirements</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#0a1220; --panel:#111c2e; --panel-hi:#16243a; --rule:#233250;
+    --ink:#cfe3f5; --ink-dim:#7f9ab8; --accent:#5aa9e6; --accent-hi:#8ec9f2;
+    --green:#3fe08a; --amber:#ffc75a; --red:#ff7a7a; --violet:#b49cf0;
+    --mono:"IBM Plex Mono","Consolas",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0 0 96px;padding:0;background:var(--ground);color:var(--ink);
+    font:16px/1.65 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 28px}
+  header{border-bottom:1px solid var(--rule);padding:44px 0 30px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  h1{font-family:"Chakra Petch",var(--mono);font-size:clamp(28px,4.4vw,42px);line-height:1.08;font-weight:700;margin:0 0 12px;color:var(--accent-hi);text-wrap:balance}
+  .lede{max-width:70ch;color:var(--ink-dim);margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:18px;margin-top:20px;font-family:var(--mono);font-size:12.5px;color:var(--ink-dim)}
+  .meta b{color:var(--ink);font-weight:600}
+  h2{font-family:"Chakra Petch",var(--mono);font-size:21px;font-weight:600;color:var(--accent-hi);margin:54px 0 6px;text-wrap:balance}
+  h2 .sec{display:inline-block;min-width:2.3em;color:var(--accent);font-size:14px;letter-spacing:.06em}
+  h3{font-family:"Chakra Petch",var(--mono);font-weight:600;font-size:16.5px;margin:26px 0 4px;color:var(--ink)}
+  p{margin:8px 0;max-width:76ch}
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 9px 3px;border-radius:3px;vertical-align:1px}
+  .pill.must{background:#123426;color:var(--green);border:1px solid #1e5c3e}
+  .pill.should{background:#12283e;color:var(--accent-hi);border:1px solid #27476b}
+  .pill.later{background:#2c2440;color:var(--violet);border:1px solid #453565}
+  .pill.gate{background:#3a2c0a;color:var(--amber);border:1px solid #5c4712}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{font-family:var(--mono);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-dim);text-align:left;padding:8px 12px;border-bottom:2px solid var(--rule);white-space:nowrap}
+  td{padding:8px 12px;border-bottom:1px solid var(--panel-hi);vertical-align:top}
+  td.mono{font-family:var(--mono);font-size:13px;white-space:nowrap}
+  .tbl{overflow-x:auto;margin:14px 0 8px}
+  code{font-family:var(--mono);font-size:.88em;color:var(--accent-hi);background:var(--panel);padding:1px 5px;border-radius:3px}
+  .card{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--accent);padding:15px 20px;margin:16px 0;border-radius:2px}
+  .card.synergy{border-left-color:var(--green)}
+  .card .head{font-family:"Chakra Petch",var(--mono);font-weight:600;font-size:16px;color:var(--accent-hi);margin-bottom:6px}
+  .card ul{margin:6px 0 2px;padding-left:20px}
+  .card li{margin:4px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr}}
+  .fr-table b.id{font-family:var(--mono);color:var(--accent);font-weight:600;white-space:nowrap}
+  footer{margin-top:60px;border-top:1px solid var(--rule);padding-top:16px;font-family:var(--mono);font-size:12.5px;color:var(--ink-dim)}
+  .src{font-size:12.5px;color:var(--ink-dim)}
+  .src a{color:var(--accent);word-break:break-all}
+</style>
+
+<header class="wrap">
+  <p class="eyebrow">UltOS &middot; marc-shade/uos-master &middot; product requirements document &middot; rev 1 &middot; 2026-08-30</p>
+  <h1>One Operating System for the Entire Modern Commodore Universe</h1>
+  <p class="lede">Product requirements for UltOS as the universal OS of the 8-bit Commodore
+  platform: every real machine, every FPGA revival, every cartridge, every accelerator
+  shipping in 2026 &mdash; detected at boot, driven natively, and degrading gracefully to
+  whatever is actually plugged in.</p>
+  <div class="meta">
+    <span><b>Reference hardware</b> C128 + Ultimate&nbsp;II+, 16&nbsp;MB REU, dual displays, Tom+ USB mouse</span>
+    <span><b>Author</b> fork of Scott Hutter's UltOS</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ================= vision ================= -->
+<h2 id="vision"><span class="sec">V</span>Vision and product thesis</h2>
+<p class="lede">In 2026 the Commodore 8-bit world stopped being "retro" and became a
+<em>platform family</em>: Commodore itself ships an FPGA C64; the Ultimate line has become
+the cartridge-standard; a Raspberry&nbsp;Pi board emulates a 14&nbsp;MHz 65816 with 16&nbsp;MB of
+SuperRAM; Wi-Fi, Ethernet, SD and REU emulations all coexist on the same IEC bus.
+Every one of these machines deserves an operating system that <em>knows what it is
+running on</em> &mdash; the way desktop OSes do &mdash; instead of assuming 1982 hardware.</p>
+<p><strong>Product thesis:</strong> UltOS is a capability-discovering OS. At boot it probes
+video (VIC/8563 VDC), memory (REU/GeoRAM/65816 SuperRAM), storage (1541&hellip;1581, SD2IEC,
+IDE64, U2+ file system), input (1351/micromys/joystick/keyboard) and network (RR-Net/64NIC,
+WiC64, Meatloaf, U2+ REST), builds a capability table, and enables everything it finds &mdash;
+with a driver architecture where adding a platform is a driver, not a rewrite.</p>
+<p><strong>Why UltOS specifically</strong>: the upstream author's own 2026 project
+(RAD Expansion Unit) brings 65816-class acceleration to C64 <em>and</em> C128 &mdash; the OS
+and the accelerator are converging from the same source. UltOS is positioned to be the system
+software that the modern-accelerator generation actually runs.</p>
+
+<!-- ================= platforms ================= -->
+<h2 id="platforms"><span class="sec">P</span>Supported platform matrix</h2>
+<p>Support tiers: <b>P0</b> = our reference machine (primary target, every release verified
+on it) &middot; <b>P1</b> = first-class &middot; <b>P2</b> = community-tested best-effort &middot;
+<b>P3</b> = stretch/exploratory.</p>
+
+<div class="tbl"><table>
+  <tr><th>Platform</th><th>Video</th><th>Storage</th><th>RAM</th><th>Input</th><th>Tier</th></tr>
+  <tr><td><b>Real C128 + U2+</b> &mdash; our machine</td><td>VIC 40&nbsp;+ 8563 VDC 80</td><td>U2+ drives/SoftIEC, 1541/1571/1581 real</td><td>U2+ REU &le;16&nbsp;MB</td><td>1351/Tom+/joystick/keyboard</td><td><b>P0</b></td></tr>
+  <tr><td>Real C64/C64C plain</td><td>VIC 40</td><td>any serial drive</td><td>&mdash;</td><td>1351/joystick/keyboard</td><td>P1</td></tr>
+  <tr><td>C64/C128 + Ultimate 64 Elite&nbsp;II</td><td>VIC-emulated + HDMI framebuffer</td><td>U64 internal (U2+ class)</td><td>U64 REU &le;16&nbsp;MB</td><td>USB &rarr; 1351 emulation (fw&nbsp;3.14d)</td><td>P1</td></tr>
+  <tr><td><b>C64 Ultimate</b> (official Commodore revival, commodore.net)</td><td>HDMI, RGB LED case; U2+ functionality built in</td><td>U2+-class DMA storage</td><td>U2+-class REU</td><td>USB mouse &rarr; 1351 emu; original keyboard</td><td>P1</td></tr>
+  <tr><td>Real C64/C128 + <b>RAD Expansion Unit</b> (2026 pre-order)</td><td>unchanged + RAD HDMI monitor</td><td>IECBuddy drives</td><td>REU &le;16&nbsp;MB + <b>65816 14&nbsp;MHz SuperRAM &le;16&nbsp;MB</b></td><td>unchanged</td><td>P1 (accelerator tier &mdash; same author as uOS)</td></tr>
+  <tr><td>C64/C128 + <b>Kung Fu Flash 2</b></td><td>unchanged</td><td>KFF disk menus</td><td>1&nbsp;MB REU emulation</td><td>unchanged</td><td>P1 (boot platform)</td></tr>
+  <tr><td>Any C64/C128 + <b>SD2IEC / Pi1541 / Meatloaf</b></td><td>unchanged</td><td>D64&hellip;D81 + native mounts; Meatloaf adds 232TCP/WiFi drive</td><td>&mdash;</td><td>unchanged</td><td>P1</td></tr>
+  <tr><td>Real C64/C128 + <b>WiC64</b> (DC/DC 2026 version)</td><td>unchanged</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>P2 (network)</td></tr>
+  <tr><td>C64/C128 + <b>RR-Net / 64NIC+</b> + 64net/2 fileserver</td><td>unchanged</td><td>PC fileserver (16 clients, D64&hellip;D81)</td><td>&mdash;</td><td>unchanged</td><td>P2 (network)</td></tr>
+  <tr><td>C64/C128 + <b>IDE64 / CMD HD / RAMLink / CMD FD-2000</b></td><td>unchanged</td><td>native-mode partitions</td><td>RAMLink RAM</td><td>unchanged</td><td>P2</td></tr>
+  <tr><td>C128 with <b>64&nbsp;K VDC RAM upgrade</b> (SaRuMan class)</td><td>8563 hi-res modes up to 640&times;480-class (vdcmaniac-proven: FLI 480&times;252, HFLI 640&times;400, interlace 640&times;576, mono 800&times;600)</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>P2 (display enhancement)</td></tr>
+  <tr><td>TheC64 Maxi/Mini (FPGA)</td><td>VIC-emulated + HDMI</td><td>USB-stick images</td><td>REU &le;4&nbsp;MB emulation</td><td>USB &rarr; joystick/mouse</td><td>P2</td></tr>
+  <tr><td>VICE 3.x / x128 (our CI rig)</td><td>all</td><td>all</td><td>all</td><td>emulated</td><td>P1 (CI)</td></tr>
+  <tr><td><b>MEGA65</b> (4510 CPU, C65 FPGA)</td><td>VDC-class (1302)</td><td>SD native</td><td>&mdash;</td><td>mouse/keyboard</td><td>P3 stretch (different ISA; 65816-style port study only)</td></tr>
+</table></div>
+
+<!-- ================= architecture ================= -->
+<h2 id="arch"><span class="sec">A</span>Architecture: capability discovery, not device lists</h2>
+<p>The PRD's central requirement is not "support device&nbsp;X". It is: <strong>boot &rarr; probe &rarr;
+build the capability table &rarr; enable what exists &rarr; expose the rest at zero cost</strong>.
+Every subsystem declares itself to a driver registry with a capability bitmask (as of rev&nbsp;1:
+<code>CAP_VDC</code>, <code>CAP_REU</code>, <code>CAP_65816</code>, <code>CAP_NET</code>,
+<code>CAP_RTC</code>, <code>CAP_NATIVEFS</code>); apps query the table, never the hardware.</p>
+
+<div class="grid2">
+  <div class="card">
+    <div class="head">FR-A1 &middot; Boot-time hardware probe <span class="pill must">must</span></div>
+    <ul>
+      <li>Probe order &amp; timeouts defined; every probe idempotent and crash-safe (a hanging device must never stop boot)</li>
+      <li>Capability table persisted to the settings disk after each change</li>
+      <li>Probe results shown on the boot banner &mdash; the machine tells you what it found</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="head">FR-A2 &middot; Driver registry <span class="pill must">must</span></div>
+    <ul>
+      <li>Per-class drivers (video / store / ram / input / net) with uniform entry vectors</li>
+      <li>Drivers live loadable from disk via the core <code>FILLFILE</code>+<code>APP_LOADER</code> path &mdash; new hardware = a driver file, no reflash</li>
+      <li>Drivers are optional: the OS boots with zero extras and upgrades itself when it finds them</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================= display ================= -->
+<h2 id="display"><span class="sec">D</span>Display subsystem</h2>
+<h3>FR-D1 &middot; Dual native displays <span class="pill must">must (P0)</span></h3>
+<p>VIC-II 40-col and 8563 VDC 80-col are independent chips: both displays render simultaneously
+with no arbitration. With two monitors attached, the desktop runs on both at native resolution
+(configurable mirror or extended roles). Gated on VDC-access Gate&nbsp;G1 (kernal ROM pattern-match
+in progress).</p>
+<h3>FR-D2 &middot; Single-monitor switching <span class="pill must">must (P0)</span></h3>
+<p>Settings-selectable <code>40 / 80 / both</code>; setting persists; switching requires no reboot
+once both drivers are resident (module load/unload at the graphics layer).</p>
+<h3>FR-D3 &middot; Enhanced VDC modes (with 64&nbsp;K VDC RAM) <span class="pill should">should</span></h3>
+<p>vdcmaniac&nbsp;v1.0.0 (2026) demonstrates on real hardware: FLI 480&times;252, HFLI 640&times;400,
+interlaced 640&times;576, mono 800&times;600, plus custom rasters. UltOS adopts those techniques:
+detect VDC RAM size (16&nbsp;K vs 64&nbsp;K &mdash; e.g. SaRuMan upgrade), expose hi-res desktop
+options only when the RAM exists, and reuse the Oscar64/Krill-loader proven patterns.</p>
+<h3>FR-D4 &middot; FPGA video paths <span class="pill should">should (P1)</span></h3>
+<p>On Ultimate 64 Elite&nbsp;II / C64 Ultimate: use the HDMI framebuffer option (50&nbsp;Hz on 60&nbsp;Hz
+panels, Elite&nbsp;II fw&nbsp;3.14d) and U64's native features; on TheC64, fall back to VIC-only with
+HDMI passthrough.</p>
+
+<!-- ================= input ================= -->
+<h2 id="input"><span class="sec">I</span>Input subsystem</h2>
+<h3>FR-I1 &middot; Keyboard <span class="pill must">must</span></h3>
+<p>IRQ-decoded matrix scan sharing CIA1 with the joystick line (Gate&nbsp;G2); event ring buffer;
+full C128 keyboard (including the numeric pad and ESC/ALT/TAB) in P0.</p>
+<h3>FR-I2 &middot; Mouse <span class="pill must">must</span></h3>
+<p>1351 proportional protocol (Commodore&nbsp;1351, Amiga-mode-capable Tom+ / micromys / mouSTer,
+USB-over-DB9 adapters, and USB&rarr;1351 emulation on U64E2/C64U per fw&nbsp;3.14d). Requirements:
+two-button, position filtering to eliminate adapter jitter, hot-plug tolerance, button-held drag
+(semantics already stubbed in core <code>main_loop</code>).</p>
+<h3>FR-I3 &middot; Joystick as pointer <span class="pill should">should</span></h3>
+<p>Port-1 joystick driver as fallback pointer (verified working under GEOS 2.0 on this machine),
+with keyboard pointer control for keyboard-only setups.</p>
+
+<!-- ================= storage/fs ================= -->
+<h2 id="fs"><span class="sec">F</span>Storage and file system</h2>
+<h3>FR-F1 &middot; Universal serial FS <span class="pill must">must</span></h3>
+<p>Directory listing, open/read/write/append, load/verify, scratch, rename, copy
+drive&rarr;drive &mdash; all through the kernal serial abstraction so anything IEC-attached
+(1541&hellip;1581 real or emulated, SD2IEC, Pi1541, Meatloaf, U2+, KFF2) is automatically supported.</p>
+<h3>FR-F2 &middot; Device inventory and hot presence <span class="pill must">must</span></h3>
+<p>Devices 8&ndash;11 enumerated at boot with type identification (DOS error-channel handshake);
+the file manager shows per-device capability; U2+ SoftIEC (bus&nbsp;10) and U64 internal storage
+treated as first-class devices.</p>
+<h3>FR-F3 &middot; Native-mode file systems <span class="pill should">should (P2)</span></h3>
+<p>CMD HD/RL, FD-2000, IDE64 and 1581-native partitions via their native command sets;
+16&nbsp;MB native-mode RAM disks from the REU (MegaPatch-class behavior adopted).</p>
+<h3>FR-F4 &middot; Fastload <span class="pill should">should</span></h3>
+<p>Krill's-loader-style fast serial burst loads where hardware permits (vdcmaniac already ships
+this pattern on real C128s); JiffyDOS-rom drives detected and used only in compatibility-safe modes
+(GEOS folklore + our U64E2 CIA-timing findings both say JiffyDOS is a compatibility surface, not a
+given).</p>
+
+<!-- ================= memory ================= -->
+<h2 id="mem"><span class="sec">M</span>Memory subsystem</h2>
+<h3>FR-M1 &middot; REU manager <span class="pill must">must</span></h3>
+<p>REU sizes 128&nbsp;K&ndash;16&nbsp;MB (U2+/U64/KFF2-1MB/RAD). Current fork already stashes
+screens (bank&nbsp;0), apps (bank&nbsp;1) and rects (bank&nbsp;2): formalize into a banking allocator
+with an API for apps, RAM-disk devices, and REU-backed window buffering for fast app switching
+(C64&nbsp;OS demonstrates 30 concurrent apps with REU backing).</p>
+<h3>FR-M2 &middot; 65816 capability layer <span class="pill should">should (RAD present)</span></h3>
+<p>When the RAD (or classic SuperCPU) is detected: 14&nbsp;MHz-class execution, 16&nbsp;MB
+SuperRAM banking, native 65816 mode for heavy subsystems (file indexing, image decoding),
+graceful single-CPU fallback otherwise. This is the same-author synergy: uOS + RAD is the
+intended pairing.</p>
+<h3>FR-M3 &middot; C128 MMU banks <span class="pill should">should (P0)</span></h3>
+<p>Use 128's own 256&nbsp;K-equivalent MMU banking space (bank&nbsp;1 etc.) for system heaps before
+touching REU; zero-cost on every C128.</p>
+
+<!-- ================= network ================= -->
+<h2 id="net"><span class="sec">N</span>Networking <span class="pill later">later (M5+)</span></h3></h2>
+<p>Driver classes: <b>U2+ REST bridge</b> (our fork's signature: serial listener &harr; U2+ API &mdash;
+swap drive images, reload fonts, fetch files from the LAN without leaving the desktop),
+<b>WiC64</b> WiFi (its C128 support makes it the P0-adjacent option), <b>RR-Net/64NIC+ Ethernet</b>
+(64net/2 fileserver protocol, CS8900A raw frames for TCP later), <b>Meatloaf</b> WiFi-IEC
+(network drives as plain serial devices). Order of value: U2+ bridge first (we own both ends),
+then 64net/2, then WiC64 apps.</p>
+
+<!-- ================= apps ================= -->
+<h2 id="apps"><span class="sec">S</span>System software and applications</h2>
+<div class="tbl"><table>
+  <tr><th>ID</th><th>Requirement</th><th>Class</th></tr>
+  <tr><td class="mono">FR-S1</td><td>Desktop + launcher (shipped v0.2) extended to disk-driven app registry</td><td><span class="pill must">must</span></td></tr>
+  <tr><td class="mono">FR-S2</td><td>File manager (browse/info/copy/rename/scratch across devices)</td><td><span class="pill must">must</span></td></tr>
+  <tr><td class="mono">FR-S3</td><td>Settings app with persistence (display, input, drive, boot)</td><td><span class="pill must">must</span></td></tr>
+  <tr><td class="mono">FR-S4</td><td>Command shell (DIR/CAT/COPY/DEL/SYS/RUN + file-manager integration)</td><td><span class="pill should">should</span></td></tr>
+  <tr><td class="mono">FR-S5</td><td>Editor, calculator, terminal (U2+ bridge / WiC64 / RS-232)</td><td><span class="pill should">should</span></td></tr>
+  <tr><td class="mono">FR-S6</td><td>App SDK + Programmer's Guide (widget macros, FILLFILE/app conventions, capability query)</td><td><span class="pill should">should</span></td></tr>
+  <tr><td class="mono">FR-S7</td><td>Backdrops, screen savers, desk toys (REU-banked)</td><td><span class="pill later">later</span></td></tr>
+</table></div>
+
+<!-- ================= perf ================= -->
+<h2 id="perf"><span class="sec">X</span>Performance requirements</h2>
+<div class="tbl"><table>
+  <tr><th>Metric</th><th>Target</th><th>Measured baseline (v0.2)</th></tr>
+  <tr><td>Boot to desktop</td><td>&le; 25&nbsp;s from U2+ (KFF2-fast: &le; 15&nbsp;s)</td><td>~15&nbsp;s incl. drive loads (all files warp-free)</td></tr>
+  <tr><td>Pointer update latency</td><td>&le; 1 frame; jitter &le; 1&nbsp;px steady-state</td><td>works; jitter present (Tom+) &mdash; G2/M2</td></tr>
+  <tr><td>Fullscreen redraw (40-col)</td><td>&le; 1&nbsp;s at 1&nbsp;MHz; &le; 0.5&nbsp;s with 2&nbsp;MHz/REU region copy</td><td>REU rect copy exists (unmeasured)</td></tr>
+  <tr><td>Directory scan</td><td>&le; 2&nbsp;s first paint, lazy fill</td><td>&le; 2&nbsp;s (launcher v0.2)</td></tr>
+  <tr><td>App switch (REU)</td><td>&le; 4 frames</td><td>path exists (FS_APP), unmeasured</td></tr>
+  <tr><td>80-col text paint</td><td>typewriter-class &le; 1&nbsp;ms/char</td><td>&mdash; (G1 open)</td></tr>
+</table></div>
+
+<!-- ================= verification ================= -->
+<h2 id="verify"><span class="sec">T</span>Verification culture</h2>
+<p>Every FR verified on real hardware before "shipped" status; the fork's discipline to date
+(build byte-identity proof, hardware-gated milestones, signed commits) extends platform-wide:</p>
+<ul style="padding-left:20px;max-width:76ch">
+  <li><b>P0 regression rig</b> = our C128 + U2+ (run_prg boot, DMA screen probes, motion recordings)</li>
+  <li><b>CI emulator rig</b> = VICE x128/x64sc headless with screenshot + memory assertions (already in use)</li>
+  <li><b>Platform matrix spot-checks</b> on U64E2/C64U/KFF2/RAD as hardware arrives in the lab</li>
+  <li><b>Every hardware claim in docs cites its gate</b> &mdash; the OS's docs and the roadmap share the verification ledger</li>
+</ul>
+
+<!-- ================= risks ================= -->
+<h2 id="risks"><span class="sec">R</span>Risks and non-goals</h2>
+<div class="grid2">
+  <div class="card" style="border-left-color:var(--amber)">
+    <div class="head">Risks</div>
+    <ul>
+      <li><b>VDC access in C64 mode (Gate&nbsp;G1)</b> &mdash; open; kernal ROM pattern-match in progress; decides C128-mode port need</li>
+      <li><b>REU&harr;pot sampling interference</b> (pointer jitter root cause on U2+) &mdash; platform-level; may cap smoothing quality on cartridge machines</li>
+      <li><b>RAD maturity</b> &mdash; v0.2 known video corruption/crashes on some configs; feature-flag 65816 paths until stable</li>
+      <li><b>Upstream divergence</b> &mdash; keep increments upstreamable (small, documented, hardware-proven)</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left-color:var(--violet)">
+    <div class="head">Non-goals (rev&nbsp;1)</div>
+    <ul>
+      <li>Preemptive multitasking &mdash; event-driven single-app model with REU app swap stays</li>
+      <li>128&nbsp;K &ldquo;1700-only&rdquo; REU optimizations &mdash; minimum supported REU is 512&nbsp;K-class; smaller gets degraded features, cleanly</li>
+      <li>MEGA65 binary compatibility &mdash; 4510 ISA is a study, not a target</li>
+      <li>Graphics beyond the machine's chips (no cartridge-side GPUs) &mdash; the RAD's HDMI monitor output is the only external-video surface</li>
+    </ul>
+  </div>
+</div>
+
+<footer class="wrap">
+  Grounded in hardware present in the lab plus publicly documented 2026 platform releases:
+  Ultimate&nbsp;64 Elite&nbsp;II &amp; fw&nbsp;3.14d &middot; C64&nbsp;Ultimate (commodore.net) &middot; RAD Expansion Unit
+  (65816, 16&nbsp;MB, C128) &middot; Kung&nbsp;Fu&nbsp;Flash&nbsp;2 &middot; WiC64 DC/DC &middot; SaRuMan 64&nbsp;K VDC upgrade &middot;
+  VDC-II FPGA &middot; 64net/2-rrnet &middot; RR-Net/64NIC+ &middot; vdcmaniac demo techniques &middot; Pi1541/SD2IEC/Meatloaf.
+  Sources linked in the session transcript; every FR gains its acceptance evidence through the
+  hardware-gated verification culture already in place.
+</footer>
+
+</body>

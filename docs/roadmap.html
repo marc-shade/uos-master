@@ -1,0 +1,381 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UltOS Build-Out Roadmap</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    /* deliberate single theme: the C128's own blue-phosphor world */
+    --ground:#0a1220;
+    --panel:#111c2e;
+    --panel-hi:#16243a;
+    --rule:#233250;
+    --ink:#cfe3f5;
+    --ink-dim:#7f9ab8;
+    --accent:#5aa9e6;          /* border-blue trim */
+    --accent-hi:#8ec9f2;
+    --green:#3fe08f;           /* verified */
+    --amber:#ffc75a;           /* gated */
+    --red:#ff7a7a;             /* critical */
+    --mono:"IBM Plex Mono","Consolas",monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:0 0 96px;
+    background:var(--ground);
+    color:var(--ink);
+    font:16px/1.65 "IBM Plex Sans",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 28px}
+
+  header{
+    border-bottom:1px solid var(--rule);
+    padding:44px 0 30px;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:"Chakra Petch",var(--mono);
+    font-size:clamp(28px,4.4vw,42px);line-height:1.1;font-weight:700;
+    margin:0 0 12px;color:var(--accent-hi);text-wrap:balance;
+  }
+  .standfirst{max-width:62ch;color:var(--ink-dim);margin:0}
+  .meta{
+    display:flex;flex-wrap:wrap;gap:18px;margin-top:22px;
+    font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);
+  }
+  .meta b{color:var(--ink);font-weight:600}
+
+  h2{
+    font-family:"Chakra Petch",var(--mono);
+    font-size:21px;font-weight:600;color:var(--accent-hi);
+    margin:56px 0 6px;text-wrap:balance;
+  }
+  h2 .sec{
+    display:inline-block;min-width:2.2em;
+    color:var(--accent);font-size:15px;letter-spacing:.06em;
+  }
+  h3{font-family:"Chakra Petch",var(--mono);font-weight:600;font-size:16.5px;color:var(--ink);margin:28px 0 4px}
+  p{margin:8px 0;max-width:74ch}
+  .lede{color:var(--ink);font-size:17px}
+
+  .pill{
+    display:inline-block;font-family:var(--mono);font-size:11px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;
+    padding:2px 9px 3px;border-radius:3px;vertical-align:1px;
+  }
+  .pill.ok{background:#123426;color:var(--green);border:1px solid #1e5c3e}
+  .pill.gate{background:#3a2c0a;color:var(--amber);border:1px solid #5c4715}
+  .pill.crit{background:#3a1414;color:var(--red);border:1px solid #5c2626}
+  .pill.info{background:#12283e;color:var(--accent-hi);border:1px solid #27476b}
+
+  table{
+    width:100%;border-collapse:collapse;margin:14px 0 6px;
+    font-size:14.5px;
+  }
+  th{
+    font-family:var(--mono);font-size:11.5px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.1em;color:var(--ink-dim);
+    text-align:left;padding:9px 12px;border-bottom:2px solid var(--rule);
+    white-space:nowrap;
+  }
+  td{
+    padding:9px 12px;border-bottom:1px solid var(--panel-hi);
+    vertical-align:top;
+  }
+  td.mono{font-family:var(--mono);font-size:13.5px;white-space:nowrap}
+  td.num{font-variant-numeric:tabular-nums;font-family:var(--mono);white-space:nowrap}
+  .tbl{overflow-x:auto;margin:14px 0 8px}
+
+  .card{
+    background:var(--panel);border:1px solid var(--rule);
+    border-left:3px solid var(--accent);
+    padding:16px 20px;margin:18px 0;border-radius:2px;
+  }
+  .card.gate{border-left-color:var(--amber)}
+  .card.gate .pill{background:#3a2c0a;color:var(--amber);border:1px solid #5c4712}
+  .card .head{
+    font-family:"Chakra Petch",var(--mono);font-weight:600;font-size:16px;
+    color:var(--accent-hi);margin-bottom:6px;
+  }
+  .card ul{margin:8px 0 4px;padding-left:20px}
+  .card li{margin:5px 0}
+  code{
+    font-family:var(--mono);font-size:.92em;color:var(--accent-hi);
+    background:var(--panel-hi);padding:1px 5px;border-radius:3px;
+  }
+  #gate code, h2[id] ~p code{color:var(--amber)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:720px){.grid2{grid-template-columns:1fr}}
+
+  .milestone{border-left:3px solid var(--accent);padding:2px 0 2px 18px;margin:26px 0;position:relative}
+  .milestone h3{margin:0 0 2px;font-size:18px;color:var(--accent-hi)}
+  .milestone .id{
+    position:absolute;left:-52px;top:0;font-family:var(--mono);
+    font-size:13px;font-weight:600;color:var(--accent);width:56px;text-align:right;
+  }
+  .milestone .status{float:right;margin-top:2px}
+  .milestone ul{margin:8px 0 4px;padding-left:20px;color:var(--ink)}
+  .milestone li{margin:4px 0}
+  .milestone .accept{
+    font-family:var(--mono);font-size:13px;color:var(--ink-dim);
+    border-top:1px dashed var(--rule);margin-top:10px;padding-top:8px;
+  }
+  .milestone .accept b{color:var(--amber)}
+
+  footer{
+    margin-top:64px;border-top:1px solid var(--rule);padding-top:18px;
+    font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);
+  }
+  a{color:var(--accent)}
+</style>
+
+<header class="wrap">
+  <p class="eyebrow">UltOS fork &middot; marc-shade/uos-master &middot; engineering master plan</p>
+  <h1>The Road to a Real C128 Operating System</h1>
+  <p class="lede">Gap analysis and full build-out roadmap for turning the UltOS fork &mdash; the graph&shy;ical
+  OS written for the Ultimate&nbsp;II+ that already boots on the real C128 &mdash; into the most complete
+  C128 operating system: dual-screen, REU-backed, keyboard and mouse driven, with real applications.</p>
+  <div class="meta">
+    <span><b>Hardware</b> C128 &times; Ultimate II+ &middot; 16&nbsp;MB REU &middot; 1541@8 / 1581@9 &middot; both displays wired</span>
+    <span><b>Rev</b> v0.2 &middot; 2026&ndash;08&ndash;30</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ 1. verified state ============ -->
+<h2 id="state"><span class="sec">01</span>Where the system stands &mdash; verified, not assumed</h2>
+<p class="lede">Everything below was exercised on the physical machine or in a hardware-matched emulator.
+It is the foundation the roadmap builds on &mdash; and the first correction it makes to any
+assumption that uOS "is just a demo".</p>
+
+<div class="tbl">
+<table>
+  <tr><th>Capability</th><th>Status</th><th>Evidence</th></tr>
+  <tr><td>Boot on real C128 (C64 mode, via U2+ <code>run_prg</code>)</td><td><span class="pill ok">verified</span></td><td>Repeatable one-command boot; ~15&nbsp;s to desktop</td></tr>
+  <tr><td>Desktop + ultos menu / clock / quit</td><td><span class="pill ok">verified</span></td><td>Live on hardware, multiple sessions</td></tr>
+  <tr><td>Tom+ USB mouse moves pointer (1351 protocol)</td><td><span class="pill ok">verified</span></td><td>Jittery; driver = <code>uos-drv1351</code></td></tr>
+  <tr><td>REU integration (512&nbsp;K test)</td><td><span class="pill ok">verified</span></td><td>uOS requires the REU &mdash; the one thing stock GEOS 2.0 cannot handle</td></tr>
+  <tr><td>Applications launcher (v0.2, this fork)</td><td><span class="pill ok">verified</span></td><td>Live disk scan + clickable launch via new <code>FILLFILE</code> core export</td></tr>
+  <tr><td>File manager, command line</td><td><span class="pill crit">stub</span></td><td>Placeholder dialogs only</td></tr>
+  <tr><td>Keyboard input</td><td><span class="pill crit">absent</span></td><td>Main loop polls mouse only</td></tr>
+  <tr><td>80-column VDC / dual display</td><td><span class="pill crit">absent</span></td><td>40-col VIC bitmap only; VDC untouched</td></tr>
+  <tr><td>Settings persistence</td><td><span class="pill crit">absent</span></td><td>Settings app exists, saves nothing</td></tr>
+  <tr><td>Stack &amp; toolchain</td><td><span class="pill ok">verified</span></td><td><code>build.sh</code> byte-identical rebuild; signed commits; fork on GitHub</td></tr>
+</table>
+</div>
+
+<!-- ============ 2. hardware inventory ============ -->
+<h2 id="hw"><span class="sec">02</span>Hardware platform &mdash; what the OS can own</h2>
+
+<div class="tbl">
+<table>
+  <tr><th>Resource</th><th>Spec</th><th>Operating-system opportunity</th><th>State</th></tr>
+  <tr><td>VIC-II 40-col</td><td>320&times;200 bitmap, sprites (pointer), colors</td><td>Primary desktop (current)</td><td><span class="pill ok">used</span></td></tr>
+  <tr><td>MOS 8563 VDC 80-col</td><td>640&times;200 char + attr; up to 640&times;480 with 64&nbsp;K VDC RAM; <em>independent chip &mdash; second display is free while VIC runs</em></td><td>Huge: second desktop, console, window mirror</td><td><span class="pill crit">untouched</span></td></tr>
+  <tr><td>U2+ REU emu</td><td>128&nbsp;K&ndash;16&nbsp;MB, live-resizable from the REST API</td><td>RAM disks, app multitask regions (uOS already banks REU 0&ndash;2 for screens/apps)</td><td><span class="pill ok">partial</span></td></tr>
+  <tr><td>U2+ drive emulation</td><td>1541/1571/1581 (+&nbsp;SoftIEC bus&nbsp;10), true-drive &amp; flash timing modes</td><td>File system layer; native-mode DNP devices later</td><td><span class="pill info">kernal LOAD only</span></td></tr>
+  <tr><td>U2+ network API</td><td class="mono" rowspan="2">&mdash;</td><td rowspan="2">A resident 6502 bridge can let the OS talk to the cartridge's REST interface (drive-image swap from the desktop!) &mdash; no other C128 OS has this</td><td><span class="pill info">future</span></td></tr>
+  <tr><td>CPU</td><td>8502 1&nbsp;/&nbsp;2&nbsp;MHz &mdash; GEOS-class systems switch clocks; uOS runs 1&nbsp;MHz today</td><td><span class="pill info">future</span></td></tr>
+  <tr><td>MMU banks</td><td>16 banks &times; 64&nbsp;K, zero-page banking</td><td>Extended memory for large apps &mdash; unused by uOS</td><td><span class="pill crit">unused</span></td></tr>
+</table>
+</div>
+
+<p><strong>Hardware facts already learned the hard way</strong> (they shape the plan):
+  with the REU <em>enabled</em>, stock GEOS&nbsp;2.0's input driver never initializes at all;
+  uOS runs fine with it. The U2+'s DMA path cannot read the VDC screen. And every VDC
+  experiment must respect the 8563's ready-bit handshake.</p>
+
+<!-- ============ 3. gap matrix ============ -->
+<h2 id="gaps"><span class="sec">03</span>Gap matrix &mdash; current fork vs. "best C128 OS"</h2>
+
+<div class="tbl">
+<table>
+  <tr><th>Layer</th><th>Have</th><th>Gap</th><th>Rank</th></tr>
+  <tr><td>Display</td><td>40-col bitmap, one hires plane</td><td>VDC 80-col driver; dual-screen compositor; 40/80 switch; 2&nbsp;MHz for redraws</td><td><span class="pill crit">P0</span></td></tr>
+  <tr><td>Input</td><td>1351 mouse (noisy), one button</td><td>Keyboard driver + input queue; right-button/middle; joystick driver; pointer acceleration &amp; jitter filter</td><td><span class="pill crit">P0</span></td></tr>
+  <tr><td>Kernel services</td><td>LOADER apps, control-buffer hit-test, REU screen/app swap</td><td>App lifecycle (close/back), persistent settings, FILLFILE-based loader with directory scanning, process model</td><td><span class="pill crit">P1</span></td></tr>
+  <tr><td>Desktop</td><td>Launcher, Settings, quit, clock</td><td>File manager, editor, terminal, calculator, dialogs, trash semantics</td><td><span class="pill crit">P1</span></td></tr>
+  <tr><td>Filesystem</td><td>Kernal <code>LOAD</code> only</td><td>Directory read, save, scratch, copy&mdash;via kernal serial; later 1581 native-mode</td><td><span class="pill crit">P1</span></td></tr>
+  <tr><td>Shell</td><td>&mdash;</td><td>Command line with a real parser &mdash; the "power user" layer</td><td><span class="pill crit">P2</span></td></tr>
+  <tr><td>U2+ integration</td><td>REU used by the kernel</td><td>u2+ control bridge (REST via serial), disk-image mounting from the desktop, RAM-disk devices</td><td><span class="pill info">P2</span></td></tr>
+  <tr><td>Distribution</td><td>Fork on GitHub, signed, buildable on Linux</td><td>Upstream PR path, release D64s per tag</td><td><span class="pill info">P3</span></td></tr>
+</table>
+</div>
+
+<!-- ============ 4. gates ============ -->
+<h2 id="gate"><span class="sec">04</span>Hardware gates &mdash; decide before you build</h2>
+<p>Each gate is a small, cheap experiment on the real machine that de-risks an entire
+milestone. No code ships above a gate that hasn't closed.</p>
+
+<div class="card gate">
+  <div class="head">Gate G1 &middot; VDC access from user code &mdash; blocks all 80-col work</div>
+  <p>Status: <strong>open</strong>. Register reads at <code>$D600/$D601</code> through direct pokes return
+  $00/garbage both in VICE x128 and on the real hardware (probed across register dumps, with and
+  without ready-handshake, at 40- and 80-col boot) &mdash; while the kernal's own 80-col console works.
+  Hypothesis: the kernal reaches the 8563 through its banked-I/O or MMU I/O-page configuration
+  rather than plain I/O-mode pokes, or a register-select subtlety.</p>
+  <ul>
+    <li>Pattern-match the kernal ROM (<code>/usr/share/vice/C128/*.bin</code>) for <code>AD 00 D6</code> / <code>8D 01 D6</code> sequences to find the kernal's own 8563 read/write routines and their exact calling convention.</li>
+    <li>Prove a user routine that uses those ROM entry points (or copies their recipe) touches VDC RAM and reads it back.</li>
+    <li>Deliverable: <code>vdcdetect.prg</code> prints <code>REG18 OK</code> on the real 80-col screen.</li>
+  </ul>
+  <p style="margin-top:8px"><strong>Consequence if closed in C64 mode:</strong> dual-display works the cheap way.
+  <strong>If C64-mode VDC access proves impossible:</strong> the OS needs a C128-mode kernel
+  (G6) &mdash; a much larger architectural change; that's why this gates first.</p>
+</div>
+
+<div class="card gate">
+  <div class="head">Gate G2 &middot; Keyboard IRQ without breaking the mouse</div>
+  <p>The main loop is a busy-wait on <code>$DC01</code> bit&nbsp;4. A keyboard path must share the
+  CIA1 keyboard-matrix scan with the joystick line reads (the two conflict electrically &mdash;
+  this is the same reason GEOS 2.0's keyboard input is quirky). Approach: scan the keyboard
+  in the existing INIT_MOUSE interrupt when a key changes state, push decoded events into a
+  ring buffer, and have apps read the queue. Acceptance: typed characters reach an app while
+  the pointer keeps tracking, with no CIA scan glitches visible on screen.</p>
+</div>
+
+<div class="card gate">
+  <div class="head">Gate G3 &middot; VDC 640&times;200 text+bitmap mode bring-up</div>
+  <p>8563 init (registers 0&ndash;11), clear-screen at VDC RAM $0000, character-set upload
+  (8&times;8 font from the chargen ROM or a custom one), fast cursor positioning. Two possible
+  render strategies: <strong>character mode</strong> (cheap: draw with a PETSCII-like set in
+  RAM &mdash; ideal for the file manager and terminal, a text-mode desktop like C64&nbsp;OS's) vs
+  <strong>bitmap mode</strong> (full 640&times;200 graphics &mdash; matches the VIC desktop's feel, 6&times; the
+  RAM traffic). Character mode is the pragmatic v1; the same module exposes bitmap later.</p>
+</div>
+
+<!-- ============ 5. roadmap ============ -->
+<h2 id="m"><span class="sec">05</span>The build-out, milestone by milestone</h2>
+<p>Sequence is deliberate: each milestone ships something usable on the physical machine, and
+nothing later depends on an unverified assumption.</p>
+
+<div class="milestone">
+  <span class="id">M0 &middot; done</span>
+  <h3>Fork &amp; platform</h3>
+  <span class="status"><span class="pill ok">complete</span></span>
+  <ul>
+    <li>Linux build with byte-identical rebuild proof</li>
+    <li>Real Applications launcher (live disk scan, filtered, clickable)</li>
+    <li>Core <code>FILLFILE</code> dynamic-loading export (<code>$0829</code>)</li>
+    <li>Fork at marc-shade/uos-master, signed commits, upstream tracked</li>
+  </ul>
+  <p class="accept"><b>Acceptance met:</b> launcher lists real apps on hardware and launches them.</p>
+</div>
+
+<div class="milestone">
+  <span class="id">M1</span>
+  <span class="status"><span class="pill crit">next</span></span>
+  <h3>80 columns &amp; the second screen</h3>
+  <ul>
+    <li>Close G1 (VDC access) &rarr; <code>uos-vdc</code> module: init, clear, character-set upload</li>
+    <li>VDC text output API (<code>VPutS</code>, <code>VClrRect</code>, scroll) mirroring the existing VIC macro set</li>
+    <li><strong>Single-monitor switch:</strong> boot-time display selection from settings &mdash; <code>40</code>, <code>80</code>, <code>both</code> (VIC keeps rendering its plane regardless; "switch" = which gets the desktop)</li>
+    <li><strong>Dual-monitor mode:</strong> VIC stays the desktop; VDC mirrors the window layer as its own 80-col surface (menus + windows rendered twice, once per screen) &mdash; the C128's two chips make this genuinely cheap: no re-render arbitration, both displays refresh independently</li>
+    <li>Landing zone: the uOS boot banner prints on <em>both</em> screens, then the desktop draws on the configured one(s)</li>
+  </ul>
+  <p class="accept"><b>Acceptance:</b> with both monitors connected the desktop shows on each at its native resolution; with one monitor, a boot-time/settings switch moves it &mdash; verified on hardware at both defaults.</p>
+</div>
+
+<div class="milestone">
+  <span class="id">M2</span>
+  <span class="status"><span class="pill info">after M1</span></span>
+  <h3>Input, properly</h3>
+  <ul>
+    <li>Close G2 &rarr; keyboard event queue; apps read it</li>
+    <li>Pointer jitter filter (pot-sampling smoothing; Tom+ mode doc)</li>
+    <li>Joystick-in-port-1 as fallback pointer driver</li>
+    <li>Window Close/X semantics: route <code>ON_CLOSE</code> from title-bar clicks (currently dead code)</li>
+  </ul>
+  <p class="accept"><b>Acceptance:</b> type into a dialog while the mouse keeps tracking; every window closes.</p>
+</div>
+
+<div class="milestone">
+  <span class="id">M3</span>
+  <span class="status"><span class="pill info">the workhorse</span></span>
+  <h3>Real applications</h3>
+  <ul>
+    <li><strong>File manager:</strong> directory browser over kernal serial, scroll list, file info panel, SCRATCH, copy between drive A/B; the existing FILLFILE path launches <code>uos-*</code> apps from it</li>
+    <li><strong>Settings:</strong> persists to the system disk (display mode, input driver, drive); adds the missing <em>back to desktop</em> path so apps are no longer dead-ends</li>
+    <li><strong>Trash:</strong> real delete-confirm semantics with the file manager</li>
+  </ul>
+  <p class="accept"><b>Acceptance:</b> rename a file, launch an app from the file manager, change a setting, hard-reset, settings survive.</p>
+</div>
+
+<div class="milestone">
+  <span class="id">M4</span>
+  <span class="status"><span class="pill info">differentiator</span></span>
+  <h3>Ultimate II+ integration</h3>
+  <ul>
+    <li>REU memory manager: 16&nbsp;MB as banked RAM + native-mode RAM disks (uOS already owns bank&nbsp;0&ndash;2 stashing; give apps an API)</li>
+    <li>2&nbsp;MHz FAST-mode regions for redraw-heavy paths (screen copies shrink ~2&times;)</li>
+    <li>U2+ REST bridge: a resident serial listener so the desktop can swap the drive-A disk image, reload fonts, snapshot screens &mdash; no other C128 OS even conceives of this; the fork's signature feature</li>
+  </ul>
+  <p class="accept"><b>Acceptance:</b> swap drive images from the desktop, see the change on the U2+'s own UI.</p>
+</div>
+
+<div class="milestone">
+  <span class="id">M5</span>
+  <span class="status"><span class="pill info">power layer</span></span>
+  <h3>Command line &amp; shell</h3>
+  <ul>
+    <li>Command-line app: line editor in a window, command table (<code>DIR</code>, <code>CAT</code>, <code>RUN</code>, <code>SYS</code>, <code>COPY</code>, <code>DEL</code>, <code>CD</code>), redirection into the file manager's display</li>
+    <li>Later: extend toward geoSHELL-style scripting</li>
+  </ul>
+  <p class="accept"><b>Acceptance:</b> a full workflow &mdash; boot, list, load, run, edit a setting &mdash; completes without touching the mouse.</p>
+</div>
+
+<div class="milestone">
+  <span class="id">M6</span>
+  <span class="status"><span class="pill info">later</span></span>
+  <h3>Landscape &amp; polish</h3>
+  <ul>
+    <li>Backdrops/desk patterns (reusing the REU banks), screen savers</li>
+    <li>App SDK docs: the widget macro set + FILLFILE/app conventions as a programmer's guide</li>
+    <li>Release discipline: versioned D64 per tag, changelog, upstream PR</li>
+  </ul>
+</div>
+
+<!-- ============ 6. decisions ============ -->
+<h2 id="d"><span class="sec">06</span>Open decisions to record</h2>
+
+<div class="grid2">
+  <div class="card">
+    <div class="head">C64 mode vs C128 mode</div>
+    <p>uOS boots in C64 mode (that's why the VDC question exists &mdash; Gate G1). If G1 fails in C64 mode,
+    a C128-mode kernel gets the VDC and 2&nbsp;MHz for free but inherits MMU-kernal complexity. The
+    launcher, file manager and most of M2&ndash;M3 work either way.</p>
+  </div>
+  <div class="card">
+    <div class="head">VDC: character or bitmap first</div>
+    <p>Character mode is 10&times; cheaper to move pixels in and matches C64 OS's text-mode bet;
+    bitmap makes the 80-col desktop a first-class twin. Recommend: character-mode desktop on the
+    VDC in M1, bitmap upgrade scoped for M4&plusmn;.</p>
+  </div>
+  <div class="card">
+    <div class="head">Pointer jitter</div>
+    <p>Root causes ranked: Tom+ host-mode switch &rarr; U2+ REU bus stealing pot-sampling cycles &rarr;
+    WIP driver sampling. Fix order: document the mode switch, add smoothing in the driver, then
+    measure bus-time under REU traffic.</p>
+  </div>
+  <div class="card">
+    <div class="head">Where GEOS/MegaPatch fits</div>
+    <p>MegaPatch 3.3 r12 sits staged on drive B (install pending). It is the *complete* GEOS-family
+    system and a working reference implementation &mdash; keep it installed as the comparison baseline,
+    not as the fork's competitor.</p>
+  </div>
+</div>
+
+<footer class="wrap">
+  Everything above marked <span class="pill ok">verified</span> was run on the physical machine
+  between 2026-08-30 07:30&ndash;15:00 EDT. Machine state at freeze: uOS fork v0.2 live on drive A,
+  REU 512&nbsp;K, MegaPatch D81 staged on drive B, GEOS 2.0 recoverable in one command.
+</footer>
+
+</body>
