@@ -41,6 +41,9 @@
     #DrawImage 152, 95, 24, 44, img_drives
     #Text 152,120, btn_drives
 
+    #CreateButton 1,2,<ON_BACK, >ON_BACK,184,95,184+24,88+44,false
+    #Text 188,120, btn_back
+
     jmp MAINLOOP
 
 title:  .text "Settings", $00
@@ -52,14 +55,26 @@ btn_colors:
         .text "colors", $00
 btn_drives:
         .text "drives", $00
+btn_back:
+        .text "back", $00
 
 .include "icons_settings.inc"
 
 ON_CLOSE:
     #UnregisterApp
-    #CloseWindow 0,72,64,143,96 
-    #RemoveButton 1,0
-    jmp MAINLOOP
+    jmp fmb_exittodsk
+
+fmb_exittodsk:                  ; reload the desktop app and re-enter it
+    #UnregisterApp
+    jsr LOAD_IMM
+    .text "uos-desktop",$00
+    jsr APP_LOADER
+    jmp DESK_START
+
+; Back button on the settings window = same exit path
+ON_BACK:
+    #UnregisterApp
+    jmp fmb_exittodsk
 
 ON_TIME:  
     #RemoveButton 1,0
