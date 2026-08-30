@@ -533,13 +533,11 @@ apps_count:     .byte $00
 ;--------------------------------------------------------------------------
 MENU_FILEMGR = *
         jsr closemenu
-        #DrawRect 100,70,119,70,1
-        #Text 112, 80, dlg_fileman
 
-        #CreateButton 0,1,<WIN_OK, >WIN_OK,180,120,210,130,true
-        #Text 189, 122, ok
-
-        jmp MAINLOOP
+        jsr LOAD_IMM
+        .text "uos-fmgr",$00
+        jsr APP_LOADER
+        jmp APP_START
 
 MENU_SETTINGS = *
         jsr closemenu
