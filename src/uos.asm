@@ -45,6 +45,7 @@
         jmp CLEAR_RECT
         jmp LOADIMM
         jmp LOADER
+        jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
 
 ; ==========================================================
 ; START
@@ -348,6 +349,31 @@ _error
 
 ftmp:   .byte $00
 file:   .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+; ==========================================================
+; Fill File Buffer
+; r0 = pointer to a $00-terminated filename
+; Copies it into the LOADER filename buffer (file) and
+; sets ftmp to its length, so a subsequent jsr APP_LOADER
+; loads that file (LOAD"file",8,1 semantics).
+; ==========================================================
+FILLFILE_RT:
+        ldy #$00
+        ldx #$00
+_ffloop:
+        lda (r0),y
+        beq _ffdone
+        sta file,x
+        inx
+        iny
+        cpx #$10                ; 1541 filenames cap at 16 chars
+        bne _ffloop
+_ffdone:
+        txa
+        sta ftmp
+        lda #$00
+        sta file,x
+        rts
 
 ; ==========================================================
 ; Load Immediate

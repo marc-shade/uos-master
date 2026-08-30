@@ -155,23 +155,385 @@ _done:
         rts
 
 WIN_OK = *
-        #FetchScreen 
+        #FetchScreen
         #RemoveButton 0,1
         jmp MAINLOOP
 
+;==========================================================================
+; Applications launcher
+;
+; Reads the drive directory live, lists every "uos-*" app found on the
+; system disk (up to APPS_MAX rows), each row clickable.  Rows launch via
+; the core FILLFILE + APP_LOADER path, so any app dropped on the disk
+; shows up without touching this code.
+;
+; Coordinates are 320x200 bitmap; rows are unrolled (6 fixed trampolines)
+; because callbacks carry no context.
+;==========================================================================
+APPS_MAX        := 6
+APPS_X          := 70
+APPS_Y          := 60
+APPS_W          := 180
+APPS_ROW_H      := 14
+
+apps_title:     .text "Applications", $00
+noapps:         .text "no apps found on disk", $00
+
 MENU_APPS = *
         jsr closemenu
-        #DrawRect 100,70,119,70,1       
-        #Text 112, 80, dlg_apps
 
-        #CreateButton 0,1,<WIN_OK, >WIN_OK,180,120,210,130,true
-        #Text 189, 122, ok
+        #CreateWindow 1,APPS_X,APPS_Y,APPS_X+APPS_W,APPS_Y+92,true,apps_title
 
+        jsr dir_scan_apps
+
+        lda apps_count
+        bne _populate
+
+        #Text APPS_X+6, APPS_Y+10, noapps
+        jmp _apps_ok
+
+_populate:
+        ; draw rows at runtime via GPUTS: r9 = string, X1 = x word, Y1 = y
+        jsr draw_rows
+
+        ldx apps_count
+        cpx #$01
+        bcc _r1skip
+        jmp _apps_ok
+_r1skip:
+        #CreateButton 0,20,<APPS_LAUNCH_1, >APPS_LAUNCH_1, APPS_X+2, APPS_Y+6, APPS_X+APPS_W-4, APPS_Y+6+APPS_ROW_H, false
+        cpx #$02
+        bcs _r2
+        jmp _apps_ok
+_r2:
+        #CreateButton 0,21,<APPS_LAUNCH_2, >APPS_LAUNCH_2, APPS_X+2, APPS_Y+6+APPS_ROW_H, APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*2), false
+        cpx #$03
+        bcs _r3
+        jmp _apps_ok
+_r3:
+        #CreateButton 0,22,<APPS_LAUNCH_3, >APPS_LAUNCH_3, APPS_X+2, APPS_Y+6+(APPS_ROW_H*2), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*3), false
+        cpx #$04
+        bcs _r4
+        jmp _apps_ok
+_r4:
+        #CreateButton 0,23,<APPS_LAUNCH_4, >APPS_LAUNCH_4, APPS_X+2, APPS_Y+6+(APPS_ROW_H*3), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*4), false
+        cpx #$05
+        bcs _r5
+        jmp _apps_ok
+_r5:
+        #CreateButton 0,24,<APPS_LAUNCH_5, >APPS_LAUNCH_5, APPS_X+2, APPS_Y+6+(APPS_ROW_H*4), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*5), false
+        cpx #$06
+        bcs _r6
+        jmp _apps_ok
+_r6:
+        #CreateButton 0,25,<APPS_LAUNCH_6, >APPS_LAUNCH_6, APPS_X+2, APPS_Y+6+(APPS_ROW_H*5), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*6), false
+
+_apps_ok:
+        #CreateButton 0,29,<APPS_CANCEL, >APPS_CANCEL, APPS_X+APPS_W-38, APPS_Y+80, APPS_X+APPS_W-8, APPS_Y+88, true
+        #Text APPS_X+APPS_W-34, APPS_Y+81, cancel
         jmp MAINLOOP
 
+; draws up to apps_count rows with GPUTS
+draw_rows:
+        lda apps_count
+        beq _drdone
+        cmp #APPS_MAX
+        bcc _drlim
+        lda #APPS_MAX
+_drlim:
+        sta rows_drawn
+        ldx #$00
+        jsr _drrow
+_drl:
+        inx
+        cpx rows_drawn
+        bcc _drrow
+_drdone:
+        rts
+_drrow:
+        ; r0 = row buffer address (rowadd tables), r9 = same (GPUTS ptr)
+        lda rowadd_lo,x
+        sta r0L
+        sta r9L
+        lda rowadd_hi,x
+        sta r0H
+        sta r9H
+        ; X1 = APPS_X+6 word; Y1 = APPS_Y+10 + row*APPS_ROW_H
+        lda #<APPS_X+6
+        sta X1
+        lda #>APPS_X+6
+        sta X1+1
+        lda #APPS_Y+10
+        sta Y1
+        txa                     ; row index -> y offset row*14
+        asl
+        sta vartmp1             ; 2*row
+        asl
+        sta vartmp2             ; 4*row
+        asl
+        sta vartmp3             ; 8*row
+        lda vartmp1
+        clc
+        adc vartmp2             ; 6*row
+        adc vartmp3             ; 14*row
+        clc
+        adc Y1
+        sta Y1
+        jsr GPUTS
+        rts
+rows_drawn:
+        .byte $00
+vartmp1: .byte $00
+vartmp2: .byte $00
+vartmp3: .byte $00
+APPS_LAUNCH_1:
+        lda #<row1
+        jmp apps_launch
+APPS_LAUNCH_2:
+        lda #<row2
+        jmp apps_launch
+APPS_LAUNCH_3:
+        lda #<row3
+        jmp apps_launch
+APPS_LAUNCH_4:
+        lda #<row4
+        jmp apps_launch
+APPS_LAUNCH_5:
+        lda #<row5
+        jmp apps_launch
+APPS_LAUNCH_6:
+        lda #<row6
+        jmp apps_launch
+
+apps_launch:
+        sta r0L
+        lda #>row1
+        sta r0H
+        jsr FILLFILE
+        jsr APP_LOADER
+        jmp APP_START
+
+APPS_CANCEL:
+        #FetchScreen
+        ; remove every launcher button (ids 20-29); RemoveButton is a no-op
+        ; for ids that were never created (rows beyond apps_count)
+        #RemoveButton 0,29
+        #RemoveButton 0,28
+        #RemoveButton 0,27
+        #RemoveButton 0,26
+        #RemoveButton 0,25
+        #RemoveButton 0,24
+        #RemoveButton 0,23
+        #RemoveButton 0,22
+        #RemoveButton 0,21
+        #RemoveButton 0,20
+        jmp MAINLOOP
+
+;--------------------------------------------------------------------------
+; dir_scan_apps: OPEN 5,8,0,"$"; walk the 1541 directory stream; any prg
+; whose name starts with "uos-" is copied into the next free row buffer.
+; Uses kernal serial file ops; leaves apps_count/apps rows filled.
+;--------------------------------------------------------------------------
+dirname:        .text "$"
+dirnamesz       := 1
+uospref:        .text "uos-"
+
+; components that must never appear in the launcher (loading them over
+; the running system would crash it)
+SYSCOMPS_N      := 5
+syscomps:
+        .text "uos", $00
+        .text "uos-gfx", $00
+        .text "uos-drv1351", $00
+        .text "uos-sprites", $00
+        .text "uos-reu", $00
+
+row1:   .byte $00
+row2:   .byte $00
+row3:   .byte $00
+row4:   .byte $00
+row5:   .byte $00
+row6:   .byte $00
+
+ftmpname:       .byte $00,$00,$00,$00,$00,$00,$00,$00
+                .byte $00,$00,$00,$00,$00,$00,$00,$00
+
+dir_scan_apps:
+        ; clear rows and counters
+        ldx #$00
+        lda #$00
+_dzero:
+        sta row1,x
+        sta row2,x
+        sta row3,x
+        sta row4,x
+        sta row5,x
+        sta row6,x
+        inx
+        cpx #$11
+        bne _dzero
+        lda #$00
+        sta apps_count
+
+        lda #$05
+        ldx #$08
+        ldy #$00                ; secondary address 0 = read directory as file
+        jsr $FFBA               ; SETLFS 5,8,0
+        lda #dirnamesz
+        ldx #<dirname
+        ldy #>dirname
+        jsr $FFBD               ; SETNAM "$"
+        jsr $FFC0               ; OPEN
+        bcc _dopenok
+        rts                     ; device not present -> leave list empty
+
+_dopenok:
+        ldx #$05
+        jsr $FFC6               ; CHKIN 5
+
+        jsr $FFCF               ; skip 2-byte start-of-chain pointer
+        jsr $FFCF
+
+_dentry:
+        jsr $FFCF               ; type byte of dir entry
+        jsr $FFB7               ; READST
+        and #$40                ; EOI?
+        bne _dend
+
+        jsr $FFCF               ; skip t/s bytes of data block
+        jsr $FFCF
+
+        ldy #$00                ; read the 16-byte PETSCII name
+_dname:
+        jsr $FFCF
+        sta ftmpname,y
+        iny
+        cpy #$10
+        bne _dname
+
+        jsr $FFCF               ; blocks used (lo/hi) - skip
+        jsr $FFCF
+
+        ; terminate name at first padding byte ($a0)
+        ldy #$00
+_dterm:
+        lda ftmpname,y
+        cmp #$a0
+        bne _dnextc
+        lda #$00
+        sta ftmpname,y
+_dnextc:
+        iny
+        cpy #$10
+        bne _dterm
+
+        jsr is_uos_app
+        bcc _dentry
+
+        jsr apps_add            ; copy ftmpname into next free row
+        jmp _dentry
+
+_dend:
+        lda #$0f
+        jsr $FFCC               ; CLRCHN
+        lda #$05
+        jsr $FFC3               ; CLOSE 5
+        rts
+
+; does ftmpname start with "uos-" AND is it not a system component?
+is_uos_app:
+        ldy #$00
+_iul:
+        lda ftmpname,y
+        cmp uospref,y
+        bne _iuno
+        iny
+        cpy #$04
+        bne _iul
+
+        ; prefix matches; reject the boot + driver components
+        ldx #$00
+_iucmp:
+        lda #<syscomps
+        sta r0L
+        lda #>syscomps
+        sta r0H
+        jsr cmp_sys_entry
+        bcc _iunext2
+        clc
+        rts                     ; it IS a system component -> hide
+_iunext2:
+        inx
+        cpx #SYSCOMPS_N
+        bne _iucmp
+        sec
+        rts
+_iuno:
+        clc
+        rts
+
+; compare ftmpname with the r0-pointed syscomp name ($00-terminated)
+cmp_sys_entry:
+        ldy #$00
+_csl:
+        lda ftmpname,y
+        beq _csmatch            ; ftmpname ended exactly -> equal
+        cmp (r0),y
+        bne _csno
+        iny
+        cpy #$11
+        bne _csl
+        clc
+        rts
+_csmatch:
+        lda (r0),y
+        beq _csyes              ; both terminated -> equal
+_csno:
+        clc
+        rts
+_csyes:
+        sec
+        rts
+
+; copy ftmpname into the next free row buffer
+apps_add:
+        ldx apps_count
+        cpx #APPS_MAX
+        bcs _aafull
+        lda rowadd_lo,x
+        sta r0L
+        lda rowadd_hi,x
+        sta r0H
+        ldy #$00
+_aacp:
+        lda ftmpname,y
+        beq _aazer
+        sta (r0),y
+        iny
+        cpy #$11
+        bne _aacp
+_aazer:
+        lda #$00
+        sta (r0),y
+        inc apps_count
+_aafull:
+        rts
+
+rowadd_lo:      .byte <row1, <row2, <row3, <row4, <row5, <row6
+rowadd_hi:      .byte >row1, >row2, >row3, >row4, >row5, >row6
+
+apps_count:     .byte $00
+
+;--------------------------------------------------------------------------
+; Applications launcher
+; Reads the drive directory live and lists every "uos-*" app found on
+; the disk (up to APPS_MAX), each clickable.  Clicking one loads it the
+; same way MENU_SETTINGS does, so any app the author drops on the disk
+; shows up without touching this code.
+;--------------------------------------------------------------------------
 MENU_FILEMGR = *
         jsr closemenu
-        #DrawRect 100,70,119,70,1       
+        #DrawRect 100,70,119,70,1
         #Text 112, 80, dlg_fileman
 
         #CreateButton 0,1,<WIN_OK, >WIN_OK,180,120,210,130,true
@@ -181,7 +543,7 @@ MENU_FILEMGR = *
 
 MENU_SETTINGS = *
         jsr closemenu
-        
+
         jsr LOAD_IMM
         .text "uos-settings",$00
         jsr APP_LOADER

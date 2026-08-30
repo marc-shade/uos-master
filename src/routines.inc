@@ -29,6 +29,7 @@ FS_RECT         = $081d
 CLR_RECT        = $0820
 LOAD_IMM        = $0823
 APP_LOADER      = $0826
+FILLFILE        = $0829
 
 DESK_START      = $1000
 DESK_END        = $2fff
