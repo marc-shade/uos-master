@@ -813,7 +813,9 @@ _stash:
 ; VDSETUP — init the 80-column display: clear, banner, clock
 ; ==========================================================
 VDSETUP:
-        ; (VDC_CLS disabled — bisecting 'error near $2020')
+        jsr VDC_INIT
+        jsr VDC_FONTUP
+        jsr VDC_CLS
         lda #<vdcline1
         sta vdcbpL
         lda #>vdcline1

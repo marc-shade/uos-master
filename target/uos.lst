@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos.prg -L target/uos.lst src/uos.asm
-; Sun Aug 30 15:55:38 2026
+; Sun Aug 30 16:27:43 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -116,10 +116,12 @@
 =$cc31					VDC_PUTS        = $cc31
 =$cc7b					VDC_PUTCHR      = $cc7b
 =$cc88					VDC_CLS         = $cc88
-=$fb					vdcbpL          = $fb
-=$fc					vdcbpH          = $fc
-=$fd					vdcdpL          = $fd
-=$fe					vdcdpH          = $fe
+=$cce4					VDC_FONTUP      = $cce4
+=$cd1b					VDC_INIT        = $cd1b
+=$23					vdcbpL          = $23
+=$24					vdcbpH          = $24
+=$25					vdcdpL          = $25
+=$26					vdcdpH          = $26
 =$1000					DESK_START      = $1000
 =$2fff					DESK_END        = $2fff
 =$5000					APP_START       = $5000
@@ -1125,31 +1127,34 @@
 .0ed9	20 03 9c	jsr $9c03	        jsr REU_STASH
 .0edc	60		rts		        rts
 .0edd					VDSETUP:
-.0edd	a9 04		lda #$04	        lda #<vdcline1
-.0edf	85 fb		sta $fb		        sta vdcbpL
-.0ee1	a9 0f		lda #$0f	        lda #>vdcline1
-.0ee3	85 fc		sta $fc		        sta vdcbpH
-.0ee5	a9 00		lda #$00	        lda #0
-.0ee7	85 fd		sta $fd		        sta vdcdpL
-.0ee9	a9 00		lda #$00	        lda #0
-.0eeb	85 fe		sta $fe		        sta vdcdpH
-.0eed	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0ef0	a9 1c		lda #$1c	        lda #<vdcline2
-.0ef2	85 fb		sta $fb		        sta vdcbpL
-.0ef4	a9 0f		lda #$0f	        lda #>vdcline2
-.0ef6	85 fc		sta $fc		        sta vdcbpH
-.0ef8	a9 50		lda #$50	        lda #80             ; row 1 start cell
-.0efa	85 fd		sta $fd		        sta vdcdpL
-.0efc	a9 00		lda #$00	        lda #0
-.0efe	85 fe		sta $fe		        sta vdcdpH
-.0f00	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0f03	60		rts		        rts
->0f04	d5 4c 54 cf d3 20 38 30		vdcline1: .text "UltOS 80-column display", $00
->0f0c	2d 43 4f 4c 55 4d 4e 20 44 49 53 50 4c 41 59 00
->0f1c	53 45 43 4f 4e 44 20 44		vdcline2: .text "second display online", 0
->0f24	49 53 50 4c 41 59 20 4f 4e 4c 49 4e 45 00
-.0f32					VDCPUTROW:
-.0f32	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0f35	60		rts		        rts
+.0edd	20 1b cd	jsr $cd1b	        jsr VDC_INIT
+.0ee0	20 e4 cc	jsr $cce4	        jsr VDC_FONTUP
+.0ee3	20 88 cc	jsr $cc88	        jsr VDC_CLS
+.0ee6	a9 0d		lda #$0d	        lda #<vdcline1
+.0ee8	85 23		sta $23		        sta vdcbpL
+.0eea	a9 0f		lda #$0f	        lda #>vdcline1
+.0eec	85 24		sta $24		        sta vdcbpH
+.0eee	a9 00		lda #$00	        lda #0
+.0ef0	85 25		sta $25		        sta vdcdpL
+.0ef2	a9 00		lda #$00	        lda #0
+.0ef4	85 26		sta $26		        sta vdcdpH
+.0ef6	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0ef9	a9 25		lda #$25	        lda #<vdcline2
+.0efb	85 23		sta $23		        sta vdcbpL
+.0efd	a9 0f		lda #$0f	        lda #>vdcline2
+.0eff	85 24		sta $24		        sta vdcbpH
+.0f01	a9 50		lda #$50	        lda #80             ; row 1 start cell
+.0f03	85 25		sta $25		        sta vdcdpL
+.0f05	a9 00		lda #$00	        lda #0
+.0f07	85 26		sta $26		        sta vdcdpH
+.0f09	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0f0c	60		rts		        rts
+>0f0d	d5 4c 54 cf d3 20 38 30		vdcline1: .text "UltOS 80-column display", $00
+>0f15	2d 43 4f 4c 55 4d 4e 20 44 49 53 50 4c 41 59 00
+>0f25	53 45 43 4f 4e 44 20 44		vdcline2: .text "second display online", 0
+>0f2d	49 53 50 4c 41 59 20 4f 4e 4c 49 4e 45 00
+.0f3b					VDCPUTROW:
+.0f3b	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0f3e	60		rts		        rts
 
 ;******  End of listing

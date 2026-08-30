@@ -37,11 +37,13 @@ VDC_SEEK        = $cc14
 VDC_PUTS        = $cc31
 VDC_PUTCHR      = $cc7b
 VDC_CLS         = $cc88
+VDC_FONTUP      = $cce4
+VDC_INIT        = $cd1b
 ; uVDC caller pointers (zero page convention shared with driver)
-vdcbpL          = $fb
-vdcbpH          = $fc
-vdcdpL          = $fd
-vdcdpH          = $fe
+vdcbpL          = $23
+vdcbpH          = $24
+vdcdpL          = $25
+vdcdpH          = $26
 
 DESK_START      = $1000
 DESK_END        = $2fff
