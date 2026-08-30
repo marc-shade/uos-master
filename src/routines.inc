@@ -30,6 +30,18 @@ CLR_RECT        = $0820
 LOAD_IMM        = $0823
 APP_LOADER      = $0826
 FILLFILE        = $0829
+; uVDC second-display driver (origin $cc00)
+VDC_GETREG      = $cc00
+VDC_SETREG      = $cc07
+VDC_SEEK        = $cc14
+VDC_PUTS        = $cc31
+VDC_PUTCHR      = $cc7b
+VDC_CLS         = $cc88
+; uVDC caller pointers (zero page convention shared with driver)
+vdcbpL          = $fb
+vdcbpH          = $fc
+vdcdpL          = $fd
+vdcdpH          = $fe
 
 DESK_START      = $1000
 DESK_END        = $2fff

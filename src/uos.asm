@@ -100,6 +100,10 @@ loadfiles:
         jsr LOADER
 
         JSR LOADIMM
+	    .text "uos-vdc",$00
+        jsr LOADER
+
+        JSR LOADIMM
 	    .text "uos-drv1351",$00
         jsr LOADER
 
@@ -177,6 +181,9 @@ setup:
 
         ; set up the mouse irq
         jsr INIT_MOUSE
+
+        ; second display (8563 VDC): clear + banner + clock slot
+        ; jsr VDSETUP   (bisect B: disabled)
 
         ; start the application
         jsr DESK_START
@@ -801,3 +808,36 @@ _stash:
         rts
 
         
+
+; ==========================================================
+; VDSETUP — init the 80-column display: clear, banner, clock
+; ==========================================================
+VDSETUP:
+        ; (VDC_CLS disabled — bisecting 'error near $2020')
+        lda #<vdcline1
+        sta vdcbpL
+        lda #>vdcline1
+        sta vdcbpH
+        lda #0
+        sta vdcdpL
+        lda #0
+        sta vdcdpH
+        jsr VDC_PUTS
+        lda #<vdcline2
+        sta vdcbpL
+        lda #>vdcline2
+        sta vdcbpH
+        lda #80             ; row 1 start cell
+        sta vdcdpL
+        lda #0
+        sta vdcdpH
+        jsr VDC_PUTS
+        rts
+
+vdcline1: .text "UltOS 80-column display", $00
+vdcline2: .text "second display online", 0
+
+; VDCPUTS: write PETSCII at (bp) to VDC row (dp word) — the desktop clock calls this
+VDCPUTROW:
+        jsr VDC_PUTS
+        rts
