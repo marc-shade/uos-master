@@ -18,6 +18,7 @@ DLOADAPP        = $0826
 SCR             = $0400
 LIST_MAX        := 12
 COL_X           := 30
+CUR_X           := 22
 TOP_Y           := 26
 ROW_PX          := 12
 
@@ -33,7 +34,7 @@ rowi            = $42
         ; title text
         lda #24
         sta X1
-        lda #$01
+        lda #$00                        ; x word high byte (COL_X < 256)
         sta X1+1
         lda #14
         sta Y1
@@ -51,6 +52,10 @@ rowi            = $42
 
         lda #(TOP_Y+12*ROW_PX)          ; below the list rows
         sta Y1
+        lda #COL_X
+        sta X1
+        lda #$00
+        sta X1+1
         lda #<msgopen
         sta r9L
         lda #>msgopen
@@ -128,13 +133,27 @@ pr_l:
         sta r9H
         lda #COL_X
         sta X1
-        lda #$01
+        lda #$00                        ; x word high byte (COL_X < 256)
         sta X1+1
         lda #TOP_Y
         sta Y1
         lda rowi
         jsr addrowy                     ; Y1 += row*ROW_PX
         jsr GPUTS
+        ; cursor marker at the row the selector points to
+        lda rowi
+        cmp fmrow
+        beq pr_cur
+        lda #$20                        ; space erases a stale marker
+        jmp pr_mark
+pr_cur: lda #$3e                        ; '>'
+pr_mark:sta vtmp2
+        lda #CUR_X
+        sta X1
+        lda #$00
+        sta X1+1
+        lda vtmp2
+        jsr GPUTC
         inc rowi
         lda rowi
         cmp fmcnt
@@ -229,8 +248,10 @@ ds_nz:  iny
 ds_cp:  lda fnbuf,y
         sta (r0),y
         iny
-        cpy #$11
+        cpy #$10
         bne ds_cp
+        lda #$00                        ; explicit terminator (16-char names
+        sta (r0),y                      ; carry no $a0 padding to stop on)
         inc fmcnt
         jmp ds_ent
 ds_end:

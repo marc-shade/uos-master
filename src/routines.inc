@@ -41,6 +41,7 @@ VDC_PUTCHR      = $cc7b
 VDC_CLS         = $cc88
 VDC_FONTUP      = $cce4
 VDC_INIT        = $cd1b
+VDC_PRESENT     = $cd56
 ; uVDC caller pointers (zero page convention shared with driver)
 vdcbpL          = $23
 vdcbpH          = $24

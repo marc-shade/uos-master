@@ -832,48 +832,21 @@ _stash:
 VDPREF:
         rts
 VDSETUP:
+        jsr VDC_PRESENT
+        cmp #$01
+        bne vds_no              ; no 8563 on this machine (C64 hosts):
+                                ; every driver wait would hang — skip
         jsr VDC_INIT
         jsr VDC_FONTUP
         jsr VDC_CLS
-        ; ---- diagnostic dump: read back VDC state into screen RAM ----
-        ; rows 9-10 of the 40-col screen: reg 0-7 values, then cells $0000-$0007
-        ldx #$00
-dgl1:   lda #0
-        sta $0400+320,x      ; row 8 blank
-        inx
-        cpx #80
-        bne dgl1
-        ldx #$00
-dreg:   lda #0
-        pha
-        lda dregs,x
-        sta $d600
-dgl2:   lda $d600
-        bpl dgl2
-        lda $d601
-        sta $0400+360,x      ; row 9: raw reg values
-        inx
-        cpx #$08
-        bne dreg
-        ; cells $0000-$0007 read back via r18/19 + r31
-        lda #$12
-        sta $d600
-        lda #$00
-        sta $d601
-        lda #$13
-        sta $d600
-        lda #$00
-        sta $d601
-        lda #$1f
-        sta $d600
-        ldx #$00
-dc0:    lda $d601
-        sta $0400+400,x      ; row 10: cell readback
-        inx
-        cpx #$08
-        bne dc0
-        ; freeze before continuing setup so the DMA catches it
-dvwait: jmp dvwait
+        jsr VD_BANNER
+        rts
+vds_no:
+        rts
+vdcline1: .text "UltOS 80-column display", $00
+vdcline2: .text "second display online", 0
+
+VD_BANNER:
         lda #<vdcline1
         sta vdcbpL
         lda #>vdcline1
@@ -893,10 +866,6 @@ dvwait: jmp dvwait
         sta vdcdpH
         jsr VDC_PUTS
         rts
-
-dregs:   .byte $00,$01,$02,$03,$12,$13,$1f,$28
-vdcline1: .text "UltOS 80-column display", $00
-vdcline2: .text "second display online", 0
 
 ; VDCPUTS: write PETSCII at (bp) to VDC row (dp word) — the desktop clock calls this
 VDCPUTROW:

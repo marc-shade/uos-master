@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-vdc.prg -L target/uos-vdc.lst src/uos-vdc.asm
-; Sun Aug 30 18:34:48 2026
+; Mon Aug 31 09:18:05 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -200,5 +200,34 @@
 >cd41	ff ff ff ff ff ff 78 e8		        .byte $ff,$ff,$ff,$ff,$ff,$ff,$78,$e8,$ff,$ff,$ff,$00,$ff,$f8,$ff,$ff
 >cd49	ff ff ff 00 ff f8 ff ff
 >cd51	ff ff 7d 64 ff			        .byte $ff,$ff,$7d,$64,$ff
+.cd56					VDC_PRESENT:
+.cd56	a9 00		lda #$00	        lda #$00
+.cd58	8d 8c cd	sta $cd8c	        sta vdcpr
+.cd5b	8d 8d cd	sta $cd8d	        sta vprb0               ; saw bit7 clear
+.cd5e	8d 8e cd	sta $cd8e	        sta vprb1               ; saw bit7 set
+.cd61	a2 00		ldx #$00	        ldx #$00                ; X counts 256 passes of 256 samples
+.cd63	a0 00		ldy #$00	vpr_l:  ldy #$00
+.cd65	ad 00 d6	lda $d600	vpr_s:  lda VDC_ADDR
+.cd68	10 06		bpl $cd70	        bpl vpr_zero
+.cd6a	ee 8e cd	inc $cd8e	        inc vprb1
+.cd6d	4c 73 cd	jmp $cd73	        jmp vpr_nx
+.cd70					vpr_zero:
+.cd70	ee 8d cd	inc $cd8d	        inc vprb0
+.cd73	c8		iny		vpr_nx: iny
+.cd74	d0 ef		bne $cd65	        bne vpr_s
+.cd76	e8		inx		        inx
+.cd77	d0 ea		bne $cd63	        bne vpr_l               ; 65536 samples total, then decide
+.cd79	ad 8d cd	lda $cd8d	        lda vprb0
+.cd7c	f0 0a		beq $cd88	        beq vpr_done
+.cd7e	ad 8e cd	lda $cd8e	        lda vprb1
+.cd81	f0 05		beq $cd88	        beq vpr_done
+.cd83	a9 01		lda #$01	        lda #$01
+.cd85	8d 8c cd	sta $cd8c	        sta vdcpr
+.cd88					vpr_done:
+.cd88	ad 8c cd	lda $cd8c	        lda vdcpr
+.cd8b	60		rts		        rts
+>cd8c	00				vdcpr:  .byte 0
+>cd8d	00				vprb0:  .byte 0
+>cd8e	00				vprb1:  .byte 0
 
 ;******  End of listing

@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-fmgr.prg -L target/uos-fmgr.lst src/uos-fmgr.asm
-; Sun Aug 30 18:48:19 2026
+; Mon Aug 31 09:04:27 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -120,6 +120,7 @@
 =$cc88					VDC_CLS         = $cc88
 =$cce4					VDC_FONTUP      = $cce4
 =$cd1b					VDC_INIT        = $cd1b
+=$cd56					VDC_PRESENT     = $cd56
 =$23					vdcbpL          = $23
 =$24					vdcbpH          = $24
 =$25					vdcdpL          = $25
@@ -291,6 +292,7 @@
 =$0400					SCR             = $0400
 =12					LIST_MAX        := 12
 =30					COL_X           := 30
+=22					CUR_X           := 22
 =26					TOP_Y           := 26
 =12					ROW_PX          := 12
 =$40					fmrow           = $40
@@ -524,218 +526,237 @@
 .51d1	20 15 c0	jsr $c015	        jsr GFX_LINE
 .51d4	a9 18		lda #$18	        lda #24
 .51d6	85 02		sta $02		        sta X1
-.51d8	a9 01		lda #$01	        lda #$01
+.51d8	a9 00		lda #$00	        lda #$00                        ; x word high byte (COL_X < 256)
 .51da	85 03		sta $03		        sta X1+1
 .51dc	a9 0e		lda #$0e	        lda #14
 .51de	85 04		sta $04		        sta Y1
-.51e0	a9 75		lda #$75	        lda #<fm_title
+.51e0	a9 7d		lda #$7d	        lda #<fm_title
 .51e2	85 14		sta $14		        sta r9L
 .51e4	a9 52		lda #$52	        lda #>fm_title
 .51e6	85 15		sta $15		        sta r9H
 .51e8	20 1e c0	jsr $c01e	        jsr GPUTS
-.51eb	20 b4 53	jsr $53b4	        jsr dirscan
+.51eb	20 da 53	jsr $53da	        jsr dirscan
 .51ee	a9 02		lda #$02	        lda #2                          ; paint from list row 2
 .51f0	85 04		sta $04		        sta Y1
-.51f2	20 85 52	jsr $5285	        jsr paintrows
+.51f2	20 8d 52	jsr $528d	        jsr paintrows
 .51f5	a9 aa		lda #$aa	        lda #(TOP_Y+12*ROW_PX)          ; below the list rows
 .51f7	85 04		sta $04		        sta Y1
-.51f9	a9 4d		lda #$4d	        lda #<msgopen
-.51fb	85 14		sta $14		        sta r9L
-.51fd	a9 54		lda #$54	        lda #>msgopen
-.51ff	85 15		sta $15		        sta r9H
-.5201	20 1e c0	jsr $c01e	        jsr GPUTS
-.5204	20 2c 08	jsr $082c	fmloop: jsr KEYIN
-.5207	c9 00		cmp #$00	        cmp #$00
-.5209	f0 f9		beq $5204	        beq fmloop
-.520b	c9 11		cmp #$11	        cmp #$11                        ; cursor down
-.520d	f0 0f		beq $521e	        beq fmdn
-.520f	c9 91		cmp #$91	        cmp #$91                        ; cursor up
-.5211	f0 1e		beq $5231	        beq fmup_
-.5213	c9 0d		cmp #$0d	        cmp #$0d                        ; RETURN
-.5215	f0 27		beq $523e	        beq fmopen
-.5217	c9 1b		cmp #$1b	        cmp #$1b                        ; ESC
-.5219	f0 3a		beq $5255	        beq fmescape
-.521b	4c 04 52	jmp $5204	        jmp fmloop
-.521e	a5 41		lda $41		fmdn:   lda fmcnt
-.5220	f0 e2		beq $5204	        beq fmloop
-.5222	a6 40		ldx $40		        ldx fmrow
-.5224	e4 41		cpx $41		        cpx fmcnt
-.5226	f0 dc		beq $5204	        beq fmloop
-.5228	e8		inx		        inx
-.5229	86 40		stx $40		        stx fmrow
-.522b	20 85 52	jsr $5285	        jsr paintrows
-.522e	4c 66 52	jmp $5266	        jmp fminput
-.5231					fmup_:
-.5231	a6 40		ldx $40		        ldx fmrow
-.5233	f0 cf		beq $5204	        beq fmloop
-.5235	ca		dex		        dex
-.5236	86 40		stx $40		        stx fmrow
-.5238	20 85 52	jsr $5285	        jsr paintrows
-.523b	4c 66 52	jmp $5266	        jmp fminput
-.523e					fmopen:
-.523e	a5 40		lda $40		        lda fmrow
-.5240	0a		asl a		        asl
-.5241	aa		tax		        tax
-.5242	bd d0 52	lda $52d0,x	        lda fmnamesL,x
-.5245	85 02		sta $02		        sta r0L
-.5247	bd dc 52	lda $52dc,x	        lda fmnamesH,x
-.524a	85 03		sta $03		        sta r0H
-.524c	20 29 08	jsr $0829	        jsr FILLFILE
-.524f	20 26 08	jsr $0826	        jsr DLOADAPP
-.5252	4c 00 50	jmp $5000	        jmp APP_START
-.5255					fmescape:
-.5255	a9 69		lda #$69	        lda #<dskstr
-.5257	85 02		sta $02		        sta r0L
-.5259	a9 52		lda #$52	        lda #>dskstr
-.525b	85 03		sta $03		        sta r0H
-.525d	20 29 08	jsr $0829	        jsr FILLFILE
-.5260	20 26 08	jsr $0826	        jsr DLOADAPP
-.5263	4c 00 10	jmp $1000	        jmp DESK_START
-.5266					fminput:
-.5266	4c 04 52	jmp $5204	        jmp fmloop
->5269	55 4f 53 2d 44 45 53 4b		dskstr: .text "uos-desktop", 0
->5271	54 4f 50 00
->5275	c6 49 4c 45 20 4d 41 4e		fm_title: .text "File manager", 0
->527d	41 47 45 52 00
-.5282					ON_CLOSE:
-.5282	4c 55 52	jmp $5255	        jmp fmescape
-.5285					paintrows:
-.5285	a9 00		lda #$00	        lda #$00
-.5287	85 42		sta $42		        sta rowi
-.5289					pr_l:
-.5289	a5 42		lda $42		        lda rowi
-.528b	0a		asl a		        asl
-.528c	aa		tax		        tax
-.528d	bd d0 52	lda $52d0,x	        lda fmnamesL,x
-.5290	85 14		sta $14		        sta r9L
-.5292	bd dc 52	lda $52dc,x	        lda fmnamesH,x
-.5295	85 15		sta $15		        sta r9H
-.5297	a9 1e		lda #$1e	        lda #COL_X
-.5299	85 02		sta $02		        sta X1
-.529b	a9 01		lda #$01	        lda #$01
-.529d	85 03		sta $03		        sta X1+1
-.529f	a9 1a		lda #$1a	        lda #TOP_Y
-.52a1	85 04		sta $04		        sta Y1
-.52a3	a5 42		lda $42		        lda rowi
-.52a5	20 b4 52	jsr $52b4	        jsr addrowy                     ; Y1 += row*ROW_PX
-.52a8	20 1e c0	jsr $c01e	        jsr GPUTS
-.52ab	e6 42		inc $42		        inc rowi
-.52ad	a5 42		lda $42		        lda rowi
-.52af	c5 41		cmp $41		        cmp fmcnt
-.52b1	d0 d6		bne $5289	        bne pr_l
-.52b3	60		rts		        rts
-.52b4					addrowy:
-.52b4	8d 4b 54	sta $544b	        sta vtmp
-.52b7	ad 4b 54	lda $544b	        lda vtmp
-.52ba	0a		asl a		        asl
-.52bb	0a		asl a		        asl
-.52bc	0a		asl a		        asl                             ; row*8
-.52bd	8d 4c 54	sta $544c	        sta vtmp2
-.52c0	ad 4b 54	lda $544b	        lda vtmp
-.52c3	0a		asl a		        asl
-.52c4	0a		asl a		        asl                             ; row*4
-.52c5	18		clc		        clc
-.52c6	6d 4c 54	adc $544c	        adc vtmp2
-.52c9	18		clc		        clc
-.52ca	65 04		adc $04		        adc Y1
-.52cc	85 04		sta $04		        sta Y1
-.52ce	60		rts		        rts
->52cf	24				dirname:  .text "$"
->52d0	e8 f9 0a 1b 2c 3d		fmnamesL: .byte <fm1, <fm2, <fm3, <fm4, <fm5, <fm6
->52d6	4e 5f 70 81 92 a3		          .byte <fm7, <fm8, <fm9, <fma, <fmb, <fmc
->52dc	52 52 53 53 53 53		fmnamesH: .byte >fm1, >fm2, >fm3, >fm4, >fm5, >fm6
->52e2	53 53 53 53 53 53		          .byte >fm7, >fm8, >fm9, >fma, >fmb, >fmc
->52e8	00 00 00 00 00 00 00 00		fm1:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->52f0	00 00 00 00 00 00 00 00 00
->52f9	00 00 00 00 00 00 00 00		fm2:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5301	00 00 00 00 00 00 00 00 00
->530a	00 00 00 00 00 00 00 00		fm3:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5312	00 00 00 00 00 00 00 00 00
->531b	00 00 00 00 00 00 00 00		fm4:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5323	00 00 00 00 00 00 00 00 00
->532c	00 00 00 00 00 00 00 00		fm5:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5334	00 00 00 00 00 00 00 00 00
->533d	00 00 00 00 00 00 00 00		fm6:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5345	00 00 00 00 00 00 00 00 00
->534e	00 00 00 00 00 00 00 00		fm7:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5356	00 00 00 00 00 00 00 00 00
->535f	00 00 00 00 00 00 00 00		fm8:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5367	00 00 00 00 00 00 00 00 00
->5370	00 00 00 00 00 00 00 00		fm9:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5378	00 00 00 00 00 00 00 00 00
->5381	00 00 00 00 00 00 00 00		fma:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5389	00 00 00 00 00 00 00 00 00
->5392	00 00 00 00 00 00 00 00		fmb:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->539a	00 00 00 00 00 00 00 00 00
->53a3	00 00 00 00 00 00 00 00		fmc:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->53ab	00 00 00 00 00 00 00 00 00
-.53b4					dirscan:
-.53b4	a9 00		lda #$00	        lda #$00
-.53b6	85 41		sta $41		        sta fmcnt
-.53b8	a9 05		lda #$05	        lda #$05
-.53ba	a2 08		ldx #$08	        ldx #$08
-.53bc	a0 00		ldy #$00	        ldy #$00
-.53be	20 ba ff	jsr $ffba	        jsr $ffba
-.53c1	a9 01		lda #$01	        lda #$01
-.53c3	a2 4a		ldx #$4a	        ldx #<dname
-.53c5	a0 54		ldy #$54	        ldy #>dname
-.53c7	20 bd ff	jsr $ffbd	        jsr $ffbd
-.53ca	20 c0 ff	jsr $ffc0	        jsr $ffc0
-.53cd	a2 05		ldx #$05	        ldx #$05
-.53cf	20 c6 ff	jsr $ffc6	        jsr $ffc6
-.53d2	20 cf ff	jsr $ffcf	        jsr $ffcf
-.53d5	20 cf ff	jsr $ffcf	        jsr $ffcf
-.53d8					ds_ent:
-.53d8	20 cf ff	jsr $ffcf	        jsr $ffcf
-.53db	20 b7 ff	jsr $ffb7	        jsr $ffb7
-.53de	29 40		and #$40	        and #$40
-.53e0	d0 4d		bne $542f	        bne ds_end
-.53e2	20 cf ff	jsr $ffcf	        jsr $ffcf
-.53e5	20 cf ff	jsr $ffcf	        jsr $ffcf
-.53e8	a0 00		ldy #$00	        ldy #$00
-.53ea	20 cf ff	jsr $ffcf	ds_nm:  jsr $ffcf
-.53ed	99 3a 54	sta $543a,y	        sta fnbuf,y
-.53f0	c8		iny		        iny
-.53f1	c0 10		cpy #$10	        cpy #$10
-.53f3	d0 f5		bne $53ea	        bne ds_nm
-.53f5	20 cf ff	jsr $ffcf	        jsr $ffcf
+.51f9	a9 1e		lda #$1e	        lda #COL_X
+.51fb	85 02		sta $02		        sta X1
+.51fd	a9 00		lda #$00	        lda #$00
+.51ff	85 03		sta $03		        sta X1+1
+.5201	a9 77		lda #$77	        lda #<msgopen
+.5203	85 14		sta $14		        sta r9L
+.5205	a9 54		lda #$54	        lda #>msgopen
+.5207	85 15		sta $15		        sta r9H
+.5209	20 1e c0	jsr $c01e	        jsr GPUTS
+.520c	20 2c 08	jsr $082c	fmloop: jsr KEYIN
+.520f	c9 00		cmp #$00	        cmp #$00
+.5211	f0 f9		beq $520c	        beq fmloop
+.5213	c9 11		cmp #$11	        cmp #$11                        ; cursor down
+.5215	f0 0f		beq $5226	        beq fmdn
+.5217	c9 91		cmp #$91	        cmp #$91                        ; cursor up
+.5219	f0 1e		beq $5239	        beq fmup_
+.521b	c9 0d		cmp #$0d	        cmp #$0d                        ; RETURN
+.521d	f0 27		beq $5246	        beq fmopen
+.521f	c9 1b		cmp #$1b	        cmp #$1b                        ; ESC
+.5221	f0 3a		beq $525d	        beq fmescape
+.5223	4c 0c 52	jmp $520c	        jmp fmloop
+.5226	a5 41		lda $41		fmdn:   lda fmcnt
+.5228	f0 e2		beq $520c	        beq fmloop
+.522a	a6 40		ldx $40		        ldx fmrow
+.522c	e4 41		cpx $41		        cpx fmcnt
+.522e	f0 dc		beq $520c	        beq fmloop
+.5230	e8		inx		        inx
+.5231	86 40		stx $40		        stx fmrow
+.5233	20 8d 52	jsr $528d	        jsr paintrows
+.5236	4c 6e 52	jmp $526e	        jmp fminput
+.5239					fmup_:
+.5239	a6 40		ldx $40		        ldx fmrow
+.523b	f0 cf		beq $520c	        beq fmloop
+.523d	ca		dex		        dex
+.523e	86 40		stx $40		        stx fmrow
+.5240	20 8d 52	jsr $528d	        jsr paintrows
+.5243	4c 6e 52	jmp $526e	        jmp fminput
+.5246					fmopen:
+.5246	a5 40		lda $40		        lda fmrow
+.5248	0a		asl a		        asl
+.5249	aa		tax		        tax
+.524a	bd f6 52	lda $52f6,x	        lda fmnamesL,x
+.524d	85 02		sta $02		        sta r0L
+.524f	bd 02 53	lda $5302,x	        lda fmnamesH,x
+.5252	85 03		sta $03		        sta r0H
+.5254	20 29 08	jsr $0829	        jsr FILLFILE
+.5257	20 26 08	jsr $0826	        jsr DLOADAPP
+.525a	4c 00 50	jmp $5000	        jmp APP_START
+.525d					fmescape:
+.525d	a9 71		lda #$71	        lda #<dskstr
+.525f	85 02		sta $02		        sta r0L
+.5261	a9 52		lda #$52	        lda #>dskstr
+.5263	85 03		sta $03		        sta r0H
+.5265	20 29 08	jsr $0829	        jsr FILLFILE
+.5268	20 26 08	jsr $0826	        jsr DLOADAPP
+.526b	4c 00 10	jmp $1000	        jmp DESK_START
+.526e					fminput:
+.526e	4c 0c 52	jmp $520c	        jmp fmloop
+>5271	55 4f 53 2d 44 45 53 4b		dskstr: .text "uos-desktop", 0
+>5279	54 4f 50 00
+>527d	c6 49 4c 45 20 4d 41 4e		fm_title: .text "File manager", 0
+>5285	41 47 45 52 00
+.528a					ON_CLOSE:
+.528a	4c 5d 52	jmp $525d	        jmp fmescape
+.528d					paintrows:
+.528d	a9 00		lda #$00	        lda #$00
+.528f	85 42		sta $42		        sta rowi
+.5291					pr_l:
+.5291	a5 42		lda $42		        lda rowi
+.5293	0a		asl a		        asl
+.5294	aa		tax		        tax
+.5295	bd f6 52	lda $52f6,x	        lda fmnamesL,x
+.5298	85 14		sta $14		        sta r9L
+.529a	bd 02 53	lda $5302,x	        lda fmnamesH,x
+.529d	85 15		sta $15		        sta r9H
+.529f	a9 1e		lda #$1e	        lda #COL_X
+.52a1	85 02		sta $02		        sta X1
+.52a3	a9 00		lda #$00	        lda #$00                        ; x word high byte (COL_X < 256)
+.52a5	85 03		sta $03		        sta X1+1
+.52a7	a9 1a		lda #$1a	        lda #TOP_Y
+.52a9	85 04		sta $04		        sta Y1
+.52ab	a5 42		lda $42		        lda rowi
+.52ad	20 da 52	jsr $52da	        jsr addrowy                     ; Y1 += row*ROW_PX
+.52b0	20 1e c0	jsr $c01e	        jsr GPUTS
+.52b3	a5 42		lda $42		        lda rowi
+.52b5	c5 40		cmp $40		        cmp fmrow
+.52b7	f0 05		beq $52be	        beq pr_cur
+.52b9	a9 20		lda #$20	        lda #$20                        ; space erases a stale marker
+.52bb	4c c0 52	jmp $52c0	        jmp pr_mark
+.52be	a9 3e		lda #$3e	pr_cur: lda #$3e                        ; '>'
+.52c0	8d 76 54	sta $5476	pr_mark:sta vtmp2
+.52c3	a9 16		lda #$16	        lda #CUR_X
+.52c5	85 02		sta $02		        sta X1
+.52c7	a9 00		lda #$00	        lda #$00
+.52c9	85 03		sta $03		        sta X1+1
+.52cb	ad 76 54	lda $5476	        lda vtmp2
+.52ce	20 1b c0	jsr $c01b	        jsr GPUTC
+.52d1	e6 42		inc $42		        inc rowi
+.52d3	a5 42		lda $42		        lda rowi
+.52d5	c5 41		cmp $41		        cmp fmcnt
+.52d7	d0 b8		bne $5291	        bne pr_l
+.52d9	60		rts		        rts
+.52da					addrowy:
+.52da	8d 75 54	sta $5475	        sta vtmp
+.52dd	ad 75 54	lda $5475	        lda vtmp
+.52e0	0a		asl a		        asl
+.52e1	0a		asl a		        asl
+.52e2	0a		asl a		        asl                             ; row*8
+.52e3	8d 76 54	sta $5476	        sta vtmp2
+.52e6	ad 75 54	lda $5475	        lda vtmp
+.52e9	0a		asl a		        asl
+.52ea	0a		asl a		        asl                             ; row*4
+.52eb	18		clc		        clc
+.52ec	6d 76 54	adc $5476	        adc vtmp2
+.52ef	18		clc		        clc
+.52f0	65 04		adc $04		        adc Y1
+.52f2	85 04		sta $04		        sta Y1
+.52f4	60		rts		        rts
+>52f5	24				dirname:  .text "$"
+>52f6	0e 1f 30 41 52 63		fmnamesL: .byte <fm1, <fm2, <fm3, <fm4, <fm5, <fm6
+>52fc	74 85 96 a7 b8 c9		          .byte <fm7, <fm8, <fm9, <fma, <fmb, <fmc
+>5302	53 53 53 53 53 53		fmnamesH: .byte >fm1, >fm2, >fm3, >fm4, >fm5, >fm6
+>5308	53 53 53 53 53 53		          .byte >fm7, >fm8, >fm9, >fma, >fmb, >fmc
+>530e	00 00 00 00 00 00 00 00		fm1:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5316	00 00 00 00 00 00 00 00 00
+>531f	00 00 00 00 00 00 00 00		fm2:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5327	00 00 00 00 00 00 00 00 00
+>5330	00 00 00 00 00 00 00 00		fm3:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5338	00 00 00 00 00 00 00 00 00
+>5341	00 00 00 00 00 00 00 00		fm4:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5349	00 00 00 00 00 00 00 00 00
+>5352	00 00 00 00 00 00 00 00		fm5:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>535a	00 00 00 00 00 00 00 00 00
+>5363	00 00 00 00 00 00 00 00		fm6:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>536b	00 00 00 00 00 00 00 00 00
+>5374	00 00 00 00 00 00 00 00		fm7:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>537c	00 00 00 00 00 00 00 00 00
+>5385	00 00 00 00 00 00 00 00		fm8:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>538d	00 00 00 00 00 00 00 00 00
+>5396	00 00 00 00 00 00 00 00		fm9:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>539e	00 00 00 00 00 00 00 00 00
+>53a7	00 00 00 00 00 00 00 00		fma:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>53af	00 00 00 00 00 00 00 00 00
+>53b8	00 00 00 00 00 00 00 00		fmb:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>53c0	00 00 00 00 00 00 00 00 00
+>53c9	00 00 00 00 00 00 00 00		fmc:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>53d1	00 00 00 00 00 00 00 00 00
+.53da					dirscan:
+.53da	a9 00		lda #$00	        lda #$00
+.53dc	85 41		sta $41		        sta fmcnt
+.53de	a9 05		lda #$05	        lda #$05
+.53e0	a2 08		ldx #$08	        ldx #$08
+.53e2	a0 00		ldy #$00	        ldy #$00
+.53e4	20 ba ff	jsr $ffba	        jsr $ffba
+.53e7	a9 01		lda #$01	        lda #$01
+.53e9	a2 74		ldx #$74	        ldx #<dname
+.53eb	a0 54		ldy #$54	        ldy #>dname
+.53ed	20 bd ff	jsr $ffbd	        jsr $ffbd
+.53f0	20 c0 ff	jsr $ffc0	        jsr $ffc0
+.53f3	a2 05		ldx #$05	        ldx #$05
+.53f5	20 c6 ff	jsr $ffc6	        jsr $ffc6
 .53f8	20 cf ff	jsr $ffcf	        jsr $ffcf
-.53fb	a0 00		ldy #$00	        ldy #$00
-.53fd	b9 3a 54	lda $543a,y	ds_t:   lda fnbuf,y
-.5400	c9 a0		cmp #$a0	        cmp #$a0
-.5402	d0 05		bne $5409	        bne ds_nz
-.5404	a9 00		lda #$00	        lda #$00
-.5406	99 3a 54	sta $543a,y	        sta fnbuf,y
-.5409	c8		iny		ds_nz:  iny
-.540a	c0 10		cpy #$10	        cpy #$10
-.540c	d0 ef		bne $53fd	        bne ds_t
-.540e	a6 41		ldx $41		        ldx fmcnt
-.5410	e0 0c		cpx #$0c	        cpx #LIST_MAX
-.5412	b0 c4		bcs $53d8	        bcs ds_ent
-.5414	bd d0 52	lda $52d0,x	        lda fmnamesL,x
-.5417	85 02		sta $02		        sta r0L
-.5419	bd dc 52	lda $52dc,x	        lda fmnamesH,x
-.541c	85 03		sta $03		        sta r0H
-.541e	a0 00		ldy #$00	        ldy #$00
-.5420	b9 3a 54	lda $543a,y	ds_cp:  lda fnbuf,y
-.5423	91 02		sta ($02),y	        sta (r0),y
-.5425	c8		iny		        iny
-.5426	c0 11		cpy #$11	        cpy #$11
-.5428	d0 f6		bne $5420	        bne ds_cp
-.542a	e6 41		inc $41		        inc fmcnt
-.542c	4c d8 53	jmp $53d8	        jmp ds_ent
-.542f					ds_end:
-.542f	a9 0f		lda #$0f	        lda #$0f
-.5431	20 cc ff	jsr $ffcc	        jsr $ffcc
-.5434	a9 05		lda #$05	        lda #$05
-.5436	20 c3 ff	jsr $ffc3	        jsr $ffc3
-.5439	60		rts		        rts
->543a	00 00 00 00 00 00 00 00		fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5442	00 00 00 00 00 00 00 00
->544a	24				dname:  .text "$"
->544b	00				vtmp:   .byte 0
->544c	00				vtmp2:  .byte 0
->544d	d2 c5 d4 d5 d2 ce 3d 4f		msgopen: .text "RETURN=open  ESC=desk", 0
->5455	50 45 4e 20 20 c5 d3 c3 3d 44 45 53 4b 00
+.53fb	20 cf ff	jsr $ffcf	        jsr $ffcf
+.53fe					ds_ent:
+.53fe	20 cf ff	jsr $ffcf	        jsr $ffcf
+.5401	20 b7 ff	jsr $ffb7	        jsr $ffb7
+.5404	29 40		and #$40	        and #$40
+.5406	d0 51		bne $5459	        bne ds_end
+.5408	20 cf ff	jsr $ffcf	        jsr $ffcf
+.540b	20 cf ff	jsr $ffcf	        jsr $ffcf
+.540e	a0 00		ldy #$00	        ldy #$00
+.5410	20 cf ff	jsr $ffcf	ds_nm:  jsr $ffcf
+.5413	99 64 54	sta $5464,y	        sta fnbuf,y
+.5416	c8		iny		        iny
+.5417	c0 10		cpy #$10	        cpy #$10
+.5419	d0 f5		bne $5410	        bne ds_nm
+.541b	20 cf ff	jsr $ffcf	        jsr $ffcf
+.541e	20 cf ff	jsr $ffcf	        jsr $ffcf
+.5421	a0 00		ldy #$00	        ldy #$00
+.5423	b9 64 54	lda $5464,y	ds_t:   lda fnbuf,y
+.5426	c9 a0		cmp #$a0	        cmp #$a0
+.5428	d0 05		bne $542f	        bne ds_nz
+.542a	a9 00		lda #$00	        lda #$00
+.542c	99 64 54	sta $5464,y	        sta fnbuf,y
+.542f	c8		iny		ds_nz:  iny
+.5430	c0 10		cpy #$10	        cpy #$10
+.5432	d0 ef		bne $5423	        bne ds_t
+.5434	a6 41		ldx $41		        ldx fmcnt
+.5436	e0 0c		cpx #$0c	        cpx #LIST_MAX
+.5438	b0 c4		bcs $53fe	        bcs ds_ent
+.543a	bd f6 52	lda $52f6,x	        lda fmnamesL,x
+.543d	85 02		sta $02		        sta r0L
+.543f	bd 02 53	lda $5302,x	        lda fmnamesH,x
+.5442	85 03		sta $03		        sta r0H
+.5444	a0 00		ldy #$00	        ldy #$00
+.5446	b9 64 54	lda $5464,y	ds_cp:  lda fnbuf,y
+.5449	91 02		sta ($02),y	        sta (r0),y
+.544b	c8		iny		        iny
+.544c	c0 10		cpy #$10	        cpy #$10
+.544e	d0 f6		bne $5446	        bne ds_cp
+.5450	a9 00		lda #$00	        lda #$00                        ; explicit terminator (16-char names
+.5452	91 02		sta ($02),y	        sta (r0),y                      ; carry no $a0 padding to stop on)
+.5454	e6 41		inc $41		        inc fmcnt
+.5456	4c fe 53	jmp $53fe	        jmp ds_ent
+.5459					ds_end:
+.5459	a9 0f		lda #$0f	        lda #$0f
+.545b	20 cc ff	jsr $ffcc	        jsr $ffcc
+.545e	a9 05		lda #$05	        lda #$05
+.5460	20 c3 ff	jsr $ffc3	        jsr $ffc3
+.5463	60		rts		        rts
+>5464	00 00 00 00 00 00 00 00		fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>546c	00 00 00 00 00 00 00 00
+>5474	24				dname:  .text "$"
+>5475	00				vtmp:   .byte 0
+>5476	00				vtmp2:  .byte 0
+>5477	d2 c5 d4 d5 d2 ce 3d 4f		msgopen: .text "RETURN=open  ESC=desk", 0
+>547f	50 45 4e 20 20 c5 d3 c3 3d 44 45 53 4b 00
 
 ;******  End of listing
