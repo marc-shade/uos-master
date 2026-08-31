@@ -378,4 +378,17 @@ nothing later depends on an unverified assumption.</p>
   REU 512&nbsp;K, MegaPatch D81 staged on drive B, GEOS 2.0 recoverable in one command.
 </footer>
 
+</body><!-- 2026-08-31 session 2 addendum (engineering ledger):
+  COMMITTED: cda0342 (fmgr v2: SCRATCH/RENAME/COPY + info line + line editor, CI 9/9 → now 12 gates),
+             2905d8e+87c78ae (FR-S3 settings persistence: kernal SAVE fixed — SETNAM-after-scratch was
+             the missing piece; record at fixed SETREC $7350; boot-side VDPREF LOAD+apply; mode-0 gating; CI 11/11),
+             5732cb5 (shell CI stages + harnesses).
+  WIP: uos-shell.asm assembles (2043 B) but shell launch after 2 app hops (fmgr→settings→shell) not yet
+       landing - suspect app-lifecycle handoff (tick vector / ctl table), next session's first item.
+  OPEN HW (needs C128 back): deploy cda0342+; validate kernal-SAVE disk landing on hardware (hardware gate PRD);
+             80-col visual acceptance (monitor chain); MegaPatch 3.3 r12 install (staged on drive B).
+  LESSONS: kernal serial paths (LOAD/SAVE/command channel) can exit with IRQs masked -> ALWAYS cli after
+           serial ops (the fmgr's dirscan already had it); 64tass .text emits SHIFTED PETSCII -> command
+           strings must be explicit unshifted .byte; label placement must be validated in the .lst.
+-->
 </body>
