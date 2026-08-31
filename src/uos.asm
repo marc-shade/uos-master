@@ -840,12 +840,25 @@ _stash:
 ; ==========================================================
 ; VDSETUP — init the 80-column display: clear, banner, clock
 ; ==========================================================
-; apply the persisted display-mode preference (FR-S3 p2): LOAD "UOS-SET";
-; the mode byte is at $7355 (SETREC_DISP). 0 = 40-col: VDSETUP is skipped
-; by the caller. Any load error leaves the default (2 = both).
+; apply the persisted display-mode preference (FR-S3): LOAD "UOS-SET";
+; the mode byte lands at $7355 (SETREC_DISP). 0 = 40-col only: VDSETUP is
+; skipped by the caller. A missing file leaves the default (2 = both).
 VDPREF:
+        lda #<setrecname
+        sta r0L
+        lda #>setrecname
+        sta r0H
+        jsr FILLFILE
+        jsr LOADER              ; "UOS-SET" -> record at $7350; C=1 if absent
+        bcc vdpr_ok
+        lda #$02                ; default mode when no record exists
+        sta SETREC_DISP
+vdpr_ok:
         rts
+setrecname: .text "UOS-SET", $00
 VDSETUP:
+        lda SETREC_DISP
+        beq vds_no              ; persisted 0 = 40-column only
         jsr VDC_PRESENT
         cmp #$01
         bne vds_no              ; no 8563 on this machine (C64 hosts):

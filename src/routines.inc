@@ -32,6 +32,10 @@ APP_LOADER      = $0826
 FILLFILE        = $0829
 KEYIN           = $082c
 GETCAP          = $082f
+; settings record (FR-S3): saved as "UOS-SET" by the settings app, loaded
+; back at boot into the app region
+SETREC          = $7350
+SETREC_DISP     = $7355
 ; uVDC second-display driver (origin $cc00)
 VDC_GETREG      = $cc00
 VDC_SETREG      = $cc07
