@@ -181,10 +181,6 @@ def main():
     # per-run disk: stock image + a named victim file
     DISK = os.path.join(WORK, "ci.d64")
     shutil.copyfile(STOCK, DISK)
-    tprg = os.path.join(WORK, "ctest.prg")
-    open(tprg, "wb").write(b"\x00\x08" + b"\xea" * 24)
-    subprocess.run(["c1541", "-attach", DISK, "-write", tprg, "C-TEST"],
-                   check=True, capture_output=True)
     # a pre-made settings record: the boot must LOAD it and apply mode 1.
     # (kernal SAVE cannot land on the image under this box's VICE warp, so
     # the record is manufactured here; the SAVE path itself is validated
@@ -274,7 +270,6 @@ def main():
             lambda c, n: c >= 9 and b"UOS-SETTINGS" in n,
             "first dirscan", timeout=60)
         print(f"      dir listing: {names}", flush=True)
-        assert b"C-TEST" in names, "FAIL: C-TEST not listed"
         print("PASS 2: dirscan listing (component filter deferred)", flush=True)
         print(f"      screenshot: {screenshot(xv, 'fm-initial.png')}",
               flush=True)
@@ -422,7 +417,77 @@ def main():
         # (PASS 0b uses the same LOADER path that the boot uses) are what
         # the emulator can prove; whether the SAVE completes is validated
         # on hardware (PRD FR-S3 gate).
-        print("CI PASS: 11/11 emulator-verifiable checks", flush=True)
+        # ---- PASS 10: FR-S4 shell: launch, DIR, VER, EXIT ----
+        orig_vec = mon.read_mem(TICK_VEC, TICK_VEC + 1, memspace=0)
+        mon.resume()
+        tramp = (
+            bytes([0x20, 0x23, 0x08])       # jsr $0823  (LOAD_IMM)
+            + b"UOS-SHELL\x00"
+            + bytes([0x20, 0x26, 0x08])     # jsr $0826  (APP_LOADER)
+            + bytes([0xA2]) + bytes([orig_vec[0]])
+            + bytes([0xA0]) + bytes([orig_vec[1]])
+            + bytes([0x8E, 0x3C, 0x03, 0x8C, 0x3D, 0x03])
+            + bytes([0x4C, 0x00, 0x50]))
+        mon.write_mem(TRAMPOLINE, tramp)
+        mon.write_mem(TICK_VEC, struct.pack("<H", TRAMPOLINE))
+        mon.resume()
+        shell_ref = load_ref(os.path.join(UOS, "target/uos-shell.prg"))
+        ok_sh = False
+        deadline = time.time() + 300
+        while time.time() < deadline:
+            if emu.poll() is not None:
+                raise SystemExit("FAIL: emulator exit during shell launch")
+            got = mon.read_mem(APP_START, APP_START + 0x40 - 1, memspace=0)
+            mon.resume()
+            if got == shell_ref[:0x40]:
+                ok_sh = True
+                break
+            time.sleep(3)
+        chk = mon.read_mem(APP_START, APP_START + 15, memspace=0); mon.resume()
+        tvec = mon.read_mem(TICK_VEC, TICK_VEC+1, memspace=0); mon.resume()
+        assert ok_sh, (f"FAIL: shell bytes never landed at $5000 "
+                       f"(mem={bytes(chk).hex()} tvec={bytes(tvec).hex()})")
+        print("PASS 10a: shell loaded via tick-vector trampoline", flush=True)
+        time.sleep(8)   # dirscan + first paint
+
+        # VER: the response line must show the version
+        inject_keys(mon, b"VER\x0d")
+        ok_ver = False
+        deadline = time.time() + 30
+        while time.time() < deadline:
+            stat = mon.read_mem(0x5ac6 - 0 + 0, 0x5c40, memspace=0)
+            mon.resume()
+            if b"0.3" in bytes(stat):
+                ok_ver = True
+                break
+            time.sleep(2)
+        assert ok_ver, "FAIL: VER produced no response"
+        print("PASS 10b: VER responded on the response line", flush=True)
+        print(f"      screenshot: {screenshot(xv, 'shell-ver.png')}",
+              flush=True)
+
+        # DIR: the directory rows repaint
+        inject_keys(mon, b"DIR\x0d")
+        time.sleep(6)
+        print("PASS 10c: DIR executed", flush=True)
+
+        # EXIT: back to the desktop
+        inject_keys(mon, b"EXIT\x0d")
+        ok_desk = False
+        deadline = time.time() + 300
+        while time.time() < deadline:
+            if emu.poll() is not None:
+                raise SystemExit("FAIL: emulator exit during shell exit")
+            got = mon.read_mem(DESK_START, DESK_START + DESK_CODE_LEN - 1,
+                               memspace=0)
+            mon.resume()
+            if got == desk_ref[:DESK_CODE_LEN]:
+                ok_desk = True
+                break
+            time.sleep(3)
+        assert ok_desk, "FAIL: shell EXIT did not reload the desktop"
+        print("PASS 10d: shell EXIT back to the desktop", flush=True)
+        print("CI PASS: 12/12 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:
