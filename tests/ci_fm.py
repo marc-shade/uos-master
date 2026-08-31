@@ -48,13 +48,21 @@ TICK_VEC = 0x033c
 STX, API_VER = 0x02, 0x02
 CMD_MEM_SET = 0x02
 
-# jsr LOAD_IMM / "UOS-FMGR",0 / jsr APP_LOADER / jmp APP_START
-TRAMPOLINE_CODE = (
-    bytes([0x20, 0x23, 0x08])           # jsr $0823  (LOAD_IMM)
-    + b"UOS-FMGR\x00"
-    + bytes([0x20, 0x26, 0x08])         # jsr $0826  (APP_LOADER)
-    + bytes([0x4C, 0x00, 0x50])         # jmp $5000
-)
+
+def make_trampoline(orig_tick_vec):
+    """jsr LOAD_IMM / "UOS-FMGR",0 / jsr APP_LOADER / restore tick vector /
+    jmp APP_START. The restore makes it one-shot: the core re-enters the
+    vector once per second, and leaving the trampoline installed would
+    re-load the fmgr out from under its own input loop every tick."""
+    return (
+        bytes([0x20, 0x23, 0x08])           # jsr $0823  (LOAD_IMM)
+        + b"UOS-FMGR\x00"
+        + bytes([0x20, 0x26, 0x08])         # jsr $0826  (APP_LOADER)
+        + bytes([0xA2]) + bytes([orig_tick_vec[0]])   # ldx #<orig
+        + bytes([0xA0]) + bytes([orig_tick_vec[1]])   # ldy #>orig
+        + bytes([0x8E, 0x3C, 0x03, 0x8C, 0x3D, 0x03]) # stx $033c ; sty $033d
+        + bytes([0x4C, 0x00, 0x50])         # jmp $5000
+    )
 
 
 class Monitor(cbm.ViceMonitor):
@@ -134,8 +142,14 @@ def main():
         print("PASS 0: boot chain complete, desktop at $1000", flush=True)
         time.sleep(3)   # let the desktop settle (RegisterApp + first paints)
 
-        # 2. tick-vector trampoline
-        mon.write_mem(TRAMPOLINE, TRAMPOLINE_CODE)
+        # 2. one-shot tick-vector trampoline: it restores the desktop's
+        # APP_TICK itself right before entering the app, so no later tick
+        # re-fires the launch (that would re-load the fmgr out from under
+        # its own input loop every second).
+        orig_vec = mon.read_mem(TICK_VEC, TICK_VEC + 1, memspace=0)
+        mon.resume()
+        tramp = make_trampoline(orig_vec)
+        mon.write_mem(TRAMPOLINE, tramp)
         mon.write_mem(TICK_VEC, struct.pack("<H", TRAMPOLINE))
         mon.resume()
 
@@ -157,7 +171,12 @@ def main():
         print(f"PASS 2: screenshot after first paint: "
               f"{screenshot(xv, 'fm-initial.png')}", flush=True)
 
-        # 3. cursor movement through the kernal buffer: 3x down, 1x up
+        # 3. wait for dirscan to finish (fmcnt at $41 fills), then cursor
+        cnt = mon.read_mem(0x41, 0x42, memspace=0)[0]
+        mon.resume()
+        print(f"      fmcnt at first-paint: {cnt}", flush=True)
+
+        # cursor movement through the kernal buffer: 3x down, 1x up
         inject_keys(mon, b"\x11\x11\x11")
         time.sleep(4)
         inject_keys(mon, b"\x91")
@@ -170,7 +189,42 @@ def main():
         print(f"      cursor screenshot: {screenshot(xv, 'fm-cursor.png')}",
               flush=True)
 
-        # 4. ESC -> desktop reloads
+        # 4. RETURN on row 7 ("uos-settings"): open path via FILLFILE+
+        #    APP_LOADER+jmp APP_START, verified by the settings PRG landing
+        st_ref = load_ref(os.path.join(UOS, "target/uos-settings.prg"))
+        ST_CODE_LEN = 0x100
+        # 5 down keys, polling until fmrow really reaches 7 (the kernal
+        # buffer holds 10 keys, but each write halts the CPU and occasional
+        # warp-timing hiccups drop an event — re-inject shortfalls)
+        for _ in range(8):
+            row = mon.read_mem(0x40, 0x41, memspace=0)[0]
+            mon.resume()
+            if row == 7:
+                break
+            need = 7 - row
+            if need > 0:
+                inject_keys(mon, b"\x11" * need)
+            time.sleep(3)
+        assert row == 7, f"FAIL: fmrow stuck at {row}, expected 7"
+        print("PASS 4a: cursor at row 7 (UOS-SETTINGS)", flush=True)
+        inject_keys(mon, b"\x0d")           # RETURN = open
+        ok_st = False
+        deadline = time.time() + 300
+        while time.time() < deadline:
+            if emu.poll() is not None:
+                raise SystemExit("FAIL: emulator exit during RETURN open")
+            got = mon.read_mem(APP_START, APP_START + ST_CODE_LEN - 1,
+                               memspace=0)
+            mon.resume()
+            if got == st_ref[:ST_CODE_LEN]:
+                ok_st = True
+                break
+            time.sleep(3)
+        assert ok_st, "FAIL: RETURN did not load uos-settings at APP_START"
+        print("PASS 4: RETURN open path — uos-settings code at $5000",
+              flush=True)
+
+        # 5. ESC from the settings app -> desktop reloads
         inject_keys(mon, b"\x1b")
         desk_len = min(len(desk_ref), 0x1000)
         ok_desk = False

@@ -19,7 +19,7 @@ SCR             = $0400
 LIST_MAX        := 12
 COL_X           := 30
 CUR_X           := 22
-TOP_Y           := 26
+TOP_Y           := 40   ; below the title text (drawn at y=14)
 ROW_PX          := 12
 
 fmrow           = $40
@@ -30,6 +30,10 @@ rowi            = $42
 
         #RegisterApp
 
+        ; NOTE: #CreateWindow (SaveRect/ClrRect REU fills) destabilises the
+        ; app when opened on top of the desktop — the CPU lands in data RAM.
+        ; Kept as the outline + banner until upstream's window system is
+        ; understood; the close box is the OS-level ESC path meanwhile.
         #DrawRect 16,8,304,180,1
         ; title text
         lda #24
@@ -46,8 +50,8 @@ rowi            = $42
 
         jsr dirscan
 
-        lda #2                          ; paint from list row 2
-        sta Y1
+        lda #$ff                        ; no previous marker yet
+        sta prev_row
         jsr paintrows
 
         lda #(TOP_Y+12*ROW_PX)          ; below the list rows
@@ -93,7 +97,6 @@ fmup_:
         jmp fminput
 fmopen:
         lda fmrow
-        asl
         tax
         lda fmnamesL,x
         sta r0L
@@ -114,18 +117,39 @@ fminput:
         jmp fmloop
 dskstr: .text "uos-desktop", 0
 fm_title: .text "File manager", 0
+x:      .text "x", $00                  ; CreateWindow's close-box label
 
 ; title-bar close box binds here (the CreateWindow macro expects ON_CLOSE)
 ON_CLOSE:
         jmp fmescape
 
 ; ---------- paint all rows from fmnames (launcher draw_rows pattern) ------
+; Marker: GPUTC is an XOR engine, so a marker is ERASED by drawing '>' over
+; its old position again (text erase can't work — a space glyph XORs 0).
 paintrows:
+        ; erase previous marker
+        lda prev_row
+        cmp #$ff
+        beq pr_noprev
+        cmp fmrow
+        beq pr_noprev
+        lda prev_row
+        jsr marky
+        lda #$3e
+        jsr GPUTC
+pr_noprev:
+        ; draw marker at the current row (capture the row BEFORE marky
+        ; clobbers the scratch regs)
+        lda fmrow
+        sta prev_row
+        jsr marky
+        lda #$3e                        ; '>'
+        jsr GPUTC
+        ; draw every name row
         lda #$00
         sta rowi
 pr_l:
         lda rowi
-        asl
         tax
         lda fmnamesL,x
         sta r9L
@@ -140,24 +164,23 @@ pr_l:
         lda rowi
         jsr addrowy                     ; Y1 += row*ROW_PX
         jsr GPUTS
-        ; cursor marker at the row the selector points to
-        lda rowi
-        cmp fmrow
-        beq pr_cur
-        lda #$20                        ; space erases a stale marker
-        jmp pr_mark
-pr_cur: lda #$3e                        ; '>'
-pr_mark:sta vtmp2
-        lda #CUR_X
-        sta X1
-        lda #$00
-        sta X1+1
-        lda vtmp2
-        jsr GPUTC
         inc rowi
         lda rowi
         cmp fmcnt
         bne pr_l
+        rts
+
+; set X1 = CUR_X word, Y1 = TOP_Y + A*ROW_PX (GPUTC call setup)
+marky:
+        sta vtmp2
+        lda #CUR_X
+        sta X1
+        lda #$00
+        sta X1+1
+        lda #TOP_Y
+        sta Y1
+        lda vtmp2
+        jsr addrowy
         rts
 
 ; Y1 += A*ROW_PX (ROW_PX = 12: row*8 + row*4)
@@ -211,35 +234,68 @@ dirscan:
         jsr $ffc0
         ldx #$05
         jsr $ffc6
-        jsr $ffcf
-        jsr $ffcf
+        ; the $ stream = 32-byte records from byte 0; the first record's
+        ; first pair IS the load address (01 04), later records carry 01 01.
+        ; Record 0 is skipped: it is the disk-title line.
+        lda #$01
+        sta dsfirst
 ds_ent:
-        jsr $ffcf
+        lda #$00
+        sta dseof
+        ldy #$00
+ds_rd:  jsr $ffcf                       ; read one full 32-byte record.
+                                        ; Store BEFORE the status check:
+                                        ; the status latch still holds EOF
+                                        ; from the app's own LOAD here.
+        sta dline,y
+        iny
         jsr $ffb7
         and #$40
-        bne ds_end
-        jsr $ffcf
-        jsr $ffcf
-        ldy #$00
-ds_nm:  jsr $ffcf
-        sta fnbuf,y
-        iny
-        cpy #$10
-        bne ds_nm
-        jsr $ffcf
-        jsr $ffcf
-        ldy #$00
-ds_t:   lda fnbuf,y
-        cmp #$a0
-        bne ds_nz
+        beq ds_more
+        inc dseof                       ; EOF: parse this, then finish
+        jmp ds_parse
+ds_more:
+        cpy #32
+        bne ds_rd
+ds_parse:
+        ; a record is a file entry iff it carries a count > 0 AND a quoted
+        ; name. Record 0 is special: it hosts the stream load address, so
+        ; its count fields sit at [4..5] — skip it unconditionally (it is
+        ; the disk title). The BLOCKS FREE trailer drops out at the quote
+        ; gate.
+        lda dsfirst
+        beq ds_cnt
         lda #$00
+        sta dsfirst
+        jmp ds_next
+ds_cnt: lda dline+2
+        ora dline+3
+        beq ds_next                     ; count 0 = disk title
+        ldx #$00
+ds_q1:  lda dline,x
+        cmp #$22
+        beq ds_qgot
+        inx
+        cpx #32
+        bne ds_q1
+        jmp ds_next                     ; no quotes -> header/trailer line
+ds_qgot:
+        inx                             ; step past the opening quote
+        ldy #$00                        ; copy the name between the quotes
+ds_nc:  lda dline,x
+        cmp #$22
+        beq ds_ncend
         sta fnbuf,y
-ds_nz:  iny
-        cpy #$10
-        bne ds_t
+        inx
+        iny
+        cpy #$10                        ; cap at 16 chars
+        bne ds_nc
+ds_ncend:
+        lda #$00
+        sta fnbuf,y                     ; terminator (Y = copied length)
         ldx fmcnt
         cpx #LIST_MAX
-        bcs ds_ent
+        bcs ds_next
         lda fmnamesL,x
         sta r0L
         lda fmnamesH,x
@@ -248,21 +304,32 @@ ds_nz:  iny
 ds_cp:  lda fnbuf,y
         sta (r0),y
         iny
-        cpy #$10
+        cpy #$11
         bne ds_cp
-        lda #$00                        ; explicit terminator (16-char names
-        sta (r0),y                      ; carry no $a0 padding to stop on)
         inc fmcnt
+ds_next:
+        lda #$00
+        sta dsfirst                     ; every later record uses [2..3]
+        lda dseof
+        bne ds_end
         jmp ds_ent
 ds_end:
         lda #$0f
         jsr $ffcc
         lda #$05
         jsr $ffc3
-        rts
+        cli                             ; the serial OPEN/GETIN paths can
+        rts                             ; exit with IRQs masked (kernal
+                                        ; serial timeout under load) — the
+                                        ; keyboard IRQ must live for KEYIN
 
-fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 dname:  .text "$"
 vtmp:   .byte 0
 vtmp2:  .byte 0
+prev_row: .byte 0
+fntyp:  .byte 0
+dseof:  .byte 0
+dsfirst: .byte 0
+dline:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 msgopen: .text "RETURN=open  ESC=desk", 0

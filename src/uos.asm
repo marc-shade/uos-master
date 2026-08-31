@@ -199,11 +199,25 @@ setup:
 main_loop:
         jsr TICK
 
+        ; keyboard: ESC leaves the current app and returns to the desktop.
+        ; Apps that want keys themselves (e.g. the file manager's input
+        ; loop) poll KEYIN in their own loops and never return here.
+        jsr KEYIN
+        cmp #$1b
+        beq esc_to_desk
+
         ;read input driver
         lda $dc01
         and #$10
         beq btnclick
         jmp main_loop
+
+esc_to_desk:
+        #UnregisterApp
+        jsr LOAD_IMM
+        .text "uos-desktop",$00
+        jsr APP_LOADER
+        jmp DESK_START
 btnclick:
         ; check for drag operation
         inc mousedowntime
