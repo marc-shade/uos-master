@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-settings.prg -L target/uos-settings.lst src/uos-settings.asm
-; Mon Aug 31 17:08:13 2026
+; Sat Sep  5 11:42:25 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -112,6 +112,7 @@
 =$0829					FILLFILE        = $0829
 =$082c					KEYIN           = $082c
 =$082f					GETCAP          = $082f
+=$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
 =$7350					SETREC          = $7350
 =$7355					SETREC_DISP     = $7355
 =$cc00					VDC_GETREG      = $cc00
@@ -526,7 +527,7 @@
 .51dc	c8		iny		    iny
 .51dd	a9 42		lda #$42	    lda #66
 .51df	85 04		sta $04		    sta Y1
-.51e1	a9 18		lda #$18	    lda #<title
+.51e1	a9 2a		lda #$2a	    lda #<title
 .51e3	85 14		sta $14		    sta r9L
 .51e5	a9 52		lda #$52	    lda #>title
 .51e7	85 15		sta $15		    sta r9H
@@ -538,140 +539,138 @@
 .51f4	c8		iny		    iny
 .51f5	a9 94		lda #$94	    lda #148
 .51f7	85 04		sta $04		    sta Y1
-.51f9	a9 21		lda #$21	    lda #<hint
+.51f9	a9 33		lda #$33	    lda #<hint
 .51fb	85 14		sta $14		    sta r9L
 .51fd	a9 52		lda #$52	    lda #>hint
 .51ff	85 15		sta $15		    sta r9H
 .5201	20 1e c0	jsr $c01e	    jsr GPUTS
 .5204	a9 ff		lda #$ff	    lda #$ff
 .5206	85 40		sta $40		    sta oldshown
-.5208	20 da 52	jsr $52da	    jsr draw_mode
-.520b	a9 92		lda #$92	    lda #<APP_KEY
-.520d	8d 3c 03	sta $033c	    sta $033c
-.5210	a9 52		lda #$52	    lda #>APP_KEY
-.5212	8d 3d 03	sta $033d	    sta $033d
-.5215	4c 11 08	jmp $0811	    jmp MAINLOOP
->5218	d3 45 54 54 49 4e 47 53		title:  .text "Settings", $00
->5220	00
->5221	c4 3d 44 49 53 50 4c 41		hint:   .text "D=display B=back", $00
->5229	59 20 c2 3d 42 41 43 4b 00
->5232	44 49 53 50 4c 41 59 3a		mode0s: .text "display: 40 only", 0
->523a	20 34 30 20 4f 4e 4c 59 00
->5243	44 49 53 50 4c 41 59 3a		mode1s: .text "display: 80 only", 0
->524b	20 38 30 20 4f 4e 4c 59 00
->5254	44 49 53 50 4c 41 59 3a		mode2s: .text "display: both (40+80)", 0
->525c	20 42 4f 54 48 20 28 34 30 2b 38 30 29 00
->526a	00 00 00 00 00 00 00 00		modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5272	00 00 00 00 00 00 00 00 00 00 00 00
->527e	00 00 00 00 00 00 00 00		oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5286	00 00 00 00 00 00 00 00 00 00 00 00
-.5292					APP_KEY:
-.5292	20 2c 08	jsr $082c	        jsr KEYIN
-.5295	c9 00		cmp #$00	        cmp #$00
-.5297	f0 0f		beq $52a8	        beq _akr
-.5299	c9 c4		cmp #$c4	        cmp #'D'
-.529b	d0 04		bne $52a1	        bne _akb
-.529d	20 c4 52	jsr $52c4	        jsr ON_DISPLAY
-.52a0	60		rts		        rts
-.52a1	c9 c2		cmp #$c2	_akb:   cmp #'B'
-.52a3	d0 03		bne $52a8	        bne _akr
-.52a5	4c a9 52	jmp $52a9	        jmp settings_back
-.52a8	60		rts		_akr:   rts
-.52a9					settings_back:
-.52a9	ce 00 9b	dec $9b00	    dec APP_ID_TBL
-.52ac	ad 00 9b	lda $9b00	    lda APP_ID_TBL
-.52af	20 23 08	jsr $0823	    jsr LOAD_IMM
->52b2	55 4f 53 2d 44 45 53 4b		    .text "uos-desktop",$00
->52ba	54 4f 50 00
-.52be	20 26 08	jsr $0826	    jsr APP_LOADER
-.52c1	4c 00 10	jmp $1000	    jmp DESK_START
-.52c4					ON_DISPLAY:
-.52c4	ad 55 73	lda $7355	    lda SETREC_DISP
-.52c7	18		clc		    clc
-.52c8	69 01		adc #$01	    adc #$01
-.52ca	c9 03		cmp #$03	    cmp #3
-.52cc	90 02		bcc $52d0	    bcc on_d_ok
-.52ce	a9 00		lda #$00	    lda #0
-.52d0					on_d_ok:
-.52d0	8d 55 73	sta $7355	    sta SETREC_DISP
-.52d3	20 51 53	jsr $5351	    jsr save_record
-.52d6	20 da 52	jsr $52da	    jsr draw_mode
-.52d9	60		rts		    rts
-.52da					draw_mode:
-.52da	a5 40		lda $40		    lda oldshown
-.52dc	c9 ff		cmp #$ff	    cmp #$ff
-.52de	f0 17		beq $52f7	    beq dm_build
-.52e0	a9 50		lda #$50	    lda #80
-.52e2	85 02		sta $02		    sta X1
-.52e4	a9 00		lda #$00	    lda #$00
-.52e6	85 03		sta $03		    sta X1+1
-.52e8	a9 54		lda #$54	    lda #84
-.52ea	85 04		sta $04		    sta Y1
-.52ec	a9 7e		lda #$7e	    lda #<oldmode
-.52ee	85 14		sta $14		    sta r9L
-.52f0	a9 52		lda #$52	    lda #>oldmode
-.52f2	85 15		sta $15		    sta r9H
-.52f4	20 1e c0	jsr $c01e	    jsr GPUTS
-.52f7					dm_build:
-.52f7	ad 55 73	lda $7355	    lda SETREC_DISP
-.52fa	20 3f 53	jsr $533f	    jsr mode_str                   ; r2 = text for the current mode
-.52fd	a0 00		ldy #$00	    ldy #$00
-.52ff	b1 06		lda ($06),y	dm_cp:  lda (r2),y
-.5301	f0 0b		beq $530e	    beq dm_done
-.5303	c0 13		cpy #$13	    cpy #19
-.5305	b0 07		bcs $530e	    bcs dm_done
-.5307	99 6a 52	sta $526a,y	    sta modebuf,y
-.530a	c8		iny		    iny
-.530b	4c ff 52	jmp $52ff	    jmp dm_cp
-.530e					dm_done:
-.530e	a9 00		lda #$00	    lda #$00
-.5310	99 6a 52	sta $526a,y	    sta modebuf,y                  ; keep the buffer $00-terminated
-.5313	a0 00		ldy #$00	    ldy #$00
-.5315	b9 6a 52	lda $526a,y	dm_old: lda modebuf,y
-.5318	99 7e 52	sta $527e,y	    sta oldmode,y
-.531b	f0 05		beq $5322	    beq dm_show
-.531d	c8		iny		    iny
-.531e	c0 14		cpy #$14	    cpy #20
-.5320	d0 00		bne $5322	    bne dm_show
-.5322					dm_show:
-.5322	ad 55 73	lda $7355	    lda SETREC_DISP
-.5325	85 40		sta $40		    sta oldshown
-.5327	a9 50		lda #$50	    lda #80
-.5329	85 02		sta $02		    sta X1
-.532b	a9 00		lda #$00	    lda #$00
-.532d	85 03		sta $03		    sta X1+1
-.532f	a9 54		lda #$54	    lda #84
-.5331	85 04		sta $04		    sta Y1
-.5333	a9 7e		lda #$7e	    lda #<oldmode
-.5335	85 14		sta $14		    sta r9L
-.5337	a9 52		lda #$52	    lda #>oldmode
-.5339	85 15		sta $15		    sta r9H
-.533b	20 1e c0	jsr $c01e	    jsr GPUTS
-.533e	60		rts		    rts
-.533f					mode_str:
-.533f	a8		tay		    tay
-.5340	b9 4b 53	lda $534b,y	    lda strtab_lo,y
-.5343	85 06		sta $06		    sta r2L
-.5345	b9 4e 53	lda $534e,y	    lda strtab_hi,y
-.5348	85 07		sta $07		    sta r2H
-.534a	60		rts		    rts
->534b	32 43 54			strtab_lo: .byte <mode0s, <mode1s, <mode2s
->534e	52 52 52			strtab_hi: .byte >mode0s, >mode1s, >mode2s
-.5351					save_record:
-.5351	20 82 53	jsr $5382	    jsr scr_record
-.5354	a9 07		lda #$07	    lda #7
-.5356	a2 6f		ldx #$6f	    ldx #<savename
-.5358	a0 53		ldy #$53	    ldy #>savename
-.535a	20 bd ff	jsr $ffbd	    jsr SETNAM
-.535d	a9 50		lda #$50	    lda #<savehdr
-.535f	85 56		sta $56		    sta sptr
-.5361	a9 73		lda #$73	    lda #>savehdr
-.5363	85 57		sta $57		    sta sptr+1
-.5365	a9 56		lda #$56	    lda #$56                       ; ZP pointer cell (apps own $56-$57)
-.5367	a2 57		ldx #$57	    ldx #<SAVEEND                  ; exclusive end = one past the last byte
-.5369	a0 73		ldy #$73	    ldy #>SAVEEND
-.536b	20 d8 ff	jsr $ffd8	    jsr SAVE
-.536e	60		rts		    rts
+.5208	20 d9 52	jsr $52d9	    jsr draw_mode
+.520b					APP_KEY:
+.520b	20 2c 08	jsr $082c	        jsr KEYIN
+.520e	c9 00		cmp #$00	        cmp #$00
+.5210	f0 f9		beq $520b	        beq APP_KEY
+.5212	c9 44		cmp #$44	        cmp #$44                        ; 'D' — explicit unshifted PETSCII:
+.5214	d0 06		bne $521c	        bne _akb                        ; 64tass's #'D' assembles to $c4
+.5216	20 c3 52	jsr $52c3	        jsr ON_DISPLAY                  ; (shifted), which no keypress
+.5219	4c 0b 52	jmp $520b	        jmp APP_KEY                     ; ever produces
+.521c	c9 42		cmp #$42	_akb:   cmp #$42                        ; 'B'
+.521e	f0 07		beq $5227	        beq _akbk
+.5220	c9 1b		cmp #$1b	        cmp #$1b                        ; ESC also backs out
+.5222	f0 03		beq $5227	        beq _akbk
+.5224	4c 0b 52	jmp $520b	        jmp APP_KEY
+.5227	4c a8 52	jmp $52a8	_akbk:  jmp settings_back
+>522a	d3 45 54 54 49 4e 47 53		title:  .text "Settings", $00
+>5232	00
+>5233	c4 3d 44 49 53 50 4c 41		hint:   .text "D=display B/ESC=back", $00
+>523b	59 20 c2 2f c5 d3 c3 3d 42 41 43 4b 00
+>5248	44 49 53 50 4c 41 59 3a		mode0s: .text "display: 40 only", 0
+>5250	20 34 30 20 4f 4e 4c 59 00
+>5259	44 49 53 50 4c 41 59 3a		mode1s: .text "display: 80 only", 0
+>5261	20 38 30 20 4f 4e 4c 59 00
+>526a	44 49 53 50 4c 41 59 3a		mode2s: .text "display: both (40+80)", 0
+>5272	20 42 4f 54 48 20 28 34 30 2b 38 30 29 00
+>5280	00 00 00 00 00 00 00 00		modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5288	00 00 00 00 00 00 00 00 00 00 00 00
+>5294	00 00 00 00 00 00 00 00		oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>529c	00 00 00 00 00 00 00 00 00 00 00 00
+.52a8					settings_back:
+.52a8	ce 00 9b	dec $9b00	    dec APP_ID_TBL
+.52ab	ad 00 9b	lda $9b00	    lda APP_ID_TBL
+.52ae	20 23 08	jsr $0823	    jsr LOAD_IMM
+>52b1	55 4f 53 2d 44 45 53 4b		    .text "uos-desktop",$00
+>52b9	54 4f 50 00
+.52bd	20 26 08	jsr $0826	    jsr APP_LOADER
+.52c0	4c 00 10	jmp $1000	    jmp DESK_START
+.52c3					ON_DISPLAY:
+.52c3	ad 55 73	lda $7355	    lda SETREC_DISP
+.52c6	18		clc		    clc
+.52c7	69 01		adc #$01	    adc #$01
+.52c9	c9 03		cmp #$03	    cmp #3
+.52cb	90 02		bcc $52cf	    bcc on_d_ok
+.52cd	a9 00		lda #$00	    lda #0
+.52cf					on_d_ok:
+.52cf	8d 55 73	sta $7355	    sta SETREC_DISP
+.52d2	20 50 53	jsr $5350	    jsr save_record
+.52d5	20 d9 52	jsr $52d9	    jsr draw_mode
+.52d8	60		rts		    rts
+.52d9					draw_mode:
+.52d9	a5 40		lda $40		    lda oldshown
+.52db	c9 ff		cmp #$ff	    cmp #$ff
+.52dd	f0 17		beq $52f6	    beq dm_build
+.52df	a9 50		lda #$50	    lda #80
+.52e1	85 02		sta $02		    sta X1
+.52e3	a9 00		lda #$00	    lda #$00
+.52e5	85 03		sta $03		    sta X1+1
+.52e7	a9 54		lda #$54	    lda #84
+.52e9	85 04		sta $04		    sta Y1
+.52eb	a9 94		lda #$94	    lda #<oldmode
+.52ed	85 14		sta $14		    sta r9L
+.52ef	a9 52		lda #$52	    lda #>oldmode
+.52f1	85 15		sta $15		    sta r9H
+.52f3	20 1e c0	jsr $c01e	    jsr GPUTS
+.52f6					dm_build:
+.52f6	ad 55 73	lda $7355	    lda SETREC_DISP
+.52f9	20 3e 53	jsr $533e	    jsr mode_str                   ; r2 = text for the current mode
+.52fc	a0 00		ldy #$00	    ldy #$00
+.52fe	b1 06		lda ($06),y	dm_cp:  lda (r2),y
+.5300	f0 0b		beq $530d	    beq dm_done
+.5302	c0 13		cpy #$13	    cpy #19
+.5304	b0 07		bcs $530d	    bcs dm_done
+.5306	99 80 52	sta $5280,y	    sta modebuf,y
+.5309	c8		iny		    iny
+.530a	4c fe 52	jmp $52fe	    jmp dm_cp
+.530d					dm_done:
+.530d	a9 00		lda #$00	    lda #$00
+.530f	99 80 52	sta $5280,y	    sta modebuf,y                  ; keep the buffer $00-terminated
+.5312	a0 00		ldy #$00	    ldy #$00
+.5314	b9 80 52	lda $5280,y	dm_old: lda modebuf,y
+.5317	99 94 52	sta $5294,y	    sta oldmode,y
+.531a	f0 05		beq $5321	    beq dm_show
+.531c	c8		iny		    iny
+.531d	c0 14		cpy #$14	    cpy #20
+.531f	d0 f3		bne $5314	    bne dm_old                     ; loop (was `bne dm_show`: copied one
+.5321					dm_show:
+.5321	ad 55 73	lda $7355	    lda SETREC_DISP
+.5324	85 40		sta $40		    sta oldshown
+.5326	a9 50		lda #$50	    lda #80
+.5328	85 02		sta $02		    sta X1
+.532a	a9 00		lda #$00	    lda #$00
+.532c	85 03		sta $03		    sta X1+1
+.532e	a9 54		lda #$54	    lda #84
+.5330	85 04		sta $04		    sta Y1
+.5332	a9 94		lda #$94	    lda #<oldmode
+.5334	85 14		sta $14		    sta r9L
+.5336	a9 52		lda #$52	    lda #>oldmode
+.5338	85 15		sta $15		    sta r9H
+.533a	20 1e c0	jsr $c01e	    jsr GPUTS
+.533d	60		rts		    rts
+.533e					mode_str:
+.533e	a8		tay		    tay
+.533f	b9 4a 53	lda $534a,y	    lda strtab_lo,y
+.5342	85 06		sta $06		    sta r2L
+.5344	b9 4d 53	lda $534d,y	    lda strtab_hi,y
+.5347	85 07		sta $07		    sta r2H
+.5349	60		rts		    rts
+>534a	48 59 6a			strtab_lo: .byte <mode0s, <mode1s, <mode2s
+>534d	52 52 52			strtab_hi: .byte >mode0s, >mode1s, >mode2s
+.5350					save_record:
+.5350	20 82 53	jsr $5382	    jsr scr_record
+.5353	a9 07		lda #$07	    lda #7
+.5355	a2 6f		ldx #$6f	    ldx #<savename
+.5357	a0 53		ldy #$53	    ldy #>savename
+.5359	20 bd ff	jsr $ffbd	    jsr SETNAM
+.535c	a9 50		lda #$50	    lda #<savehdr
+.535e	85 56		sta $56		    sta sptr
+.5360	a9 73		lda #$73	    lda #>savehdr
+.5362	85 57		sta $57		    sta sptr+1
+.5364	a9 56		lda #$56	    lda #$56                       ; ZP pointer cell (apps own $56-$57)
+.5366	a2 57		ldx #$57	    ldx #<SAVEEND                  ; exclusive end = one past the last byte
+.5368	a0 73		ldy #$73	    ldy #>SAVEEND
+.536a	20 d8 ff	jsr $ffd8	    jsr SAVE
+.536d	58		cli		    cli                             ; the serial paths can exit with IRQs
+.536e	60		rts		    rts                             ; masked (same kernel quirk as LOAD);
 >536f	55 4f 53 2d 53 45 54 00		savename: .byte $55,$4f,$53,$2d,$53,$45,$54,$00  ; "UOS-SET" unshifted
 =$56					sptr    = $56
 >5377	53 30 3a 55 4f 53 2d 53		scrname: .byte $53,$30,$3a,$55,$4f,$53,$2d,$53,$45,$54,$00 ; "S0:UOS-SET" unshifted

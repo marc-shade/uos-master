@@ -391,4 +391,33 @@ nothing later depends on an unverified assumption.</p>
            serial ops (the fmgr's dirscan already had it); 64tass .text emits SHIFTED PETSCII -> command
            strings must be explicit unshifted .byte; label placement must be validated in the .lst.
 -->
+<!-- 2026-09-05 session 3 addendum (FR-S4 shell landed; app-lifecycle handoff closed):
+  CI: tests/ci_fm.py now 12/12 in x64 BOTH with the kernal SAVE and with UOS_CI_SKIP_SAVE=1
+      (SAVE-under-warp carve-out kept as an env gate; the SAVE's disk landing is still the HW gate).
+      PASS 10a-d exercise the shell end to end: launch after fmgr->settings->ESC hops, VER response,
+      DIR rescan + command-line clear, EXIT back to a LIVE desktop (tick dispatch re-proven, not just
+      resident bytes).
+  ROOT CAUSES FIXED (six, each verified):
+   1. esc_to_desk stack underflow — DESK_START ended in RTS; reached by `jmp` from any depth it popped an
+      empty stack and killed the main loop (so nothing dispatched the next app). Fix: DESK_START resets
+      the stack (ldx #$ff / txs) and ends `jmp MAINLOOP`. Regression gate: tests/dbg_esc.py.
+   2. shell sh_add stored cmdlen (the loop index) instead of the typed char (A held the length after the
+      cap check) -> every command parsed $00 -> "?"; EXIT/VER/DIR/RUN all dead. Fix keeps A. Proof:
+      tests/dbg_shellexit.py (cmdbuf must read 45 58 49 54).
+   3. app-lifecycle input race — settings uniquely ran in the core main_loop with a once-per-second
+      APP_KEY tick handler; main_loop's own KEYIN (faster consumer) stole D/B/ESC before the tick could.
+      Fix: settings owns a private KEYIN loop like the fmgr/shell (no main_loop, no tick key handler).
+   4. self-overwrite launch — fmopen/cmd_run did `jsr APP_LOADER / jmp APP_START` from inside the app
+      being replaced; the kernal LOAD overwrote the caller mid-return. Fix: core-resident LAUNCH_APP
+      ($0832 jump-table slot) does LOADER + jmp APP_START; apps `jmp LAUNCH_APP`.
+   5. settings #'D'/#'B' compares — 64tass #'D' assembles to $c4 (shifted); a real keypress is $44.
+      Also draw_mode's dm_old loop was `bne dm_show` (ran once) -> XOR erase cleared only the first glyph.
+   6. shell setline wrote X1 (== r0/$02) before copying (r0)->respbuf, destroying the message pointer, so
+      the VER/response line stayed blank; copy-first fixes it. Plus j_exec now clears the command line and
+      refresh/paintrows are XOR-safe + guard an empty dir (0 entries no longer paints 256 rows).
+  ALSO: core LOADER latches the last kernal error at LOADERR ($0a48) for callers/CI diagnostics.
+  OPEN HW (unchanged, needs the C128 back): deploy this build; validate kernal-SAVE disk landing on
+      hardware; 80-col visual acceptance (monitor chain); MegaPatch 3.3 r12 install (staged drive B).
+      NOT yet deployed to hardware this session (machine state unknown); all results are x64-emulator.
+-->
 </body>

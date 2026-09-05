@@ -48,6 +48,7 @@
         jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
         jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
         jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
+        jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
 
 ; ==========================================================
 ; START
@@ -362,6 +363,7 @@ _skip   LDY #$01      ; not $01 means: load to address stored in file
         BCS _error    ; if carry set, a load error has happened
         RTS
 _error
+        STA LOADERR   ; latch the kernal error for callers / diagnostics
         ; Accumulator contains BASIC error code
 
         ; most likely errors:
@@ -374,6 +376,8 @@ _error
         RTS
 
 ftmp:   .byte $00
+LOADERR: .byte $00     ; last kernal LOAD error ($04 file not found, $05 device
+                       ; not present, $1d load error); 0 until the first failure
 file:   .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
 
 ; ==========================================================
@@ -400,6 +404,20 @@ _ffdone:
         lda #$00
         sta file,x
         rts
+
+; ==========================================================
+; Launch App
+; Loads the file named in the LOADER buffer (set by FILLFILE
+; or LOAD_IMM) and enters it at APP_START. Lives in the core
+; on purpose: an app that loads another app OVER ITSELF (both
+; at APP_START) has its own code overwritten while the kernal
+; LOAD is running, so the LOAD returns into the new image's
+; bytes. Callers therefore `jmp LAUNCH_APP` (never jsr) and
+; let core-resident code do the load and the jump.
+; ==========================================================
+LAUNCH_APP_RT:
+        jsr LOADER
+        jmp APP_START
 
 ; ==========================================================
 ; Key In

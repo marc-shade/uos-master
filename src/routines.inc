@@ -32,6 +32,7 @@ APP_LOADER      = $0826
 FILLFILE        = $0829
 KEYIN           = $082c
 GETCAP          = $082f
+LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
 ; settings record (FR-S3): saved as "UOS-SET" by the settings app, loaded
 ; back at boot into the app region
 SETREC          = $7350

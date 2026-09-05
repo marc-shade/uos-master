@@ -273,8 +273,9 @@ fmopen:
         lda fmnamesH,x
         sta r0H
         jsr FILLFILE
-        jsr DLOADAPP
-        jmp APP_START
+        jmp LAUNCH_APP                  ; core-resident: the new app loads
+                                        ; over THIS code, so the kernal LOAD
+                                        ; must not return into the fmgr
 fmescape:
         lda #<dskstr
         sta r0L

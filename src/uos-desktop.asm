@@ -28,6 +28,14 @@
 
 * = DESK_START
 
+        ; One-way entry: callers `jmp` here from any stack depth (core
+        ; esc_to_desk, app EXITs, click handlers), so the caller's frames
+        ; are dead on arrival. Reset the stack and re-enter the core loop
+        ; at the end instead of RTS - an RTS here pops an empty stack and
+        ; kills the TICK dispatch (proven in tests/dbg_esc.py).
+        ldx #$ff
+        txs
+
         #RegisterApp
 
         lda #<APP_TICK
@@ -51,7 +59,7 @@
         #Text 283,174, trash
         
         #SaveScreen
-        RTS
+        jmp MAINLOOP
 
 computer:
         .text "computer", $00

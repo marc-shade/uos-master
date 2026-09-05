@@ -33,36 +33,36 @@ vtmpb           = $42
     sta oldshown
     jsr draw_mode
 
-    ; keyboard service through the core's once-per-second tick dispatch
-    lda #<APP_KEY
-    sta $033c
-    lda #>APP_KEY
-    sta $033d
-
-    jmp MAINLOOP
+    ; own the keyboard directly (like the fmgr and shell). The old design
+    ; registered APP_KEY on the once-per-second tick and returned to the
+    ; core main_loop; but main_loop ALSO polls KEYIN (for ESC), and being
+    ; the faster of the two consumers it stole most keypresses before the
+    ; tick could dispatch APP_KEY — the "app-lifecycle handoff" race that
+    ; left D/B/ESC unreliable and the shell hop unreachable. A private
+    ; input loop has a single KEYIN consumer, so every key is seen.
+APP_KEY:
+        jsr KEYIN
+        cmp #$00
+        beq APP_KEY
+        cmp #$44                        ; 'D' — explicit unshifted PETSCII:
+        bne _akb                        ; 64tass's #'D' assembles to $c4
+        jsr ON_DISPLAY                  ; (shifted), which no keypress
+        jmp APP_KEY                     ; ever produces
+_akb:   cmp #$42                        ; 'B'
+        beq _akbk
+        cmp #$1b                        ; ESC also backs out
+        beq _akbk
+        jmp APP_KEY
+_akbk:  jmp settings_back
 
 title:  .text "Settings", $00
-hint:   .text "D=display B=back", $00
+hint:   .text "D=display B/ESC=back", $00
 mode0s: .text "display: 40 only", 0
 mode1s: .text "display: 80 only", 0
 mode2s: .text "display: both (40+80)", 0
 
 modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-; ---------- once-per-second keyboard service ----------
-APP_KEY:
-        jsr KEYIN
-        cmp #$00
-        beq _akr
-        cmp #'D'
-        bne _akb
-        jsr ON_DISPLAY
-        rts
-_akb:   cmp #'B'
-        bne _akr
-        jmp settings_back
-_akr:   rts
 
 settings_back:
     #UnregisterApp
@@ -127,7 +127,9 @@ dm_old: lda modebuf,y
     beq dm_show
     iny
     cpy #20
-    bne dm_show
+    bne dm_old                     ; loop (was `bne dm_show`: copied one
+                                   ; byte, so the XOR erase only ever
+                                   ; cleared the first glyph)
 dm_show:
     lda SETREC_DISP
     sta oldshown
@@ -175,7 +177,10 @@ save_record:
     ldx #<SAVEEND                  ; exclusive end = one past the last byte
     ldy #>SAVEEND
     jsr SAVE
-    rts
+    cli                             ; the serial paths can exit with IRQs
+    rts                             ; masked (same kernel quirk as LOAD);
+                                    ; the keyboard IRQ must live for the
+                                    ; APP_TICK key service
 
 savename: .byte $55,$4f,$53,$2d,$53,$45,$54,$00  ; "UOS-SET" unshifted
 
