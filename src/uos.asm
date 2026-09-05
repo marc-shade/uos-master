@@ -906,11 +906,17 @@ VDPREF:
         jsr FILLFILE
         jsr LOADER              ; "UOS-SET" -> record at $7350; C=1 if absent
         bcc vdpr_ok
-        lda #$02                ; default mode when no record exists
+        lda #$02                ; defaults when no record exists
         sta SETREC_DISP
+        lda #VIC_COLOR_CYAN
+        sta SETREC_BG
 vdpr_ok:
         rts
-setrecname: .text "UOS-SET", $00
+        ; unshifted PETSCII "UOS-SET" — MUST match the SAVE's savename, which
+        ; is written unshifted; `.text` here assembles to SHIFTED bytes
+        ; ($d5 $cf ...) that never match the saved file, so the boot would
+        ; always fall back to defaults on real hardware.
+setrecname: .byte $55,$4f,$53,$2d,$53,$45,$54,$00
 VDSETUP:
         lda SETREC_DISP
         beq vds_no              ; persisted 0 = 40-column only

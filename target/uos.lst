@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos.prg -L target/uos.lst src/uos.asm
-; Sat Sep  5 15:16:20 2026
+; Sat Sep  5 16:20:32 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -114,7 +114,8 @@
 =$082f					GETCAP          = $082f
 =$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
 =$7350					SETREC          = $7350
-=$7355					SETREC_DISP     = $7355
+=$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+=$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
 =$cc00					VDC_GETREG      = $cc00
 =$cc07					VDC_SETREG      = $cc07
 =$cc14					VDC_SEEK        = $cc14
@@ -307,7 +308,7 @@
 .0826	4c 34 0a	jmp $0a34	        jmp LOADER
 .0829	4c 7b 0a	jmp $0a7b	        jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
 .082c	4c 9c 0a	jmp $0a9c	        jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
-.082f	4c df 0f	jmp $0fdf	        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
+.082f	4c e4 0f	jmp $0fe4	        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
 .0832	4c 96 0a	jmp $0a96	        jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
 .0835					START:
 .0835	a9 12		lda #$12	        LDA #$12	; Load clock registers with inital time
@@ -403,7 +404,7 @@
 .093f	20 03 9c	jsr $9c03	        jsr REU_STASH
 .0942	20 03 9f	jsr $9f03	        jsr INIT_MOUSE
 .0945	20 3f 0f	jsr $0f3f	        jsr VDPREF
-.0948	20 5d 0f	jsr $0f5d	        jsr VDSETUP
+.0948	20 62 0f	jsr $0f62	        jsr VDSETUP
 .094b	20 00 10	jsr $1000	        jsr DESK_START
 .094e					main_loop:
 .094e	20 53 0b	jsr $0b53	        jsr TICK
@@ -1177,108 +1178,110 @@
 .0f3b	20 03 9c	jsr $9c03	        jsr REU_STASH
 .0f3e	60		rts		        rts
 .0f3f					VDPREF:
-.0f3f	a9 55		lda #$55	        lda #<setrecname
+.0f3f	a9 5a		lda #$5a	        lda #<setrecname
 .0f41	85 02		sta $02		        sta r0L
 .0f43	a9 0f		lda #$0f	        lda #>setrecname
 .0f45	85 03		sta $03		        sta r0H
 .0f47	20 29 08	jsr $0829	        jsr FILLFILE
 .0f4a	20 34 0a	jsr $0a34	        jsr LOADER              ; "UOS-SET" -> record at $7350; C=1 if absent
-.0f4d	90 05		bcc $0f54	        bcc vdpr_ok
-.0f4f	a9 02		lda #$02	        lda #$02                ; default mode when no record exists
+.0f4d	90 0a		bcc $0f59	        bcc vdpr_ok
+.0f4f	a9 02		lda #$02	        lda #$02                ; defaults when no record exists
 .0f51	8d 55 73	sta $7355	        sta SETREC_DISP
-.0f54					vdpr_ok:
-.0f54	60		rts		        rts
->0f55	d5 cf d3 2d d3 c5 d4 00		setrecname: .text "UOS-SET", $00
-.0f5d					VDSETUP:
-.0f5d	ad 55 73	lda $7355	        lda SETREC_DISP
-.0f60	f0 14		beq $0f76	        beq vds_no              ; persisted 0 = 40-column only
-.0f62	20 56 cd	jsr $cd56	        jsr VDC_PRESENT
-.0f65	c9 01		cmp #$01	        cmp #$01
-.0f67	d0 0d		bne $0f76	        bne vds_no              ; no 8563 on this machine (C64 hosts):
-.0f69	20 1b cd	jsr $cd1b	        jsr VDC_INIT
-.0f6c	20 e4 cc	jsr $cce4	        jsr VDC_FONTUP
-.0f6f	20 88 cc	jsr $cc88	        jsr VDC_CLS
-.0f72	20 a5 0f	jsr $0fa5	        jsr VD_BANNER
-.0f75	60		rts		        rts
-.0f76					vds_no:
-.0f76	60		rts		        rts
->0f77	d5 4c 54 cf d3 20 38 30		vdcline1: .text "UltOS 80-column display", $00
->0f7f	2d 43 4f 4c 55 4d 4e 20 44 49 53 50 4c 41 59 00
->0f8f	53 45 43 4f 4e 44 20 44		vdcline2: .text "second display online", 0
->0f97	49 53 50 4c 41 59 20 4f 4e 4c 49 4e 45 00
-.0fa5					VD_BANNER:
-.0fa5	a9 77		lda #$77	        lda #<vdcline1
-.0fa7	85 23		sta $23		        sta vdcbpL
-.0fa9	a9 0f		lda #$0f	        lda #>vdcline1
-.0fab	85 24		sta $24		        sta vdcbpH
-.0fad	a9 00		lda #$00	        lda #0
-.0faf	85 25		sta $25		        sta vdcdpL
-.0fb1	a9 00		lda #$00	        lda #0
-.0fb3	85 26		sta $26		        sta vdcdpH
-.0fb5	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0fb8	a9 8f		lda #$8f	        lda #<vdcline2
-.0fba	85 23		sta $23		        sta vdcbpL
-.0fbc	a9 0f		lda #$0f	        lda #>vdcline2
-.0fbe	85 24		sta $24		        sta vdcbpH
-.0fc0	a9 50		lda #$50	        lda #80             ; row 1 start cell
-.0fc2	85 25		sta $25		        sta vdcdpL
-.0fc4	a9 00		lda #$00	        lda #0
-.0fc6	85 26		sta $26		        sta vdcdpH
-.0fc8	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0fcb	60		rts		        rts
-.0fcc					VDCPUTROW:
-.0fcc	20 31 cc	jsr $cc31	        jsr VDC_PUTS
-.0fcf	60		rts		        rts
+.0f54	a9 03		lda #$03	        lda #VIC_COLOR_CYAN
+.0f56	8d 56 73	sta $7356	        sta SETREC_BG
+.0f59					vdpr_ok:
+.0f59	60		rts		        rts
+>0f5a	55 4f 53 2d 53 45 54 00		setrecname: .byte $55,$4f,$53,$2d,$53,$45,$54,$00
+.0f62					VDSETUP:
+.0f62	ad 55 73	lda $7355	        lda SETREC_DISP
+.0f65	f0 14		beq $0f7b	        beq vds_no              ; persisted 0 = 40-column only
+.0f67	20 56 cd	jsr $cd56	        jsr VDC_PRESENT
+.0f6a	c9 01		cmp #$01	        cmp #$01
+.0f6c	d0 0d		bne $0f7b	        bne vds_no              ; no 8563 on this machine (C64 hosts):
+.0f6e	20 1b cd	jsr $cd1b	        jsr VDC_INIT
+.0f71	20 e4 cc	jsr $cce4	        jsr VDC_FONTUP
+.0f74	20 88 cc	jsr $cc88	        jsr VDC_CLS
+.0f77	20 aa 0f	jsr $0faa	        jsr VD_BANNER
+.0f7a	60		rts		        rts
+.0f7b					vds_no:
+.0f7b	60		rts		        rts
+>0f7c	d5 4c 54 cf d3 20 38 30		vdcline1: .text "UltOS 80-column display", $00
+>0f84	2d 43 4f 4c 55 4d 4e 20 44 49 53 50 4c 41 59 00
+>0f94	53 45 43 4f 4e 44 20 44		vdcline2: .text "second display online", 0
+>0f9c	49 53 50 4c 41 59 20 4f 4e 4c 49 4e 45 00
+.0faa					VD_BANNER:
+.0faa	a9 7c		lda #$7c	        lda #<vdcline1
+.0fac	85 23		sta $23		        sta vdcbpL
+.0fae	a9 0f		lda #$0f	        lda #>vdcline1
+.0fb0	85 24		sta $24		        sta vdcbpH
+.0fb2	a9 00		lda #$00	        lda #0
+.0fb4	85 25		sta $25		        sta vdcdpL
+.0fb6	a9 00		lda #$00	        lda #0
+.0fb8	85 26		sta $26		        sta vdcdpH
+.0fba	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0fbd	a9 94		lda #$94	        lda #<vdcline2
+.0fbf	85 23		sta $23		        sta vdcbpL
+.0fc1	a9 0f		lda #$0f	        lda #>vdcline2
+.0fc3	85 24		sta $24		        sta vdcbpH
+.0fc5	a9 50		lda #$50	        lda #80             ; row 1 start cell
+.0fc7	85 25		sta $25		        sta vdcdpL
+.0fc9	a9 00		lda #$00	        lda #0
+.0fcb	85 26		sta $26		        sta vdcdpH
+.0fcd	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0fd0	60		rts		        rts
+.0fd1					VDCPUTROW:
+.0fd1	20 31 cc	jsr $cc31	        jsr VDC_PUTS
+.0fd4	60		rts		        rts
 =$01					CAP_GFX         = $01
 =$02					CAP_VDC         = $02
 =$03					CAP_REU         = $03
 =$04					CAP_KEYIN       = $04
 =$05					CAP_FILLFILE    = $05
-.0fd0					CAPTBL:
->0fd0	01				        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
->0fd1	00 c0				        .word $c000
->0fd3	02				        .byte CAP_VDC
->0fd4	00 cc				        .word $cc00
->0fd6	03				        .byte CAP_REU
->0fd7	00 9c				        .word $9c00
->0fd9	04				        .byte CAP_KEYIN
->0fda	2c 08				        .word $082c
->0fdc	05				        .byte CAP_FILLFILE
->0fdd	29 08				        .word $0829
-.0fdf					CAPTBLEND:
-.0fdf					GETCAP_RT:
-.0fdf	a9 00		lda #$00	        lda #$00                ; default: base = 0 (absent)
-.0fe1	8d 1e 10	sta $101e	        sta retval
-.0fe4	8d 1f 10	sta $101f	        sta retval+1
-.0fe7	a2 00		ldx #$00	        ldx #0
-.0fe9	bd d0 0f	lda $0fd0,x	gc_l:   lda CAPTBL,x
-.0fec	c9 ff		cmp #$ff	        cmp #$ff
-.0fee	f0 21		beq $1011	        beq gc_none
-.0ff0	e0 0d		cpx #$0d	        cpx #13
-.0ff2	b0 1d		bcs $1011	        bcs gc_none
-.0ff4	cd 1d 10	cmp $101d	        cmp capid
-.0ff7	d0 11		bne $100a	        bne gc_next3
-.0ff9	e8		inx		        inx
-.0ffa	bd d0 0f	lda $0fd0,x	        lda CAPTBL,x
-.0ffd	8d 1e 10	sta $101e	        sta retval              ; lo
-.1000	e8		inx		        inx
-.1001	bd d0 0f	lda $0fd0,x	        lda CAPTBL,x
-.1004	8d 1f 10	sta $101f	        sta retval+1            ; hi
-.1007	4c 19 10	jmp $1019	        jmp gc_done
-.100a					gc_next3:
-.100a	e8		inx		        inx
-.100b	e8		inx		        inx
-.100c	e8		inx		        inx
-.100d	e8		inx		        inx
-.100e	4c e9 0f	jmp $0fe9	        jmp gc_l
-.1011					gc_none:
-.1011	a9 00		lda #$00	        lda #$00
-.1013	8d 1e 10	sta $101e	        sta retval
-.1016	8d 1f 10	sta $101f	        sta retval+1
-.1019					gc_done:
-.1019	ad 1e 10	lda $101e	        lda retval
-.101c	60		rts		        rts
->101d	00				capid:  .byte $00
->101e	00 00				retval: .byte $00, $00
+.0fd5					CAPTBL:
+>0fd5	01				        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
+>0fd6	00 c0				        .word $c000
+>0fd8	02				        .byte CAP_VDC
+>0fd9	00 cc				        .word $cc00
+>0fdb	03				        .byte CAP_REU
+>0fdc	00 9c				        .word $9c00
+>0fde	04				        .byte CAP_KEYIN
+>0fdf	2c 08				        .word $082c
+>0fe1	05				        .byte CAP_FILLFILE
+>0fe2	29 08				        .word $0829
+.0fe4					CAPTBLEND:
+.0fe4					GETCAP_RT:
+.0fe4	a9 00		lda #$00	        lda #$00                ; default: base = 0 (absent)
+.0fe6	8d 23 10	sta $1023	        sta retval
+.0fe9	8d 24 10	sta $1024	        sta retval+1
+.0fec	a2 00		ldx #$00	        ldx #0
+.0fee	bd d5 0f	lda $0fd5,x	gc_l:   lda CAPTBL,x
+.0ff1	c9 ff		cmp #$ff	        cmp #$ff
+.0ff3	f0 21		beq $1016	        beq gc_none
+.0ff5	e0 0d		cpx #$0d	        cpx #13
+.0ff7	b0 1d		bcs $1016	        bcs gc_none
+.0ff9	cd 22 10	cmp $1022	        cmp capid
+.0ffc	d0 11		bne $100f	        bne gc_next3
+.0ffe	e8		inx		        inx
+.0fff	bd d5 0f	lda $0fd5,x	        lda CAPTBL,x
+.1002	8d 23 10	sta $1023	        sta retval              ; lo
+.1005	e8		inx		        inx
+.1006	bd d5 0f	lda $0fd5,x	        lda CAPTBL,x
+.1009	8d 24 10	sta $1024	        sta retval+1            ; hi
+.100c	4c 1e 10	jmp $101e	        jmp gc_done
+.100f					gc_next3:
+.100f	e8		inx		        inx
+.1010	e8		inx		        inx
+.1011	e8		inx		        inx
+.1012	e8		inx		        inx
+.1013	4c ee 0f	jmp $0fee	        jmp gc_l
+.1016					gc_none:
+.1016	a9 00		lda #$00	        lda #$00
+.1018	8d 23 10	sta $1023	        sta retval
+.101b	8d 24 10	sta $1024	        sta retval+1
+.101e					gc_done:
+.101e	ad 23 10	lda $1023	        lda retval
+.1021	60		rts		        rts
+>1022	00				capid:  .byte $00
+>1023	00 00				retval: .byte $00, $00
 
 ;******  End of listing

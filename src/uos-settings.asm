@@ -29,9 +29,23 @@ vtmpb           = $42
     ; hint line
     #Text 80, 148, hint
 
+    ; Loading this app overwrites the record at $7350 with its own compiled
+    ; defaults (the app image is gap-padded up to $7350), so re-read UOS-SET
+    ; from disk to show the values the user actually SAVED. Unshifted name so
+    ; it matches the SAVE; an absent file just leaves the compiled defaults.
+    lda #<savename
+    sta r0L
+    lda #>savename
+    sta r0H
+    jsr FILLFILE
+    jsr APP_LOADER
+
     lda #$ff
     sta oldshown
+    sta oldshowncol
     jsr draw_mode
+    #Text 80, 100, bglabel
+    jsr draw_color
 
     ; own the keyboard directly (like the fmgr and shell). The old design
     ; registered APP_KEY on the once-per-second tick and returned to the
@@ -45,9 +59,13 @@ APP_KEY:
         cmp #$00
         beq APP_KEY
         cmp #$44                        ; 'D' — explicit unshifted PETSCII:
-        bne _akb                        ; 64tass's #'D' assembles to $c4
+        bne _akc                        ; 64tass's #'D' assembles to $c4
         jsr ON_DISPLAY                  ; (shifted), which no keypress
         jmp APP_KEY                     ; ever produces
+_akc:   cmp #$43                        ; 'C' = cycle background colour
+        bne _akb
+        jsr ON_COLOR
+        jmp APP_KEY
 _akb:   cmp #$42                        ; 'B'
         beq _akbk
         cmp #$1b                        ; ESC also backs out
@@ -56,7 +74,8 @@ _akb:   cmp #$42                        ; 'B'
 _akbk:  jmp settings_back
 
 title:  .text "Settings", $00
-hint:   .text "D=display B/ESC=back", $00
+hint:   .text "D=display C=color ESC=back", $00
+bglabel: .text "background:", $00
 mode0s: .text "display: 40 only", 0
 mode1s: .text "display: 80 only", 0
 mode2s: .text "display: both (40+80)", 0
@@ -157,6 +176,107 @@ mode_str:
 strtab_lo: .byte <mode0s, <mode1s, <mode2s
 strtab_hi: .byte >mode0s, >mode1s, >mode2s
 
+; ---------- background-colour cycle + persistence ----------
+; ON_COLOR advances SETREC_BG through the 16 VIC colours (wrap) and SAVEs.
+; The desktop reads SETREC_BG when it clears the screen, so the new colour
+; takes effect the moment you leave settings, and the boot re-applies it.
+ON_COLOR:
+    lda SETREC_BG
+    clc
+    adc #$01
+    and #$0f                       ; wrap 0..15
+    sta SETREC_BG
+    jsr save_record
+    jsr draw_color
+    rts
+
+oldshowncol: .byte $ff
+colbuf:   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+oldcolor: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+; draw the current background-colour name at x=170,y=100 (XOR-safe: erase
+; the previously shown name, then draw the new one)
+draw_color:
+    lda oldshowncol
+    cmp #$ff
+    beq dc_build
+    lda #170
+    sta X1
+    lda #$00
+    sta X1+1
+    lda #100
+    sta Y1
+    lda #<oldcolor
+    sta r9L
+    lda #>oldcolor
+    sta r9H
+    jsr GPUTS
+dc_build:
+    lda SETREC_BG
+    jsr col_str                    ; r2 = name for the current colour
+    ldy #$00
+dc_cp:  lda (r2),y
+    beq dc_done
+    cpy #19
+    bcs dc_done
+    sta colbuf,y
+    iny
+    jmp dc_cp
+dc_done:
+    lda #$00
+    sta colbuf,y
+    ldy #$00
+dc_old: lda colbuf,y
+    sta oldcolor,y
+    beq dc_show
+    iny
+    cpy #20
+    bne dc_old
+dc_show:
+    lda SETREC_BG
+    sta oldshowncol
+    lda #170
+    sta X1
+    lda #$00
+    sta X1+1
+    lda #100
+    sta Y1
+    lda #<oldcolor
+    sta r9L
+    lda #>oldcolor
+    sta r9H
+    jsr GPUTS
+    rts
+
+; A = colour (0..15) -> r2 = $00-terminated name
+col_str:
+    tay
+    lda coltab_lo,y
+    sta r2L
+    lda coltab_hi,y
+    sta r2H
+    rts
+coltab_lo: .byte <col0,<col1,<col2,<col3,<col4,<col5,<col6,<col7
+           .byte <col8,<col9,<cola,<colb,<colc,<cold,<cole,<colf
+coltab_hi: .byte >col0,>col1,>col2,>col3,>col4,>col5,>col6,>col7
+           .byte >col8,>col9,>cola,>colb,>colc,>cold,>cole,>colf
+col0: .text "black",0
+col1: .text "white",0
+col2: .text "red",0
+col3: .text "cyan",0
+col4: .text "purple",0
+col5: .text "green",0
+col6: .text "blue",0
+col7: .text "yellow",0
+col8: .text "orange",0
+col9: .text "brown",0
+cola: .text "lt red",0
+colb: .text "dk grey",0
+colc: .text "md grey",0
+cold: .text "lt green",0
+cole: .text "lt blue",0
+colf: .text "lt grey",0
+
 ; ---------- settings record persistence ----------
 ; kernal SAVE convention: A = zero-page pointer to a two-byte cell holding
 ; the START address; X/Y = end address (exclusive). The FILE NAME comes
@@ -221,6 +341,7 @@ savehdr:                        ; the 2-byte load address header
     .byte $00,$00,$00           ; reserved (SETREC+2..4)
 SETRECDATA:
     .byte $02                    ; display mode at SETREC+5: 0=40 1=80 2=both
-    .byte $00,$00,$00            ; reserved
+    .byte VIC_COLOR_CYAN         ; background colour at SETREC+6 (SETREC_BG)
+    .byte $00,$00                ; reserved (SETREC+7,+8)
 
 save_end:

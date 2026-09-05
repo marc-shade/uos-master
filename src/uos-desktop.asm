@@ -41,10 +41,19 @@
         ; outline-pattern apps paint straight onto the desktop bitmap with
         ; XOR text and never restore it — on the real C128 the file
         ; manager's rows/title/hint stayed on screen after exit and piled
-        ; up on every open ("opens too big, seems broke"). Same call the
-        ; boot uses; with the bitmap already on, GFX_ON only performs the
-        ; color-RAM fill + CLEARBITMAP.
-        #HiresOn VIC_COLOR_BLACK, VIC_COLOR_CYAN
+        ; up on every open ("opens too big, seems broke"). GFX_ON does the
+        ; colour-RAM fill + CLEARBITMAP.
+        ; Background colour is user-selectable (settings 'C'): the colour
+        ; byte GFX_ON wants is (fg<<4)|bg; fg stays black (high nibble 0),
+        ; so A = the low-nibble background colour from the settings record.
+        lda SETREC_BG
+        and #$0f
+        bne _bgok
+        lda #$10                ; black background: GFX_ON treats colour byte
+                                ; $00 as "skip the clear", and black-on-black
+                                ; icons are invisible — use a white foreground
+                                ; (byte $10) so the clear runs and icons show
+_bgok:  jsr GFX_ON
 
         ; #HiresOn's colour fill spans $8400-$87ff, and the VIC sprite
         ; pointers live in its last 8 bytes ($87f8+) — the fill leaves the

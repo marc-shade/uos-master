@@ -239,8 +239,11 @@ def main():
     # the record is manufactured here; the SAVE path itself is validated
     # on hardware - PRD FR-S3 gate)
     sprg = os.path.join(WORK, "uos-set.prg")
-    open(sprg, "wb").write(b"\x50\x73" + b"\x50\x73" + b"\x00\x00\x00\x01\x00")
-    subprocess.run(["c1541", "-attach", DISK, "-write", sprg, "UOS-SET"],
+    # record bytes at $7350: load-word, 3 reserved, mode=1 (+5), bg=green (+6)
+    open(sprg, "wb").write(b"\x50\x73" + b"\x50\x73" + b"\x00\x00\x00\x01\x05")
+    # lowercase name so c1541 stores it UNSHIFTED ($55..), matching VDPREF's
+    # unshifted SETNAM; an uppercase arg would store shifted and never match
+    subprocess.run(["c1541", "-attach", DISK, "-write", sprg, "uos-set"],
                    check=True, capture_output=True)
 
     NAMES_L, NAMES_H = parse_lst_symbols()

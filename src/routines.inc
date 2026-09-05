@@ -36,7 +36,8 @@ LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
 ; settings record (FR-S3): saved as "UOS-SET" by the settings app, loaded
 ; back at boot into the app region
 SETREC          = $7350
-SETREC_DISP     = $7355
+SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
 ; uVDC second-display driver (origin $cc00)
 VDC_GETREG      = $cc00
 VDC_SETREG      = $cc07
