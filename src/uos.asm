@@ -207,9 +207,8 @@ main_loop:
         cmp #$1b
         beq esc_to_desk
 
-        ;read input driver
-        lda $dc01
-        and #$10
+        ;read the mouse button from EITHER control port (read-both-ports)
+        jsr READ_BTN
         beq btnclick
         jmp main_loop
 
@@ -229,9 +228,8 @@ btnclick:
         bne _keepwaiting
         jsr dragmode
 _keepwaiting:
-        ; wait for mouse up
-        lda $dc01
-        and #$10
+        ; wait for mouse up (either control port)
+        jsr READ_BTN
         beq btnclick
         jsr normalmode
         jsr TESTCLICK
@@ -259,6 +257,45 @@ normalmode:
 
 mousedowntime:
         .byte $00, $00
+
+; ==========================================================
+; Read Mouse Button (read-both-ports)
+; Returns Z=1 (A=0) if the fire button is down on EITHER control port.
+;   port 1 fire = $dc01 bit4 (port B is already an input) — read directly
+;   port 2 fire = $dc00 bit4 (port A is the keyboard-column OUTPUT, and an
+;     output pin is driven high hard enough that the switch can't pull it
+;     low on read; verified on HW). So briefly flip port-A bit4 to INPUT
+;     ($dc02), read, restore — guarded by sei so an IRQ can't run the
+;     keyboard scan with the column direction changed. Core-resident and
+;     only ever called from the post-boot main loop, so it can never
+;     disturb the boot-time IRQ (an earlier attempt to do this inside the
+;     mouse IRQ hung the boot).
+; ==========================================================
+READ_BTN:
+        lda $dc01
+        and #$10
+        beq _rb_down            ; port 1 fire down (port B is already input)
+        ; port 2 fire = $dc00 bit4; port A is the keyboard-column OUTPUT, so
+        ; flip it to input for the read (sei-guarded) then restore.
+        php
+        sei
+        lda $dc02
+        pha
+        and #$ef                ; ONLY bit4 (fire) -> input; bits 6-7 stay
+        sta $dc02               ; outputs = the SID pot MUX select, or the
+                                ; mouse's Y/X pot movement goes wild
+        lda $dc00
+        and #$10                ; port 2 fire
+        sta rbtmp
+        pla
+        sta $dc02
+        plp
+        lda rbtmp
+        rts                     ; Z=1 iff port 2 fire down
+_rb_down:
+        lda #$00
+        rts
+rbtmp:  .byte $00
 
 ; ==========================================================
 ; Find Control

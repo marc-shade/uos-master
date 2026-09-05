@@ -105,6 +105,10 @@ mirq1:
         adc ypos
         sta ypos
 
+        ; latch the mouse button from BOTH control ports (read-both-ports).
+        ; Writing $ff to port A deselects every keyboard column, so port B
+        ; ($dc01) reflects only port-1 joystick and a port-2 fire pulls
+        ; $dc00 bit4 cleanly — no keyboard cross-talk during the read.
         ldx ciasave     ;restore keyboard
         stx cia
 
