@@ -20,11 +20,12 @@ from importlib.machinery import SourceFileLoader
 _cbm = SourceFileLoader("cbm", "/home/marc/.claude/skills/commodore-basic/bin/cbm")
 cbm = importlib.util.module_from_spec(importlib.util.spec_from_loader("cbm", _cbm))
 _cbm.exec_module(cbm)
+from hwlib import desk_tick, lst_symbol as _lst
 
 UOS = os.path.dirname(os.path.abspath(__file__))
 TICK_VEC, T = 0x033c, 0x7f00
 KB_BUF, KB_CNT, APP_START = 0x0277, 0xC6, 0x5000
-DESK_TICK, CMDLEN = 0x1f2c, 0x46
+DESK_TICK, CMDLEN = desk_tick(), 0x46
 WATCH = int(sys.argv[1]) if len(sys.argv) > 1 else 60
 
 

@@ -36,6 +36,23 @@
         ldx #$ff
         txs
 
+        ; Clear the screen before redrawing. Every app exit (fmgr ESC, shell
+        ; EXIT, settings back, core esc_to_desk) lands here, and the
+        ; outline-pattern apps paint straight onto the desktop bitmap with
+        ; XOR text and never restore it — on the real C128 the file
+        ; manager's rows/title/hint stayed on screen after exit and piled
+        ; up on every open ("opens too big, seems broke"). Same call the
+        ; boot uses; with the bitmap already on, GFX_ON only performs the
+        ; color-RAM fill + CLEARBITMAP.
+        #HiresOn VIC_COLOR_BLACK, VIC_COLOR_CYAN
+
+        ; #HiresOn's colour fill spans $8400-$87ff, and the VIC sprite
+        ; pointers live in its last 8 bytes ($87f8+) — the fill leaves the
+        ; pointer sprite aimed at garbage (a "block of lines"). Restore
+        ; sprite 0 to the arrow shape at $8000 (data itself is untouched).
+        lda #$00
+        sta $87f8
+
         #RegisterApp
 
         lda #<APP_TICK

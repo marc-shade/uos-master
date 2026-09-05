@@ -22,6 +22,7 @@ from importlib.machinery import SourceFileLoader
 _cbm = SourceFileLoader("cbm", "/home/marc/.claude/skills/commodore-basic/bin/cbm")
 cbm = importlib.util.module_from_spec(importlib.util.spec_from_loader("cbm", _cbm))
 _cbm.exec_module(cbm)
+from hwlib import desk_tick, lst_symbol as _lst
 
 UOS = os.path.dirname(os.path.abspath(__file__))
 DISK = os.path.join(UOS, "target/ultos.d64")
@@ -61,7 +62,7 @@ def main():
         diffs = [i for i in range(len(DESK)) if full[i] != DESK[i]]
         vec = bytes(ult.read_mem(0x033c, 2))
         tick = vec[0] | (vec[1] << 8)
-        if tick == 0x1f2c and len(diffs) < 64:
+        if tick == desk_tick() and len(diffs) < 64:
             up = True
             break
         time.sleep(5)
@@ -77,7 +78,7 @@ def main():
           f"after run_prg ({len(diffs)} runtime byte(s) differ: "
           f"{[hex(0x1000 + d) for d in diffs[:6]]})")
     print(f"      APP_TICK vector $033c = ${tick:04x} "
-          f"({'desktop APP_TICK' if tick == 0x1f2c else 'UNEXPECTED'})")
+          f"({'desktop APP_TICK' if tick == desk_tick() else 'UNEXPECTED'})")
     ctl = ult.read_mem(0x9000, 1)[0]
     print(f"      APP_CTL_CTR $9000 = {ctl} registered controls")
 
@@ -87,7 +88,7 @@ def main():
     p2 = bytes(ult.read_mem(0xd000, 2))
     print(f"      sprite0 x/y: {hexs(p1)} -> {hexs(p2)} "
           f"({'moved' if p1 != p2 else 'static'})")
-    return 0 if tick == 0x1f2c else 2
+    return 0 if tick == desk_tick() else 2
 
 
 if __name__ == "__main__":
