@@ -69,7 +69,13 @@ REU_STASH       = $9c03
 REU_FETCH       = $9c06
 REU_PARAMS      = $9c09
 
-INIT_MOUSE      = $9f00
+; drv1351 entry points: $9f00 = install1 (port 1), $9f03 = install2 (port 2).
+; Port 2 is the default on purpose: a device in control port 1 pulls the
+; keyboard-matrix row lines ($dc01), and the KERNAL scan reads that as
+; keypresses — on the real C128 a 1351 in port 1 flooded the shell's command
+; line with phantom 'W's (verified A/B with hw_phantom.py, 2026-09-05).
+; Port 2 is the C64 convention precisely to avoid that.
+INIT_MOUSE      = $9f03
 
 BITMAP_START    = $a000
 
