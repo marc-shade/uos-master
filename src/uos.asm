@@ -920,14 +920,22 @@ setrecname: .byte $55,$4f,$53,$2d,$53,$45,$54,$00
 VDSETUP:
         lda SETREC_DISP
         beq vds_no              ; persisted 0 = 40-column only
+        ; All VDC access is wait-free and reached through the driver's fixed
+        ; jump table (routines.inc). sei: a VDC register-select ($d600) then
+        ; data access ($d601) is a two-step transaction an IRQ can corrupt.
+        ; Init FIRST so a cold 8563 starts displaying; only then does its
+        ; status bit toggle for VDC_PRESENT. On a VDC-less C64 the init just
+        ; hits the SID mirror harmlessly and PRESENT fails closed.
+        sei
+        jsr VDC_INIT
         jsr VDC_PRESENT
         cmp #$01
-        bne vds_no              ; no 8563 on this machine (C64 hosts):
-                                ; every driver wait would hang — skip
-        jsr VDC_INIT
-        jsr VDC_FONTUP
+        bne vds_off
+        jsr VDC_FONTUP          ; per-glyph bank-flip upload (see driver)
         jsr VDC_CLS
         jsr VD_BANNER
+vds_off:
+        cli
         rts
 vds_no:
         rts

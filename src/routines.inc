@@ -39,15 +39,19 @@ SETREC          = $7350
 SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
 SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
 ; uVDC second-display driver (origin $cc00)
+; uos-vdc exports via a FIXED JUMP TABLE at $cc00 (3 bytes per slot). Never
+; point these at the routines' own addresses: those shift with every driver
+; edit, and stale copies here made the core jump into the middle of other
+; routines (the root cause of the 80-column boot hangs).
 VDC_GETREG      = $cc00
-VDC_SETREG      = $cc07
-VDC_SEEK        = $cc14
-VDC_PUTS        = $cc31
-VDC_PUTCHR      = $cc7b
-VDC_CLS         = $cc88
-VDC_FONTUP      = $cce4
-VDC_INIT        = $cd1b
-VDC_PRESENT     = $cd56
+VDC_SETREG      = $cc03
+VDC_SEEK        = $cc06
+VDC_PUTS        = $cc09
+VDC_PUTCHR      = $cc0c
+VDC_CLS         = $cc0f
+VDC_FONTUP      = $cc12
+VDC_INIT        = $cc15
+VDC_PRESENT     = $cc18
 ; uVDC caller pointers (zero page convention shared with driver)
 vdcbpL          = $23
 vdcbpH          = $24

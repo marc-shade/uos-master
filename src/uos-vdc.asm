@@ -38,41 +38,76 @@ vdcval          = $2c
 
 * = $cc00
 
+; ---- JUMP TABLE: fixed exports for the core (routines.inc) ----
+; The routines below may grow or shrink freely; these slots never move.
+; Before this table the exports were "natural order" addresses copied by
+; hand into routines.inc, and they had drifted stale (VDC_CLS was listed
+; as $cc88 while the real routine sat at $cc90, VDC_FONTUP $cce4 vs $ccb7,
+; ...). The core was jumping into the middle of other routines — the real
+; cause of every 80-column boot hang, and why the 80-col display never
+; came up under uOS while a self-contained probe worked.
+        jmp VDC_GETREG          ; $cc00
+        jmp VDC_SETREG          ; $cc03
+        jmp VDC_SEEK            ; $cc06
+        jmp VDC_PUTS            ; $cc09
+        jmp VDC_PUTCHR          ; $cc0c
+        jmp VDC_CLS             ; $cc0f
+        jmp VDC_FONTUP          ; $cc12
+        jmp VDC_INIT            ; $cc15
+        jmp VDC_PRESENT         ; $cc18
+
+; VDC access is WAIT-FREE. The `bit $d600 / bpl` ready-guard stalls the boot
+; on the real C128; register access needs no handshake, and back-to-back RAM
+; writes via r31 auto-increment are spaced by the loop overhead at 1 MHz
+; (proven on hardware, probes/vdc-fullinit.asm).
+
 ; read register X -> A
 VDC_GETREG:
         stx VDC_ADDR
-gwt:    bit VDC_ADDR
-        bpl gwt
         lda VDC_DATA
         rts
 
-; select register X, write A (guarded); X preserved
+; select register X, write A; X preserved
 VDC_SETREG:
         sta vdcval
         stx VDC_ADDR
-swt:    bit VDC_ADDR
-        bpl swt
         lda vdcval
         sta VDC_DATA
         rts
 
-; guarded store of A into the currently selected register's data port
+; bounded ready-wait: spin until status bit7 (ready) or 256 tries.
+; Preserves A and X (callers use both as loop counters). RAM access via r31
+; MUST wait: a write issued before the 8563 is ready is DROPPED and the
+; auto-increment does not advance, so a 2000-cell clear falls short and the
+; bottom rows keep stale (blinking) attributes. Bounded so a stuck status
+; bit can never hang the boot (worst case: a dropped write, not a lock-up).
+vwait:  pha
+        txa
+        pha
+        ldx #$00
+vw_l:   bit VDC_ADDR
+        bmi vw_ok
+        dex
+        bne vw_l
+vw_ok:  pla
+        tax
+        pla
+        rts
+
+; store A into the currently selected register's data port (r31), ready-waited
 vdcpush:
-        bit VDC_ADDR
-        bpl vdcpush
+        jsr vwait
         sta VDC_DATA
         rts
 
-; select r31 guarded
+; select r31 (data port)
 VDC_ST0:
         lda #VDC_R_DATA
         sta VDC_ADDR
-swf:    bit VDC_ADDR
-        bpl swf
         rts
 
 ; ---------- seek update address: A = lo, X = hi ----------
-; r18 takes the HIGH byte, r19 the LOW byte; settle after.
+; r18 takes the HIGH byte, r19 the LOW byte; leaves r31 selected.
 VDC_SEEK:
         sta vdclo
         stx vdchi
@@ -86,8 +121,7 @@ VDC_SEEK:
         jsr VDC_SETREG                  ; LOW -> r19
         lda #VDC_R_DATA
         sta VDC_ADDR
-sw4:    bit VDC_ADDR
-        bpl sw4                         ; settle before any data store
+        jsr vwait                       ; settle before the first data store
         rts
 
 ; ---------- copy $00-terminated PETSCII at (vdcbp) to cells (vdcdp) ----------
@@ -99,14 +133,22 @@ VDC_PUTS:
         ldy #$00
 vps_l:  lda (vdcbpL),y
         beq vps_done
-        sta vdcval
         lda vdcdpL
         ldx vdcdpH
-        jsr VDC_SEEK
-        lda vdcval
-        jsr vdcpush                     ; char into screen cell
-        lda vdcdpL
-        ldx vdcdpH
+        jsr VDC_SEEK                    ; clobbers vdcval (SETREG scratch), so
+                                        ; the char must NOT be parked there —
+                                        ; the old code did, and wrote the
+                                        ; seek's address byte instead
+        lda (vdcbpL),y                  ; re-read; Y survives VDC_SEEK
+        jsr p2s                         ; PETSCII -> screen code: the VDC
+                                        ; font is indexed by SCREEN code, and
+                                        ; writing PETSCII raw shows wrong glyphs
+        jsr vdcpush                     ; char into screen cell (org+offset)
+        lda vdcdpH
+        clc
+        adc #$08                        ; attribute plane is +$0800 — the old
+        tax                             ; code re-sought the SAME cell and
+        lda vdcdpL                      ; overwrote the glyph with $81
         jsr VDC_SEEK
         lda #$81
         jsr vdcpush                     ; attribute into attr plane
@@ -120,95 +162,126 @@ vps_done:
 
 ; write char A at cell (vdcdp)
 VDC_PUTCHR:
-        sta vdcval
+        pha                             ; keep the char: VDC_SEEK clobbers vdcval
         lda vdcdpL
         ldx vdcdpH
         jsr VDC_SEEK
-        lda vdcval
+        pla
         jsr vdcpush
         rts
 
-; clear 2000 cells ($20) + 2000 attributes ($81)
+; clear all 2000 screen cells to space, then all 2000 attributes to $81
+; (2000 = 7 full pages + 208). The old loop ran cpx #$08 = only 8 cells —
+; never caught because the core never reached this routine (stale export).
 VDC_CLS:
-        lda #$00
+        lda #$00                        ; screen plane at $0000
         ldx #$00
-        jsr VDC_SEEK
-        ldx #$00
-cls_chn:
+        jsr VDC_SEEK                    ; leaves r31 selected; writes auto-inc
         lda #$20
-        jsr vdcpush
-        inx
-        cpx #$08
-        bne cls_chn
-        lda #$00
+        ldx #$07
+        jsr cls_fill
+        lda #$00                        ; attribute plane at $0800
         ldx #$08
         jsr VDC_SEEK
-        ldx #$00
-cls_atn:
         lda #$81
+        ldx #$07
+        jsr cls_fill
+        rts
+; fill A into (X full pages + 208) cells at the current auto-inc address.
+; X holds the page count across the inner loop (which uses only Y).
+cls_fill:
+        sta vdcval
+cls_pg: ldy #$00
+cls_pb: lda vdcval
         jsr vdcpush
-        inx
-        cpx #$08
-        bne cls_atn
+        iny
+        bne cls_pb
+        dex
+        bne cls_pg
+        ldy #$00                        ; + 208 tail
+cls_tl: lda vdcval
+        jsr vdcpush
+        iny
+        cpy #208
+        bne cls_tl
         rts
 
-; ---------- font upload: 2 KB chargen -> lowercase defs ----------
-; target = (R28 & $e0)<<8 + $1000 + glyph*16 (8 pattern rows + 8 zero rows);
-; clears CHAREN (bit 2 of $01) for the whole copy.
+; ---------- font upload: per-glyph bank-flip ----------
+; Copies the C64 character ROM's lowercase/uppercase set ($d800, 2 KB) into
+; the VDC lowercase bank at (R28 & $e0)<<8 + $1000, 16 B/glyph (8 rows + 8
+; zero rows). The char ROM at $d000-$dfff is only visible with CHAREN clear,
+; and that same banking HIDES the VDC at $d600 — so each glyph is read into
+; a buffer with the ROM banked in, then written to the VDC with I/O banked
+; back. IRQs are off for the whole copy (I/O hidden = no CIA for the IRQ).
+; The old routine cleared the WRONG bit (HIRAM, not CHAREN), tried to read
+; ROM and write the VDC in one banking state, and ran with IRQs live.
 VDC_FONTUP:
+        php
+        sei
         lda $01
-        pha
-        and #%11111101
-        sta $01
+        pha                             ; restore banking on exit
         ldx #VDC_R_CHARBASE
-        jsr VDC_GETREG                  ; A = R28
-        and #$e0                        ; def base high byte
+        jsr VDC_GETREG                  ; A = R28 (I/O in)
+        and #$e0
         clc
         adc #$10                        ; + $1000 -> lowercase bank
         sta vdcbaseHi
         lda #$00
         sta glyphn
-fll:    lda glyphn
+fll:    ; --- VDC update address = bank + glyph*16 (I/O in) ---
+        lda glyphn
         asl
         asl
         asl
-        asl                             ; glyph<<4 (low byte)
-        sta vdcdpL
+        asl
+        sta vdcdpL                      ; (glyph<<4) low byte
         lda glyphn
         lsr
         lsr
         lsr
-        lsr                             ; glyph>>4
+        lsr
         clc
         adc vdcbaseHi
         sta vdcdpH
         lda vdcdpL
         ldx vdcdpH
-        jsr VDC_SEEK
-        ; source pointer = $d000 + glyph*8
-        lda #<$d000
-        sta srcL
-        lda #>$d000
-        sta srcH
+        jsr VDC_SEEK                    ; r31 selected, auto-inc
+        ; --- source = $d800 + glyph*8 ---
         lda glyphn
         asl
         asl
         asl
+        sta srcL                        ; (glyph<<3) low byte
+        lda glyphn
+        lsr
+        lsr
+        lsr
+        lsr
+        lsr                             ; glyph>>5
         clc
-        adc srcL
-        sta srcL
-        bcc fno
-        inc srcH
-fno:
-        jsr VDC_ST0                     ; select r31, guarded
-        ldy #0
-fpat:   lda (srcL),y
+        adc #$d8
+        sta srcH
+        ; --- read 8 rows: char ROM in, I/O (and the VDC) hidden ---
+        lda $01
+        and #%11111011                  ; CHAREN=0 -> char ROM at $d000
+        sta $01
+        ldy #$00
+frd:    lda (srcL),y
+        sta fbuf,y
+        iny
+        cpy #8
+        bne frd
+        lda $01
+        ora #%00000100                  ; CHAREN=1 -> I/O back, VDC visible
+        sta $01
+        ; --- write 8 rows + 8 zero rows to the VDC ---
+        ldy #$00
+fwr:    lda fbuf,y
         jsr vdcpush
         iny
         cpy #8
-        bne fpat
-        lda #0                          ; 8 zero rows: defs are 16 cells
-        ldy #8
+        bne fwr
+        lda #$00
 fz0:    jsr vdcpush
         iny
         cpy #16
@@ -217,62 +290,90 @@ fz0:    jsr vdcpush
         bne fll
         pla
         sta $01
+        plp
         rts
+fbuf:   .byte 0,0,0,0,0,0,0,0
+
+; ---------- PETSCII -> screen code (standard C64 mapping) ----------
+; A = PETSCII -> A = screen code. Control codes become a space.
+p2s:    cmp #$20
+        bcc p2s_sp
+        cmp #$40
+        bcc p2s_ok                      ; $20-$3f unchanged
+        cmp #$60
+        bcc p2s_m40                     ; $40-$5f -> -$40
+        cmp #$80
+        bcc p2s_m20                     ; $60-$7f -> -$20
+        cmp #$a0
+        bcc p2s_sp                      ; $80-$9f control
+        cmp #$c0
+        bcc p2s_m40                     ; $a0-$bf -> -$40
+        cmp #$ff
+        bcc p2s_m80                     ; $c0-$fe -> -$80
+        lda #$5e                        ; $ff -> pi
+        rts
+p2s_m40: sec
+        sbc #$40
+        rts
+p2s_m20: sec
+        sbc #$20
+        rts
+p2s_m80: sec
+        sbc #$80
+        rts
+p2s_sp: lda #$20
+p2s_ok: rts
 
 ; ---------- apply the hardware-proven register table ----------
 ; (GEOS InitVDC semantics: $ff = leave unchanged)
 ; sets 80x25 character mode with display origin $0000
+; COMPLETE init, r0..r36, written directly. The old table SKIPPED the
+; vertical-timing registers (r4/r6/r7/r9...) with $ff, assuming the C128
+; kernal had set them; after a C64-mode boot they are NOT set, so the VDC
+; produced no lockable display. Every register now carries a real value
+; (the set probes/vdc-fullinit.asm proved on the real C128).
 VDC_INIT:
-        ldx #36
+        ldx #$00
 vinit_l:
+        stx VDC_ADDR
         lda VDC_INIT_TABLE,x
-        cmp #$ff
-        beq vinit_n
-        ; keep X for VDC_SETREG: it preserves X (guarded by VDC_ADDR only)
-        jsr VDC_SETREG
-vinit_n:
-        dex
-        bpl vinit_l
+        sta VDC_DATA
+        inx
+        cpx #37
+        bne vinit_l
         rts
 
+; r1=$50 (80 cols) r6=$19 (25 rows) r9=$07 (8 scanlines/char)
+; r20/21=$0800 attribute base   r25=$47 attributes ENABLED (driver writes
+; per-cell $81 attrs) r26=$00 background black (fg comes from the attribute)
+; r28=$20 char base $2000 (VDC_FONTUP uploads to the lowercase bank $3000)
 VDC_INIT_TABLE:
-        .byte $7e,$50,$66,$49,$ff,$e0,$ff,$20,$fc,$ff,$a0,$e7,$00,$00,$00,$00
-        .byte $ff,$ff,$ff,$ff,$ff,$ff,$78,$e8,$ff,$ff,$ff,$00,$ff,$f8,$ff,$ff
-        .byte $ff,$ff,$7d,$64,$ff
+        .byte $7e,$50,$66,$49,$26,$00,$19,$20,$00,$07,$20,$07,$00,$00,$00,$00
+        .byte $00,$00,$00,$00,$08,$00,$78,$e8,$20,$47,$00,$00,$20,$e7,$00,$00
+        .byte $00,$00,$7d,$64,$00
 
 ; ---------- presence probe: A = 1 if an 8563 answers, else 0 ----------
-; The VDC status byte's vblank bit (7) toggles ~50/60 Hz in normal
-; operation. Watch it for ~64K reads: BOTH levels must be seen. On a
-; VDC-less machine $d600 is SID/sidcart space and the byte there is stable
-; (read-what-you-wrote on a write-only register), so exactly one level is
-; ever seen -> absent. This replaces the earlier r31 round-trip probe,
-; which a SID register alias can pass. The result gates VDSETUP: the
-; guarded waits in the rest of the driver never terminate without a VDC.
+; Register round-trip, run AFTER VDC_INIT: read back two registers the init
+; just wrote (r1 = 80 columns, r6 = 25 rows). A real or emulated 8563
+; returns them; a VDC-less C64 has the SID mirror at $d600/$d601, whose
+; write-only registers never read back $50 then $19, so this fails closed.
+; The previous probe watched status bit 7 for BOTH levels; that bit is the
+; READY flag, which VICE holds constantly set, so under x128 it reported the
+; VDC absent and the clear/font/banner were skipped (striped 80-col screen
+; in the emulator while the real machine — where the bit happens to
+; toggle — showed text). A deterministic read-back has no such dependency.
 VDC_PRESENT:
-        lda #$00
-        sta vdcpr
-        sta vprb0               ; saw bit7 clear
-        sta vprb1               ; saw bit7 set
-        ldx #$00                ; X counts 256 passes of 256 samples
-vpr_l:  ldy #$00
-vpr_s:  lda VDC_ADDR
-        bpl vpr_zero
-        inc vprb1
-        jmp vpr_nx
-vpr_zero:
-        inc vprb0
-vpr_nx: iny
-        bne vpr_s
-        inx
-        bne vpr_l               ; 65536 samples total, then decide
-        lda vprb0
-        beq vpr_done
-        lda vprb1
-        beq vpr_done
+        ldx #1
+        jsr VDC_GETREG          ; r1: horizontal displayed
+        cmp #$50                ; 80 columns, as VDC_INIT wrote
+        bne vpr_no
+        ldx #6
+        jsr VDC_GETREG          ; r6: vertical displayed
+        cmp #$19                ; 25 rows
+        bne vpr_no
         lda #$01
-        sta vdcpr
-vpr_done:
-        lda vdcpr
+        rts
+vpr_no: lda #$00
         rts
 
 vdcpr:  .byte 0
