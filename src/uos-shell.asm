@@ -139,7 +139,14 @@ sh_parse:
         beq _sp_v
         cmp #$45                        ; 'E'
         beq _sp_e
+        cmp #$43                        ; 'C'
+        beq _sp_c
         jmp sp_unk
+_sp_c:  lda cmdbuf+1
+        cmp #$4f                        ; 'O' -> COPY old new
+        bne sp_unk
+        jsr cmd_copy
+        rts
 _sp_d:  lda cmdbuf+1
         cmp #$49                        ; 'I' -> DIR
         bne _sp_de
@@ -151,7 +158,12 @@ _sp_de: cmp #$45                        ; 'E' -> DEL
         rts
 _sp_r:  lda cmdbuf+1
         cmp #$55                        ; 'U' -> RUN
+        beq _sp_run
+        cmp #$45                        ; 'E' -> REN old new
         bne sp_unk
+        jsr cmd_ren
+        rts
+_sp_run:
         jsr cmd_run
         jmp sp_fin
 _sp_v:  lda cmdbuf+1
@@ -196,6 +208,127 @@ _ag_z:  lda #$00
 _sa_none:
         lda #$00
         sta tokbuf
+        rts
+
+; two args: X = offset of the first in cmdbuf -> tokbuf (old), tok2buf (new)
+; (space-separated, each capped at 16 chars); tok2buf empty if missing
+sh_args2:
+        ldy #$00
+_a2_l:  lda cmdbuf,x
+        beq _a2_e1
+        cmp #' '
+        beq _a2_sp
+        sta tokbuf,y
+        inx
+        iny
+        cpy #16
+        bne _a2_l
+_a2_e1: lda #$00
+        sta tokbuf,y
+        sta tok2buf
+        rts
+_a2_sp: lda #$00
+        sta tokbuf,y
+        inx                             ; skip the space
+        ldy #$00
+_a2_m:  lda cmdbuf,x
+        beq _a2_e2
+        cmp #' '
+        beq _a2_e2
+        sta tok2buf,y
+        inx
+        iny
+        cpy #16
+        bne _a2_m
+_a2_e2: lda #$00
+        sta tok2buf,y
+        rts
+
+; COPY old new  ->  DOS "C0:new=0:old"
+cmd_copy:
+        ldx #$05                        ; after "COPY "
+        jsr sh_args2
+        lda tokbuf
+        beq cp_none
+        lda tok2buf
+        beq cp_none
+        lda #$00
+        sta fci
+        lda #<p_copy
+        sta r0L
+        lda #>p_copy
+        sta r0H
+        jsr apstr                       ; "C0:"
+        lda #<tok2buf
+        sta r0L
+        lda #>tok2buf
+        sta r0H
+        jsr apstr                       ; new
+        lda #<p_eq0
+        sta r0L
+        lda #>p_eq0
+        sta r0H
+        jsr apstr                       ; "=0:"
+        lda #<tokbuf
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        jsr apstr                       ; old
+        jsr apnull
+        jsr sendcmd
+        jsr refresh
+        lda #<msg_copd
+        sta r0L
+        lda #>msg_copd
+        sta r0H
+        jsr show_status
+        rts
+cp_none:
+        lda #<msg_args
+        sta r0L
+        lda #>msg_args
+        sta r0H
+        jsr setline
+        rts
+
+; REN old new  ->  DOS "R0:new=old"
+cmd_ren:
+        ldx #$04                        ; after "REN "
+        jsr sh_args2
+        lda tokbuf
+        beq cp_none
+        lda tok2buf
+        beq cp_none
+        lda #$00
+        sta fci
+        lda #<p_ren
+        sta r0L
+        lda #>p_ren
+        sta r0H
+        jsr apstr                       ; "R0:"
+        lda #<tok2buf
+        sta r0L
+        lda #>tok2buf
+        sta r0H
+        jsr apstr                       ; new
+        lda #<p_eq
+        sta r0L
+        lda #>p_eq
+        sta r0H
+        jsr apstr                       ; "="
+        lda #<tokbuf
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        jsr apstr                       ; old
+        jsr apnull
+        jsr sendcmd
+        jsr refresh
+        lda #<msg_rend
+        sta r0L
+        lda #>msg_rend
+        sta r0H
+        jsr show_status
         rts
 
 ; ---------------- command implementations ----------------
@@ -245,12 +378,12 @@ cmd_del:
         jsr apstr                       ; <arg>
         jsr apnull
         jsr sendcmd
+        jsr refresh
         lda #<msg_deld
         sta r0L
         lda #>msg_deld
         sta r0H
-        jsr setline
-        jsr refresh
+        jsr show_status
         rts
 _sp_none:
         rts
@@ -306,9 +439,45 @@ sc_cp:  lda fncmd,y
 sc_cr:  lda #$0d
         jsr CHROUT
         jsr CLRCHN
+        ; read the drive's status line ("00, OK,00,00" or the error) into
+        ; stbuf so the caller can show it - a rejected command is otherwise
+        ; silent
+        ldx #$0f
+        jsr CHKIN
+        ldy #$00
+st_l:   jsr CHRIN
+        cmp #$0d
+        beq st_d
+        cpy #30
+        bcs st_l                        ; drain, but keep only 30 chars
+        sta stbuf,y
+        iny
+        jmp st_l
+st_d:   lda #$00
+        sta stbuf,y
+        jsr CLRCHN
         lda #$0f
         jsr CLOSE
         cli                             ; serial IRQ-mask quirk (see fmgr)
+        rts
+
+; show (r0) on the response line if the drive said "00"; else the status
+show_status:
+        lda stbuf
+        cmp #'0'
+        bne ss_err
+        lda stbuf+1
+        cmp #'0'                        ; "00, OK"
+        beq ss_ok
+        cmp #'1'                        ; "01, FILES SCRATCHED" (1541 scratch)
+        bne ss_err
+ss_ok:  jsr setline
+        rts
+ss_err: lda #<stbuf
+        sta r0L
+        lda #>stbuf
+        sta r0H
+        jsr setline
         rts
 
 strlen:                                 ; r0 -> namlen (max 24)
@@ -647,12 +816,21 @@ ds_end:
 dskstr: .text "uos-desktop", 0
 sh_title: .text "Command shell", 0
 shver:  .text "UltOS 0.3", 0
-sh_hint: .text "DIR RUN name DEL name VER EXIT", 0
+sh_hint: .text "DIR RUN DEL COPY REN VER EXIT", 0
 p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
                                         ; would emit shifted PETSCII junk)
 msg_dird: .text "dir", 0
 msg_deld: .text "deleted", 0
+msg_copd: .text "copied", 0
+msg_rend: .text "renamed", 0
+msg_args: .text "need: old new", 0
 msg_unk: .text "?", 0
+p_copy: .byte $43,$30,$3a,$00           ; "C0:" unshifted
+p_ren:  .byte $52,$30,$3a,$00           ; "R0:" unshifted
+p_eq0:  .byte $3d,$30,$3a,$00           ; "=0:"
+p_eq:   .byte $3d,$00                   ; "="
+tok2buf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+stbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 dname:  .text "$"
 
 cmdbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -670,7 +848,8 @@ namlen: .byte 0
 prev_row: .byte 0
 painted: .byte 0                        ; rows are on screen (XOR bookkeeping)
 fci:    .byte 0
-fncmd:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+fncmd:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0     ; "C0:"+16+"=0:"+16+NUL = 39
+        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         .byte 0,0,0,0,0,0
 dseof:  .byte 0
 dsfirst: .byte 0

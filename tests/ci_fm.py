@@ -134,11 +134,18 @@ def wait_desktop_live(mon, timeout=120):
 
 
 def inject_keys(mon, keys):
-    mon.write_mem(KB_BUF, keys + b"\x00" * (10 - len(keys)))
-    mon.write_mem(KB_CNT, bytes([len(keys)]))
-    # writes halt the emulated CPU until the next resume; give it back so
-    # the kernal IRQ actually drains the buffer while we sleep
-    mon.resume()
+    # the kernal keyboard buffer is 10 bytes ($0277-$0280); a longer write
+    # spills into the BASIC memory pointers behind it ($0281 MEMSTR ...),
+    # so feed the string in chunks and let the IRQ drain each one
+    for i in range(0, len(keys), 10):
+        chunk = keys[i:i + 10]
+        mon.write_mem(KB_BUF, chunk + b"\x00" * (10 - len(chunk)))
+        mon.write_mem(KB_CNT, bytes([len(chunk)]))
+        # writes halt the emulated CPU until the next resume; give it back so
+        # the kernal IRQ actually drains the buffer while we sleep
+        mon.resume()
+        if i + 10 < len(keys):
+            time.sleep(1.0)
 
 
 def read_name(mon, addr):
@@ -581,6 +588,41 @@ def main():
         print(f"PASS 10c: DIR rescanned {shcnt} entries, command line cleared",
               flush=True)
 
+        # COPY old new / REN old new: the shell sends "C0:new=0:old" and
+        # "R0:new=old" on the DOS channel; VICE (true drive) writes the
+        # image, so c1541 on the disk file is the ground truth
+        def disk_names():
+            out = subprocess.run(["c1541", "-attach", DISK, "-dir"],
+                                 capture_output=True, text=True).stdout
+            return re.findall(r'"([^"]+)"', out)
+        inject_keys(mon, b"COPY UOS-SET UOS-CP2\x0d")
+        time.sleep(10)
+        names = disk_names()
+        assert "uos-cp2" in names, f"FAIL: shell COPY did not create uos-cp2: {names}"
+        inject_keys(mon, b"REN UOS-CP2 UOS-RN2\x0d")
+        time.sleep(8)
+        # the shell's listing is capped at 10 entries and these are 11-13,
+        # so use the drive itself as the oracle: DEL of the NEW name must be
+        # accepted ("00, OK"), DEL of the OLD name must fail (62 not found)
+        stb = lst_symbol("uos-shell", "stbuf")
+        def drive_status():
+            st = bytes(mon.read_mem(stb, stb + 31, memspace=0)); mon.resume()
+            return st.split(b"\x00")[0].decode("latin-1")
+        inject_keys(mon, b"DEL UOS-RN2\x0d")
+        time.sleep(8)
+        st_new = drive_status()
+        inject_keys(mon, b"DEL UOS-CP2\x0d")
+        time.sleep(8)
+        st_old = drive_status()
+        # 1541 scratch reply: "01, FILES SCRATCHED,<count>,00"
+        assert st_new.startswith("01, FILES SCRATCHED,01"), \
+            f"FAIL: DEL of the renamed file did not scratch one file: {st_new!r}"
+        assert st_old.startswith("01, FILES SCRATCHED,00"), \
+            f"FAIL: the old name still existed after REN: {st_old!r}"
+        shnames = [st_new, st_old]
+        print(f"      image file view: {disk_names()[-3:]}", flush=True)
+        print(f"PASS 10e: shell COPY (on the image) + REN (in the drive listing: {shnames[-2:]})", flush=True)
+
         # EXIT: back to the desktop
         inject_keys(mon, b"EXIT\x0d")
         ok_desk = False
@@ -602,7 +644,7 @@ def main():
             "FAIL: desktop never resumed tick dispatch after shell EXIT"
         print("PASS 10d: shell EXIT back to the desktop (tick dispatch live)",
               flush=True)
-        print("CI PASS: 12/12 emulator-verifiable checks", flush=True)
+        print("CI PASS: 13/13 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:
