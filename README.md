@@ -8,7 +8,7 @@ uOS already boots and runs on **real hardware**: a Commodore 128 with an Ultimat
 16 MB REU, 1541/1581 drives and *both* displays (VIC-II 40-col + 8563 VDC 80-col) wired up.
 The upstream project is a young alpha (desktop + settings, mouse-driven); this fork
 builds it out into a complete C128 OS — see [docs/roadmap.html](docs/roadmap.html)
-(gap analysis + M0–M6 milestones, hardware-gated) and [docs/prd.html](docs/prd.html)
+(gap analysis + M0–M6 milestones, hardware-gated) and [docs/prd.html](docs/prd.html) and [docs/SDK.md](docs/SDK.md) (application SDK: memory map, jump tables, app lifecycle, 80-column companion API, CI).
 (product requirements across the whole 2026 Commodore hardware universe).
 
 ## What's new in this fork (v0.2, verified on real C128 hardware)
