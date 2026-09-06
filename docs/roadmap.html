@@ -421,3 +421,16 @@ nothing later depends on an unverified assumption.</p>
       NOT yet deployed to hardware this session (machine state unknown); all results are x64-emulator.
 -->
 </body>
+<!--
+LEDGER 2026-09-05 (session 3): 80-column VDC display WORKS under uOS on the real C128
+(Marc confirmed banner + clean bottom rows; six driver bugs fixed, fixed jump table at $cc00).
+M1 companion display DONE in emulator (commits 2af832a, 6e11a76): VDC_TEXT/VDC_CLR/VDC_BANNER
+slots + VDC_LIVE gate; desktop/fmgr/shell/settings mirror on the VDC; tests/ci_vdc.py 5/5 in
+x128 -go64. Core-size gotcha: core must end below $1000 (desktop load) - it had reached $1028
+and clobbered GETCAP/CAPTBL; fixed by moving VDC text code into the driver (core now $0801-$0fd8).
+Mouse: fire read from both control ports (DDR bit 4 only). Settings: background colour option.
+MegaPatch 128 3.3 r12: installed in x128 (needs REU; 64 KB VDC RAM confirmed on the real C128
+via probes/vdc-ramsize.asm); deliverable ~/geos128/mp3-megapatch128.d81 boots standalone;
+hardware deploy (deploy_mp3.py) pending - the C128 went offline. OPEN: hardware run of the
+companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M6 SDK docs.
+-->
