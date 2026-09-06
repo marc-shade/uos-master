@@ -234,6 +234,29 @@ targets. Launching a row from the Applications window goes through
 `LAUNCH_APP` (cleared screen), and the window's controls die with the next
 desktop entry.
 
+## The text editor (`uos-edit`)
+
+A note editor launched from the Applications menu: type text, RETURN for a
+new line, DEL to backspace, F1 to save, ESC to exit; it loads `NOTES.T` on
+entry. Both displays are drawn (40-column proportional + 80-column mirror).
+Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
+
+* **Closing the command channel (secondary 15) closes every open file on
+  the drive.** So the "does NOTES.T exist?" check can't open 15 alongside
+  the file. `ed_exists` instead pattern-lists `"$0:NOTES.T"` on its own
+  logical file and counts quote characters (a matching file adds a second
+  quoted entry). Use a *different logical file* from the one you reopen
+  next, or the real drive returns stale/garbled data.
+* **A missing SEQ file reads `$00` forever with `ST=$00` on the real 1541
+  (Ultimate),** and its command channel reads back empty — neither ST nor
+  the status channel flags the miss the way VICE does. Bound every file
+  read with a hard page/byte counter, not a 16-bit compare, and gate the
+  read on the directory check above.
+* **SEQ file *data* writes do not persist to the .d64 image under this
+  box's VICE** (the same gate as the settings kernal SAVE); the write
+  sequence itself is proven clean (`probes/seqwrite.asm` -> CHKOUT ST=$00)
+  and lands on real hardware.
+
 ## 64tass conventions that bite
 
 * `.text "ABC"` emits **shifted** PETSCII (`$c1…`). Filenames for
@@ -257,7 +280,8 @@ desktop entry.
 ```
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
 UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/IP/TIME/GET (17 checks)
-python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity (13 checks)
+python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity, status line (14 checks)
+python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_net_check.py                      # real C128: clock synced (driver bytes, Ultimate RTC via REST, row 0)

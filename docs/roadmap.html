@@ -511,3 +511,16 @@ companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M
   shorter source bled the previous text ("ntpultimate") -> pad to col 78 (same class as the row-0 pad).
   CI: ci_vdc 14/14 (PASS H2: after the canned NTP apply, row 24 = "2026-09-06  no ip  ntp"), ci_fm 17/17.
 -->
+<!-- 2026-09-06 session 4f addendum (text editor uos-edit):
+  uos-edit ($5000, an app): type/RETURN/DEL/F1-save/ESC, loads NOTES.T on entry, both displays drawn,
+  full re-render per change (correctness first). Save/load = SEQ file over the KERNAL. 1541 traps found
+  and fixed: (1) closing the command channel (sa 15) closes ALL files -> ed_exists pattern-lists
+  "$0:NOTES.T" on its OWN logical file (3, not the file channel 2) and counts quotes; (2) a missing SEQ
+  file reads $00 forever with ST=$00 on the real 1541 and the cmd channel reads empty -> bound the read
+  with a hard page/byte counter (EDPAGES*256), gated on the dir check; (3) SEQ data writes don't persist
+  under this VICE (settings-SAVE-class gate; mechanism proven by probes/seqwrite CHKOUT ST=$00, lands on
+  hw). CI: ci_edit.py 5/5 (load real content, edit, save-runs-clean, exit), ci_fm 17/17, ci_vdc 14/14.
+  HARDWARE: editor loads + runs; ed_load reads a real NOTES.T off the real 1541 (edlen=38, exact match)
+  AND is clean on a missing file (edlen=0). Typed F1-save on hw needs Marc's keyboard (DMA key injection
+  doesn't land). The launcher now lists 4 apps (settings/fmgr/shell/edit).
+-->
