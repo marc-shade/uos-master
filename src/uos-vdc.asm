@@ -401,15 +401,102 @@ VDC_TEXT:
         rts
 vt_go:  pla
         jsr vd_cell             ; vdcdp = row*80 + col
+        lda vdcdpL
+        sta vtsavL
+        lda vdcdpH
+        sta vtsavH
         lda r9L
         sta vdcbpL
         lda r9H
         sta vdcbpH
         php
         sei
+        ; Write the string THREE times with a short gap between passes.
+        ; Hardware readback showed isolated cells dropped by the 8563 even
+        ; behind the ready-wait and with no DMA on the bus, and a readback
+        ; immediately after the write returns the just-written latch, so it
+        ; cannot see the loss. Independent passes make a repeat loss of the
+        ; same cell negligible; the verify pass below catches the rest.
+        lda #$03
+        sta vtrep
+vt_rep: lda vtsavL
+        sta vdcdpL
+        lda vtsavH
+        sta vdcdpH
         jsr VDC_PUTS
+        ldx #$00                ; ~1.3 ms gap: let the chip's write settle
+vt_gap: dey
+        bne vt_gap
+        dex
+        bne vt_gap
+        dec vtrep
+        bne vt_rep
+        ; Verify-and-repair. On the real 8563 a data write is occasionally
+        ; lost even behind the ready-wait (hardware readback 2026-09-06:
+        ; "uos-f" for "uos-fmgr", "u s-shell"), and the auto-increment still
+        ; advanced, so the loss is silent. Read every cell back and rewrite
+        ; any glyph or attribute that differs; two passes make a repeat
+        ; loss of the same cell negligible. Text volume is tiny.
+        lda #$02
+        sta vtpass
+vt_vp:  lda vtsavL
+        sta vdcdpL
+        lda vtsavH
+        sta vdcdpH
+        ldy #$00
+vt_vl:  lda (vdcbpL),y
+        beq vt_vend
+        lda vdcdpL
+        ldx vdcdpH
+        jsr VDC_SEEK
+        jsr vwait
+        lda VDC_DATA            ; glyph as stored
+        sta vtgot
+        lda (vdcbpL),y
+        jsr p2s
+        cmp vtgot
+        beq vt_attr
+        pha
+        lda vdcdpL
+        ldx vdcdpH
+        jsr VDC_SEEK
+        pla
+        jsr vdcpush             ; rewrite the glyph
+vt_attr:
+        lda vdcdpH
+        clc
+        adc #$08
+        tax
+        lda vdcdpL
+        jsr VDC_SEEK
+        jsr vwait
+        lda VDC_DATA
+        cmp #$81
+        beq vt_next
+        lda vdcdpH
+        clc
+        adc #$08
+        tax
+        lda vdcdpL
+        jsr VDC_SEEK
+        lda #$81
+        jsr vdcpush             ; rewrite the attribute
+vt_next:
+        inc vdcdpL
+        bne vt_ny
+        inc vdcdpH
+vt_ny:  iny
+        bne vt_vl
+vt_vend:
+        dec vtpass
+        bne vt_vp
         plp
         rts
+vtsavL: .byte 0
+vtsavH: .byte 0
+vtpass: .byte 0
+vtgot:  .byte 0
+vtrep:  .byte 0
 
 VDC_CLR:
         ldx #$00

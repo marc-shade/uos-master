@@ -260,7 +260,18 @@ def main():
         show(rows, "launcher")
         apps = [r.strip() for r in rows[4:10] if r.strip()]
         assert any("settings" in a for a in apps) and any("shell" in a for a in apps), apps
-        print(f"PASS F: launcher mirrored ({len(apps)} apps: {apps})")
+        # the launcher's CreateWindow stash/fetch used to DMA over the
+        # graphics engine at $c000 (bad last-row math); prove the module is
+        # byte-intact after the window opened
+        gfx_ref = open(os.path.join(UOS, "target/uos-gfx.prg"), "rb").read()[2:]
+        gfx_mem = b"".join(mon.peek(0xc000 + i, min(0x100, len(gfx_ref) - i))
+                           for i in range(0, len(gfx_ref), 0x100))
+        bad = [i for i, (a, b) in enumerate(zip(gfx_ref, gfx_mem)) if a != b]
+        # the engine self-modifies a few counters (COUNTHI at $c29b etc.);
+        # corruption looks different: the jump table at $c000 zeroed, hundreds of bytes
+        assert not any(i < 0x80 for i in bad) and len(bad) < 64, \
+            f"FAIL: gfx module corrupted after launcher: {len(bad)} bytes from ${0xc000 + bad[0]:04x}"
+        print(f"PASS F: launcher mirrored ({len(apps)} apps: {apps}); gfx module intact")
         passed += 1
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)

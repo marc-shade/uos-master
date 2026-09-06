@@ -443,12 +443,21 @@ FetchScreen .macro
 
 SaveRect .macro x, y, width, height
 
+    ; rows are 8-pixel bitmap bands (0-24). lastrow used to be
+    ; firstrow + (y+height)/8, i.e. it overshot by firstrow: a window at
+    ; y=60/h=92 reached band 26 = $c0c0, and the REU stash/fetch DMA'd over
+    ; the graphics engine at $c000 (proven on the real C128: 890 corrupted
+    ; bytes, then a BRK storm). VICE never showed it because stash+fetch
+    ; of the same bytes is a no-op there.
     exploc      := 0
     firstrow    := \y / 8
-    lastrow     := firstrow + ((\y + \height) / 8)
+    lastrow     := (\y + \height - 1) / 8
+    .if lastrow > 24
+    lastrow     := 24            ; the bitmap has 25 bands; never DMA past $bfff
+    .fi
     row         := 0
     col         := (\x / 8)
-    memsz       := (((\x + \width) / 8) * 8) + 8
+    memsz       := ((((\x + \width - 1) / 8) - col) + 1) * 8
 
     .for row := firstrow, row <= lastrow, row := row + 1 
 
@@ -477,12 +486,21 @@ SaveRect .macro x, y, width, height
 
 FetchRect .macro x, y, width, height
 
+    ; rows are 8-pixel bitmap bands (0-24). lastrow used to be
+    ; firstrow + (y+height)/8, i.e. it overshot by firstrow: a window at
+    ; y=60/h=92 reached band 26 = $c0c0, and the REU stash/fetch DMA'd over
+    ; the graphics engine at $c000 (proven on the real C128: 890 corrupted
+    ; bytes, then a BRK storm). VICE never showed it because stash+fetch
+    ; of the same bytes is a no-op there.
     exploc      := 0
     firstrow    := \y / 8
-    lastrow     := firstrow + ((\y + \height) / 8)
+    lastrow     := (\y + \height - 1) / 8
+    .if lastrow > 24
+    lastrow     := 24            ; the bitmap has 25 bands; never DMA past $bfff
+    .fi
     row         := 0
     col         := (\x / 8)
-    memsz       := (((\x + \width) / 8) * 8) + 8
+    memsz       := ((((\x + \width - 1) / 8) - col) + 1) * 8
 
     .for row := firstrow, row <= lastrow, row := row + 1 
 
@@ -513,10 +531,13 @@ ClrRect .macro x, y, width, height
 
     exploc      := 0
     firstrow    := \y / 8
-    lastrow     := (\y + \height) / 8
+    lastrow     := (\y + \height - 1) / 8
+    .if lastrow > 24
+    lastrow     := 24            ; the bitmap has 25 bands; never DMA past $bfff
+    .fi
     row         := 0
     col         := (\x / 8)
-    lastcol     := col + (\width / 8) + 1
+    lastcol     := ((\x + \width - 1) / 8) + 1
     memsz       := (lastcol - col) * 8
 
     .for row := firstrow, row <= lastrow, row := row + 1 

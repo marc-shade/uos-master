@@ -235,7 +235,10 @@ noapps:         .text "no apps found on disk", $00
 MENU_APPS = *
         jsr closemenu
 
-        #CreateWindow 1,APPS_X,APPS_Y,APPS_X+APPS_W,APPS_Y+92,true,apps_title
+        ; CreateWindow takes x, y, WIDTH, HEIGHT (it used to be handed the
+        ; far corner: height 152 pushed the rect rows to band 26 = $c0c0 and
+        ; the REU stash/fetch overwrote the graphics engine on real hardware)
+        #CreateWindow 1,APPS_X,APPS_Y,APPS_W,92,true,apps_title
 
         ; 80-column companion: title on row 2, the app rows follow (4..)
         lda #<apps_title
