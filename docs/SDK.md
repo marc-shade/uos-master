@@ -62,7 +62,9 @@ $c00c` (1 = write, 0 = erase), `GFX_SETPIXEL $c00f`, `GFX_LINE $c015`,
 `GFX_CIRCLE $c018`, `GPUTC $c01b` (`A` = char at `X1/Y1`), `GPUTS $c01e`
 (`r9` → text at `X1/Y1`), `GFX_DRAWBYTEPATTERN $c021`. Text is an **XOR
 engine**: drawing a string twice erases it — keep the string you drew
-(`oldbuf` pattern in the shell) and redraw it to erase.
+(`oldbuf` pattern in the shell) and redraw it to erase. **`GPUTS`/`GPUTC`
+clobber X and Y** — save a loop index before the call (the launcher's row
+loop lost its index this way for a long time).
 
 VDC driver (`$cc00`…, fixed jump table; never mirror routine addresses by
 hand): `VDC_GETREG $cc00` (`X` = reg → `A`), `VDC_SETREG $cc03`,
@@ -151,11 +153,14 @@ so loading it overwrites the record with compiled defaults; it re-reads
 
 ```
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
-UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell (13 checks)
-python3 tests/ci_vdc.py                      # x128 -go64: 80-column companion display (5 checks)
+UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell (14 checks)
+python3 tests/ci_vdc.py                      # x128 -go64: 80-column companion display (6 checks)
+python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 deploy_hw.py                         # real C128 via the Ultimate II+ REST API
 ```
 
+Never boot `target/ultos.d64` itself read-write in a test: copy it to a
+scratch image first (a settings SAVE otherwise lands in the committed file).
 Both CI scripts drive the OS through real code paths: keys through the
 kernal keyboard buffer (`$0277/$c6`, 10 bytes at a time), apps through a
 one-shot tick-vector trampoline, and they read results from memory (x64
