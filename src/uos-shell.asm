@@ -141,7 +141,18 @@ sh_parse:
         beq _sp_e
         cmp #$43                        ; 'C'
         beq _sp_c
+        cmp #$48                        ; 'H' -> HELP
+        beq _sp_h
         jmp sp_unk
+_sp_h:  lda cmdbuf+1
+        cmp #$45                        ; 'E'
+        bne sp_unk
+        lda #<sh_hint
+        sta r0L
+        lda #>sh_hint
+        sta r0H
+        jsr setline
+        jmp sp_fin
 _sp_c:  lda cmdbuf+1
         cmp #$4f                        ; 'O' -> COPY old new
         bne sp_unk
@@ -816,7 +827,7 @@ ds_end:
 dskstr: .text "uos-desktop", 0
 sh_title: .text "Command shell", 0
 shver:  .text "UltOS 0.3", 0
-sh_hint: .text "DIR RUN DEL COPY REN VER EXIT", 0
+sh_hint: .text "DIR RUN DEL COPY REN VER HELP EXIT", 0
 p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
                                         ; would emit shifted PETSCII junk)
 msg_dird: .text "dir", 0

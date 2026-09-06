@@ -623,6 +623,13 @@ def main():
         print(f"      image file view: {disk_names()[-3:]}", flush=True)
         print(f"PASS 10e: shell COPY (on the image) + REN (in the drive listing: {shnames[-2:]})", flush=True)
 
+        # HELP: the command list lands on the response line
+        inject_keys(mon, b"HELP\x0d")
+        time.sleep(5)
+        resp = bytes(mon.read_mem(SH_RESP, SH_RESP + 19, memspace=0)); mon.resume()
+        assert resp.startswith(b"\xc4\xc9\xd2 \xd2\xd5\xce"), f"FAIL: HELP response wrong: {resp!r}"   # "DIR RUN" shifted PETSCII
+        print("PASS 10f: HELP lists the command set", flush=True)
+
         # EXIT: back to the desktop
         inject_keys(mon, b"EXIT\x0d")
         ok_desk = False
@@ -644,7 +651,7 @@ def main():
             "FAIL: desktop never resumed tick dispatch after shell EXIT"
         print("PASS 10d: shell EXIT back to the desktop (tick dispatch live)",
               flush=True)
-        print("CI PASS: 13/13 emulator-verifiable checks", flush=True)
+        print("CI PASS: 14/14 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:
