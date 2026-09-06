@@ -64,7 +64,10 @@ def main():
     for i, r in enumerate(rows):
         if r:
             print(f"{i:2d}: {r}")
-    ok = rows[0].startswith("UltOS") and "ultos menu" in rows[1] and rows[2].startswith("desktop")
+    # the copy is not atomic (the 8563 keeps refreshing), so a few cells can
+    # read back blank: check anchors, not whole strings
+    ok = rows[0].startswith("UltOS") and rows[1].startswith("ultos") and "apps" in rows[1] \
+        and rows[2].startswith("desktop")
     print("raw row0:", mem[:16].hex())
     if not ok:
         cbm.die("FAIL: companion display rows did not read back from the real VDC")

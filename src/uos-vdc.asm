@@ -79,22 +79,18 @@ VDC_SETREG:
         sta VDC_DATA
         rts
 
-; bounded ready-wait: spin until status bit7 (ready) or 256 tries.
-; Preserves A and X (callers use both as loop counters). RAM access via r31
-; MUST wait: a write issued before the 8563 is ready is DROPPED and the
-; auto-increment does not advance, so a 2000-cell clear falls short and the
-; bottom rows keep stale (blinking) attributes. Bounded so a stuck status
-; bit can never hang the boot (worst case: a dropped write, not a lock-up).
+; ready-wait: spin until status bit7 (ready). Preserves A and X.
+; RAM access via r31 MUST wait: a write issued before the 8563 is ready is
+; DROPPED and the auto-increment does not advance. This wait is UNBOUNDED,
+; like the C128 kernal's own $CDCC/$CDD8 routines: on the real chip a
+; 256-iteration bound still dropped runs of ~25 cells (hardware readback
+; 2026-09-06 showed "Ul" + blanks in the header). Unbounded is safe
+; because every caller runs after VDC_INIT (the display is up and the
+; status bit toggles); the only place a wait ever hung was BEFORE init,
+; and VDC_INIT does not wait at all.
 vwait:  pha
-        txa
-        pha
-        ldx #$00
 vw_l:   bit VDC_ADDR
-        bmi vw_ok
-        dex
-        bne vw_l
-vw_ok:  pla
-        tax
+        bpl vw_l
         pla
         rts
 
