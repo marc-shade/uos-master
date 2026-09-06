@@ -71,6 +71,8 @@ _bgok:  jsr GFX_ON
         lda #>APP_TICK
         sta $033d
 
+        jsr clr_ctls            ; fresh control table on every entry
+
         #PenWrite
         #DrawLine 0,189,319,189
         
@@ -90,21 +92,7 @@ _bgok:  jsr GFX_ON
 
         ; 80-column companion: the desktop owns rows 2-23; blank them (an
         ; app may have left its listing there) and announce the desktop.
-        lda #$02
-_vdclr: pha
-        jsr VDCLR
-        pla
-        clc
-        adc #$01
-        cmp #24
-        bne _vdclr
-        lda #<vd_desk
-        sta r9L
-        lda #>vd_desk
-        sta r9H
-        lda #$02
-        ldx #$00
-        jsr VDTEXT
+        jsr vd_reset
         jmp MAINLOOP
 
 vd_desk: .text "desktop", $00
@@ -271,9 +259,7 @@ ctag5:  .text "unsynced", $00
 vdtime: .fill 24, 0
 
 WIN_OK = *
-        #FetchScreen
-        #RemoveButton 0,1
-        jmp MAINLOOP
+        jmp ON_CLOSE
 
 ;==========================================================================
 ; Applications launcher
@@ -329,35 +315,35 @@ _populate:
         bcc _r1skip
         jmp _apps_ok
 _r1skip:
-        #CreateButton 0,20,<APPS_LAUNCH_1, >APPS_LAUNCH_1, APPS_X+2, APPS_Y+18, APPS_X+APPS_W-4, APPS_Y+18+APPS_ROW_H, false
+        #CreateButton 1,20,<APPS_LAUNCH_1, >APPS_LAUNCH_1, APPS_X+2, APPS_Y+18, APPS_X+APPS_W-4, APPS_Y+18+APPS_ROW_H, false
         cpx #$02
         bcs _r2
         jmp _apps_ok
 _r2:
-        #CreateButton 0,21,<APPS_LAUNCH_2, >APPS_LAUNCH_2, APPS_X+2, APPS_Y+18+APPS_ROW_H, APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*2), false
+        #CreateButton 1,21,<APPS_LAUNCH_2, >APPS_LAUNCH_2, APPS_X+2, APPS_Y+18+APPS_ROW_H, APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*2), false
         cpx #$03
         bcs _r3
         jmp _apps_ok
 _r3:
-        #CreateButton 0,22,<APPS_LAUNCH_3, >APPS_LAUNCH_3, APPS_X+2, APPS_Y+18+(APPS_ROW_H*2), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*3), false
+        #CreateButton 1,22,<APPS_LAUNCH_3, >APPS_LAUNCH_3, APPS_X+2, APPS_Y+18+(APPS_ROW_H*2), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*3), false
         cpx #$04
         bcs _r4
         jmp _apps_ok
 _r4:
-        #CreateButton 0,23,<APPS_LAUNCH_4, >APPS_LAUNCH_4, APPS_X+2, APPS_Y+18+(APPS_ROW_H*3), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*4), false
+        #CreateButton 1,23,<APPS_LAUNCH_4, >APPS_LAUNCH_4, APPS_X+2, APPS_Y+18+(APPS_ROW_H*3), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*4), false
         cpx #$05
         bcs _r5
         jmp _apps_ok
 _r5:
-        #CreateButton 0,24,<APPS_LAUNCH_5, >APPS_LAUNCH_5, APPS_X+2, APPS_Y+18+(APPS_ROW_H*4), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*5), false
+        #CreateButton 1,24,<APPS_LAUNCH_5, >APPS_LAUNCH_5, APPS_X+2, APPS_Y+18+(APPS_ROW_H*4), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*5), false
         cpx #$06
         bcs _r6
         jmp _apps_ok
 _r6:
-        #CreateButton 0,25,<APPS_LAUNCH_6, >APPS_LAUNCH_6, APPS_X+2, APPS_Y+18+(APPS_ROW_H*5), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*6), false
+        #CreateButton 1,25,<APPS_LAUNCH_6, >APPS_LAUNCH_6, APPS_X+2, APPS_Y+18+(APPS_ROW_H*5), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*6), false
 
 _apps_ok:
-        #CreateButton 0,29,<APPS_CANCEL, >APPS_CANCEL, APPS_X+APPS_W-38, APPS_Y+96, APPS_X+APPS_W-8, APPS_Y+104, true
+        #CreateButton 1,29,<APPS_CANCEL, >APPS_CANCEL, APPS_X+APPS_W-38, APPS_Y+96, APPS_X+APPS_W-8, APPS_Y+104, true
         #Text APPS_X+APPS_W-34, APPS_Y+97, cancel
         jmp MAINLOOP
 
@@ -450,24 +436,11 @@ apps_launch:
         lda #>row1
         sta r0H
         jsr FILLFILE
-        jsr APP_LOADER
-        jmp APP_START
+        jmp LAUNCH_APP          ; clears the screen; DESK_START drops the
+                                ; window's controls when the app returns
 
 APPS_CANCEL:
-        #FetchScreen
-        ; remove every launcher button (ids 20-29); RemoveButton is a no-op
-        ; for ids that were never created (rows beyond apps_count)
-        #RemoveButton 0,29
-        #RemoveButton 0,28
-        #RemoveButton 0,27
-        #RemoveButton 0,26
-        #RemoveButton 0,25
-        #RemoveButton 0,24
-        #RemoveButton 0,23
-        #RemoveButton 0,22
-        #RemoveButton 0,21
-        #RemoveButton 0,20
-        jmp MAINLOOP
+        jmp ON_CLOSE            ; same as the title-bar close box
 
 ;--------------------------------------------------------------------------
 ; dir_scan_apps: OPEN 5,8,0,"$"; walk the 1541 directory stream; any prg
@@ -763,14 +736,14 @@ MENU_QUIT = *
         left := 180
         width := 30
         height := 10
-        #CreateButton 0,1,<QUIT_YES, >QUIT_YES, left, top, left + width, top + height,true
+        #CreateButton 1,1,<QUIT_YES, >QUIT_YES, left, top, left + width, top + height,true
         #Text 189, 122, yes
 
         top := 120
         left := 140
         width := 30
         height := 10
-        #CreateButton 0,2,<QUIT_NO, >QUIT_NO, left, top, left + width, top + height,true
+        #CreateButton 1,2,<QUIT_NO, >QUIT_NO, left, top, left + width, top + height,true
         #Text 148, 122, no 
 
         jmp MAINLOOP
@@ -779,10 +752,7 @@ QUIT_YES:
         jmp $fce2
 
 QUIT_NO:
-        #FetchScreen
-        #RemoveButton 0,1
-        #RemoveButton 0,2
-        jmp MAINLOOP
+        jmp ON_CLOSE
 
 
 MNU_ULTOS = *
@@ -803,27 +773,25 @@ _openmenu:
         width := 75
         top := 105
 
-        #CreateButton 0, 1, <MENU_APPS,  >MENU_APPS, left, top + (height * 1), width, (top + height) + (height*1),true
+        #CreateButton 2, 1, <MENU_APPS,  >MENU_APPS, left, top + (height * 1), width, (top + height) + (height*1),true
         #Text left + 5, top + 4 + (height * 1), mnu_apps
-        #CreateButton 0, 2, <MENU_FILEMGR,  >MENU_FILEMGR, left, top + (height * 2), width, (top + height) + (height*2),true
+        #CreateButton 2, 2, <MENU_FILEMGR,  >MENU_FILEMGR, left, top + (height * 2), width, (top + height) + (height*2),true
         #Text left + 5, top + 4 + (height * 2), mnu_fileman
-        #CreateButton 0, 3, <MENU_SETTINGS, >MENU_SETTINGS,left, top + (height * 3), width, (top + height) + (height*3),true
+        #CreateButton 2, 3, <MENU_SETTINGS, >MENU_SETTINGS,left, top + (height * 3), width, (top + height) + (height*3),true
         #Text left + 5, top + 4 + (height * 3), mnu_settings
-        #CreateButton 0, 4, <MENU_CMDLN,    >MENU_CMDLN   ,left, top + (height * 4), width, (top + height) + (height*4),true
+        #CreateButton 2, 4, <MENU_CMDLN,    >MENU_CMDLN   ,left, top + (height * 4), width, (top + height) + (height*4),true
         #Text left + 5, top + 4 + (height * 4), mnu_cmdline
-        #CreateButton 0, 5, <MENU_QUIT,     >MENU_QUIT    ,left, top + (height * 5), width, (top + height) + (height*5),true
+        #CreateButton 2, 5, <MENU_QUIT,     >MENU_QUIT    ,left, top + (height * 5), width, (top + height) + (height*5),true
         #Text left + 5, top + 4 + (height * 5), mnu_quit
 
         jmp MAINLOOP
 
 closemenu:
         #FetchScreen
-nop
-        #RemoveButton 0,1
-        #RemoveButton 0,2
-        #RemoveButton 0,3
-        #RemoveButton 0,4
-
+        lda #$02                ; free every popup-menu control (layer 2).
+        jsr rm_app_ctls         ; The old RemoveButton 0,1..4 removed the
+                                ; FIRST (0,1) = the computer icon (id clash)
+                                ; and never removed quit (0,5).
         lda #$00
         sta menuopen
         rts
@@ -1011,9 +979,74 @@ ci_16mb:    .text "reu: 16 mb", $00
 ci_banks:   .byte $00
 ci_reubuf:  .fill 20, 0
 
+; ON_CLOSE — the one close path for every window/dialog (title-bar X,
+; Cancel, No, OK). It used to #CloseWindow the Computer window's hardcoded
+; rect, so the X on the Applications window restored the wrong pixels; and
+; nothing ever freed the close box itself. Windows are modal over a static
+; desktop whose full screen was stashed in DESK_START, so restoring that
+; stash erases any window; freeing layer 1 drops the window's controls.
 ON_CLOSE:
-        #CloseWindow 0,80,48,159,84
-        jmp MAINLOOP 
+        #FetchScreen
+        lda #$01
+        jsr rm_app_ctls
+        jsr vd_reset            ; 80-col rows back to "desktop"
+        lda #$ff
+        sta minute              ; the restored stash carries a stale clock:
+        jmp MAINLOOP            ; redraw it on the next tick
+
+; free every control slot belonging to layer A (0 desktop, 1 window/dialog,
+; 2 popup menu). Slots are 10 bytes; 25 of them ($9001-$90fa).
+rm_app_ctls:
+        sta rmid
+        ldx #$00
+        ldy #25
+_ra_l:  lda APP_CTL_BUF,x
+        cmp rmid
+        bne _ra_n
+        lda #$ff
+        sta APP_CTL_BUF,x
+        sta APP_CTL_BUF+1,x
+        dec APP_CTL_CTR
+_ra_n:  txa
+        clc
+        adc #$0a
+        tax
+        dey
+        bne _ra_l
+        rts
+rmid:   .byte 0
+
+; empty the control table: every desktop (re-)entry starts clean, so a
+; window or app that was open when the desktop was left cannot leave ghost
+; click targets behind
+clr_ctls:
+        lda #$00
+        sta APP_CTL_CTR
+        lda #$ff
+        ldx #$00
+_cc_l:  sta APP_CTL_BUF,x
+        inx
+        cpx #250
+        bne _cc_l
+        rts
+
+; 80-column companion: the desktop owns rows 2-23; blank them and announce
+vd_reset:
+        lda #$02
+_vdclr: pha
+        jsr VDCLR
+        pla
+        clc
+        adc #$01
+        cmp #24
+        bne _vdclr
+        lda #<vd_desk
+        sta r9L
+        lda #>vd_desk
+        sta r9H
+        lda #$02
+        ldx #$00
+        jmp VDTEXT
 
 win_computer_title:
         .text "Computer", $00

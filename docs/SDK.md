@@ -183,6 +183,48 @@ fixes it); the calendar is exact for 1900-2199; one SNTP sample, no
 round-trip compensation (the request/reply takes well under a second on a
 LAN, so the clock is set to the second).
 
+## Controls, windows and menus (`APP_CTL_TBL = $9000`)
+
+Every clickable thing is a 10-byte slot in a 25-slot table at `$9001-$90fa`
+(`APP_CTL_CTR` at `$9000` counts them): app-id, button-id, callback (lo/hi),
+x1 (word), y1, x2 (word), y2. `CreateButton` fills the first free slot
+(`FIND_CTL` with id `$ff`) and **skips the write when the table is full**
+(it used to store the record at `$00xx`, i.e. into zero page).
+`TESTCLICK` scans **all 25 slots** and **skips any slot whose app-id is
+`$ff`** — until 2026-09-06 it scanned `APP_CTL_CTR` slots (a counter nothing
+ever initialised: RAM garbage of 122-135 on real boots, so the scan walked
+off the table into driver code) and matched on coordinates only, so a
+"removed" button stayed clickable until its slot was reused.
+
+**Layers by app-id.** The app-id is a *layer*, not an application:
+
+| app-id | layer | created by | freed by |
+|---|---|---|---|
+| 0 | desktop base: menu bar `(0,0)`, computer icon `(0,1)` | `DESK_START` after `clr_ctls` | never (rebuilt on every desktop entry) |
+| 1 | the open window or dialog: title-bar close box `(1,0)`, its content buttons (launcher rows `(1,20..25)`, Cancel `(1,29)`, quit Yes/No `(1,1)/(1,2)`) | `CreateWindow` / the dialog | `ON_CLOSE` → `rm_app_ctls 1` |
+| 2 | the ultos popup menu items `(2,1..5)` | `MNU_ULTOS` | `closemenu` → `rm_app_ctls 2` |
+
+Layers stack LIFO (menu → closes itself before a window opens), so freeing
+a layer never strands a live slot behind a freed one. The old scheme reused
+app-id 0 for everything and, for example, `closemenu`'s `RemoveButton 0,1`
+removed the *first* `(0,1)` — the computer icon — and never removed quit.
+
+**One close path.** `ON_CLOSE` (desktop) is where every window and dialog
+ends: `FetchScreen` (the desktop's full-screen REU stash from `DESK_START`
+erases any modal window, so no per-window rect is needed), `rm_app_ctls 1`,
+`vd_reset` (80-column rows back to `desktop`), and a forced clock redraw
+(`minute = $ff`, the stash carried a stale time). The title-bar X, the
+launcher's Cancel, the quit dialog's No and the old `WIN_OK` all `jmp
+ON_CLOSE`. It used to `#CloseWindow` the Computer window's hardcoded rect,
+so the X on the Applications window restored the wrong pixels, and nothing
+ever freed the close box.
+
+`DESK_START` calls `clr_ctls` first (counter 0, all slots `$ff`), so a window
+or app that was open when the desktop was left cannot leave ghost click
+targets. Launching a row from the Applications window goes through
+`LAUNCH_APP` (cleared screen), and the window's controls die with the next
+desktop entry.
+
 ## 64tass conventions that bite
 
 * `.text "ABC"` emits **shifted** PETSCII (`$c1…`). Filenames for
@@ -199,7 +241,7 @@ LAN, so the clock is set to the second).
 ```
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
 UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. IP/TIME/GET (15 checks)
-python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key (12 checks)
+python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity (13 checks)
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_net_check.py                      # real C128: clock synced (driver bytes, Ultimate RTC via REST, row 0)

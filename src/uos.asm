@@ -537,8 +537,9 @@ LOADIMM3:
 ; ==========================================================
 TESTCLICK:
         ldx #$00
-        lda APP_CTL_CTR
-        sta r1
+        lda #25                 ; scan the whole bounded table (25 slots),
+        sta r1                  ; not the counter: a freed slot in the middle
+                                ; must not hide the live ones after it
 
 _loopbtns:
         bne _storemeta
@@ -546,8 +547,14 @@ _loopbtns:
 
 _storemeta:
 
-        ; get app id
+        ; get app id; $ff = a freed slot whose stale coords must NOT match
+        ; (RemoveButton only marked the id; the scan never checked it, so
+        ; every "removed" button stayed clickable until its slot was reused)
         lda APP_CTL_BUF,x
+        cmp #$ff
+        bne _liveslot
+        jmp _checknextbtn
+_liveslot:
         sta r2
 
         ; get button id
@@ -727,6 +734,10 @@ img_stop:
 ; it to it's basic state
 ; ==========================================================
 SETUP_CTL_BUF:
+        lda #$00
+        sta APP_CTL_CTR         ; was never initialised: RAM garbage (122-135
+                                ; on three hardware boots) drove the click scan
+                                ; off the 25-slot table into driver code
         lda #<APP_CTL_BUF
         sta r1L
         lda #>APP_CTL_BUF

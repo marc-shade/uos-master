@@ -465,3 +465,22 @@ companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M
     SET_TIME push - a dead RTC cell, so hw_net_check treats that witness as informational, gating only
     on the driver's synced state and the 80-column row-0 readback.
 -->
+<!-- 2026-09-06 session 4b addendum (mouse regression + control-table/window-close integrity):
+  MOUSE DIED AFTER SETTINGS (f17c1cd): KEYIN_EXT scanned the C128 extended keyboard from the main loop by
+    writing $dc00=$ff; bits 6-7 of CIA1 port A are the SID pot-MUX the 1351 driver uses, so an app's tight
+    key-poll (Settings) corrupted the pot reads and a bad delta flipped the sprite X msb off-screen (X=458),
+    no clamp. Diagnosed over DMA (IRQ alive, opotx frozen, pot stable when read with a settled MUX). Fix:
+    the extended-key scan now lives in the mouse IRQ (owns $dc00), KEYIN_EXT is a pure reader of the
+    IRQ-latched key, and the sprite is clamped to [24,340]x[50,229]. HW: opotx stable, clamp recovers.
+  CONTROL TABLE (this commit): APP_CTL_CTR was never initialised (RAM garbage 122-135 on three real boots)
+    and TESTCLICK scanned that many slots off the 25-slot table into driver code, matching on coordinates
+    only - so RemoveButton was cosmetic (freed slots stayed clickable) and CreateButton wrote to zero page
+    when FIND_CTL found no slot. Fixes: counter zeroed in SETUP_CTL_BUF; TESTCLICK scans all 25 slots and
+    skips app-id $ff; CreateButton guards r3H=0. Layers by app-id (0 base, 1 window/dialog, 2 popup menu)
+    with rm_app_ctls/clr_ctls; the old scheme's RemoveButton 0,1 deleted the computer icon's target.
+  WINDOW CLOSE: ON_CLOSE is the one close path (FetchScreen + free layer 1 + vd_reset + clock redraw);
+    title-bar X, launcher Cancel, quit No, WIN_OK all route there. It used to #CloseWindow the Computer
+    window's hardcoded rect (wrong pixels for the Applications window) and never freed the close box.
+    Launcher rows launch via LAUNCH_APP (cleared screen). DESK_START calls clr_ctls on every entry.
+  CI: ci_vdc 13 checks (+F2: Cancel frees the window's controls; A/L assert CTR == 2 base buttons).
+-->

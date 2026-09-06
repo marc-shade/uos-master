@@ -234,7 +234,9 @@ def main():
         show(rows, "boot")
         assert "companion display" in rows[0], rows[0]
         assert "ultos menu" in rows[1], rows[1]
-        print("PASS A: header rows 0-1 + row 2 'desktop' on the 80-col display")
+        ctr = mon.peek(0x9000, 1)[0]
+        assert ctr == 2, f"APP_CTL_CTR after boot = {ctr} (want 2: menu bar + computer icon); it used to be RAM garbage"
+        print("PASS A: header rows 0-1 + row 2 'desktop' on the 80-col display; control table = 2 base buttons")
         passed += 1
 
         mon.launch(b"UOS-FMGR")
@@ -319,6 +321,14 @@ def main():
         sym = lambda n: hwlib.lst_symbol("uos-desktop", n)
         mon.tramp(bytes([0x4C, sym("APPS_CANCEL") & 0xff, sym("APPS_CANCEL") >> 8]))
         time.sleep(4)
+        def live_slots():
+            tbl = mon.peek(0x9001, 250)
+            return [(tbl[i], tbl[i + 1]) for i in range(0, 250, 10) if tbl[i] != 0xff]
+        ctr, live = mon.peek(0x9000, 1)[0], live_slots()
+        assert ctr == 2 and sorted(live) == [(0, 0), (0, 1)], \
+            f"after Cancel: CTR={ctr} live={live} (want only the 2 base buttons: the window's close box, rows and Cancel must be freed)"
+        print(f"PASS F2: closing the Applications window freed its controls (live slots {live})")
+        passed += 1
 
         # G: the clock mirror. x128 has no command interface at $df1c, so
         # the boot sync must report "no ultimate" and the desktop shows the
@@ -466,12 +476,17 @@ def main():
         cl = sym("ON_CLOSE")
         mon.tramp(bytes([0x4C, cl & 0xff, cl >> 8]))
         time.sleep(3)
-        print(f"PASS L: Computer window rows: {rows[6].strip()!r} / {rows[7].strip()!r}")
+        ctr, live = mon.peek(0x9000, 1)[0], live_slots()
+        assert ctr == 2 and sorted(live) == [(0, 0), (0, 1)], \
+            f"after the title-bar close: CTR={ctr} live={live} (the close box (1,0) must be freed)"
+        r2 = mon.vdc_rows()[2]
+        assert r2.startswith("desktop"), f"80-col row 2 after close: {r2!r}"
+        print(f"PASS L: Computer window rows: {rows[6].strip()!r} / {rows[7].strip()!r}; close freed its controls, row 2 back to 'desktop'")
         passed += 1
 
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)
-        print(f"CI-VDC PASS: {passed}/12 companion-display checks")
+        print(f"CI-VDC PASS: {passed}/13 companion-display checks")
     finally:
         emu.terminate()
         xvfb.terminate()

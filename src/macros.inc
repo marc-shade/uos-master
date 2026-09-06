@@ -307,6 +307,8 @@ CreateButton .macro appid, btnid, lo, hi, x1, y1, x2, y2, border
     sta r1
     sta r2
     jsr FIND_CTL
+    lda r3H
+    beq _cb_full            ; no free slot: do NOT write the record to $00xx
 
     ; store the app id
     ldy #$00
@@ -371,6 +373,7 @@ CreateButton .macro appid, btnid, lo, hi, x1, y1, x2, y2, border
     iny
 
     inc APP_CTL_CTR
+_cb_full:
 
 .endm
 
