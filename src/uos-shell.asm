@@ -155,9 +155,13 @@ _sp_h:  lda cmdbuf+1
         jmp sp_fin
 _sp_c:  lda cmdbuf+1
         cmp #$4f                        ; 'O' -> COPY old new
-        bne sp_unk
+        bne _sp_ca
         jsr cmd_copy
         rts
+_sp_ca: cmp #$41                        ; 'A' -> CAT file
+        bne sp_unk
+        jsr cmd_cat
+        jmp sp_fin
 _sp_d:  lda cmdbuf+1
         cmp #$49                        ; 'I' -> DIR
         bne _sp_de
@@ -1234,8 +1238,16 @@ _cg_got:
         sta dirty
         lda #$00
         sta rowi
-_cg_ln: jsr next_line
-        bcs _cg_done                    ; end of data
+        jsr show_body
+        lda NET_SOCK
+        jsr NET_CLOSE                   ; one chunk is what we show
+        rts
+
+; show up to 8 lines from (gp) in the rows region + VDC rows 9-16.
+; rowi = the first row to draw on (usually 0). Shared by GET and CAT.
+show_body:
+_sb_ln: jsr next_line
+        bcs _sb_done                    ; end of data
         lda #COL_X
         sta X1
         lda #$00
@@ -1261,10 +1273,84 @@ _cg_ln: jsr next_line
         inc rowi
         lda rowi
         cmp #$08
-        bne _cg_ln
-_cg_done:
-        lda NET_SOCK
-        jsr NET_CLOSE                   ; one chunk is what we show
+        bne _sb_ln
+_sb_done:
+        rts
+
+; CAT filename — read up to 512 bytes of a disk file and show it as text
+; (a PRG's 2-byte load header shows as two leading chars; fine for a viewer)
+cmd_cat:
+        jsr sh_argbuf
+        lda tokbuf
+        bne _cat_go
+        jmp sp_unk_msg                  ; no filename
+_cat_go:
+        ldy #$00
+_cat_len:
+        lda tokbuf,y
+        beq _cat_l2
+        iny
+        cpy #16
+        bne _cat_len
+_cat_l2:
+        tya
+        ldx #<tokbuf
+        ldy #>tokbuf
+        jsr SETNAM
+        lda #$05
+        ldx $ba                         ; last-used device (8)
+        ldy #$00
+        jsr SETLFS
+        jsr OPEN
+        ldx #$05
+        jsr CHKIN
+        lda #<catbuf
+        sta gp
+        lda #>catbuf
+        sta gp+1
+        lda #$00
+        sta catn
+        sta catn+1
+_cat_rd:
+        jsr READST                      ; check BEFORE the read (dirscan order)
+        and #$40
+        bne _cat_eof
+        jsr CHRIN
+        ldy #$00
+        sta (gp),y
+        inc gp
+        bne _cat_i1
+        inc gp+1
+_cat_i1:
+        inc catn
+        bne _cat_i2
+        inc catn+1
+_cat_i2:
+        lda catn+1
+        cmp #$02                        ; cap at 512 bytes
+        bne _cat_rd
+_cat_eof:
+        ldy #$00
+        lda #$00
+        sta (gp),y                      ; terminate for next_line
+        jsr CLRCHN
+        lda #$05
+        jsr CLOSE
+        lda #<tokbuf                    ; filename on the response line
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        jsr setline
+        jsr rows_wipe
+        lda #$01
+        sta dirty
+        lda #$00
+        sta rowi
+        lda #<catbuf
+        sta gp
+        lda #>catbuf
+        sta gp+1
+        jsr show_body
         rts
 
 ; blank the rows region (ClrRect expands to ~290 bytes: keep it out of
@@ -1403,12 +1489,14 @@ gp       = $4c                          ; line pointer (apps own $40-$4f)
 linebuf: .fill 48, 0
 vdline:  .fill 80, 0
 reqbuf:  .fill 128, 0
+catbuf:  .fill 513, 0
+catn:    .word 0
 
 ; ---------- strings / buffers ----------------------------------------
 dskstr: .text "uos-desktop", 0
 sh_title: .text "Command shell", 0
 shver:  .text "UltOS 0.3", 0
-sh_hint: .text "DIR RUN DEL COPY REN VER IP TIME GET EXIT", 0
+sh_hint: .text "DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT", 0
 p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
                                         ; would emit shifted PETSCII junk)
 msg_dird: .text "dir", 0

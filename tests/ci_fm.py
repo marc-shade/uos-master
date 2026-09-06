@@ -641,7 +641,7 @@ def main():
         inject_keys(mon, b"HELP\x0d")
         time.sleep(5)
         resp = bytes(mon.read_mem(SH_RESP, SH_RESP + 19, memspace=0)); mon.resume()
-        assert resp.startswith(b"\xc4\xc9\xd2 \xd2\xd5\xce"), f"FAIL: HELP response wrong: {resp!r}"   # "DIR RUN" shifted PETSCII
+        assert resp.startswith(b"\xc4\xc9\xd2 \xc3\xc1\xd4"), f"FAIL: HELP response wrong: {resp!r}"   # "DIR CAT" shifted PETSCII
         print("PASS 10f: HELP lists the command set", flush=True)
 
         # ---- PASS 10g: network/clock verbs without an Ultimate: x64 has
@@ -668,6 +668,31 @@ def main():
                 time.sleep(2)
             assert ok_v, f"FAIL: {verb!r} did not answer {want!r}: respbuf={resp.hex()}"
         print("PASS 10g: IP / TIME / GET answer 'no ultimate' on a plain C64", flush=True)
+
+        # ---- PASS 10h: CAT reads a disk file and shows it on the rows ----
+        # CAT uos-net -> the file's bytes appear in the rows region (the
+        # module PRGs all start with their $9100/$cc00/etc load address, but
+        # the readable body is the shell's own strings/labels turned to text)
+        mon.write_mem(SH_RESP, b"\x00" * 8); mon.resume()
+        SH_LINE = lst_symbol("uos-shell", "linebuf")   # CAT's response = filename
+        inject_keys(mon, b"CAT UOS-NET\x0d")
+        ok_cat = False
+        deadline = time.time() + 40
+        while time.time() < deadline:
+            resp = bytes(mon.read_mem(SH_RESP, SH_RESP + 11, memspace=0)); mon.resume()
+            catn = mon.read_mem(lst_symbol("uos-shell", "catn"),
+                                lst_symbol("uos-shell", "catn") + 1, memspace=0)
+            mon.resume()
+            n = catn[0] | (catn[1] << 8)
+            if n > 100:                                # read a few hundred bytes
+                ok_cat = True
+                break
+            time.sleep(2)
+        assert ok_cat, f"FAIL: CAT read no data (catn={n}, resp={resp!r})"
+        # the shell must still be alive and back at its prompt (CAT returns)
+        cl = mon.read_mem(0x46, 0x46, memspace=0)[0]; mon.resume()
+        assert cl == 0, f"FAIL: command line not cleared after CAT (cmdlen={cl})"
+        print(f"PASS 10h: CAT UOS-NET read {n} bytes to the viewer, shell back at prompt", flush=True)
 
         # EXIT: back to the desktop
         inject_keys(mon, b"EXIT\x0d")
@@ -707,7 +732,7 @@ def main():
         assert live, "FAIL: desktop never resumed tick dispatch after shell EXIT"
         print("PASS 10d: shell EXIT back to the desktop (tick dispatch live)",
               flush=True)
-        print("CI PASS: 15/15 emulator-verifiable checks", flush=True)
+        print("CI PASS: 16/16 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:
