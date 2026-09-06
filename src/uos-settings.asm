@@ -40,6 +40,30 @@ vtmpb           = $42
     jsr FILLFILE
     jsr APP_LOADER
 
+    ; 80-column companion: header + hint; rows 4/5 mirror the two values
+    jsr vd_clear_area
+    lda #<title
+    sta r9L
+    lda #>title
+    sta r9H
+    lda #$02
+    ldx #$00
+    jsr VDTEXT
+    lda #<hint
+    sta r9L
+    lda #>hint
+    sta r9H
+    lda #23
+    ldx #$00
+    jsr VDTEXT
+    lda #<bglabel
+    sta r9L
+    lda #>bglabel
+    sta r9H
+    lda #$05
+    ldx #$02
+    jsr VDTEXT
+
     lda #$ff
     sta oldshown
     sta oldshowncol
@@ -80,8 +104,8 @@ mode0s: .text "display: 40 only", 0
 mode1s: .text "display: 80 only", 0
 mode2s: .text "display: both (40+80)", 0
 
-modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 settings_back:
     #UnregisterApp
@@ -131,7 +155,7 @@ dm_build:
     ldy #$00
 dm_cp:  lda (r2),y
     beq dm_done
-    cpy #19
+    cpy #23
     bcs dm_done
     sta modebuf,y
     iny
@@ -145,7 +169,7 @@ dm_old: lda modebuf,y
     sta oldmode,y
     beq dm_show
     iny
-    cpy #20
+    cpy #24
     bne dm_old                     ; loop (was `bne dm_show`: copied one
                                    ; byte, so the XOR erase only ever
                                    ; cleared the first glyph)
@@ -163,7 +187,30 @@ dm_show:
     lda #>oldmode
     sta r9H
     jsr GPUTS
+    ; mirror on the 80-column display (row 4, after the label)
+    lda #$04
+    jsr VDCLR
+    lda #<oldmode
+    sta r9L
+    lda #>oldmode
+    sta r9H
+    lda #$04
+    ldx #$02
+    jsr VDTEXT
     rts
+
+; blank companion rows 2-23 (app area) on the 80-column display
+vd_clear_area:
+    lda #$02
+vca_l:  pha
+    jsr VDCLR
+    pla
+    clc
+    adc #$01
+    cmp #24
+    bne vca_l
+    rts
+vd_pad: .text "                    ", $00
 
 ; A = display mode (0..2) -> r2 = $00-terminated text
 mode_str:
@@ -246,6 +293,21 @@ dc_show:
     lda #>oldcolor
     sta r9H
     jsr GPUTS
+    ; mirror on the 80-column display (row 5, after the label)
+    lda #<vd_pad
+    sta r9L
+    lda #>vd_pad
+    sta r9H
+    lda #$05
+    ldx #14
+    jsr VDTEXT
+    lda #<oldcolor
+    sta r9L
+    lda #>oldcolor
+    sta r9H
+    lda #$05
+    ldx #14
+    jsr VDTEXT
     rts
 
 ; A = colour (0..15) -> r2 = $00-terminated name

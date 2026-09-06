@@ -10,6 +10,7 @@ Checks:
      key hint, rows 4.. one directory entry each with the ">" marker on row 0
   C  ESC: back on the desktop, listing rows blanked
   D  shell: row 2 "Command shell", VER -> row 7 "UltOS 0.3", EXIT -> desktop
+  E  settings: rows 4/5 display mode + background colour, C cycles it, ESC
 
 Run: python3 tests/ci_vdc.py   (exit 0 = all pass)
 """
@@ -218,9 +219,30 @@ def main():
         rows = wait_rows(mon, lambda r: r[2].startswith("desktop"), "desktop after EXIT")
         print("PASS D: shell mirrored (header, VER response row 7, EXIT back to desktop)")
         passed += 1
+        time.sleep(4)   # let the desktop finish re-entering before the next launch
+
+        # E: settings mirrors its two values; C cycles the colour; ESC returns
+        mon.launch(b"UOS-SETTINGS")
+        rows = wait_rows(mon, lambda r: r[2].startswith("Settings")
+                         and r[4].startswith("  display:") and r[5].startswith("  background:"),
+                         "settings rows")
+        show(rows, "settings")
+        col0 = rows[5][14:].strip()
+        assert col0, rows[5]
+        assert rows[4][14:].strip(), rows[4]
+        mon.keys(b"C")
+        rows = wait_rows(mon, lambda r: r[5][14:].strip() not in ("", col0),
+                         "colour name change after C", timeout=60)
+        col1 = rows[5][14:].strip()
+        show(rows, "after C")
+        mon.keys(b"\x1b")
+        wait_rows(mon, lambda r: r[2].startswith("desktop") and not any(r[4:6]),
+                  "desktop after settings ESC")
+        print(f"PASS E: settings mirrored (mode + colour rows; C: {col0!r} -> {col1!r}; ESC)")
+        passed += 1
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)
-        print(f"CI-VDC PASS: {passed}/4 companion-display checks")
+        print(f"CI-VDC PASS: {passed}/5 companion-display checks")
     finally:
         emu.terminate()
         xvfb.terminate()
