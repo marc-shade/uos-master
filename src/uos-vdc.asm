@@ -55,6 +55,10 @@ vdcval          = $2c
         jmp VDC_FONTUP          ; $cc12
         jmp VDC_INIT            ; $cc15
         jmp VDC_PRESENT         ; $cc18
+        jmp VDC_TEXT            ; $cc1b  A=row X=col r9->PETSCII (no-op until VDC_LIVE)
+        jmp VDC_CLR             ; $cc1e  A=row -> 80 spaces (no-op until VDC_LIVE)
+        jmp VDC_BANNER          ; $cc21  header rows 0-1
+VDC_LIVE: .byte $00             ; $cc24  set to 1 by the core's VDSETUP once the 8563 is up
 
 ; VDC access is WAIT-FREE. The `bit $d600 / bpl` ready-guard stalls the boot
 ; on the real C128; register access needs no handshake, and back-to-back RAM
@@ -379,3 +383,93 @@ vpr_no: lda #$00
 vdcpr:  .byte 0
 vprb0:  .byte 0
 vprb1:  .byte 0
+
+; ==========================================================
+; 80-column companion text API. Lives in the driver (not the core): the
+; core must stay below $1000 where the desktop loads, and these routines
+; are only meaningful with the 8563 present anyway.
+; VDC_TEXT: A = row (0-24), X = column (0-79), r9 ($14/$15) -> $00-
+;           terminated PETSCII. VDC_CLR: A = row -> 80 spaces. Both are
+;           no-ops until VDC_LIVE = 1, so apps call them unconditionally.
+; The select/data pair is a two-step transaction: IRQs are held off around
+; the write (php/sei ... plp keeps the caller's interrupt state).
+; ==========================================================
+r9L             = $14
+r9H             = $15
+
+VDC_TEXT:
+        pha
+        lda VDC_LIVE
+        bne vt_go
+        pla
+        rts
+vt_go:  pla
+        jsr vd_cell             ; vdcdp = row*80 + col
+        lda r9L
+        sta vdcbpL
+        lda r9H
+        sta vdcbpH
+        php
+        sei
+        jsr VDC_PUTS
+        plp
+        rts
+
+VDC_CLR:
+        ldx #$00
+        pha
+        lda #<vdblank
+        sta r9L
+        lda #>vdblank
+        sta r9H
+        pla
+        jmp VDC_TEXT
+
+; vdcdp (16-bit) = A*80 + X, by repeated addition (row <= 24)
+vd_cell:
+        stx vdtmp2
+        sta vdtmp
+        lda #$00
+        sta vdcdpL
+        sta vdcdpH
+vc_l:   lda vdtmp
+        beq vc_d
+        lda vdcdpL
+        clc
+        adc #80
+        sta vdcdpL
+        bcc vc_n
+        inc vdcdpH
+vc_n:   dec vdtmp
+        jmp vc_l
+vc_d:   lda vdcdpL
+        clc
+        adc vdtmp2
+        sta vdcdpL
+        bcc vc_r
+        inc vdcdpH
+vc_r:   rts
+
+; header rows 0-1 (called by the core after clear + font upload)
+VDC_BANNER:
+        lda #<vdcline1
+        sta r9L
+        lda #>vdcline1
+        sta r9H
+        lda #$00
+        ldx #$00
+        jsr VDC_TEXT
+        lda #<vdcline2
+        sta r9L
+        lda #>vdcline2
+        sta r9H
+        lda #$01
+        ldx #$00
+        jmp VDC_TEXT
+
+vdtmp:  .byte $00
+vdtmp2: .byte $00
+vdblank: .fill 80, $20
+        .byte $00
+vdcline1: .text "UltOS  80-column companion display", $00
+vdcline2: .text "ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit", 0

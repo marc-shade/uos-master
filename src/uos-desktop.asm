@@ -85,8 +85,27 @@ _bgok:  jsr GFX_ON
         #Text 283,174, trash
         
         #SaveScreen
+
+        ; 80-column companion: the desktop owns rows 2-23; blank them (an
+        ; app may have left its listing there) and announce the desktop.
+        lda #$02
+_vdclr: pha
+        jsr VDCLR
+        pla
+        clc
+        adc #$01
+        cmp #24
+        bne _vdclr
+        lda #<vd_desk
+        sta r9L
+        lda #>vd_desk
+        sta r9H
+        lda #$02
+        ldx #$00
+        jsr VDTEXT
         jmp MAINLOOP
 
+vd_desk: .text "desktop", $00
 computer:
         .text "computer", $00
 trash:

@@ -38,6 +38,38 @@ tmpa            = $48
         #Text 200, 14, shver
         #Text 24, 26, sh_hint
 
+        ; 80-column companion: header, version, hint; row 5 = command,
+        ; row 7 = response (both mirrored as they change)
+        jsr vd_clear_area
+        lda #<sh_title
+        sta r9L
+        lda #>sh_title
+        sta r9H
+        lda #$02
+        ldx #$00
+        jsr VDTEXT
+        lda #<shver
+        sta r9L
+        lda #>shver
+        sta r9H
+        lda #$02
+        ldx #$14
+        jsr VDTEXT
+        lda #<sh_hint
+        sta r9L
+        lda #>sh_hint
+        sta r9H
+        lda #23
+        ldx #$00
+        jsr VDTEXT
+        lda #<vd_prompt
+        sta r9L
+        lda #>vd_prompt
+        sta r9H
+        lda #$05
+        ldx #$00
+        jsr VDTEXT
+
         jsr refresh
 
         lda #$00
@@ -328,7 +360,30 @@ sl_old: lda respbuf,y
         cpy #39
         bne sl_old
 sl_d2:  jsr resp_show
+        ; mirror the response on the 80-column display (row 7)
+        lda #$07
+        jsr VDCLR
+        lda #<respbuf
+        sta r9L
+        lda #>respbuf
+        sta r9H
+        lda #$07
+        ldx #$02
+        jsr VDTEXT
         rts
+
+; blank companion rows 2-23 (app area) on the 80-column display
+vd_clear_area:
+        lda #$02
+vca_l:  pha
+        jsr VDCLR
+        pla
+        clc
+        adc #$01
+        cmp #24
+        bne vca_l
+        rts
+vd_prompt: .text "> ", $00
 
 show_hint:
         lda #<sh_hint
@@ -359,6 +414,23 @@ resp_show:
         rts
 
 cmd_line:
+        ; mirror the command line on the 80-column display (row 5, after "> ")
+        lda #$05
+        jsr VDCLR
+        lda #<vd_prompt
+        sta r9L
+        lda #>vd_prompt
+        sta r9H
+        lda #$05
+        ldx #$00
+        jsr VDTEXT
+        lda #<cmdbuf
+        sta r9L
+        lda #>cmdbuf
+        sta r9H
+        lda #$05
+        ldx #$02
+        jsr VDTEXT
         ; XOR redraw: cancel the previously shown string, publish the new
         ; one as both the visible line and the old-copy for the next cancel
         lda #COL_X

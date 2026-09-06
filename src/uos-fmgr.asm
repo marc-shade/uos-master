@@ -76,6 +76,30 @@ ktbhi           = $54
         sta r9H
         jsr GPUTS
 
+        ; 80-column companion: header + hint; rows 4-13 get the listing
+        jsr vd_clear_area
+        lda #<fm_title
+        sta r9L
+        lda #>fm_title
+        sta r9H
+        lda #$02
+        ldx #$00
+        jsr VDTEXT
+        lda #<vd_dev8
+        sta r9L
+        lda #>vd_dev8
+        sta r9H
+        lda #$02
+        ldx #$16
+        jsr VDTEXT
+        lda #<p_hint
+        sta r9L
+        lda #>p_hint
+        sta r9H
+        lda #23
+        ldx #$00
+        jsr VDTEXT
+
         lda #$08
         sta fmdev
         lda #$00
@@ -760,11 +784,65 @@ pr_l:
         lda rowi
         jsr addrowy
         jsr GPUTS
+        ; mirror the row on the 80-column display: marker at col 2,
+        ; name at col 4, rows 4.. (VDCLR first: names shrink after DEL)
+        lda rowi
+        clc
+        adc #$04
+        jsr VDCLR
+        ldx rowi
+        lda fmnamesL,x
+        sta r9L
+        lda fmnamesH,x
+        sta r9H
+        lda rowi
+        clc
+        adc #$04
+        ldx #$04
+        jsr VDTEXT
+        lda rowi
+        cmp fmrow
+        bne pr_nomark
+        lda #<vd_mark
+        sta r9L
+        lda #>vd_mark
+        sta r9H
+        lda rowi
+        clc
+        adc #$04
+        ldx #$02
+        jsr VDTEXT
+pr_nomark:
         inc rowi
         lda rowi
         cmp fmcnt
         bne pr_l
+        ; blank the rows below the listing (entries removed by DEL)
+pr_tail:
+        lda rowi
+        cmp #LIST_MAX
+        bcs pr_done
+        clc
+        adc #$04
+        jsr VDCLR
+        inc rowi
+        jmp pr_tail
+pr_done:
         rts
+
+; blank companion rows 2-23 (app area) on the 80-column display
+vd_clear_area:
+        lda #$02
+vca_l:  pha
+        jsr VDCLR
+        pla
+        clc
+        adc #$01
+        cmp #24
+        bne vca_l
+        rts
+vd_mark: .text ">", $00
+vd_dev8: .text "device 8", $00
 
 ; set X1 = CUR_X word, Y1 = TOP_Y + A*ROW_PX (GPUTC call setup)
 marky:

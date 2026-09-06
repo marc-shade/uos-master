@@ -33,6 +33,8 @@ FILLFILE        = $0829
 KEYIN           = $082c
 GETCAP          = $082f
 LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
 ; settings record (FR-S3): saved as "UOS-SET" by the settings app, loaded
 ; back at boot into the app region
 SETREC          = $7350
@@ -52,6 +54,10 @@ VDC_CLS         = $cc0f
 VDC_FONTUP      = $cc12
 VDC_INIT        = $cc15
 VDC_PRESENT     = $cc18
+VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+VDC_CLR         = $cc1e  ; A=row -> blank the row
+VDC_BANNER      = $cc21  ; header rows 0-1
+VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
 ; uVDC caller pointers (zero page convention shared with driver)
 vdcbpL          = $23
 vdcbpH          = $24

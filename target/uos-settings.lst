@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-settings.prg -L target/uos-settings.lst src/uos-settings.asm
-; Sat Sep  5 17:33:09 2026
+; Sat Sep  5 20:38:05 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -113,6 +113,8 @@
 =$082c					KEYIN           = $082c
 =$082f					GETCAP          = $082f
 =$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+=$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+=$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
 =$7350					SETREC          = $7350
 =$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
 =$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
@@ -125,6 +127,10 @@
 =$cc12					VDC_FONTUP      = $cc12
 =$cc15					VDC_INIT        = $cc15
 =$cc18					VDC_PRESENT     = $cc18
+=$cc1b					VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+=$cc1e					VDC_CLR         = $cc1e  ; A=row -> blank the row
+=$cc21					VDC_BANNER      = $cc21  ; header rows 0-1
+=$cc24					VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
 =$23					vdcbpL          = $23
 =$24					vdcbpH          = $24
 =$25					vdcdpL          = $25

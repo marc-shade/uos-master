@@ -49,6 +49,8 @@
         jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
         jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
         jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
+        jmp VDC_TEXT    ; 80-col companion: A=row X=col r9->PETSCII text (driver, no-op w/o VDC)
+        jmp VDC_CLR     ; 80-col companion: A=row -> blank the row (driver, no-op w/o VDC)
 
 ; ==========================================================
 ; START
@@ -933,39 +935,13 @@ VDSETUP:
         bne vds_off
         jsr VDC_FONTUP          ; per-glyph bank-flip upload (see driver)
         jsr VDC_CLS
-        jsr VD_BANNER
+        lda #$01
+        sta VDC_LIVE            ; VDC_TEXT/VDC_CLR are live from here on
+        jsr VDC_BANNER
 vds_off:
         cli
         rts
 vds_no:
-        rts
-vdcline1: .text "UltOS 80-column display", $00
-vdcline2: .text "second display online", 0
-
-VD_BANNER:
-        lda #<vdcline1
-        sta vdcbpL
-        lda #>vdcline1
-        sta vdcbpH
-        lda #0
-        sta vdcdpL
-        lda #0
-        sta vdcdpH
-        jsr VDC_PUTS
-        lda #<vdcline2
-        sta vdcbpL
-        lda #>vdcline2
-        sta vdcbpH
-        lda #80             ; row 1 start cell
-        sta vdcdpL
-        lda #0
-        sta vdcdpH
-        jsr VDC_PUTS
-        rts
-
-; VDCPUTS: write PETSCII at (bp) to VDC row (dp word) — the desktop clock calls this
-VDCPUTROW:
-        jsr VDC_PUTS
         rts
 
 ; ==========================================================
