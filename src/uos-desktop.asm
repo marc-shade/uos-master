@@ -194,6 +194,7 @@ _startclk:
         sta $dc08       ; writing to the 10th/sec value restarts tod
 
         jsr vd_clock    ; 80-column mirror: time + how it was set (row 0)
+        jsr vd_status   ; row 24: date + ip + clock source
         #Text 282, 191, time
 _done:
         rts
@@ -1046,7 +1047,169 @@ _vdclr: pha
         sta r9H
         lda #$02
         ldx #$00
+        jsr VDTEXT
+        ; fall through to the row-24 status line
+
+; vd_status — persistent status on VDC row 24: "YYYY-MM-DD  ip A.B.C.D  src"
+; built from uos-net's NET_YEAR/MON/DAY, NET_IPSTR and NET_STATE. Row 24 is
+; below the app area (rows 2-23), so windows/apps never touch it.
+vd_status:
+        ldx #$00
+        lda NET_YEAR
+        sta vsw
+        lda NET_YEAR+1
+        sta vsw+1
+        jsr vs_put4                     ; YYYY
+        lda #'-'
+        sta statbuf,x
+        inx
+        lda NET_MON
+        jsr vs_put2
+        lda #'-'
+        sta statbuf,x
+        inx
+        lda NET_DAY
+        jsr vs_put2
+        lda #' '                        ; "  " separator
+        sta statbuf,x
+        inx
+        sta statbuf,x
+        inx
+        lda NET_IPSTR
+        beq _vs_noip
+        ldy #$00                        ; "ip " + dotted address
+_vs_pp: lda vs_ippfx,y
+        beq _vs_ic
+        sta statbuf,x
+        inx
+        iny
+        bne _vs_pp
+_vs_ic: ldy #$00
+_vs_il: lda NET_IPSTR,y
+        beq _vs_src
+        sta statbuf,x
+        inx
+        iny
+        cpy #16
+        bne _vs_il
+        jmp _vs_src
+_vs_noip:
+        ldy #$00
+_vs_nn: lda vs_none,y
+        beq _vs_src
+        sta statbuf,x
+        inx
+        iny
+        bne _vs_nn
+_vs_src:
+        lda #' '
+        sta statbuf,x
+        inx
+        sta statbuf,x
+        inx
+        jsr clk_tag                     ; r0 -> source text
+        ldy #$00
+_vs_sc: lda (r0),y
+        beq _vs_end
+        sta statbuf,x
+        inx
+        iny
+        cpx #78
+        bne _vs_sc
+_vs_end:
+        lda #' '
+_vs_pad:
+        cpx #78
+        bcs _vs_term
+        sta statbuf,x
+        inx
+        bne _vs_pad
+_vs_term:
+        lda #$00
+        sta statbuf,x
+        lda #<statbuf
+        sta r9L
+        lda #>statbuf
+        sta r9H
+        lda #24
+        ldx #$00
         jmp VDTEXT
+
+; A (byte, 0-99) -> two decimal digits at statbuf,x
+vs_put2:
+        ldy #$2f                        ; first iny -> $30 = '0'
+_v2t:   iny
+        sec
+        sbc #10
+        bcs _v2t
+        adc #10                         ; A = ones digit (0-9)
+        pha
+        tya                             ; Y already holds the tens as '0'..'9'
+        sta statbuf,x
+        inx
+        pla
+        clc
+        adc #$30
+        sta statbuf,x
+        inx
+        rts
+
+; vsw (16-bit) -> four decimal digits at statbuf,x (leading zeros kept)
+vs_put4:
+        lda #<1000
+        sta vsdiv
+        lda #>1000
+        sta vsdiv+1
+        jsr vs_digit                    ; thousands
+        lda #<100
+        sta vsdiv
+        lda #$00
+        sta vsdiv+1
+        jsr vs_digit                    ; hundreds
+        lda #10
+        sta vsdiv
+        lda #$00
+        sta vsdiv+1
+        jsr vs_digit                    ; tens
+        lda vsw
+        clc
+        adc #$30
+        sta statbuf,x                   ; ones
+        inx
+        rts
+vs_digit:
+        lda #$00
+        sta vsdig
+_vd_l:  lda vsw+1                       ; vsw >= vsdiv ?
+        cmp vsdiv+1
+        bcc _vd_done
+        bne _vd_sub
+        lda vsw
+        cmp vsdiv
+        bcc _vd_done
+_vd_sub:
+        sec
+        lda vsw
+        sbc vsdiv
+        sta vsw
+        lda vsw+1
+        sbc vsdiv+1
+        sta vsw+1
+        inc vsdig
+        jmp _vd_l
+_vd_done:
+        lda vsdig
+        clc
+        adc #$30
+        sta statbuf,x
+        inx
+        rts
+vs_ippfx: .text "ip ", $00
+vs_none:  .text "no ip", $00
+statbuf:  .fill 80, 0
+vsw:      .word 0
+vsdiv:    .word 0
+vsdig:    .byte 0
 
 win_computer_title:
         .text "Computer", $00

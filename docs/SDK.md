@@ -26,6 +26,12 @@ build output; addresses are the fixed ABI the core and drivers export.
 | `$cc00-$cfff` | `uos-vdc` | 8563 driver + 80-column companion API |
 | `$d000-$dfff` | I/O | VDC at `$d600/$d601` |
 
+The 80-column companion display: row 0 = header + clock (time + source),
+row 1 = the menu hint, rows 2-23 = the app area (windows, listings), and
+**row 24 = a status line** the desktop draws on entry and refreshes on the
+clock tick: `YYYY-MM-DD  ip A.B.C.D  <source>` (date/ip/source from uos-net;
+`no ip` and `no ultimate`/`no network` when offline).
+
 Zero page: `r0`-`r15` word registers at `$02-$21` (`r0L=$02`, `r0H=$03`, …
 `r9L=$14`, `r9H=$15`). **`X1/Y1` of the graphics engine ARE `r0/r1`
 (`$02-$05`)** — writing a text position destroys a pointer you parked in

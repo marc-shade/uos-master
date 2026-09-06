@@ -504,3 +504,10 @@ companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M
   hex letters render uppercase like the rest of the UI. CI: ci_fm 17/17 (PASS 10i: POKE $02A7=$5A then
   PEEK reports it; $02a7 reads $5A over the monitor), ci_vdc 13/13.
 -->
+<!-- 2026-09-06 session 4e addendum (companion-display status line):
+  vd_status draws VDC row 24 (below the app area) on every desktop entry and on the clock tick:
+  "YYYY-MM-DD  ip A.B.C.D  <source>" from uos-net's NET_YEAR/MON/DAY, NET_IPSTR, NET_STATE (clk_tag).
+  Bugs fixed: vs_put2 double-added $30 to the tens digit (".9" not "09"); the row wasn't padded so a
+  shorter source bled the previous text ("ntpultimate") -> pad to col 78 (same class as the row-0 pad).
+  CI: ci_vdc 14/14 (PASS H2: after the canned NTP apply, row 24 = "2026-09-06  no ip  ntp"), ci_fm 17/17.
+-->

@@ -377,6 +377,15 @@ def main():
         print(f"PASS H: NTP reply -> 13:45:30 Sun 2026/09/06 local, CIA TOD $81:$45, row 0: {rows[0][58:]!r}")
         passed += 1
 
+        # H2: the row-24 status line carries the date + clock source (the
+        # tick redraws it; no network in VICE so ip reads "no ip")
+        rows = wait_rows(mon, lambda r: r[24].startswith("2026-09-06"),
+                         "date on the status line (row 24)", timeout=60)
+        assert "ntp" in rows[24], rows[24]
+        assert "no ip" in rows[24], rows[24]
+        print(f"PASS H2: row-24 status line: {rows[24]!r}")
+        passed += 1
+
         # I: a zone change shifts the running clock by whole hours (+4 quarters)
         mon.tramp(bytes([0xA9, 0x04, 0x20, NET['NET_TZSHIFT'] & 0xff, NET['NET_TZSHIFT'] >> 8,
                          0xA9, 0xFF, 0x8D, minute & 0xff, minute >> 8]))
@@ -486,7 +495,7 @@ def main():
 
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)
-        print(f"CI-VDC PASS: {passed}/13 companion-display checks")
+        print(f"CI-VDC PASS: {passed}/14 companion-display checks")
     finally:
         emu.terminate()
         xvfb.terminate()
