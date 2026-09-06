@@ -107,10 +107,88 @@ mirq1:
         adc ypos
         sta ypos
 
-        ; latch the mouse button from BOTH control ports (read-both-ports).
-        ; Writing $ff to port A deselects every keyboard column, so port B
-        ; ($dc01) reflects only port-1 joystick and a port-2 fire pulls
-        ; $dc00 bit4 cleanly — no keyboard cross-talk during the read.
+        ; clamp the sprite to the visible area so a single noisy pot delta
+        ; can never strand the arrow off-screen (the bug behind "mouse arrow
+        ; disappears": a bad read flipped the X msb, +256, no way back).
+        lda xposmsb
+        and #$01
+        beq _cxlo
+        lda xpos                ; msb set: X = 256+xpos, cap X at 340
+        cmp #$55
+        bcc _cxok
+        lda #$54
+        sta xpos
+        jmp _cxok
+_cxlo:  lda xpos                ; msb clear: floor X at 24
+        cmp #$18
+        bcs _cxok
+        lda #$18
+        sta xpos
+_cxok:  lda ypos
+        cmp #$32                ; floor Y at 50
+        bcs _cyhi
+        lda #$32
+        sta ypos
+        jmp _cyok
+_cyhi:  cmp #$e6                ; cap Y at 229
+        bcc _cyok
+        lda #$e5
+        sta ypos
+_cyok:
+
+        ; C128 extended-key scan (ESC + cursor keys on the VIC-IIe matrix,
+        ; $d02f) is done HERE, inside the mouse IRQ, on purpose: $dc00 bits
+        ; 6-7 are the SID pot-MUX select shared with the keyboard columns.
+        ; The old KEYIN_EXT poked $dc00 from the main loop thousands of times
+        ; a second, corrupting the 1351 pot reads (jittery/runaway pointer,
+        ; worst in an app's tight key-poll loop). The IRQ already owns $dc00
+        ; and restores it below; the pot was read above with a settled MUX,
+        ; and next frame's setpot re-settles it, so the scan is harmless.
+        lda #$ff
+        sta cia                 ; deselect all standard keyboard columns
+        lda #$fd                ; K1 low
+        sta $d02f
+        lda $dc01
+        sta extk1
+        lda #$fb                ; K2 low
+        sta $d02f
+        lda $dc01
+        sta extk2
+        lda #$ff
+        sta $d02f
+        lda extk1
+        and #$01                ; K1 bit0 = ESC
+        sta extmask
+        lda extk2
+        and #$78                ; K2 bits3-6 = up/down/left/right
+        ora extmask
+        eor #$79                ; 1 = pressed (on a plain C64 $d02f reads
+        sta extmask             ; $ff -> extmask 0, so no false keys)
+        lda extmask
+        and #$01
+        beq _mkedge
+        lda #$01
+        sta extseen             ; sticky: the ESC matrix line was seen (tests)
+_mkedge:
+        lda extlatch
+        eor #$ff
+        and extmask             ; newly pressed since the last IRQ
+        sta extnew
+        lda extmask
+        sta extlatch
+        lda extnew
+        beq _mkdone
+        ldx #$00
+_mkl:   lda extnew
+        and extbits,x
+        bne _mkhit
+        inx
+        cpx #$05
+        bne _mkl
+        jmp _mkdone
+_mkhit: lda extcodes,x
+        sta extkey              ; latch one key event for KEYIN_EXT
+_mkdone:
         ldx ciasave     ;restore keyboard
         stx cia
 
@@ -186,66 +264,25 @@ _10	dey
 ; Returns A = $1b ESC, $91 up, $11 down, $9d left, $1d right, else the
 ; KERNAL character or 0.
 ;==========================================================================
+; KEYIN_EXT is now a pure reader: KERNAL GETIN first (normal keys, and
+; RUN/STOP -> ESC for C64 keyboards), else return the extended key the
+; mouse IRQ latched (ESC / cursor keys). It touches NO CIA/VIC keyboard
+; register, so it can be called as tightly as an app likes without
+; disturbing the 1351 pot MUX. Returns A = PETSCII (0 = no key).
 KEYIN_EXT:
         jsr $ffe4               ; KERNAL GETIN
-        beq ke_scan
+        beq ke_ext
         cmp #$03                ; RUN/STOP -> ESC alias
         bne ke_r
         lda #$1b
 ke_r:   rts
-ke_scan:
-        php
-        sei                     ; the KERNAL scan also drives $dc00
-        lda cia
+ke_ext: lda extkey             ; IRQ-latched extended key (0 = none)
+        beq ke_z
         pha
-        lda #$ff
-        sta cia                 ; no C64 column selected
-        lda #$fd                ; K1 low
-        sta $d02f
-        lda $dc01
-        sta extk1
-        lda #$fb                ; K2 low
-        sta $d02f
-        lda $dc01
-        sta extk2
-        lda #$ff
-        sta $d02f
-        pla
-        sta cia
-        plp
-        lda extk1
-        and #$01
-        sta extmask
-        lda extk2
-        and #$78
-        ora extmask
-        eor #$79                ; 1 = pressed
-        sta extmask
-        and #$01
-        beq ke_edge
-        lda #$01
-        sta extseen
-ke_edge:
-        lda extlatch
-        eor #$ff
-        and extmask             ; newly pressed since the last poll
-        sta extnew
-        lda extmask
-        sta extlatch
-        lda extnew
-        beq ke_none
-        ldx #$00
-ke_l:   lda extnew
-        and extbits,x
-        bne ke_hit
-        inx
-        cpx #$05
-        bne ke_l
-ke_none:
         lda #$00
-        rts
-ke_hit: lda extcodes,x
-        rts
+        sta extkey             ; consume it
+        pla
+ke_z:   rts
 extbits:  .byte $01,$08,$10,$20,$40
 extcodes: .byte $1b,$91,$11,$9d,$1d
 extk1:    .byte $ff
@@ -253,3 +290,4 @@ extk2:    .byte $ff
 extmask:  .byte $00
 extlatch: .byte $00
 extnew:   .byte $00
+extkey:   .byte $00

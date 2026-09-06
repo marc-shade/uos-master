@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-drv1351.prg -L target/uos-drv1351.lst src/uos-drv1351.asm
-; Sun Sep  6 13:54:04 2026
+; Sun Sep  6 16:20:44 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -20,7 +20,7 @@
 .9e00	4c 0d 9e	jmp $9e0d	        jmp install1    ;install mouse in port 1      $9e00
 .9e03	4c 10 9e	jmp $9e10		jmp install2    ;install mouse in port 2      $9e03
 .9e06	4c 39 9e	jmp $9e39		jmp remove      ;remove mouse wedge           $9e06
-.9e09	4c d9 9e	jmp $9ed9	        jmp KEYIN_EXT   ;OS keyboard read (see below) $9e09
+.9e09	4c 82 9f	jmp $9f82	        jmp KEYIN_EXT   ;OS keyboard read (see below) $9e09
 >9e0c	00				extseen: .byte $00      ;sticky: 1 once the C128 ESC line read low ($9e0c)
 .9e0d					install1:
 .9e0d	a2 00		ldx #$00	    	ldx #0          ;port 1 mouse
@@ -67,10 +67,10 @@
 >9e59	2c				        .byte $2c
 .9e5a					mirq1:
 .9e5a	a9 40		lda #$40	        lda #$40        ;port1 mouse scan
-.9e5c	20 c5 9e	jsr $9ec5	        jsr setpot      ;configure cia per .a
+.9e5c	20 6e 9f	jsr $9f6e	        jsr setpot      ;configure cia per .a
 .9e5f	ad 19 d4	lda $d419	        lda potx        ;get delta values for x
 .9e62	ac 52 9e	ldy $9e52	        ldy opotx
-.9e65	20 9b 9e	jsr $9e9b	        jsr movchk
+.9e65	20 44 9f	jsr $9f44	        jsr movchk
 .9e68	8c 52 9e	sty $9e52	        sty opotx
 .9e6b	18		clc		        clc             ;modify low order x position
 .9e6c	6d 00 d0	adc $d000	        adc xpos
@@ -82,115 +82,140 @@
 .9e7a	8d 10 d0	sta $d010	        sta xposmsb
 .9e7d	ad 1a d4	lda $d41a	        lda poty        ;get delta value for y
 .9e80	ac 53 9e	ldy $9e53	        ldy opoty
-.9e83	20 9b 9e	jsr $9e9b	        jsr movchk
+.9e83	20 44 9f	jsr $9f44	        jsr movchk
 .9e86	8c 53 9e	sty $9e53	        sty opoty
 .9e89	38		sec		        sec             ;modify y position (decrease y for increase in pot)
 .9e8a	49 ff		eor #$ff	        eor #$ff
 .9e8c	6d 01 d0	adc $d001	        adc ypos
 .9e8f	8d 01 d0	sta $d001	        sta ypos
-.9e92	ae 56 9e	ldx $9e56	        ldx ciasave     ;restore keyboard
-.9e95	8e 00 dc	stx $dc00	        stx cia
-.9e98	6c 50 9e	jmp ($9e50)	_90 	jmp (iirq2)     ;continue w/ irq operation
-.9e9b					movchk:
-.9e9b	8c 55 9e	sty $9e55	        sty oldvalue    ;save old & new values
-.9e9e	8d 54 9e	sta $9e54		sta newvalue
-.9ea1	a2 00		ldx #$00	        ldx #0          ;preload x w/ 0
-.9ea3	38		sec		        sec             ;a = mod64(new-old)
-.9ea4	ed 55 9e	sbc $9e55	        sbc oldvalue
-.9ea7	29 7f		and #$7f	        and #%01111111
-.9ea9	c9 40		cmp #$40	        cmp #%01000000	;if a > 0
-.9eab	b0 07		bcs $9eb4	        bcs _50
-.9ead	4a		lsr a		        lsr a           ;   then a = a/2
-.9eae	f0 12		beq $9ec2	        beq _80         ;      if a <> 0
-.9eb0	ac 54 9e	ldy $9e54	        ldy newvalue	;         then y = newvalue
-.9eb3	60		rts		        rts             ;              return
-.9eb4	09 c0		ora #$c0	_50 	ora #%11000000	;   else or-in high order bits
-.9eb6	c9 ff		cmp #$ff	        cmp #$ff        ;      if a <> -1
-.9eb8	f0 08		beq $9ec2	        beq _80
-.9eba	38		sec		        sec             ;         then a = a/2
-.9ebb	6a		ror a		        ror a
-.9ebc	a2 ff		ldx #$ff	        ldx #$ff        ;              x = -1
-.9ebe	ac 54 9e	ldy $9e54	        ldy newvalue	;              y = newvalue
-.9ec1	60		rts		        rts             ;              return
-.9ec2	a9 00		lda #$00	_80 	lda #0          ;a = 0
-.9ec4	60		rts			rts             ;return w/ y = old value
-.9ec5					setpot:
-.9ec5	ae 00 dc	ldx $dc00	        ldx cia         ;save keyboard GFX_LINEs
-.9ec8	8e 56 9e	stx $9e56		stx ciasave
-.9ecb	8d 00 dc	sta $dc00		sta cia         ;connect appropriate port to sid
-.9ece	a2 04		ldx #$04	        ldx #4
-.9ed0	a0 c7		ldy #$c7	        ldy #$c7	;delay 4ms to let GFX_LINEs settle & get sync-ed
-.9ed2	88		dey		_10	dey
-.9ed3	d0 fd		bne $9ed2	        bne _10
-.9ed5	ca		dex		        dex
-.9ed6	d0 fa		bne $9ed2	        bne _10
-.9ed8	60		rts		        rts
-.9ed9					KEYIN_EXT:
-.9ed9	20 e4 ff	jsr $ffe4	        jsr $ffe4               ; KERNAL GETIN
-.9edc	f0 07		beq $9ee5	        beq ke_scan
-.9ede	c9 03		cmp #$03	        cmp #$03                ; RUN/STOP -> ESC alias
-.9ee0	d0 02		bne $9ee4	        bne ke_r
-.9ee2	a9 1b		lda #$1b	        lda #$1b
-.9ee4	60		rts		ke_r:   rts
-.9ee5					ke_scan:
-.9ee5	08		php		        php
-.9ee6	78		sei		        sei                     ; the KERNAL scan also drives $dc00
-.9ee7	ad 00 dc	lda $dc00	        lda cia
-.9eea	48		pha		        pha
-.9eeb	a9 ff		lda #$ff	        lda #$ff
-.9eed	8d 00 dc	sta $dc00	        sta cia                 ; no C64 column selected
-.9ef0	a9 fd		lda #$fd	        lda #$fd                ; K1 low
-.9ef2	8d 2f d0	sta $d02f	        sta $d02f
-.9ef5	ad 01 dc	lda $dc01	        lda $dc01
-.9ef8	8d 64 9f	sta $9f64	        sta extk1
-.9efb	a9 fb		lda #$fb	        lda #$fb                ; K2 low
-.9efd	8d 2f d0	sta $d02f	        sta $d02f
-.9f00	ad 01 dc	lda $dc01	        lda $dc01
-.9f03	8d 65 9f	sta $9f65	        sta extk2
-.9f06	a9 ff		lda #$ff	        lda #$ff
-.9f08	8d 2f d0	sta $d02f	        sta $d02f
-.9f0b	68		pla		        pla
-.9f0c	8d 00 dc	sta $dc00	        sta cia
-.9f0f	28		plp		        plp
-.9f10	ad 64 9f	lda $9f64	        lda extk1
-.9f13	29 01		and #$01	        and #$01
-.9f15	8d 66 9f	sta $9f66	        sta extmask
-.9f18	ad 65 9f	lda $9f65	        lda extk2
-.9f1b	29 78		and #$78	        and #$78
-.9f1d	0d 66 9f	ora $9f66	        ora extmask
-.9f20	49 79		eor #$79	        eor #$79                ; 1 = pressed
-.9f22	8d 66 9f	sta $9f66	        sta extmask
-.9f25	29 01		and #$01	        and #$01
-.9f27	f0 05		beq $9f2e	        beq ke_edge
-.9f29	a9 01		lda #$01	        lda #$01
-.9f2b	8d 0c 9e	sta $9e0c	        sta extseen
-.9f2e					ke_edge:
-.9f2e	ad 67 9f	lda $9f67	        lda extlatch
-.9f31	49 ff		eor #$ff	        eor #$ff
-.9f33	2d 66 9f	and $9f66	        and extmask             ; newly pressed since the last poll
-.9f36	8d 68 9f	sta $9f68	        sta extnew
-.9f39	ad 66 9f	lda $9f66	        lda extmask
-.9f3c	8d 67 9f	sta $9f67	        sta extlatch
-.9f3f	ad 68 9f	lda $9f68	        lda extnew
-.9f42	f0 0f		beq $9f53	        beq ke_none
-.9f44	a2 00		ldx #$00	        ldx #$00
-.9f46	ad 68 9f	lda $9f68	ke_l:   lda extnew
-.9f49	3d 5a 9f	and $9f5a,x	        and extbits,x
-.9f4c	d0 08		bne $9f56	        bne ke_hit
-.9f4e	e8		inx		        inx
-.9f4f	e0 05		cpx #$05	        cpx #$05
-.9f51	d0 f3		bne $9f46	        bne ke_l
-.9f53					ke_none:
-.9f53	a9 00		lda #$00	        lda #$00
-.9f55	60		rts		        rts
-.9f56	bd 5f 9f	lda $9f5f,x	ke_hit: lda extcodes,x
-.9f59	60		rts		        rts
->9f5a	01 08 10 20 40			extbits:  .byte $01,$08,$10,$20,$40
->9f5f	1b 91 11 9d 1d			extcodes: .byte $1b,$91,$11,$9d,$1d
->9f64	ff				extk1:    .byte $ff
->9f65	ff				extk2:    .byte $ff
->9f66	00				extmask:  .byte $00
->9f67	00				extlatch: .byte $00
->9f68	00				extnew:   .byte $00
+.9e92	ad 10 d0	lda $d010	        lda xposmsb
+.9e95	29 01		and #$01	        and #$01
+.9e97	f0 0f		beq $9ea8	        beq _cxlo
+.9e99	ad 00 d0	lda $d000	        lda xpos                ; msb set: X = 256+xpos, cap X at 340
+.9e9c	c9 55		cmp #$55	        cmp #$55
+.9e9e	90 14		bcc $9eb4	        bcc _cxok
+.9ea0	a9 54		lda #$54	        lda #$54
+.9ea2	8d 00 d0	sta $d000	        sta xpos
+.9ea5	4c b4 9e	jmp $9eb4	        jmp _cxok
+.9ea8	ad 00 d0	lda $d000	_cxlo:  lda xpos                ; msb clear: floor X at 24
+.9eab	c9 18		cmp #$18	        cmp #$18
+.9ead	b0 05		bcs $9eb4	        bcs _cxok
+.9eaf	a9 18		lda #$18	        lda #$18
+.9eb1	8d 00 d0	sta $d000	        sta xpos
+.9eb4	ad 01 d0	lda $d001	_cxok:  lda ypos
+.9eb7	c9 32		cmp #$32	        cmp #$32                ; floor Y at 50
+.9eb9	b0 08		bcs $9ec3	        bcs _cyhi
+.9ebb	a9 32		lda #$32	        lda #$32
+.9ebd	8d 01 d0	sta $d001	        sta ypos
+.9ec0	4c cc 9e	jmp $9ecc	        jmp _cyok
+.9ec3	c9 e6		cmp #$e6	_cyhi:  cmp #$e6                ; cap Y at 229
+.9ec5	90 05		bcc $9ecc	        bcc _cyok
+.9ec7	a9 e5		lda #$e5	        lda #$e5
+.9ec9	8d 01 d0	sta $d001	        sta ypos
+.9ecc					_cyok:
+.9ecc	a9 ff		lda #$ff	        lda #$ff
+.9ece	8d 00 dc	sta $dc00	        sta cia                 ; deselect all standard keyboard columns
+.9ed1	a9 fd		lda #$fd	        lda #$fd                ; K1 low
+.9ed3	8d 2f d0	sta $d02f	        sta $d02f
+.9ed6	ad 01 dc	lda $dc01	        lda $dc01
+.9ed9	8d a5 9f	sta $9fa5	        sta extk1
+.9edc	a9 fb		lda #$fb	        lda #$fb                ; K2 low
+.9ede	8d 2f d0	sta $d02f	        sta $d02f
+.9ee1	ad 01 dc	lda $dc01	        lda $dc01
+.9ee4	8d a6 9f	sta $9fa6	        sta extk2
+.9ee7	a9 ff		lda #$ff	        lda #$ff
+.9ee9	8d 2f d0	sta $d02f	        sta $d02f
+.9eec	ad a5 9f	lda $9fa5	        lda extk1
+.9eef	29 01		and #$01	        and #$01                ; K1 bit0 = ESC
+.9ef1	8d a7 9f	sta $9fa7	        sta extmask
+.9ef4	ad a6 9f	lda $9fa6	        lda extk2
+.9ef7	29 78		and #$78	        and #$78                ; K2 bits3-6 = up/down/left/right
+.9ef9	0d a7 9f	ora $9fa7	        ora extmask
+.9efc	49 79		eor #$79	        eor #$79                ; 1 = pressed (on a plain C64 $d02f reads
+.9efe	8d a7 9f	sta $9fa7	        sta extmask             ; $ff -> extmask 0, so no false keys)
+.9f01	ad a7 9f	lda $9fa7	        lda extmask
+.9f04	29 01		and #$01	        and #$01
+.9f06	f0 05		beq $9f0d	        beq _mkedge
+.9f08	a9 01		lda #$01	        lda #$01
+.9f0a	8d 0c 9e	sta $9e0c	        sta extseen             ; sticky: the ESC matrix line was seen (tests)
+.9f0d					_mkedge:
+.9f0d	ad a8 9f	lda $9fa8	        lda extlatch
+.9f10	49 ff		eor #$ff	        eor #$ff
+.9f12	2d a7 9f	and $9fa7	        and extmask             ; newly pressed since the last IRQ
+.9f15	8d a9 9f	sta $9fa9	        sta extnew
+.9f18	ad a7 9f	lda $9fa7	        lda extmask
+.9f1b	8d a8 9f	sta $9fa8	        sta extlatch
+.9f1e	ad a9 9f	lda $9fa9	        lda extnew
+.9f21	f0 18		beq $9f3b	        beq _mkdone
+.9f23	a2 00		ldx #$00	        ldx #$00
+.9f25	ad a9 9f	lda $9fa9	_mkl:   lda extnew
+.9f28	3d 9b 9f	and $9f9b,x	        and extbits,x
+.9f2b	d0 08		bne $9f35	        bne _mkhit
+.9f2d	e8		inx		        inx
+.9f2e	e0 05		cpx #$05	        cpx #$05
+.9f30	d0 f3		bne $9f25	        bne _mkl
+.9f32	4c 3b 9f	jmp $9f3b	        jmp _mkdone
+.9f35	bd a0 9f	lda $9fa0,x	_mkhit: lda extcodes,x
+.9f38	8d aa 9f	sta $9faa	        sta extkey              ; latch one key event for KEYIN_EXT
+.9f3b					_mkdone:
+.9f3b	ae 56 9e	ldx $9e56	        ldx ciasave     ;restore keyboard
+.9f3e	8e 00 dc	stx $dc00	        stx cia
+.9f41	6c 50 9e	jmp ($9e50)	_90 	jmp (iirq2)     ;continue w/ irq operation
+.9f44					movchk:
+.9f44	8c 55 9e	sty $9e55	        sty oldvalue    ;save old & new values
+.9f47	8d 54 9e	sta $9e54		sta newvalue
+.9f4a	a2 00		ldx #$00	        ldx #0          ;preload x w/ 0
+.9f4c	38		sec		        sec             ;a = mod64(new-old)
+.9f4d	ed 55 9e	sbc $9e55	        sbc oldvalue
+.9f50	29 7f		and #$7f	        and #%01111111
+.9f52	c9 40		cmp #$40	        cmp #%01000000	;if a > 0
+.9f54	b0 07		bcs $9f5d	        bcs _50
+.9f56	4a		lsr a		        lsr a           ;   then a = a/2
+.9f57	f0 12		beq $9f6b	        beq _80         ;      if a <> 0
+.9f59	ac 54 9e	ldy $9e54	        ldy newvalue	;         then y = newvalue
+.9f5c	60		rts		        rts             ;              return
+.9f5d	09 c0		ora #$c0	_50 	ora #%11000000	;   else or-in high order bits
+.9f5f	c9 ff		cmp #$ff	        cmp #$ff        ;      if a <> -1
+.9f61	f0 08		beq $9f6b	        beq _80
+.9f63	38		sec		        sec             ;         then a = a/2
+.9f64	6a		ror a		        ror a
+.9f65	a2 ff		ldx #$ff	        ldx #$ff        ;              x = -1
+.9f67	ac 54 9e	ldy $9e54	        ldy newvalue	;              y = newvalue
+.9f6a	60		rts		        rts             ;              return
+.9f6b	a9 00		lda #$00	_80 	lda #0          ;a = 0
+.9f6d	60		rts			rts             ;return w/ y = old value
+.9f6e					setpot:
+.9f6e	ae 00 dc	ldx $dc00	        ldx cia         ;save keyboard GFX_LINEs
+.9f71	8e 56 9e	stx $9e56		stx ciasave
+.9f74	8d 00 dc	sta $dc00		sta cia         ;connect appropriate port to sid
+.9f77	a2 04		ldx #$04	        ldx #4
+.9f79	a0 c7		ldy #$c7	        ldy #$c7	;delay 4ms to let GFX_LINEs settle & get sync-ed
+.9f7b	88		dey		_10	dey
+.9f7c	d0 fd		bne $9f7b	        bne _10
+.9f7e	ca		dex		        dex
+.9f7f	d0 fa		bne $9f7b	        bne _10
+.9f81	60		rts		        rts
+.9f82					KEYIN_EXT:
+.9f82	20 e4 ff	jsr $ffe4	        jsr $ffe4               ; KERNAL GETIN
+.9f85	f0 07		beq $9f8e	        beq ke_ext
+.9f87	c9 03		cmp #$03	        cmp #$03                ; RUN/STOP -> ESC alias
+.9f89	d0 02		bne $9f8d	        bne ke_r
+.9f8b	a9 1b		lda #$1b	        lda #$1b
+.9f8d	60		rts		ke_r:   rts
+.9f8e	ad aa 9f	lda $9faa	ke_ext: lda extkey             ; IRQ-latched extended key (0 = none)
+.9f91	f0 07		beq $9f9a	        beq ke_z
+.9f93	48		pha		        pha
+.9f94	a9 00		lda #$00	        lda #$00
+.9f96	8d aa 9f	sta $9faa	        sta extkey             ; consume it
+.9f99	68		pla		        pla
+.9f9a	60		rts		ke_z:   rts
+>9f9b	01 08 10 20 40			extbits:  .byte $01,$08,$10,$20,$40
+>9fa0	1b 91 11 9d 1d			extcodes: .byte $1b,$91,$11,$9d,$1d
+>9fa5	ff				extk1:    .byte $ff
+>9fa6	ff				extk2:    .byte $ff
+>9fa7	00				extmask:  .byte $00
+>9fa8	00				extlatch: .byte $00
+>9fa9	00				extnew:   .byte $00
+>9faa	00				extkey:   .byte $00
 
 ;******  End of listing
