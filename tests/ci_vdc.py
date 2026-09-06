@@ -22,9 +22,14 @@ import sys
 import time
 
 UOS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DISK = os.path.join(UOS, "target/ultos.d64")
+STOCK = os.path.join(UOS, "target/ultos.d64")
 OUT = os.path.join(UOS, "vdc-emu-out")
 os.makedirs(OUT, exist_ok=True)
+# x128 runs the drive read-write and the settings check SAVEs a record:
+# never boot the committed image directly, or it gets a uos-set file
+DISK = os.path.join(OUT, "ci_vdc.d64")
+import shutil
+shutil.copyfile(STOCK, DISK)
 EGL = {"__EGL_VENDOR_LIBRARY_FILENAMES": "/usr/share/glvnd/egl_vendor.d/50_mesa.json"}
 sys.stdout.reconfigure(line_buffering=True)
 KB_BUF, KB_CNT, TICK_VEC, TRAMP = 0x0277, 0x00C6, 0x033C, 0x7F00
@@ -240,9 +245,26 @@ def main():
                   "desktop after settings ESC")
         print(f"PASS E: settings mirrored (mode + colour rows; C: {col0!r} -> {col1!r}; ESC)")
         passed += 1
+
+        # F: the Applications launcher (desktop menu) lists apps on rows 4..
+        sys.path.insert(0, UOS)
+        import hwlib
+        menu_apps = hwlib.lst_symbol("uos-desktop", "MENU_APPS")
+        vec = mon.peek(TICK_VEC, 2)
+        tramp = (bytes([0xA2, vec[0], 0xA0, vec[1], 0x8E, 0x3C, 0x03, 0x8C, 0x3D, 0x03])
+                 + bytes([0x4C, menu_apps & 0xff, menu_apps >> 8]))
+        mon.poke(TRAMP, tramp)
+        mon.poke(TICK_VEC, bytes([TRAMP & 0xff, TRAMP >> 8]))
+        rows = wait_rows(mon, lambda r: r[2].startswith("Applications") and r[4].strip(),
+                         "launcher rows")
+        show(rows, "launcher")
+        apps = [r.strip() for r in rows[4:10] if r.strip()]
+        assert any("settings" in a for a in apps) and any("shell" in a for a in apps), apps
+        print(f"PASS F: launcher mirrored ({len(apps)} apps: {apps})")
+        passed += 1
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)
-        print(f"CI-VDC PASS: {passed}/5 companion-display checks")
+        print(f"CI-VDC PASS: {passed}/6 companion-display checks")
     finally:
         emu.terminate()
         xvfb.terminate()

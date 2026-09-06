@@ -237,6 +237,15 @@ MENU_APPS = *
 
         #CreateWindow 1,APPS_X,APPS_Y,APPS_X+APPS_W,APPS_Y+92,true,apps_title
 
+        ; 80-column companion: title on row 2, the app rows follow (4..)
+        lda #<apps_title
+        sta r9L
+        lda #>apps_title
+        sta r9H
+        lda #$02
+        ldx #$00
+        jsr VDTEXT
+
         jsr dir_scan_apps
 
         lda apps_count
@@ -296,11 +305,10 @@ draw_rows:
 _drlim:
         sta rows_drawn
         ldx #$00
-        jsr _drrow
-_drl:
-        inx
-        cpx rows_drawn
-        bcc _drrow
+_drl:   jsr _drrow              ; (was: jsr for row 0, then a plain branch
+        inx                     ; into _drrow whose rts left draw_rows early,
+        cpx rows_drawn          ; and GPUTS had clobbered X anyway)
+        bcc _drl
 _drdone:
         rts
 _drrow:
@@ -332,7 +340,20 @@ _drrow:
         clc
         adc Y1
         sta Y1
+        stx vartmp1             ; GPUTS clobbers X: keep the row index
         jsr GPUTS
+        ldx vartmp1
+        ; mirror the row on the 80-column display (row 4+X, col 4)
+        lda rowadd_lo,x
+        sta r9L
+        lda rowadd_hi,x
+        sta r9H
+        txa
+        clc
+        adc #$04
+        ldx #$04
+        jsr VDTEXT
+        ldx vartmp1
         rts
 rows_drawn:
         .byte $00
@@ -393,22 +414,31 @@ uospref:        .text "uos-"
 
 ; components that must never appear in the launcher (loading them over
 ; the running system would crash it)
-SYSCOMPS_N      := 5
+SYSCOMPS_N      := 8
 syscomps:
         .text "uos", $00
         .text "uos-gfx", $00
+        .text "uos-vdc", $00
         .text "uos-drv1351", $00
         .text "uos-sprites", $00
         .text "uos-reu", $00
+        .text "uos-desktop", $00
+        .text "uos-set", $00
 
-row1:   .byte $00
-row2:   .byte $00
-row3:   .byte $00
-row4:   .byte $00
-row5:   .byte $00
-row6:   .byte $00
+; 17-byte name slots (16 + terminator): dir_scan_apps zeroes and apps_add
+; copies 17 bytes per row; they were 1-byte placeholders, so every name
+; overwrote the following rows (the launcher never listed correctly)
+row1:   .fill 17, 0
+row2:   .fill 17, 0
+row3:   .fill 17, 0
+row4:   .fill 17, 0
+row5:   .fill 17, 0
+row6:   .fill 17, 0
 
-ftmpname:       .byte $00,$00,$00,$00,$00,$00,$00,$00
+ftmpname:       .fill 17, 0     ; 16-char name + terminator (was 8 bytes: the scan overflowed it)
+dsline: .fill 32, 0
+dsfirst: .byte 0
+dseof:  .byte 0
                 .byte $00,$00,$00,$00,$00,$00,$00,$00
 
 dir_scan_apps:
@@ -443,47 +473,68 @@ _dzero:
 _dopenok:
         ldx #$05
         jsr $FFC6               ; CHKIN 5
-
-        jsr $FFCF               ; skip 2-byte start-of-chain pointer
-        jsr $FFCF
-
+        lda #$01
+        sta dsfirst
+        ; The "$" file is the BASIC-formatted listing (load address, then
+        ; 32-byte lines: link, block count, quoted name, type), NOT raw
+        ; directory sectors. Same parser as the file manager's dirscan.
 _dentry:
-        jsr $FFCF               ; type byte of dir entry
-        jsr $FFB7               ; READST
-        and #$40                ; EOI?
-        bne _dend
-
-        jsr $FFCF               ; skip t/s bytes of data block
-        jsr $FFCF
-
-        ldy #$00                ; read the 16-byte PETSCII name
-_dname:
-        jsr $FFCF
-        sta ftmpname,y
-        iny
-        cpy #$10
-        bne _dname
-
-        jsr $FFCF               ; blocks used (lo/hi) - skip
-        jsr $FFCF
-
-        ; terminate name at first padding byte ($a0)
-        ldy #$00
-_dterm:
-        lda ftmpname,y
-        cmp #$a0
-        bne _dnextc
         lda #$00
+        sta dseof
+        ldy #$00
+_drd:   jsr $FFCF               ; CHRIN: one 32-byte record
+        sta dsline,y
+        iny
+        jsr $FFB7               ; READST
+        and #$40
+        beq _dmore
+        inc dseof               ; EOF: parse this record, then finish
+        jmp _dparse
+_dmore: cpy #32
+        bne _drd
+_dparse:
+        lda dsfirst
+        beq _dcnt
+        lda #$00
+        sta dsfirst
+        jmp _dnextrec           ; first record carries the load address
+_dcnt:  lda dsline+2
+        ora dsline+3
+        bne _dxinit
+        jmp _dnextrec           ; block count 0 = disk title line
+_dxinit:
+        ldx #$00
+_dq1:   lda dsline,x
+        cmp #$22
+        beq _dqgot
+        inx
+        cpx #32
+        bne _dq1
+        jmp _dnextrec           ; no quote: "blocks free" trailer
+_dqgot: inx                     ; past the opening quote
+        ldy #$00
+_dnc:   lda dsline,x
+        cmp #$22
+        beq _dncend
         sta ftmpname,y
-_dnextc:
+        inx
         iny
         cpy #$10
-        bne _dterm
-
-        jsr is_uos_app
-        bcc _dentry
-
-        jsr apps_add            ; copy ftmpname into next free row
+        bne _dnc
+_dncend:
+        lda #$00
+        sta ftmpname,y          ; terminate (Y = length)
+_dpad:  cpy #$10
+        beq _dchk
+        iny
+        sta ftmpname,y          ; zero-fill to 16 so compares are clean
+        jmp _dpad
+_dchk:  jsr is_uos_app
+        bcc _dnextrec
+        jsr apps_add            ; copy ftmpname into the next free row
+_dnextrec:
+        lda dseof
+        bne _dend
         jmp _dentry
 
 _dend:
@@ -505,21 +556,36 @@ _iul:
         bne _iul
 
         ; prefix matches; reject the boot + driver components
-        ldx #$00
-_iucmp:
         lda #<syscomps
         sta r0L
         lda #>syscomps
         sta r0H
+        ldx #$00
+_iucmp:
         jsr cmp_sys_entry
+        bcs _iuhide             ; it IS a system component -> hide
+        ; step r0 past this entry's terminator to the next table entry
+        ; (the old loop reset r0 to the table start every time, so only
+        ; "uos" was ever compared and every module showed up as an app)
+        ldy #$00
+_iuadv: lda (r0),y
+        beq _iuend
+        iny
+        bne _iuadv
+_iuend: tya
+        sec                     ; +Y+1
+        adc r0L
+        sta r0L
         bcc _iunext2
-        clc
-        rts                     ; it IS a system component -> hide
+        inc r0H
 _iunext2:
         inx
         cpx #SYSCOMPS_N
         bne _iucmp
         sec
+        rts
+_iuhide:
+        clc
         rts
 _iuno:
         clc
