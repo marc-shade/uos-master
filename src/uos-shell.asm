@@ -143,15 +143,11 @@ sh_parse:
         beq _sp_c
         cmp #$48                        ; 'H' -> HELP
         beq _sp_h
-        jmp sp_unk                      ; (T/I/G verbs are checked there)
+        jmp sp_unk                      ; (T/I/G/P verbs are checked there)
 _sp_h:  lda cmdbuf+1
         cmp #$45                        ; 'E'
         bne sp_unk
-        lda #<sh_hint
-        sta r0L
-        lda #>sh_hint
-        sta r0H
-        jsr setline
+        jsr cmd_help
         jmp sp_fin
 _sp_c:  lda cmdbuf+1
         cmp #$4f                        ; 'O' -> COPY old new
@@ -203,6 +199,8 @@ sp_unk:
         beq sp_i
         cmp #$47                        ; 'G' -> GET host path
         beq sp_g
+        cmp #$50                        ; 'P' -> PEEK / POKE
+        beq sp_p
 sp_unk_msg:
         lda #<msg_unk
         sta r0L
@@ -225,6 +223,15 @@ sp_g:   lda cmdbuf+1
         cmp #$45                        ; 'E'
         bne sp_unk_msg
         jsr cmd_get
+        jmp sp_fin
+sp_p:   lda cmdbuf+1
+        cmp #$45                        ; 'E' -> PEEK
+        bne _sp_po
+        jsr cmd_peek
+        jmp sp_fin
+_sp_po: cmp #$4f                        ; 'O' -> POKE
+        bne sp_unk_msg
+        jsr cmd_poke
         jmp sp_fin
 
 ; arg = cmdbuf+4 (after the 3-char verb and one space)
@@ -1491,12 +1498,207 @@ vdline:  .fill 80, 0
 reqbuf:  .fill 128, 0
 catbuf:  .fill 513, 0
 catn:    .word 0
+pkaddr:  .word 0
+pkval:   .byte 0
+pkaL:    .byte 0
+pkaH:    .byte 0
+
+; ---------------- memory monitor: PEEK / POKE / HELP ----------------
+; PEEK addr        -> "$ADDR: $VV" on the response line
+cmd_peek:
+        ldx #$05                        ; after "PEEK " (4-char verb + space)
+        jsr sh_args2                    ; tokbuf = hex address
+        lda tokbuf
+        bne _pk_go
+        jmp sp_unk_msg
+_pk_go: lda #<tokbuf
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        jsr parse_hex                   ; -> pkaddr (16-bit)
+        lda pkaddr
+        sta r0L
+        lda pkaddr+1
+        sta r0H
+        ldy #$00
+        lda (r0),y
+        sta pkval
+        jsr fmt_peek                    ; linebuf = "$AAAA: $VV"
+        lda #<linebuf
+        sta r0L
+        lda #>linebuf
+        sta r0H
+        jsr setline
+        rts
+
+; POKE addr val    -> writes val to addr, "$ADDR = $VV"
+cmd_poke:
+        ldx #$05                        ; after "POKE "
+        jsr sh_args2                    ; tokbuf = addr, tok2buf = val
+        lda tokbuf
+        bne _po_go
+        jmp sp_unk_msg
+_po_go: lda tok2buf
+        bne _po_v
+        jmp sp_unk_msg
+_po_v:  lda #<tokbuf
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        jsr parse_hex
+        lda pkaddr
+        sta pkaL
+        lda pkaddr+1
+        sta pkaH
+        lda #<tok2buf
+        sta r0L
+        lda #>tok2buf
+        sta r0H
+        jsr parse_hex
+        lda pkaddr
+        sta pkval                       ; low byte of the value
+        lda pkaL
+        sta r0L
+        lda pkaH
+        sta r0H
+        lda pkval
+        ldy #$00
+        sta (r0),y
+        ; report as "$AAAA: $VV" (address = the poked one)
+        lda pkaL
+        sta pkaddr
+        lda pkaH
+        sta pkaddr+1
+        jsr fmt_peek
+        lda #<linebuf
+        sta r0L
+        lda #>linebuf
+        sta r0H
+        jsr setline
+        rts
+
+; linebuf = "$" AAAA ": $" VV, from pkaddr / pkval
+fmt_peek:
+        ldx #$00
+        lda #'$'
+        sta linebuf,x
+        inx
+        lda pkaddr+1
+        jsr put_hex2
+        lda pkaddr
+        jsr put_hex2
+        lda #':'
+        sta linebuf,x
+        inx
+        lda #' '
+        sta linebuf,x
+        inx
+        lda #'$'
+        sta linebuf,x
+        inx
+        lda pkval
+        jsr put_hex2
+        lda #$00
+        sta linebuf,x
+        rts
+
+; A -> two hex digits at linebuf,x (x advanced); PETSCII digits/letters
+put_hex2:
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        jsr _ph_nib
+        pla
+        and #$0f
+_ph_nib:
+        cmp #10
+        bcc _ph_dig
+        clc
+        adc #$c1-10                     ; A-F -> $c1-$c6 (shifted uppercase)
+        jmp _ph_put
+_ph_dig:
+        clc
+        adc #$30                        ; 0-9 -> $30-$39
+_ph_put:
+        sta linebuf,x
+        inx
+        rts
+
+; (r0) hex string -> pkaddr (16-bit); stops at the first non-hex/terminator
+parse_hex:
+        lda #$00
+        sta pkaddr
+        sta pkaddr+1
+        ldy #$00
+_hx_l:  lda (r0),y
+        jsr hex_nib                     ; A -> 0-15, C=1 if not a hex digit
+        bcs _hx_d
+        ; pkaddr = pkaddr*16 + nibble
+        ldx #$04
+_hx_s:  asl pkaddr
+        rol pkaddr+1
+        dex
+        bne _hx_s
+        ora pkaddr
+        sta pkaddr
+        iny
+        cpy #$04                        ; 4 hex digits max
+        bne _hx_l
+_hx_d:  rts
+
+; A = PETSCII char -> A = 0-15, C=0 ok / C=1 not a hex digit
+; A = ASCII char from the keyboard -> A = 0-15, C=0 ok / C=1 not hex.
+; Uses explicit ASCII codes: 64tass char literals ('A') would compile to
+; this project's shifted-PETSCII encoding ($c1), but GETIN returns ASCII.
+hex_nib:
+        cmp #$30                        ; '0'
+        bcc _hn_bad
+        cmp #$3a                        ; '9'+1
+        bcs _hn_af
+        sec
+        sbc #$30
+        clc
+        rts
+_hn_af: and #$df                        ; force upper-case ($61-$66 -> $41-$46)
+        cmp #$41                        ; 'A'
+        bcc _hn_bad
+        cmp #$47                        ; 'F'+1
+        bcs _hn_bad
+        sec
+        sbc #$37                        ; 'A'($41) - 10
+        clc
+        rts
+_hn_bad:
+        sec
+        rts
+
+; HELP: common set on the response line (unchanged), full list in the rows
+cmd_help:
+        lda #<sh_hint
+        sta r0L
+        lda #>sh_hint
+        sta r0H
+        jsr setline
+        lda #<help_text
+        sta gp
+        lda #>help_text
+        sta gp+1
+        jsr rows_wipe
+        lda #$01
+        sta dirty
+        lda #$00
+        sta rowi
+        jsr show_body
+        rts
 
 ; ---------- strings / buffers ----------------------------------------
 dskstr: .text "uos-desktop", 0
 sh_title: .text "Command shell", 0
 shver:  .text "UltOS 0.3", 0
 sh_hint: .text "DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT", 0
+help_text: .byte 68,73,82,32,67,65,84,32,82,85,78,32,68,69,76,32,67,79,80,89,32,82,69,78,32,86,69,82,13,73,80,32,84,73,77,69,32,71,69,84,32,80,69,69,75,32,80,79,75,69,32,69,88,73,84,13,67,65,84,32,70,32,32,86,73,69,87,32,70,73,76,69,13,80,69,69,75,32,65,65,65,65,32,32,82,69,65,68,32,65,32,66,89,84,69,13,80,79,75,69,32,65,65,65,65,32,86,86,32,32,87,82,73,84,69,32,65,32,66,89,84,69,13,71,69,84,32,72,79,83,84,32,80,65,84,72,32,32,72,84,84,80,32,70,69,84,67,72,13,0
 p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
                                         ; would emit shifted PETSCII junk)
 msg_dird: .text "dir", 0

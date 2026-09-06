@@ -492,3 +492,15 @@ companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M
   (PASS 10h: CAT UOS-NET reads 512 bytes, shell returns to the prompt). This gives the OS a file viewer
   (you could list/run/delete but not read a file before).
 -->
+<!-- 2026-09-06 session 4d addendum (shell PEEK/POKE + rows-region HELP — a memory monitor):
+  cmd_peek 'PEEK addr' / cmd_poke 'POKE addr val' (hex): parse_hex (4 hex digits -> 16-bit) + hex_nib;
+  PEEK reads the byte and shows "$AAAA: $VV" on the response line, POKE writes then echoes the same.
+  Both parse via sh_args2 at offset 5 (PEEK/POKE are 4-char verbs; sh_argbuf assumes 3-char). cmd_help
+  keeps the common list on the response line (ci 10f prefix unchanged) and shows the full list (incl
+  PEEK/POKE, with syntax) in the rows region via the shared show_body over an ASCII help_text.
+  BUG FOUND: 64tass char literals ('A') compile with this project's shifted-PETSCII .enc ($c1), but
+  GETIN returns ASCII ($41) -> hex_nib rejected A-F (only digits $30-$39, identical in both encodings,
+  parsed). Fixed with explicit ASCII codes ($30/$3a/$41/$47/$37); put_hex2 emits shifted $c1-$c6 so the
+  hex letters render uppercase like the rest of the UI. CI: ci_fm 17/17 (PASS 10i: POKE $02A7=$5A then
+  PEEK reports it; $02a7 reads $5A over the monitor), ci_vdc 13/13.
+-->

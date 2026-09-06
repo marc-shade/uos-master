@@ -174,8 +174,9 @@ day, weekday (0 = Sunday), zone, IP, IPSTR, LEN, SOCK, STAT) are plain RAM:
 command interface, 4 host unresolved / socket open failed. The desktop
 shows the state next to the clock on the 80-column row 0 and in the
 Computer window; the shell has `CAT file` (view the first 512 bytes of a
-disk file as text in the rows region + 80-column rows 9-16), `TIME [SYNC]`,
-`IP` and `GET host path`
+disk file as text in the rows region + 80-column rows 9-16), `PEEK addr`
+and `POKE addr val` (hex, a memory monitor), `HELP` (full command list in
+the rows region), `TIME [SYNC]`, `IP` and `GET host path`
 (an HTTP/1.0 GET whose status line lands on the response line and whose
 next eight lines fill the rows region, mirrored on rows 9-16).
 
@@ -237,12 +238,19 @@ desktop entry.
 * Screen-code text (for VDC RAM or `$0400`) needs `.enc` + `.cdef`; the
   VDC driver's `p2s` maps PETSCII for you, so pass PETSCII to `VDTEXT`.
 * Module exports must be fixed jump tables; natural-order addresses drift.
+* **Character literals compile with the current `.enc`.** This project's
+  default encoding maps `.text` (and `#'A'`) to SHIFTED PETSCII (`'A'` =
+  `$c1`), but `KEYIN`/`GETIN` return ASCII (`'A'` = `$41`). Compare typed
+  input against explicit ASCII codes (`cmp #$41`), not `cmp #'A'` — the
+  latter silently rejected every A-F hex digit in the PEEK/POKE parser.
+  Digits `$30-$39` and punctuation `$20-$3f` are identical in both, so only
+  letters bite.
 
 ## Build and test
 
 ```
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
-UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/IP/TIME/GET (16 checks)
+UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/IP/TIME/GET (17 checks)
 python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity (13 checks)
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563

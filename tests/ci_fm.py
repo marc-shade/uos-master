@@ -694,6 +694,32 @@ def main():
         assert cl == 0, f"FAIL: command line not cleared after CAT (cmdlen={cl})"
         print(f"PASS 10h: CAT UOS-NET read {n} bytes to the viewer, shell back at prompt", flush=True)
 
+        # ---- PASS 10i: POKE then PEEK a scratch address ----
+        # $02a7 is unused RAM; POKE $02A7 $5A must land, PEEK must report it
+        mon.write_mem(0x02a7, b"\x00"); mon.resume()
+        inject_keys(mon, b"POKE 02A7 5A\x0d")
+        ok_poke = False
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            v = mon.read_mem(0x02a7, 0x02a7, memspace=0)[0]; mon.resume()
+            if v == 0x5a:
+                ok_poke = True
+                break
+            time.sleep(1)
+        assert ok_poke, f"FAIL: POKE 02A7 5A did not write (mem=${v:02x})"
+        inject_keys(mon, b"PEEK 02A7\x0d")
+        ok_peek = False
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            resp = bytes(mon.read_mem(SH_RESP, SH_RESP + 15, memspace=0)); mon.resume()
+            # response is "$02A7: $5A" in shifted PETSCII; check the digits
+            if b"\x35\xc1" in resp:                     # "5A": '5'=$35, 'A'=shifted $c1
+                ok_peek = True
+                break
+            time.sleep(1)
+        assert ok_peek, f"FAIL: PEEK 02A7 did not report $5A (resp={resp!r})"
+        print(f"PASS 10i: POKE $02A7=$5A then PEEK reported it (resp={resp.split(chr(0).encode())[0]!r})", flush=True)
+
         # EXIT: back to the desktop
         inject_keys(mon, b"EXIT\x0d")
         ok_desk = False
@@ -732,7 +758,7 @@ def main():
         assert live, "FAIL: desktop never resumed tick dispatch after shell EXIT"
         print("PASS 10d: shell EXIT back to the desktop (tick dispatch live)",
               flush=True)
-        print("CI PASS: 16/16 emulator-verifiable checks", flush=True)
+        print("CI PASS: 17/17 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:
