@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-settings.prg -L target/uos-settings.lst src/uos-settings.asm
-; Sun Sep  6 10:18:11 2026
+; Sun Sep  6 14:01:49 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -118,6 +118,9 @@
 =$7350					SETREC          = $7350
 =$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
 =$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
 =$cc00					VDC_GETREG      = $cc00
 =$cc03					VDC_SETREG      = $cc03
 =$cc06					VDC_SEEK        = $cc06
@@ -142,12 +145,42 @@
 =$9000					APP_CTL_TBL     = $9000
 =$9000					APP_CTL_CTR     = $9000
 =$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
 =$9b00					APP_ID_TBL      = $9b00
 =$9c00					REU_SIZE        = $9c00
 =$9c03					REU_STASH       = $9c03
 =$9c06					REU_FETCH       = $9c06
 =$9c09					REU_PARAMS      = $9c09
-=$9f03					INIT_MOUSE      = $9f03
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
 =$a000					BITMAP_START    = $a000
 =$c000					GFX_INIT        = $c000
 =$c00f					GFX_SETPIXEL    = $c00f
@@ -534,7 +567,7 @@
 .51dc	c8		iny		    iny
 .51dd	a9 42		lda #$42	    lda #66
 .51df	85 04		sta $04		    sta Y1
-.51e1	a9 90		lda #$90	    lda #<title
+.51e1	a9 d5		lda #$d5	    lda #<title
 .51e3	85 14		sta $14		    sta r9L
 .51e5	a9 52		lda #$52	    lda #>title
 .51e7	85 15		sta $15		    sta r9H
@@ -546,347 +579,527 @@
 .51f4	c8		iny		    iny
 .51f5	a9 94		lda #$94	    lda #148
 .51f7	85 04		sta $04		    sta Y1
-.51f9	a9 99		lda #$99	    lda #<hint
+.51f9	a9 de		lda #$de	    lda #<hint
 .51fb	85 14		sta $14		    sta r9L
 .51fd	a9 52		lda #$52	    lda #>hint
 .51ff	85 15		sta $15		    sta r9H
 .5201	20 1e c0	jsr $c01e	    jsr GPUTS
-.5204	a9 7e		lda #$7e	    lda #<savename
+.5204	a9 0a		lda #$0a	    lda #<savename
 .5206	85 02		sta $02		    sta r0L
-.5208	a9 55		lda #$55	    lda #>savename
+.5208	a9 57		lda #$57	    lda #>savename
 .520a	85 03		sta $03		    sta r0H
 .520c	20 29 08	jsr $0829	    jsr FILLFILE
 .520f	20 26 08	jsr $0826	    jsr APP_LOADER
-.5212	20 d2 53	jsr $53d2	    jsr vd_clear_area
-.5215	a9 90		lda #$90	    lda #<title
+.5212	20 2b 54	jsr $542b	    jsr vd_clear_area
+.5215	a9 d5		lda #$d5	    lda #<title
 .5217	85 14		sta $14		    sta r9L
 .5219	a9 52		lda #$52	    lda #>title
 .521b	85 15		sta $15		    sta r9H
 .521d	a9 02		lda #$02	    lda #$02
 .521f	a2 00		ldx #$00	    ldx #$00
 .5221	20 35 08	jsr $0835	    jsr VDTEXT
-.5224	a9 99		lda #$99	    lda #<hint
+.5224	a9 de		lda #$de	    lda #<hint
 .5226	85 14		sta $14		    sta r9L
 .5228	a9 52		lda #$52	    lda #>hint
 .522a	85 15		sta $15		    sta r9H
 .522c	a9 17		lda #$17	    lda #23
 .522e	a2 00		ldx #$00	    ldx #$00
 .5230	20 35 08	jsr $0835	    jsr VDTEXT
-.5233	a9 b4		lda #$b4	    lda #<bglabel
+.5233	a9 0d		lda #$0d	    lda #<bglabel
 .5235	85 14		sta $14		    sta r9L
-.5237	a9 52		lda #$52	    lda #>bglabel
+.5237	a9 53		lda #$53	    lda #>bglabel
 .5239	85 15		sta $15		    sta r9H
 .523b	a9 05		lda #$05	    lda #$05
 .523d	a2 02		ldx #$02	    ldx #$02
 .523f	20 35 08	jsr $0835	    jsr VDTEXT
 .5242	a9 ff		lda #$ff	    lda #$ff
 .5244	85 40		sta $40		    sta oldshown
-.5246	8d 1a 54	sta $541a	    sta oldshowncol
-.5249	20 59 53	jsr $5359	    jsr draw_mode
-.524c	a9 50		lda #$50	    lda #80
-.524e	85 02		sta $02		    sta X1
-.5250	a9 00		lda #$00	    lda #$00
-.5252	85 03		sta $03		    sta X1+1
-.5254	c8		iny		    iny
-.5255	a9 64		lda #$64	    lda #100
-.5257	85 04		sta $04		    sta Y1
-.5259	a9 b4		lda #$b4	    lda #<bglabel
-.525b	85 14		sta $14		    sta r9L
-.525d	a9 52		lda #$52	    lda #>bglabel
-.525f	85 15		sta $15		    sta r9H
-.5261	20 1e c0	jsr $c01e	    jsr GPUTS
-.5264	20 43 54	jsr $5443	    jsr draw_color
-.5267					APP_KEY:
-.5267	20 2c 08	jsr $082c	        jsr KEYIN
-.526a	c9 00		cmp #$00	        cmp #$00
-.526c	f0 f9		beq $5267	        beq APP_KEY
-.526e	c9 44		cmp #$44	        cmp #$44                        ; 'D' — explicit unshifted PETSCII:
-.5270	d0 06		bne $5278	        bne _akc                        ; 64tass's #'D' assembles to $c4
-.5272	20 43 53	jsr $5343	        jsr ON_DISPLAY                  ; (shifted), which no keypress
-.5275	4c 67 52	jmp $5267	        jmp APP_KEY                     ; ever produces
-.5278	c9 43		cmp #$43	_akc:   cmp #$43                        ; 'C' = cycle background colour
-.527a	d0 06		bne $5282	        bne _akb
-.527c	20 08 54	jsr $5408	        jsr ON_COLOR
-.527f	4c 67 52	jmp $5267	        jmp APP_KEY
-.5282	c9 42		cmp #$42	_akb:   cmp #$42                        ; 'B'
-.5284	f0 07		beq $528d	        beq _akbk
-.5286	c9 1b		cmp #$1b	        cmp #$1b                        ; ESC also backs out
-.5288	f0 03		beq $528d	        beq _akbk
-.528a	4c 67 52	jmp $5267	        jmp APP_KEY
-.528d	4c 28 53	jmp $5328	_akbk:  jmp settings_back
->5290	d3 45 54 54 49 4e 47 53		title:  .text "Settings", $00
->5298	00
->5299	c4 3d 44 49 53 50 4c 41		hint:   .text "D=display C=color ESC=back", $00
->52a1	59 20 c3 3d 43 4f 4c 4f 52 20 c5 d3 c3 3d 42 41
->52b1	43 4b 00
->52b4	42 41 43 4b 47 52 4f 55		bglabel: .text "background:", $00
->52bc	4e 44 3a 00
->52c0	44 49 53 50 4c 41 59 3a		mode0s: .text "display: 40 only", 0
->52c8	20 34 30 20 4f 4e 4c 59 00
->52d1	44 49 53 50 4c 41 59 3a		mode1s: .text "display: 80 only", 0
->52d9	20 38 30 20 4f 4e 4c 59 00
->52e2	44 49 53 50 4c 41 59 3a		mode2s: .text "display: both (40+80)", 0
->52ea	20 42 4f 54 48 20 28 34 30 2b 38 30 29 00
->52f8	00 00 00 00 00 00 00 00		modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5300	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->5310	00 00 00 00 00 00 00 00		oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5318	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-.5328					settings_back:
-.5328	ce 00 9b	dec $9b00	    dec APP_ID_TBL
-.532b	ad 00 9b	lda $9b00	    lda APP_ID_TBL
-.532e	20 23 08	jsr $0823	    jsr LOAD_IMM
->5331	55 4f 53 2d 44 45 53 4b		    .text "uos-desktop",$00
->5339	54 4f 50 00
-.533d	20 26 08	jsr $0826	    jsr APP_LOADER
-.5340	4c 00 10	jmp $1000	    jmp DESK_START
-.5343					ON_DISPLAY:
-.5343	ad 55 73	lda $7355	    lda SETREC_DISP
-.5346	18		clc		    clc
-.5347	69 01		adc #$01	    adc #$01
-.5349	c9 03		cmp #$03	    cmp #3
-.534b	90 02		bcc $534f	    bcc on_d_ok
-.534d	a9 00		lda #$00	    lda #0
-.534f					on_d_ok:
-.534f	8d 55 73	sta $7355	    sta SETREC_DISP
-.5352	20 5f 55	jsr $555f	    jsr save_record
-.5355	20 59 53	jsr $5359	    jsr draw_mode
-.5358	60		rts		    rts
-.5359					draw_mode:
-.5359	a5 40		lda $40		    lda oldshown
-.535b	c9 ff		cmp #$ff	    cmp #$ff
-.535d	f0 17		beq $5376	    beq dm_build
-.535f	a9 50		lda #$50	    lda #80
-.5361	85 02		sta $02		    sta X1
-.5363	a9 00		lda #$00	    lda #$00
-.5365	85 03		sta $03		    sta X1+1
-.5367	a9 54		lda #$54	    lda #84
-.5369	85 04		sta $04		    sta Y1
-.536b	a9 10		lda #$10	    lda #<oldmode
-.536d	85 14		sta $14		    sta r9L
-.536f	a9 53		lda #$53	    lda #>oldmode
-.5371	85 15		sta $15		    sta r9H
-.5373	20 1e c0	jsr $c01e	    jsr GPUTS
-.5376					dm_build:
-.5376	ad 55 73	lda $7355	    lda SETREC_DISP
-.5379	20 f6 53	jsr $53f6	    jsr mode_str                   ; r2 = text for the current mode
-.537c	a0 00		ldy #$00	    ldy #$00
-.537e	b1 06		lda ($06),y	dm_cp:  lda (r2),y
-.5380	f0 0b		beq $538d	    beq dm_done
-.5382	c0 17		cpy #$17	    cpy #23
-.5384	b0 07		bcs $538d	    bcs dm_done
-.5386	99 f8 52	sta $52f8,y	    sta modebuf,y
-.5389	c8		iny		    iny
-.538a	4c 7e 53	jmp $537e	    jmp dm_cp
-.538d					dm_done:
-.538d	a9 00		lda #$00	    lda #$00
-.538f	99 f8 52	sta $52f8,y	    sta modebuf,y                  ; keep the buffer $00-terminated
-.5392	a0 00		ldy #$00	    ldy #$00
-.5394	b9 f8 52	lda $52f8,y	dm_old: lda modebuf,y
-.5397	99 10 53	sta $5310,y	    sta oldmode,y
-.539a	f0 05		beq $53a1	    beq dm_show
-.539c	c8		iny		    iny
-.539d	c0 18		cpy #$18	    cpy #24
-.539f	d0 f3		bne $5394	    bne dm_old                     ; loop (was `bne dm_show`: copied one
-.53a1					dm_show:
-.53a1	ad 55 73	lda $7355	    lda SETREC_DISP
-.53a4	85 40		sta $40		    sta oldshown
-.53a6	a9 50		lda #$50	    lda #80
-.53a8	85 02		sta $02		    sta X1
-.53aa	a9 00		lda #$00	    lda #$00
-.53ac	85 03		sta $03		    sta X1+1
-.53ae	a9 54		lda #$54	    lda #84
-.53b0	85 04		sta $04		    sta Y1
-.53b2	a9 10		lda #$10	    lda #<oldmode
-.53b4	85 14		sta $14		    sta r9L
-.53b6	a9 53		lda #$53	    lda #>oldmode
-.53b8	85 15		sta $15		    sta r9H
-.53ba	20 1e c0	jsr $c01e	    jsr GPUTS
-.53bd	a9 04		lda #$04	    lda #$04
-.53bf	20 38 08	jsr $0838	    jsr VDCLR
-.53c2	a9 10		lda #$10	    lda #<oldmode
-.53c4	85 14		sta $14		    sta r9L
-.53c6	a9 53		lda #$53	    lda #>oldmode
-.53c8	85 15		sta $15		    sta r9H
-.53ca	a9 04		lda #$04	    lda #$04
-.53cc	a2 02		ldx #$02	    ldx #$02
-.53ce	20 35 08	jsr $0835	    jsr VDTEXT
-.53d1	60		rts		    rts
-.53d2					vd_clear_area:
-.53d2	a9 02		lda #$02	    lda #$02
-.53d4	48		pha		vca_l:  pha
-.53d5	20 38 08	jsr $0838	    jsr VDCLR
-.53d8	68		pla		    pla
-.53d9	18		clc		    clc
-.53da	69 01		adc #$01	    adc #$01
-.53dc	c9 18		cmp #$18	    cmp #24
-.53de	d0 f4		bne $53d4	    bne vca_l
-.53e0	60		rts		    rts
->53e1	20 20 20 20 20 20 20 20		vd_pad: .text "                    ", $00
->53e9	20 20 20 20 20 20 20 20 20 20 20 20 00
-.53f6					mode_str:
-.53f6	a8		tay		    tay
-.53f7	b9 02 54	lda $5402,y	    lda strtab_lo,y
-.53fa	85 06		sta $06		    sta r2L
-.53fc	b9 05 54	lda $5405,y	    lda strtab_hi,y
-.53ff	85 07		sta $07		    sta r2H
-.5401	60		rts		    rts
->5402	c0 d1 e2			strtab_lo: .byte <mode0s, <mode1s, <mode2s
->5405	52 52 52			strtab_hi: .byte >mode0s, >mode1s, >mode2s
-.5408					ON_COLOR:
-.5408	ad 56 73	lda $7356	    lda SETREC_BG
-.540b	18		clc		    clc
-.540c	69 01		adc #$01	    adc #$01
-.540e	29 0f		and #$0f	    and #$0f                       ; wrap 0..15
-.5410	8d 56 73	sta $7356	    sta SETREC_BG
-.5413	20 5f 55	jsr $555f	    jsr save_record
-.5416	20 43 54	jsr $5443	    jsr draw_color
-.5419	60		rts		    rts
->541a	ff				oldshowncol: .byte $ff
->541b	00 00 00 00 00 00 00 00		colbuf:   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5423	00 00 00 00 00 00 00 00 00 00 00 00
->542f	00 00 00 00 00 00 00 00		oldcolor: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5437	00 00 00 00 00 00 00 00 00 00 00 00
-.5443					draw_color:
-.5443	ad 1a 54	lda $541a	    lda oldshowncol
-.5446	c9 ff		cmp #$ff	    cmp #$ff
-.5448	f0 17		beq $5461	    beq dc_build
-.544a	a9 aa		lda #$aa	    lda #170
-.544c	85 02		sta $02		    sta X1
-.544e	a9 00		lda #$00	    lda #$00
-.5450	85 03		sta $03		    sta X1+1
-.5452	a9 64		lda #$64	    lda #100
-.5454	85 04		sta $04		    sta Y1
-.5456	a9 2f		lda #$2f	    lda #<oldcolor
-.5458	85 14		sta $14		    sta r9L
-.545a	a9 54		lda #$54	    lda #>oldcolor
-.545c	85 15		sta $15		    sta r9H
-.545e	20 1e c0	jsr $c01e	    jsr GPUTS
-.5461					dc_build:
+.5246	8d 73 54	sta $5473	    sta oldshowncol
+.5249	8d d2 56	sta $56d2	    sta oldshowntz
+.524c	20 b2 53	jsr $53b2	    jsr draw_mode
+.524f	a9 50		lda #$50	    lda #80
+.5251	85 02		sta $02		    sta X1
+.5253	a9 00		lda #$00	    lda #$00
+.5255	85 03		sta $03		    sta X1+1
+.5257	c8		iny		    iny
+.5258	a9 64		lda #$64	    lda #100
+.525a	85 04		sta $04		    sta Y1
+.525c	a9 0d		lda #$0d	    lda #<bglabel
+.525e	85 14		sta $14		    sta r9L
+.5260	a9 53		lda #$53	    lda #>bglabel
+.5262	85 15		sta $15		    sta r9H
+.5264	20 1e c0	jsr $c01e	    jsr GPUTS
+.5267	20 9c 54	jsr $549c	    jsr draw_color
+.526a	a9 50		lda #$50	    lda #80
+.526c	85 02		sta $02		    sta X1
+.526e	a9 00		lda #$00	    lda #$00
+.5270	85 03		sta $03		    sta X1+1
+.5272	c8		iny		    iny
+.5273	a9 70		lda #$70	    lda #112
+.5275	85 04		sta $04		    sta Y1
+.5277	a9 02		lda #$02	    lda #<tzlabel
+.5279	85 14		sta $14		    sta r9L
+.527b	a9 53		lda #$53	    lda #>tzlabel
+.527d	85 15		sta $15		    sta r9H
+.527f	20 1e c0	jsr $c01e	    jsr GPUTS
+.5282	a9 02		lda #$02	    lda #<tzlabel
+.5284	85 14		sta $14		    sta r9L
+.5286	a9 53		lda #$53	    lda #>tzlabel
+.5288	85 15		sta $15		    sta r9H
+.528a	a9 06		lda #$06	    lda #$06
+.528c	a2 02		ldx #$02	    ldx #$02
+.528e	20 35 08	jsr $0835	    jsr VDTEXT
+.5291	20 ee 55	jsr $55ee	    jsr draw_tz
+.5294					APP_KEY:
+.5294	20 2c 08	jsr $082c	        jsr KEYIN
+.5297	c9 00		cmp #$00	        cmp #$00
+.5299	f0 f9		beq $5294	        beq APP_KEY
+.529b	c9 44		cmp #$44	        cmp #$44                        ; 'D' — explicit unshifted PETSCII:
+.529d	d0 06		bne $52a5	        bne _akc                        ; 64tass's #'D' assembles to $c4
+.529f	20 9c 53	jsr $539c	        jsr ON_DISPLAY                  ; (shifted), which no keypress
+.52a2	4c 94 52	jmp $5294	        jmp APP_KEY                     ; ever produces
+.52a5	c9 43		cmp #$43	_akc:   cmp #$43                        ; 'C' = cycle background colour
+.52a7	d0 06		bne $52af	        bne _akp
+.52a9	20 61 54	jsr $5461	        jsr ON_COLOR
+.52ac	4c 94 52	jmp $5294	        jmp APP_KEY
+.52af	c9 2b		cmp #$2b	_akp:   cmp #$2b                        ; '+' = zone one hour east
+.52b1	d0 08		bne $52bb	        bne _akm
+.52b3	a9 04		lda #$04	        lda #$04
+.52b5	20 b8 55	jsr $55b8	        jsr ON_TZ
+.52b8	4c 94 52	jmp $5294	        jmp APP_KEY
+.52bb	c9 2d		cmp #$2d	_akm:   cmp #$2d                        ; '-' = zone one hour west
+.52bd	d0 08		bne $52c7	        bne _akb
+.52bf	a9 fc		lda #$fc	        lda #$fc
+.52c1	20 b8 55	jsr $55b8	        jsr ON_TZ
+.52c4	4c 94 52	jmp $5294	        jmp APP_KEY
+.52c7	c9 42		cmp #$42	_akb:   cmp #$42                        ; 'B'
+.52c9	f0 07		beq $52d2	        beq _akbk
+.52cb	c9 1b		cmp #$1b	        cmp #$1b                        ; ESC also backs out
+.52cd	f0 03		beq $52d2	        beq _akbk
+.52cf	4c 94 52	jmp $5294	        jmp APP_KEY
+.52d2	4c 81 53	jmp $5381	_akbk:  jmp settings_back
+>52d5	d3 45 54 54 49 4e 47 53		title:  .text "Settings", $00
+>52dd	00
+>52de	c4 3d 44 49 53 50 4c 41		hint:   .text "D=display C=color +/-=zone ESC=back", $00
+>52e6	59 20 c3 3d 43 4f 4c 4f 52 20 2b 2f 2d 3d 5a 4f
+>52f6	4e 45 20 c5 d3 c3 3d 42 41 43 4b 00
+>5302	54 49 4d 45 20 5a 4f 4e		tzlabel: .text "time zone:", $00
+>530a	45 3a 00
+>530d	42 41 43 4b 47 52 4f 55		bglabel: .text "background:", $00
+>5315	4e 44 3a 00
+>5319	44 49 53 50 4c 41 59 3a		mode0s: .text "display: 40 only", 0
+>5321	20 34 30 20 4f 4e 4c 59 00
+>532a	44 49 53 50 4c 41 59 3a		mode1s: .text "display: 80 only", 0
+>5332	20 38 30 20 4f 4e 4c 59 00
+>533b	44 49 53 50 4c 41 59 3a		mode2s: .text "display: both (40+80)", 0
+>5343	20 42 4f 54 48 20 28 34 30 2b 38 30 29 00
+>5351	00 00 00 00 00 00 00 00		modebuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5359	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>5369	00 00 00 00 00 00 00 00		oldmode: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5371	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+.5381					settings_back:
+.5381	ce 00 9b	dec $9b00	    dec APP_ID_TBL
+.5384	ad 00 9b	lda $9b00	    lda APP_ID_TBL
+.5387	20 23 08	jsr $0823	    jsr LOAD_IMM
+>538a	55 4f 53 2d 44 45 53 4b		    .text "uos-desktop",$00
+>5392	54 4f 50 00
+.5396	20 26 08	jsr $0826	    jsr APP_LOADER
+.5399	4c 00 10	jmp $1000	    jmp DESK_START
+.539c					ON_DISPLAY:
+.539c	ad 55 73	lda $7355	    lda SETREC_DISP
+.539f	18		clc		    clc
+.53a0	69 01		adc #$01	    adc #$01
+.53a2	c9 03		cmp #$03	    cmp #3
+.53a4	90 02		bcc $53a8	    bcc on_d_ok
+.53a6	a9 00		lda #$00	    lda #0
+.53a8					on_d_ok:
+.53a8	8d 55 73	sta $7355	    sta SETREC_DISP
+.53ab	20 eb 56	jsr $56eb	    jsr save_record
+.53ae	20 b2 53	jsr $53b2	    jsr draw_mode
+.53b1	60		rts		    rts
+.53b2					draw_mode:
+.53b2	a5 40		lda $40		    lda oldshown
+.53b4	c9 ff		cmp #$ff	    cmp #$ff
+.53b6	f0 17		beq $53cf	    beq dm_build
+.53b8	a9 50		lda #$50	    lda #80
+.53ba	85 02		sta $02		    sta X1
+.53bc	a9 00		lda #$00	    lda #$00
+.53be	85 03		sta $03		    sta X1+1
+.53c0	a9 54		lda #$54	    lda #84
+.53c2	85 04		sta $04		    sta Y1
+.53c4	a9 69		lda #$69	    lda #<oldmode
+.53c6	85 14		sta $14		    sta r9L
+.53c8	a9 53		lda #$53	    lda #>oldmode
+.53ca	85 15		sta $15		    sta r9H
+.53cc	20 1e c0	jsr $c01e	    jsr GPUTS
+.53cf					dm_build:
+.53cf	ad 55 73	lda $7355	    lda SETREC_DISP
+.53d2	20 4f 54	jsr $544f	    jsr mode_str                   ; r2 = text for the current mode
+.53d5	a0 00		ldy #$00	    ldy #$00
+.53d7	b1 06		lda ($06),y	dm_cp:  lda (r2),y
+.53d9	f0 0b		beq $53e6	    beq dm_done
+.53db	c0 17		cpy #$17	    cpy #23
+.53dd	b0 07		bcs $53e6	    bcs dm_done
+.53df	99 51 53	sta $5351,y	    sta modebuf,y
+.53e2	c8		iny		    iny
+.53e3	4c d7 53	jmp $53d7	    jmp dm_cp
+.53e6					dm_done:
+.53e6	a9 00		lda #$00	    lda #$00
+.53e8	99 51 53	sta $5351,y	    sta modebuf,y                  ; keep the buffer $00-terminated
+.53eb	a0 00		ldy #$00	    ldy #$00
+.53ed	b9 51 53	lda $5351,y	dm_old: lda modebuf,y
+.53f0	99 69 53	sta $5369,y	    sta oldmode,y
+.53f3	f0 05		beq $53fa	    beq dm_show
+.53f5	c8		iny		    iny
+.53f6	c0 18		cpy #$18	    cpy #24
+.53f8	d0 f3		bne $53ed	    bne dm_old                     ; loop (was `bne dm_show`: copied one
+.53fa					dm_show:
+.53fa	ad 55 73	lda $7355	    lda SETREC_DISP
+.53fd	85 40		sta $40		    sta oldshown
+.53ff	a9 50		lda #$50	    lda #80
+.5401	85 02		sta $02		    sta X1
+.5403	a9 00		lda #$00	    lda #$00
+.5405	85 03		sta $03		    sta X1+1
+.5407	a9 54		lda #$54	    lda #84
+.5409	85 04		sta $04		    sta Y1
+.540b	a9 69		lda #$69	    lda #<oldmode
+.540d	85 14		sta $14		    sta r9L
+.540f	a9 53		lda #$53	    lda #>oldmode
+.5411	85 15		sta $15		    sta r9H
+.5413	20 1e c0	jsr $c01e	    jsr GPUTS
+.5416	a9 04		lda #$04	    lda #$04
+.5418	20 38 08	jsr $0838	    jsr VDCLR
+.541b	a9 69		lda #$69	    lda #<oldmode
+.541d	85 14		sta $14		    sta r9L
+.541f	a9 53		lda #$53	    lda #>oldmode
+.5421	85 15		sta $15		    sta r9H
+.5423	a9 04		lda #$04	    lda #$04
+.5425	a2 02		ldx #$02	    ldx #$02
+.5427	20 35 08	jsr $0835	    jsr VDTEXT
+.542a	60		rts		    rts
+.542b					vd_clear_area:
+.542b	a9 02		lda #$02	    lda #$02
+.542d	48		pha		vca_l:  pha
+.542e	20 38 08	jsr $0838	    jsr VDCLR
+.5431	68		pla		    pla
+.5432	18		clc		    clc
+.5433	69 01		adc #$01	    adc #$01
+.5435	c9 18		cmp #$18	    cmp #24
+.5437	d0 f4		bne $542d	    bne vca_l
+.5439	60		rts		    rts
+>543a	20 20 20 20 20 20 20 20		vd_pad: .text "                    ", $00
+>5442	20 20 20 20 20 20 20 20 20 20 20 20 00
+.544f					mode_str:
+.544f	a8		tay		    tay
+.5450	b9 5b 54	lda $545b,y	    lda strtab_lo,y
+.5453	85 06		sta $06		    sta r2L
+.5455	b9 5e 54	lda $545e,y	    lda strtab_hi,y
+.5458	85 07		sta $07		    sta r2H
+.545a	60		rts		    rts
+>545b	19 2a 3b			strtab_lo: .byte <mode0s, <mode1s, <mode2s
+>545e	53 53 53			strtab_hi: .byte >mode0s, >mode1s, >mode2s
+.5461					ON_COLOR:
 .5461	ad 56 73	lda $7356	    lda SETREC_BG
-.5464	20 c8 54	jsr $54c8	    jsr col_str                    ; r2 = name for the current colour
-.5467	a0 00		ldy #$00	    ldy #$00
-.5469	b1 06		lda ($06),y	dc_cp:  lda (r2),y
-.546b	f0 0b		beq $5478	    beq dc_done
-.546d	c0 13		cpy #$13	    cpy #19
-.546f	b0 07		bcs $5478	    bcs dc_done
-.5471	99 1b 54	sta $541b,y	    sta colbuf,y
-.5474	c8		iny		    iny
-.5475	4c 69 54	jmp $5469	    jmp dc_cp
-.5478					dc_done:
-.5478	a9 00		lda #$00	    lda #$00
-.547a	99 1b 54	sta $541b,y	    sta colbuf,y
-.547d	a0 00		ldy #$00	    ldy #$00
-.547f	b9 1b 54	lda $541b,y	dc_old: lda colbuf,y
-.5482	99 2f 54	sta $542f,y	    sta oldcolor,y
-.5485	f0 05		beq $548c	    beq dc_show
-.5487	c8		iny		    iny
-.5488	c0 14		cpy #$14	    cpy #20
-.548a	d0 f3		bne $547f	    bne dc_old
-.548c					dc_show:
-.548c	ad 56 73	lda $7356	    lda SETREC_BG
-.548f	8d 1a 54	sta $541a	    sta oldshowncol
-.5492	a9 aa		lda #$aa	    lda #170
-.5494	85 02		sta $02		    sta X1
-.5496	a9 00		lda #$00	    lda #$00
-.5498	85 03		sta $03		    sta X1+1
-.549a	a9 64		lda #$64	    lda #100
-.549c	85 04		sta $04		    sta Y1
-.549e	a9 2f		lda #$2f	    lda #<oldcolor
-.54a0	85 14		sta $14		    sta r9L
-.54a2	a9 54		lda #$54	    lda #>oldcolor
-.54a4	85 15		sta $15		    sta r9H
-.54a6	20 1e c0	jsr $c01e	    jsr GPUTS
-.54a9	a9 e1		lda #$e1	    lda #<vd_pad
-.54ab	85 14		sta $14		    sta r9L
-.54ad	a9 53		lda #$53	    lda #>vd_pad
-.54af	85 15		sta $15		    sta r9H
-.54b1	a9 05		lda #$05	    lda #$05
-.54b3	a2 0e		ldx #$0e	    ldx #14
-.54b5	20 35 08	jsr $0835	    jsr VDTEXT
-.54b8	a9 2f		lda #$2f	    lda #<oldcolor
-.54ba	85 14		sta $14		    sta r9L
-.54bc	a9 54		lda #$54	    lda #>oldcolor
-.54be	85 15		sta $15		    sta r9H
-.54c0	a9 05		lda #$05	    lda #$05
-.54c2	a2 0e		ldx #$0e	    ldx #14
-.54c4	20 35 08	jsr $0835	    jsr VDTEXT
-.54c7	60		rts		    rts
-.54c8					col_str:
-.54c8	a8		tay		    tay
-.54c9	b9 d4 54	lda $54d4,y	    lda coltab_lo,y
-.54cc	85 06		sta $06		    sta r2L
-.54ce	b9 e4 54	lda $54e4,y	    lda coltab_hi,y
-.54d1	85 07		sta $07		    sta r2H
-.54d3	60		rts		    rts
->54d4	f4 fa 00 04 09 10 16 1b		coltab_lo: .byte <col0,<col1,<col2,<col3,<col4,<col5,<col6,<col7
->54dc	22 29 2f 36 3e 46 4f 57		           .byte <col8,<col9,<cola,<colb,<colc,<cold,<cole,<colf
->54e4	54 54 55 55 55 55 55 55		coltab_hi: .byte >col0,>col1,>col2,>col3,>col4,>col5,>col6,>col7
->54ec	55 55 55 55 55 55 55 55		           .byte >col8,>col9,>cola,>colb,>colc,>cold,>cole,>colf
->54f4	42 4c 41 43 4b 00		col0: .text "black",0
->54fa	57 48 49 54 45 00		col1: .text "white",0
->5500	52 45 44 00			col2: .text "red",0
->5504	43 59 41 4e 00			col3: .text "cyan",0
->5509	50 55 52 50 4c 45 00		col4: .text "purple",0
->5510	47 52 45 45 4e 00		col5: .text "green",0
->5516	42 4c 55 45 00			col6: .text "blue",0
->551b	59 45 4c 4c 4f 57 00		col7: .text "yellow",0
->5522	4f 52 41 4e 47 45 00		col8: .text "orange",0
->5529	42 52 4f 57 4e 00		col9: .text "brown",0
->552f	4c 54 20 52 45 44 00		cola: .text "lt red",0
->5536	44 4b 20 47 52 45 59 00		colb: .text "dk grey",0
->553e	4d 44 20 47 52 45 59 00		colc: .text "md grey",0
->5546	4c 54 20 47 52 45 45 4e		cold: .text "lt green",0
->554e	00
->554f	4c 54 20 42 4c 55 45 00		cole: .text "lt blue",0
->5557	4c 54 20 47 52 45 59 00		colf: .text "lt grey",0
-.555f					save_record:
-.555f	20 91 55	jsr $5591	    jsr scr_record
-.5562	a9 07		lda #$07	    lda #7
-.5564	a2 7e		ldx #$7e	    ldx #<savename
-.5566	a0 55		ldy #$55	    ldy #>savename
-.5568	20 bd ff	jsr $ffbd	    jsr SETNAM
-.556b	a9 50		lda #$50	    lda #<savehdr
-.556d	85 56		sta $56		    sta sptr
-.556f	a9 73		lda #$73	    lda #>savehdr
-.5571	85 57		sta $57		    sta sptr+1
-.5573	a9 56		lda #$56	    lda #$56                       ; ZP pointer cell (apps own $56-$57)
-.5575	a2 57		ldx #$57	    ldx #<SAVEEND                  ; exclusive end = one past the last byte
-.5577	a0 73		ldy #$73	    ldy #>SAVEEND
-.5579	20 d8 ff	jsr $ffd8	    jsr SAVE
-.557c	58		cli		    cli                             ; the serial paths can exit with IRQs
-.557d	60		rts		    rts                             ; masked (same kernel quirk as LOAD);
->557e	55 4f 53 2d 53 45 54 00		savename: .byte $55,$4f,$53,$2d,$53,$45,$54,$00  ; "UOS-SET" unshifted
+.5464	18		clc		    clc
+.5465	69 01		adc #$01	    adc #$01
+.5467	29 0f		and #$0f	    and #$0f                       ; wrap 0..15
+.5469	8d 56 73	sta $7356	    sta SETREC_BG
+.546c	20 eb 56	jsr $56eb	    jsr save_record
+.546f	20 9c 54	jsr $549c	    jsr draw_color
+.5472	60		rts		    rts
+>5473	ff				oldshowncol: .byte $ff
+>5474	00 00 00 00 00 00 00 00		colbuf:   .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>547c	00 00 00 00 00 00 00 00 00 00 00 00
+>5488	00 00 00 00 00 00 00 00		oldcolor: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5490	00 00 00 00 00 00 00 00 00 00 00 00
+.549c					draw_color:
+.549c	ad 73 54	lda $5473	    lda oldshowncol
+.549f	c9 ff		cmp #$ff	    cmp #$ff
+.54a1	f0 17		beq $54ba	    beq dc_build
+.54a3	a9 aa		lda #$aa	    lda #170
+.54a5	85 02		sta $02		    sta X1
+.54a7	a9 00		lda #$00	    lda #$00
+.54a9	85 03		sta $03		    sta X1+1
+.54ab	a9 64		lda #$64	    lda #100
+.54ad	85 04		sta $04		    sta Y1
+.54af	a9 88		lda #$88	    lda #<oldcolor
+.54b1	85 14		sta $14		    sta r9L
+.54b3	a9 54		lda #$54	    lda #>oldcolor
+.54b5	85 15		sta $15		    sta r9H
+.54b7	20 1e c0	jsr $c01e	    jsr GPUTS
+.54ba					dc_build:
+.54ba	ad 56 73	lda $7356	    lda SETREC_BG
+.54bd	20 21 55	jsr $5521	    jsr col_str                    ; r2 = name for the current colour
+.54c0	a0 00		ldy #$00	    ldy #$00
+.54c2	b1 06		lda ($06),y	dc_cp:  lda (r2),y
+.54c4	f0 0b		beq $54d1	    beq dc_done
+.54c6	c0 13		cpy #$13	    cpy #19
+.54c8	b0 07		bcs $54d1	    bcs dc_done
+.54ca	99 74 54	sta $5474,y	    sta colbuf,y
+.54cd	c8		iny		    iny
+.54ce	4c c2 54	jmp $54c2	    jmp dc_cp
+.54d1					dc_done:
+.54d1	a9 00		lda #$00	    lda #$00
+.54d3	99 74 54	sta $5474,y	    sta colbuf,y
+.54d6	a0 00		ldy #$00	    ldy #$00
+.54d8	b9 74 54	lda $5474,y	dc_old: lda colbuf,y
+.54db	99 88 54	sta $5488,y	    sta oldcolor,y
+.54de	f0 05		beq $54e5	    beq dc_show
+.54e0	c8		iny		    iny
+.54e1	c0 14		cpy #$14	    cpy #20
+.54e3	d0 f3		bne $54d8	    bne dc_old
+.54e5					dc_show:
+.54e5	ad 56 73	lda $7356	    lda SETREC_BG
+.54e8	8d 73 54	sta $5473	    sta oldshowncol
+.54eb	a9 aa		lda #$aa	    lda #170
+.54ed	85 02		sta $02		    sta X1
+.54ef	a9 00		lda #$00	    lda #$00
+.54f1	85 03		sta $03		    sta X1+1
+.54f3	a9 64		lda #$64	    lda #100
+.54f5	85 04		sta $04		    sta Y1
+.54f7	a9 88		lda #$88	    lda #<oldcolor
+.54f9	85 14		sta $14		    sta r9L
+.54fb	a9 54		lda #$54	    lda #>oldcolor
+.54fd	85 15		sta $15		    sta r9H
+.54ff	20 1e c0	jsr $c01e	    jsr GPUTS
+.5502	a9 3a		lda #$3a	    lda #<vd_pad
+.5504	85 14		sta $14		    sta r9L
+.5506	a9 54		lda #$54	    lda #>vd_pad
+.5508	85 15		sta $15		    sta r9H
+.550a	a9 05		lda #$05	    lda #$05
+.550c	a2 0e		ldx #$0e	    ldx #14
+.550e	20 35 08	jsr $0835	    jsr VDTEXT
+.5511	a9 88		lda #$88	    lda #<oldcolor
+.5513	85 14		sta $14		    sta r9L
+.5515	a9 54		lda #$54	    lda #>oldcolor
+.5517	85 15		sta $15		    sta r9H
+.5519	a9 05		lda #$05	    lda #$05
+.551b	a2 0e		ldx #$0e	    ldx #14
+.551d	20 35 08	jsr $0835	    jsr VDTEXT
+.5520	60		rts		    rts
+.5521					col_str:
+.5521	a8		tay		    tay
+.5522	b9 2d 55	lda $552d,y	    lda coltab_lo,y
+.5525	85 06		sta $06		    sta r2L
+.5527	b9 3d 55	lda $553d,y	    lda coltab_hi,y
+.552a	85 07		sta $07		    sta r2H
+.552c	60		rts		    rts
+>552d	4d 53 59 5d 62 69 6f 74		coltab_lo: .byte <col0,<col1,<col2,<col3,<col4,<col5,<col6,<col7
+>5535	7b 82 88 8f 97 9f a8 b0		           .byte <col8,<col9,<cola,<colb,<colc,<cold,<cole,<colf
+>553d	55 55 55 55 55 55 55 55		coltab_hi: .byte >col0,>col1,>col2,>col3,>col4,>col5,>col6,>col7
+>5545	55 55 55 55 55 55 55 55		           .byte >col8,>col9,>cola,>colb,>colc,>cold,>cole,>colf
+>554d	42 4c 41 43 4b 00		col0: .text "black",0
+>5553	57 48 49 54 45 00		col1: .text "white",0
+>5559	52 45 44 00			col2: .text "red",0
+>555d	43 59 41 4e 00			col3: .text "cyan",0
+>5562	50 55 52 50 4c 45 00		col4: .text "purple",0
+>5569	47 52 45 45 4e 00		col5: .text "green",0
+>556f	42 4c 55 45 00			col6: .text "blue",0
+>5574	59 45 4c 4c 4f 57 00		col7: .text "yellow",0
+>557b	4f 52 41 4e 47 45 00		col8: .text "orange",0
+>5582	42 52 4f 57 4e 00		col9: .text "brown",0
+>5588	4c 54 20 52 45 44 00		cola: .text "lt red",0
+>558f	44 4b 20 47 52 45 59 00		colb: .text "dk grey",0
+>5597	4d 44 20 47 52 45 59 00		colc: .text "md grey",0
+>559f	4c 54 20 47 52 45 45 4e		cold: .text "lt green",0
+>55a7	00
+>55a8	4c 54 20 42 4c 55 45 00		cole: .text "lt blue",0
+>55b0	4c 54 20 47 52 45 59 00		colf: .text "lt grey",0
+.55b8					ON_TZ:
+.55b8	8d d0 56	sta $56d0	    sta tzdelta
+.55bb	ad 53 73	lda $7353	    lda SETREC_TZ
+.55be	18		clc		    clc
+.55bf	6d d0 56	adc $56d0	    adc tzdelta
+.55c2	8d d1 56	sta $56d1	    sta tztmp
+.55c5	ad d1 56	lda $56d1	    lda tztmp
+.55c8	30 05		bmi $55cf	    bmi _tz_neg
+.55ca	c9 39		cmp #$39	    cmp #57
+.55cc	90 06		bcc $55d4	    bcc _tz_ok
+.55ce	60		rts		    rts                            ; already at +14 h
+.55cf					_tz_neg:
+.55cf	c9 d0		cmp #$d0	    cmp #$d0                       ; -48
+.55d1	b0 01		bcs $55d4	    bcs _tz_ok
+.55d3	60		rts		    rts                            ; already at -12 h
+.55d4					_tz_ok:
+.55d4	8d 53 73	sta $7353	    sta SETREC_TZ
+.55d7	a9 02		lda #$02	    lda #$02
+.55d9	8d 52 73	sta $7352	    sta SETREC_VER
+.55dc	a9 a5		lda #$a5	    lda #$a5
+.55de	8d 54 73	sta $7354	    sta SETREC_TZMAG
+.55e1	20 eb 56	jsr $56eb	    jsr save_record
+.55e4	20 ee 55	jsr $55ee	    jsr draw_tz
+.55e7	ad d0 56	lda $56d0	    lda tzdelta
+.55ea	20 1e 91	jsr $911e	    jsr NET_TZSHIFT
+.55ed	60		rts		    rts
+.55ee					draw_tz:
+.55ee	ad d2 56	lda $56d2	    lda oldshowntz
+.55f1	c9 ff		cmp #$ff	    cmp #$ff
+.55f3	f0 17		beq $560c	    beq dt_build
+.55f5	a9 aa		lda #$aa	    lda #170
+.55f7	85 02		sta $02		    sta X1
+.55f9	a9 00		lda #$00	    lda #$00
+.55fb	85 03		sta $03		    sta X1+1
+.55fd	a9 70		lda #$70	    lda #112
+.55ff	85 04		sta $04		    sta Y1
+.5601	a9 df		lda #$df	    lda #<oldtz
+.5603	85 14		sta $14		    sta r9L
+.5605	a9 56		lda #$56	    lda #>oldtz
+.5607	85 15		sta $15		    sta r9H
+.5609	20 1e c0	jsr $c01e	    jsr GPUTS
+.560c					dt_build:
+.560c	20 5a 56	jsr $565a	    jsr tz_str                     ; tzbuf = text for SETREC_TZ
+.560f	a0 00		ldy #$00	    ldy #$00
+.5611	b9 d3 56	lda $56d3,y	dt_old: lda tzbuf,y
+.5614	99 df 56	sta $56df,y	    sta oldtz,y
+.5617	f0 05		beq $561e	    beq dt_show
+.5619	c8		iny		    iny
+.561a	c0 0c		cpy #$0c	    cpy #12
+.561c	d0 f3		bne $5611	    bne dt_old
+.561e					dt_show:
+.561e	ad 53 73	lda $7353	    lda SETREC_TZ
+.5621	8d d2 56	sta $56d2	    sta oldshowntz
+.5624	a9 aa		lda #$aa	    lda #170
+.5626	85 02		sta $02		    sta X1
+.5628	a9 00		lda #$00	    lda #$00
+.562a	85 03		sta $03		    sta X1+1
+.562c	a9 70		lda #$70	    lda #112
+.562e	85 04		sta $04		    sta Y1
+.5630	a9 df		lda #$df	    lda #<oldtz
+.5632	85 14		sta $14		    sta r9L
+.5634	a9 56		lda #$56	    lda #>oldtz
+.5636	85 15		sta $15		    sta r9H
+.5638	20 1e c0	jsr $c01e	    jsr GPUTS
+.563b	a9 3a		lda #$3a	    lda #<vd_pad
+.563d	85 14		sta $14		    sta r9L
+.563f	a9 54		lda #$54	    lda #>vd_pad
+.5641	85 15		sta $15		    sta r9H
+.5643	a9 06		lda #$06	    lda #$06
+.5645	a2 0e		ldx #$0e	    ldx #14
+.5647	20 35 08	jsr $0835	    jsr VDTEXT
+.564a	a9 df		lda #$df	    lda #<oldtz
+.564c	85 14		sta $14		    sta r9L
+.564e	a9 56		lda #$56	    lda #>oldtz
+.5650	85 15		sta $15		    sta r9H
+.5652	a9 06		lda #$06	    lda #$06
+.5654	a2 0e		ldx #$0e	    ldx #14
+.5656	20 35 08	jsr $0835	    jsr VDTEXT
+.5659	60		rts		    rts
+.565a					tz_str:
+.565a	a9 c4		lda #$c4	    lda #<tzpfx
+.565c	85 06		sta $06		    sta r2L
+.565e	a9 56		lda #$56	    lda #>tzpfx
+.5660	85 07		sta $07		    sta r2H
+.5662	a0 00		ldy #$00	    ldy #$00
+.5664	b1 06		lda ($06),y	ts_p:   lda (r2),y
+.5666	f0 06		beq $566e	    beq ts_s
+.5668	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.566b	c8		iny		    iny
+.566c	d0 f6		bne $5664	    bne ts_p
+.566e	ad 53 73	lda $7353	ts_s:   lda SETREC_TZ
+.5671	30 04		bmi $5677	    bmi ts_neg
+.5673	a2 2b		ldx #$2b	    ldx #$2b                       ; '+'
+.5675	d0 07		bne $567e	    bne ts_sg
+.5677	49 ff		eor #$ff	ts_neg: eor #$ff
+.5679	18		clc		    clc
+.567a	69 01		adc #$01	    adc #$01
+.567c	a2 2d		ldx #$2d	    ldx #$2d                       ; '-'
+.567e	85 41		sta $41		ts_sg:  sta vtmpa                   ; |quarters|
+.5680	8a		txa		    txa
+.5681	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.5684	c8		iny		    iny
+.5685	a5 41		lda $41		    lda vtmpa
+.5687	4a		lsr a		    lsr
+.5688	4a		lsr a		    lsr                            ; hours
+.5689	20 ab 56	jsr $56ab	    jsr ts_2dig
+.568c	a9 3a		lda #$3a	    lda #$3a                       ; ':'
+.568e	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.5691	c8		iny		    iny
+.5692	a5 41		lda $41		    lda vtmpa
+.5694	29 03		and #$03	    and #$03
+.5696	aa		tax		    tax
+.5697	bd c8 56	lda $56c8,x	    lda tzminL,x
+.569a	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.569d	c8		iny		    iny
+.569e	bd cc 56	lda $56cc,x	    lda tzminH,x
+.56a1	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.56a4	c8		iny		    iny
+.56a5	a9 00		lda #$00	    lda #$00
+.56a7	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.56aa	60		rts		    rts
+.56ab					ts_2dig:
+.56ab	a2 30		ldx #$30	    ldx #$30
+.56ad	c9 0a		cmp #$0a	ts_2l:  cmp #10
+.56af	90 05		bcc $56b6	    bcc ts_2d
+.56b1	e9 0a		sbc #$0a	    sbc #10
+.56b3	e8		inx		    inx
+.56b4	d0 f7		bne $56ad	    bne ts_2l
+.56b6	48		pha		ts_2d:  pha
+.56b7	8a		txa		    txa
+.56b8	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.56bb	c8		iny		    iny
+.56bc	68		pla		    pla
+.56bd	09 30		ora #$30	    ora #$30
+.56bf	99 d3 56	sta $56d3,y	    sta tzbuf,y
+.56c2	c8		iny		    iny
+.56c3	60		rts		    rts
+>56c4	55 54 43 00			tzpfx:  .text "utc", $00
+>56c8	30 31 33 34			tzminL: .byte $30, $31, $33, $34   ; "00" "15" "30" "45"
+>56cc	30 35 30 35			tzminH: .byte $30, $35, $30, $35
+>56d0	00				tzdelta: .byte 0
+>56d1	00				tztmp:   .byte 0
+>56d2	ff				oldshowntz: .byte $ff
+>56d3	00 00 00 00 00 00 00 00		tzbuf:   .fill 12, 0
+>56db	00 00 00 00
+>56df	00 00 00 00 00 00 00 00		oldtz:   .fill 12, 0
+>56e7	00 00 00 00
+.56eb					save_record:
+.56eb	20 1d 57	jsr $571d	    jsr scr_record
+.56ee	a9 07		lda #$07	    lda #7
+.56f0	a2 0a		ldx #$0a	    ldx #<savename
+.56f2	a0 57		ldy #$57	    ldy #>savename
+.56f4	20 bd ff	jsr $ffbd	    jsr SETNAM
+.56f7	a9 50		lda #$50	    lda #<savehdr
+.56f9	85 56		sta $56		    sta sptr
+.56fb	a9 73		lda #$73	    lda #>savehdr
+.56fd	85 57		sta $57		    sta sptr+1
+.56ff	a9 56		lda #$56	    lda #$56                       ; ZP pointer cell (apps own $56-$57)
+.5701	a2 57		ldx #$57	    ldx #<SAVEEND                  ; exclusive end = one past the last byte
+.5703	a0 73		ldy #$73	    ldy #>SAVEEND
+.5705	20 d8 ff	jsr $ffd8	    jsr SAVE
+.5708	58		cli		    cli                             ; the serial paths can exit with IRQs
+.5709	60		rts		    rts                             ; masked (same kernel quirk as LOAD);
+>570a	55 4f 53 2d 53 45 54 00		savename: .byte $55,$4f,$53,$2d,$53,$45,$54,$00  ; "UOS-SET" unshifted
 =$56					sptr    = $56
->5586	53 30 3a 55 4f 53 2d 53		scrname: .byte $53,$30,$3a,$55,$4f,$53,$2d,$53,$45,$54,$00 ; "S0:UOS-SET" unshifted
->558e	45 54 00
-.5591					scr_record:
-.5591	a9 0f		lda #$0f	    lda #$0f
-.5593	a6 ba		ldx $ba		    ldx $ba                        ; last used device (8)
-.5595	a0 0f		ldy #$0f	    ldy #$0f
-.5597	20 ba ff	jsr $ffba	    jsr SETLFS
-.559a	a9 0a		lda #$0a	    lda #10
-.559c	a2 86		ldx #$86	    ldx #<scrname
-.559e	a0 55		ldy #$55	    ldy #>scrname
-.55a0	20 bd ff	jsr $ffbd	    jsr SETNAM
-.55a3	20 c0 ff	jsr $ffc0	    jsr OPEN
-.55a6	a2 0f		ldx #$0f	    ldx #$0f
-.55a8	20 c9 ff	jsr $ffc9	    jsr CHKOUT
-.55ab	a0 00		ldy #$00	    ldy #$00
-.55ad	b9 86 55	lda $5586,y	_sr_cp: lda scrname,y
-.55b0	f0 07		beq $55b9	    beq _sr_cr
-.55b2	20 d2 ff	jsr $ffd2	    jsr CHROUT
-.55b5	c8		iny		    iny
-.55b6	4c ad 55	jmp $55ad	    jmp _sr_cp
-.55b9	a9 0d		lda #$0d	_sr_cr: lda #$0d
-.55bb	20 d2 ff	jsr $ffd2	    jsr CHROUT
-.55be	20 cc ff	jsr $ffcc	    jsr CLRCHN
-.55c1	a9 0f		lda #$0f	    lda #$0f
-.55c3	20 c3 ff	jsr $ffc3	    jsr CLOSE
-.55c6	60		rts		    rts
+>5712	53 30 3a 55 4f 53 2d 53		scrname: .byte $53,$30,$3a,$55,$4f,$53,$2d,$53,$45,$54,$00 ; "S0:UOS-SET" unshifted
+>571a	45 54 00
+.571d					scr_record:
+.571d	a9 0f		lda #$0f	    lda #$0f
+.571f	a6 ba		ldx $ba		    ldx $ba                        ; last used device (8)
+.5721	a0 0f		ldy #$0f	    ldy #$0f
+.5723	20 ba ff	jsr $ffba	    jsr SETLFS
+.5726	a9 0a		lda #$0a	    lda #10
+.5728	a2 12		ldx #$12	    ldx #<scrname
+.572a	a0 57		ldy #$57	    ldy #>scrname
+.572c	20 bd ff	jsr $ffbd	    jsr SETNAM
+.572f	20 c0 ff	jsr $ffc0	    jsr OPEN
+.5732	a2 0f		ldx #$0f	    ldx #$0f
+.5734	20 c9 ff	jsr $ffc9	    jsr CHKOUT
+.5737	a0 00		ldy #$00	    ldy #$00
+.5739	b9 12 57	lda $5712,y	_sr_cp: lda scrname,y
+.573c	f0 07		beq $5745	    beq _sr_cr
+.573e	20 d2 ff	jsr $ffd2	    jsr CHROUT
+.5741	c8		iny		    iny
+.5742	4c 39 57	jmp $5739	    jmp _sr_cp
+.5745	a9 0d		lda #$0d	_sr_cr: lda #$0d
+.5747	20 d2 ff	jsr $ffd2	    jsr CHROUT
+.574a	20 cc ff	jsr $ffcc	    jsr CLRCHN
+.574d	a9 0f		lda #$0f	    lda #$0f
+.574f	20 c3 ff	jsr $ffc3	    jsr CLOSE
+.5752	60		rts		    rts
 =29527					SAVEEND = SETREC + 7            ; load-address word + 5 record bytes
 .7350					savehdr:
 >7350	50 73				    .word SETREC
->7352	00 00 00			    .byte $00,$00,$00           ; reserved (SETREC+2..4)
+>7352	02 f0 a5			    .byte $02, $f0, $a5
 .7355					SETRECDATA:
 >7355	02				    .byte $02                    ; display mode at SETREC+5: 0=40 1=80 2=both
 >7356	03				    .byte VIC_COLOR_CYAN         ; background colour at SETREC+6 (SETREC_BG)

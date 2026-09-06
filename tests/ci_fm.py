@@ -146,6 +146,15 @@ def inject_keys(mon, keys):
         mon.resume()
         if i + 10 < len(keys):
             time.sleep(1.0)
+    # do not return with keys still queued: the caller's next injection
+    # would overwrite them (the kernal drains ~60 keys/s; apps poll faster)
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        left = mon.read_mem(KB_CNT, KB_CNT, memspace=0)[0]
+        mon.resume()
+        if left == 0:
+            break
+        time.sleep(0.2)
 
 
 def read_name(mon, addr):
@@ -374,10 +383,13 @@ def main():
         inject_keys(mon, b"D")
         time.sleep(2)
         inject_keys(mon, b"Y")
+        # the list shows LIST_MAX (10) entries; the disk holds 11 modules +
+        # the pre-written UOS-SET, so the entry that scrolls into view when
+        # CI-RN goes is UOS-SHELL (the 11th file), proof the slot was freed
         cnt, names = wait_files(
-            mon, lambda c, n: b"CI-RN" not in n and b"UOS-SET" in n,
+            mon, lambda c, n: b"CI-RN" not in n and b"UOS-SHELL" in n,
             "scratch result")
-        print("PASS 5: SCRATCH removes CI-RN; saved UOS-SET is listed",
+        print("PASS 5: SCRATCH removes CI-RN; the 11th file scrolls into the list",
               flush=True)
 
         # ---- PASS 6: COPY uos-sprites -> UOS-CPY (drive-side DOS copy;
@@ -449,8 +461,10 @@ def main():
             print("PASS 7b: display mode cycled, record save issued",
                   flush=True)
 
-        # ---- PASS 8: ESC from settings -> desktop reload ----
-        inject_keys(mon, b"\x1b")
+        # ---- PASS 8: RUN/STOP from settings -> desktop reload. $03 is the
+        # C64 keyboard's way out (KEYIN_EXT aliases it to ESC: a C128's ESC
+        # key is not on the C64 matrix, and a C64 has no ESC at all)
+        inject_keys(mon, b"\x03")
         desk_len = min(len(desk_ref), 0x1000)
         ok_desk = False
         deadline = time.time() + 300
@@ -482,7 +496,7 @@ def main():
         # the real gate - the core loop must be dispatching ticks again
         assert wait_desktop_live(mon), \
             "FAIL: desktop never resumed tick dispatch after ESC reload"
-        print("PASS 8: ESC reload — desktop re-registered its APP_TICK",
+        print("PASS 8: RUN/STOP (ESC alias) reload — desktop re-registered its APP_TICK",
               flush=True)
         print(f"      screenshot after ESC: {screenshot(xv, 'fm-after-esc.png')}",
               flush=True)
@@ -630,6 +644,31 @@ def main():
         assert resp.startswith(b"\xc4\xc9\xd2 \xd2\xd5\xce"), f"FAIL: HELP response wrong: {resp!r}"   # "DIR RUN" shifted PETSCII
         print("PASS 10f: HELP lists the command set", flush=True)
 
+        # ---- PASS 10g: network/clock verbs without an Ultimate: x64 has
+        # no command interface at $df1c, so every verb must answer with the
+        # honest "no ultimate command interface" instead of hanging or
+        # pretending (the driver's presence check reads $df1d twice)
+        for verb, want in ((b"IP\x0d", b"NO ULTIMATE"),
+                           (b"TIME\x0d", b"CLOCK UNSYNCED: NO ULTIMATE"),
+                           (b"GET 192.168.1.1 /\x0d", b"NO ULTIMATE")):
+            # blank the response first: the previous verb's text would
+            # satisfy a substring match before this verb even ran, and the
+            # next injection would then overwrite keys still in the buffer
+            # (that race put "GET 192.168EXIT" on the command line once)
+            mon.write_mem(SH_RESP, b"\x00" * 4)
+            mon.resume()
+            inject_keys(mon, verb)
+            ok_v = False
+            deadline = time.time() + 30
+            while time.time() < deadline:
+                resp = bytes(mon.read_mem(SH_RESP, SH_RESP + 47, memspace=0)); mon.resume()
+                if want in resp:
+                    ok_v = True
+                    break
+                time.sleep(2)
+            assert ok_v, f"FAIL: {verb!r} did not answer {want!r}: respbuf={resp.hex()}"
+        print("PASS 10g: IP / TIME / GET answer 'no ultimate' on a plain C64", flush=True)
+
         # EXIT: back to the desktop
         inject_keys(mon, b"EXIT\x0d")
         ok_desk = False
@@ -647,11 +686,28 @@ def main():
         assert ok_desk, "FAIL: shell EXIT did not reload the desktop"
         # desktop bytes are resident throughout; the real proof of a
         # completed EXIT is the core loop dispatching ticks again
-        assert wait_desktop_live(mon), \
-            "FAIL: desktop never resumed tick dispatch after shell EXIT"
+        live = wait_desktop_live(mon)
+        if not live:
+            pcs = []
+            for _s in range(10):
+                err, body = mon._recv(mon._send(0x31, b"\x00")); mon.resume()
+                n = struct.unpack("<H", body[0:2])[0]; off = 2
+                for _i in range(n):
+                    if body[off + 1] == 3:
+                        pcs.append(hex(struct.unpack("<H", body[off+2:off+4])[0]))
+                    off += 1 + body[off]
+                time.sleep(0.3)
+            def rd(a, n=1):
+                v = bytes(mon.read_mem(a, a + n - 1, memspace=0)); mon.resume(); return v
+            print(f"      [dbg] pc samples={pcs} $033c={rd(0x33c, 2).hex()} tod sec={rd(0xdc09).hex()}"
+                  f"/{(time.sleep(1.2), rd(0xdc09).hex())[1]} r16={rd(0x22).hex()} kb $c6={rd(0xc6)[0]}"
+                  f" cmdlen={rd(0x46)[0]} cmd={rd(SH_CMD, 20)} resp={rd(SH_RESP, 32)} ST $90={rd(0x90).hex()}"
+                  f" $98={rd(0x98)[0]} LOADERR={rd(LOADERR).hex()} $01={rd(0x01).hex()} sp={rd(0x01ff-0x20, 32).hex()}",
+                  flush=True)
+        assert live, "FAIL: desktop never resumed tick dispatch after shell EXIT"
         print("PASS 10d: shell EXIT back to the desktop (tick dispatch live)",
               flush=True)
-        print("CI PASS: 14/14 emulator-verifiable checks", flush=True)
+        print("CI PASS: 15/15 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:

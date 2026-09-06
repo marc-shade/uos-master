@@ -5,7 +5,7 @@ src = open(os.path.join(os.path.dirname(__file__), "ci_vdc.py")).read()
 exec(src[:src.index("def main():")])
 sys.path.insert(0, UOS); import hwlib
 xvfb, disp = start_xvfb(); port = free_port()
-emu = subprocess.Popen(["x128", "-default", "-go64", "-VDC64KB", "-autostart", DISK,
+emu = subprocess.Popen(["x128", "-default", "-go64", "-VDC64KB", "-reu", "-reusize", "512", "-autostart", DISK,
     "-drive8true", "-drive8type", "1541", "-sounddev", "dummy", "-jamaction", "0", "-warp",
     "-remotemonitor", "-remotemonitoraddress", f"ip4://127.0.0.1:{port}"],
     env=dict(os.environ, DISPLAY=disp, **EGL), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)

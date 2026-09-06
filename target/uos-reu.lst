@@ -1,13 +1,13 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-reu.prg -L target/uos-reu.lst src/uos-reu.asm
-; Sun Aug 30 14:25:46 2026
+; Sun Sep  6 15:33:24 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
 ;******  Processing input file: src/uos-reu.asm
 
-=$9e00					buffer	        = $9e00
+=$9d00					buffer	        = $9d00   ; 256-byte bank-probe scratch. MUST NOT overlap a
 =$fb					numbank         = $fb
 =$df00					ramexp          = $df00
 =$d506					rcr             = $d506
@@ -26,7 +26,7 @@
 >9c12	00				bnk128  .byte $00       ; Bank of 128 to work with
 .9c13					pend
 .9c13					GETSIZE:
-.9c13	a2 9e		ldx #$9e	        ldx #>buffer            ; must set for stash and fetch:
+.9c13	a2 9d		ldx #$9d	        ldx #>buffer            ; must set for stash and fetch:
 .9c15	8e 0a 9c	stx $9c0a	        stx params+1            ; First, set up the hi bytes of
 .9c18	8e 0c 9c	stx $9c0c	        stx params+3            ; the cpu and expansion address.
 .9c1b	a2 01		ldx #$01	        ldx #$01
@@ -39,7 +39,7 @@
 .9c2d	8e 12 9c	stx $9c12	        stx bnk128              ; Set the 128 bank to work with.
 .9c30	8a		txa		_20	txa		        ; Generate a 1 block
 .9c31	49 5a		eor #$5a		eor #$5a                ; test pattern in
-.9c33	9d 00 9e	sta $9e00,x		sta buffer,x            ; buffer.
+.9c33	9d 00 9d	sta $9d00,x		sta buffer,x            ; buffer.
 .9c36	ca		dex			dex
 .9c37	d0 f7		bne $9c30		bne _20
 .9c39	20 7e 9c	jsr $9c7e	_30	jsr stash	        ; Now write the test
@@ -52,7 +52,7 @@
 .9c4b	a2 00		ldx #$00	_40     ldx #0		        ; OK, now change
 .9c4d	8a		txa		_50 	txa		        ; the 1 block test
 .9c4e	49 3c		eor #$3c		eor #$3c                ; pattern in the buffer
-.9c50	9d 00 9e	sta $9e00,x		sta buffer,x            ; to a new pattern.
+.9c50	9d 00 9d	sta $9d00,x		sta buffer,x            ; to a new pattern.
 .9c53	ca		dex			dex
 .9c54	d0 f7		bne $9c4d		bne _50
 .9c56	20 7e 9c	jsr $9c7e		jsr stash	        ; Now write the new
@@ -64,7 +64,7 @@
 .9c66	a2 00		ldx #$00		ldx #0                  ;    from bank (x+1).
 .9c68	8a		txa		_60	txa		        ;
 .9c69	49 5a		eor #$5a		eor #$5a                ; We should see the old pattern
-.9c6b	dd 00 9e	cmp $9e00,x		cmp buffer,x            ; here.  If we don't then the data
+.9c6b	dd 00 9d	cmp $9d00,x		cmp buffer,x            ; here.  If we don't then the data
 .9c6e	d0 05		bne $9c75		bne _90		        ; changed and we have found the end.
 .9c70	ca		dex			dex
 .9c71	d0 f5		bne $9c68		bne _60                 ; Bytes match so all is well.

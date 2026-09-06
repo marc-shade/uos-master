@@ -434,3 +434,34 @@ via probes/vdc-ramsize.asm); deliverable ~/geos128/mp3-megapatch128.d81 boots st
 hardware deploy (deploy_mp3.py) pending - the C128 went offline. OPEN: hardware run of the
 companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M6 SDK docs.
 -->
+<!-- 2026-09-06 session 4 addendum (networking + self-setting clock + C128 ESC key):
+  uos-net ($9100-$9aff, NET_DATA $8800): Ultimate II+ command interface driver (targets DOS/network),
+    NET_PRESENT/CMD/GETIP/OPEN/CLOSE/READ/WRITE, NET_SYNC = network check + SNTP (pool.ntp.org,
+    UDP 123) -> zone (SETREC format 2: +2 ver, +3 zone quarter-hours, +4 $a5) -> CIA TOD (hour-12
+    AM/PM inversion corrected by read-back) -> Ultimate RTC via DOS SET_TIME. The Ultimate's own
+    RTC read 2015-10-13 (REST "Clock Settings") so it is a sink, not a source.
+  Desktop: clock + sync tag mirrored on VDC row 0 col 58; Computer window +ip/+clock rows (height 84);
+    menu entries (file manager, settings, and now command line -> shell) launch through LAUNCH_APP
+    (cleared screen; the old LOAD_IMM path left the icons under the app). Shell: cmd_line X1 reset
+    (the "ddir" echo smear), 48-char response line, TIME/IP/GET verbs, rows_wipe. Settings: zone row
+    + +/- (NET_TZSHIFT shifts the running TOD).
+  ESC: the C128 ESC key sits on the VIC-IIe extended matrix ($d02f K1 bit 0) which the C64-mode
+    kernal never scans -> "escape key not working in menus" on the real machine (the emulator tests
+    injected $1b into the kernal buffer and never saw it). KEYIN_EXT (drv1351, now at $9e00) scans
+    K1/K2 (ESC + cursor keys, one event per press) and aliases RUN/STOP; x128 test presses F9 (VICE's
+    C128 ESC) through XTest and checks the sticky KEY_EXTSEEN byte.
+  CI: ci_fm 15 checks (IP/TIME/GET answer "no ultimate" on x64; settings exit via RUN/STOP alias),
+    ci_vdc 12 checks (layout vs routines.inc, clock mirror, canned-SNTP conversion, zone shift, C128
+    ESC key, settings zone row, Computer rows), tests/screens.py gallery. Hardware: hw_net_check.py
+    (driver bytes over DMA + Ultimate RTC over REST + VDC row 0), hw_nettrace.py (SNTP/DNS over the
+    real command interface: time.cloudflare.com/time.google.com answer in 2-3 reads; a pool.ntp.org
+    member timed out, hence the multi-host NET_SYNC).
+  REU-buffer / mouse-driver collision (found via a JAM at $9ec8 when the Computer window opened):
+    uos-reu's GETSIZE bank-probe scratch was hardcoded at $9e00 - exactly where drv1351 moved for
+    KEYIN_EXT. REU_SIZE (called live by the Computer window) overwrote the mouse-IRQ code and the next
+    IRQ JAMmed in setpot. Moved the scratch to $9d00 ($9cd6-$9dff is free below drv1351). The desktop
+    itself never tripped it because GETSIZE only runs on a Computer-window open, not at boot.
+  Ultimate RTC on this cartridge is frozen at 2015-10-13 16:52:55 and ignores the (acknowledged) DOS
+    SET_TIME push - a dead RTC cell, so hw_net_check treats that witness as informational, gating only
+    on the driver's synced state and the 80-column row-0 readback.
+-->

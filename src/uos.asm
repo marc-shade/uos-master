@@ -46,7 +46,7 @@
         jmp LOADIMM
         jmp LOADER
         jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
-        jmp KEYIN_RT    ; A = kernal GETIN: keyboard events (0 = no input)
+        jmp KEYIN_EXT   ; A = keyboard event (0 = none): KERNAL GETIN + C128 ESC/cursor scan (drv1351)
         jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
         jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
         jmp VDC_TEXT    ; 80-col companion: A=row X=col r9->PETSCII text (driver, no-op w/o VDC)
@@ -93,7 +93,7 @@ _prdone:
 
         jmp loadfiles
 
-msg1:   .text "booting system...", $0d, $00
+msg1:   .text "ultos", $0d, $00
 
 ; ==========================================================
 ; Load Files
@@ -118,6 +118,10 @@ loadfiles:
 
         JSR LOADIMM
 	    .text "uos-reu",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-net",$00
         jsr LOADER
 
         JSR LOADIMM
@@ -192,6 +196,10 @@ setup:
         ; only. If the file is missing, the default is both (2).
         jsr VDPREF
         jsr VDSETUP
+
+        ; the self-setting clock: network check + SNTP through the
+        ; Ultimate command interface (uos-net); NET_STATE says how it went
+        jsr NET_SYNC
 
         ; start the application
         jsr DESK_START
@@ -318,7 +326,7 @@ find_control:
         ldx #$00
  _loop:
         lda r3H
-        cmp #>APP_ID_TBL
+        cmp #>APP_CTL_END
         beq _notfound  
 _skip:
         lda (r3),y      
@@ -455,6 +463,17 @@ _ffdone:
 ; let core-resident code do the load and the jump.
 ; ==========================================================
 LAUNCH_APP_RT:
+        ; clear the desktop bitmap before the app draws: apps paint outline
+        ; windows straight onto the bitmap, and the desktop icons showed
+        ; through them. Same colour rule and sprite-pointer restore as
+        ; DESK_START (GFX_ON's colour fill clobbers $87f8).
+        lda SETREC_BG
+        and #$0f
+        bne la_bg
+        lda #$10
+la_bg:  jsr GFX_ON
+        lda #$00
+        sta $87f8
         jsr LOADER
         jmp APP_START
 
@@ -464,9 +483,6 @@ LAUNCH_APP_RT:
 ; buffer (the KERNAL IRQ scans and decodes the matrix); A = 0
 ; when nothing is pending. This is the OS keyboard driver path.
 ; ==========================================================
-KEYIN_RT:
-        jsr $ffe4               ; KERNAL GETIN
-        rts
 ; ==========================================================
 ; Load Immediate
 ; Like a PRIMM subroutine, this will load the file
@@ -716,7 +732,7 @@ SETUP_CTL_BUF:
         lda #>APP_CTL_BUF
         sta r1H
 
-        lda #>APP_ID_TBL
+        lda #>APP_CTL_END
         sta r2
 
         ldy #$00

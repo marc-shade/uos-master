@@ -26,7 +26,12 @@
 ;========================================
 ;
 ;
-buffer	        = $9e00
+buffer	        = $9d00   ; 256-byte bank-probe scratch. MUST NOT overlap a
+                        ; loaded module: drv1351 moved to $9e00 on
+                        ; 2026-09-06 and GETSIZE (called live by the
+                        ; desktop Computer window) was clobbering the
+                        ; mouse-IRQ code -> JAM in setpot. $9cd6-$9dff
+                        ; is free (reu code ends $9cd5, drv1351 at $9e00).
 numbank         = $fb
 ramexp          = $df00
 rcr             = $d506

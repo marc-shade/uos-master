@@ -64,6 +64,8 @@ _bgok:  jsr GFX_ON
 
         #RegisterApp
 
+        lda #$ff
+        sta minute              ; force the clock redraw on the first tick
         lda #<APP_TICK
         sta $033c
         lda #>APP_TICK
@@ -203,9 +205,70 @@ _startclk:
         lda $dc08       ; tod has stopped since we read the hour value
         sta $dc08       ; writing to the 10th/sec value restarts tod
 
+        jsr vd_clock    ; 80-column mirror: time + how it was set (row 0)
         #Text 282, 191, time
 _done:
         rts
+
+; vdtime = time + "  " + clock tag, written at row 0 col 58 (fits col 79)
+vd_clock:
+        ldx #$00
+_vc_t:  lda time,x
+        beq _vc_sp
+        sta vdtime,x
+        inx
+        bne _vc_t
+_vc_sp: lda #' '
+        sta vdtime,x
+        inx
+        sta vdtime,x
+        inx
+        jsr clk_tag             ; r0 -> tag text for NET_STATE
+        ldy #$00
+_vc_c:  lda (r0),y
+        beq _vc_p
+        sta vdtime,x
+        inx
+        iny
+        bne _vc_c
+_vc_p:  lda #' '                ; pad to 22 columns (58..79): a shorter tag
+        sta vdtime,x            ; must blank the tail of the previous one
+        inx
+        cpx #22
+        bne _vc_p
+        lda #$00
+        sta vdtime,x
+_vc_w:  lda #<vdtime
+        sta r9L
+        lda #>vdtime
+        sta r9H
+        lda #$00
+        ldx #58
+        jsr VDTEXT
+        rts
+
+; r0 -> the short text for NET_STATE (0-4, anything else = "unsynced").
+; Uses Y only: the callers keep their output index in X (the first cut
+; loaded X here and the tag landed at offset NET_STATE: "12:no ultimate")
+clk_tag:
+        ldy NET_STATE
+        cpy #$05
+        bcc _ck_ok
+        ldy #$05
+_ck_ok: lda clktagL,y
+        sta r0L
+        lda clktagH,y
+        sta r0H
+        rts
+clktagL: .byte <ctag0, <ctag1, <ctag2, <ctag3, <ctag4, <ctag5
+clktagH: .byte >ctag0, >ctag1, >ctag2, >ctag3, >ctag4, >ctag5
+ctag0:  .text "ntp", $00
+ctag1:  .text "no reply", $00
+ctag2:  .text "no network", $00
+ctag3:  .text "no ultimate", $00
+ctag4:  .text "no ntp host", $00
+ctag5:  .text "unsynced", $00
+vdtime: .fill 24, 0
 
 WIN_OK = *
         #FetchScreen
@@ -238,7 +301,7 @@ MENU_APPS = *
         ; CreateWindow takes x, y, WIDTH, HEIGHT (it used to be handed the
         ; far corner: height 152 pushed the rect rows to band 26 = $c0c0 and
         ; the REU stash/fetch overwrote the graphics engine on real hardware)
-        #CreateWindow 1,APPS_X,APPS_Y,APPS_W,92,true,apps_title
+        #CreateWindow 1,APPS_X,APPS_Y,APPS_W,110,true,apps_title
 
         ; 80-column companion: title on row 2, the app rows follow (4..)
         lda #<apps_title
@@ -254,7 +317,7 @@ MENU_APPS = *
         lda apps_count
         bne _populate
 
-        #Text APPS_X+6, APPS_Y+10, noapps
+        #Text APPS_X+6, APPS_Y+22, noapps
         jmp _apps_ok
 
 _populate:
@@ -266,36 +329,36 @@ _populate:
         bcc _r1skip
         jmp _apps_ok
 _r1skip:
-        #CreateButton 0,20,<APPS_LAUNCH_1, >APPS_LAUNCH_1, APPS_X+2, APPS_Y+6, APPS_X+APPS_W-4, APPS_Y+6+APPS_ROW_H, false
+        #CreateButton 0,20,<APPS_LAUNCH_1, >APPS_LAUNCH_1, APPS_X+2, APPS_Y+18, APPS_X+APPS_W-4, APPS_Y+18+APPS_ROW_H, false
         cpx #$02
         bcs _r2
         jmp _apps_ok
 _r2:
-        #CreateButton 0,21,<APPS_LAUNCH_2, >APPS_LAUNCH_2, APPS_X+2, APPS_Y+6+APPS_ROW_H, APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*2), false
+        #CreateButton 0,21,<APPS_LAUNCH_2, >APPS_LAUNCH_2, APPS_X+2, APPS_Y+18+APPS_ROW_H, APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*2), false
         cpx #$03
         bcs _r3
         jmp _apps_ok
 _r3:
-        #CreateButton 0,22,<APPS_LAUNCH_3, >APPS_LAUNCH_3, APPS_X+2, APPS_Y+6+(APPS_ROW_H*2), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*3), false
+        #CreateButton 0,22,<APPS_LAUNCH_3, >APPS_LAUNCH_3, APPS_X+2, APPS_Y+18+(APPS_ROW_H*2), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*3), false
         cpx #$04
         bcs _r4
         jmp _apps_ok
 _r4:
-        #CreateButton 0,23,<APPS_LAUNCH_4, >APPS_LAUNCH_4, APPS_X+2, APPS_Y+6+(APPS_ROW_H*3), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*4), false
+        #CreateButton 0,23,<APPS_LAUNCH_4, >APPS_LAUNCH_4, APPS_X+2, APPS_Y+18+(APPS_ROW_H*3), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*4), false
         cpx #$05
         bcs _r5
         jmp _apps_ok
 _r5:
-        #CreateButton 0,24,<APPS_LAUNCH_5, >APPS_LAUNCH_5, APPS_X+2, APPS_Y+6+(APPS_ROW_H*4), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*5), false
+        #CreateButton 0,24,<APPS_LAUNCH_5, >APPS_LAUNCH_5, APPS_X+2, APPS_Y+18+(APPS_ROW_H*4), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*5), false
         cpx #$06
         bcs _r6
         jmp _apps_ok
 _r6:
-        #CreateButton 0,25,<APPS_LAUNCH_6, >APPS_LAUNCH_6, APPS_X+2, APPS_Y+6+(APPS_ROW_H*5), APPS_X+APPS_W-4, APPS_Y+6+(APPS_ROW_H*6), false
+        #CreateButton 0,25,<APPS_LAUNCH_6, >APPS_LAUNCH_6, APPS_X+2, APPS_Y+18+(APPS_ROW_H*5), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*6), false
 
 _apps_ok:
-        #CreateButton 0,29,<APPS_CANCEL, >APPS_CANCEL, APPS_X+APPS_W-38, APPS_Y+80, APPS_X+APPS_W-8, APPS_Y+88, true
-        #Text APPS_X+APPS_W-34, APPS_Y+81, cancel
+        #CreateButton 0,29,<APPS_CANCEL, >APPS_CANCEL, APPS_X+APPS_W-38, APPS_Y+96, APPS_X+APPS_W-8, APPS_Y+104, true
+        #Text APPS_X+APPS_W-34, APPS_Y+97, cancel
         jmp MAINLOOP
 
 ; draws up to apps_count rows with GPUTS
@@ -327,8 +390,8 @@ _drrow:
         sta X1
         lda #>APPS_X+6
         sta X1+1
-        lda #APPS_Y+10
-        sta Y1
+        lda #APPS_Y+22          ; below the 14 px title bar (rows used to
+        sta Y1                  ; start at +10 and overprint the title)
         txa                     ; row index -> y offset row*14
         asl
         sta vartmp1             ; 2*row
@@ -417,9 +480,10 @@ uospref:        .text "uos-"
 
 ; components that must never appear in the launcher (loading them over
 ; the running system would crash it)
-SYSCOMPS_N      := 8
+SYSCOMPS_N      := 9
 syscomps:
         .text "uos", $00
+        .text "uos-net", $00
         .text "uos-gfx", $00
         .text "uos-vdc", $00
         .text "uos-drv1351", $00
@@ -653,32 +717,42 @@ apps_count:     .byte $00
 ; same way MENU_SETTINGS does, so any app the author drops on the disk
 ; shows up without touching this code.
 ;--------------------------------------------------------------------------
+; The menu entries launch through the core's LAUNCH_APP (FILLFILE + the
+; launcher path): it clears the desktop bitmap first. The old LOAD_IMM +
+; APP_LOADER path left the icons and the ultos bar under the app, so the
+; file manager's title collided with the "computer" label and the settings
+; shadow sat on the trash can (visible in tests/screens.py captures).
 MENU_FILEMGR = *
         jsr closemenu
-
-        jsr LOAD_IMM
-        .text "uos-fmgr",$00
-        jsr APP_LOADER
-        jmp APP_START
+        lda #<s_fmgr
+        sta r0L
+        lda #>s_fmgr
+        sta r0H
+        jsr FILLFILE
+        jmp LAUNCH_APP
 
 MENU_SETTINGS = *
         jsr closemenu
+        lda #<s_settings
+        sta r0L
+        lda #>s_settings
+        sta r0H
+        jsr FILLFILE
+        jmp LAUNCH_APP
 
-        jsr LOAD_IMM
-        .text "uos-settings",$00
-        jsr APP_LOADER
-
-        jmp APP_START
-
+; "command line" opens the shell (it used to show a placeholder dialog)
 MENU_CMDLN = *
         jsr closemenu
-        #DrawRect 100,70,119,70,1       
-        #Text 112, 80, dlg_cmd
+        lda #<s_shell
+        sta r0L
+        lda #>s_shell
+        sta r0H
+        jsr FILLFILE
+        jmp LAUNCH_APP
 
-        #CreateButton 0,1,<WIN_OK, >WIN_OK,180,120,210,130,true
-        #Text 189, 122, ok
-
-        jmp MAINLOOP
+s_fmgr:     .text "uos-fmgr", $00
+s_settings: .text "uos-settings", $00
+s_shell:    .text "uos-shell", $00
 
 MENU_QUIT = *
         jsr closemenu
@@ -756,11 +830,189 @@ nop
 
 ON_CLICK_COMPUTER:
 
-        #CreateWindow 1,80,48,159,54,true,win_computer_title
+        #CreateWindow 1,80,48,159,84,true,win_computer_title
+        ; "about this computer": version, second display state, REU size,
+        ; network address, clock source
+        #Text 86, 66, ci_ver
+        lda VDC_LIVE
+        beq _ci_off
+        #Text 86, 76, ci_vdc_on
+        jmp _ci_reu
+_ci_off:
+        #Text 86, 76, ci_vdc_off
+_ci_reu:
+        jsr REU_SIZE            ; A = number of 64K banks (1 = no REU;
+        sta ci_banks            ;  0 = wrapped: 256+ banks = 16 MB U2+)
+        jsr ci_fmt_banks
+        #Text 86, 86, ci_reubuf
+        jsr ci_fmt_ip           ; "ip: 192.168.1.42" / "ip: none" / "ip: no ultimate"
+        #Text 86, 96, ci_ipbuf
+        jsr ci_fmt_clk          ; "clock: ntp" / "clock: no network" ...
+        #Text 86, 106, ci_clkbuf
+        ; 80-column mirror (rows 2-7)
+        lda #<win_computer_title
+        sta r9L
+        lda #>win_computer_title
+        sta r9H
+        lda #$02
+        ldx #$00
+        jsr VDTEXT
+        lda #<ci_ver
+        sta r9L
+        lda #>ci_ver
+        sta r9H
+        lda #$04
+        ldx #$02
+        jsr VDTEXT
+        lda #<ci_reubuf
+        sta r9L
+        lda #>ci_reubuf
+        sta r9H
+        lda #$05
+        ldx #$02
+        jsr VDTEXT
+        lda #<ci_ipbuf
+        sta r9L
+        lda #>ci_ipbuf
+        sta r9H
+        lda #$06
+        ldx #$02
+        jsr VDTEXT
+        lda #<ci_clkbuf
+        sta r9L
+        lda #>ci_clkbuf
+        sta r9H
+        lda #$07
+        ldx #$02
+        jsr VDTEXT
         jmp MAINLOOP
 
+; ci_ipbuf = "ip: " + NET_IPSTR, or "ip: none" / "ip: no ultimate"
+ci_fmt_ip:
+        ldx #$00
+_cip_p: lda ci_ip_pfx,x
+        beq _cip_v
+        sta ci_ipbuf,x
+        inx
+        bne _cip_p
+_cip_v: lda NET_STATE
+        cmp #$03
+        bne _cip_n
+        lda #<ctag3             ; "no ultimate"
+        sta r0L
+        lda #>ctag3
+        sta r0H
+        jmp _cip_c
+_cip_n: lda NET_IPSTR
+        beq _cip_none
+        lda #<NET_IPSTR
+        sta r0L
+        lda #>NET_IPSTR
+        sta r0H
+        jmp _cip_c
+_cip_none:
+        lda #<ci_none
+        sta r0L
+        lda #>ci_none
+        sta r0H
+_cip_c: ldy #$00
+_cip_l: lda (r0),y
+        sta ci_ipbuf,x
+        beq _cip_d
+        inx
+        iny
+        bne _cip_l
+_cip_d: rts
+
+; ci_clkbuf = "clock: " + tag
+ci_fmt_clk:
+        ldx #$00
+_ccl_p: lda ci_clk_pfx,x
+        beq _ccl_v
+        sta ci_clkbuf,x
+        inx
+        bne _ccl_p
+_ccl_v: jsr clk_tag
+        ldy #$00
+_ccl_l: lda (r0),y
+        sta ci_clkbuf,x
+        beq _ccl_d
+        inx
+        iny
+        bne _ccl_l
+_ccl_d: rts
+ci_ip_pfx:  .text "ip: ", $00
+ci_clk_pfx: .text "clock: ", $00
+ci_none:    .text "none", $00
+ci_ipbuf:   .fill 24, 0
+ci_clkbuf:  .fill 24, 0
+
+; ci_reubuf = "reu: NNN x 64k" from ci_banks (0 -> "reu: 16 mb")
+ci_fmt_banks:
+        lda ci_banks
+        bne _cf_dec
+        ldx #$00
+_cf_16: lda ci_16mb,x
+        sta ci_reubuf,x
+        beq _cf_done
+        inx
+        bne _cf_16
+_cf_dec:
+        ldx #$00
+_cf_cp: lda ci_reu_pfx,x
+        beq _cf_num
+        sta ci_reubuf,x
+        inx
+        bne _cf_cp
+_cf_num:
+        ; 3-digit decimal of ci_banks
+        lda ci_banks
+        ldy #$30
+_cf_h:  cmp #100
+        bcc _cf_h1
+        sbc #100
+        iny
+        bne _cf_h
+_cf_h1: pha
+        tya
+        sta ci_reubuf,x         ; (no STY abs,X on the 6502)
+        pla
+        inx
+        ldy #$30
+_cf_t:  cmp #10
+        bcc _cf_t1
+        sbc #10
+        iny
+        bne _cf_t
+_cf_t1: pha
+        tya
+        sta ci_reubuf,x
+        pla
+        inx
+        clc
+        adc #$30
+        sta ci_reubuf,x
+        inx
+        ldy #$00
+_cf_sf: lda ci_reu_sfx,y
+        sta ci_reubuf,x
+        beq _cf_done
+        inx
+        iny
+        bne _cf_sf
+_cf_done:
+        rts
+ci_ver:     .text "UltOS 0.3 C128/8502", $00
+ci_vdc_on:  .text "80-col display: on", $00
+ci_vdc_off: .text "80-col display: off", $00
+ci_reu_pfx: .text "reu: ", $00
+ci_reu_sfx: .text " x 64k", $00
+ci_16mb:    .text "reu: 16 mb", $00
+ci_banks:   .byte $00
+ci_reubuf:  .fill 20, 0
+
 ON_CLOSE:
-        #CloseWindow 0,80,48,159,54
+        #CloseWindow 0,80,48,159,84
         jmp MAINLOOP 
 
 win_computer_title:

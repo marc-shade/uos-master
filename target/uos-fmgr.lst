@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-fmgr.prg -L target/uos-fmgr.lst src/uos-fmgr.asm
-; Sun Sep  6 10:18:11 2026
+; Sun Sep  6 13:57:37 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -118,6 +118,9 @@
 =$7350					SETREC          = $7350
 =$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
 =$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
 =$cc00					VDC_GETREG      = $cc00
 =$cc03					VDC_SETREG      = $cc03
 =$cc06					VDC_SEEK        = $cc06
@@ -142,12 +145,42 @@
 =$9000					APP_CTL_TBL     = $9000
 =$9000					APP_CTL_CTR     = $9000
 =$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
 =$9b00					APP_ID_TBL      = $9b00
 =$9c00					REU_SIZE        = $9c00
 =$9c03					REU_STASH       = $9c03
 =$9c06					REU_FETCH       = $9c06
 =$9c09					REU_PARAMS      = $9c09
-=$9f03					INIT_MOUSE      = $9f03
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
 =$a000					BITMAP_START    = $a000
 =$c000					GFX_INIT        = $c000
 =$c00f					GFX_SETPIXEL    = $c00f

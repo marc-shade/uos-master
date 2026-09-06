@@ -67,9 +67,19 @@ vtmpb           = $42
     lda #$ff
     sta oldshown
     sta oldshowncol
+    sta oldshowntz
     jsr draw_mode
     #Text 80, 100, bglabel
     jsr draw_color
+    #Text 80, 112, tzlabel
+    lda #<tzlabel
+    sta r9L
+    lda #>tzlabel
+    sta r9H
+    lda #$06
+    ldx #$02
+    jsr VDTEXT
+    jsr draw_tz
 
     ; own the keyboard directly (like the fmgr and shell). The old design
     ; registered APP_KEY on the once-per-second tick and returned to the
@@ -87,8 +97,18 @@ APP_KEY:
         jsr ON_DISPLAY                  ; (shifted), which no keypress
         jmp APP_KEY                     ; ever produces
 _akc:   cmp #$43                        ; 'C' = cycle background colour
-        bne _akb
+        bne _akp
         jsr ON_COLOR
+        jmp APP_KEY
+_akp:   cmp #$2b                        ; '+' = zone one hour east
+        bne _akm
+        lda #$04
+        jsr ON_TZ
+        jmp APP_KEY
+_akm:   cmp #$2d                        ; '-' = zone one hour west
+        bne _akb
+        lda #$fc
+        jsr ON_TZ
         jmp APP_KEY
 _akb:   cmp #$42                        ; 'B'
         beq _akbk
@@ -98,7 +118,8 @@ _akb:   cmp #$42                        ; 'B'
 _akbk:  jmp settings_back
 
 title:  .text "Settings", $00
-hint:   .text "D=display C=color ESC=back", $00
+hint:   .text "D=display C=color +/-=zone ESC=back", $00
+tzlabel: .text "time zone:", $00
 bglabel: .text "background:", $00
 mode0s: .text "display: 40 only", 0
 mode1s: .text "display: 80 only", 0
@@ -339,6 +360,161 @@ cold: .text "lt green",0
 cole: .text "lt blue",0
 colf: .text "lt grey",0
 
+; ---------- time zone (+/- one hour) ----------
+; ON_TZ: A = signed quarter-hours delta. Clamps to -48..+56 (UTC-12..+14),
+; SAVEs the record, redraws, and shifts the running clock at once through
+; the driver (no network round trip needed for a zone change).
+ON_TZ:
+    sta tzdelta
+    lda SETREC_TZ
+    clc
+    adc tzdelta
+    sta tztmp
+    ; clamp: signed compare against -48 / +56
+    lda tztmp
+    bmi _tz_neg
+    cmp #57
+    bcc _tz_ok
+    rts                            ; already at +14 h
+_tz_neg:
+    cmp #$d0                       ; -48
+    bcs _tz_ok
+    rts                            ; already at -12 h
+_tz_ok:
+    sta SETREC_TZ
+    lda #$02
+    sta SETREC_VER
+    lda #$a5
+    sta SETREC_TZMAG
+    jsr save_record
+    jsr draw_tz
+    lda tzdelta
+    jsr NET_TZSHIFT
+    rts
+
+; the zone text "utc-04:00" / "utc+05:30" at x=170,y=112 (XOR-safe) + row 6
+draw_tz:
+    lda oldshowntz
+    cmp #$ff
+    beq dt_build
+    lda #170
+    sta X1
+    lda #$00
+    sta X1+1
+    lda #112
+    sta Y1
+    lda #<oldtz
+    sta r9L
+    lda #>oldtz
+    sta r9H
+    jsr GPUTS
+dt_build:
+    jsr tz_str                     ; tzbuf = text for SETREC_TZ
+    ldy #$00
+dt_old: lda tzbuf,y
+    sta oldtz,y
+    beq dt_show
+    iny
+    cpy #12
+    bne dt_old
+dt_show:
+    lda SETREC_TZ
+    sta oldshowntz
+    lda #170
+    sta X1
+    lda #$00
+    sta X1+1
+    lda #112
+    sta Y1
+    lda #<oldtz
+    sta r9L
+    lda #>oldtz
+    sta r9H
+    jsr GPUTS
+    lda #<vd_pad
+    sta r9L
+    lda #>vd_pad
+    sta r9H
+    lda #$06
+    ldx #14
+    jsr VDTEXT
+    lda #<oldtz
+    sta r9L
+    lda #>oldtz
+    sta r9H
+    lda #$06
+    ldx #14
+    jsr VDTEXT
+    rts
+
+; tzbuf = "utc" sign hh ":" mm from SETREC_TZ (quarter-hours)
+tz_str:
+    lda #<tzpfx
+    sta r2L
+    lda #>tzpfx
+    sta r2H
+    ldy #$00
+ts_p:   lda (r2),y
+    beq ts_s
+    sta tzbuf,y
+    iny
+    bne ts_p
+ts_s:   lda SETREC_TZ
+    bmi ts_neg
+    ldx #$2b                       ; '+'
+    bne ts_sg
+ts_neg: eor #$ff
+    clc
+    adc #$01
+    ldx #$2d                       ; '-'
+ts_sg:  sta vtmpa                   ; |quarters|
+    txa
+    sta tzbuf,y
+    iny
+    lda vtmpa
+    lsr
+    lsr                            ; hours
+    jsr ts_2dig
+    lda #$3a                       ; ':'
+    sta tzbuf,y
+    iny
+    lda vtmpa
+    and #$03
+    tax
+    lda tzminL,x
+    sta tzbuf,y
+    iny
+    lda tzminH,x
+    sta tzbuf,y
+    iny
+    lda #$00
+    sta tzbuf,y
+    rts
+ts_2dig:                           ; A (0-14) -> two digits at tzbuf,y
+    ldx #$30
+ts_2l:  cmp #10
+    bcc ts_2d
+    sbc #10
+    inx
+    bne ts_2l
+ts_2d:  pha
+    txa
+    sta tzbuf,y
+    iny
+    pla
+    ora #$30
+    sta tzbuf,y
+    iny
+    rts
+tzpfx:  .text "utc", $00
+tzminL: .byte $30, $31, $33, $34   ; "00" "15" "30" "45"
+tzminH: .byte $30, $35, $30, $35
+tzdelta: .byte 0
+tztmp:   .byte 0
+oldshowntz: .byte $ff
+tzbuf:   .fill 12, 0
+oldtz:   .fill 12, 0
+
 ; ---------- settings record persistence ----------
 ; kernal SAVE convention: A = zero-page pointer to a two-byte cell holding
 ; the START address; X/Y = end address (exclusive). The FILE NAME comes
@@ -400,7 +576,10 @@ SAVEEND = SETREC + 7            ; load-address word + 5 record bytes
 * = SETREC                      ; the record's fixed address
 savehdr:                        ; the 2-byte load address header
     .word SETREC
-    .byte $00,$00,$00           ; reserved (SETREC+2..4)
+    ; record format 2: version, time zone (signed quarter-hours from UTC,
+    ; -16 = UTC-4), marker $a5 (routines.inc SETREC_VER/TZ/TZMAG); these
+    ; three bytes were reserved zeros in format 0 records
+    .byte $02, $f0, $a5
 SETRECDATA:
     .byte $02                    ; display mode at SETREC+5: 0=40 1=80 2=both
     .byte VIC_COLOR_CYAN         ; background colour at SETREC+6 (SETREC_BG)

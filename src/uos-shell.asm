@@ -143,7 +143,7 @@ sh_parse:
         beq _sp_c
         cmp #$48                        ; 'H' -> HELP
         beq _sp_h
-        jmp sp_unk
+        jmp sp_unk                      ; (T/I/G verbs are checked there)
 _sp_h:  lda cmdbuf+1
         cmp #$45                        ; 'E'
         bne sp_unk
@@ -189,15 +189,39 @@ _sp_e:  lda cmdbuf+1
         cmp #$58                        ; 'X' -> EXIT
         bne sp_unk
         jmp sh_desk
+; the newer verbs are matched here (after the original dispatch, whose
+; branch targets would otherwise drift out of range)
 sp_unk:
+        lda cmdbuf
+        cmp #$54                        ; 'T' -> TIME [SYNC]
+        beq sp_t
+        cmp #$49                        ; 'I' -> IP
+        beq sp_i
+        cmp #$47                        ; 'G' -> GET host path
+        beq sp_g
+sp_unk_msg:
         lda #<msg_unk
         sta r0L
         lda #>msg_unk
         sta r0H
         jsr setline
-        jmp sp_fin
 sp_fin:
         rts
+sp_t:   lda cmdbuf+1
+        cmp #$49                        ; 'I'
+        bne sp_unk_msg
+        jsr cmd_time
+        jmp sp_fin
+sp_i:   lda cmdbuf+1
+        cmp #$50                        ; 'P'
+        bne sp_unk_msg
+        jsr cmd_ip
+        jmp sp_fin
+sp_g:   lda cmdbuf+1
+        cmp #$45                        ; 'E'
+        bne sp_unk_msg
+        jsr cmd_get
+        jmp sp_fin
 
 ; arg = cmdbuf+4 (after the 3-char verb and one space)
 sh_argbuf:
@@ -512,7 +536,7 @@ setline:                                ; r0 = $00-terminated response
         ldy #$00
 sl_cp:  lda (r0),y
         beq sl_d
-        cpy #38
+        cpy #46
         bcs sl_d
         sta respbuf,y
         iny
@@ -537,7 +561,7 @@ sl_old: lda respbuf,y
         sta respold,y
         beq sl_d2
         iny
-        cpy #39
+        cpy #47
         bne sl_old
 sl_d2:  jsr resp_show
         ; mirror the response on the 80-column display (row 7)
@@ -632,6 +656,13 @@ cl_cp:  lda cmdbuf,y
         bne cl_cp
         lda #$00
         sta oldbuf,y
+        ; GPUTS advances X1 as it draws: reset it, or the new line starts
+        ; where the erase pass ended and every keystroke smears the echo
+        ; ("ddir" on the command line, tests/screens.py 06-shell)
+        lda #COL_X
+        sta X1
+        lda #$00
+        sta X1+1
         lda #CMD_Y
         sta Y1
         lda #<oldbuf
@@ -644,6 +675,12 @@ cl_cp:  lda cmdbuf,y
 refresh:
         lda #$01
         jsr GFX_SETCOLOR
+        ; a GET response is on the rows region: wipe it (its text was not
+        ; painted through the XOR bookkeeping) and forget the painted rows
+        lda dirty
+        beq _rf_clean
+        jsr rows_wipe
+_rf_clean:
         ; GPUTS is an XOR engine: rows already on screen must be drawn
         ; again (same names, before dirscan replaces them) to cancel out,
         ; or a second DIR would erase the listing instead of redrawing it
@@ -823,11 +860,555 @@ ds_end:
         cli
         rts
 
+; ---------------- network / clock commands (uos-net) ----------------
+; TIME [SYNC]: the running clock, the date, and how the clock was set
+cmd_time:
+        lda cmdbuf+4
+        cmp #$20
+        bne _ct_show
+        lda cmdbuf+5
+        cmp #$53                        ; 'S' -> TIME SYNC
+        bne _ct_show
+        jsr NET_SYNC
+_ct_show:
+        jsr fmt_time
+        lda #<linebuf
+        sta r0L
+        lda #>linebuf
+        sta r0H
+        jsr setline
+        rts
+
+; linebuf = "01:45:07 PM 2026/09/06 ntp" or "clock unsynced: <reason>"
+fmt_time:
+        lda NET_STATE
+        beq _ft_ok
+        ldx #$00
+_ft_u:  lda msg_unsync,x
+        beq _ft_u2
+        sta linebuf,x
+        inx
+        bne _ft_u
+_ft_u2: ldy NET_STATE
+        cpy #$05
+        bcc _ft_u3
+        ldy #$05
+_ft_u3: lda tagL,y
+        sta r0L
+        lda tagH,y
+        sta r0H
+        ldy #$00
+_ft_u4: lda (r0),y
+        sta linebuf,x
+        beq _ft_r
+        inx
+        iny
+        bne _ft_u4
+_ft_r:  rts
+_ft_ok: ldx #$00
+        lda TODHRS                      ; latches the TOD registers
+        pha
+        and #$1f
+        jsr put_bcd
+        lda #':'
+        sta linebuf,x
+        inx
+        lda TODMIN
+        jsr put_bcd
+        lda #':'
+        sta linebuf,x
+        inx
+        lda TODSEC
+        jsr put_bcd
+        lda TODTEN                      ; releases them
+        lda #' '
+        sta linebuf,x
+        inx
+        pla
+        and #$80
+        beq _ft_am
+        lda #'P'
+        bne _ft_ap
+_ft_am: lda #'A'
+_ft_ap: sta linebuf,x
+        inx
+        lda #'M'
+        sta linebuf,x
+        inx
+        lda #' '
+        sta linebuf,x
+        inx
+        sec
+        lda NET_YEAR
+        sbc #<2000
+        pha
+        lda NET_YEAR+1
+        sbc #>2000
+        bcc _ft_19
+        lda #'2'
+        sta linebuf,x
+        inx
+        lda #'0'
+        sta linebuf,x
+        inx
+        pla
+        jmp _ft_y2
+_ft_19: pla
+        clc
+        adc #100                        ; (y-2000)+100 = y-1900
+        pha
+        lda #'1'
+        sta linebuf,x
+        inx
+        lda #'9'
+        sta linebuf,x
+        inx
+        pla
+_ft_y2: jsr put_dec2
+        lda #'/'
+        sta linebuf,x
+        inx
+        lda NET_MON
+        jsr put_dec2
+        lda #'/'
+        sta linebuf,x
+        inx
+        lda NET_DAY
+        jsr put_dec2
+        lda #' '
+        sta linebuf,x
+        inx
+        ldy #$00
+_ft_t:  lda tag0,y
+        sta linebuf,x
+        beq _ft_r2
+        inx
+        iny
+        bne _ft_t
+_ft_r2: rts
+
+put_bcd:                                ; A = BCD -> two digits at linebuf,x
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        ora #$30
+        sta linebuf,x
+        inx
+        pla
+        and #$0f
+        ora #$30
+        sta linebuf,x
+        inx
+        rts
+put_dec2:                               ; A (0-99) -> two digits at linebuf,x
+        ldy #$30
+_pd_l:  cmp #10
+        bcc _pd_d
+        sbc #10
+        iny
+        bne _pd_l
+_pd_d:  pha
+        tya
+        sta linebuf,x
+        inx
+        pla
+        ora #$30
+        sta linebuf,x
+        inx
+        rts
+
+; IP: the Ultimate's address (re-queried, not the boot-time copy)
+cmd_ip:
+        jsr NET_PRESENT
+        bne _ci_p
+        lda #<msg_noult
+        sta r0L
+        lda #>msg_noult
+        sta r0H
+        jsr setline
+        rts
+_ci_p:  jsr NET_GETIP
+        bne _ci_ok
+        lda #<msg_nonet
+        sta r0L
+        lda #>msg_nonet
+        sta r0H
+        jsr setline
+        rts
+_ci_ok: ldx #$00
+_ci_c1: lda p_ip,x
+        beq _ci_c2
+        sta linebuf,x
+        inx
+        bne _ci_c1
+_ci_c2: ldy #$00
+_ci_c3: lda NET_IPSTR,y
+        sta linebuf,x
+        beq _ci_d
+        inx
+        iny
+        bne _ci_c3
+_ci_d:  lda #<linebuf
+        sta r0L
+        lda #>linebuf
+        sta r0H
+        jsr setline
+        rts
+
+; GET host path: HTTP/1.0 GET over the Ultimate's TCP socket. The status
+; line goes on the response line, the next lines of the reply (headers,
+; then body) fill the rows region; the 80-column display mirrors up to
+; eight 78-character lines on rows 9-16.
+cmd_get:
+        jsr NET_PRESENT
+        bne _cg_p
+        lda #<msg_noult
+        sta r0L
+        lda #>msg_noult
+        sta r0H
+        jsr setline
+        rts
+_cg_p:  ldx #$04
+        jsr sh_args2                    ; tokbuf = host, tok2buf = path
+        lda tokbuf
+        bne _cg_h
+        lda #<msg_getargs
+        sta r0L
+        lda #>msg_getargs
+        sta r0H
+        jsr setline
+        rts
+_cg_h:  lda tok2buf
+        bne _cg_ok
+        lda #$2f                        ; missing path -> "/"
+        sta tok2buf
+        lda #$00
+        sta tok2buf+1
+_cg_ok: ldx #$00
+_cg_a1: lda tokbuf,x                    ; typed PETSCII -> ASCII
+        beq _cg_a2
+        jsr p2a
+        sta tokbuf,x
+        inx
+        bne _cg_a1
+_cg_a2: ldx #$00
+_cg_a3: lda tok2buf,x
+        beq _cg_a4
+        jsr p2a
+        sta tok2buf,x
+        inx
+        bne _cg_a3
+_cg_a4: lda #<msg_conn
+        sta r0L
+        lda #>msg_conn
+        sta r0H
+        jsr setline                     ; "connecting..." while the Ultimate resolves
+        lda #<tokbuf
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        lda #80
+        sta r1L
+        lda #$00
+        sta r1H
+        lda #$07                        ; tcp
+        jsr NET_OPEN
+        bcc _cg_open
+        ; "open failed: " + the Ultimate's status line
+        ldx #$00
+_cg_f1: lda msg_openf,x
+        beq _cg_f2
+        sta linebuf,x
+        inx
+        bne _cg_f1
+_cg_f2: ldy #$00
+_cg_f3: lda NET_STAT,y
+        beq _cg_f4
+        jsr a2p
+        sta linebuf,x
+        inx
+        iny
+        cpx #44
+        bne _cg_f3
+_cg_f4: lda #$00
+        sta linebuf,x
+        lda #<linebuf
+        sta r0L
+        lda #>linebuf
+        sta r0H
+        jsr setline
+        rts
+_cg_open:
+        ; request: "GET " path " HTTP/1.0" CRLF "Host: " host CRLF CRLF
+        lda #$00
+        sta rqi
+        lda #<p_get
+        sta r0L
+        lda #>p_get
+        sta r0H
+        jsr rq_app
+        lda #<tok2buf
+        sta r0L
+        lda #>tok2buf
+        sta r0H
+        jsr rq_app
+        lda #<p_http
+        sta r0L
+        lda #>p_http
+        sta r0H
+        jsr rq_app
+        lda #<tokbuf
+        sta r0L
+        lda #>tokbuf
+        sta r0H
+        jsr rq_app
+        lda #<p_crlf2
+        sta r0L
+        lda #>p_crlf2
+        sta r0H
+        jsr rq_app
+        lda #<reqbuf
+        sta r0L
+        lda #>reqbuf
+        sta r0H
+        ldx rqi
+        lda NET_SOCK
+        jsr NET_WRITE
+        lda #50                         ; up to 2 s for the first bytes
+        sta tries
+_cg_rd: lda #<500
+        sta r1L
+        lda #>500
+        sta r1H
+        lda NET_SOCK
+        jsr NET_READ
+        cmp #$00
+        beq _cg_got
+        cmp #$01
+        bne _cg_none
+        dec tries
+        bne _cg_rd
+_cg_none:
+        lda NET_SOCK
+        jsr NET_CLOSE
+        lda #<msg_nodata
+        sta r0L
+        lda #>msg_nodata
+        sta r0H
+        jsr setline
+        rts
+_cg_got:
+        ; (the socket is closed at _cg_done: NET_CLOSE goes through NET_CMD,
+        ; which resets NET_LEN and reuses NET_DATA - the reply we are about
+        ; to show)
+        lda NET_LEN                     ; terminate the payload
+        sta r0L
+        lda NET_LEN+1
+        sta r0H
+        clc
+        lda r0L
+        adc #<(NET_DATA+2)
+        sta r0L
+        lda r0H
+        adc #>(NET_DATA+2)
+        sta r0H
+        ldy #$00
+        lda #$00
+        sta (r0),y
+        ; line 1 = status line -> response line
+        lda #<(NET_DATA+2)
+        sta gp
+        lda #>(NET_DATA+2)
+        sta gp+1
+        jsr next_line                   ; -> linebuf (40) + vdline (78)
+        lda #<linebuf
+        sta r0L
+        lda #>linebuf
+        sta r0H
+        jsr setline
+        ; lines 2..9 -> rows region (cleared first) + VDC rows 9..16
+        jsr rows_wipe
+        lda #$01
+        sta dirty
+        lda #$00
+        sta rowi
+_cg_ln: jsr next_line
+        bcs _cg_done                    ; end of data
+        lda #COL_X
+        sta X1
+        lda #$00
+        sta X1+1
+        lda #TOP_Y
+        sta Y1
+        lda rowi
+        jsr addrowy
+        lda #<linebuf
+        sta r9L
+        lda #>linebuf
+        sta r9H
+        jsr GPUTS
+        lda #<vdline
+        sta r9L
+        lda #>vdline
+        sta r9H
+        lda rowi
+        clc
+        adc #$09
+        ldx #$02
+        jsr VDTEXT
+        inc rowi
+        lda rowi
+        cmp #$08
+        bne _cg_ln
+_cg_done:
+        lda NET_SOCK
+        jsr NET_CLOSE                   ; one chunk is what we show
+        rts
+
+; blank the rows region (ClrRect expands to ~290 bytes: keep it out of
+; the branch ranges of its callers)
+rows_wipe:
+        #ClrRect 24, 40, 272, 120
+        lda #$00
+        sta dirty
+        sta painted
+        rts
+
+; append the (r0) 0-terminated bytes to reqbuf at rqi
+rq_app: ldx rqi
+        ldy #$00
+_rq_l:  lda (r0),y
+        beq _rq_d
+        sta reqbuf,x
+        inx
+        iny
+        cpx #120
+        bne _rq_l
+_rq_d:  stx rqi
+        rts
+
+; the next text line at (gp) -> linebuf (<=40 chars) and vdline (<=78),
+; both 0-terminated, ASCII converted to PETSCII; C=1 when no data is left
+next_line:
+        ldy #$00
+        lda (gp),y
+        bne _nl_go
+        sec
+        rts
+_nl_go: ldx #$00
+_nl_l:  lda (gp),y
+        beq _nl_e
+        cmp #$0a
+        beq _nl_e
+        cmp #$0d
+        beq _nl_s
+        cmp #$09
+        bne _nl_c
+        lda #$20
+_nl_c:  jsr a2p
+        cpx #78
+        bcs _nl_s
+        sta vdline,x
+        cpx #40
+        bcs _nl_x
+        sta linebuf,x
+_nl_x:  inx
+_nl_s:  iny
+        bne _nl_l
+_nl_e:  lda #$00
+        sta vdline,x
+        cpx #40
+        bcc _nl_t
+        ldx #40
+_nl_t:  sta linebuf,x
+        ; advance gp past the line (and its LF)
+        lda (gp),y
+        beq _nl_adv
+        iny
+_nl_adv:
+        tya
+        clc
+        adc gp
+        sta gp
+        bcc _nl_r
+        inc gp+1
+_nl_r:  clc
+        rts
+
+; typed PETSCII -> ASCII: unshifted letters become lower case, shifted
+; letters upper case (URLs are case-sensitive); everything else as is
+p2a:    cmp #$41
+        bcc _p2a_r
+        cmp #$5b
+        bcs _p2a_u
+        ora #$20
+        rts
+_p2a_u: cmp #$c1
+        bcc _p2a_r
+        cmp #$db
+        bcs _p2a_r
+        and #$7f
+_p2a_r: rts
+
+; ASCII -> the font's PETSCII: a-z -> $41-$5a, A-Z -> $c1-$da, other
+; control or 8-bit bytes -> '.'
+a2p:    cmp #$20
+        bcc _a2p_dot
+        cmp #$7f
+        bcs _a2p_dot
+        cmp #$61
+        bcc _a2p_up
+        cmp #$7b
+        bcs _a2p_r
+        and #$df
+        rts
+_a2p_up:
+        cmp #$41
+        bcc _a2p_r
+        cmp #$5b
+        bcs _a2p_r
+        ora #$80
+_a2p_r: rts
+_a2p_dot:
+        lda #$2e
+        rts
+
+tagL:   .byte <tag0, <tag1, <tag2, <tag3, <tag4, <tag5
+tagH:   .byte >tag0, >tag1, >tag2, >tag3, >tag4, >tag5
+tag0:   .text "ntp", 0
+tag1:   .text "no reply", 0
+tag2:   .text "no network", 0
+tag3:   .text "no ultimate", 0
+tag4:   .text "no ntp host", 0
+tag5:   .text "unsynced", 0
+msg_unsync: .text "clock unsynced: ", 0
+msg_noult:  .text "no ultimate command interface", 0
+msg_nonet:  .text "no network", 0
+msg_getargs: .text "need: host path", 0
+msg_conn:   .text "connecting...", 0
+msg_openf:  .text "open failed: ", 0
+msg_nodata: .text "no data from host", 0
+p_ip:       .text "ip: ", 0
+; ASCII request fragments (64tass -a would turn .text into PETSCII)
+p_get:   .byte $47,$45,$54,$20,$00                              ; "GET "
+p_http:  .byte $20,$48,$54,$54,$50,$2f,$31,$2e,$30,$0d,$0a       ; " HTTP/1.0\r\n"
+         .byte $48,$6f,$73,$74,$3a,$20,$00                       ; "Host: "
+p_crlf2: .byte $0d,$0a,$0d,$0a,$00
+rqi:     .byte 0
+tries:   .byte 0
+dirty:   .byte 0
+gp       = $4c                          ; line pointer (apps own $40-$4f)
+linebuf: .fill 48, 0
+vdline:  .fill 80, 0
+reqbuf:  .fill 128, 0
+
 ; ---------- strings / buffers ----------------------------------------
 dskstr: .text "uos-desktop", 0
 sh_title: .text "Command shell", 0
 shver:  .text "UltOS 0.3", 0
-sh_hint: .text "DIR RUN DEL COPY REN VER HELP EXIT", 0
+sh_hint: .text "DIR RUN DEL COPY REN VER IP TIME GET EXIT", 0
 p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
                                         ; would emit shifted PETSCII junk)
 msg_dird: .text "dir", 0
@@ -847,11 +1428,11 @@ dname:  .text "$"
 cmdbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 tokbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-respbuf:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+respbuf: .fill 48, 0
         .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 oldbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-respold:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+respold: .fill 48, 0
         .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 oldmode:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

@@ -15,6 +15,16 @@ builds it out into a complete C128 OS — see [docs/roadmap.html](docs/roadmap.h
 
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 
+- **Networking** (`uos-net`, 2026-09-06) — a driver for the Ultimate II+ command
+  interface: TCP/UDP sockets by host name, socket read/write, the cartridge's address.
+  Shell verbs `IP`, `TIME [SYNC]` and `GET host path` (HTTP over the Ultimate's socket).
+- **Self-setting clock** — at boot the OS checks the network and sets the CIA time-of-day
+  clock from SNTP (`pool.ntp.org`), in the time zone kept in the settings record
+  (`+`/`-` in Settings), then pushes date/time into the Ultimate's own RTC. The 80-column
+  row 0 and the Computer window say how the clock was set (`ntp`, `no network`, ...).
+- **The C128 ESC key works in C64 mode** — it is not on the C64 matrix, so the kernal
+  never saw it; `KEYIN` now scans the VIC-IIe extended matrix (ESC + the dedicated cursor
+  keys) and treats RUN/STOP as ESC on a C64.
 - **Real Applications launcher** — the "Apps submenu" placeholder is gone: the desktop
   scans the system disk directory for `uos-*` apps (system components filtered out),
   lists each as a selectable row, and any row launches through the core loader.

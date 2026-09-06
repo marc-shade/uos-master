@@ -140,14 +140,26 @@ class Mon:
         self.poke(KB_CNT, bytes([len(data)]))
 
     def launch(self, name):
-        """One-shot tick-vector trampoline: LOAD_IMM name, APP_LOADER, restore
-        the desktop tick, jump to APP_START (same recipe as tests/ci_fm.py)."""
+        """One-shot tick-vector trampoline that launches an app the way the
+        desktop menu does: r0 -> name, FILLFILE ($0829), restore the desktop
+        tick, jmp LAUNCH_APP ($0832: clears the screen, loads, enters)."""
         vec = self.peek(TICK_VEC, 2)
-        tramp = (bytes([0x20, 0x23, 0x08]) + name + b"\x00"
-                 + bytes([0x20, 0x26, 0x08])
+        straddr = TRAMP + 24
+        tramp = (bytes([0xA9, straddr & 0xff, 0x85, 0x02, 0xA9, straddr >> 8, 0x85, 0x03])
+                 + bytes([0x20, 0x29, 0x08])
                  + bytes([0xA2, vec[0], 0xA0, vec[1], 0x8E, 0x3C, 0x03, 0x8C, 0x3D, 0x03])
-                 + bytes([0x4C, 0x00, 0x50]))
+                 + bytes([0x4C, 0x32, 0x08]) + name + b"\x00")
+        assert len(tramp) == 24 + len(name) + 1
         self.poke(TRAMP, tramp)
+        self.poke(TICK_VEC, bytes([TRAMP & 0xff, TRAMP >> 8]))
+
+    def tramp(self, code):
+        """One-shot: restore the desktop tick vector, run `code`, then
+        continue into the desktop tick handler."""
+        vec = self.peek(TICK_VEC, 2)
+        t = (bytes([0xA2, vec[0], 0xA0, vec[1], 0x8E, 0x3C, 0x03, 0x8C, 0x3D, 0x03])
+             + code + bytes([0x6C, 0x3C, 0x03]))
+        self.poke(TRAMP, t)
         self.poke(TICK_VEC, bytes([TRAMP & 0xff, TRAMP >> 8]))
 
 
@@ -172,11 +184,42 @@ def show(rows, tag):
             print(f"{i:2d}: {r}")
 
 
+def check_driver_layout():
+    """routines.inc publishes uos-net's jump table and data bytes as fixed
+    addresses (the module cannot include routines.inc: duplicate labels);
+    prove the assembled module matches, byte for byte, before booting."""
+    sys.path.insert(0, UOS)
+    import hwlib
+    inc = open(os.path.join(UOS, "src/routines.inc")).read()
+    base = int(re.search(r"^NET_BASE\s*=\s*\$([0-9a-f]{4})", inc, re.M).group(1), 16)
+    want = {m.group(1): base + int(m.group(2), 16)
+            for m in re.finditer(r"^(NET_[A-Z]+)\s*=\s*NET_BASE\+\$([0-9a-f]{2})", inc, re.M)}
+    prg = open(os.path.join(UOS, "target/uos-net.prg"), "rb").read()
+    assert prg[0] | prg[1] << 8 == base, "uos-net load address != NET_BASE"
+    img = prg[2:]
+    slots = 0
+    for name, addr in want.items():
+        if addr - base <= 0x1e:
+            assert img[addr - base] == 0x4c, f"{name}: no jmp at ${addr:04x}"
+            slots += 1
+        else:
+            got = hwlib.lst_symbol("uos-net", name)
+            assert got == addr, f"{name}: routines.inc ${addr:04x} != module ${got:04x}"
+    end = base + len(img)
+    assert end <= 0x9b00, f"uos-net overruns APP_ID_TBL: ends at ${end:04x}"
+    drv = open(os.path.join(UOS, "target/uos-drv1351.prg"), "rb").read()
+    assert drv[0] | drv[1] << 8 == 0x9e00 and drv[2 + 9] == 0x4c, "KEYIN_EXT slot"
+    assert hwlib.lst_symbol("uos-drv1351", "extseen") == 0x9e0c, "KEY_EXTSEEN"
+    print(f"PASS 0: uos-net layout matches routines.inc ({slots} jump slots, "
+          f"{len(want) - slots} data labels, ends ${end:04x}); KEYIN_EXT at $9e09")
+
+
 def main():
+    check_driver_layout()
     xvfb, disp = start_xvfb()
     port = free_port()
     emu = subprocess.Popen(
-        ["x128", "-default", "-go64", "-VDC64KB", "-autostart", DISK,
+        ["x128", "-default", "-go64", "-VDC64KB", "-reu", "-reusize", "512", "-autostart", DISK,
          "-drive8true", "-drive8type", "1541", "-sounddev", "dummy",
          "-jamaction", "0", "-warp", "-remotemonitor",
          "-remotemonitoraddress", f"ip4://127.0.0.1:{port}"],
@@ -273,9 +316,162 @@ def main():
             f"FAIL: gfx module corrupted after launcher: {len(bad)} bytes from ${0xc000 + bad[0]:04x}"
         print(f"PASS F: launcher mirrored ({len(apps)} apps: {apps}); gfx module intact")
         passed += 1
+        sym = lambda n: hwlib.lst_symbol("uos-desktop", n)
+        mon.tramp(bytes([0x4C, sym("APPS_CANCEL") & 0xff, sym("APPS_CANCEL") >> 8]))
+        time.sleep(4)
+
+        # G: the clock mirror. x128 has no command interface at $df1c, so
+        # the boot sync must report "no ultimate" and the desktop shows the
+        # CIA default 12:00 PM on row 0 col 58 (forced redraw at DESK_START)
+        NET = {k: int(v, 16) for k, v in re.findall(r"^(NET_[A-Z]+)\s*=\s*NET_BASE\+\$([0-9a-f]{2})",
+                                                    open(os.path.join(UOS, "src/routines.inc")).read(), re.M)}
+        NET = {k: 0x9100 + v for k, v in NET.items()}
+        NET_DATA = 0x8800
+        # (-warp runs the CIA TOD ~10x real time: only the shape is checked)
+        rows = wait_rows(mon, lambda r: "no ultimate" in r[0][58:]
+                         and re.match(r"\d\d:\d\d [AP]M  no ultimate", r[0][58:]),
+                         "clock mirror on row 0", timeout=90)
+        show(rows[:1], "clock")
+        assert rows[0].startswith("UltOS"), rows[0]
+        st = mon.peek(NET['NET_STATE'], 1)[0]
+        assert st == 3, f"NET_STATE={st} (want 3 = no ultimate)"
+        print(f"PASS G: boot clock sync reported honestly (NET_STATE=3), row 0: {rows[0][58:]!r}")
+        passed += 1
+
+        # H: the SNTP conversion, fed a canned reply. 2026-09-06 17:45:30 UTC
+        # with the zone -16 quarter-hours (UTC-4) must become 13:45:30 local,
+        # Sunday 2026/09/06, land in the CIA TOD as 01:45 PM, and be mirrored
+        import calendar
+        import datetime
+        utc = calendar.timegm((2026, 9, 6, 17, 45, 30, 0, 0, 0))
+        pkt = bytes(40) + (utc + 2208988800).to_bytes(4, "big") + bytes(4)
+        mon.poke(NET_DATA + 2, pkt[:24])
+        mon.poke(NET_DATA + 2 + 24, pkt[24:])
+        mon.poke(0x7352, bytes([0x02, 0xf0, 0xa5]))       # record format 2, UTC-4
+        mon.poke(NET['NET_STATE'], b"\x00")
+        minute = sym("minute")
+        mon.tramp(bytes([0x20, NET['NET_APPLYNTP'] & 0xff, NET['NET_APPLYNTP'] >> 8,
+                         0xA9, 0xFF, 0x8D, minute & 0xff, minute >> 8]))
+        rows = wait_rows(mon, lambda r: re.match(r"01:4\d PM  ntp", r[0][58:]),
+                         "synced clock on row 0", timeout=60)
+        show(rows[:1], "after NTP apply")
+        got = mon.peek(NET['NET_HOUR'], 9)     # hour min sec yearL yearH mon day wday tz
+        year = got[3] | got[4] << 8
+        wday = (datetime.date(2026, 9, 6).weekday() + 1) % 7
+        assert (got[0], got[1], got[2]) == (13, 45, 30), f"time {got[:3]}"
+        assert (year, got[5], got[6], got[7]) == (2026, 9, 6, wday), f"date {year}/{got[5]}/{got[6]} wd{got[7]}"
+        assert got[8] == 0xf0, f"NET_TZ={got[8]:#x}"
+        tod = mon.peek(0xdc0b, 1)[0]; mon.peek(0xdc08, 1)
+        todm = mon.peek(0xdc0a, 1)[0]; mon.peek(0xdc08, 1)
+        assert tod == 0x81 and 0x45 <= todm <= 0x49, f"CIA TOD hours/min {tod:#x} {todm:#x} (want $81 $45..)"
+        print(f"PASS H: NTP reply -> 13:45:30 Sun 2026/09/06 local, CIA TOD $81:$45, row 0: {rows[0][58:]!r}")
+        passed += 1
+
+        # I: a zone change shifts the running clock by whole hours (+4 quarters)
+        mon.tramp(bytes([0xA9, 0x04, 0x20, NET['NET_TZSHIFT'] & 0xff, NET['NET_TZSHIFT'] >> 8,
+                         0xA9, 0xFF, 0x8D, minute & 0xff, minute >> 8]))
+        rows = wait_rows(mon, lambda r: re.match(r"02:\d\d PM  ntp", r[0][58:]), "shifted clock on row 0", timeout=60)
+        got = mon.peek(NET['NET_HOUR'], 2)
+        tz = mon.peek(NET['NET_TZ'], 1)[0]
+        assert got[0] == 14 and tz == 0xf4, f"after shift: {got} tz={tz:#x}"
+        print(f"PASS I: NET_TZSHIFT +1 h -> 14:{got[1]:02d}, NET_TZ -12, row 0: {rows[0][58:]!r}")
+        passed += 1
+
+        # J: the C128 ESC key. The KERNAL never sees it in C64 mode; KEYIN_EXT
+        # scans the VIC-IIe extended column. Press the real key through XTest
+        # with the file manager open: it must exit, and the sticky flag at
+        # $9e0c must prove the ESC matrix line (not the RUN/STOP alias) fired.
+        # (the Applications window from F may still be up; its VDC row 2
+        # stays "Applications" until a full desktop re-entry, but the tick
+        # vector is live, so LAUNCH_APP works regardless of the screen)
+        mon.launch(b"UOS-FMGR")
+        # its hint row (row 23) proves the fmgr is up and past its scan; the
+        # ">" marker column drifts on re-entry, so it is not required here
+        wait_rows(mon, lambda r: r[2].startswith("File manager") and r[23].startswith("D=del"),
+                  "file manager before ESC")
+        time.sleep(2)
+        mon.poke(0x9e0c, b"\x00")
+        sys.path.insert(0, os.path.dirname(UOS))
+        import xtst
+        xk = xtst.X(disp)
+        xk.pointer_to(700, 300)          # inside the VIC window (Xvfb focus follows the pointer)
+        xk.focus_window_named("C128")
+        time.sleep(0.5)
+        # F9 = the C128 ESC key in VICE's gtk3_sym.vkm (its "Escape" is RUN/STOP).
+        # Retry: one synthetic tap can miss the ~1 s KEYIN poll window.
+        left = False
+        for _ in range(6):
+            xk.key("F9", True); time.sleep(0.25); xk.key("F9", False)
+            for _ in range(5):
+                time.sleep(1)
+                if mon.vdc_rows()[2].startswith("desktop"):
+                    left = True
+                    break
+            if left:
+                break
+        seen = mon.peek(0x9e0c, 1)[0]
+        assert left, f"file manager did not leave on the C128 ESC key (KEY_EXTSEEN={seen})"
+        assert seen == 1, f"file manager left, but KEY_EXTSEEN={seen}: ESC came from the alias, not the C128 key line"
+        print("PASS J: the C128 ESC key (VIC-IIe extended matrix) leaves the file manager; matrix line seen")
+        passed += 1
+        time.sleep(3)
+
+        # K: settings shows and edits the zone; +/- move it an hour and shift the clock
+        mon.launch(b"UOS-SETTINGS")
+        rows = wait_rows(mon, lambda r: r[2].startswith("Settings") and r[6].startswith("  time zone:"),
+                         "settings zone row")
+        show(rows, "settings zone")
+        # the saved record still holds the default UTC-4 (check I's
+        # NET_TZSHIFT moved the running clock only, not SETREC_TZ)
+        assert rows[6][14:].strip() == "utc-04:00", rows[6]
+        assert "+/-=zone" in rows[23], rows[23]
+        def tod_hour():
+            h = mon.peek(0xdc0b, 1)[0]; mon.peek(0xdc08, 1)
+            return (h & 0x0f) + 10 * ((h >> 4) & 1) + (12 if h & 0x80 else 0) - (12 if (h & 0x1f) == 0x12 else 0)
+        h0 = tod_hour()
+        mon.keys(b"+")
+        rows = wait_rows(mon, lambda r: r[6][14:].strip() == "utc-03:00", "zone +1 h", timeout=60)
+        tz = mon.peek(0x7353, 1)[0]
+        hour = mon.peek(NET['NET_HOUR'], 1)[0]
+        assert tz == 0xf4 and hour in ((h0 + 1) % 24, (h0 + 2) % 24), f"after +: SETREC_TZ={tz:#x} NET_HOUR={hour} (TOD was {h0})"
+        mon.keys(b"-")
+        rows = wait_rows(mon, lambda r: r[6][14:].strip() == "utc-04:00", "zone -1 h", timeout=60)
+        hour2 = mon.peek(NET['NET_HOUR'], 1)[0]
+        assert hour2 in ((hour - 1) % 24, hour % 24), f"after -: NET_HOUR={hour2} (was {hour})"
+        mon.keys(b"\x1b")
+        wait_rows(mon, lambda r: r[2].startswith("desktop"), "desktop after settings")
+        print(f"PASS K: settings zone utc-04:00 -> + -> utc-03:00 (clock {hour}h) -> - -> utc-04:00 ({hour2}h); SETREC_TZ persisted")
+        passed += 1
+        time.sleep(3)
+
+        # L: the Computer window lists the address and the clock source.
+        # Re-fire the one-shot tramp until the window shows: a DESK_START
+        # re-entry (from K's settings ESC) can re-register APP_TICK over it.
+        oc = sym("ON_CLICK_COMPUTER")
+        rows = None
+        for _ in range(8):
+            mon.tramp(bytes([0x4C, oc & 0xff, oc >> 8]))
+            for _ in range(5):
+                time.sleep(2)
+                r = mon.vdc_rows()
+                if r[2].startswith("Computer") and r[7].strip().startswith("clock:"):
+                    rows = r
+                    break
+            if rows:
+                break
+        assert rows, "FAIL: computer window rows never appeared"
+        show(rows[:8], "computer")
+        assert rows[6].strip() == "ip: none", rows[6]
+        assert rows[7].strip() == "clock: ntp", rows[7]
+        cl = sym("ON_CLOSE")
+        mon.tramp(bytes([0x4C, cl & 0xff, cl >> 8]))
+        time.sleep(3)
+        print(f"PASS L: Computer window rows: {rows[6].strip()!r} / {rows[7].strip()!r}")
+        passed += 1
+
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)
-        print(f"CI-VDC PASS: {passed}/6 companion-display checks")
+        print(f"CI-VDC PASS: {passed}/12 companion-display checks")
     finally:
         emu.terminate()
         xvfb.terminate()
