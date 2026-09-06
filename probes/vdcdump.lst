@@ -1,0 +1,53 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -q -o probes/vdcdump.bin -L probes/vdcdump.lst probes/vdcdump.asm
+; Sun Sep  6 06:52:34 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: probes/vdcdump.asm
+
+.7f00	78		sei		        sei
+.7f01	a2 12		ldx #$12	        ldx #$12            ; r18 = update addr high = 0
+.7f03	8e 00 d6	stx $d600	        stx $d600
+.7f06	a9 00		lda #$00	        lda #$00
+.7f08	8d 01 d6	sta $d601	        sta $d601
+.7f0b	a2 13		ldx #$13	        ldx #$13            ; r19 = update addr low = 0
+.7f0d	8e 00 d6	stx $d600	        stx $d600
+.7f10	8d 01 d6	sta $d601	        sta $d601
+.7f13	a2 1f		ldx #$1f	        ldx #$1f            ; select r31 (auto-inc data port)
+.7f15	8e 00 d6	stx $d600	        stx $d600
+.7f18	a9 00		lda #$00	        lda #$00
+.7f1a	85 fb		sta $fb		        sta $fb             ; dest = $6000
+.7f1c	a9 60		lda #$60	        lda #$60
+.7f1e	85 fc		sta $fc		        sta $fc
+.7f20	a9 d0		lda #$d0	        lda #<2000
+.7f22	8d 5d 7f	sta $7f5d	        sta cnt
+.7f25	a9 07		lda #$07	        lda #>2000
+.7f27	8d 5e 7f	sta $7f5e	        sta cnt+1
+.7f2a	a0 00		ldy #$00	        ldy #$00
+.7f2c	2c 00 d6	bit $d600	cell:   bit $d600           ; wait VDC ready
+.7f2f	10 fb		bpl $7f2c	        bpl cell
+.7f31	ad 01 d6	lda $d601	        lda $d601
+.7f34	91 fb		sta ($fb),y	        sta ($fb),y
+.7f36	e6 fb		inc $fb		        inc $fb
+.7f38	d0 02		bne $7f3c	        bne nolo
+.7f3a	e6 fc		inc $fc		        inc $fc
+.7f3c	ad 5d 7f	lda $7f5d	nolo:   lda cnt             ; 16-bit dec cnt
+.7f3f	d0 03		bne $7f44	        bne dechi
+.7f41	ce 5e 7f	dec $7f5e	        dec cnt+1
+.7f44	ce 5d 7f	dec $7f5d	dechi:  dec cnt
+.7f47	ad 5d 7f	lda $7f5d	        lda cnt
+.7f4a	0d 5e 7f	ora $7f5e	        ora cnt+1
+.7f4d	d0 dd		bne $7f2c	        bne cell
+.7f4f	a9 00		lda #$00	        lda #$00
+=$7f50					VEC0 = *-1
+.7f51	8d 3c 03	sta $033c	        sta $033c
+.7f54	a9 00		lda #$00	        lda #$00
+=$7f55					VEC1 = *-1
+.7f56	8d 3d 03	sta $033d	        sta $033d
+.7f59	58		cli		        cli
+.7f5a	6c 3c 03	jmp ($033c)	        jmp ($033c)
+>7f5d	00 00				cnt:    .byte 0,0
+
+;******  End of listing
