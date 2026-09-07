@@ -119,6 +119,8 @@ NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
 NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
 NET_SOCK        = NET_BASE+$41
 NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
+NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
 NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
 
 ; drv1351 entry points: $9e00 = install1 (port 1), $9e03 = install2 (port 2),

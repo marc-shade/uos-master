@@ -720,6 +720,28 @@ def main():
         assert ok_peek, f"FAIL: PEEK 02A7 did not report $5A (resp={resp!r})"
         print(f"PASS 10i: POKE $02A7=$5A then PEEK reported it (resp={resp.split(chr(0).encode())[0]!r})", flush=True)
 
+        # ---- PASS 10j: CD/PWD/LS run without crashing on a plain C64 ----
+        # (no Ultimate command interface in VICE -> they answer empty; the
+        # real filesystem listing is a hardware check via DMA)
+        for verb in (b"PWD\x0d", b"LS\x0d", b"CD ..\x0d"):
+            inject_keys(mon, verb)
+            time.sleep(3)
+        # the shell must still be alive: type a char, watch the command line grow
+        cl0 = mon.read_mem(0x46, 0x46, memspace=0)[0]; mon.resume()
+        inject_keys(mon, b"X")
+        ok = False
+        deadline = time.time() + 15
+        while time.time() < deadline:
+            cl = mon.read_mem(0x46, 0x46, memspace=0)[0]; mon.resume()
+            if cl == 1:
+                ok = True
+                break
+            time.sleep(1)
+        assert ok, f"FAIL: shell not responsive after PWD/LS/CD (cmdlen={cl})"
+        inject_keys(mon, b"\x14")   # DEL the X, back to a clean line
+        time.sleep(2)
+        print("PASS 10j: PWD / LS / CD ran without crashing; shell still responsive", flush=True)
+
         # EXIT: back to the desktop
         inject_keys(mon, b"EXIT\x0d")
         ok_desk = False
@@ -758,7 +780,7 @@ def main():
         assert live, "FAIL: desktop never resumed tick dispatch after shell EXIT"
         print("PASS 10d: shell EXIT back to the desktop (tick dispatch live)",
               flush=True)
-        print("CI PASS: 17/17 emulator-verifiable checks", flush=True)
+        print("CI PASS: 18/18 emulator-verifiable checks", flush=True)
 
     finally:
         if mon:

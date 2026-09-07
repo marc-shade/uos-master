@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-net.prg -L target/uos-net.lst src/uos-net.asm
-; Sun Sep  6 14:36:15 2026
+; Sun Sep  6 19:56:37 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -136,17 +136,17 @@
 =$f0					TZ_DEFAULT      = $f0           ; -16 quarter-hours = UTC-4 (US Eastern, daylight)
 =5					TMO_OUTER       = 5             ; wait budget: 5*65536 polls, ~11 s at 1 MHz
 =510					NET_DATA_MAX    = 510           ; bytes kept of a reply (NET_DATA is 512)
-.9100	4c 62 91	jmp $9162	        jmp NET_PRESENT         ; $9100 A=1 when the command interface answers
-.9103	4c bd 91	jmp $91bd	        jmp NET_CMD             ; $9103 r0->bytes (target first), A=len -> A=status code, C=1 timeout/absent
-.9106	4c cc 92	jmp $92cc	        jmp NET_GETIP           ; $9106 A=1 when an interface has an address (NET_IP, NET_IPSTR)
-.9109	4c b8 93	jmp $93b8	        jmp NET_OPEN            ; $9109 A=7 tcp / 8 udp, r0->host, r1=port -> A=socket (NET_SOCK), C=1 failed
-.910c	4c 03 94	jmp $9403	        jmp NET_CLOSE           ; $910c A=socket
-.910f	4c 1d 94	jmp $941d	        jmp NET_READ            ; $910f A=socket, r1=max(<=508) -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
-.9112	4c 8a 94	jmp $948a	        jmp NET_WRITE           ; $9112 A=socket, r0->data, X=len(1..200) -> A=status code
-.9115	4c b6 94	jmp $94b6	        jmp NET_SYNC            ; $9115 network check + SNTP -> TOD + Ultimate RTC; A=NET_STATE
-.9118	4c d6 95	jmp $95d6	        jmp NET_APPLYNTP        ; $9118 NET_DATA+2..: 48-byte reply -> local time/date + TOD; A=0 ok
-.911b	4c 2d 99	jmp $992d	        jmp NET_RTCTIME         ; $911b Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
-.911e	4c 3c 99	jmp $993c	        jmp NET_TZSHIFT         ; $911e A=signed quarter-hours -> shift the TOD (zone change)
+.9100	4c 64 91	jmp $9164	        jmp NET_PRESENT         ; $9100 A=1 when the command interface answers
+.9103	4c bf 91	jmp $91bf	        jmp NET_CMD             ; $9103 r0->bytes (target first), A=len -> A=status code, C=1 timeout/absent
+.9106	4c e1 92	jmp $92e1	        jmp NET_GETIP           ; $9106 A=1 when an interface has an address (NET_IP, NET_IPSTR)
+.9109	4c cd 93	jmp $93cd	        jmp NET_OPEN            ; $9109 A=7 tcp / 8 udp, r0->host, r1=port -> A=socket (NET_SOCK), C=1 failed
+.910c	4c 18 94	jmp $9418	        jmp NET_CLOSE           ; $910c A=socket
+.910f	4c 32 94	jmp $9432	        jmp NET_READ            ; $910f A=socket, r1=max(<=508) -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+.9112	4c 9f 94	jmp $949f	        jmp NET_WRITE           ; $9112 A=socket, r0->data, X=len(1..200) -> A=status code
+.9115	4c cb 94	jmp $94cb	        jmp NET_SYNC            ; $9115 network check + SNTP -> TOD + Ultimate RTC; A=NET_STATE
+.9118	4c eb 95	jmp $95eb	        jmp NET_APPLYNTP        ; $9118 NET_DATA+2..: 48-byte reply -> local time/date + TOD; A=0 ok
+.911b	4c 42 99	jmp $9942	        jmp NET_RTCTIME         ; $911b Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+.911e	4c 51 99	jmp $9951	        jmp NET_TZSHIFT         ; $911e A=signed quarter-hours -> shift the TOD (zone change)
 >9121	ff				NET_STATE:  .byte $ff           ; $9121 $ff not tried, 0 ntp ok, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
 >9122	00				NET_HOUR:   .byte 0             ; $9122 local time, 24 h, binary
 >9123	00				NET_MIN:    .byte 0             ; $9123
@@ -164,1041 +164,1051 @@
 >9142	00 00 00 00 00 00 00 00		NET_STAT:   .fill 32, 0         ; $9142 last status line "NN,TEXT", 0-terminated
 >914a	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >915a	00 00 00 00 00 00 00 00
-.9162					NET_PRESENT:
-.9162	ad 1d df	lda $df1d	        lda UCI_ID
-.9165	c9 c9		cmp #$c9	        cmp #$c9
-.9167	d0 0a		bne $9173	        bne np_no
-.9169	ad 1d df	lda $df1d	        lda UCI_ID              ; twice: an open bus does not hold $c9
-.916c	c9 c9		cmp #$c9	        cmp #$c9
-.916e	d0 03		bne $9173	        bne np_no
-.9170	a9 01		lda #$01	        lda #$01
-.9172	60		rts		        rts
-.9173	a9 00		lda #$00	np_no:  lda #$00
-.9175	60		rts		        rts
-.9176					tmo_init:
-.9176	a9 00		lda #$00	        lda #$00
-.9178	8d fa 99	sta $99fa	        sta tmo0
-.917b	8d fe 99	sta $99fe	        sta tmo1
-.917e	a9 05		lda #$05	        lda #TMO_OUTER
-.9180	8d ff 99	sta $99ff	        sta tmo2
-.9183	60		rts		        rts
-.9184					tmo_tick:
-.9184	ce fa 99	dec $99fa	        dec tmo0
-.9187	d0 0c		bne $9195	        bne tt_ok
-.9189	ce fe 99	dec $99fe	        dec tmo1
-.918c	d0 07		bne $9195	        bne tt_ok
-.918e	ce ff 99	dec $99ff	        dec tmo2
-.9191	d0 02		bne $9195	        bne tt_ok
-.9193	38		sec		        sec
-.9194	60		rts		        rts
-.9195	18		clc		tt_ok:  clc
+>9162	00				NET_DIRMODE: .byte 0            ; $9162 1 = READ_DIR: null-separate + count each reply block
+>9163	00				NET_DIRN:   .byte 0             ; $9163 directory entry count after a dir read
+.9164					NET_PRESENT:
+.9164	ad 1d df	lda $df1d	        lda UCI_ID
+.9167	c9 c9		cmp #$c9	        cmp #$c9
+.9169	d0 0a		bne $9175	        bne np_no
+.916b	ad 1d df	lda $df1d	        lda UCI_ID              ; twice: an open bus does not hold $c9
+.916e	c9 c9		cmp #$c9	        cmp #$c9
+.9170	d0 03		bne $9175	        bne np_no
+.9172	a9 01		lda #$01	        lda #$01
+.9174	60		rts		        rts
+.9175	a9 00		lda #$00	np_no:  lda #$00
+.9177	60		rts		        rts
+.9178					tmo_init:
+.9178	a9 00		lda #$00	        lda #$00
+.917a	8d 0f 9a	sta $9a0f	        sta tmo0
+.917d	8d 13 9a	sta $9a13	        sta tmo1
+.9180	a9 05		lda #$05	        lda #TMO_OUTER
+.9182	8d 14 9a	sta $9a14	        sta tmo2
+.9185	60		rts		        rts
+.9186					tmo_tick:
+.9186	ce 0f 9a	dec $9a0f	        dec tmo0
+.9189	d0 0c		bne $9197	        bne tt_ok
+.918b	ce 13 9a	dec $9a13	        dec tmo1
+.918e	d0 07		bne $9197	        bne tt_ok
+.9190	ce 14 9a	dec $9a14	        dec tmo2
+.9193	d0 02		bne $9197	        bne tt_ok
+.9195	38		sec		        sec
 .9196	60		rts		        rts
-.9197					wait_idle:
-.9197	20 76 91	jsr $9176	        jsr tmo_init
-.919a	ad 1c df	lda $df1c	wi_l:   lda UCI_STAT
-.919d	29 30		and #$30	        and #$30
-.919f	f0 06		beq $91a7	        beq wi_ok
-.91a1	20 84 91	jsr $9184	        jsr tmo_tick
-.91a4	90 f4		bcc $919a	        bcc wi_l
-.91a6	60		rts		        rts
-.91a7	18		clc		wi_ok:  clc
+.9197	18		clc		tt_ok:  clc
+.9198	60		rts		        rts
+.9199					wait_idle:
+.9199	20 78 91	jsr $9178	        jsr tmo_init
+.919c	ad 1c df	lda $df1c	wi_l:   lda UCI_STAT
+.919f	29 30		and #$30	        and #$30
+.91a1	f0 06		beq $91a9	        beq wi_ok
+.91a3	20 86 91	jsr $9186	        jsr tmo_tick
+.91a6	90 f4		bcc $919c	        bcc wi_l
 .91a8	60		rts		        rts
-.91a9					wait_done:
-.91a9	20 76 91	jsr $9176	        jsr tmo_init
-.91ac	ad 1c df	lda $df1c	wd_l:   lda UCI_STAT
-.91af	29 30		and #$30	        and #$30
-.91b1	c9 10		cmp #$10	        cmp #$10
-.91b3	d0 06		bne $91bb	        bne wd_ok
-.91b5	20 84 91	jsr $9184	        jsr tmo_tick
-.91b8	90 f2		bcc $91ac	        bcc wd_l
-.91ba	60		rts		        rts
-.91bb	18		clc		wd_ok:  clc
+.91a9	18		clc		wi_ok:  clc
+.91aa	60		rts		        rts
+.91ab					wait_done:
+.91ab	20 78 91	jsr $9178	        jsr tmo_init
+.91ae	ad 1c df	lda $df1c	wd_l:   lda UCI_STAT
+.91b1	29 30		and #$30	        and #$30
+.91b3	c9 10		cmp #$10	        cmp #$10
+.91b5	d0 06		bne $91bd	        bne wd_ok
+.91b7	20 86 91	jsr $9186	        jsr tmo_tick
+.91ba	90 f2		bcc $91ae	        bcc wd_l
 .91bc	60		rts		        rts
-.91bd					NET_CMD:
-.91bd	8d 00 9a	sta $9a00	        sta cmdlen
-.91c0	a9 00		lda #$00	        lda #$00
-.91c2	8d 3f 91	sta $913f	        sta NET_LEN
-.91c5	8d 40 91	sta $9140	        sta NET_LEN+1
-.91c8	8d 42 91	sta $9142	        sta NET_STAT
-.91cb	8d 00 88	sta $8800	        sta NET_DATA
-.91ce	20 62 91	jsr $9162	        jsr NET_PRESENT
-.91d1	d0 04		bne $91d7	        bne nc_go
-.91d3	a9 fe		lda #$fe	        lda #$fe
-.91d5	38		sec		        sec
-.91d6	60		rts		        rts
-.91d7	20 97 91	jsr $9197	nc_go:  jsr wait_idle
-.91da	90 0f		bcc $91eb	        bcc nc_push
-.91dc	a9 04		lda #$04	        lda #$04                ; stuck in a previous transaction: abort it
-.91de	8d 1c df	sta $df1c	        sta UCI_CTRL
-.91e1	a9 08		lda #$08	        lda #$08
+.91bd	18		clc		wd_ok:  clc
+.91be	60		rts		        rts
+.91bf					NET_CMD:
+.91bf	8d 15 9a	sta $9a15	        sta cmdlen
+.91c2	a9 00		lda #$00	        lda #$00
+.91c4	8d 3f 91	sta $913f	        sta NET_LEN
+.91c7	8d 40 91	sta $9140	        sta NET_LEN+1
+.91ca	8d 42 91	sta $9142	        sta NET_STAT
+.91cd	8d 00 88	sta $8800	        sta NET_DATA
+.91d0	8d 63 91	sta $9163	        sta NET_DIRN
+.91d3	20 64 91	jsr $9164	        jsr NET_PRESENT
+.91d6	d0 04		bne $91dc	        bne nc_go
+.91d8	a9 fe		lda #$fe	        lda #$fe
+.91da	38		sec		        sec
+.91db	60		rts		        rts
+.91dc	20 99 91	jsr $9199	nc_go:  jsr wait_idle
+.91df	90 0f		bcc $91f0	        bcc nc_push
+.91e1	a9 04		lda #$04	        lda #$04                ; stuck in a previous transaction: abort it
 .91e3	8d 1c df	sta $df1c	        sta UCI_CTRL
-.91e6	20 97 91	jsr $9197	        jsr wait_idle
-.91e9	b0 57		bcs $9242	        bcs nc_tmo
-.91eb					nc_push:
-.91eb	a0 00		ldy #$00	        ldy #$00
-.91ed	b1 02		lda ($02),y	nc_w:   lda (r0),y
-.91ef	8d 1d df	sta $df1d	        sta UCI_CMD
-.91f2	c8		iny		        iny
-.91f3	cc 00 9a	cpy $9a00	        cpy cmdlen
-.91f6	d0 f5		bne $91ed	        bne nc_w
-.91f8	a9 01		lda #$01	        lda #$01                ; PUSH_CMD
-.91fa	8d 1c df	sta $df1c	        sta UCI_CTRL
-.91fd	ad 1c df	lda $df1c	        lda UCI_STAT
-.9200	29 08		and #$08	        and #$08                ; ERROR: pushed while not idle
-.9202	f0 08		beq $920c	        beq nc_wait
-.9204	a9 08		lda #$08	        lda #$08                ; CLR_ERR
-.9206	8d 1c df	sta $df1c	        sta UCI_CTRL
-.9209	4c 42 92	jmp $9242	        jmp nc_tmo
-.920c					nc_wait:
-.920c	20 a9 91	jsr $91a9	        jsr wait_done
-.920f	b0 31		bcs $9242	        bcs nc_tmo
-.9211					nc_more:
-.9211	20 4b 92	jsr $924b	        jsr read_data
-.9214	20 8c 92	jsr $928c	        jsr read_status
-.9217	a9 02		lda #$02	        lda #$02                ; DATA_ACC: release the queues
-.9219	8d 1c df	sta $df1c	        sta UCI_CTRL
-.921c	20 76 91	jsr $9176	        jsr tmo_init
-.921f	ad 1c df	lda $df1c	nc_acc: lda UCI_STAT
-.9222	29 02		and #$02	        and #$02
-.9224	f0 08		beq $922e	        beq nc_acc_ok
-.9226	20 84 91	jsr $9184	        jsr tmo_tick
-.9229	90 f4		bcc $921f	        bcc nc_acc
-.922b	4c 42 92	jmp $9242	        jmp nc_tmo
-.922e					nc_acc_ok:
-.922e	20 a9 91	jsr $91a9	        jsr wait_done
-.9231	b0 0f		bcs $9242	        bcs nc_tmo
-.9233	ad 1c df	lda $df1c	        lda UCI_STAT
-.9236	29 30		and #$30	        and #$30
-.9238	f0 03		beq $923d	        beq nc_fin              ; idle: reply complete
-.923a	4c 11 92	jmp $9211	        jmp nc_more             ; another data block (multi-part reply)
-.923d	20 a8 92	jsr $92a8	nc_fin: jsr stat_code
-.9240	18		clc		        clc
-.9241	60		rts		        rts
-.9242	a9 04		lda #$04	nc_tmo: lda #$04                ; ABORT, leave the machine idle for the next call
-.9244	8d 1c df	sta $df1c	        sta UCI_CTRL
-.9247	a9 ff		lda #$ff	        lda #$ff
-.9249	38		sec		        sec
-.924a	60		rts		        rts
-.924b					read_data:
-.924b	18		clc		        clc
-.924c	a9 00		lda #$00	        lda #<NET_DATA
-.924e	6d 3f 91	adc $913f	        adc NET_LEN
-.9251	85 06		sta $06		        sta r2L
-.9253	a9 88		lda #$88	        lda #>NET_DATA
-.9255	6d 40 91	adc $9140	        adc NET_LEN+1
-.9258	85 07		sta $07		        sta r2H
-.925a	ad 1c df	lda $df1c	rd_l:   lda UCI_STAT
-.925d	10 26		bpl $9285	        bpl rd_done             ; bit 7 = DATA_AV
-.925f	ad 1e df	lda $df1e	        lda UCI_RDAT
-.9262	ae 40 91	ldx $9140	        ldx NET_LEN+1
-.9265	e0 01		cpx #$01	        cpx #>NET_DATA_MAX
-.9267	90 07		bcc $9270	        bcc rd_st
-.9269	ae 3f 91	ldx $913f	        ldx NET_LEN
-.926c	e0 fe		cpx #$fe	        cpx #<NET_DATA_MAX
-.926e	b0 ea		bcs $925a	        bcs rd_l                ; buffer full: drain and drop
-.9270	a0 00		ldy #$00	rd_st:  ldy #$00
-.9272	91 06		sta ($06),y	        sta (r2),y
-.9274	e6 06		inc $06		        inc r2L
-.9276	d0 02		bne $927a	        bne rd_i
-.9278	e6 07		inc $07		        inc r2H
-.927a	ee 3f 91	inc $913f	rd_i:   inc NET_LEN
-.927d	d0 db		bne $925a	        bne rd_l
-.927f	ee 40 91	inc $9140	        inc NET_LEN+1
-.9282	4c 5a 92	jmp $925a	        jmp rd_l
-.9285					rd_done:
-.9285	a9 00		lda #$00	        lda #$00
-.9287	a0 00		ldy #$00	        ldy #$00
-.9289	91 06		sta ($06),y	        sta (r2),y
-.928b	60		rts		        rts
-.928c					read_status:
-.928c	a0 00		ldy #$00	        ldy #$00
-.928e	ad 1c df	lda $df1c	rs_l:   lda UCI_STAT
-.9291	29 40		and #$40	        and #$40
-.9293	f0 0d		beq $92a2	        beq rs_done
-.9295	ad 1f df	lda $df1f	        lda UCI_SDAT
-.9298	c0 1f		cpy #$1f	        cpy #31
-.929a	b0 f2		bcs $928e	        bcs rs_l
-.929c	99 42 91	sta $9142,y	        sta NET_STAT,y
-.929f	c8		iny		        iny
-.92a0	d0 ec		bne $928e	        bne rs_l
-.92a2					rs_done:
-.92a2	a9 00		lda #$00	        lda #$00
-.92a4	99 42 91	sta $9142,y	        sta NET_STAT,y
-.92a7	60		rts		        rts
-.92a8					stat_code:
-.92a8	ad 42 91	lda $9142	        lda NET_STAT
-.92ab	38		sec		        sec
-.92ac	e9 30		sbc #$30	        sbc #'0'
-.92ae	c9 0a		cmp #$0a	        cmp #10
-.92b0	b0 17		bcs $92c9	        bcs sc_bad
-.92b2	85 7e		sta $7e		        sta tmpa
-.92b4	0a		asl a		        asl
-.92b5	0a		asl a		        asl
-.92b6	65 7e		adc $7e		        adc tmpa                ; *5 (no carry possible from the shifts of 0-9)
-.92b8	0a		asl a		        asl                     ; *10
-.92b9	85 7e		sta $7e		        sta tmpa
-.92bb	ad 43 91	lda $9143	        lda NET_STAT+1
-.92be	38		sec		        sec
-.92bf	e9 30		sbc #$30	        sbc #'0'
-.92c1	c9 0a		cmp #$0a	        cmp #10
-.92c3	b0 04		bcs $92c9	        bcs sc_bad
-.92c5	18		clc		        clc
-.92c6	65 7e		adc $7e		        adc tmpa
-.92c8	60		rts		        rts
-.92c9	a9 ff		lda #$ff	sc_bad: lda #$ff
-.92cb	60		rts		        rts
-.92cc					NET_GETIP:
-.92cc	a9 00		lda #$00	        lda #$00
-.92ce	8d 2b 91	sta $912b	        sta NET_IP
-.92d1	8d 2c 91	sta $912c	        sta NET_IP+1
-.92d4	8d 2d 91	sta $912d	        sta NET_IP+2
-.92d7	8d 2e 91	sta $912e	        sta NET_IP+3
-.92da	8d 2f 91	sta $912f	        sta NET_IPSTR
-.92dd	a9 4f		lda #$4f	        lda #<c_ifcnt
-.92df	85 02		sta $02		        sta r0L
-.92e1	a9 93		lda #$93	        lda #>c_ifcnt
-.92e3	85 03		sta $03		        sta r0H
-.92e5	a9 02		lda #$02	        lda #$02
-.92e7	20 bd 91	jsr $91bd	        jsr NET_CMD
-.92ea	b0 60		bcs $934c	        bcs gi_no
-.92ec	c9 00		cmp #$00	        cmp #$00
-.92ee	d0 5c		bne $934c	        bne gi_no
-.92f0	ad 3f 91	lda $913f	        lda NET_LEN
-.92f3	f0 57		beq $934c	        beq gi_no
-.92f5	ad 00 88	lda $8800	        lda NET_DATA
-.92f8	f0 52		beq $934c	        beq gi_no
-.92fa	8d 02 9a	sta $9a02	        sta ifcnt
-.92fd	a9 00		lda #$00	        lda #$00
-.92ff	8d 03 9a	sta $9a03	        sta ifidx
-.9302	ad 03 9a	lda $9a03	gi_l:   lda ifidx
-.9305	8d 53 93	sta $9353	        sta c_getip+2
-.9308	a9 51		lda #$51	        lda #<c_getip
-.930a	85 02		sta $02		        sta r0L
-.930c	a9 93		lda #$93	        lda #>c_getip
-.930e	85 03		sta $03		        sta r0H
-.9310	a9 03		lda #$03	        lda #$03
-.9312	20 bd 91	jsr $91bd	        jsr NET_CMD
-.9315	b0 2a		bcs $9341	        bcs gi_nx
-.9317	c9 00		cmp #$00	        cmp #$00
-.9319	d0 26		bne $9341	        bne gi_nx
-.931b	ad 3f 91	lda $913f	        lda NET_LEN
-.931e	c9 04		cmp #$04	        cmp #$04
-.9320	90 1f		bcc $9341	        bcc gi_nx
-.9322	ad 00 88	lda $8800	        lda NET_DATA
-.9325	0d 01 88	ora $8801	        ora NET_DATA+1
-.9328	0d 02 88	ora $8802	        ora NET_DATA+2
-.932b	0d 03 88	ora $8803	        ora NET_DATA+3
-.932e	f0 11		beq $9341	        beq gi_nx
-.9330	a2 03		ldx #$03	        ldx #$03
-.9332	bd 00 88	lda $8800,x	gi_cp:  lda NET_DATA,x
-.9335	9d 2b 91	sta $912b,x	        sta NET_IP,x
-.9338	ca		dex		        dex
-.9339	10 f7		bpl $9332	        bpl gi_cp
-.933b	20 54 93	jsr $9354	        jsr fmt_ip
-.933e	a9 01		lda #$01	        lda #$01
-.9340	60		rts		        rts
-.9341	ee 03 9a	inc $9a03	gi_nx:  inc ifidx
-.9344	ad 03 9a	lda $9a03	        lda ifidx
-.9347	cd 02 9a	cmp $9a02	        cmp ifcnt
-.934a	90 b6		bcc $9302	        bcc gi_l
-.934c	a9 00		lda #$00	gi_no:  lda #$00
-.934e	60		rts		        rts
->934f	03 02				c_ifcnt:  .byte $03, $02        ; network: GET_INTERFACE_COUNT
->9351	03 05 00			c_getip:  .byte $03, $05, $00   ; network: GET_IPADDR interface n -> ip[4] mask[4] gw[4]
-.9354					fmt_ip:
-.9354	a2 00		ldx #$00	        ldx #$00
-.9356	a0 00		ldy #$00	        ldy #$00
-.9358	b9 2b 91	lda $912b,y	fi_l:   lda NET_IP,y
-.935b	20 71 93	jsr $9371	        jsr put_dec
-.935e	c8		iny		        iny
-.935f	c0 04		cpy #$04	        cpy #$04
-.9361	f0 08		beq $936b	        beq fi_d
-.9363	a9 2e		lda #$2e	        lda #'.'
-.9365	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
-.9368	e8		inx		        inx
-.9369	d0 ed		bne $9358	        bne fi_l
-.936b	a9 00		lda #$00	fi_d:   lda #$00
-.936d	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
-.9370	60		rts		        rts
-.9371					put_dec:
-.9371	8c 07 9a	sty $9a07	        sty tmpy
-.9374	85 7e		sta $7e		        sta tmpa
-.9376	a0 00		ldy #$00	        ldy #$00                ; 0 = still suppressing leading zeros
-.9378	a9 64		lda #$64	        lda #100
-.937a	20 8f 93	jsr $938f	        jsr pd_digit
-.937d	a9 0a		lda #$0a	        lda #10
-.937f	20 8f 93	jsr $938f	        jsr pd_digit
-.9382	a5 7e		lda $7e		        lda tmpa
-.9384	18		clc		        clc
-.9385	69 30		adc #$30	        adc #'0'
-.9387	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
-.938a	e8		inx		        inx
-.938b	ac 07 9a	ldy $9a07	        ldy tmpy
-.938e	60		rts		        rts
-.938f					pd_digit:
-.938f	8d 12 9a	sta $9a12	        sta tmpd
-.9392	a9 00		lda #$00	        lda #$00
-.9394	85 7f		sta $7f		        sta tmpc
-.9396	a5 7e		lda $7e		pd_l:   lda tmpa
-.9398	cd 12 9a	cmp $9a12	        cmp tmpd
-.939b	90 0a		bcc $93a7	        bcc pd_e
-.939d	ed 12 9a	sbc $9a12	        sbc tmpd
-.93a0	85 7e		sta $7e		        sta tmpa
-.93a2	e6 7f		inc $7f		        inc tmpc
-.93a4	4c 96 93	jmp $9396	        jmp pd_l
-.93a7	a5 7f		lda $7f		pd_e:   lda tmpc
-.93a9	d0 04		bne $93af	        bne pd_emit
-.93ab	c0 00		cpy #$00	        cpy #$00
-.93ad	f0 08		beq $93b7	        beq pd_r
-.93af					pd_emit:
-.93af	18		clc		        clc
-.93b0	69 30		adc #$30	        adc #'0'
-.93b2	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
-.93b5	e8		inx		        inx
-.93b6	c8		iny		        iny
-.93b7	60		rts		pd_r:   rts
-.93b8					NET_OPEN:
-.93b8	8d 14 9a	sta $9a14	        sta cmdb+1
-.93bb	a9 03		lda #$03	        lda #$03
-.93bd	8d 13 9a	sta $9a13	        sta cmdb
-.93c0	a5 04		lda $04		        lda r1L
-.93c2	8d 15 9a	sta $9a15	        sta cmdb+2
-.93c5	a5 05		lda $05		        lda r1H
-.93c7	8d 16 9a	sta $9a16	        sta cmdb+3
-.93ca	a0 00		ldy #$00	        ldy #$00
-.93cc	b1 02		lda ($02),y	no_cp:  lda (r0),y
-.93ce	99 17 9a	sta $9a17,y	        sta cmdb+4,y
-.93d1	f0 0a		beq $93dd	        beq no_e
-.93d3	c8		iny		        iny
-.93d4	c0 28		cpy #$28	        cpy #40
-.93d6	d0 f4		bne $93cc	        bne no_cp
-.93d8	a9 00		lda #$00	        lda #$00
-.93da	99 17 9a	sta $9a17,y	        sta cmdb+4,y
-.93dd	98		tya		no_e:   tya
-.93de	18		clc		        clc
-.93df	69 05		adc #$05	        adc #$05                ; header 4 + host + terminator
-.93e1	48		pha		        pha
-.93e2	a9 13		lda #$13	        lda #<cmdb
-.93e4	85 02		sta $02		        sta r0L
-.93e6	a9 9a		lda #$9a	        lda #>cmdb
-.93e8	85 03		sta $03		        sta r0H
-.93ea	68		pla		        pla
-.93eb	20 bd 91	jsr $91bd	        jsr NET_CMD
-.93ee	b0 11		bcs $9401	        bcs no_f
-.93f0	c9 00		cmp #$00	        cmp #$00
-.93f2	d0 0d		bne $9401	        bne no_f
-.93f4	ad 3f 91	lda $913f	        lda NET_LEN
-.93f7	f0 08		beq $9401	        beq no_f
-.93f9	ad 00 88	lda $8800	        lda NET_DATA
-.93fc	8d 41 91	sta $9141	        sta NET_SOCK
-.93ff	18		clc		        clc
-.9400	60		rts		        rts
-.9401	38		sec		no_f:   sec
-.9402	60		rts		        rts
-.9403					NET_CLOSE:
-.9403	8d 15 9a	sta $9a15	        sta cmdb+2
-.9406	a9 03		lda #$03	        lda #$03
-.9408	8d 13 9a	sta $9a13	        sta cmdb
-.940b	a9 09		lda #$09	        lda #$09
-.940d	8d 14 9a	sta $9a14	        sta cmdb+1
-.9410	a9 13		lda #$13	        lda #<cmdb
-.9412	85 02		sta $02		        sta r0L
-.9414	a9 9a		lda #$9a	        lda #>cmdb
-.9416	85 03		sta $03		        sta r0H
-.9418	a9 03		lda #$03	        lda #$03
-.941a	4c bd 91	jmp $91bd	        jmp NET_CMD
-.941d					NET_READ:
-.941d	8d 15 9a	sta $9a15	        sta cmdb+2
-.9420	a9 03		lda #$03	        lda #$03
-.9422	8d 13 9a	sta $9a13	        sta cmdb
-.9425	a9 10		lda #$10	        lda #$10
-.9427	8d 14 9a	sta $9a14	        sta cmdb+1
-.942a	a5 04		lda $04		        lda r1L
-.942c	8d 16 9a	sta $9a16	        sta cmdb+3
-.942f	a5 05		lda $05		        lda r1H
-.9431	8d 17 9a	sta $9a17	        sta cmdb+4
-.9434	a9 13		lda #$13	        lda #<cmdb
-.9436	85 02		sta $02		        sta r0L
-.9438	a9 9a		lda #$9a	        lda #>cmdb
-.943a	85 03		sta $03		        sta r0H
-.943c	a9 05		lda #$05	        lda #$05
-.943e	20 bd 91	jsr $91bd	        jsr NET_CMD
-.9441	b0 27		bcs $946a	        bcs nr_err
-.9443	48		pha		        pha
-.9444	ad 3f 91	lda $913f	        lda NET_LEN
-.9447	c9 02		cmp #$02	        cmp #$02
-.9449	90 22		bcc $946d	        bcc nr_e2
-.944b	ad 00 88	lda $8800	        lda NET_DATA            ; count word from the reply
-.944e	8d 3f 91	sta $913f	        sta NET_LEN
-.9451	ad 01 88	lda $8801	        lda NET_DATA+1
-.9454	8d 40 91	sta $9140	        sta NET_LEN+1
-.9457	68		pla		        pla
-.9458	c9 00		cmp #$00	        cmp #$00
-.945a	f0 15		beq $9471	        beq nr_ok
-.945c	c9 01		cmp #$01	        cmp #$01                ; "01,CONNECTION CLOSED BY HOST"
-.945e	f0 14		beq $9474	        beq nr_closed
-.9460	ad 3f 91	lda $913f	        lda NET_LEN
-.9463	2d 40 91	and $9140	        and NET_LEN+1
-.9466	c9 ff		cmp #$ff	        cmp #$ff                ; -1: nothing within the window
-.9468	f0 15		beq $947f	        beq nr_none
-.946a	a9 03		lda #$03	nr_err: lda #$03
-.946c	60		rts		        rts
-.946d	68		pla		nr_e2:  pla
-.946e	4c 6a 94	jmp $946a	        jmp nr_err
-.9471	a9 00		lda #$00	nr_ok:  lda #$00
-.9473	60		rts		        rts
-.9474					nr_closed:
-.9474	a9 00		lda #$00	        lda #$00
-.9476	8d 3f 91	sta $913f	        sta NET_LEN
-.9479	8d 40 91	sta $9140	        sta NET_LEN+1
-.947c	a9 02		lda #$02	        lda #$02
-.947e	60		rts		        rts
-.947f					nr_none:
-.947f	a9 00		lda #$00	        lda #$00
-.9481	8d 3f 91	sta $913f	        sta NET_LEN
-.9484	8d 40 91	sta $9140	        sta NET_LEN+1
-.9487	a9 01		lda #$01	        lda #$01
-.9489	60		rts		        rts
-.948a					NET_WRITE:
-.948a	8d 15 9a	sta $9a15	        sta cmdb+2
-.948d	8e 01 9a	stx $9a01	        stx cmdlen2
-.9490	a9 03		lda #$03	        lda #$03
-.9492	8d 13 9a	sta $9a13	        sta cmdb
-.9495	a9 11		lda #$11	        lda #$11
-.9497	8d 14 9a	sta $9a14	        sta cmdb+1
-.949a	a0 00		ldy #$00	        ldy #$00
-.949c	b1 02		lda ($02),y	nw_cp:  lda (r0),y
-.949e	99 16 9a	sta $9a16,y	        sta cmdb+3,y
-.94a1	c8		iny		        iny
-.94a2	cc 01 9a	cpy $9a01	        cpy cmdlen2
-.94a5	d0 f5		bne $949c	        bne nw_cp
-.94a7	a9 13		lda #$13	        lda #<cmdb
-.94a9	85 02		sta $02		        sta r0L
-.94ab	a9 9a		lda #$9a	        lda #>cmdb
-.94ad	85 03		sta $03		        sta r0H
-.94af	98		tya		        tya
-.94b0	18		clc		        clc
-.94b1	69 03		adc #$03	        adc #$03
-.94b3	4c bd 91	jmp $91bd	        jmp NET_CMD
-.94b6					NET_SYNC:
-.94b6	20 6d 96	jsr $966d	        jsr get_tz              ; normalise the zone bytes even when the
-.94b9	20 62 91	jsr $9162	        jsr NET_PRESENT         ; sync cannot run (settings shows them)
-.94bc	d0 05		bne $94c3	        bne ns_p
-.94be	a9 03		lda #$03	        lda #$03
-.94c0	4c 66 95	jmp $9566	        jmp ns_set
-.94c3	20 cc 92	jsr $92cc	ns_p:   jsr NET_GETIP
-.94c6	d0 05		bne $94cd	        bne ns_net
-.94c8	a9 02		lda #$02	        lda #$02
-.94ca	4c 66 95	jmp $9566	        jmp ns_set
-.94cd	a9 00		lda #$00	ns_net: lda #$00
-.94cf	8d fb 99	sta $99fb	        sta hidx
-.94d2	a9 04		lda #$04	        lda #$04                ; failure code if no host even opens
-.94d4	8d fc 99	sta $99fc	        sta failcode
-.94d7					ns_host:
-.94d7	ae fb 99	ldx $99fb	        ldx hidx
-.94da	bd 6f 95	lda $956f,x	        lda ntp_hostL,x
-.94dd	85 02		sta $02		        sta r0L
-.94df	bd 72 95	lda $9572,x	        lda ntp_hostH,x
-.94e2	85 03		sta $03		        sta r0H
-.94e4	a9 7b		lda #$7b	        lda #<NTP_PORT
-.94e6	85 04		sta $04		        sta r1L
-.94e8	a9 00		lda #$00	        lda #>NTP_PORT
-.94ea	85 05		sta $05		        sta r1H
-.94ec	a9 08		lda #$08	        lda #$08                ; udp
-.94ee	20 b8 93	jsr $93b8	        jsr NET_OPEN
-.94f1	90 03		bcc $94f6	        bcc ns_open
-.94f3	4c 31 95	jmp $9531	        jmp ns_next
-.94f6					ns_open:
-.94f6	a9 a6		lda #$a6	        lda #<ntp_req
-.94f8	85 02		sta $02		        sta r0L
-.94fa	a9 95		lda #$95	        lda #>ntp_req
-.94fc	85 03		sta $03		        sta r0H
-.94fe	a2 30		ldx #$30	        ldx #48
-.9500	ad 41 91	lda $9141	        lda NET_SOCK
-.9503	20 8a 94	jsr $948a	        jsr NET_WRITE
-.9506	a9 96		lda #$96	        lda #150                ; the Ultimate answers a read at once when
-.9508	8d 04 9a	sta $9a04	        sta tries               ; nothing is queued: ~1.5 s of polling
-.950b	a9 30		lda #$30	ns_rd:  lda #48
-.950d	85 04		sta $04		        sta r1L
-.950f	a9 00		lda #$00	        lda #$00
-.9511	85 05		sta $05		        sta r1H
-.9513	ad 41 91	lda $9141	        lda NET_SOCK
-.9516	20 1d 94	jsr $941d	        jsr NET_READ
-.9519	c9 00		cmp #$00	        cmp #$00
-.951b	f0 24		beq $9541	        beq ns_got
-.951d	c9 01		cmp #$01	        cmp #$01
-.951f	d0 05		bne $9526	        bne ns_fail
-.9521	ce 04 9a	dec $9a04	        dec tries
-.9524	d0 e5		bne $950b	        bne ns_rd
-.9526					ns_fail:
-.9526	ad 41 91	lda $9141	        lda NET_SOCK
-.9529	20 03 94	jsr $9403	        jsr NET_CLOSE
-.952c	a9 01		lda #$01	        lda #$01
-.952e	8d fc 99	sta $99fc	        sta failcode            ; a host was reachable but silent
-.9531					ns_next:
-.9531	ee fb 99	inc $99fb	        inc hidx
-.9534	ad fb 99	lda $99fb	        lda hidx
-.9537	c9 03		cmp #$03	        cmp #NTP_HOSTS
-.9539	90 9c		bcc $94d7	        bcc ns_host
-.953b	ad fc 99	lda $99fc	        lda failcode
-.953e	4c 66 95	jmp $9566	        jmp ns_set
-.9541	ad 40 91	lda $9140	ns_got: lda NET_LEN+1
-.9544	d0 0a		bne $9550	        bne ns_len_ok
-.9546	ad 3f 91	lda $913f	        lda NET_LEN
-.9549	c9 2c		cmp #$2c	        cmp #44                 ; transmit timestamp ends at byte 43
-.954b	b0 03		bcs $9550	        bcs ns_len_ok
-.954d	4c 26 95	jmp $9526	        jmp ns_fail
-.9550					ns_len_ok:
-.9550	20 d6 95	jsr $95d6	        jsr NET_APPLYNTP        ; before the close: NET_CMD reuses NET_DATA
-.9553	8d 05 9a	sta $9a05	        sta applyres
-.9556	ad 41 91	lda $9141	        lda NET_SOCK
-.9559	20 03 94	jsr $9403	        jsr NET_CLOSE
-.955c	ad 05 9a	lda $9a05	        lda applyres
-.955f	d0 09		bne $956a	        bne ns_bad
-.9561	20 ef 98	jsr $98ef	        jsr rtc_push
-.9564	a9 00		lda #$00	        lda #$00
-.9566	8d 21 91	sta $9121	ns_set: sta NET_STATE
-.9569	60		rts		        rts
-.956a	a9 01		lda #$01	ns_bad: lda #$01
-.956c	4c 66 95	jmp $9566	        jmp ns_set
+.91e6	a9 08		lda #$08	        lda #$08
+.91e8	8d 1c df	sta $df1c	        sta UCI_CTRL
+.91eb	20 99 91	jsr $9199	        jsr wait_idle
+.91ee	b0 67		bcs $9257	        bcs nc_tmo
+.91f0					nc_push:
+.91f0	a0 00		ldy #$00	        ldy #$00
+.91f2	b1 02		lda ($02),y	nc_w:   lda (r0),y
+.91f4	8d 1d df	sta $df1d	        sta UCI_CMD
+.91f7	c8		iny		        iny
+.91f8	cc 15 9a	cpy $9a15	        cpy cmdlen
+.91fb	d0 f5		bne $91f2	        bne nc_w
+.91fd	a9 01		lda #$01	        lda #$01                ; PUSH_CMD
+.91ff	8d 1c df	sta $df1c	        sta UCI_CTRL
+.9202	ad 1c df	lda $df1c	        lda UCI_STAT
+.9205	29 08		and #$08	        and #$08                ; ERROR: pushed while not idle
+.9207	f0 08		beq $9211	        beq nc_wait
+.9209	a9 08		lda #$08	        lda #$08                ; CLR_ERR
+.920b	8d 1c df	sta $df1c	        sta UCI_CTRL
+.920e	4c 57 92	jmp $9257	        jmp nc_tmo
+.9211					nc_wait:
+.9211	20 ab 91	jsr $91ab	        jsr wait_done
+.9214	b0 41		bcs $9257	        bcs nc_tmo
+.9216					nc_more:
+.9216	20 60 92	jsr $9260	        jsr read_data
+.9219	20 a1 92	jsr $92a1	        jsr read_status
+.921c	ad 62 91	lda $9162	        lda NET_DIRMODE         ; directory mode: each reply block is one
+.921f	f0 0b		beq $922c	        beq nc_nodir            ; entry -> keep read_data's $00 as a separator
+.9221	ee 3f 91	inc $913f	        inc NET_LEN             ; (advance past it) and count the entry
+.9224	d0 03		bne $9229	        bne nc_dc
+.9226	ee 40 91	inc $9140	        inc NET_LEN+1
+.9229	ee 63 91	inc $9163	nc_dc:  inc NET_DIRN
+.922c					nc_nodir:
+.922c	a9 02		lda #$02	        lda #$02                ; DATA_ACC: release the queues
+.922e	8d 1c df	sta $df1c	        sta UCI_CTRL
+.9231	20 78 91	jsr $9178	        jsr tmo_init
+.9234	ad 1c df	lda $df1c	nc_acc: lda UCI_STAT
+.9237	29 02		and #$02	        and #$02
+.9239	f0 08		beq $9243	        beq nc_acc_ok
+.923b	20 86 91	jsr $9186	        jsr tmo_tick
+.923e	90 f4		bcc $9234	        bcc nc_acc
+.9240	4c 57 92	jmp $9257	        jmp nc_tmo
+.9243					nc_acc_ok:
+.9243	20 ab 91	jsr $91ab	        jsr wait_done
+.9246	b0 0f		bcs $9257	        bcs nc_tmo
+.9248	ad 1c df	lda $df1c	        lda UCI_STAT
+.924b	29 30		and #$30	        and #$30
+.924d	f0 03		beq $9252	        beq nc_fin              ; idle: reply complete
+.924f	4c 16 92	jmp $9216	        jmp nc_more             ; another data block (multi-part reply)
+.9252	20 bd 92	jsr $92bd	nc_fin: jsr stat_code
+.9255	18		clc		        clc
+.9256	60		rts		        rts
+.9257	a9 04		lda #$04	nc_tmo: lda #$04                ; ABORT, leave the machine idle for the next call
+.9259	8d 1c df	sta $df1c	        sta UCI_CTRL
+.925c	a9 ff		lda #$ff	        lda #$ff
+.925e	38		sec		        sec
+.925f	60		rts		        rts
+.9260					read_data:
+.9260	18		clc		        clc
+.9261	a9 00		lda #$00	        lda #<NET_DATA
+.9263	6d 3f 91	adc $913f	        adc NET_LEN
+.9266	85 06		sta $06		        sta r2L
+.9268	a9 88		lda #$88	        lda #>NET_DATA
+.926a	6d 40 91	adc $9140	        adc NET_LEN+1
+.926d	85 07		sta $07		        sta r2H
+.926f	ad 1c df	lda $df1c	rd_l:   lda UCI_STAT
+.9272	10 26		bpl $929a	        bpl rd_done             ; bit 7 = DATA_AV
+.9274	ad 1e df	lda $df1e	        lda UCI_RDAT
+.9277	ae 40 91	ldx $9140	        ldx NET_LEN+1
+.927a	e0 01		cpx #$01	        cpx #>NET_DATA_MAX
+.927c	90 07		bcc $9285	        bcc rd_st
+.927e	ae 3f 91	ldx $913f	        ldx NET_LEN
+.9281	e0 fe		cpx #$fe	        cpx #<NET_DATA_MAX
+.9283	b0 ea		bcs $926f	        bcs rd_l                ; buffer full: drain and drop
+.9285	a0 00		ldy #$00	rd_st:  ldy #$00
+.9287	91 06		sta ($06),y	        sta (r2),y
+.9289	e6 06		inc $06		        inc r2L
+.928b	d0 02		bne $928f	        bne rd_i
+.928d	e6 07		inc $07		        inc r2H
+.928f	ee 3f 91	inc $913f	rd_i:   inc NET_LEN
+.9292	d0 db		bne $926f	        bne rd_l
+.9294	ee 40 91	inc $9140	        inc NET_LEN+1
+.9297	4c 6f 92	jmp $926f	        jmp rd_l
+.929a					rd_done:
+.929a	a9 00		lda #$00	        lda #$00
+.929c	a0 00		ldy #$00	        ldy #$00
+.929e	91 06		sta ($06),y	        sta (r2),y
+.92a0	60		rts		        rts
+.92a1					read_status:
+.92a1	a0 00		ldy #$00	        ldy #$00
+.92a3	ad 1c df	lda $df1c	rs_l:   lda UCI_STAT
+.92a6	29 40		and #$40	        and #$40
+.92a8	f0 0d		beq $92b7	        beq rs_done
+.92aa	ad 1f df	lda $df1f	        lda UCI_SDAT
+.92ad	c0 1f		cpy #$1f	        cpy #31
+.92af	b0 f2		bcs $92a3	        bcs rs_l
+.92b1	99 42 91	sta $9142,y	        sta NET_STAT,y
+.92b4	c8		iny		        iny
+.92b5	d0 ec		bne $92a3	        bne rs_l
+.92b7					rs_done:
+.92b7	a9 00		lda #$00	        lda #$00
+.92b9	99 42 91	sta $9142,y	        sta NET_STAT,y
+.92bc	60		rts		        rts
+.92bd					stat_code:
+.92bd	ad 42 91	lda $9142	        lda NET_STAT
+.92c0	38		sec		        sec
+.92c1	e9 30		sbc #$30	        sbc #'0'
+.92c3	c9 0a		cmp #$0a	        cmp #10
+.92c5	b0 17		bcs $92de	        bcs sc_bad
+.92c7	85 7e		sta $7e		        sta tmpa
+.92c9	0a		asl a		        asl
+.92ca	0a		asl a		        asl
+.92cb	65 7e		adc $7e		        adc tmpa                ; *5 (no carry possible from the shifts of 0-9)
+.92cd	0a		asl a		        asl                     ; *10
+.92ce	85 7e		sta $7e		        sta tmpa
+.92d0	ad 43 91	lda $9143	        lda NET_STAT+1
+.92d3	38		sec		        sec
+.92d4	e9 30		sbc #$30	        sbc #'0'
+.92d6	c9 0a		cmp #$0a	        cmp #10
+.92d8	b0 04		bcs $92de	        bcs sc_bad
+.92da	18		clc		        clc
+.92db	65 7e		adc $7e		        adc tmpa
+.92dd	60		rts		        rts
+.92de	a9 ff		lda #$ff	sc_bad: lda #$ff
+.92e0	60		rts		        rts
+.92e1					NET_GETIP:
+.92e1	a9 00		lda #$00	        lda #$00
+.92e3	8d 2b 91	sta $912b	        sta NET_IP
+.92e6	8d 2c 91	sta $912c	        sta NET_IP+1
+.92e9	8d 2d 91	sta $912d	        sta NET_IP+2
+.92ec	8d 2e 91	sta $912e	        sta NET_IP+3
+.92ef	8d 2f 91	sta $912f	        sta NET_IPSTR
+.92f2	a9 64		lda #$64	        lda #<c_ifcnt
+.92f4	85 02		sta $02		        sta r0L
+.92f6	a9 93		lda #$93	        lda #>c_ifcnt
+.92f8	85 03		sta $03		        sta r0H
+.92fa	a9 02		lda #$02	        lda #$02
+.92fc	20 bf 91	jsr $91bf	        jsr NET_CMD
+.92ff	b0 60		bcs $9361	        bcs gi_no
+.9301	c9 00		cmp #$00	        cmp #$00
+.9303	d0 5c		bne $9361	        bne gi_no
+.9305	ad 3f 91	lda $913f	        lda NET_LEN
+.9308	f0 57		beq $9361	        beq gi_no
+.930a	ad 00 88	lda $8800	        lda NET_DATA
+.930d	f0 52		beq $9361	        beq gi_no
+.930f	8d 17 9a	sta $9a17	        sta ifcnt
+.9312	a9 00		lda #$00	        lda #$00
+.9314	8d 18 9a	sta $9a18	        sta ifidx
+.9317	ad 18 9a	lda $9a18	gi_l:   lda ifidx
+.931a	8d 68 93	sta $9368	        sta c_getip+2
+.931d	a9 66		lda #$66	        lda #<c_getip
+.931f	85 02		sta $02		        sta r0L
+.9321	a9 93		lda #$93	        lda #>c_getip
+.9323	85 03		sta $03		        sta r0H
+.9325	a9 03		lda #$03	        lda #$03
+.9327	20 bf 91	jsr $91bf	        jsr NET_CMD
+.932a	b0 2a		bcs $9356	        bcs gi_nx
+.932c	c9 00		cmp #$00	        cmp #$00
+.932e	d0 26		bne $9356	        bne gi_nx
+.9330	ad 3f 91	lda $913f	        lda NET_LEN
+.9333	c9 04		cmp #$04	        cmp #$04
+.9335	90 1f		bcc $9356	        bcc gi_nx
+.9337	ad 00 88	lda $8800	        lda NET_DATA
+.933a	0d 01 88	ora $8801	        ora NET_DATA+1
+.933d	0d 02 88	ora $8802	        ora NET_DATA+2
+.9340	0d 03 88	ora $8803	        ora NET_DATA+3
+.9343	f0 11		beq $9356	        beq gi_nx
+.9345	a2 03		ldx #$03	        ldx #$03
+.9347	bd 00 88	lda $8800,x	gi_cp:  lda NET_DATA,x
+.934a	9d 2b 91	sta $912b,x	        sta NET_IP,x
+.934d	ca		dex		        dex
+.934e	10 f7		bpl $9347	        bpl gi_cp
+.9350	20 69 93	jsr $9369	        jsr fmt_ip
+.9353	a9 01		lda #$01	        lda #$01
+.9355	60		rts		        rts
+.9356	ee 18 9a	inc $9a18	gi_nx:  inc ifidx
+.9359	ad 18 9a	lda $9a18	        lda ifidx
+.935c	cd 17 9a	cmp $9a17	        cmp ifcnt
+.935f	90 b6		bcc $9317	        bcc gi_l
+.9361	a9 00		lda #$00	gi_no:  lda #$00
+.9363	60		rts		        rts
+>9364	03 02				c_ifcnt:  .byte $03, $02        ; network: GET_INTERFACE_COUNT
+>9366	03 05 00			c_getip:  .byte $03, $05, $00   ; network: GET_IPADDR interface n -> ip[4] mask[4] gw[4]
+.9369					fmt_ip:
+.9369	a2 00		ldx #$00	        ldx #$00
+.936b	a0 00		ldy #$00	        ldy #$00
+.936d	b9 2b 91	lda $912b,y	fi_l:   lda NET_IP,y
+.9370	20 86 93	jsr $9386	        jsr put_dec
+.9373	c8		iny		        iny
+.9374	c0 04		cpy #$04	        cpy #$04
+.9376	f0 08		beq $9380	        beq fi_d
+.9378	a9 2e		lda #$2e	        lda #'.'
+.937a	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
+.937d	e8		inx		        inx
+.937e	d0 ed		bne $936d	        bne fi_l
+.9380	a9 00		lda #$00	fi_d:   lda #$00
+.9382	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
+.9385	60		rts		        rts
+.9386					put_dec:
+.9386	8c 1c 9a	sty $9a1c	        sty tmpy
+.9389	85 7e		sta $7e		        sta tmpa
+.938b	a0 00		ldy #$00	        ldy #$00                ; 0 = still suppressing leading zeros
+.938d	a9 64		lda #$64	        lda #100
+.938f	20 a4 93	jsr $93a4	        jsr pd_digit
+.9392	a9 0a		lda #$0a	        lda #10
+.9394	20 a4 93	jsr $93a4	        jsr pd_digit
+.9397	a5 7e		lda $7e		        lda tmpa
+.9399	18		clc		        clc
+.939a	69 30		adc #$30	        adc #'0'
+.939c	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
+.939f	e8		inx		        inx
+.93a0	ac 1c 9a	ldy $9a1c	        ldy tmpy
+.93a3	60		rts		        rts
+.93a4					pd_digit:
+.93a4	8d 27 9a	sta $9a27	        sta tmpd
+.93a7	a9 00		lda #$00	        lda #$00
+.93a9	85 7f		sta $7f		        sta tmpc
+.93ab	a5 7e		lda $7e		pd_l:   lda tmpa
+.93ad	cd 27 9a	cmp $9a27	        cmp tmpd
+.93b0	90 0a		bcc $93bc	        bcc pd_e
+.93b2	ed 27 9a	sbc $9a27	        sbc tmpd
+.93b5	85 7e		sta $7e		        sta tmpa
+.93b7	e6 7f		inc $7f		        inc tmpc
+.93b9	4c ab 93	jmp $93ab	        jmp pd_l
+.93bc	a5 7f		lda $7f		pd_e:   lda tmpc
+.93be	d0 04		bne $93c4	        bne pd_emit
+.93c0	c0 00		cpy #$00	        cpy #$00
+.93c2	f0 08		beq $93cc	        beq pd_r
+.93c4					pd_emit:
+.93c4	18		clc		        clc
+.93c5	69 30		adc #$30	        adc #'0'
+.93c7	9d 2f 91	sta $912f,x	        sta NET_IPSTR,x
+.93ca	e8		inx		        inx
+.93cb	c8		iny		        iny
+.93cc	60		rts		pd_r:   rts
+.93cd					NET_OPEN:
+.93cd	8d 29 9a	sta $9a29	        sta cmdb+1
+.93d0	a9 03		lda #$03	        lda #$03
+.93d2	8d 28 9a	sta $9a28	        sta cmdb
+.93d5	a5 04		lda $04		        lda r1L
+.93d7	8d 2a 9a	sta $9a2a	        sta cmdb+2
+.93da	a5 05		lda $05		        lda r1H
+.93dc	8d 2b 9a	sta $9a2b	        sta cmdb+3
+.93df	a0 00		ldy #$00	        ldy #$00
+.93e1	b1 02		lda ($02),y	no_cp:  lda (r0),y
+.93e3	99 2c 9a	sta $9a2c,y	        sta cmdb+4,y
+.93e6	f0 0a		beq $93f2	        beq no_e
+.93e8	c8		iny		        iny
+.93e9	c0 28		cpy #$28	        cpy #40
+.93eb	d0 f4		bne $93e1	        bne no_cp
+.93ed	a9 00		lda #$00	        lda #$00
+.93ef	99 2c 9a	sta $9a2c,y	        sta cmdb+4,y
+.93f2	98		tya		no_e:   tya
+.93f3	18		clc		        clc
+.93f4	69 05		adc #$05	        adc #$05                ; header 4 + host + terminator
+.93f6	48		pha		        pha
+.93f7	a9 28		lda #$28	        lda #<cmdb
+.93f9	85 02		sta $02		        sta r0L
+.93fb	a9 9a		lda #$9a	        lda #>cmdb
+.93fd	85 03		sta $03		        sta r0H
+.93ff	68		pla		        pla
+.9400	20 bf 91	jsr $91bf	        jsr NET_CMD
+.9403	b0 11		bcs $9416	        bcs no_f
+.9405	c9 00		cmp #$00	        cmp #$00
+.9407	d0 0d		bne $9416	        bne no_f
+.9409	ad 3f 91	lda $913f	        lda NET_LEN
+.940c	f0 08		beq $9416	        beq no_f
+.940e	ad 00 88	lda $8800	        lda NET_DATA
+.9411	8d 41 91	sta $9141	        sta NET_SOCK
+.9414	18		clc		        clc
+.9415	60		rts		        rts
+.9416	38		sec		no_f:   sec
+.9417	60		rts		        rts
+.9418					NET_CLOSE:
+.9418	8d 2a 9a	sta $9a2a	        sta cmdb+2
+.941b	a9 03		lda #$03	        lda #$03
+.941d	8d 28 9a	sta $9a28	        sta cmdb
+.9420	a9 09		lda #$09	        lda #$09
+.9422	8d 29 9a	sta $9a29	        sta cmdb+1
+.9425	a9 28		lda #$28	        lda #<cmdb
+.9427	85 02		sta $02		        sta r0L
+.9429	a9 9a		lda #$9a	        lda #>cmdb
+.942b	85 03		sta $03		        sta r0H
+.942d	a9 03		lda #$03	        lda #$03
+.942f	4c bf 91	jmp $91bf	        jmp NET_CMD
+.9432					NET_READ:
+.9432	8d 2a 9a	sta $9a2a	        sta cmdb+2
+.9435	a9 03		lda #$03	        lda #$03
+.9437	8d 28 9a	sta $9a28	        sta cmdb
+.943a	a9 10		lda #$10	        lda #$10
+.943c	8d 29 9a	sta $9a29	        sta cmdb+1
+.943f	a5 04		lda $04		        lda r1L
+.9441	8d 2b 9a	sta $9a2b	        sta cmdb+3
+.9444	a5 05		lda $05		        lda r1H
+.9446	8d 2c 9a	sta $9a2c	        sta cmdb+4
+.9449	a9 28		lda #$28	        lda #<cmdb
+.944b	85 02		sta $02		        sta r0L
+.944d	a9 9a		lda #$9a	        lda #>cmdb
+.944f	85 03		sta $03		        sta r0H
+.9451	a9 05		lda #$05	        lda #$05
+.9453	20 bf 91	jsr $91bf	        jsr NET_CMD
+.9456	b0 27		bcs $947f	        bcs nr_err
+.9458	48		pha		        pha
+.9459	ad 3f 91	lda $913f	        lda NET_LEN
+.945c	c9 02		cmp #$02	        cmp #$02
+.945e	90 22		bcc $9482	        bcc nr_e2
+.9460	ad 00 88	lda $8800	        lda NET_DATA            ; count word from the reply
+.9463	8d 3f 91	sta $913f	        sta NET_LEN
+.9466	ad 01 88	lda $8801	        lda NET_DATA+1
+.9469	8d 40 91	sta $9140	        sta NET_LEN+1
+.946c	68		pla		        pla
+.946d	c9 00		cmp #$00	        cmp #$00
+.946f	f0 15		beq $9486	        beq nr_ok
+.9471	c9 01		cmp #$01	        cmp #$01                ; "01,CONNECTION CLOSED BY HOST"
+.9473	f0 14		beq $9489	        beq nr_closed
+.9475	ad 3f 91	lda $913f	        lda NET_LEN
+.9478	2d 40 91	and $9140	        and NET_LEN+1
+.947b	c9 ff		cmp #$ff	        cmp #$ff                ; -1: nothing within the window
+.947d	f0 15		beq $9494	        beq nr_none
+.947f	a9 03		lda #$03	nr_err: lda #$03
+.9481	60		rts		        rts
+.9482	68		pla		nr_e2:  pla
+.9483	4c 7f 94	jmp $947f	        jmp nr_err
+.9486	a9 00		lda #$00	nr_ok:  lda #$00
+.9488	60		rts		        rts
+.9489					nr_closed:
+.9489	a9 00		lda #$00	        lda #$00
+.948b	8d 3f 91	sta $913f	        sta NET_LEN
+.948e	8d 40 91	sta $9140	        sta NET_LEN+1
+.9491	a9 02		lda #$02	        lda #$02
+.9493	60		rts		        rts
+.9494					nr_none:
+.9494	a9 00		lda #$00	        lda #$00
+.9496	8d 3f 91	sta $913f	        sta NET_LEN
+.9499	8d 40 91	sta $9140	        sta NET_LEN+1
+.949c	a9 01		lda #$01	        lda #$01
+.949e	60		rts		        rts
+.949f					NET_WRITE:
+.949f	8d 2a 9a	sta $9a2a	        sta cmdb+2
+.94a2	8e 16 9a	stx $9a16	        stx cmdlen2
+.94a5	a9 03		lda #$03	        lda #$03
+.94a7	8d 28 9a	sta $9a28	        sta cmdb
+.94aa	a9 11		lda #$11	        lda #$11
+.94ac	8d 29 9a	sta $9a29	        sta cmdb+1
+.94af	a0 00		ldy #$00	        ldy #$00
+.94b1	b1 02		lda ($02),y	nw_cp:  lda (r0),y
+.94b3	99 2b 9a	sta $9a2b,y	        sta cmdb+3,y
+.94b6	c8		iny		        iny
+.94b7	cc 16 9a	cpy $9a16	        cpy cmdlen2
+.94ba	d0 f5		bne $94b1	        bne nw_cp
+.94bc	a9 28		lda #$28	        lda #<cmdb
+.94be	85 02		sta $02		        sta r0L
+.94c0	a9 9a		lda #$9a	        lda #>cmdb
+.94c2	85 03		sta $03		        sta r0H
+.94c4	98		tya		        tya
+.94c5	18		clc		        clc
+.94c6	69 03		adc #$03	        adc #$03
+.94c8	4c bf 91	jmp $91bf	        jmp NET_CMD
+.94cb					NET_SYNC:
+.94cb	20 82 96	jsr $9682	        jsr get_tz              ; normalise the zone bytes even when the
+.94ce	20 64 91	jsr $9164	        jsr NET_PRESENT         ; sync cannot run (settings shows them)
+.94d1	d0 05		bne $94d8	        bne ns_p
+.94d3	a9 03		lda #$03	        lda #$03
+.94d5	4c 7b 95	jmp $957b	        jmp ns_set
+.94d8	20 e1 92	jsr $92e1	ns_p:   jsr NET_GETIP
+.94db	d0 05		bne $94e2	        bne ns_net
+.94dd	a9 02		lda #$02	        lda #$02
+.94df	4c 7b 95	jmp $957b	        jmp ns_set
+.94e2	a9 00		lda #$00	ns_net: lda #$00
+.94e4	8d 10 9a	sta $9a10	        sta hidx
+.94e7	a9 04		lda #$04	        lda #$04                ; failure code if no host even opens
+.94e9	8d 11 9a	sta $9a11	        sta failcode
+.94ec					ns_host:
+.94ec	ae 10 9a	ldx $9a10	        ldx hidx
+.94ef	bd 84 95	lda $9584,x	        lda ntp_hostL,x
+.94f2	85 02		sta $02		        sta r0L
+.94f4	bd 87 95	lda $9587,x	        lda ntp_hostH,x
+.94f7	85 03		sta $03		        sta r0H
+.94f9	a9 7b		lda #$7b	        lda #<NTP_PORT
+.94fb	85 04		sta $04		        sta r1L
+.94fd	a9 00		lda #$00	        lda #>NTP_PORT
+.94ff	85 05		sta $05		        sta r1H
+.9501	a9 08		lda #$08	        lda #$08                ; udp
+.9503	20 cd 93	jsr $93cd	        jsr NET_OPEN
+.9506	90 03		bcc $950b	        bcc ns_open
+.9508	4c 46 95	jmp $9546	        jmp ns_next
+.950b					ns_open:
+.950b	a9 bb		lda #$bb	        lda #<ntp_req
+.950d	85 02		sta $02		        sta r0L
+.950f	a9 95		lda #$95	        lda #>ntp_req
+.9511	85 03		sta $03		        sta r0H
+.9513	a2 30		ldx #$30	        ldx #48
+.9515	ad 41 91	lda $9141	        lda NET_SOCK
+.9518	20 9f 94	jsr $949f	        jsr NET_WRITE
+.951b	a9 96		lda #$96	        lda #150                ; the Ultimate answers a read at once when
+.951d	8d 19 9a	sta $9a19	        sta tries               ; nothing is queued: ~1.5 s of polling
+.9520	a9 30		lda #$30	ns_rd:  lda #48
+.9522	85 04		sta $04		        sta r1L
+.9524	a9 00		lda #$00	        lda #$00
+.9526	85 05		sta $05		        sta r1H
+.9528	ad 41 91	lda $9141	        lda NET_SOCK
+.952b	20 32 94	jsr $9432	        jsr NET_READ
+.952e	c9 00		cmp #$00	        cmp #$00
+.9530	f0 24		beq $9556	        beq ns_got
+.9532	c9 01		cmp #$01	        cmp #$01
+.9534	d0 05		bne $953b	        bne ns_fail
+.9536	ce 19 9a	dec $9a19	        dec tries
+.9539	d0 e5		bne $9520	        bne ns_rd
+.953b					ns_fail:
+.953b	ad 41 91	lda $9141	        lda NET_SOCK
+.953e	20 18 94	jsr $9418	        jsr NET_CLOSE
+.9541	a9 01		lda #$01	        lda #$01
+.9543	8d 11 9a	sta $9a11	        sta failcode            ; a host was reachable but silent
+.9546					ns_next:
+.9546	ee 10 9a	inc $9a10	        inc hidx
+.9549	ad 10 9a	lda $9a10	        lda hidx
+.954c	c9 03		cmp #$03	        cmp #NTP_HOSTS
+.954e	90 9c		bcc $94ec	        bcc ns_host
+.9550	ad 11 9a	lda $9a11	        lda failcode
+.9553	4c 7b 95	jmp $957b	        jmp ns_set
+.9556	ad 40 91	lda $9140	ns_got: lda NET_LEN+1
+.9559	d0 0a		bne $9565	        bne ns_len_ok
+.955b	ad 3f 91	lda $913f	        lda NET_LEN
+.955e	c9 2c		cmp #$2c	        cmp #44                 ; transmit timestamp ends at byte 43
+.9560	b0 03		bcs $9565	        bcs ns_len_ok
+.9562	4c 3b 95	jmp $953b	        jmp ns_fail
+.9565					ns_len_ok:
+.9565	20 eb 95	jsr $95eb	        jsr NET_APPLYNTP        ; before the close: NET_CMD reuses NET_DATA
+.9568	8d 1a 9a	sta $9a1a	        sta applyres
+.956b	ad 41 91	lda $9141	        lda NET_SOCK
+.956e	20 18 94	jsr $9418	        jsr NET_CLOSE
+.9571	ad 1a 9a	lda $9a1a	        lda applyres
+.9574	d0 09		bne $957f	        bne ns_bad
+.9576	20 04 99	jsr $9904	        jsr rtc_push
+.9579	a9 00		lda #$00	        lda #$00
+.957b	8d 21 91	sta $9121	ns_set: sta NET_STATE
+.957e	60		rts		        rts
+.957f	a9 01		lda #$01	ns_bad: lda #$01
+.9581	4c 7b 95	jmp $957b	        jmp ns_set
 =3					NTP_HOSTS = 3
->956f	75 89 99			ntp_hostL: .byte <ntp_h0, <ntp_h1, <ntp_h2
->9572	95 95 95			ntp_hostH: .byte >ntp_h0, >ntp_h1, >ntp_h2
->9575	54 49 4d 45 2e 43 4c 4f		ntp_h0:   .text "time.cloudflare.com", $00
->957d	55 44 46 4c 41 52 45 2e 43 4f 4d 00
->9589	54 49 4d 45 2e 47 4f 4f		ntp_h1:   .text "time.google.com", $00
->9591	47 4c 45 2e 43 4f 4d 00
->9599	50 4f 4f 4c 2e 4e 54 50		ntp_h2:   .text "pool.ntp.org", $00
->95a1	2e 4f 52 47 00
->95a6	23				ntp_req:  .byte $23             ; LI 0, version 4, mode 3 (client)
->95a7	00 00 00 00 00 00 00 00		          .fill 47, 0
->95af	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->95bf	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->95cf	00 00 00 00 00 00 00
-.95d6					NET_APPLYNTP:
-.95d6	ad 2d 88	lda $882d	        lda NET_DATA+2+43       ; transmit timestamp, seconds, big-endian
-.95d9	85 70		sta $70		        sta t0
-.95db	ad 2c 88	lda $882c	        lda NET_DATA+2+42
-.95de	85 71		sta $71		        sta t1
-.95e0	ad 2b 88	lda $882b	        lda NET_DATA+2+41
-.95e3	85 72		sta $72		        sta t2
-.95e5	ad 2a 88	lda $882a	        lda NET_DATA+2+40
-.95e8	85 73		sta $73		        sta t3
-.95ea	05 72		ora $72		        ora t2
-.95ec	05 71		ora $71		        ora t1
-.95ee	05 70		ora $70		        ora t0
-.95f0	d0 03		bne $95f5	        bne an_ok
-.95f2	a9 01		lda #$01	        lda #$01
-.95f4	60		rts		        rts
-.95f5	20 6d 96	jsr $966d	an_ok:  jsr get_tz
-.95f8	8d 2a 91	sta $912a	        sta NET_TZ
-.95fb	20 8e 96	jsr $968e	        jsr add_tz
-.95fe	a9 80		lda #$80	        lda #$80                ; 86400 = $00015180
-.9600	85 78		sta $78		        sta d0
-.9602	a9 51		lda #$51	        lda #$51
-.9604	85 79		sta $79		        sta d1
-.9606	a9 01		lda #$01	        lda #$01
-.9608	85 7a		sta $7a		        sta d2
-.960a	a9 00		lda #$00	        lda #$00
-.960c	85 7b		sta $7b		        sta d3
-.960e	20 da 96	jsr $96da	        jsr div32               ; t = days since 1900-01-01, rm = seconds of day
-.9611	a5 70		lda $70		        lda t0
-.9613	8d 08 9a	sta $9a08	        sta days
-.9616	a5 71		lda $71		        lda t1
-.9618	8d 09 9a	sta $9a09	        sta days+1
-.961b	a5 74		lda $74		        lda rm0
-.961d	85 70		sta $70		        sta t0
-.961f	a5 75		lda $75		        lda rm1
-.9621	85 71		sta $71		        sta t1
-.9623	a5 76		lda $76		        lda rm2
-.9625	85 72		sta $72		        sta t2
-.9627	a9 00		lda #$00	        lda #$00
-.9629	85 73		sta $73		        sta t3
-.962b	a9 10		lda #$10	        lda #<3600
-.962d	85 78		sta $78		        sta d0
-.962f	a9 0e		lda #$0e	        lda #>3600
-.9631	85 79		sta $79		        sta d1
-.9633	a9 00		lda #$00	        lda #$00
-.9635	85 7a		sta $7a		        sta d2
-.9637	85 7b		sta $7b		        sta d3
-.9639	20 da 96	jsr $96da	        jsr div32
-.963c	a5 70		lda $70		        lda t0
-.963e	8d 22 91	sta $9122	        sta NET_HOUR
-.9641	a5 74		lda $74		        lda rm0
-.9643	85 70		sta $70		        sta t0
-.9645	a5 75		lda $75		        lda rm1
-.9647	85 71		sta $71		        sta t1
-.9649	a9 00		lda #$00	        lda #$00
-.964b	85 72		sta $72		        sta t2
-.964d	85 73		sta $73		        sta t3
-.964f	a9 3c		lda #$3c	        lda #60
-.9651	85 78		sta $78		        sta d0
-.9653	a9 00		lda #$00	        lda #$00
-.9655	85 79		sta $79		        sta d1
-.9657	20 da 96	jsr $96da	        jsr div32
-.965a	a5 70		lda $70		        lda t0
-.965c	8d 23 91	sta $9123	        sta NET_MIN
-.965f	a5 74		lda $74		        lda rm0
-.9661	8d 24 91	sta $9124	        sta NET_SEC
-.9664	20 2b 97	jsr $972b	        jsr civil_date
-.9667	20 21 98	jsr $9821	        jsr set_tod
-.966a	a9 00		lda #$00	        lda #$00
-.966c	60		rts		        rts
-.966d					get_tz:
-.966d	ad 52 73	lda $7352	        lda SETREC_VER
-.9670	c9 02		cmp #$02	        cmp #$02
-.9672	d0 07		bne $967b	        bne gt_def
-.9674	ad 54 73	lda $7354	        lda SETREC_TZMAG
-.9677	c9 a5		cmp #$a5	        cmp #$a5
-.9679	f0 0f		beq $968a	        beq gt_ok
-.967b	a9 02		lda #$02	gt_def: lda #$02
-.967d	8d 52 73	sta $7352	        sta SETREC_VER
-.9680	a9 f0		lda #$f0	        lda #TZ_DEFAULT
-.9682	8d 53 73	sta $7353	        sta SETREC_TZ
-.9685	a9 a5		lda #$a5	        lda #$a5
-.9687	8d 54 73	sta $7354	        sta SETREC_TZMAG
-.968a	ad 53 73	lda $7353	gt_ok:  lda SETREC_TZ
-.968d	60		rts		        rts
-.968e					add_tz:
-.968e	ad 2a 91	lda $912a	        lda NET_TZ
-.9691	f0 46		beq $96d9	        beq at_d
-.9693	10 25		bpl $96ba	        bpl at_pos
-.9695	49 ff		eor #$ff	        eor #$ff
-.9697	18		clc		        clc
-.9698	69 01		adc #$01	        adc #$01
-.969a	85 7f		sta $7f		        sta tmpc
-.969c	38		sec		at_nl:  sec
-.969d	a5 70		lda $70		        lda t0
-.969f	e9 84		sbc #$84	        sbc #<900
-.96a1	85 70		sta $70		        sta t0
-.96a3	a5 71		lda $71		        lda t1
-.96a5	e9 03		sbc #$03	        sbc #>900
-.96a7	85 71		sta $71		        sta t1
-.96a9	a5 72		lda $72		        lda t2
-.96ab	e9 00		sbc #$00	        sbc #$00
-.96ad	85 72		sta $72		        sta t2
-.96af	a5 73		lda $73		        lda t3
-.96b1	e9 00		sbc #$00	        sbc #$00
-.96b3	85 73		sta $73		        sta t3
-.96b5	c6 7f		dec $7f		        dec tmpc
-.96b7	d0 e3		bne $969c	        bne at_nl
-.96b9	60		rts		        rts
-.96ba	85 7f		sta $7f		at_pos: sta tmpc
-.96bc	18		clc		at_pl:  clc
-.96bd	a5 70		lda $70		        lda t0
-.96bf	69 84		adc #$84	        adc #<900
-.96c1	85 70		sta $70		        sta t0
-.96c3	a5 71		lda $71		        lda t1
-.96c5	69 03		adc #$03	        adc #>900
-.96c7	85 71		sta $71		        sta t1
-.96c9	a5 72		lda $72		        lda t2
-.96cb	69 00		adc #$00	        adc #$00
-.96cd	85 72		sta $72		        sta t2
-.96cf	a5 73		lda $73		        lda t3
-.96d1	69 00		adc #$00	        adc #$00
-.96d3	85 73		sta $73		        sta t3
-.96d5	c6 7f		dec $7f		        dec tmpc
-.96d7	d0 e3		bne $96bc	        bne at_pl
-.96d9	60		rts		at_d:   rts
-.96da					div32:
-.96da	a9 00		lda #$00	        lda #$00
-.96dc	85 74		sta $74		        sta rm0
-.96de	85 75		sta $75		        sta rm1
-.96e0	85 76		sta $76		        sta rm2
-.96e2	85 77		sta $77		        sta rm3
-.96e4	a2 20		ldx #$20	        ldx #32
-.96e6	06 70		asl $70		dv_l:   asl t0
-.96e8	26 71		rol $71		        rol t1
-.96ea	26 72		rol $72		        rol t2
-.96ec	26 73		rol $73		        rol t3
-.96ee	26 74		rol $74		        rol rm0
-.96f0	26 75		rol $75		        rol rm1
-.96f2	26 76		rol $76		        rol rm2
-.96f4	26 77		rol $77		        rol rm3
-.96f6	38		sec		        sec
-.96f7	a5 74		lda $74		        lda rm0
-.96f9	e5 78		sbc $78		        sbc d0
-.96fb	85 7c		sta $7c		        sta q0
-.96fd	a5 75		lda $75		        lda rm1
-.96ff	e5 79		sbc $79		        sbc d1
-.9701	85 7d		sta $7d		        sta q1
-.9703	a5 76		lda $76		        lda rm2
-.9705	e5 7a		sbc $7a		        sbc d2
-.9707	8d 10 9a	sta $9a10	        sta q2
-.970a	a5 77		lda $77		        lda rm3
-.970c	e5 7b		sbc $7b		        sbc d3
-.970e	8d 11 9a	sta $9a11	        sta q3
-.9711	90 14		bcc $9727	        bcc dv_n
-.9713	a5 7c		lda $7c		        lda q0
-.9715	85 74		sta $74		        sta rm0
-.9717	a5 7d		lda $7d		        lda q1
-.9719	85 75		sta $75		        sta rm1
-.971b	ad 10 9a	lda $9a10	        lda q2
-.971e	85 76		sta $76		        sta rm2
-.9720	ad 11 9a	lda $9a11	        lda q3
-.9723	85 77		sta $77		        sta rm3
-.9725	e6 70		inc $70		        inc t0
-.9727	ca		dex		dv_n:   dex
-.9728	d0 bc		bne $96e6	        bne dv_l
-.972a	60		rts		        rts
-.972b					civil_date:
-.972b	18		clc		        clc
-.972c	ad 08 9a	lda $9a08	        lda days
-.972f	69 01		adc #$01	        adc #$01                ; 1900-01-01 was a Monday
-.9731	85 70		sta $70		        sta t0
-.9733	ad 09 9a	lda $9a09	        lda days+1
-.9736	69 00		adc #$00	        adc #$00
-.9738	85 71		sta $71		        sta t1
-.973a	a9 00		lda #$00	        lda #$00
-.973c	85 72		sta $72		        sta t2
-.973e	85 73		sta $73		        sta t3
-.9740	a9 07		lda #$07	        lda #$07
-.9742	85 78		sta $78		        sta d0
-.9744	a9 00		lda #$00	        lda #$00
-.9746	85 79		sta $79		        sta d1
-.9748	85 7a		sta $7a		        sta d2
-.974a	85 7b		sta $7b		        sta d3
-.974c	20 da 96	jsr $96da	        jsr div32
-.974f	a5 74		lda $74		        lda rm0
-.9751	8d 29 91	sta $9129	        sta NET_WDAY
-.9754	a9 6c		lda #$6c	        lda #<1900
-.9756	8d 25 91	sta $9125	        sta NET_YEAR
-.9759	a9 07		lda #$07	        lda #>1900
-.975b	8d 26 91	sta $9126	        sta NET_YEAR+1
-.975e	20 d9 97	jsr $97d9	cd_yl:  jsr days_in_year
-.9761	ad 09 9a	lda $9a09	        lda days+1
-.9764	cd 0b 9a	cmp $9a0b	        cmp diy+1
-.9767	90 28		bcc $9791	        bcc cd_ml
-.9769	d0 08		bne $9773	        bne cd_ysub
-.976b	ad 08 9a	lda $9a08	        lda days
-.976e	cd 0a 9a	cmp $9a0a	        cmp diy
-.9771	90 1e		bcc $9791	        bcc cd_ml
-.9773					cd_ysub:
-.9773	38		sec		        sec
-.9774	ad 08 9a	lda $9a08	        lda days
-.9777	ed 0a 9a	sbc $9a0a	        sbc diy
-.977a	8d 08 9a	sta $9a08	        sta days
-.977d	ad 09 9a	lda $9a09	        lda days+1
-.9780	ed 0b 9a	sbc $9a0b	        sbc diy+1
-.9783	8d 09 9a	sta $9a09	        sta days+1
-.9786	ee 25 91	inc $9125	        inc NET_YEAR
-.9789	d0 d3		bne $975e	        bne cd_yl
-.978b	ee 26 91	inc $9126	        inc NET_YEAR+1
-.978e	4c 5e 97	jmp $975e	        jmp cd_yl
-.9791	a9 01		lda #$01	cd_ml:  lda #$01
-.9793	8d 27 91	sta $9127	        sta NET_MON
-.9796	ae 27 91	ldx $9127	cd_mm:  ldx NET_MON
-.9799	bd 14 98	lda $9814,x	        lda mdays-1,x
-.979c	e0 02		cpx #$02	        cpx #$02
-.979e	d0 07		bne $97a7	        bne cd_m2
-.97a0	ac 0c 9a	ldy $9a0c	        ldy leap
-.97a3	f0 02		beq $97a7	        beq cd_m2
-.97a5	a9 1d		lda #$1d	        lda #29
-.97a7	8d 12 9a	sta $9a12	cd_m2:  sta tmpd
-.97aa	ad 09 9a	lda $9a09	        lda days+1
-.97ad	d0 08		bne $97b7	        bne cd_msub
-.97af	ad 08 9a	lda $9a08	        lda days
-.97b2	cd 12 9a	cmp $9a12	        cmp tmpd
-.97b5	90 18		bcc $97cf	        bcc cd_md
-.97b7					cd_msub:
-.97b7	38		sec		        sec
-.97b8	ad 08 9a	lda $9a08	        lda days
-.97bb	ed 12 9a	sbc $9a12	        sbc tmpd
-.97be	8d 08 9a	sta $9a08	        sta days
-.97c1	ad 09 9a	lda $9a09	        lda days+1
-.97c4	e9 00		sbc #$00	        sbc #$00
-.97c6	8d 09 9a	sta $9a09	        sta days+1
-.97c9	ee 27 91	inc $9127	        inc NET_MON
-.97cc	4c 96 97	jmp $9796	        jmp cd_mm
-.97cf	ad 08 9a	lda $9a08	cd_md:  lda days
-.97d2	18		clc		        clc
-.97d3	69 01		adc #$01	        adc #$01
-.97d5	8d 28 91	sta $9128	        sta NET_DAY
-.97d8	60		rts		        rts
-.97d9					days_in_year:
-.97d9	a9 00		lda #$00	        lda #$00
-.97db	8d 0c 9a	sta $9a0c	        sta leap
-.97de	ad 25 91	lda $9125	        lda NET_YEAR
-.97e1	29 03		and #$03	        and #$03
-.97e3	d0 1f		bne $9804	        bne diy_n
-.97e5	ad 26 91	lda $9126	        lda NET_YEAR+1
-.97e8	c9 07		cmp #$07	        cmp #>1900
-.97ea	d0 07		bne $97f3	        bne diy_c2
-.97ec	ad 25 91	lda $9125	        lda NET_YEAR
-.97ef	c9 6c		cmp #$6c	        cmp #<1900
-.97f1	f0 11		beq $9804	        beq diy_n
-.97f3	ad 26 91	lda $9126	diy_c2: lda NET_YEAR+1
-.97f6	c9 08		cmp #$08	        cmp #>2100
-.97f8	d0 07		bne $9801	        bne diy_y
-.97fa	ad 25 91	lda $9125	        lda NET_YEAR
-.97fd	c9 34		cmp #$34	        cmp #<2100
-.97ff	f0 03		beq $9804	        beq diy_n
-.9801	ee 0c 9a	inc $9a0c	diy_y:  inc leap
-.9804	18		clc		diy_n:  clc
-.9805	a9 6d		lda #$6d	        lda #<365
-.9807	6d 0c 9a	adc $9a0c	        adc leap
-.980a	8d 0a 9a	sta $9a0a	        sta diy
-.980d	a9 01		lda #$01	        lda #>365
-.980f	69 00		adc #$00	        adc #$00
-.9811	8d 0b 9a	sta $9a0b	        sta diy+1
-.9814	60		rts		        rts
->9815	1f 1c 1f 1e 1f 1e 1f 1f		mdays:  .byte 31,28,31,30,31,30,31,31,30,31,30,31
->981d	1e 1f 1e 1f
-.9821					set_tod:
-.9821	ad 22 91	lda $9122	        lda NET_HOUR
-.9824	a2 00		ldx #$00	        ldx #$00
-.9826	c9 0c		cmp #$0c	        cmp #12
-.9828	90 04		bcc $982e	        bcc st_am
-.982a	a2 80		ldx #$80	        ldx #$80
-.982c	e9 0c		sbc #$0c	        sbc #12
-.982e	c9 00		cmp #$00	st_am:  cmp #$00
-.9830	d0 02		bne $9834	        bne st_h
-.9832	a9 0c		lda #$0c	        lda #12
-.9834	20 83 98	jsr $9883	st_h:   jsr bin2bcd
-.9837	86 7e		stx $7e		        stx tmpa
-.9839	05 7e		ora $7e		        ora tmpa
-.983b	8d 0d 9a	sta $9a0d	        sta todh
-.983e	ad 23 91	lda $9123	        lda NET_MIN
-.9841	20 83 98	jsr $9883	        jsr bin2bcd
-.9844	8d 0e 9a	sta $9a0e	        sta todm
-.9847	ad 24 91	lda $9124	        lda NET_SEC
-.984a	20 83 98	jsr $9883	        jsr bin2bcd
-.984d	8d 0f 9a	sta $9a0f	        sta tods
-.9850	20 6b 98	jsr $986b	        jsr tod_write
-.9853	ad 0b dc	lda $dc0b	        lda TODHRS              ; latches the TOD registers
-.9856	aa		tax		        tax
-.9857	ad 08 dc	lda $dc08	        lda TODTEN              ; releases them
-.985a	ec 0d 9a	cpx $9a0d	        cpx todh
-.985d	f0 0b		beq $986a	        beq st_ok
-.985f	ad 0d 9a	lda $9a0d	        lda todh
-.9862	49 80		eor #$80	        eor #$80
-.9864	8d 0d 9a	sta $9a0d	        sta todh
-.9867	20 6b 98	jsr $986b	        jsr tod_write
-.986a	60		rts		st_ok:  rts
-.986b					tod_write:
-.986b	ad 0d 9a	lda $9a0d	        lda todh
-.986e	8d 0b dc	sta $dc0b	        sta TODHRS              ; stops the clock
-.9871	ad 0e 9a	lda $9a0e	        lda todm
-.9874	8d 0a dc	sta $dc0a	        sta TODMIN
-.9877	ad 0f 9a	lda $9a0f	        lda tods
-.987a	8d 09 dc	sta $dc09	        sta TODSEC
-.987d	a9 00		lda #$00	        lda #$00
-.987f	8d 08 dc	sta $dc08	        sta TODTEN              ; restarts it
-.9882	60		rts		        rts
-.9883					bin2bcd:
-.9883	8e 06 9a	stx $9a06	        stx tmpx
-.9886	a2 00		ldx #$00	        ldx #$00
-.9888	c9 0a		cmp #$0a	b2_l:   cmp #10
-.988a	90 05		bcc $9891	        bcc b2_d
-.988c	e9 0a		sbc #$0a	        sbc #10
-.988e	e8		inx		        inx
-.988f	d0 f7		bne $9888	        bne b2_l
-.9891	85 7e		sta $7e		b2_d:   sta tmpa
-.9893	8a		txa		        txa
-.9894	0a		asl a		        asl
-.9895	0a		asl a		        asl
-.9896	0a		asl a		        asl
-.9897	0a		asl a		        asl
-.9898	05 7e		ora $7e		        ora tmpa
-.989a	ae 06 9a	ldx $9a06	        ldx tmpx
-.989d	60		rts		        rts
-.989e					bcd2bin:
-.989e	48		pha		        pha
-.989f	29 0f		and #$0f	        and #$0f
-.98a1	85 7e		sta $7e		        sta tmpa
-.98a3	68		pla		        pla
-.98a4	4a		lsr a		        lsr
-.98a5	4a		lsr a		        lsr
-.98a6	4a		lsr a		        lsr
-.98a7	4a		lsr a		        lsr
-.98a8	aa		tax		        tax
-.98a9	a9 00		lda #$00	        lda #$00
-.98ab	e0 00		cpx #$00	b2b_l:  cpx #$00
-.98ad	f0 07		beq $98b6	        beq b2b_d
-.98af	18		clc		        clc
-.98b0	69 0a		adc #$0a	        adc #10
-.98b2	ca		dex		        dex
-.98b3	4c ab 98	jmp $98ab	        jmp b2b_l
-.98b6	18		clc		b2b_d:  clc
-.98b7	65 7e		adc $7e		        adc tmpa
-.98b9	60		rts		        rts
-.98ba					read_tod:
-.98ba	ad 0b dc	lda $dc0b	        lda TODHRS
-.98bd	8d fd 99	sta $99fd	        sta todraw              ; keep the PM bit here: bcd2bin clobbers X
-.98c0	ad 0a dc	lda $dc0a	        lda TODMIN
-.98c3	20 9e 98	jsr $989e	        jsr bcd2bin
-.98c6	8d 23 91	sta $9123	        sta NET_MIN
-.98c9	ad 09 dc	lda $dc09	        lda TODSEC
-.98cc	20 9e 98	jsr $989e	        jsr bcd2bin
-.98cf	8d 24 91	sta $9124	        sta NET_SEC
-.98d2	ad 08 dc	lda $dc08	        lda TODTEN
-.98d5	ad fd 99	lda $99fd	        lda todraw
-.98d8	29 1f		and #$1f	        and #$1f
-.98da	20 9e 98	jsr $989e	        jsr bcd2bin
-.98dd	c9 0c		cmp #$0c	        cmp #12
-.98df	d0 02		bne $98e3	        bne rt_n12
-.98e1	a9 00		lda #$00	        lda #$00
-.98e3	2c fd 99	bit $99fd	rt_n12: bit todraw
-.98e6	10 03		bpl $98eb	        bpl rt_am
-.98e8	18		clc		        clc
-.98e9	69 0c		adc #$0c	        adc #12
-.98eb	8d 22 91	sta $9122	rt_am:  sta NET_HOUR
-.98ee	60		rts		        rts
-.98ef					rtc_push:
-.98ef	a9 01		lda #$01	        lda #$01
-.98f1	8d 13 9a	sta $9a13	        sta cmdb
-.98f4	a9 27		lda #$27	        lda #$27
-.98f6	8d 14 9a	sta $9a14	        sta cmdb+1
-.98f9	38		sec		        sec
-.98fa	ad 25 91	lda $9125	        lda NET_YEAR
-.98fd	e9 6c		sbc #$6c	        sbc #<1900
-.98ff	8d 15 9a	sta $9a15	        sta cmdb+2              ; year - 1900
-.9902	ad 27 91	lda $9127	        lda NET_MON
-.9905	8d 16 9a	sta $9a16	        sta cmdb+3
-.9908	ad 28 91	lda $9128	        lda NET_DAY
-.990b	8d 17 9a	sta $9a17	        sta cmdb+4
-.990e	ad 22 91	lda $9122	        lda NET_HOUR
-.9911	8d 18 9a	sta $9a18	        sta cmdb+5
-.9914	ad 23 91	lda $9123	        lda NET_MIN
-.9917	8d 19 9a	sta $9a19	        sta cmdb+6
-.991a	ad 24 91	lda $9124	        lda NET_SEC
-.991d	8d 1a 9a	sta $9a1a	        sta cmdb+7
-.9920	a9 13		lda #$13	        lda #<cmdb
-.9922	85 02		sta $02		        sta r0L
-.9924	a9 9a		lda #$9a	        lda #>cmdb
-.9926	85 03		sta $03		        sta r0H
-.9928	a9 08		lda #$08	        lda #$08
-.992a	4c bd 91	jmp $91bd	        jmp NET_CMD
-.992d					NET_RTCTIME:
-.992d	a9 3a		lda #$3a	        lda #<c_gettime
-.992f	85 02		sta $02		        sta r0L
-.9931	a9 99		lda #$99	        lda #>c_gettime
-.9933	85 03		sta $03		        sta r0H
-.9935	a9 02		lda #$02	        lda #$02
-.9937	4c bd 91	jmp $91bd	        jmp NET_CMD             ; "YYYY/MM/DD HH:MM:SS" at NET_DATA, 0-terminated
->993a	01 26				c_gettime: .byte $01, $26
-.993c					NET_TZSHIFT:
-.993c	8d 12 9a	sta $9a12	        sta tmpd
-.993f	20 ba 98	jsr $98ba	        jsr read_tod
-.9942	ad 22 91	lda $9122	        lda NET_HOUR
-.9945	20 e1 99	jsr $99e1	        jsr mul60
-.9948	18		clc		        clc
-.9949	a5 70		lda $70		        lda t0
-.994b	6d 23 91	adc $9123	        adc NET_MIN
-.994e	85 70		sta $70		        sta t0
-.9950	90 02		bcc $9954	        bcc tz_a
-.9952	e6 71		inc $71		        inc t1
-.9954	ad 12 9a	lda $9a12	tz_a:   lda tmpd
-.9957	10 1b		bpl $9974	        bpl tz_pos
-.9959	49 ff		eor #$ff	        eor #$ff
-.995b	18		clc		        clc
-.995c	69 01		adc #$01	        adc #$01
-.995e	85 7f		sta $7f		        sta tmpc
-.9960	38		sec		tz_nl:  sec
-.9961	a5 70		lda $70		        lda t0
-.9963	e9 0f		sbc #$0f	        sbc #15
-.9965	85 70		sta $70		        sta t0
-.9967	a5 71		lda $71		        lda t1
-.9969	e9 00		sbc #$00	        sbc #$00
-.996b	85 71		sta $71		        sta t1
-.996d	c6 7f		dec $7f		        dec tmpc
-.996f	d0 ef		bne $9960	        bne tz_nl
-.9971	4c 87 99	jmp $9987	        jmp tz_wrap
-.9974	f0 11		beq $9987	tz_pos: beq tz_wrap
-.9976	85 7f		sta $7f		        sta tmpc
-.9978	18		clc		tz_pl:  clc
-.9979	a5 70		lda $70		        lda t0
-.997b	69 0f		adc #$0f	        adc #15
-.997d	85 70		sta $70		        sta t0
-.997f	90 02		bcc $9983	        bcc tz_p2
-.9981	e6 71		inc $71		        inc t1
-.9983	c6 7f		dec $7f		tz_p2:  dec tmpc
-.9985	d0 f1		bne $9978	        bne tz_pl
-.9987					tz_wrap:
-.9987	a5 71		lda $71		        lda t1
-.9989	30 1c		bmi $99a7	        bmi tz_neg
-.998b	c9 05		cmp #$05	        cmp #>1440
-.998d	90 25		bcc $99b4	        bcc tz_set
-.998f	d0 06		bne $9997	        bne tz_sub
-.9991	a5 70		lda $70		        lda t0
-.9993	c9 a0		cmp #$a0	        cmp #<1440
-.9995	90 1d		bcc $99b4	        bcc tz_set
-.9997	38		sec		tz_sub: sec
-.9998	a5 70		lda $70		        lda t0
-.999a	e9 a0		sbc #$a0	        sbc #<1440
-.999c	85 70		sta $70		        sta t0
-.999e	a5 71		lda $71		        lda t1
-.99a0	e9 05		sbc #$05	        sbc #>1440
-.99a2	85 71		sta $71		        sta t1
-.99a4	4c b4 99	jmp $99b4	        jmp tz_set
-.99a7	18		clc		tz_neg: clc
-.99a8	a5 70		lda $70		        lda t0
-.99aa	69 a0		adc #$a0	        adc #<1440
-.99ac	85 70		sta $70		        sta t0
-.99ae	a5 71		lda $71		        lda t1
-.99b0	69 05		adc #$05	        adc #>1440
-.99b2	85 71		sta $71		        sta t1
-.99b4	a9 00		lda #$00	tz_set: lda #$00
-.99b6	85 72		sta $72		        sta t2
-.99b8	85 73		sta $73		        sta t3
-.99ba	a9 3c		lda #$3c	        lda #60
-.99bc	85 78		sta $78		        sta d0
-.99be	a9 00		lda #$00	        lda #$00
-.99c0	85 79		sta $79		        sta d1
-.99c2	85 7a		sta $7a		        sta d2
-.99c4	85 7b		sta $7b		        sta d3
-.99c6	20 da 96	jsr $96da	        jsr div32
-.99c9	a5 70		lda $70		        lda t0
-.99cb	8d 22 91	sta $9122	        sta NET_HOUR
-.99ce	a5 74		lda $74		        lda rm0
-.99d0	8d 23 91	sta $9123	        sta NET_MIN
-.99d3	20 21 98	jsr $9821	        jsr set_tod
-.99d6	18		clc		        clc
-.99d7	ad 2a 91	lda $912a	        lda NET_TZ
-.99da	6d 12 9a	adc $9a12	        adc tmpd
-.99dd	8d 2a 91	sta $912a	        sta NET_TZ
-.99e0	60		rts		        rts
-.99e1	85 7e		sta $7e		mul60:  sta tmpa                ; A -> t0/t1 = A * 60
-.99e3	a9 00		lda #$00	        lda #$00
-.99e5	85 70		sta $70		        sta t0
-.99e7	85 71		sta $71		        sta t1
-.99e9	a2 3c		ldx #$3c	        ldx #60
-.99eb	18		clc		m60_l:  clc
-.99ec	a5 70		lda $70		        lda t0
-.99ee	65 7e		adc $7e		        adc tmpa
-.99f0	85 70		sta $70		        sta t0
-.99f2	90 02		bcc $99f6	        bcc m60_n
-.99f4	e6 71		inc $71		        inc t1
-.99f6	ca		dex		m60_n:  dex
-.99f7	d0 f2		bne $99eb	        bne m60_l
-.99f9	60		rts		        rts
->99fa	00				tmo0:     .byte 0
->99fb	00				hidx:     .byte 0
->99fc	00				failcode: .byte 0
->99fd	00				todraw:   .byte 0
->99fe	00				tmo1:     .byte 0
->99ff	00				tmo2:     .byte 0
->9a00	00				cmdlen:   .byte 0
->9a01	00				cmdlen2:  .byte 0
->9a02	00				ifcnt:    .byte 0
->9a03	00				ifidx:    .byte 0
->9a04	00				tries:    .byte 0
->9a05	00				applyres: .byte 0
->9a06	00				tmpx:     .byte 0
->9a07	00				tmpy:     .byte 0
->9a08	00 00				days:     .word 0
->9a0a	00 00				diy:      .word 0
->9a0c	00				leap:     .byte 0
->9a0d	00				todh:     .byte 0
->9a0e	00				todm:     .byte 0
->9a0f	00				tods:     .byte 0
->9a10	00				q2:       .byte 0
->9a11	00				q3:       .byte 0
->9a12	00				tmpd:     .byte 0
->9a13	00 00 00 00 00 00 00 00		cmdb:     .fill 204, 0          ; command image: 3 header + up to 200 data / 4 + host
->9a1b	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>9584	8a 9e ae			ntp_hostL: .byte <ntp_h0, <ntp_h1, <ntp_h2
+>9587	95 95 95			ntp_hostH: .byte >ntp_h0, >ntp_h1, >ntp_h2
+>958a	54 49 4d 45 2e 43 4c 4f		ntp_h0:   .text "time.cloudflare.com", $00
+>9592	55 44 46 4c 41 52 45 2e 43 4f 4d 00
+>959e	54 49 4d 45 2e 47 4f 4f		ntp_h1:   .text "time.google.com", $00
+>95a6	47 4c 45 2e 43 4f 4d 00
+>95ae	50 4f 4f 4c 2e 4e 54 50		ntp_h2:   .text "pool.ntp.org", $00
+>95b6	2e 4f 52 47 00
+>95bb	23				ntp_req:  .byte $23             ; LI 0, version 4, mode 3 (client)
+>95bc	00 00 00 00 00 00 00 00		          .fill 47, 0
+>95c4	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>95d4	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>95e4	00 00 00 00 00 00 00
+.95eb					NET_APPLYNTP:
+.95eb	ad 2d 88	lda $882d	        lda NET_DATA+2+43       ; transmit timestamp, seconds, big-endian
+.95ee	85 70		sta $70		        sta t0
+.95f0	ad 2c 88	lda $882c	        lda NET_DATA+2+42
+.95f3	85 71		sta $71		        sta t1
+.95f5	ad 2b 88	lda $882b	        lda NET_DATA+2+41
+.95f8	85 72		sta $72		        sta t2
+.95fa	ad 2a 88	lda $882a	        lda NET_DATA+2+40
+.95fd	85 73		sta $73		        sta t3
+.95ff	05 72		ora $72		        ora t2
+.9601	05 71		ora $71		        ora t1
+.9603	05 70		ora $70		        ora t0
+.9605	d0 03		bne $960a	        bne an_ok
+.9607	a9 01		lda #$01	        lda #$01
+.9609	60		rts		        rts
+.960a	20 82 96	jsr $9682	an_ok:  jsr get_tz
+.960d	8d 2a 91	sta $912a	        sta NET_TZ
+.9610	20 a3 96	jsr $96a3	        jsr add_tz
+.9613	a9 80		lda #$80	        lda #$80                ; 86400 = $00015180
+.9615	85 78		sta $78		        sta d0
+.9617	a9 51		lda #$51	        lda #$51
+.9619	85 79		sta $79		        sta d1
+.961b	a9 01		lda #$01	        lda #$01
+.961d	85 7a		sta $7a		        sta d2
+.961f	a9 00		lda #$00	        lda #$00
+.9621	85 7b		sta $7b		        sta d3
+.9623	20 ef 96	jsr $96ef	        jsr div32               ; t = days since 1900-01-01, rm = seconds of day
+.9626	a5 70		lda $70		        lda t0
+.9628	8d 1d 9a	sta $9a1d	        sta days
+.962b	a5 71		lda $71		        lda t1
+.962d	8d 1e 9a	sta $9a1e	        sta days+1
+.9630	a5 74		lda $74		        lda rm0
+.9632	85 70		sta $70		        sta t0
+.9634	a5 75		lda $75		        lda rm1
+.9636	85 71		sta $71		        sta t1
+.9638	a5 76		lda $76		        lda rm2
+.963a	85 72		sta $72		        sta t2
+.963c	a9 00		lda #$00	        lda #$00
+.963e	85 73		sta $73		        sta t3
+.9640	a9 10		lda #$10	        lda #<3600
+.9642	85 78		sta $78		        sta d0
+.9644	a9 0e		lda #$0e	        lda #>3600
+.9646	85 79		sta $79		        sta d1
+.9648	a9 00		lda #$00	        lda #$00
+.964a	85 7a		sta $7a		        sta d2
+.964c	85 7b		sta $7b		        sta d3
+.964e	20 ef 96	jsr $96ef	        jsr div32
+.9651	a5 70		lda $70		        lda t0
+.9653	8d 22 91	sta $9122	        sta NET_HOUR
+.9656	a5 74		lda $74		        lda rm0
+.9658	85 70		sta $70		        sta t0
+.965a	a5 75		lda $75		        lda rm1
+.965c	85 71		sta $71		        sta t1
+.965e	a9 00		lda #$00	        lda #$00
+.9660	85 72		sta $72		        sta t2
+.9662	85 73		sta $73		        sta t3
+.9664	a9 3c		lda #$3c	        lda #60
+.9666	85 78		sta $78		        sta d0
+.9668	a9 00		lda #$00	        lda #$00
+.966a	85 79		sta $79		        sta d1
+.966c	20 ef 96	jsr $96ef	        jsr div32
+.966f	a5 70		lda $70		        lda t0
+.9671	8d 23 91	sta $9123	        sta NET_MIN
+.9674	a5 74		lda $74		        lda rm0
+.9676	8d 24 91	sta $9124	        sta NET_SEC
+.9679	20 40 97	jsr $9740	        jsr civil_date
+.967c	20 36 98	jsr $9836	        jsr set_tod
+.967f	a9 00		lda #$00	        lda #$00
+.9681	60		rts		        rts
+.9682					get_tz:
+.9682	ad 52 73	lda $7352	        lda SETREC_VER
+.9685	c9 02		cmp #$02	        cmp #$02
+.9687	d0 07		bne $9690	        bne gt_def
+.9689	ad 54 73	lda $7354	        lda SETREC_TZMAG
+.968c	c9 a5		cmp #$a5	        cmp #$a5
+.968e	f0 0f		beq $969f	        beq gt_ok
+.9690	a9 02		lda #$02	gt_def: lda #$02
+.9692	8d 52 73	sta $7352	        sta SETREC_VER
+.9695	a9 f0		lda #$f0	        lda #TZ_DEFAULT
+.9697	8d 53 73	sta $7353	        sta SETREC_TZ
+.969a	a9 a5		lda #$a5	        lda #$a5
+.969c	8d 54 73	sta $7354	        sta SETREC_TZMAG
+.969f	ad 53 73	lda $7353	gt_ok:  lda SETREC_TZ
+.96a2	60		rts		        rts
+.96a3					add_tz:
+.96a3	ad 2a 91	lda $912a	        lda NET_TZ
+.96a6	f0 46		beq $96ee	        beq at_d
+.96a8	10 25		bpl $96cf	        bpl at_pos
+.96aa	49 ff		eor #$ff	        eor #$ff
+.96ac	18		clc		        clc
+.96ad	69 01		adc #$01	        adc #$01
+.96af	85 7f		sta $7f		        sta tmpc
+.96b1	38		sec		at_nl:  sec
+.96b2	a5 70		lda $70		        lda t0
+.96b4	e9 84		sbc #$84	        sbc #<900
+.96b6	85 70		sta $70		        sta t0
+.96b8	a5 71		lda $71		        lda t1
+.96ba	e9 03		sbc #$03	        sbc #>900
+.96bc	85 71		sta $71		        sta t1
+.96be	a5 72		lda $72		        lda t2
+.96c0	e9 00		sbc #$00	        sbc #$00
+.96c2	85 72		sta $72		        sta t2
+.96c4	a5 73		lda $73		        lda t3
+.96c6	e9 00		sbc #$00	        sbc #$00
+.96c8	85 73		sta $73		        sta t3
+.96ca	c6 7f		dec $7f		        dec tmpc
+.96cc	d0 e3		bne $96b1	        bne at_nl
+.96ce	60		rts		        rts
+.96cf	85 7f		sta $7f		at_pos: sta tmpc
+.96d1	18		clc		at_pl:  clc
+.96d2	a5 70		lda $70		        lda t0
+.96d4	69 84		adc #$84	        adc #<900
+.96d6	85 70		sta $70		        sta t0
+.96d8	a5 71		lda $71		        lda t1
+.96da	69 03		adc #$03	        adc #>900
+.96dc	85 71		sta $71		        sta t1
+.96de	a5 72		lda $72		        lda t2
+.96e0	69 00		adc #$00	        adc #$00
+.96e2	85 72		sta $72		        sta t2
+.96e4	a5 73		lda $73		        lda t3
+.96e6	69 00		adc #$00	        adc #$00
+.96e8	85 73		sta $73		        sta t3
+.96ea	c6 7f		dec $7f		        dec tmpc
+.96ec	d0 e3		bne $96d1	        bne at_pl
+.96ee	60		rts		at_d:   rts
+.96ef					div32:
+.96ef	a9 00		lda #$00	        lda #$00
+.96f1	85 74		sta $74		        sta rm0
+.96f3	85 75		sta $75		        sta rm1
+.96f5	85 76		sta $76		        sta rm2
+.96f7	85 77		sta $77		        sta rm3
+.96f9	a2 20		ldx #$20	        ldx #32
+.96fb	06 70		asl $70		dv_l:   asl t0
+.96fd	26 71		rol $71		        rol t1
+.96ff	26 72		rol $72		        rol t2
+.9701	26 73		rol $73		        rol t3
+.9703	26 74		rol $74		        rol rm0
+.9705	26 75		rol $75		        rol rm1
+.9707	26 76		rol $76		        rol rm2
+.9709	26 77		rol $77		        rol rm3
+.970b	38		sec		        sec
+.970c	a5 74		lda $74		        lda rm0
+.970e	e5 78		sbc $78		        sbc d0
+.9710	85 7c		sta $7c		        sta q0
+.9712	a5 75		lda $75		        lda rm1
+.9714	e5 79		sbc $79		        sbc d1
+.9716	85 7d		sta $7d		        sta q1
+.9718	a5 76		lda $76		        lda rm2
+.971a	e5 7a		sbc $7a		        sbc d2
+.971c	8d 25 9a	sta $9a25	        sta q2
+.971f	a5 77		lda $77		        lda rm3
+.9721	e5 7b		sbc $7b		        sbc d3
+.9723	8d 26 9a	sta $9a26	        sta q3
+.9726	90 14		bcc $973c	        bcc dv_n
+.9728	a5 7c		lda $7c		        lda q0
+.972a	85 74		sta $74		        sta rm0
+.972c	a5 7d		lda $7d		        lda q1
+.972e	85 75		sta $75		        sta rm1
+.9730	ad 25 9a	lda $9a25	        lda q2
+.9733	85 76		sta $76		        sta rm2
+.9735	ad 26 9a	lda $9a26	        lda q3
+.9738	85 77		sta $77		        sta rm3
+.973a	e6 70		inc $70		        inc t0
+.973c	ca		dex		dv_n:   dex
+.973d	d0 bc		bne $96fb	        bne dv_l
+.973f	60		rts		        rts
+.9740					civil_date:
+.9740	18		clc		        clc
+.9741	ad 1d 9a	lda $9a1d	        lda days
+.9744	69 01		adc #$01	        adc #$01                ; 1900-01-01 was a Monday
+.9746	85 70		sta $70		        sta t0
+.9748	ad 1e 9a	lda $9a1e	        lda days+1
+.974b	69 00		adc #$00	        adc #$00
+.974d	85 71		sta $71		        sta t1
+.974f	a9 00		lda #$00	        lda #$00
+.9751	85 72		sta $72		        sta t2
+.9753	85 73		sta $73		        sta t3
+.9755	a9 07		lda #$07	        lda #$07
+.9757	85 78		sta $78		        sta d0
+.9759	a9 00		lda #$00	        lda #$00
+.975b	85 79		sta $79		        sta d1
+.975d	85 7a		sta $7a		        sta d2
+.975f	85 7b		sta $7b		        sta d3
+.9761	20 ef 96	jsr $96ef	        jsr div32
+.9764	a5 74		lda $74		        lda rm0
+.9766	8d 29 91	sta $9129	        sta NET_WDAY
+.9769	a9 6c		lda #$6c	        lda #<1900
+.976b	8d 25 91	sta $9125	        sta NET_YEAR
+.976e	a9 07		lda #$07	        lda #>1900
+.9770	8d 26 91	sta $9126	        sta NET_YEAR+1
+.9773	20 ee 97	jsr $97ee	cd_yl:  jsr days_in_year
+.9776	ad 1e 9a	lda $9a1e	        lda days+1
+.9779	cd 20 9a	cmp $9a20	        cmp diy+1
+.977c	90 28		bcc $97a6	        bcc cd_ml
+.977e	d0 08		bne $9788	        bne cd_ysub
+.9780	ad 1d 9a	lda $9a1d	        lda days
+.9783	cd 1f 9a	cmp $9a1f	        cmp diy
+.9786	90 1e		bcc $97a6	        bcc cd_ml
+.9788					cd_ysub:
+.9788	38		sec		        sec
+.9789	ad 1d 9a	lda $9a1d	        lda days
+.978c	ed 1f 9a	sbc $9a1f	        sbc diy
+.978f	8d 1d 9a	sta $9a1d	        sta days
+.9792	ad 1e 9a	lda $9a1e	        lda days+1
+.9795	ed 20 9a	sbc $9a20	        sbc diy+1
+.9798	8d 1e 9a	sta $9a1e	        sta days+1
+.979b	ee 25 91	inc $9125	        inc NET_YEAR
+.979e	d0 d3		bne $9773	        bne cd_yl
+.97a0	ee 26 91	inc $9126	        inc NET_YEAR+1
+.97a3	4c 73 97	jmp $9773	        jmp cd_yl
+.97a6	a9 01		lda #$01	cd_ml:  lda #$01
+.97a8	8d 27 91	sta $9127	        sta NET_MON
+.97ab	ae 27 91	ldx $9127	cd_mm:  ldx NET_MON
+.97ae	bd 29 98	lda $9829,x	        lda mdays-1,x
+.97b1	e0 02		cpx #$02	        cpx #$02
+.97b3	d0 07		bne $97bc	        bne cd_m2
+.97b5	ac 21 9a	ldy $9a21	        ldy leap
+.97b8	f0 02		beq $97bc	        beq cd_m2
+.97ba	a9 1d		lda #$1d	        lda #29
+.97bc	8d 27 9a	sta $9a27	cd_m2:  sta tmpd
+.97bf	ad 1e 9a	lda $9a1e	        lda days+1
+.97c2	d0 08		bne $97cc	        bne cd_msub
+.97c4	ad 1d 9a	lda $9a1d	        lda days
+.97c7	cd 27 9a	cmp $9a27	        cmp tmpd
+.97ca	90 18		bcc $97e4	        bcc cd_md
+.97cc					cd_msub:
+.97cc	38		sec		        sec
+.97cd	ad 1d 9a	lda $9a1d	        lda days
+.97d0	ed 27 9a	sbc $9a27	        sbc tmpd
+.97d3	8d 1d 9a	sta $9a1d	        sta days
+.97d6	ad 1e 9a	lda $9a1e	        lda days+1
+.97d9	e9 00		sbc #$00	        sbc #$00
+.97db	8d 1e 9a	sta $9a1e	        sta days+1
+.97de	ee 27 91	inc $9127	        inc NET_MON
+.97e1	4c ab 97	jmp $97ab	        jmp cd_mm
+.97e4	ad 1d 9a	lda $9a1d	cd_md:  lda days
+.97e7	18		clc		        clc
+.97e8	69 01		adc #$01	        adc #$01
+.97ea	8d 28 91	sta $9128	        sta NET_DAY
+.97ed	60		rts		        rts
+.97ee					days_in_year:
+.97ee	a9 00		lda #$00	        lda #$00
+.97f0	8d 21 9a	sta $9a21	        sta leap
+.97f3	ad 25 91	lda $9125	        lda NET_YEAR
+.97f6	29 03		and #$03	        and #$03
+.97f8	d0 1f		bne $9819	        bne diy_n
+.97fa	ad 26 91	lda $9126	        lda NET_YEAR+1
+.97fd	c9 07		cmp #$07	        cmp #>1900
+.97ff	d0 07		bne $9808	        bne diy_c2
+.9801	ad 25 91	lda $9125	        lda NET_YEAR
+.9804	c9 6c		cmp #$6c	        cmp #<1900
+.9806	f0 11		beq $9819	        beq diy_n
+.9808	ad 26 91	lda $9126	diy_c2: lda NET_YEAR+1
+.980b	c9 08		cmp #$08	        cmp #>2100
+.980d	d0 07		bne $9816	        bne diy_y
+.980f	ad 25 91	lda $9125	        lda NET_YEAR
+.9812	c9 34		cmp #$34	        cmp #<2100
+.9814	f0 03		beq $9819	        beq diy_n
+.9816	ee 21 9a	inc $9a21	diy_y:  inc leap
+.9819	18		clc		diy_n:  clc
+.981a	a9 6d		lda #$6d	        lda #<365
+.981c	6d 21 9a	adc $9a21	        adc leap
+.981f	8d 1f 9a	sta $9a1f	        sta diy
+.9822	a9 01		lda #$01	        lda #>365
+.9824	69 00		adc #$00	        adc #$00
+.9826	8d 20 9a	sta $9a20	        sta diy+1
+.9829	60		rts		        rts
+>982a	1f 1c 1f 1e 1f 1e 1f 1f		mdays:  .byte 31,28,31,30,31,30,31,31,30,31,30,31
+>9832	1e 1f 1e 1f
+.9836					set_tod:
+.9836	ad 22 91	lda $9122	        lda NET_HOUR
+.9839	a2 00		ldx #$00	        ldx #$00
+.983b	c9 0c		cmp #$0c	        cmp #12
+.983d	90 04		bcc $9843	        bcc st_am
+.983f	a2 80		ldx #$80	        ldx #$80
+.9841	e9 0c		sbc #$0c	        sbc #12
+.9843	c9 00		cmp #$00	st_am:  cmp #$00
+.9845	d0 02		bne $9849	        bne st_h
+.9847	a9 0c		lda #$0c	        lda #12
+.9849	20 98 98	jsr $9898	st_h:   jsr bin2bcd
+.984c	86 7e		stx $7e		        stx tmpa
+.984e	05 7e		ora $7e		        ora tmpa
+.9850	8d 22 9a	sta $9a22	        sta todh
+.9853	ad 23 91	lda $9123	        lda NET_MIN
+.9856	20 98 98	jsr $9898	        jsr bin2bcd
+.9859	8d 23 9a	sta $9a23	        sta todm
+.985c	ad 24 91	lda $9124	        lda NET_SEC
+.985f	20 98 98	jsr $9898	        jsr bin2bcd
+.9862	8d 24 9a	sta $9a24	        sta tods
+.9865	20 80 98	jsr $9880	        jsr tod_write
+.9868	ad 0b dc	lda $dc0b	        lda TODHRS              ; latches the TOD registers
+.986b	aa		tax		        tax
+.986c	ad 08 dc	lda $dc08	        lda TODTEN              ; releases them
+.986f	ec 22 9a	cpx $9a22	        cpx todh
+.9872	f0 0b		beq $987f	        beq st_ok
+.9874	ad 22 9a	lda $9a22	        lda todh
+.9877	49 80		eor #$80	        eor #$80
+.9879	8d 22 9a	sta $9a22	        sta todh
+.987c	20 80 98	jsr $9880	        jsr tod_write
+.987f	60		rts		st_ok:  rts
+.9880					tod_write:
+.9880	ad 22 9a	lda $9a22	        lda todh
+.9883	8d 0b dc	sta $dc0b	        sta TODHRS              ; stops the clock
+.9886	ad 23 9a	lda $9a23	        lda todm
+.9889	8d 0a dc	sta $dc0a	        sta TODMIN
+.988c	ad 24 9a	lda $9a24	        lda tods
+.988f	8d 09 dc	sta $dc09	        sta TODSEC
+.9892	a9 00		lda #$00	        lda #$00
+.9894	8d 08 dc	sta $dc08	        sta TODTEN              ; restarts it
+.9897	60		rts		        rts
+.9898					bin2bcd:
+.9898	8e 1b 9a	stx $9a1b	        stx tmpx
+.989b	a2 00		ldx #$00	        ldx #$00
+.989d	c9 0a		cmp #$0a	b2_l:   cmp #10
+.989f	90 05		bcc $98a6	        bcc b2_d
+.98a1	e9 0a		sbc #$0a	        sbc #10
+.98a3	e8		inx		        inx
+.98a4	d0 f7		bne $989d	        bne b2_l
+.98a6	85 7e		sta $7e		b2_d:   sta tmpa
+.98a8	8a		txa		        txa
+.98a9	0a		asl a		        asl
+.98aa	0a		asl a		        asl
+.98ab	0a		asl a		        asl
+.98ac	0a		asl a		        asl
+.98ad	05 7e		ora $7e		        ora tmpa
+.98af	ae 1b 9a	ldx $9a1b	        ldx tmpx
+.98b2	60		rts		        rts
+.98b3					bcd2bin:
+.98b3	48		pha		        pha
+.98b4	29 0f		and #$0f	        and #$0f
+.98b6	85 7e		sta $7e		        sta tmpa
+.98b8	68		pla		        pla
+.98b9	4a		lsr a		        lsr
+.98ba	4a		lsr a		        lsr
+.98bb	4a		lsr a		        lsr
+.98bc	4a		lsr a		        lsr
+.98bd	aa		tax		        tax
+.98be	a9 00		lda #$00	        lda #$00
+.98c0	e0 00		cpx #$00	b2b_l:  cpx #$00
+.98c2	f0 07		beq $98cb	        beq b2b_d
+.98c4	18		clc		        clc
+.98c5	69 0a		adc #$0a	        adc #10
+.98c7	ca		dex		        dex
+.98c8	4c c0 98	jmp $98c0	        jmp b2b_l
+.98cb	18		clc		b2b_d:  clc
+.98cc	65 7e		adc $7e		        adc tmpa
+.98ce	60		rts		        rts
+.98cf					read_tod:
+.98cf	ad 0b dc	lda $dc0b	        lda TODHRS
+.98d2	8d 12 9a	sta $9a12	        sta todraw              ; keep the PM bit here: bcd2bin clobbers X
+.98d5	ad 0a dc	lda $dc0a	        lda TODMIN
+.98d8	20 b3 98	jsr $98b3	        jsr bcd2bin
+.98db	8d 23 91	sta $9123	        sta NET_MIN
+.98de	ad 09 dc	lda $dc09	        lda TODSEC
+.98e1	20 b3 98	jsr $98b3	        jsr bcd2bin
+.98e4	8d 24 91	sta $9124	        sta NET_SEC
+.98e7	ad 08 dc	lda $dc08	        lda TODTEN
+.98ea	ad 12 9a	lda $9a12	        lda todraw
+.98ed	29 1f		and #$1f	        and #$1f
+.98ef	20 b3 98	jsr $98b3	        jsr bcd2bin
+.98f2	c9 0c		cmp #$0c	        cmp #12
+.98f4	d0 02		bne $98f8	        bne rt_n12
+.98f6	a9 00		lda #$00	        lda #$00
+.98f8	2c 12 9a	bit $9a12	rt_n12: bit todraw
+.98fb	10 03		bpl $9900	        bpl rt_am
+.98fd	18		clc		        clc
+.98fe	69 0c		adc #$0c	        adc #12
+.9900	8d 22 91	sta $9122	rt_am:  sta NET_HOUR
+.9903	60		rts		        rts
+.9904					rtc_push:
+.9904	a9 01		lda #$01	        lda #$01
+.9906	8d 28 9a	sta $9a28	        sta cmdb
+.9909	a9 27		lda #$27	        lda #$27
+.990b	8d 29 9a	sta $9a29	        sta cmdb+1
+.990e	38		sec		        sec
+.990f	ad 25 91	lda $9125	        lda NET_YEAR
+.9912	e9 6c		sbc #$6c	        sbc #<1900
+.9914	8d 2a 9a	sta $9a2a	        sta cmdb+2              ; year - 1900
+.9917	ad 27 91	lda $9127	        lda NET_MON
+.991a	8d 2b 9a	sta $9a2b	        sta cmdb+3
+.991d	ad 28 91	lda $9128	        lda NET_DAY
+.9920	8d 2c 9a	sta $9a2c	        sta cmdb+4
+.9923	ad 22 91	lda $9122	        lda NET_HOUR
+.9926	8d 2d 9a	sta $9a2d	        sta cmdb+5
+.9929	ad 23 91	lda $9123	        lda NET_MIN
+.992c	8d 2e 9a	sta $9a2e	        sta cmdb+6
+.992f	ad 24 91	lda $9124	        lda NET_SEC
+.9932	8d 2f 9a	sta $9a2f	        sta cmdb+7
+.9935	a9 28		lda #$28	        lda #<cmdb
+.9937	85 02		sta $02		        sta r0L
+.9939	a9 9a		lda #$9a	        lda #>cmdb
+.993b	85 03		sta $03		        sta r0H
+.993d	a9 08		lda #$08	        lda #$08
+.993f	4c bf 91	jmp $91bf	        jmp NET_CMD
+.9942					NET_RTCTIME:
+.9942	a9 4f		lda #$4f	        lda #<c_gettime
+.9944	85 02		sta $02		        sta r0L
+.9946	a9 99		lda #$99	        lda #>c_gettime
+.9948	85 03		sta $03		        sta r0H
+.994a	a9 02		lda #$02	        lda #$02
+.994c	4c bf 91	jmp $91bf	        jmp NET_CMD             ; "YYYY/MM/DD HH:MM:SS" at NET_DATA, 0-terminated
+>994f	01 26				c_gettime: .byte $01, $26
+.9951					NET_TZSHIFT:
+.9951	8d 27 9a	sta $9a27	        sta tmpd
+.9954	20 cf 98	jsr $98cf	        jsr read_tod
+.9957	ad 22 91	lda $9122	        lda NET_HOUR
+.995a	20 f6 99	jsr $99f6	        jsr mul60
+.995d	18		clc		        clc
+.995e	a5 70		lda $70		        lda t0
+.9960	6d 23 91	adc $9123	        adc NET_MIN
+.9963	85 70		sta $70		        sta t0
+.9965	90 02		bcc $9969	        bcc tz_a
+.9967	e6 71		inc $71		        inc t1
+.9969	ad 27 9a	lda $9a27	tz_a:   lda tmpd
+.996c	10 1b		bpl $9989	        bpl tz_pos
+.996e	49 ff		eor #$ff	        eor #$ff
+.9970	18		clc		        clc
+.9971	69 01		adc #$01	        adc #$01
+.9973	85 7f		sta $7f		        sta tmpc
+.9975	38		sec		tz_nl:  sec
+.9976	a5 70		lda $70		        lda t0
+.9978	e9 0f		sbc #$0f	        sbc #15
+.997a	85 70		sta $70		        sta t0
+.997c	a5 71		lda $71		        lda t1
+.997e	e9 00		sbc #$00	        sbc #$00
+.9980	85 71		sta $71		        sta t1
+.9982	c6 7f		dec $7f		        dec tmpc
+.9984	d0 ef		bne $9975	        bne tz_nl
+.9986	4c 9c 99	jmp $999c	        jmp tz_wrap
+.9989	f0 11		beq $999c	tz_pos: beq tz_wrap
+.998b	85 7f		sta $7f		        sta tmpc
+.998d	18		clc		tz_pl:  clc
+.998e	a5 70		lda $70		        lda t0
+.9990	69 0f		adc #$0f	        adc #15
+.9992	85 70		sta $70		        sta t0
+.9994	90 02		bcc $9998	        bcc tz_p2
+.9996	e6 71		inc $71		        inc t1
+.9998	c6 7f		dec $7f		tz_p2:  dec tmpc
+.999a	d0 f1		bne $998d	        bne tz_pl
+.999c					tz_wrap:
+.999c	a5 71		lda $71		        lda t1
+.999e	30 1c		bmi $99bc	        bmi tz_neg
+.99a0	c9 05		cmp #$05	        cmp #>1440
+.99a2	90 25		bcc $99c9	        bcc tz_set
+.99a4	d0 06		bne $99ac	        bne tz_sub
+.99a6	a5 70		lda $70		        lda t0
+.99a8	c9 a0		cmp #$a0	        cmp #<1440
+.99aa	90 1d		bcc $99c9	        bcc tz_set
+.99ac	38		sec		tz_sub: sec
+.99ad	a5 70		lda $70		        lda t0
+.99af	e9 a0		sbc #$a0	        sbc #<1440
+.99b1	85 70		sta $70		        sta t0
+.99b3	a5 71		lda $71		        lda t1
+.99b5	e9 05		sbc #$05	        sbc #>1440
+.99b7	85 71		sta $71		        sta t1
+.99b9	4c c9 99	jmp $99c9	        jmp tz_set
+.99bc	18		clc		tz_neg: clc
+.99bd	a5 70		lda $70		        lda t0
+.99bf	69 a0		adc #$a0	        adc #<1440
+.99c1	85 70		sta $70		        sta t0
+.99c3	a5 71		lda $71		        lda t1
+.99c5	69 05		adc #$05	        adc #>1440
+.99c7	85 71		sta $71		        sta t1
+.99c9	a9 00		lda #$00	tz_set: lda #$00
+.99cb	85 72		sta $72		        sta t2
+.99cd	85 73		sta $73		        sta t3
+.99cf	a9 3c		lda #$3c	        lda #60
+.99d1	85 78		sta $78		        sta d0
+.99d3	a9 00		lda #$00	        lda #$00
+.99d5	85 79		sta $79		        sta d1
+.99d7	85 7a		sta $7a		        sta d2
+.99d9	85 7b		sta $7b		        sta d3
+.99db	20 ef 96	jsr $96ef	        jsr div32
+.99de	a5 70		lda $70		        lda t0
+.99e0	8d 22 91	sta $9122	        sta NET_HOUR
+.99e3	a5 74		lda $74		        lda rm0
+.99e5	8d 23 91	sta $9123	        sta NET_MIN
+.99e8	20 36 98	jsr $9836	        jsr set_tod
+.99eb	18		clc		        clc
+.99ec	ad 2a 91	lda $912a	        lda NET_TZ
+.99ef	6d 27 9a	adc $9a27	        adc tmpd
+.99f2	8d 2a 91	sta $912a	        sta NET_TZ
+.99f5	60		rts		        rts
+.99f6	85 7e		sta $7e		mul60:  sta tmpa                ; A -> t0/t1 = A * 60
+.99f8	a9 00		lda #$00	        lda #$00
+.99fa	85 70		sta $70		        sta t0
+.99fc	85 71		sta $71		        sta t1
+.99fe	a2 3c		ldx #$3c	        ldx #60
+.9a00	18		clc		m60_l:  clc
+.9a01	a5 70		lda $70		        lda t0
+.9a03	65 7e		adc $7e		        adc tmpa
+.9a05	85 70		sta $70		        sta t0
+.9a07	90 02		bcc $9a0b	        bcc m60_n
+.9a09	e6 71		inc $71		        inc t1
+.9a0b	ca		dex		m60_n:  dex
+.9a0c	d0 f2		bne $9a00	        bne m60_l
+.9a0e	60		rts		        rts
+>9a0f	00				tmo0:     .byte 0
+>9a10	00				hidx:     .byte 0
+>9a11	00				failcode: .byte 0
+>9a12	00				todraw:   .byte 0
+>9a13	00				tmo1:     .byte 0
+>9a14	00				tmo2:     .byte 0
+>9a15	00				cmdlen:   .byte 0
+>9a16	00				cmdlen2:  .byte 0
+>9a17	00				ifcnt:    .byte 0
+>9a18	00				ifidx:    .byte 0
+>9a19	00				tries:    .byte 0
+>9a1a	00				applyres: .byte 0
+>9a1b	00				tmpx:     .byte 0
+>9a1c	00				tmpy:     .byte 0
+>9a1d	00 00				days:     .word 0
+>9a1f	00 00				diy:      .word 0
+>9a21	00				leap:     .byte 0
+>9a22	00				todh:     .byte 0
+>9a23	00				todm:     .byte 0
+>9a24	00				tods:     .byte 0
+>9a25	00				q2:       .byte 0
+>9a26	00				q3:       .byte 0
+>9a27	00				tmpd:     .byte 0
+>9a28	00 00 00 00 00 00 00 00		cmdb:     .fill 204, 0          ; command image: 3 header + up to 200 data / 4 + host
+>9a30	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 11 times (176 bytes)...
->9adb	00 00 00 00
-.9adf					net_end:
+>9af0	00 00 00 00
+.9af4					net_end:
 
 ;******  End of listing

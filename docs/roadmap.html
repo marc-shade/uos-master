@@ -524,3 +524,13 @@ companion display; MP3 deploy; M4 U2+ bridge; M5 shell commands (CAT/COPY/CD); M
   AND is clean on a missing file (edlen=0). Typed F1-save on hw needs Marc's keyboard (DMA key injection
   doesn't land). The launcher now lists 4 apps (settings/fmgr/shell/edit).
 -->
+<!-- 2026-09-06 session 4g addendum (directory navigation of the Ultimate filesystem):
+  uos-net: NET_CMD gains a dir mode (NET_DIRMODE $9162): in READ_DIR each reply block is one entry
+  (attrib byte + name) -> keep read_data's $00 as a separator, advance NET_LEN past it, count in
+  NET_DIRN $9163. Added AFTER NET_STAT so no existing NET_ data address shifts (code shifts, transparent
+  via the fixed jump table). Shell: CD path ($01 $11), PWD ($01 $12 -> NET_DATA), LS (OPEN_DIR $01 $13 +
+  READ_DIR $01 $14 in dir mode -> entries parsed null-separated, dirs prefixed "/", shown in the rows
+  region + VDC 9-16). CI: ci_fm 18/18 (PASS 10j: PWD/LS/CD run without crashing on a plain C64 = no
+  command interface), ci_vdc 14/14. HARDWARE-VERIFIED via DMA calling NET_CMD: PWD="/" (root), LS = 3
+  entries Flash/Temp/Usb0 (the real Ultimate mounts) — genuine real-filesystem navigation.
+-->

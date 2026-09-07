@@ -155,9 +155,13 @@ _sp_c:  lda cmdbuf+1
         jsr cmd_copy
         rts
 _sp_ca: cmp #$41                        ; 'A' -> CAT file
-        bne sp_unk
+        bne _sp_cd
         jsr cmd_cat
         jmp sp_fin
+_sp_cd: cmp #$44                        ; 'D' -> CD path (Ultimate dir)
+        bne sp_unk
+        jsr cmd_cd
+        rts
 _sp_d:  lda cmdbuf+1
         cmp #$49                        ; 'I' -> DIR
         bne _sp_de
@@ -199,8 +203,10 @@ sp_unk:
         beq sp_i
         cmp #$47                        ; 'G' -> GET host path
         beq sp_g
-        cmp #$50                        ; 'P' -> PEEK / POKE
+        cmp #$50                        ; 'P' -> PEEK / POKE / PWD
         beq sp_p
+        cmp #$4c                        ; 'L' -> LS (Ultimate dir)
+        beq sp_ls
 sp_unk_msg:
         lda #<msg_unk
         sta r0L
@@ -230,8 +236,14 @@ sp_p:   lda cmdbuf+1
         jsr cmd_peek
         jmp sp_fin
 _sp_po: cmp #$4f                        ; 'O' -> POKE
-        bne sp_unk_msg
+        bne _sp_pw
         jsr cmd_poke
+        jmp sp_fin
+_sp_pw: cmp #$57                        ; 'W' -> PWD
+        bne sp_unk_msg
+        jsr cmd_pwd
+        jmp sp_fin
+sp_ls:  jsr cmd_ls
         jmp sp_fin
 
 ; arg = cmdbuf+4 (after the 3-char verb and one space)
@@ -1693,12 +1705,174 @@ cmd_help:
         jsr show_body
         rts
 
+; ------------- Ultimate filesystem navigation (uos-net DOS) -----------
+; CD path -> DOS_CMD_CHANGE_DIR ($01 $11 <path>); status on the response line
+cmd_cd:
+        ldx #$03                        ; "CD " -> arg at cmdbuf+3
+        jsr sh_args2                    ; tokbuf = path
+        lda #$01
+        sta reqbuf
+        lda #$11
+        sta reqbuf+1
+        ldy #$00
+_cd_c:  lda tokbuf,y
+        beq _cd_d
+        sta reqbuf+2,y
+        iny
+        cpy #$20
+        bne _cd_c
+_cd_d:  tya
+        clc
+        adc #$02                        ; length = 2 header + path
+        pha
+        lda #<reqbuf
+        sta r0L
+        lda #>reqbuf
+        sta r0H
+        pla
+        jsr NET_CMD
+        lda #<NET_STAT                  ; "00,OK" or "83,NO SUCH DIRECTORY"
+        sta r0L
+        lda #>NET_STAT
+        sta r0H
+        jsr setline
+        rts
+
+; PWD -> DOS_CMD_GET_PATH ($01 $12); the path (NET_DATA) on the response line
+cmd_pwd:
+        lda #$01
+        sta reqbuf
+        lda #$12
+        sta reqbuf+1
+        lda #<reqbuf
+        sta r0L
+        lda #>reqbuf
+        sta r0H
+        lda #$02
+        jsr NET_CMD
+        lda #<NET_DATA
+        sta r0L
+        lda #>NET_DATA
+        sta r0H
+        jsr setline
+        rts
+
+; LS -> OPEN_DIR ($01 $13) then READ_DIR ($01 $14) in dir mode; list the
+; first entries (dirs prefixed "/") in the rows region + VDC rows 9-16
+cmd_ls:
+        lda #$01
+        sta reqbuf
+        lda #$13                        ; OPEN_DIR
+        sta reqbuf+1
+        lda #<reqbuf
+        sta r0L
+        lda #>reqbuf
+        sta r0H
+        lda #$02
+        jsr NET_CMD
+        lda #$01
+        sta NET_DIRMODE                 ; null-separate + count each entry
+        lda #$01
+        sta reqbuf
+        lda #$14                        ; READ_DIR
+        sta reqbuf+1
+        lda #<reqbuf
+        sta r0L
+        lda #>reqbuf
+        sta r0H
+        lda #$02
+        jsr NET_CMD
+        lda #$00
+        sta NET_DIRMODE
+        jsr rows_wipe
+        lda #$01
+        sta dirty
+        lda #$00
+        sta rowi
+        lda #<NET_DATA
+        sta gp
+        lda #>NET_DATA
+        sta gp+1
+        lda NET_DIRN
+        sta lsleft
+_ls_e:  lda lsleft
+        beq _ls_done
+        lda rowi
+        cmp #$08
+        bcs _ls_done
+        ; entry: attrib at (gp), name until $00
+        ldy #$00
+        lda (gp),y
+        and #$40                        ; DIR bit -> leading "/"
+        beq _ls_sp
+        lda #$2f                        ; '/'
+        bne _ls_pfx
+_ls_sp: lda #$20                        ; ' '
+_ls_pfx:
+        sta linebuf
+        sta vdline
+        inc gp                          ; past the attrib byte
+        bne _ls_n1
+        inc gp+1
+_ls_n1: ldx #$01                        ; linebuf index (after the prefix)
+_ls_nc: ldy #$00
+        lda (gp),y
+        inc gp
+        bne _ls_n2
+        inc gp+1
+_ls_n2: cmp #$00
+        beq _ls_draw
+        jsr a2p
+        sta linebuf,x
+        cpx #38
+        bcs _ls_nc                      ; keep advancing gp to the terminator
+        sta vdline,x
+        inx
+        bne _ls_nc
+_ls_draw:
+        lda #$00
+        sta linebuf,x
+        sta vdline,x
+        lda #COL_X
+        sta X1
+        lda #$00
+        sta X1+1
+        lda #TOP_Y
+        sta Y1
+        lda rowi
+        jsr addrowy
+        lda #<linebuf
+        sta r9L
+        lda #>linebuf
+        sta r9H
+        jsr GPUTS
+        lda #<vdline
+        sta r9L
+        lda #>vdline
+        sta r9H
+        lda rowi
+        clc
+        adc #$09
+        ldx #$02
+        jsr VDTEXT
+        inc rowi
+        dec lsleft
+        jmp _ls_e
+_ls_done:
+        lda #<NET_STAT                  ; status line ("00,OK"/"01,EMPTY"/"86,..")
+        sta r0L
+        lda #>NET_STAT
+        sta r0H
+        jsr setline
+        rts
+lsleft:  .byte 0
+
 ; ---------- strings / buffers ----------------------------------------
 dskstr: .text "uos-desktop", 0
 sh_title: .text "Command shell", 0
 shver:  .text "UltOS 0.3", 0
 sh_hint: .text "DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT", 0
-help_text: .byte 68,73,82,32,67,65,84,32,82,85,78,32,68,69,76,32,67,79,80,89,32,82,69,78,32,86,69,82,13,73,80,32,84,73,77,69,32,71,69,84,32,80,69,69,75,32,80,79,75,69,32,69,88,73,84,13,67,65,84,32,70,32,32,86,73,69,87,32,70,73,76,69,13,80,69,69,75,32,65,65,65,65,32,32,82,69,65,68,32,65,32,66,89,84,69,13,80,79,75,69,32,65,65,65,65,32,86,86,32,32,87,82,73,84,69,32,65,32,66,89,84,69,13,71,69,84,32,72,79,83,84,32,80,65,84,72,32,32,72,84,84,80,32,70,69,84,67,72,13,0
+help_text: .byte 68,73,82,32,67,65,84,32,82,85,78,32,68,69,76,32,67,79,80,89,32,82,69,78,32,86,69,82,13,73,80,32,84,73,77,69,32,71,69,84,32,80,69,69,75,32,80,79,75,69,32,69,88,73,84,13,67,68,32,80,65,84,72,32,32,67,72,65,78,71,69,32,85,76,84,32,68,73,82,13,80,87,68,32,32,83,72,79,87,32,80,65,84,72,32,32,32,76,83,32,32,76,73,83,84,32,68,73,82,13,80,69,69,75,32,65,65,65,65,32,32,32,80,79,75,69,32,65,65,65,65,32,86,86,13,0
 p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
                                         ; would emit shifted PETSCII junk)
 msg_dird: .text "dir", 0

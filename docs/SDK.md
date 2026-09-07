@@ -173,6 +173,12 @@ or wedged cartridge returns instead of hanging.
 | `$911b` | `NET_RTCTIME` | the Ultimate's RTC as `"YYYY/MM/DD HH:MM:SS"` in `NET_DATA` (diagnostic: that RTC read 2015 before the driver started setting it) |
 | `$911e` | `NET_TZSHIFT` | `A` = signed quarter-hours → shifts the running TOD (settings `+`/`-`, no network round trip) |
 
+`NET_CMD` also drives the DOS directory commands (target `$01`): `CD` =
+`$01 $11 <path>`, `PWD` = `$01 $12` (path → `NET_DATA`), `LS` = `$01 $13`
+then `$01 $14` with `NET_DIRMODE` (`$9162`) set so each reply block (one
+entry: attribute byte + name) is kept null-separated and counted in
+`NET_DIRN` (`$9163`). DIR entries have attribute bit 6.
+
 Data bytes (`NET_STATE = $9121`, then hour, min, sec, year word, month,
 day, weekday (0 = Sunday), zone, IP, IPSTR, LEN, SOCK, STAT) are plain RAM:
 `tests/ci_vdc.py` and `hw_net_check.py` read them back. `NET_STATE`:
@@ -181,8 +187,11 @@ command interface, 4 host unresolved / socket open failed. The desktop
 shows the state next to the clock on the 80-column row 0 and in the
 Computer window; the shell has `CAT file` (view the first 512 bytes of a
 disk file as text in the rows region + 80-column rows 9-16), `PEEK addr`
-and `POKE addr val` (hex, a memory monitor), `HELP` (full command list in
-the rows region), `TIME [SYNC]`, `IP` and `GET host path`
+and `POKE addr val` (hex, a memory monitor), `CD path` / `PWD` / `LS`
+(navigate the Ultimate II+ filesystem via the DOS directory commands over
+the command interface: CHANGE_DIR/GET_PATH/OPEN_DIR/READ_DIR), `HELP`
+(full command list in the rows region), `TIME [SYNC]`, `IP` and `GET host
+path`
 (an HTTP/1.0 GET whose status line lands on the response line and whose
 next eight lines fill the rows region, mirrored on rows 9-16).
 
@@ -279,7 +288,7 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
 
 ```
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
-UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/IP/TIME/GET (17 checks)
+UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/CD/PWD/LS/IP/TIME/GET (18 checks)
 python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity, status line (14 checks)
 python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit

@@ -88,6 +88,8 @@ NET_IPSTR:  .fill 16, 0         ; $912f dotted decimal, 0-terminated ("" = none)
 NET_LEN:    .word 0             ; $913f payload length of the last reply / socket read
 NET_SOCK:   .byte 0             ; $9141 last socket opened
 NET_STAT:   .fill 32, 0         ; $9142 last status line "NN,TEXT", 0-terminated
+NET_DIRMODE: .byte 0            ; $9162 1 = READ_DIR: null-separate + count each reply block
+NET_DIRN:   .byte 0             ; $9163 directory entry count after a dir read
 
 ;--------------------------------------------------------------------------
 NET_PRESENT:
@@ -161,6 +163,7 @@ NET_CMD:
         sta NET_LEN+1
         sta NET_STAT
         sta NET_DATA
+        sta NET_DIRN
         jsr NET_PRESENT
         bne nc_go
         lda #$fe
@@ -195,6 +198,13 @@ nc_wait:
 nc_more:
         jsr read_data
         jsr read_status
+        lda NET_DIRMODE         ; directory mode: each reply block is one
+        beq nc_nodir            ; entry -> keep read_data's $00 as a separator
+        inc NET_LEN             ; (advance past it) and count the entry
+        bne nc_dc
+        inc NET_LEN+1
+nc_dc:  inc NET_DIRN
+nc_nodir:
         lda #$02                ; DATA_ACC: release the queues
         sta UCI_CTRL
         jsr tmo_init
