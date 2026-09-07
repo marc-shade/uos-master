@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-drv1351.prg -L target/uos-drv1351.lst src/uos-drv1351.asm
-; Sun Sep  6 16:20:44 2026
+; Sun Sep  6 20:32:44 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -108,9 +108,9 @@
 .9ebb	a9 32		lda #$32	        lda #$32
 .9ebd	8d 01 d0	sta $d001	        sta ypos
 .9ec0	4c cc 9e	jmp $9ecc	        jmp _cyok
-.9ec3	c9 e6		cmp #$e6	_cyhi:  cmp #$e6                ; cap Y at 229
-.9ec5	90 05		bcc $9ecc	        bcc _cyok
-.9ec7	a9 e5		lda #$e5	        lda #$e5
+.9ec3	c9 fa		cmp #$fa	_cyhi:  cmp #$fa                ; cap Y at 249 = screen row 199 (the bottom
+.9ec5	90 05		bcc $9ecc	        bcc _cyok               ; bar / "ultos" button lives at screen y 189-199,
+.9ec7	a9 f9		lda #$f9	        lda #$f9               ; i.e. sprite Y 239-249 — the old 229 cap blocked it)
 .9ec9	8d 01 d0	sta $d001	        sta ypos
 .9ecc					_cyok:
 .9ecc	a9 ff		lda #$ff	        lda #$ff

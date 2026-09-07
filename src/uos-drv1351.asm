@@ -130,9 +130,9 @@ _cxok:  lda ypos
         lda #$32
         sta ypos
         jmp _cyok
-_cyhi:  cmp #$e6                ; cap Y at 229
-        bcc _cyok
-        lda #$e5
+_cyhi:  cmp #$fa                ; cap Y at 249 = screen row 199 (the bottom
+        bcc _cyok               ; bar / "ultos" button lives at screen y 189-199,
+        lda #$f9               ; i.e. sprite Y 239-249 — the old 229 cap blocked it)
         sta ypos
 _cyok:
 
