@@ -243,6 +243,48 @@ targets. Launching a row from the Applications window goes through
 `LAUNCH_APP` (cleared screen), and the window's controls die with the next
 desktop entry.
 
+## The calculator (`uos-calc`)
+
+The last app named in the PRD's FR-S5 ("editor, calculator, terminal").
+Integer, 16-bit unsigned: digits build the entry, `+ - * /` chain
+immediate-execution (no precedence), `=`/RETURN folds the chain, `DEL`
+backspaces the entry, `C` clears, ESC exits. While an error is latched
+only `C` is accepted. Errors: `DIV/0` and `OVF` (multiply overflow past
+65535 — the accumulator keeps the low 16 bits); subtraction wraps
+(unsigned, documented). 16/16 division is a shift-subtract with the 17th
+remainder bit checked, so divisors above 32768 are exact; the display is
+drawn on both screens. Launchable from the Applications menu (popup
+"calculator" entry + the disk-scanning launcher), from the file manager
+(RETURN), and from the shell (`RUN UOS-CALC`).
+
+Two bugs this app fixed in the shared shift-subtract divider, both worth
+remembering for any future 16-bit work: the dividend's **high byte must
+participate in the shift** (`asl low` + `rol high` — shifting only the
+low byte leaves the high byte's bits un-consumed, so the remainder keeps
+doubling after the low byte empties and the digit loop never reaches 0),
+and a `cmp`-based success return must match its caller's `bcs`/`bcc`
+convention — the verify here returned carry-set on success while the
+caller branched to the error path on carry-set, so every copy reported
+failure.
+
+## The file manager: cross-device copy and device switching
+
+`C` copies the file on the **current device** (the drive's own DOS COPY,
+`C0:<new>=<old>`). `B` copies the file **to the other device (8<->9)** as
+a kernal byte-stream copy (source read on the listing device with a plain
+name — no type suffix reads any existing file — dest written as
+`name,S,W`, 16 KB page-bounded read loop) and then **verifies the
+destination directory** before reporting `copied to device 9/8`; a write
+that never landed reports `copy failed`. `8`/`9` switch the listing
+device. Why explicit keys + a verify instead of auto-detecting the other
+drive from the serial status: under VICE an OPEN to an absent device
+returns no device-not-present flag (`ST` stays `$00`/`$20` regardless,
+probe: `probes/devprobe.asm`), and a guessed destination that silently
+drops the bytes is worse than an explicit key with an honest failure.
+1541 traps honored: the verify pattern-read uses its own logical file
+with a 256-byte hard bound (a missing SEQ file reads `$00` forever on the
+real Ultimate drive), and the copy read loop is page-bounded.
+
 ## The text editor (`uos-edit`)
 
 A note editor launched from the Applications menu: type text, RETURN for a
@@ -291,8 +333,11 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
 UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/CD/PWD/LS/IP/TIME/GET (18 checks)
 python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity, status line (14 checks)
 python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
+python3 tests/ci_calc.py                     # x64: the calculator (uos-calc) arithmetic, OVF/DIV/0, backspace, exit (10 checks)
+python3 tests/ci_copy.py                     # x64 two drives, no warp: fmgr cross-device copy 8->9->8 + image persistence (7 checks)
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
+python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)
 python3 hw_net_check.py                      # real C128: clock synced (driver bytes, Ultimate RTC via REST, row 0)
 python3 deploy_hw.py                         # real C128 via the Ultimate II+ REST API
 ```
