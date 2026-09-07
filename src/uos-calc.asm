@@ -222,15 +222,19 @@ c_del:
         jsr c_show
 _cd_x:  jmp cloop
 
-; A = op 1-4: fold any pending op first, then pend this one
+; A = op 1-4: fold any pending op first, then pend this one. With no
+; typed entry (elen=0, fresh=1 — right after '=' or another op) the
+; accumulator is KEPT: '+1=' after '9=' continues from 9, not 0.
 c_op:
         sta c_opkey
+        lda c_elen
+        beq _cop_ent                    ; no entry: keep acc, just pend
         lda c_pen
-        beq _cop_first
+        beq _cop_take
         jsr c_fold
         bcs _cop_err
         jmp _cop_ent
-_cop_first:                             ; first op: acc = ent
+_cop_take:                              ; first op with a typed entry: acc = ent
         lda c_ent
         sta c_acc
         lda c_ent+1
@@ -448,16 +452,19 @@ _um_s:  asl c_ent                       ; multiplier <<= 1
 ; old value overprints instead of replacing it.
 c_show:
         lda c_elen
-        beq _sh_acc
-        lda c_ent
-        sta c_tmp
-        lda c_ent+1
-        sta c_tmp+1
-        jmp _sh_fmt
+        bne _sh_ent
+        lda c_fresh                     ; fresh=0 with no digits = backspaced
+        beq _sh_ent                     ; to empty: show the (zero) entry
 _sh_acc:
         lda c_acc
         sta c_tmp
         lda c_acc+1
+        sta c_tmp+1
+        jmp _sh_fmt
+_sh_ent:
+        lda c_ent
+        sta c_tmp
+        lda c_ent+1
         sta c_tmp+1
 _sh_fmt:
         lda c_err

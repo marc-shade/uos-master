@@ -173,14 +173,50 @@ def main():
         print("PASS 6 backspace: 99 -> 9", flush=True)
         passed += 1
 
-        # 7: ESC -> desktop
+        # 7: chained ops fold the pending one (2+3+4= -> 9), and a new
+        # chain after '=' starts from the result (9+1= -> 10)
+        inject_keys(mon, b"C2+3+4=")
+        ok = False
+        dl = time.time() + 30
+        while time.time() < dl:
+            if disp(mon) == b"9":
+                ok = True
+                break
+            time.sleep(2)
+        assert ok, f"FAIL 7 chain: display={disp(mon)!r}"
+        inject_keys(mon, b"+1=")
+        ok = False
+        dl = time.time() + 30
+        while time.time() < dl:
+            if disp(mon) == b"10":
+                ok = True
+                break
+            time.sleep(2)
+        assert ok, f"FAIL 7 chain2: display={disp(mon)!r}"
+        print("PASS 7: chained ops fold (2+3+4=9, then +1= -> 10)", flush=True)
+        passed += 1
+
+        # 8: DEL down to an empty entry shows 0 (99 -> 9 -> 0)
+        inject_keys(mon, b"99\x14\x14")
+        ok = False
+        dl = time.time() + 30
+        while time.time() < dl:
+            if disp(mon) == b"0":
+                ok = True
+                break
+            time.sleep(2)
+        assert ok, f"FAIL 8 del-empty: display={disp(mon)!r}"
+        print("PASS 8: DEL to empty entry shows 0", flush=True)
+        passed += 1
+
+        # 9: ESC -> desktop
         inject_keys(mon, b"\x1b")
         assert wait_bytes(mon, DESK_START, desk_ref[:16], timeout=120), "no desktop after ESC"
         assert wait_desktop_live(mon), "desktop tick not live after calculator ESC"
-        print("PASS 7: ESC returned to a live desktop", flush=True)
+        print("PASS 9: ESC returned to a live desktop", flush=True)
         passed += 1
 
-        print(f"CI-CALC PASS: {passed}/10 calculator checks", flush=True)
+        print(f"CI-CALC PASS: {passed}/12 calculator checks", flush=True)
     finally:
         emu.terminate()
         xv.stop()

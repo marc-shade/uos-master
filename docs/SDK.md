@@ -333,7 +333,7 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
 UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/CD/PWD/LS/IP/TIME/GET (18 checks)
 python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity, status line (14 checks)
 python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
-python3 tests/ci_calc.py                     # x64: the calculator (uos-calc) arithmetic, OVF/DIV/0, backspace, exit (10 checks)
+python3 tests/ci_calc.py                     # x64: the calculator (uos-calc) arithmetic, chains, OVF/DIV/0, backspace, exit (12 checks)
 python3 tests/ci_copy.py                     # x64 two drives, no warp: fmgr cross-device copy 8->9->8 + image persistence (7 checks)
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
