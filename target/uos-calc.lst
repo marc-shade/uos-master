@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-calc.prg -L target/uos-calc.lst src/uos-calc.asm
-; Mon Sep  7 08:50:58 2026
+; Mon Sep  7 11:53:13 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -579,7 +579,7 @@
 .51dc	c8		iny		    iny
 .51dd	a9 0c		lda #$0c	    lda #12
 .51df	85 04		sta $04		    sta Y1
-.51e1	a9 c1		lda #$c1	    lda #<c_title
+.51e1	a9 c9		lda #$c9	    lda #<c_title
 .51e3	85 14		sta $14		    sta r9L
 .51e5	a9 55		lda #$55	    lda #>c_title
 .51e7	85 15		sta $15		    sta r9H
@@ -591,7 +591,7 @@
 .51f4	c8		iny		    iny
 .51f5	a9 b6		lda #$b6	    lda #182
 .51f7	85 04		sta $04		    sta Y1
-.51f9	a9 cc		lda #$cc	    lda #<c_hint
+.51f9	a9 d4		lda #$d4	    lda #<c_hint
 .51fb	85 14		sta $14		    sta r9L
 .51fd	a9 55		lda #$55	    lda #>c_hint
 .51ff	85 15		sta $15		    sta r9H
@@ -604,14 +604,14 @@
 .520c	69 01		adc #$01	        adc #$01
 .520e	c9 18		cmp #$18	        cmp #24
 .5210	d0 f4		bne $5206	        bne _cvc
-.5212	a9 c1		lda #$c1	        lda #<c_title
+.5212	a9 c9		lda #$c9	        lda #<c_title
 .5214	85 14		sta $14		        sta r9L
 .5216	a9 55		lda #$55	        lda #>c_title
 .5218	85 15		sta $15		        sta r9H
 .521a	a9 02		lda #$02	        lda #$02
 .521c	a2 00		ldx #$00	        ldx #$00
 .521e	20 35 08	jsr $0835	        jsr VDTEXT
-.5221	a9 cc		lda #$cc	        lda #<c_hint
+.5221	a9 d4		lda #$d4	        lda #<c_hint
 .5223	85 14		sta $14		        sta r9L
 .5225	a9 55		lda #$55	        lda #>c_hint
 .5227	85 15		sta $15		        sta r9H
@@ -656,7 +656,7 @@
 .5279	4c 33 52	jmp $5233	        jmp cloop
 .527c	4c 9f 52	jmp $529f	_jexit: jmp c_exit
 .527f	4c 4a 53	jmp $534a	_jdel:  jmp c_del
-.5282	4c 99 53	jmp $5399	_jeq:   jmp c_eq
+.5282	4c 9d 53	jmp $539d	_jeq:   jmp c_eq
 .5285	4c ba 52	jmp $52ba	_jclear: jmp c_clear
 .5288	4c d4 52	jmp $52d4	_jdig:  jmp c_dig
 .528b	a9 01		lda #$01	_cop1:  lda #$01
@@ -686,7 +686,7 @@
 .52c8	85 47		sta $47		        sta c_err
 .52ca	a9 01		lda #$01	        lda #$01
 .52cc	85 46		sta $46		        sta c_fresh
-.52ce	20 cb 54	jsr $54cb	        jsr c_show
+.52ce	20 cf 54	jsr $54cf	        jsr c_show
 .52d1	4c 33 52	jmp $5233	        jmp cloop
 .52d4					c_dig:
 .52d4	85 4a		sta $4a		        sta c_tmp2                      ; save the digit char before A is used
@@ -750,254 +750,259 @@
 .533e	69 00		adc #$00	        adc #$00
 .5340	85 43		sta $43		        sta c_ent+1
 .5342	e6 44		inc $44		        inc c_elen
-.5344	20 cb 54	jsr $54cb	        jsr c_show
+.5344	20 cf 54	jsr $54cf	        jsr c_show
 .5347	4c 33 52	jmp $5233	        jmp cloop
 .534a					c_del:
 .534a	a5 44		lda $44		        lda c_elen
 .534c	f0 08		beq $5356	        beq _cd_x
-.534e	20 76 54	jsr $5476	        jsr c_div10
+.534e	20 7a 54	jsr $547a	        jsr c_div10
 .5351	c6 44		dec $44		        dec c_elen
-.5353	20 cb 54	jsr $54cb	        jsr c_show
+.5353	20 cf 54	jsr $54cf	        jsr c_show
 .5356	4c 33 52	jmp $5233	_cd_x:  jmp cloop
 .5359					c_op:
 .5359	85 4f		sta $4f		        sta c_opkey
-.535b	a5 45		lda $45		        lda c_pen
-.535d	f0 08		beq $5367	        beq _cop_first
-.535f	20 d0 53	jsr $53d0	        jsr c_fold
-.5362	b0 21		bcs $5385	        bcs _cop_err
-.5364	4c 6f 53	jmp $536f	        jmp _cop_ent
-.5367					_cop_first:
-.5367	a5 42		lda $42		        lda c_ent
-.5369	85 40		sta $40		        sta c_acc
-.536b	a5 43		lda $43		        lda c_ent+1
-.536d	85 41		sta $41		        sta c_acc+1
-.536f					_cop_ent:
-.536f	a5 4f		lda $4f		        lda c_opkey
-.5371	85 45		sta $45		        sta c_pen
-.5373	a9 00		lda #$00	        lda #$00
-.5375	85 42		sta $42		        sta c_ent
-.5377	85 43		sta $43		        sta c_ent+1
-.5379	85 44		sta $44		        sta c_elen
-.537b	a9 01		lda #$01	        lda #$01
-.537d	85 46		sta $46		        sta c_fresh
-.537f	20 cb 54	jsr $54cb	        jsr c_show
-.5382	4c 33 52	jmp $5233	        jmp cloop
-.5385					_cop_err:
-.5385	a9 00		lda #$00	        lda #$00
-.5387	85 45		sta $45		        sta c_pen
-.5389	85 44		sta $44		        sta c_elen
-.538b	85 42		sta $42		        sta c_ent
-.538d	85 43		sta $43		        sta c_ent+1
-.538f	a9 01		lda #$01	        lda #$01
-.5391	85 46		sta $46		        sta c_fresh
-.5393	20 cb 54	jsr $54cb	        jsr c_show
-.5396	4c 33 52	jmp $5233	        jmp cloop
-.5399					c_eq:
-.5399	a5 45		lda $45		        lda c_pen
-.539b	f0 2d		beq $53ca	        beq _ce_show                    ; nothing pending: just show
-.539d	20 d0 53	jsr $53d0	        jsr c_fold
-.53a0	b0 14		bcs $53b6	        bcs _ce_err
-.53a2	a9 00		lda #$00	        lda #$00
-.53a4	85 45		sta $45		        sta c_pen
-.53a6	85 44		sta $44		        sta c_elen
-.53a8	85 42		sta $42		        sta c_ent
-.53aa	85 43		sta $43		        sta c_ent+1
-.53ac	a9 01		lda #$01	        lda #$01
-.53ae	85 46		sta $46		        sta c_fresh
-.53b0	20 cb 54	jsr $54cb	        jsr c_show
-.53b3	4c 33 52	jmp $5233	        jmp cloop
-.53b6					_ce_err:
-.53b6	a9 00		lda #$00	        lda #$00
-.53b8	85 45		sta $45		        sta c_pen
-.53ba	85 44		sta $44		        sta c_elen
-.53bc	85 42		sta $42		        sta c_ent
-.53be	85 43		sta $43		        sta c_ent+1
-.53c0	a9 01		lda #$01	        lda #$01
-.53c2	85 46		sta $46		        sta c_fresh
-.53c4	20 cb 54	jsr $54cb	        jsr c_show
-.53c7	4c 33 52	jmp $5233	        jmp cloop
-.53ca					_ce_show:
-.53ca	20 cb 54	jsr $54cb	        jsr c_show
-.53cd	4c 33 52	jmp $5233	        jmp cloop
-.53d0					c_fold:
-.53d0	a5 45		lda $45		        lda c_pen
-.53d2	c9 01		cmp #$01	        cmp #$01
-.53d4	f0 0e		beq $53e4	        beq _f_add
-.53d6	c9 02		cmp #$02	        cmp #$02
-.53d8	f0 19		beq $53f3	        beq _f_sub
-.53da	c9 03		cmp #$03	        cmp #$03
-.53dc	f0 24		beq $5402	        beq _f_mul
-.53de	c9 04		cmp #$04	        cmp #$04
-.53e0	f0 39		beq $541b	        beq _f_div
-.53e2	18		clc		        clc
-.53e3	60		rts		        rts
-.53e4					_f_add:
-.53e4	a5 40		lda $40		        lda c_acc
+.535b	a5 44		lda $44		        lda c_elen
+.535d	f0 14		beq $5373	        beq _cop_ent                    ; no entry: keep acc, just pend
+.535f	a5 45		lda $45		        lda c_pen
+.5361	f0 08		beq $536b	        beq _cop_take
+.5363	20 d4 53	jsr $53d4	        jsr c_fold
+.5366	b0 21		bcs $5389	        bcs _cop_err
+.5368	4c 73 53	jmp $5373	        jmp _cop_ent
+.536b					_cop_take:
+.536b	a5 42		lda $42		        lda c_ent
+.536d	85 40		sta $40		        sta c_acc
+.536f	a5 43		lda $43		        lda c_ent+1
+.5371	85 41		sta $41		        sta c_acc+1
+.5373					_cop_ent:
+.5373	a5 4f		lda $4f		        lda c_opkey
+.5375	85 45		sta $45		        sta c_pen
+.5377	a9 00		lda #$00	        lda #$00
+.5379	85 42		sta $42		        sta c_ent
+.537b	85 43		sta $43		        sta c_ent+1
+.537d	85 44		sta $44		        sta c_elen
+.537f	a9 01		lda #$01	        lda #$01
+.5381	85 46		sta $46		        sta c_fresh
+.5383	20 cf 54	jsr $54cf	        jsr c_show
+.5386	4c 33 52	jmp $5233	        jmp cloop
+.5389					_cop_err:
+.5389	a9 00		lda #$00	        lda #$00
+.538b	85 45		sta $45		        sta c_pen
+.538d	85 44		sta $44		        sta c_elen
+.538f	85 42		sta $42		        sta c_ent
+.5391	85 43		sta $43		        sta c_ent+1
+.5393	a9 01		lda #$01	        lda #$01
+.5395	85 46		sta $46		        sta c_fresh
+.5397	20 cf 54	jsr $54cf	        jsr c_show
+.539a	4c 33 52	jmp $5233	        jmp cloop
+.539d					c_eq:
+.539d	a5 45		lda $45		        lda c_pen
+.539f	f0 2d		beq $53ce	        beq _ce_show                    ; nothing pending: just show
+.53a1	20 d4 53	jsr $53d4	        jsr c_fold
+.53a4	b0 14		bcs $53ba	        bcs _ce_err
+.53a6	a9 00		lda #$00	        lda #$00
+.53a8	85 45		sta $45		        sta c_pen
+.53aa	85 44		sta $44		        sta c_elen
+.53ac	85 42		sta $42		        sta c_ent
+.53ae	85 43		sta $43		        sta c_ent+1
+.53b0	a9 01		lda #$01	        lda #$01
+.53b2	85 46		sta $46		        sta c_fresh
+.53b4	20 cf 54	jsr $54cf	        jsr c_show
+.53b7	4c 33 52	jmp $5233	        jmp cloop
+.53ba					_ce_err:
+.53ba	a9 00		lda #$00	        lda #$00
+.53bc	85 45		sta $45		        sta c_pen
+.53be	85 44		sta $44		        sta c_elen
+.53c0	85 42		sta $42		        sta c_ent
+.53c2	85 43		sta $43		        sta c_ent+1
+.53c4	a9 01		lda #$01	        lda #$01
+.53c6	85 46		sta $46		        sta c_fresh
+.53c8	20 cf 54	jsr $54cf	        jsr c_show
+.53cb	4c 33 52	jmp $5233	        jmp cloop
+.53ce					_ce_show:
+.53ce	20 cf 54	jsr $54cf	        jsr c_show
+.53d1	4c 33 52	jmp $5233	        jmp cloop
+.53d4					c_fold:
+.53d4	a5 45		lda $45		        lda c_pen
+.53d6	c9 01		cmp #$01	        cmp #$01
+.53d8	f0 0e		beq $53e8	        beq _f_add
+.53da	c9 02		cmp #$02	        cmp #$02
+.53dc	f0 19		beq $53f7	        beq _f_sub
+.53de	c9 03		cmp #$03	        cmp #$03
+.53e0	f0 24		beq $5406	        beq _f_mul
+.53e2	c9 04		cmp #$04	        cmp #$04
+.53e4	f0 39		beq $541f	        beq _f_div
 .53e6	18		clc		        clc
-.53e7	65 42		adc $42		        adc c_ent
-.53e9	85 40		sta $40		        sta c_acc
-.53eb	a5 41		lda $41		        lda c_acc+1
-.53ed	65 43		adc $43		        adc c_ent+1
-.53ef	85 41		sta $41		        sta c_acc+1
-.53f1	18		clc		        clc
-.53f2	60		rts		        rts
-.53f3					_f_sub:
-.53f3	a5 40		lda $40		        lda c_acc
-.53f5	38		sec		        sec
-.53f6	e5 42		sbc $42		        sbc c_ent
-.53f8	85 40		sta $40		        sta c_acc
-.53fa	a5 41		lda $41		        lda c_acc+1
-.53fc	e5 43		sbc $43		        sbc c_ent+1
-.53fe	85 41		sta $41		        sta c_acc+1
-.5400	18		clc		        clc
-.5401	60		rts		        rts
-.5402					_f_mul:
-.5402	20 92 54	jsr $5492	        jsr umul32                      ; 32-bit product: low c_tmp, high c_rem
-.5405	a5 48		lda $48		        lda c_tmp
-.5407	85 40		sta $40		        sta c_acc
-.5409	a5 49		lda $49		        lda c_tmp+1
-.540b	85 41		sta $41		        sta c_acc+1
-.540d	a5 4d		lda $4d		        lda c_rem
-.540f	05 4e		ora $4e		        ora c_rem+1
-.5411	f0 06		beq $5419	        beq _fm_ok
-.5413	a9 02		lda #$02	        lda #$02                        ; OVF
-.5415	85 47		sta $47		        sta c_err
-.5417	38		sec		        sec
-.5418	60		rts		        rts
-.5419	18		clc		_fm_ok: clc
-.541a	60		rts		        rts
-.541b					_f_div:
-.541b	a5 42		lda $42		        lda c_ent
-.541d	05 43		ora $43		        ora c_ent+1
-.541f	d0 06		bne $5427	        bne _fd_go
-.5421	a9 01		lda #$01	        lda #$01                        ; DIV/0
-.5423	85 47		sta $47		        sta c_err
-.5425	38		sec		        sec
-.5426	60		rts		        rts
-.5427	a5 40		lda $40		_fd_go: lda c_acc
-.5429	85 48		sta $48		        sta c_tmp
-.542b	a5 41		lda $41		        lda c_acc+1
-.542d	85 49		sta $49		        sta c_tmp+1
-.542f	20 3c 54	jsr $543c	        jsr udiv                        ; c_tmp / c_ent -> c_divs, c_rem
-.5432	a5 4b		lda $4b		        lda c_divs
-.5434	85 40		sta $40		        sta c_acc
-.5436	a5 4c		lda $4c		        lda c_divs+1
-.5438	85 41		sta $41		        sta c_acc+1
-.543a	18		clc		        clc
-.543b	60		rts		        rts
-.543c					udiv:
-.543c	a9 00		lda #$00	        lda #$00
-.543e	85 4b		sta $4b		        sta c_divs
-.5440	85 4c		sta $4c		        sta c_divs+1
-.5442	85 4d		sta $4d		        sta c_rem
-.5444	85 4e		sta $4e		        sta c_rem+1
-.5446	a2 10		ldx #$10	        ldx #$10
-.5448	06 4b		asl $4b		_ud_l:  asl c_divs
-.544a	26 4c		rol $4c		        rol c_divs+1
-.544c	06 48		asl $48		        asl c_tmp
-.544e	26 49		rol $49		        rol c_tmp+1                     ; shift the FULL 16-bit dividend
-.5450	26 4d		rol $4d		        rol c_rem
-.5452	26 4e		rol $4e		        rol c_rem+1
-.5454	b0 0c		bcs $5462	        bcs _ud_do                      ; 17th bit set: rem > any 16-bit divisor
-.5456	a5 4d		lda $4d		        lda c_rem
-.5458	38		sec		        sec
-.5459	e5 42		sbc $42		        sbc c_ent
-.545b	a8		tay		        tay
-.545c	a5 4e		lda $4e		        lda c_rem+1
-.545e	e5 43		sbc $43		        sbc c_ent+1
-.5460	90 10		bcc $5472	        bcc _ud_n
-.5462	a5 4d		lda $4d		_ud_do: lda c_rem
-.5464	38		sec		        sec
-.5465	e5 42		sbc $42		        sbc c_ent
-.5467	a8		tay		        tay
-.5468	a5 4e		lda $4e		        lda c_rem+1
-.546a	e5 43		sbc $43		        sbc c_ent+1
-.546c	85 4e		sta $4e		        sta c_rem+1
-.546e	84 4d		sty $4d		        sty c_rem
-.5470	e6 4b		inc $4b		        inc c_divs
-.5472	ca		dex		_ud_n:  dex
-.5473	d0 d3		bne $5448	        bne _ud_l
-.5475	60		rts		        rts
-.5476					c_div10:
-.5476	a5 42		lda $42		        lda c_ent
-.5478	85 48		sta $48		        sta c_tmp
-.547a	a5 43		lda $43		        lda c_ent+1
-.547c	85 49		sta $49		        sta c_tmp+1
-.547e	a9 0a		lda #$0a	        lda #$0a
-.5480	85 42		sta $42		        sta c_ent
-.5482	a9 00		lda #$00	        lda #$00
-.5484	85 43		sta $43		        sta c_ent+1
-.5486	20 3c 54	jsr $543c	        jsr udiv
-.5489	a5 4b		lda $4b		        lda c_divs
-.548b	85 42		sta $42		        sta c_ent
-.548d	a5 4c		lda $4c		        lda c_divs+1
-.548f	85 43		sta $43		        sta c_ent+1
-.5491	60		rts		        rts
-.5492					umul32:
-.5492	a9 00		lda #$00	        lda #$00
-.5494	85 48		sta $48		        sta c_tmp
-.5496	85 49		sta $49		        sta c_tmp+1
-.5498	85 4d		sta $4d		        sta c_rem
-.549a	85 4e		sta $4e		        sta c_rem+1
-.549c	a2 10		ldx #$10	        ldx #$10
-.549e	06 48		asl $48		_um_l:  asl c_tmp                       ; product <<= 1 (32-bit)
-.54a0	26 49		rol $49		        rol c_tmp+1
-.54a2	26 4d		rol $4d		        rol c_rem
-.54a4	26 4e		rol $4e		        rol c_rem+1
-.54a6	a5 43		lda $43		        lda c_ent+1                     ; test the multiplier's current bit15
-.54a8	10 19		bpl $54c3	        bpl _um_s
-.54aa	a5 48		lda $48		        lda c_tmp                       ; product += acc
-.54ac	18		clc		        clc
-.54ad	65 40		adc $40		        adc c_acc
-.54af	85 48		sta $48		        sta c_tmp
-.54b1	a5 49		lda $49		        lda c_tmp+1
-.54b3	65 41		adc $41		        adc c_acc+1
-.54b5	85 49		sta $49		        sta c_tmp+1
-.54b7	a5 4d		lda $4d		        lda c_rem
-.54b9	69 00		adc #$00	        adc #$00
-.54bb	85 4d		sta $4d		        sta c_rem
-.54bd	a5 4e		lda $4e		        lda c_rem+1
-.54bf	69 00		adc #$00	        adc #$00
-.54c1	85 4e		sta $4e		        sta c_rem+1
-.54c3	06 42		asl $42		_um_s:  asl c_ent                       ; multiplier <<= 1
-.54c5	26 43		rol $43		        rol c_ent+1
-.54c7	ca		dex		        dex
-.54c8	d0 d4		bne $549e	        bne _um_l
-.54ca	60		rts		        rts
-.54cb					c_show:
-.54cb	a5 44		lda $44		        lda c_elen
-.54cd	f0 0b		beq $54da	        beq _sh_acc
-.54cf	a5 42		lda $42		        lda c_ent
-.54d1	85 48		sta $48		        sta c_tmp
-.54d3	a5 43		lda $43		        lda c_ent+1
-.54d5	85 49		sta $49		        sta c_tmp+1
-.54d7	4c e2 54	jmp $54e2	        jmp _sh_fmt
-.54da					_sh_acc:
-.54da	a5 40		lda $40		        lda c_acc
-.54dc	85 48		sta $48		        sta c_tmp
-.54de	a5 41		lda $41		        lda c_acc+1
-.54e0	85 49		sta $49		        sta c_tmp+1
-.54e2					_sh_fmt:
-.54e2	a5 47		lda $47		        lda c_err
-.54e4	f0 1e		beq $5504	        beq _sh_num
-.54e6	c9 01		cmp #$01	        cmp #$01
-.54e8	d0 0d		bne $54f7	        bne _sh_ovf
-.54ea	a0 00		ldy #$00	        ldy #$00
-.54ec	b9 f2 55	lda $55f2,y	_sh_es: lda c_div0,y
-.54ef	f0 16		beq $5507	        beq _sh_draw
-.54f1	99 fc 55	sta $55fc,y	        sta dispbuf,y
-.54f4	c8		iny		        iny
-.54f5	d0 f5		bne $54ec	        bne _sh_es
-.54f7					_sh_ovf:
-.54f7	a0 00		ldy #$00	        ldy #$00
-.54f9	b9 f8 55	lda $55f8,y	_sh_eo: lda c_ovf,y
-.54fc	f0 09		beq $5507	        beq _sh_draw
-.54fe	99 fc 55	sta $55fc,y	        sta dispbuf,y
-.5501	c8		iny		        iny
-.5502	d0 f5		bne $54f9	        bne _sh_eo
-.5504					_sh_num:
-.5504	20 64 55	jsr $5564	        jsr fmt_dec
-.5507					_sh_draw:
+.53e7	60		rts		        rts
+.53e8					_f_add:
+.53e8	a5 40		lda $40		        lda c_acc
+.53ea	18		clc		        clc
+.53eb	65 42		adc $42		        adc c_ent
+.53ed	85 40		sta $40		        sta c_acc
+.53ef	a5 41		lda $41		        lda c_acc+1
+.53f1	65 43		adc $43		        adc c_ent+1
+.53f3	85 41		sta $41		        sta c_acc+1
+.53f5	18		clc		        clc
+.53f6	60		rts		        rts
+.53f7					_f_sub:
+.53f7	a5 40		lda $40		        lda c_acc
+.53f9	38		sec		        sec
+.53fa	e5 42		sbc $42		        sbc c_ent
+.53fc	85 40		sta $40		        sta c_acc
+.53fe	a5 41		lda $41		        lda c_acc+1
+.5400	e5 43		sbc $43		        sbc c_ent+1
+.5402	85 41		sta $41		        sta c_acc+1
+.5404	18		clc		        clc
+.5405	60		rts		        rts
+.5406					_f_mul:
+.5406	20 96 54	jsr $5496	        jsr umul32                      ; 32-bit product: low c_tmp, high c_rem
+.5409	a5 48		lda $48		        lda c_tmp
+.540b	85 40		sta $40		        sta c_acc
+.540d	a5 49		lda $49		        lda c_tmp+1
+.540f	85 41		sta $41		        sta c_acc+1
+.5411	a5 4d		lda $4d		        lda c_rem
+.5413	05 4e		ora $4e		        ora c_rem+1
+.5415	f0 06		beq $541d	        beq _fm_ok
+.5417	a9 02		lda #$02	        lda #$02                        ; OVF
+.5419	85 47		sta $47		        sta c_err
+.541b	38		sec		        sec
+.541c	60		rts		        rts
+.541d	18		clc		_fm_ok: clc
+.541e	60		rts		        rts
+.541f					_f_div:
+.541f	a5 42		lda $42		        lda c_ent
+.5421	05 43		ora $43		        ora c_ent+1
+.5423	d0 06		bne $542b	        bne _fd_go
+.5425	a9 01		lda #$01	        lda #$01                        ; DIV/0
+.5427	85 47		sta $47		        sta c_err
+.5429	38		sec		        sec
+.542a	60		rts		        rts
+.542b	a5 40		lda $40		_fd_go: lda c_acc
+.542d	85 48		sta $48		        sta c_tmp
+.542f	a5 41		lda $41		        lda c_acc+1
+.5431	85 49		sta $49		        sta c_tmp+1
+.5433	20 40 54	jsr $5440	        jsr udiv                        ; c_tmp / c_ent -> c_divs, c_rem
+.5436	a5 4b		lda $4b		        lda c_divs
+.5438	85 40		sta $40		        sta c_acc
+.543a	a5 4c		lda $4c		        lda c_divs+1
+.543c	85 41		sta $41		        sta c_acc+1
+.543e	18		clc		        clc
+.543f	60		rts		        rts
+.5440					udiv:
+.5440	a9 00		lda #$00	        lda #$00
+.5442	85 4b		sta $4b		        sta c_divs
+.5444	85 4c		sta $4c		        sta c_divs+1
+.5446	85 4d		sta $4d		        sta c_rem
+.5448	85 4e		sta $4e		        sta c_rem+1
+.544a	a2 10		ldx #$10	        ldx #$10
+.544c	06 4b		asl $4b		_ud_l:  asl c_divs
+.544e	26 4c		rol $4c		        rol c_divs+1
+.5450	06 48		asl $48		        asl c_tmp
+.5452	26 49		rol $49		        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.5454	26 4d		rol $4d		        rol c_rem
+.5456	26 4e		rol $4e		        rol c_rem+1
+.5458	b0 0c		bcs $5466	        bcs _ud_do                      ; 17th bit set: rem > any 16-bit divisor
+.545a	a5 4d		lda $4d		        lda c_rem
+.545c	38		sec		        sec
+.545d	e5 42		sbc $42		        sbc c_ent
+.545f	a8		tay		        tay
+.5460	a5 4e		lda $4e		        lda c_rem+1
+.5462	e5 43		sbc $43		        sbc c_ent+1
+.5464	90 10		bcc $5476	        bcc _ud_n
+.5466	a5 4d		lda $4d		_ud_do: lda c_rem
+.5468	38		sec		        sec
+.5469	e5 42		sbc $42		        sbc c_ent
+.546b	a8		tay		        tay
+.546c	a5 4e		lda $4e		        lda c_rem+1
+.546e	e5 43		sbc $43		        sbc c_ent+1
+.5470	85 4e		sta $4e		        sta c_rem+1
+.5472	84 4d		sty $4d		        sty c_rem
+.5474	e6 4b		inc $4b		        inc c_divs
+.5476	ca		dex		_ud_n:  dex
+.5477	d0 d3		bne $544c	        bne _ud_l
+.5479	60		rts		        rts
+.547a					c_div10:
+.547a	a5 42		lda $42		        lda c_ent
+.547c	85 48		sta $48		        sta c_tmp
+.547e	a5 43		lda $43		        lda c_ent+1
+.5480	85 49		sta $49		        sta c_tmp+1
+.5482	a9 0a		lda #$0a	        lda #$0a
+.5484	85 42		sta $42		        sta c_ent
+.5486	a9 00		lda #$00	        lda #$00
+.5488	85 43		sta $43		        sta c_ent+1
+.548a	20 40 54	jsr $5440	        jsr udiv
+.548d	a5 4b		lda $4b		        lda c_divs
+.548f	85 42		sta $42		        sta c_ent
+.5491	a5 4c		lda $4c		        lda c_divs+1
+.5493	85 43		sta $43		        sta c_ent+1
+.5495	60		rts		        rts
+.5496					umul32:
+.5496	a9 00		lda #$00	        lda #$00
+.5498	85 48		sta $48		        sta c_tmp
+.549a	85 49		sta $49		        sta c_tmp+1
+.549c	85 4d		sta $4d		        sta c_rem
+.549e	85 4e		sta $4e		        sta c_rem+1
+.54a0	a2 10		ldx #$10	        ldx #$10
+.54a2	06 48		asl $48		_um_l:  asl c_tmp                       ; product <<= 1 (32-bit)
+.54a4	26 49		rol $49		        rol c_tmp+1
+.54a6	26 4d		rol $4d		        rol c_rem
+.54a8	26 4e		rol $4e		        rol c_rem+1
+.54aa	a5 43		lda $43		        lda c_ent+1                     ; test the multiplier's current bit15
+.54ac	10 19		bpl $54c7	        bpl _um_s
+.54ae	a5 48		lda $48		        lda c_tmp                       ; product += acc
+.54b0	18		clc		        clc
+.54b1	65 40		adc $40		        adc c_acc
+.54b3	85 48		sta $48		        sta c_tmp
+.54b5	a5 49		lda $49		        lda c_tmp+1
+.54b7	65 41		adc $41		        adc c_acc+1
+.54b9	85 49		sta $49		        sta c_tmp+1
+.54bb	a5 4d		lda $4d		        lda c_rem
+.54bd	69 00		adc #$00	        adc #$00
+.54bf	85 4d		sta $4d		        sta c_rem
+.54c1	a5 4e		lda $4e		        lda c_rem+1
+.54c3	69 00		adc #$00	        adc #$00
+.54c5	85 4e		sta $4e		        sta c_rem+1
+.54c7	06 42		asl $42		_um_s:  asl c_ent                       ; multiplier <<= 1
+.54c9	26 43		rol $43		        rol c_ent+1
+.54cb	ca		dex		        dex
+.54cc	d0 d4		bne $54a2	        bne _um_l
+.54ce	60		rts		        rts
+.54cf					c_show:
+.54cf	a5 44		lda $44		        lda c_elen
+.54d1	d0 0f		bne $54e2	        bne _sh_ent
+.54d3	a5 46		lda $46		        lda c_fresh                     ; fresh=0 with no digits = backspaced
+.54d5	f0 0b		beq $54e2	        beq _sh_ent                     ; to empty: show the (zero) entry
+.54d7					_sh_acc:
+.54d7	a5 40		lda $40		        lda c_acc
+.54d9	85 48		sta $48		        sta c_tmp
+.54db	a5 41		lda $41		        lda c_acc+1
+.54dd	85 49		sta $49		        sta c_tmp+1
+.54df	4c ea 54	jmp $54ea	        jmp _sh_fmt
+.54e2					_sh_ent:
+.54e2	a5 42		lda $42		        lda c_ent
+.54e4	85 48		sta $48		        sta c_tmp
+.54e6	a5 43		lda $43		        lda c_ent+1
+.54e8	85 49		sta $49		        sta c_tmp+1
+.54ea					_sh_fmt:
+.54ea	a5 47		lda $47		        lda c_err
+.54ec	f0 1e		beq $550c	        beq _sh_num
+.54ee	c9 01		cmp #$01	        cmp #$01
+.54f0	d0 0d		bne $54ff	        bne _sh_ovf
+.54f2	a0 00		ldy #$00	        ldy #$00
+.54f4	b9 fa 55	lda $55fa,y	_sh_es: lda c_div0,y
+.54f7	f0 16		beq $550f	        beq _sh_draw
+.54f9	99 04 56	sta $5604,y	        sta dispbuf,y
+.54fc	c8		iny		        iny
+.54fd	d0 f5		bne $54f4	        bne _sh_es
+.54ff					_sh_ovf:
+.54ff	a0 00		ldy #$00	        ldy #$00
+.5501	b9 00 56	lda $5600,y	_sh_eo: lda c_ovf,y
+.5504	f0 09		beq $550f	        beq _sh_draw
+.5506	99 04 56	sta $5604,y	        sta dispbuf,y
+.5509	c8		iny		        iny
+.550a	d0 f5		bne $5501	        bne _sh_eo
+.550c					_sh_num:
+.550c	20 6c 55	jsr $556c	        jsr fmt_dec
+.550f					_sh_draw:
 =0					    exploc      := 0
 =5					    firstrow    := CDY / 8
 =6					    lastrow     := (CDY + 12 - 1) / 8
@@ -1006,113 +1011,113 @@
 =27					    lastcol     := ((CDX + 200 - 1) / 8) + 1
 =200					    memsz       := (lastcol - col) * 8
 =42576					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5507	a9 50		lda #$50	        lda #<memloc
-.5509	85 02		sta $02		        sta r0L
-.550b	a9 a6		lda #$a6	        lda #>memloc
-.550d	85 03		sta $03		        sta r0H
-.550f	a9 00		lda #$00	        lda #<exploc
-.5511	85 04		sta $04		        sta r1L
-.5513	a9 00		lda #$00	        lda #>exploc
-.5515	85 05		sta $05		        sta r1H
-.5517	a9 c8		lda #$c8	        lda #<memsz
-.5519	85 06		sta $06		        sta r2L
-.551b	a9 00		lda #$00	        lda #>memsz
-.551d	85 07		sta $07		        sta r2H
-.551f	20 20 08	jsr $0820	        jsr CLR_RECT
+.550f	a9 50		lda #$50	        lda #<memloc
+.5511	85 02		sta $02		        sta r0L
+.5513	a9 a6		lda #$a6	        lda #>memloc
+.5515	85 03		sta $03		        sta r0H
+.5517	a9 00		lda #$00	        lda #<exploc
+.5519	85 04		sta $04		        sta r1L
+.551b	a9 00		lda #$00	        lda #>exploc
+.551d	85 05		sta $05		        sta r1H
+.551f	a9 c8		lda #$c8	        lda #<memsz
+.5521	85 06		sta $06		        sta r2L
+.5523	a9 00		lda #$00	        lda #>memsz
+.5525	85 07		sta $07		        sta r2H
+.5527	20 20 08	jsr $0820	        jsr CLR_RECT
 =201					        exploc := exploc + memsz + 1
 =42896					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5522	a9 90		lda #$90	        lda #<memloc
-.5524	85 02		sta $02		        sta r0L
-.5526	a9 a7		lda #$a7	        lda #>memloc
-.5528	85 03		sta $03		        sta r0H
-.552a	a9 c9		lda #$c9	        lda #<exploc
-.552c	85 04		sta $04		        sta r1L
-.552e	a9 00		lda #$00	        lda #>exploc
-.5530	85 05		sta $05		        sta r1H
-.5532	a9 c8		lda #$c8	        lda #<memsz
-.5534	85 06		sta $06		        sta r2L
-.5536	a9 00		lda #$00	        lda #>memsz
-.5538	85 07		sta $07		        sta r2H
-.553a	20 20 08	jsr $0820	        jsr CLR_RECT
+.552a	a9 90		lda #$90	        lda #<memloc
+.552c	85 02		sta $02		        sta r0L
+.552e	a9 a7		lda #$a7	        lda #>memloc
+.5530	85 03		sta $03		        sta r0H
+.5532	a9 c9		lda #$c9	        lda #<exploc
+.5534	85 04		sta $04		        sta r1L
+.5536	a9 00		lda #$00	        lda #>exploc
+.5538	85 05		sta $05		        sta r1H
+.553a	a9 c8		lda #$c8	        lda #<memsz
+.553c	85 06		sta $06		        sta r2L
+.553e	a9 00		lda #$00	        lda #>memsz
+.5540	85 07		sta $07		        sta r2H
+.5542	20 20 08	jsr $0820	        jsr CLR_RECT
 =402					        exploc := exploc + memsz + 1
-.553d	a9 10		lda #$10	        lda #CDX
-.553f	85 02		sta $02		        sta X1
-.5541	a9 00		lda #$00	        lda #$00
-.5543	85 03		sta $03		        sta X1+1
-.5545	a9 28		lda #$28	        lda #CDY
-.5547	85 04		sta $04		        sta Y1
-.5549	a9 fc		lda #$fc	        lda #<dispbuf
-.554b	85 14		sta $14		        sta r9L
-.554d	a9 55		lda #$55	        lda #>dispbuf
-.554f	85 15		sta $15		        sta r9H
-.5551	20 1e c0	jsr $c01e	        jsr GPUTS
-.5554	a9 fc		lda #$fc	        lda #<dispbuf
-.5556	85 14		sta $14		        sta r9L
-.5558	a9 55		lda #$55	        lda #>dispbuf
-.555a	85 15		sta $15		        sta r9H
-.555c	a9 08		lda #$08	        lda #$08                        ; VDC row 8
-.555e	a2 00		ldx #$00	        ldx #$00
-.5560	20 35 08	jsr $0835	        jsr VDTEXT
-.5563	60		rts		        rts
-.5564					fmt_dec:
-.5564	a5 48		lda $48		        lda c_tmp
-.5566	05 49		ora $49		        ora c_tmp+1
-.5568	d0 0b		bne $5575	        bne _fd_nz
-.556a	a9 30		lda #$30	        lda #$30
-.556c	8d fc 55	sta $55fc	        sta dispbuf
-.556f	a9 00		lda #$00	        lda #$00
-.5571	8d fd 55	sta $55fd	        sta dispbuf+1
-.5574	60		rts		        rts
-.5575	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
-.5577	85 4a		sta $4a		        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
-.5579	20 9b 55	jsr $559b	_fd_l:  jsr d10tmp
-.557c	a5 4d		lda $4d		        lda c_rem
-.557e	18		clc		        clc
-.557f	69 30		adc #$30	        adc #$30
-.5581	48		pha		        pha                             ; digits pushed least-significant first
-.5582	e6 4a		inc $4a		        inc c_tmp2
-.5584	a5 48		lda $48		        lda c_tmp
-.5586	05 49		ora $49		        ora c_tmp+1
-.5588	d0 ef		bne $5579	        bne _fd_l
-.558a	a0 00		ldy #$00	        ldy #$00
-.558c	68		pla		_fd_c:  pla
-.558d	99 fc 55	sta $55fc,y	        sta dispbuf,y
-.5590	c8		iny		        iny
-.5591	c6 4a		dec $4a		        dec c_tmp2
-.5593	d0 f7		bne $558c	        bne _fd_c
-.5595	a9 00		lda #$00	        lda #$00
-.5597	99 fc 55	sta $55fc,y	        sta dispbuf,y
-.559a	60		rts		        rts
-.559b					d10tmp:
-.559b	a9 00		lda #$00	        lda #$00
-.559d	85 4d		sta $4d		        sta c_rem
-.559f	85 4e		sta $4e		        sta c_rem+1
-.55a1	a2 10		ldx #$10	        ldx #$10
-.55a3	06 48		asl $48		_d1l:   asl c_tmp
-.55a5	26 49		rol $49		        rol c_tmp+1                     ; shift the FULL 16-bit dividend
-.55a7	26 4d		rol $4d		        rol c_rem
-.55a9	26 4e		rol $4e		        rol c_rem+1
-.55ab	a5 4d		lda $4d		        lda c_rem
-.55ad	38		sec		        sec
-.55ae	e9 0a		sbc #$0a	        sbc #$0a
-.55b0	a8		tay		        tay
-.55b1	a5 4e		lda $4e		        lda c_rem+1
-.55b3	e9 00		sbc #$00	        sbc #$00
-.55b5	90 06		bcc $55bd	        bcc _d1n
-.55b7	85 4e		sta $4e		        sta c_rem+1
-.55b9	84 4d		sty $4d		        sty c_rem
-.55bb	e6 48		inc $48		        inc c_tmp
-.55bd	ca		dex		_d1n:   dex
-.55be	d0 e3		bne $55a3	        bne _d1l
-.55c0	60		rts		        rts
->55c1	c3 41 4c 43 55 4c 41 54		c_title: .text "Calculator", $00
->55c9	4f 52 00
->55cc	30 2d 39 20 2b 20 2d 20		c_hint:  .text "0-9 + - * / =  DEL  C=clear  ESC=exit", $00
->55d4	2a 20 2f 20 3d 20 20 c4 c5 cc 20 20 c3 3d 43 4c
->55e4	45 41 52 20 20 c5 d3 c3 3d 45 58 49 54 00
->55f2	44 49 56 2f 30 00		c_div0:  .byte $44,$49,$56,$2f,$30,$00          ; "DIV/0"
->55f8	4f 56 46 00			c_ovf:   .byte $4f,$56,$46,$00                  ; "OVF"
->55fc	00 00 00 00 00 00 00 00		dispbuf: .fill 8, 0
-.5604					calc_end:
+.5545	a9 10		lda #$10	        lda #CDX
+.5547	85 02		sta $02		        sta X1
+.5549	a9 00		lda #$00	        lda #$00
+.554b	85 03		sta $03		        sta X1+1
+.554d	a9 28		lda #$28	        lda #CDY
+.554f	85 04		sta $04		        sta Y1
+.5551	a9 04		lda #$04	        lda #<dispbuf
+.5553	85 14		sta $14		        sta r9L
+.5555	a9 56		lda #$56	        lda #>dispbuf
+.5557	85 15		sta $15		        sta r9H
+.5559	20 1e c0	jsr $c01e	        jsr GPUTS
+.555c	a9 04		lda #$04	        lda #<dispbuf
+.555e	85 14		sta $14		        sta r9L
+.5560	a9 56		lda #$56	        lda #>dispbuf
+.5562	85 15		sta $15		        sta r9H
+.5564	a9 08		lda #$08	        lda #$08                        ; VDC row 8
+.5566	a2 00		ldx #$00	        ldx #$00
+.5568	20 35 08	jsr $0835	        jsr VDTEXT
+.556b	60		rts		        rts
+.556c					fmt_dec:
+.556c	a5 48		lda $48		        lda c_tmp
+.556e	05 49		ora $49		        ora c_tmp+1
+.5570	d0 0b		bne $557d	        bne _fd_nz
+.5572	a9 30		lda #$30	        lda #$30
+.5574	8d 04 56	sta $5604	        sta dispbuf
+.5577	a9 00		lda #$00	        lda #$00
+.5579	8d 05 56	sta $5605	        sta dispbuf+1
+.557c	60		rts		        rts
+.557d	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
+.557f	85 4a		sta $4a		        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
+.5581	20 a3 55	jsr $55a3	_fd_l:  jsr d10tmp
+.5584	a5 4d		lda $4d		        lda c_rem
+.5586	18		clc		        clc
+.5587	69 30		adc #$30	        adc #$30
+.5589	48		pha		        pha                             ; digits pushed least-significant first
+.558a	e6 4a		inc $4a		        inc c_tmp2
+.558c	a5 48		lda $48		        lda c_tmp
+.558e	05 49		ora $49		        ora c_tmp+1
+.5590	d0 ef		bne $5581	        bne _fd_l
+.5592	a0 00		ldy #$00	        ldy #$00
+.5594	68		pla		_fd_c:  pla
+.5595	99 04 56	sta $5604,y	        sta dispbuf,y
+.5598	c8		iny		        iny
+.5599	c6 4a		dec $4a		        dec c_tmp2
+.559b	d0 f7		bne $5594	        bne _fd_c
+.559d	a9 00		lda #$00	        lda #$00
+.559f	99 04 56	sta $5604,y	        sta dispbuf,y
+.55a2	60		rts		        rts
+.55a3					d10tmp:
+.55a3	a9 00		lda #$00	        lda #$00
+.55a5	85 4d		sta $4d		        sta c_rem
+.55a7	85 4e		sta $4e		        sta c_rem+1
+.55a9	a2 10		ldx #$10	        ldx #$10
+.55ab	06 48		asl $48		_d1l:   asl c_tmp
+.55ad	26 49		rol $49		        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.55af	26 4d		rol $4d		        rol c_rem
+.55b1	26 4e		rol $4e		        rol c_rem+1
+.55b3	a5 4d		lda $4d		        lda c_rem
+.55b5	38		sec		        sec
+.55b6	e9 0a		sbc #$0a	        sbc #$0a
+.55b8	a8		tay		        tay
+.55b9	a5 4e		lda $4e		        lda c_rem+1
+.55bb	e9 00		sbc #$00	        sbc #$00
+.55bd	90 06		bcc $55c5	        bcc _d1n
+.55bf	85 4e		sta $4e		        sta c_rem+1
+.55c1	84 4d		sty $4d		        sty c_rem
+.55c3	e6 48		inc $48		        inc c_tmp
+.55c5	ca		dex		_d1n:   dex
+.55c6	d0 e3		bne $55ab	        bne _d1l
+.55c8	60		rts		        rts
+>55c9	c3 41 4c 43 55 4c 41 54		c_title: .text "Calculator", $00
+>55d1	4f 52 00
+>55d4	30 2d 39 20 2b 20 2d 20		c_hint:  .text "0-9 + - * / =  DEL  C=clear  ESC=exit", $00
+>55dc	2a 20 2f 20 3d 20 20 c4 c5 cc 20 20 c3 3d 43 4c
+>55ec	45 41 52 20 20 c5 d3 c3 3d 45 58 49 54 00
+>55fa	44 49 56 2f 30 00		c_div0:  .byte $44,$49,$56,$2f,$30,$00          ; "DIV/0"
+>5600	4f 56 46 00			c_ovf:   .byte $4f,$56,$46,$00                  ; "OVF"
+>5604	00 00 00 00 00 00 00 00		dispbuf: .fill 8, 0
+.560c					calc_end:
 
 ;******  End of listing
