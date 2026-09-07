@@ -82,7 +82,8 @@ def main():
 
         for name, key_after, label in (("UOS-FMGR", b"\x1b", "05-file-manager"),
                                        ("UOS-SHELL", None, "06-shell"),
-                                       ("UOS-SETTINGS", b"\x1b", "07-settings")):
+                                       ("UOS-SETTINGS", b"\x1b", "07-settings"),
+                                       ("UOS-CALC", b"\x1b", "08-calculator")):
             # apps are launched from a live desktop: the previous app's
             # exit key lands on the desktop first
             mon.launch(name.encode())
@@ -101,6 +102,11 @@ def main():
                 time.sleep(8)
                 shot(disp, label)
                 mon.keys(b"EXIT\x0d")
+            elif name == "UOS-CALC":
+                mon.keys(b"12+34=")      # exercise the display path
+                time.sleep(4)
+                shot(disp, label)
+                mon.keys(key_after)
             else:
                 shot(disp, label)
                 mon.keys(key_after)
