@@ -724,9 +724,19 @@ MENU_CMDLN = *
         jsr FILLFILE
         jmp LAUNCH_APP
 
+MENU_CALC = *
+        jsr closemenu
+        lda #<s_calc
+        sta r0L
+        lda #>s_calc
+        sta r0H
+        jsr FILLFILE
+        jmp LAUNCH_APP
+
 s_fmgr:     .text "uos-fmgr", $00
 s_settings: .text "uos-settings", $00
 s_shell:    .text "uos-shell", $00
+s_calc:     .text "uos-calc", $00
 
 MENU_QUIT = *
         jsr closemenu
@@ -769,7 +779,7 @@ _openmenu:
         lda #$01
         sta menuopen
         
-        height := 14
+        height := 12
         left := 0
         width := 75
         top := 105
@@ -782,8 +792,10 @@ _openmenu:
         #Text left + 5, top + 4 + (height * 3), mnu_settings
         #CreateButton 2, 4, <MENU_CMDLN,    >MENU_CMDLN   ,left, top + (height * 4), width, (top + height) + (height*4),true
         #Text left + 5, top + 4 + (height * 4), mnu_cmdline
-        #CreateButton 2, 5, <MENU_QUIT,     >MENU_QUIT    ,left, top + (height * 5), width, (top + height) + (height*5),true
-        #Text left + 5, top + 4 + (height * 5), mnu_quit
+        #CreateButton 2, 5, <MENU_CALC,     >MENU_CALC    ,left, top + (height * 5), width, (top + height) + (height*5),true
+        #Text left + 5, top + 4 + (height * 5), mnu_calc
+        #CreateButton 2, 6, <MENU_QUIT,     >MENU_QUIT    ,left, top + (height * 6), width, (top + height) + (height*6),true
+        #Text left + 5, top + 4 + (height * 6), mnu_quit
 
         jmp MAINLOOP
 
@@ -1231,6 +1243,7 @@ mnu_fileman:    .text "file manager", $00
 mnu_quit:       .text "quit", $00
 mnu_settings:   .text "settings", $00
 mnu_cmdline:    .text "command line", $00
+mnu_calc:       .text "calculator", $00
 mnu_main:       .text "ultos", $00
 
 time:           .text "12:00 PM", $00
