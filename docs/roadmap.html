@@ -163,10 +163,12 @@ assumption that uOS "is just a demo".</p>
   <tr><td>Tom+ USB mouse moves pointer (1351 protocol)</td><td><span class="pill ok">verified</span></td><td>Jittery; driver = <code>uos-drv1351</code></td></tr>
   <tr><td>REU integration (512&nbsp;K test)</td><td><span class="pill ok">verified</span></td><td>uOS requires the REU &mdash; the one thing stock GEOS 2.0 cannot handle</td></tr>
   <tr><td>Applications launcher (v0.2, this fork)</td><td><span class="pill ok">verified</span></td><td>Live disk scan + clickable launch via new <code>FILLFILE</code> core export</td></tr>
-  <tr><td>File manager, command line</td><td><span class="pill crit">stub</span></td><td>Placeholder dialogs only</td></tr>
-  <tr><td>Keyboard input</td><td><span class="pill crit">absent</span></td><td>Main loop polls mouse only</td></tr>
-  <tr><td>80-column VDC / dual display</td><td><span class="pill crit">absent</span></td><td>40-col VIC bitmap only; VDC untouched</td></tr>
-  <tr><td>Settings persistence</td><td><span class="pill crit">absent</span></td><td>Settings app exists, saves nothing</td></tr>
+  <tr><td>File manager + cross-device copy</td><td><span class="pill ok">verified</span></td><td>Dirscan/rename/scratch/copy + `B` byte-stream copy 8&lt;-&gt;9 with directory verify; <code>ci_fm</code> 18/18, <code>ci_copy</code> 7/7</td></tr>
+  <tr><td>Keyboard input</td><td><span class="pill ok">verified</span></td><td><code>KEYIN</code> drives the fmgr/shell/editor/calculator; C128 ESC via the VIC-IIe extended matrix (<code>uos-drv1351</code>), hw-verified</td></tr>
+  <tr><td>80-column VDC / dual display</td><td><span class="pill ok">verified</span></td><td>VDC driver + companion text; hw-verified off the 8563 (<code>hw_vdc_check</code>), <code>ci_vdc</code> 14/14</td></tr>
+  <tr><td>Settings persistence</td><td><span class="pill ok">verified</span></td><td><code>uos-set</code> kernal SAVE + display mode/zone restored at boot; hw-verified</td></tr>
+  <tr><td>Text editor + calculator (FR-S5)</td><td><span class="pill ok">verified</span></td><td><code>uos-edit</code> 5/5, <code>uos-calc</code> 10/10 (arithmetic, OVF, DIV/0, backspace, exit); calculator LOAD-verified on hardware</td></tr>
+  <tr><td>Terminal / shell beyond the command line</td><td><span class="pill info">in progress</span></td><td>Shell commands + CAT/PEEK/POKE verified in <code>ci_fm</code>; dialogs and trash semantics remain</td></tr>
   <tr><td>Stack &amp; toolchain</td><td><span class="pill ok">verified</span></td><td><code>build.sh</code> byte-identical rebuild; signed commits; fork on GitHub</td></tr>
 </table>
 </div>
@@ -198,12 +200,12 @@ assumption that uOS "is just a demo".</p>
 <div class="tbl">
 <table>
   <tr><th>Layer</th><th>Have</th><th>Gap</th><th>Rank</th></tr>
-  <tr><td>Display</td><td>40-col bitmap, one hires plane</td><td>VDC 80-col driver; dual-screen compositor; 40/80 switch; 2&nbsp;MHz for redraws</td><td><span class="pill crit">P0</span></td></tr>
-  <tr><td>Input</td><td>1351 mouse (noisy), one button</td><td>Keyboard driver + input queue; right-button/middle; joystick driver; pointer acceleration &amp; jitter filter</td><td><span class="pill crit">P0</span></td></tr>
-  <tr><td>Kernel services</td><td>LOADER apps, control-buffer hit-test, REU screen/app swap</td><td>App lifecycle (close/back), persistent settings, FILLFILE-based loader with directory scanning, process model</td><td><span class="pill crit">P1</span></td></tr>
-  <tr><td>Desktop</td><td>Launcher, Settings, quit, clock</td><td>File manager, editor, terminal, calculator, dialogs, trash semantics</td><td><span class="pill crit">P1</span></td></tr>
-  <tr><td>Filesystem</td><td>Kernal <code>LOAD</code> only</td><td>Directory read, save, scratch, copy&mdash;via kernal serial; later 1581 native-mode</td><td><span class="pill crit">P1</span></td></tr>
-  <tr><td>Shell</td><td>&mdash;</td><td>Command line with a real parser &mdash; the "power user" layer</td><td><span class="pill crit">P2</span></td></tr>
+  <tr><td>Display</td><td>40-col bitmap, one hires plane; VDC 80-col companion driver (hw-verified)</td><td>Dual-screen compositor; 40/80 switch; 2&nbsp;MHz for redraws</td><td><span class="pill info">P1</span></td></tr>
+  <tr><td>Input</td><td>1351 mouse (noisy), one button; <code>KEYIN</code> keyboard driver used by every app</td><td>Input queue; right-button/middle; joystick driver; pointer acceleration &amp; jitter filter</td><td><span class="pill crit">P1</span></td></tr>
+  <tr><td>Kernel services</td><td>LOADER apps, control-buffer hit-test, REU screen/app swap; FILLFILE-based loader with directory scanning; persisted settings</td><td>App lifecycle (close/back), process model</td><td><span class="pill crit">P1</span></td></tr>
+  <tr><td>Desktop</td><td>Launcher, Settings, quit, clock; file manager, editor, calculator</td><td>Terminal beyond the shell, dialogs, trash semantics</td><td><span class="pill crit">P1</span></td></tr>
+  <tr><td>Filesystem</td><td>Kernal <code>LOAD</code>, directory read, rename, scratch, SEQ save, cross-device byte-stream copy (8&lt;-&gt;9, directory-verified)</td><td>Later 1581 native-mode; disk-image mounting from the desktop</td><td><span class="pill info">P2</span></td></tr>
+  <tr><td>Shell</td><td>Command line + VER/DIR/COPY/REN/CAT/PEEK/POKE/PWD/LS/CD/HELP, CI-verified</td><td>More commands, pipes, scripting</td><td><span class="pill info">P2</span></td></tr>
   <tr><td>U2+ integration</td><td>REU used by the kernel</td><td>u2+ control bridge (REST via serial), disk-image mounting from the desktop, RAM-disk devices</td><td><span class="pill info">P2</span></td></tr>
   <tr><td>Distribution</td><td>Fork on GitHub, signed, buildable on Linux</td><td>Upstream PR path, release D64s per tag</td><td><span class="pill info">P3</span></td></tr>
 </table>
