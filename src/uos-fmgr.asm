@@ -7,10 +7,14 @@
 ; v2 adds (PRD FR-S2 / FR-F1): SCRATCH / RENAME / COPY through the kernal
 ; serial abstraction (same-device copy via the drive's own DOS COPY
 ; command), an info line, and an in-window line editor. Keyboard-first.
-; deferred: system-component filter + per-row block/type capture — both
-; corrupt the first paint (root cause pending, task FR-S2 polish).
-; Drawing note: GPUTC/GPUTS are XOR engines — erasing text means
-; redrawing the same glyphs; strings are erased+redrawn whole.
+; per-row block/type capture landed (fmblockL/fmtype, fed by show_info).
+; Drawing note: GPUTC/GPUTS are NOT XOR engines. Each set glyph bit is
+; plotted with EOR-BITMASK/AND/EOR — pen 1 (GFX_SETCOLOR 1) ORs the bit
+; in, pen 0 clears it. Drawing text over text with pen 1 therefore
+; unions the glyphs (overprint garbage), and "erasing" by redrawing the
+; same string is a no-op. Every redraw in this app first ClrRects the
+; region it is about to draw (the old XOR belief is what left the '>'-
+; marker ghosts and the overprinted rows visible after rename/scratch).
 ;==========================================================================
 
 .include "equates.inc"
@@ -22,7 +26,7 @@
 
 DLOADAPP        = $0826
 LIST_MAX        := 10
-LISTN           := 8    ; list-state key table entries
+LISTN           := 11   ; list-state key table entries
 INPN            := 5    ; input-state key table entries
 COL_X           := 30
 CUR_X           := 22
@@ -30,13 +34,14 @@ TOP_Y           := 40    ; below the title text (drawn at y=14)
 ROW_PX          := 12
 ACT_Y           := 164   ; status/hint line
 IN_Y            := 176   ; input line (rename/copy text)
+COPAGES         := 64    ; cross-device copy read bound (64*256 = 16 KB)
 
 fmrow           = $40
 fmcnt           = $41
 rowi            = $42
 fmdev           = $43    ; current device (default 8)
 state           = $44    ; 0 = list, 1 = confirm, 2 = line editor
-mode            = $45    ; editor purpose: 1 = rename, 2 = copy
+mode            = $45    ; editor purpose: 1 = rename, 2 = copy, 3 = copy to other device
 gllen           = $46    ; editor buffer length
 fci             = $47    ; fncmd write index
 keytmp          = $48    ; A save for the editor path
@@ -53,6 +58,7 @@ dnum            = $51
 kcnt            = $52
 ktblo           = $53    ; keyfind: table pointer (2 bytes)
 ktbhi           = $54
+cdst            = $56    ; cross-device copy: the other device (8<->9)
 
 * = APP_START
 
@@ -213,6 +219,9 @@ listtbl:
         .byte $52, <ask_rename, >ask_rename
         .byte $43, <ask_copy, >ask_copy
         .byte $49, <show_info, >show_info
+        .byte $38, <fmdev8, >fmdev8
+        .byte $39, <fmdev9, >fmdev9
+        .byte $42, <ask_copyx, >ask_copyx
 ; keys not in the input table (and >= $20) go to the editor add path
 
 inputtbl:
@@ -251,6 +260,7 @@ gla_add:
 gl_cancel:
         lda #$00
         sta state
+        jsr clr_inline
         jsr show_hint
         jmp inp_ret2
 gl_accept:
@@ -262,8 +272,14 @@ gl_accept:
         jsr do_rename
         jmp gla_ret
 gla_cp2:
+        cmp #$03                        ; 3 = copy to the other device
+        beq gla_cpx
         jsr do_copy
+        jmp gla_ret
+gla_cpx:
+        jsr do_copyx
 gla_ret:
+        jsr clr_inline
         jmp j_fmloop
 
 ; ---------------- cursor movement ----------------
@@ -363,6 +379,24 @@ ask_copy:
         jsr gl_show
         jmp fmloop
 
+; 'B': same editor flow, but the accept path byte-stream copies the file
+; to the other device (mode 3)
+ask_copyx:
+        lda #<p_cpyx
+        sta r0L
+        lda #>p_cpyx
+        sta r0H
+        jsr setline
+        lda #$00
+        sta gllen
+        sta fnbuf2
+        lda #$03
+        sta mode
+        lda #$02
+        sta state
+        jsr gl_show
+        jmp fmloop
+
 show_info:
         ; status line = <name> B=nn <TYP> (blocks are 0 until the
         ; dirscan type capture is fixed)
@@ -442,11 +476,10 @@ do_rename:
 
 do_copy:
         ; same-device copy via the drive's own DOS command channel:
-        ; "C0:<new>=<old>". The kernal's sequential file reads stall under
-        ; this VICE build's warp (only $-directory reads complete), so the
-        ; byte-stream copy is not viable yet; the drive-side COPY is.
-        ; Cross-device copy (FR-F1 drive->drive) returns to the seq-read
-        ; path once that is resolved on hardware.
+        ; "C0:<new>=<old>". (Cross-device copy is the explicit 'B' key —
+        ; see do_copyx. Auto-detecting the other device from the serial
+        ; status proved unreliable under VICE, and silently guessing a
+        ; destination is worse than an explicit key.)
         lda #$00
         sta fci
         lda #<p_c0
@@ -478,6 +511,222 @@ dc_err:                                 ; reached by error paths only
         lda #>msg_err
         sta r0H
         jsr setline
+        jmp j_fmloop
+
+; 'B': byte-stream copy of the selected file to the OTHER device (8<->9),
+; then a directory verify on the target (an emulator drive that never
+; received the bytes can still report the write clean, so the verify is
+; the only honest gate). 1541 traps honored: every read is page-bounded
+; (a missing SEQ file reads $00 forever on the real Ultimate drive), the
+; source is opened with a plain name (no type suffix reads any existing
+; file), and the verify uses its own logical file.
+do_copyx:
+        lda fmdev
+        eor #$01
+        sta cdst
+        jsr dc_seqcopy
+        bcs dc_err
+        jsr dc_verify
+        bcs dc_err
+        jsr refresh
+        lda cdst
+        cmp #$09
+        beq dc_msg9
+        lda #<msg_to8
+        jmp dc_msgh
+dc_msg9:
+        lda #<msg_to9
+dc_msgh:
+        sta r0L
+        lda #>msg_to9
+        bcs dc_mh2
+        lda #>msg_to8
+dc_mh2:
+        sta r0H
+        jsr setline
+        jmp j_fmloop
+
+; directory verify on cdst: pattern-list "$0:<fnbuf2>" on its own logical
+; file and count quote chars (>=3 quotes = >=2 quoted entries = present;
+; the same reliable trick the editor uses for existence checks).
+dc_verify:
+        lda #$00
+        sta fci
+        lda #<p_d0
+        sta r0L
+        lda #>p_d0
+        sta r0H
+        jsr apstr                       ; "$0:"
+        lda #<fnbuf2
+        sta r0L
+        lda #>fnbuf2
+        sta r0H
+        jsr apstr                       ; <name>
+        jsr apnull
+        lda #$03
+        ldx cdst
+        ldy #$00
+        jsr SETLFS
+        lda fci
+        ldx #<fncmd
+        ldy #>fncmd
+        jsr SETNAM
+        jsr OPEN
+        ldx #$03
+        jsr CHKIN
+        ldx #$00                        ; byte bound
+        lda #$00
+        sta dnum                        ; quote count
+dv_l:   jsr READST
+        and #$40
+        bne dv_e
+        jsr CHRIN
+        cmp #$22                        ; '"'
+        bne dv_l1
+        inc dnum
+dv_l1:  inx
+        bne dv_l                        ; 256-byte hard bound: an absent
+        ; device reads $00 forever with no EOF flag on some hosts — the
+        ; quote count below then just reports the file absent
+dv_e:   jsr CLRCHN
+        lda #$03
+        jsr CLOSE
+        lda dnum
+        cmp #$03                        ; >=3 quotes -> file present
+        bcc dv_absent
+        clc                             ; C=0 = success (do_copyx: bcs dc_err)
+        rts
+dv_absent:
+        sec
+        rts
+
+; byte-stream copy: source = selected row on fmdev (LFN 2/SA 2, name as
+; listed — no type suffix reads any existing file), dest = cdst (LFN 3/
+; SA 3, fnbuf2 + ",S,W"). Returns C=1 on failure (channels cleaned up).
+dc_seqcopy:
+        ; dest name = fnbuf2 + ",S,W" in csrcbuf
+        ldy #$00
+dcs_n:  lda fnbuf2,y
+        beq dcs_s
+        sta csrcbuf,y
+        iny
+        cpy #17
+        bne dcs_n
+dcs_s:  ldx #$00
+dcs_s2: lda w_sufx,x
+        beq dcs_s3
+        sta csrcbuf,y
+        iny
+        inx
+        jmp dcs_s2
+dcs_s3: lda #$00
+        sta csrcbuf,y
+        ; --- open the source (existing file, plain name) ---
+        ldx fmrow                       ; r0 = fmnames[fmrow]
+        lda fmnamesL,x
+        sta r0L
+        lda fmnamesH,x
+        sta r0H
+        jsr strlen
+        lda #$02
+        ldx fmdev
+        ldy #$02
+        jsr SETLFS
+        lda namlen
+        ldx r0L
+        ldy r0H
+        jsr SETNAM
+        jsr OPEN
+        jsr READST
+        and #$80
+        beq dcs_srcok
+        lda #$02
+        jsr CLOSE
+        sec
+        rts
+dcs_srcok:
+        ; --- open the destination ---
+        lda #<csrcbuf
+        sta r0L
+        lda #>csrcbuf
+        sta r0H
+        jsr strlen
+        lda #$03
+        ldx cdst
+        ldy #$03
+        jsr SETLFS
+        lda namlen
+        ldx r0L
+        ldy r0H
+        jsr SETNAM
+        jsr OPEN
+        jsr READST
+        and #$80
+        beq dcs_dstok
+        lda #$02                        ; dest failed: drop the source
+        jsr CLOSE
+        lda #$03
+        jsr CLOSE
+        sec
+        rts
+dcs_dstok:
+        ; --- page-bounded copy loop (COPAGES * 256 bytes) ---
+        ldx #$02
+        jsr CHKIN
+        ldx #COPAGES
+dcs_pg: ldy #$00
+dcs_rd: jsr CHRIN
+        sta cpbuf,y
+        jsr READST                      ; EOF rides with the final byte:
+        and #$40                        ; the byte just read is valid
+        bne dcs_weof
+        iny
+        bne dcs_rd
+        lda #$00                        ; full page: write 256
+        sta dnum
+        jsr dcs_write
+        dex
+        bne dcs_pg
+        jmp dcs_fin                     ; 16 KB bound: stop reading
+dcs_weof:
+        iny                             ; partial page: bytes 0..Y
+        sty dnum
+        jsr dcs_write
+dcs_fin:
+        jsr CLRCHN
+        lda #$02
+        jsr CLOSE
+        lda #$03
+        jsr CLOSE
+        clc
+        rts
+
+dcs_write:                              ; dnum bytes of cpbuf -> dest
+        ; NOTE: no CLRCHN here — it would clear the destination OUTPUT
+        ; channel, and every page after the first would be written to the
+        ; screen. The input channel is re-pointed at the source instead.
+        ldx #$03
+        jsr CHKOUT
+        ldy #$00
+dcw_l:  lda cpbuf,y
+        jsr CHROUT
+        iny
+        cpy dnum
+        bne dcw_l
+        ldx #$02
+        jsr CHKIN                       ; back to the source for next page
+        rts
+
+; ---------------- device switch keys ----------------
+fmdev8:
+        lda #$08
+        sta fmdev
+        jsr refresh
+        jmp j_fmloop
+fmdev9:
+        lda #$09
+        sta fmdev
+        jsr refresh
         jmp j_fmloop
 
 ; ---------------- building blocks ----------------
@@ -661,6 +910,7 @@ showlinecmd:
         jmp setline
 
 drawlinea:
+        #ClrRect 24, (ACT_Y - 2), 280, 12
         lda #24
         sta X1
         lda #$00
@@ -682,19 +932,9 @@ show_hint:
         jsr setline
         rts
 
-; redraw the editor line: erase the old string (XOR), draw the new one
+; redraw the editor line: clear the strip, then draw the new text
 gl_show:
-        lda #24
-        sta X1
-        lda #$00
-        sta X1+1
-        lda #IN_Y
-        sta Y1
-        lda #<glnold
-        sta r9L
-        lda #>glnold
-        sta r9H
-        jsr GPUTS                       ; erase what was shown
+        #ClrRect 24, (IN_Y - 2), 240, 12
         ldy #$00
 gs_cp:  lda fnbuf2,y
         sta glnold,y
@@ -713,6 +953,11 @@ gs_d:   lda #24
         lda #>glnold
         sta r9H
         jsr GPUTS
+        rts
+
+; blank the editor strip (leaving the rename/copy editor state)
+clr_inline:
+        #ClrRect 24, (IN_Y - 2), 240, 12
         rts
 
 ; ---------------- refresh after a mutation ----------------
@@ -750,17 +995,12 @@ ON_CLOSE:
         jmp fmescape
 
 ; ---------- paint all rows from fmnames -----------------------------
+; The list region is cleared whole, then every row and exactly one
+; marker are drawn with pen = write. (The previous erase-the-previous-
+; marker-by-redrawing scheme relied on a false XOR model and left one
+; '>' behind per move.)
 paintrows:
-        lda prev_row
-        cmp #$ff
-        beq pr_noprev
-        cmp fmrow
-        beq pr_noprev
-        lda prev_row
-        jsr marky
-        lda #$3e
-        jsr GPUTC
-pr_noprev:
+        #ClrRect (CUR_X - 2), (TOP_Y - 2), 288, (LIST_MAX * ROW_PX) + 4
         lda fmrow
         sta prev_row
         jsr marky
@@ -1136,12 +1376,18 @@ p_yn:   .text " (Y/N)", 0
 p_c0:   .byte $43,$30,$3a,$00   ; "C0:" unshifted (see p_s0 note)
 p_ren:  .text "RENAME TO:", 0
 p_cpy:  .text "COPY AS:", 0
+p_cpyx: .text "COPY TO OTHER DEV AS:", 0
+p_d0:   .byte $24,$30,$3a,$00   ; "$0:" unshifted (see p_s0 note)
 p_bsep: .text " B=", 0
 w_sufx: .byte $2c,$53,$2c,$57,$00     ; ",S,W" unshifted (see p_s0 note)
 msg_scr: .text "scratched", 0
 msg_ren: .text "renamed", 0
 msg_cpy: .text "copied", 0
+msg_to8: .text "copied to device 8", 0
+msg_to9: .text "copied to device 9", 0
 msg_err: .text "copy failed", 0
+csrcbuf: .fill 24, 0                      ; copy: dest name (name + ",S,W")
+cpbuf:   .fill 256, 0                     ; copy: one page in flight
 
 fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 fnbuf2: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
