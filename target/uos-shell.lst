@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-shell.prg -L target/uos-shell.lst src/uos-shell.asm
-; Sun Sep  6 21:39:28 2026
+; Mon Sep  7 15:41:06 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -578,7 +578,7 @@
 .51dc	c8		iny		    iny
 .51dd	a9 0e		lda #$0e	    lda #14
 .51df	85 04		sta $04		    sta Y1
-.51e1	a9 91		lda #$91	    lda #<sh_title
+.51e1	a9 f8		lda #$f8	    lda #<sh_title
 .51e3	85 14		sta $14		    sta r9L
 .51e5	a9 65		lda #$65	    lda #>sh_title
 .51e7	85 15		sta $15		    sta r9H
@@ -590,9 +590,9 @@
 .51f4	c8		iny		    iny
 .51f5	a9 0e		lda #$0e	    lda #14
 .51f7	85 04		sta $04		    sta Y1
-.51f9	a9 9f		lda #$9f	    lda #<shver
+.51f9	a9 06		lda #$06	    lda #<shver
 .51fb	85 14		sta $14		    sta r9L
-.51fd	a9 65		lda #$65	    lda #>shver
+.51fd	a9 66		lda #$66	    lda #>shver
 .51ff	85 15		sta $15		    sta r9H
 .5201	20 1e c0	jsr $c01e	    jsr GPUTS
 .5204	a9 18		lda #$18	    lda #24
@@ -602,46 +602,46 @@
 .520c	c8		iny		    iny
 .520d	a9 1a		lda #$1a	    lda #26
 .520f	85 04		sta $04		    sta Y1
-.5211	a9 a9		lda #$a9	    lda #<sh_hint
+.5211	a9 10		lda #$10	    lda #<sh_hint
 .5213	85 14		sta $14		    sta r9L
-.5215	a9 65		lda #$65	    lda #>sh_hint
+.5215	a9 66		lda #$66	    lda #>sh_hint
 .5217	85 15		sta $15		    sta r9H
 .5219	20 1e c0	jsr $c01e	    jsr GPUTS
-.521c	20 54 56	jsr $5654	        jsr vd_clear_area
-.521f	a9 91		lda #$91	        lda #<sh_title
+.521c	20 97 56	jsr $5697	        jsr vd_clear_area
+.521f	a9 f8		lda #$f8	        lda #<sh_title
 .5221	85 14		sta $14		        sta r9L
 .5223	a9 65		lda #$65	        lda #>sh_title
 .5225	85 15		sta $15		        sta r9H
 .5227	a9 02		lda #$02	        lda #$02
 .5229	a2 00		ldx #$00	        ldx #$00
 .522b	20 35 08	jsr $0835	        jsr VDTEXT
-.522e	a9 9f		lda #$9f	        lda #<shver
+.522e	a9 06		lda #$06	        lda #<shver
 .5230	85 14		sta $14		        sta r9L
-.5232	a9 65		lda #$65	        lda #>shver
+.5232	a9 66		lda #$66	        lda #>shver
 .5234	85 15		sta $15		        sta r9H
 .5236	a9 02		lda #$02	        lda #$02
 .5238	a2 14		ldx #$14	        ldx #$14
 .523a	20 35 08	jsr $0835	        jsr VDTEXT
-.523d	a9 a9		lda #$a9	        lda #<sh_hint
+.523d	a9 10		lda #$10	        lda #<sh_hint
 .523f	85 14		sta $14		        sta r9L
-.5241	a9 65		lda #$65	        lda #>sh_hint
+.5241	a9 66		lda #$66	        lda #>sh_hint
 .5243	85 15		sta $15		        sta r9H
 .5245	a9 17		lda #$17	        lda #23
 .5247	a2 00		ldx #$00	        ldx #$00
 .5249	20 35 08	jsr $0835	        jsr VDTEXT
-.524c	a9 63		lda #$63	        lda #<vd_prompt
+.524c	a9 a6		lda #$a6	        lda #<vd_prompt
 .524e	85 14		sta $14		        sta r9L
 .5250	a9 56		lda #$56	        lda #>vd_prompt
 .5252	85 15		sta $15		        sta r9H
 .5254	a9 05		lda #$05	        lda #$05
 .5256	a2 00		ldx #$00	        ldx #$00
 .5258	20 35 08	jsr $0835	        jsr VDTEXT
-.525b	20 fb 56	jsr $56fb	        jsr refresh
+.525b	20 3e 57	jsr $573e	        jsr refresh
 .525e	a9 00		lda #$00	        lda #$00
 .5260	85 46		sta $46		        sta cmdlen
-.5262	8d ce 66	sta $66ce	        sta cmdbuf
-.5265	8d ff 66	sta $66ff	        sta respbuf
-.5268	8d 61 67	sta $6761	        sta respold
+.5262	8d 35 67	sta $6735	        sta cmdbuf
+.5265	8d 66 67	sta $6766	        sta respbuf
+.5268	8d c8 67	sta $67c8	        sta respold
 .526b	20 2c 08	jsr $082c	shloop: jsr KEYIN
 .526e	c9 00		cmp #$00	        cmp #$00
 .5270	f0 f9		beq $526b	        beq shloop
@@ -661,19 +661,19 @@
 .5291	20 c3 52	jsr $52c3	j_exec: jsr sh_parse
 .5294	a9 00		lda #$00	        lda #$00
 .5296	85 46		sta $46		        sta cmdlen
-.5298	8d ce 66	sta $66ce	        sta cmdbuf
-.529b	20 97 56	jsr $5697	        jsr cmd_line
+.5298	8d 35 67	sta $6735	        sta cmdbuf
+.529b	20 da 56	jsr $56da	        jsr cmd_line
 .529e	4c 6b 52	jmp $526b	        jmp shloop
 .52a1					sh_add:
 .52a1	a4 46		ldy $46		        ldy cmdlen
 .52a3	c0 1e		cpy #$1e	        cpy #30                         ; cap the command line
 .52a5	b0 0e		bcs $52b5	        bcs _sa_r
-.52a7	99 ce 66	sta $66ce,y	        sta cmdbuf,y                    ; store the character, not cmdlen
+.52a7	99 35 67	sta $6735,y	        sta cmdbuf,y                    ; store the character, not cmdlen
 .52aa	c8		iny		        iny
 .52ab	84 46		sty $46		        sty cmdlen
 .52ad	a9 00		lda #$00	        lda #$00
-.52af	99 ce 66	sta $66ce,y	        sta cmdbuf,y                    ; keep the buffer $00-terminated
-.52b2	20 97 56	jsr $5697	        jsr cmd_line                    ; whole-line redraw (XOR-safe)
+.52af	99 35 67	sta $6735,y	        sta cmdbuf,y                    ; keep the buffer $00-terminated
+.52b2	20 da 56	jsr $56da	        jsr cmd_line                    ; whole-line redraw (XOR-safe)
 .52b5	60		rts		_sa_r:  rts
 .52b6					sh_back:
 .52b6	a5 46		lda $46		        lda cmdlen
@@ -681,10 +681,10 @@
 .52ba	38		sec		        sec
 .52bb	e9 01		sbc #$01	        sbc #$01
 .52bd	85 46		sta $46		        sta cmdlen
-.52bf	20 97 56	jsr $5697	        jsr cmd_line
+.52bf	20 da 56	jsr $56da	        jsr cmd_line
 .52c2	60		rts		_sb_r:  rts
 .52c3					sh_parse:
-.52c3	ad ce 66	lda $66ce	        lda cmdbuf
+.52c3	ad 35 67	lda $6735	        lda cmdbuf
 .52c6	c9 44		cmp #$44	        cmp #$44                        ; 'D'
 .52c8	f0 41		beq $530b	        beq _sp_d
 .52ca	c9 52		cmp #$52	        cmp #$52                        ; 'R'
@@ -698,25 +698,25 @@
 .52da	c9 48		cmp #$48	        cmp #$48                        ; 'H' -> HELP
 .52dc	f0 03		beq $52e1	        beq _sp_h
 .52de	4c 53 53	jmp $5353	        jmp sp_unk                      ; (T/I/G/P verbs are checked there)
-.52e1	ad cf 66	lda $66cf	_sp_h:  lda cmdbuf+1
+.52e1	ad 36 67	lda $6736	_sp_h:  lda cmdbuf+1
 .52e4	c9 45		cmp #$45	        cmp #$45                        ; 'E'
 .52e6	d0 6b		bne $5353	        bne sp_unk
-.52e8	20 22 64	jsr $6422	        jsr cmd_help
+.52e8	20 89 64	jsr $6489	        jsr cmd_help
 .52eb	4c 75 53	jmp $5375	        jmp sp_fin
-.52ee	ad cf 66	lda $66cf	_sp_c:  lda cmdbuf+1
+.52ee	ad 36 67	lda $6736	_sp_c:  lda cmdbuf+1
 .52f1	c9 4f		cmp #$4f	        cmp #$4f                        ; 'O' -> COPY old new
 .52f3	d0 04		bne $52f9	        bne _sp_ca
 .52f5	20 26 54	jsr $5426	        jsr cmd_copy
 .52f8	60		rts		        rts
 .52f9	c9 41		cmp #$41	_sp_ca: cmp #$41                        ; 'A' -> CAT file
 .52fb	d0 06		bne $5303	        bne _sp_cd
-.52fd	20 34 5c	jsr $5c34	        jsr cmd_cat
+.52fd	20 77 5c	jsr $5c77	        jsr cmd_cat
 .5300	4c 75 53	jmp $5375	        jmp sp_fin
 .5303	c9 44		cmp #$44	_sp_cd: cmp #$44                        ; 'D' -> CD path (Ultimate dir)
 .5305	d0 4c		bne $5353	        bne sp_unk
-.5307	20 45 64	jsr $6445	        jsr cmd_cd
+.5307	20 ac 64	jsr $64ac	        jsr cmd_cd
 .530a	60		rts		        rts
-.530b	ad cf 66	lda $66cf	_sp_d:  lda cmdbuf+1
+.530b	ad 36 67	lda $6736	_sp_d:  lda cmdbuf+1
 .530e	c9 49		cmp #$49	        cmp #$49                        ; 'I' -> DIR
 .5310	d0 06		bne $5318	        bne _sp_de
 .5312	20 dc 54	jsr $54dc	        jsr cmd_dir
@@ -725,7 +725,7 @@
 .531a	d0 37		bne $5353	        bne sp_unk
 .531c	20 08 55	jsr $5508	        jsr cmd_del
 .531f	60		rts		        rts
-.5320	ad cf 66	lda $66cf	_sp_r:  lda cmdbuf+1
+.5320	ad 36 67	lda $6736	_sp_r:  lda cmdbuf+1
 .5323	c9 55		cmp #$55	        cmp #$55                        ; 'U' -> RUN
 .5325	f0 08		beq $532f	        beq _sp_run
 .5327	c9 45		cmp #$45	        cmp #$45                        ; 'E' -> REN old new
@@ -735,20 +735,20 @@
 .532f					_sp_run:
 .532f	20 f7 54	jsr $54f7	        jsr cmd_run
 .5332	4c 75 53	jmp $5375	        jmp sp_fin
-.5335	ad cf 66	lda $66cf	_sp_v:  lda cmdbuf+1
+.5335	ad 36 67	lda $6736	_sp_v:  lda cmdbuf+1
 .5338	c9 45		cmp #$45	        cmp #$45                        ; 'E'
 .533a	d0 17		bne $5353	        bne sp_unk
-.533c	ad d0 66	lda $66d0	        lda cmdbuf+2
+.533c	ad 37 67	lda $6737	        lda cmdbuf+2
 .533f	c9 52		cmp #$52	        cmp #$52                        ; 'R' -> VER
 .5341	d0 10		bne $5353	        bne sp_unk
 .5343	20 eb 54	jsr $54eb	        jsr cmd_ver
 .5346	4c 75 53	jmp $5375	        jmp sp_fin
-.5349	ad cf 66	lda $66cf	_sp_e:  lda cmdbuf+1
+.5349	ad 36 67	lda $6736	_sp_e:  lda cmdbuf+1
 .534c	c9 58		cmp #$58	        cmp #$58                        ; 'X' -> EXIT
 .534e	d0 03		bne $5353	        bne sp_unk
 .5350	4c 41 55	jmp $5541	        jmp sh_desk
 .5353					sp_unk:
-.5353	ad ce 66	lda $66ce	        lda cmdbuf
+.5353	ad 35 67	lda $6735	        lda cmdbuf
 .5356	c9 54		cmp #$54	        cmp #$54                        ; 'T' -> TIME [SYNC]
 .5358	f0 1c		beq $5376	        beq sp_t
 .535a	c9 49		cmp #$49	        cmp #$49                        ; 'I' -> IP
@@ -760,134 +760,134 @@
 .5366	c9 4c		cmp #$4c	        cmp #$4c                        ; 'L' -> LS (Ultimate dir)
 .5368	f0 54		beq $53be	        beq sp_ls
 .536a					sp_unk_msg:
-.536a	a9 8c		lda #$8c	        lda #<msg_unk
+.536a	a9 f3		lda #$f3	        lda #<msg_unk
 .536c	85 02		sta $02		        sta r0L
 .536e	a9 66		lda #$66	        lda #>msg_unk
 .5370	85 03		sta $03		        sta r0H
 .5372	20 01 56	jsr $5601	        jsr setline
 .5375					sp_fin:
 .5375	60		rts		        rts
-.5376	ad cf 66	lda $66cf	sp_t:   lda cmdbuf+1
+.5376	ad 36 67	lda $6736	sp_t:   lda cmdbuf+1
 .5379	c9 49		cmp #$49	        cmp #$49                        ; 'I'
 .537b	d0 ed		bne $536a	        bne sp_unk_msg
-.537d	20 16 59	jsr $5916	        jsr cmd_time
+.537d	20 59 59	jsr $5959	        jsr cmd_time
 .5380	4c 75 53	jmp $5375	        jmp sp_fin
-.5383	ad cf 66	lda $66cf	sp_i:   lda cmdbuf+1
+.5383	ad 36 67	lda $6736	sp_i:   lda cmdbuf+1
 .5386	c9 50		cmp #$50	        cmp #$50                        ; 'P'
 .5388	d0 e0		bne $536a	        bne sp_unk_msg
-.538a	20 3e 5a	jsr $5a3e	        jsr cmd_ip
+.538a	20 81 5a	jsr $5a81	        jsr cmd_ip
 .538d	4c 75 53	jmp $5375	        jmp sp_fin
-.5390	ad cf 66	lda $66cf	sp_g:   lda cmdbuf+1
+.5390	ad 36 67	lda $6736	sp_g:   lda cmdbuf+1
 .5393	c9 45		cmp #$45	        cmp #$45                        ; 'E'
 .5395	d0 d3		bne $536a	        bne sp_unk_msg
-.5397	20 87 5a	jsr $5a87	        jsr cmd_get
+.5397	20 ca 5a	jsr $5aca	        jsr cmd_get
 .539a	4c 75 53	jmp $5375	        jmp sp_fin
-.539d	ad cf 66	lda $66cf	sp_p:   lda cmdbuf+1
+.539d	ad 36 67	lda $6736	sp_p:   lda cmdbuf+1
 .53a0	c9 45		cmp #$45	        cmp #$45                        ; 'E' -> PEEK
 .53a2	d0 06		bne $53aa	        bne _sp_po
-.53a4	20 ec 62	jsr $62ec	        jsr cmd_peek
+.53a4	20 53 63	jsr $6353	        jsr cmd_peek
 .53a7	4c 75 53	jmp $5375	        jmp sp_fin
 .53aa	c9 4f		cmp #$4f	_sp_po: cmp #$4f                        ; 'O' -> POKE
 .53ac	d0 06		bne $53b4	        bne _sp_pw
-.53ae	20 24 63	jsr $6324	        jsr cmd_poke
+.53ae	20 8b 63	jsr $638b	        jsr cmd_poke
 .53b1	4c 75 53	jmp $5375	        jmp sp_fin
 .53b4	c9 57		cmp #$57	_sp_pw: cmp #$57                        ; 'W' -> PWD
 .53b6	d0 b2		bne $536a	        bne sp_unk_msg
-.53b8	20 80 64	jsr $6480	        jsr cmd_pwd
+.53b8	20 e7 64	jsr $64e7	        jsr cmd_pwd
 .53bb	4c 75 53	jmp $5375	        jmp sp_fin
-.53be	20 a3 64	jsr $64a3	sp_ls:  jsr cmd_ls
+.53be	20 0a 65	jsr $650a	sp_ls:  jsr cmd_ls
 .53c1	4c 75 53	jmp $5375	        jmp sp_fin
 .53c4					sh_argbuf:
-.53c4	ad d1 66	lda $66d1	        lda cmdbuf+3
+.53c4	ad 38 67	lda $6738	        lda cmdbuf+3
 .53c7	c9 20		cmp #$20	        cmp #' '
 .53c9	d0 18		bne $53e3	        bne _sa_none
 .53cb	a0 00		ldy #$00	        ldy #$00
 .53cd	a2 04		ldx #$04	        ldx #$04
-.53cf	bd ce 66	lda $66ce,x	_ag_l:  lda cmdbuf,x
+.53cf	bd 35 67	lda $6735,x	_ag_l:  lda cmdbuf,x
 .53d2	f0 09		beq $53dd	        beq _ag_z
-.53d4	99 ee 66	sta $66ee,y	        sta tokbuf,y
+.53d4	99 55 67	sta $6755,y	        sta tokbuf,y
 .53d7	e8		inx		        inx
 .53d8	c8		iny		        iny
 .53d9	c0 10		cpy #$10	        cpy #16
 .53db	d0 f2		bne $53cf	        bne _ag_l
 .53dd	a9 00		lda #$00	_ag_z:  lda #$00
-.53df	99 ee 66	sta $66ee,y	        sta tokbuf,y
+.53df	99 55 67	sta $6755,y	        sta tokbuf,y
 .53e2	60		rts		        rts
 .53e3					_sa_none:
 .53e3	a9 00		lda #$00	        lda #$00
-.53e5	8d ee 66	sta $66ee	        sta tokbuf
+.53e5	8d 55 67	sta $6755	        sta tokbuf
 .53e8	60		rts		        rts
 .53e9					sh_args2:
 .53e9	a0 00		ldy #$00	        ldy #$00
-.53eb	bd ce 66	lda $66ce,x	_a2_l:  lda cmdbuf,x
+.53eb	bd 35 67	lda $6735,x	_a2_l:  lda cmdbuf,x
 .53ee	f0 0d		beq $53fd	        beq _a2_e1
 .53f0	c9 20		cmp #$20	        cmp #' '
 .53f2	f0 12		beq $5406	        beq _a2_sp
-.53f4	99 ee 66	sta $66ee,y	        sta tokbuf,y
+.53f4	99 55 67	sta $6755,y	        sta tokbuf,y
 .53f7	e8		inx		        inx
 .53f8	c8		iny		        iny
 .53f9	c0 10		cpy #$10	        cpy #16
 .53fb	d0 ee		bne $53eb	        bne _a2_l
 .53fd	a9 00		lda #$00	_a2_e1: lda #$00
-.53ff	99 ee 66	sta $66ee,y	        sta tokbuf,y
-.5402	8d 9c 66	sta $669c	        sta tok2buf
+.53ff	99 55 67	sta $6755,y	        sta tokbuf,y
+.5402	8d 03 67	sta $6703	        sta tok2buf
 .5405	60		rts		        rts
 .5406	a9 00		lda #$00	_a2_sp: lda #$00
-.5408	99 ee 66	sta $66ee,y	        sta tokbuf,y
+.5408	99 55 67	sta $6755,y	        sta tokbuf,y
 .540b	e8		inx		        inx                             ; skip the space
 .540c	a0 00		ldy #$00	        ldy #$00
-.540e	bd ce 66	lda $66ce,x	_a2_m:  lda cmdbuf,x
+.540e	bd 35 67	lda $6735,x	_a2_m:  lda cmdbuf,x
 .5411	f0 0d		beq $5420	        beq _a2_e2
 .5413	c9 20		cmp #$20	        cmp #' '
 .5415	f0 09		beq $5420	        beq _a2_e2
-.5417	99 9c 66	sta $669c,y	        sta tok2buf,y
+.5417	99 03 67	sta $6703,y	        sta tok2buf,y
 .541a	e8		inx		        inx
 .541b	c8		iny		        iny
 .541c	c0 10		cpy #$10	        cpy #16
 .541e	d0 ee		bne $540e	        bne _a2_m
 .5420	a9 00		lda #$00	_a2_e2: lda #$00
-.5422	99 9c 66	sta $669c,y	        sta tok2buf,y
+.5422	99 03 67	sta $6703,y	        sta tok2buf,y
 .5425	60		rts		        rts
 .5426					cmd_copy:
 .5426	a2 05		ldx #$05	        ldx #$05                        ; after "COPY "
 .5428	20 e9 53	jsr $53e9	        jsr sh_args2
-.542b	ad ee 66	lda $66ee	        lda tokbuf
+.542b	ad 55 67	lda $6755	        lda tokbuf
 .542e	f0 4b		beq $547b	        beq cp_none
-.5430	ad 9c 66	lda $669c	        lda tok2buf
+.5430	ad 03 67	lda $6703	        lda tok2buf
 .5433	f0 46		beq $547b	        beq cp_none
 .5435	a9 00		lda #$00	        lda #$00
-.5437	8d cc 67	sta $67cc	        sta fci
-.543a	a9 8e		lda #$8e	        lda #<p_copy
+.5437	8d 33 68	sta $6833	        sta fci
+.543a	a9 f5		lda #$f5	        lda #<p_copy
 .543c	85 02		sta $02		        sta r0L
 .543e	a9 66		lda #$66	        lda #>p_copy
 .5440	85 03		sta $03		        sta r0H
 .5442	20 52 55	jsr $5552	        jsr apstr                       ; "C0:"
-.5445	a9 9c		lda #$9c	        lda #<tok2buf
+.5445	a9 03		lda #$03	        lda #<tok2buf
 .5447	85 02		sta $02		        sta r0L
-.5449	a9 66		lda #$66	        lda #>tok2buf
+.5449	a9 67		lda #$67	        lda #>tok2buf
 .544b	85 03		sta $03		        sta r0H
 .544d	20 52 55	jsr $5552	        jsr apstr                       ; new
-.5450	a9 96		lda #$96	        lda #<p_eq0
+.5450	a9 fd		lda #$fd	        lda #<p_eq0
 .5452	85 02		sta $02		        sta r0L
 .5454	a9 66		lda #$66	        lda #>p_eq0
 .5456	85 03		sta $03		        sta r0H
 .5458	20 52 55	jsr $5552	        jsr apstr                       ; "=0:"
-.545b	a9 ee		lda #$ee	        lda #<tokbuf
+.545b	a9 55		lda #$55	        lda #<tokbuf
 .545d	85 02		sta $02		        sta r0L
-.545f	a9 66		lda #$66	        lda #>tokbuf
+.545f	a9 67		lda #$67	        lda #>tokbuf
 .5461	85 03		sta $03		        sta r0H
 .5463	20 52 55	jsr $5552	        jsr apstr                       ; old
 .5466	20 67 55	jsr $5567	        jsr apnull
 .5469	20 70 55	jsr $5570	        jsr sendcmd
-.546c	20 fb 56	jsr $56fb	        jsr refresh
-.546f	a9 6f		lda #$6f	        lda #<msg_copd
+.546c	20 3e 57	jsr $573e	        jsr refresh
+.546f	a9 d6		lda #$d6	        lda #<msg_copd
 .5471	85 02		sta $02		        sta r0L
 .5473	a9 66		lda #$66	        lda #>msg_copd
 .5475	85 03		sta $03		        sta r0H
 .5477	20 c8 55	jsr $55c8	        jsr show_status
 .547a	60		rts		        rts
 .547b					cp_none:
-.547b	a9 7e		lda #$7e	        lda #<msg_args
+.547b	a9 e5		lda #$e5	        lda #<msg_args
 .547d	85 02		sta $02		        sta r0L
 .547f	a9 66		lda #$66	        lda #>msg_args
 .5481	85 03		sta $03		        sta r0H
@@ -896,85 +896,85 @@
 .5487					cmd_ren:
 .5487	a2 04		ldx #$04	        ldx #$04                        ; after "REN "
 .5489	20 e9 53	jsr $53e9	        jsr sh_args2
-.548c	ad ee 66	lda $66ee	        lda tokbuf
+.548c	ad 55 67	lda $6755	        lda tokbuf
 .548f	f0 ea		beq $547b	        beq cp_none
-.5491	ad 9c 66	lda $669c	        lda tok2buf
+.5491	ad 03 67	lda $6703	        lda tok2buf
 .5494	f0 e5		beq $547b	        beq cp_none
 .5496	a9 00		lda #$00	        lda #$00
-.5498	8d cc 67	sta $67cc	        sta fci
-.549b	a9 92		lda #$92	        lda #<p_ren
+.5498	8d 33 68	sta $6833	        sta fci
+.549b	a9 f9		lda #$f9	        lda #<p_ren
 .549d	85 02		sta $02		        sta r0L
 .549f	a9 66		lda #$66	        lda #>p_ren
 .54a1	85 03		sta $03		        sta r0H
 .54a3	20 52 55	jsr $5552	        jsr apstr                       ; "R0:"
-.54a6	a9 9c		lda #$9c	        lda #<tok2buf
+.54a6	a9 03		lda #$03	        lda #<tok2buf
 .54a8	85 02		sta $02		        sta r0L
-.54aa	a9 66		lda #$66	        lda #>tok2buf
+.54aa	a9 67		lda #$67	        lda #>tok2buf
 .54ac	85 03		sta $03		        sta r0H
 .54ae	20 52 55	jsr $5552	        jsr apstr                       ; new
-.54b1	a9 9a		lda #$9a	        lda #<p_eq
+.54b1	a9 01		lda #$01	        lda #<p_eq
 .54b3	85 02		sta $02		        sta r0L
-.54b5	a9 66		lda #$66	        lda #>p_eq
+.54b5	a9 67		lda #$67	        lda #>p_eq
 .54b7	85 03		sta $03		        sta r0H
 .54b9	20 52 55	jsr $5552	        jsr apstr                       ; "="
-.54bc	a9 ee		lda #$ee	        lda #<tokbuf
+.54bc	a9 55		lda #$55	        lda #<tokbuf
 .54be	85 02		sta $02		        sta r0L
-.54c0	a9 66		lda #$66	        lda #>tokbuf
+.54c0	a9 67		lda #$67	        lda #>tokbuf
 .54c2	85 03		sta $03		        sta r0H
 .54c4	20 52 55	jsr $5552	        jsr apstr                       ; old
 .54c7	20 67 55	jsr $5567	        jsr apnull
 .54ca	20 70 55	jsr $5570	        jsr sendcmd
-.54cd	20 fb 56	jsr $56fb	        jsr refresh
-.54d0	a9 76		lda #$76	        lda #<msg_rend
+.54cd	20 3e 57	jsr $573e	        jsr refresh
+.54d0	a9 dd		lda #$dd	        lda #<msg_rend
 .54d2	85 02		sta $02		        sta r0L
 .54d4	a9 66		lda #$66	        lda #>msg_rend
 .54d6	85 03		sta $03		        sta r0H
 .54d8	20 c8 55	jsr $55c8	        jsr show_status
 .54db	60		rts		        rts
 .54dc					cmd_dir:
-.54dc	a9 63		lda #$63	        lda #<msg_dird
+.54dc	a9 ca		lda #$ca	        lda #<msg_dird
 .54de	85 02		sta $02		        sta r0L
 .54e0	a9 66		lda #$66	        lda #>msg_dird
 .54e2	85 03		sta $03		        sta r0H
 .54e4	20 01 56	jsr $5601	        jsr setline
-.54e7	20 fb 56	jsr $56fb	        jsr refresh
+.54e7	20 3e 57	jsr $573e	        jsr refresh
 .54ea					_sp_dir_r:
 .54ea	60		rts		        rts
 .54eb					cmd_ver:
-.54eb	a9 9f		lda #$9f	        lda #<shver
+.54eb	a9 06		lda #$06	        lda #<shver
 .54ed	85 02		sta $02		        sta r0L
-.54ef	a9 65		lda #$65	        lda #>shver
+.54ef	a9 66		lda #$66	        lda #>shver
 .54f1	85 03		sta $03		        sta r0H
 .54f3	20 01 56	jsr $5601	        jsr setline
 .54f6	60		rts		        rts
 .54f7					cmd_run:
 .54f7	20 c4 53	jsr $53c4	        jsr sh_argbuf
-.54fa	a9 ee		lda #$ee	        lda #<tokbuf
+.54fa	a9 55		lda #$55	        lda #<tokbuf
 .54fc	85 02		sta $02		        sta r0L
-.54fe	a9 66		lda #$66	        lda #>tokbuf
+.54fe	a9 67		lda #$67	        lda #>tokbuf
 .5500	85 03		sta $03		        sta r0H
 .5502	20 29 08	jsr $0829	        jsr FILLFILE
 .5505	4c 32 08	jmp $0832	        jmp LAUNCH_APP                  ; core-resident: the load overwrites
 .5508					cmd_del:
 .5508	20 c4 53	jsr $53c4	        jsr sh_argbuf
-.550b	ad ee 66	lda $66ee	        lda tokbuf
+.550b	ad 55 67	lda $6755	        lda tokbuf
 .550e	f0 30		beq $5540	        beq _sp_none                    ; no argument: nothing to scratch
 .5510	a9 00		lda #$00	        lda #$00
-.5512	8d cc 67	sta $67cc	        sta fci
-.5515	a9 5f		lda #$5f	        lda #<p_del2
+.5512	8d 33 68	sta $6833	        sta fci
+.5515	a9 c6		lda #$c6	        lda #<p_del2
 .5517	85 02		sta $02		        sta r0L
 .5519	a9 66		lda #$66	        lda #>p_del2
 .551b	85 03		sta $03		        sta r0H
 .551d	20 52 55	jsr $5552	        jsr apstr                       ; "S0:"
-.5520	a9 ee		lda #$ee	        lda #<tokbuf
+.5520	a9 55		lda #$55	        lda #<tokbuf
 .5522	85 02		sta $02		        sta r0L
-.5524	a9 66		lda #$66	        lda #>tokbuf
+.5524	a9 67		lda #$67	        lda #>tokbuf
 .5526	85 03		sta $03		        sta r0H
 .5528	20 52 55	jsr $5552	        jsr apstr                       ; <arg>
 .552b	20 67 55	jsr $5567	        jsr apnull
 .552e	20 70 55	jsr $5570	        jsr sendcmd
-.5531	20 fb 56	jsr $56fb	        jsr refresh
-.5534	a9 67		lda #$67	        lda #<msg_deld
+.5531	20 3e 57	jsr $573e	        jsr refresh
+.5534	a9 ce		lda #$ce	        lda #<msg_deld
 .5536	85 02		sta $02		        sta r0L
 .5538	a9 66		lda #$66	        lda #>msg_deld
 .553a	85 03		sta $03		        sta r0H
@@ -983,7 +983,7 @@
 .5540					_sp_none:
 .5540	60		rts		        rts
 .5541					sh_desk:
-.5541	a9 85		lda #$85	        lda #<dskstr
+.5541	a9 ec		lda #$ec	        lda #<dskstr
 .5543	85 02		sta $02		        sta r0L
 .5545	a9 65		lda #$65	        lda #>dskstr
 .5547	85 03		sta $03		        sta r0H
@@ -991,20 +991,20 @@
 .554c	20 26 08	jsr $0826	        jsr DLOADAPP
 .554f	4c 00 10	jmp $1000	        jmp DESK_START
 .5552					apstr:
-.5552	ae cc 67	ldx $67cc	        ldx fci
+.5552	ae 33 68	ldx $6833	        ldx fci
 .5555	a0 00		ldy #$00	        ldy #$00
 .5557	b1 02		lda ($02),y	ap_l:   lda (r0),y
 .5559	f0 08		beq $5563	        beq ap_d
-.555b	9d cd 67	sta $67cd,x	        sta fncmd,x
+.555b	9d 34 68	sta $6834,x	        sta fncmd,x
 .555e	e8		inx		        inx
 .555f	c8		iny		        iny
 .5560	4c 57 55	jmp $5557	        jmp ap_l
-.5563	8e cc 67	stx $67cc	ap_d:   stx fci
+.5563	8e 33 68	stx $6833	ap_d:   stx fci
 .5566	60		rts		        rts
 .5567					apnull:
-.5567	ae cc 67	ldx $67cc	        ldx fci
+.5567	ae 33 68	ldx $6833	        ldx fci
 .556a	a9 00		lda #$00	        lda #$00
-.556c	9d cd 67	sta $67cd,x	        sta fncmd,x
+.556c	9d 34 68	sta $6834,x	        sta fncmd,x
 .556f	60		rts		        rts
 .5570					sendcmd:
 .5570	a9 0f		lda #$0f	        lda #$0f
@@ -1019,7 +1019,7 @@
 .5585	a2 0f		ldx #$0f	        ldx #$0f
 .5587	20 c9 ff	jsr $ffc9	        jsr CHKOUT
 .558a	a0 00		ldy #$00	        ldy #$00
-.558c	b9 cd 67	lda $67cd,y	sc_cp:  lda fncmd,y
+.558c	b9 34 68	lda $6834,y	sc_cp:  lda fncmd,y
 .558f	f0 07		beq $5598	        beq sc_cr
 .5591	20 d2 ff	jsr $ffd2	        jsr CHROUT
 .5594	c8		iny		        iny
@@ -1035,42 +1035,42 @@
 .55ac	f0 0b		beq $55b9	        beq st_d
 .55ae	c0 1e		cpy #$1e	        cpy #30
 .55b0	b0 f5		bcs $55a7	        bcs st_l                        ; drain, but keep only 30 chars
-.55b2	99 ad 66	sta $66ad,y	        sta stbuf,y
+.55b2	99 14 67	sta $6714,y	        sta stbuf,y
 .55b5	c8		iny		        iny
 .55b6	4c a7 55	jmp $55a7	        jmp st_l
 .55b9	a9 00		lda #$00	st_d:   lda #$00
-.55bb	99 ad 66	sta $66ad,y	        sta stbuf,y
+.55bb	99 14 67	sta $6714,y	        sta stbuf,y
 .55be	20 cc ff	jsr $ffcc	        jsr CLRCHN
 .55c1	a9 0f		lda #$0f	        lda #$0f
 .55c3	20 c3 ff	jsr $ffc3	        jsr CLOSE
 .55c6	58		cli		        cli                             ; serial IRQ-mask quirk (see fmgr)
 .55c7	60		rts		        rts
 .55c8					show_status:
-.55c8	ad ad 66	lda $66ad	        lda stbuf
+.55c8	ad 14 67	lda $6714	        lda stbuf
 .55cb	c9 30		cmp #$30	        cmp #'0'
 .55cd	d0 0f		bne $55de	        bne ss_err
-.55cf	ad ae 66	lda $66ae	        lda stbuf+1
+.55cf	ad 15 67	lda $6715	        lda stbuf+1
 .55d2	c9 30		cmp #$30	        cmp #'0'                        ; "00, OK"
 .55d4	f0 04		beq $55da	        beq ss_ok
 .55d6	c9 31		cmp #$31	        cmp #'1'                        ; "01, FILES SCRATCHED" (1541 scratch)
 .55d8	d0 04		bne $55de	        bne ss_err
 .55da	20 01 56	jsr $5601	ss_ok:  jsr setline
 .55dd	60		rts		        rts
-.55de	a9 ad		lda #$ad	ss_err: lda #<stbuf
+.55de	a9 14		lda #$14	ss_err: lda #<stbuf
 .55e0	85 02		sta $02		        sta r0L
-.55e2	a9 66		lda #$66	        lda #>stbuf
+.55e2	a9 67		lda #$67	        lda #>stbuf
 .55e4	85 03		sta $03		        sta r0H
 .55e6	20 01 56	jsr $5601	        jsr setline
 .55e9	60		rts		        rts
 .55ea					strlen:
 .55ea	a9 00		lda #$00	        lda #$00
-.55ec	8d c9 67	sta $67c9	        sta namlen
+.55ec	8d 30 68	sta $6830	        sta namlen
 .55ef	a0 00		ldy #$00	        ldy #$00
 .55f1	b1 02		lda ($02),y	stl_l:  lda (r0),y
 .55f3	f0 0b		beq $5600	        beq stl_d
 .55f5	c0 18		cpy #$18	        cpy #24
 .55f7	b0 07		bcs $5600	        bcs stl_d
-.55f9	ee c9 67	inc $67c9	        inc namlen
+.55f9	ee 30 68	inc $6830	        inc namlen
 .55fc	c8		iny		        iny
 .55fd	4c f1 55	jmp $55f1	        jmp stl_l
 .5600	60		rts		stl_d:  rts
@@ -1080,775 +1080,837 @@
 .5605	f0 0a		beq $5611	        beq sl_d
 .5607	c0 2e		cpy #$2e	        cpy #46
 .5609	b0 06		bcs $5611	        bcs sl_d
-.560b	99 ff 66	sta $66ff,y	        sta respbuf,y
+.560b	99 66 67	sta $6766,y	        sta respbuf,y
 .560e	c8		iny		        iny
 .560f	d0 f2		bne $5603	        bne sl_cp
 .5611	a9 00		lda #$00	sl_d:   lda #$00
-.5613	99 ff 66	sta $66ff,y	        sta respbuf,y
-.5616	a9 18		lda #$18	        lda #COL_X
-.5618	85 02		sta $02		        sta X1
-.561a	a9 00		lda #$00	        lda #$00
-.561c	85 03		sta $03		        sta X1+1
-.561e	a9 ac		lda #$ac	        lda #STAT_Y
-.5620	85 04		sta $04		        sta Y1
-.5622	a9 61		lda #$61	        lda #<respold
-.5624	85 14		sta $14		        sta r9L
-.5626	a9 67		lda #$67	        lda #>respold
-.5628	85 15		sta $15		        sta r9H
-.562a	20 1e c0	jsr $c01e	        jsr GPUTS
-.562d	a0 00		ldy #$00	        ldy #$00
-.562f	b9 ff 66	lda $66ff,y	sl_old: lda respbuf,y
-.5632	99 61 67	sta $6761,y	        sta respold,y
-.5635	f0 05		beq $563c	        beq sl_d2
-.5637	c8		iny		        iny
-.5638	c0 2f		cpy #$2f	        cpy #47
-.563a	d0 f3		bne $562f	        bne sl_old
-.563c	20 72 56	jsr $5672	sl_d2:  jsr resp_show
-.563f	a9 07		lda #$07	        lda #$07
-.5641	20 38 08	jsr $0838	        jsr VDCLR
-.5644	a9 ff		lda #$ff	        lda #<respbuf
-.5646	85 14		sta $14		        sta r9L
-.5648	a9 66		lda #$66	        lda #>respbuf
-.564a	85 15		sta $15		        sta r9H
-.564c	a9 07		lda #$07	        lda #$07
-.564e	a2 02		ldx #$02	        ldx #$02
-.5650	20 35 08	jsr $0835	        jsr VDTEXT
-.5653	60		rts		        rts
-.5654					vd_clear_area:
-.5654	a9 02		lda #$02	        lda #$02
-.5656	48		pha		vca_l:  pha
-.5657	20 38 08	jsr $0838	        jsr VDCLR
-.565a	68		pla		        pla
-.565b	18		clc		        clc
-.565c	69 01		adc #$01	        adc #$01
-.565e	c9 18		cmp #$18	        cmp #24
-.5660	d0 f4		bne $5656	        bne vca_l
-.5662	60		rts		        rts
->5663	3e 20 00			vd_prompt: .text "> ", $00
-.5666					show_hint:
-.5666	a9 a9		lda #$a9	        lda #<sh_hint
-.5668	85 02		sta $02		        sta r0L
-.566a	a9 65		lda #$65	        lda #>sh_hint
-.566c	85 03		sta $03		        sta r0H
-.566e	20 01 56	jsr $5601	        jsr setline
-.5671	60		rts		        rts
-.5672					resp_show:
-.5672	a9 01		lda #$01	        lda #$01
-.5674	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
-.5677	a9 18		lda #$18	        lda #COL_X
-.5679	85 02		sta $02		        sta X1
-.567b	a9 00		lda #$00	        lda #$00
-.567d	85 03		sta $03		        sta X1+1
-.567f	a9 ac		lda #$ac	        lda #STAT_Y
-.5681	85 04		sta $04		        sta Y1
-.5683	a9 61		lda #$61	        lda #<respold
-.5685	85 14		sta $14		        sta r9L
-.5687	a9 67		lda #$67	        lda #>respold
-.5689	85 15		sta $15		        sta r9H
-.568b	a9 00		lda #$00	        lda #$00
-.568d	85 03		sta $03		        sta X1+1
-.568f	a9 ac		lda #$ac	        lda #STAT_Y
-.5691	85 04		sta $04		        sta Y1
-.5693	20 1e c0	jsr $c01e	        jsr GPUTS
+.5613	99 66 67	sta $6766,y	        sta respbuf,y
+.5616	a5 02		lda $02		    lda r0L
+.5618	48		pha		    pha
+.5619	a5 03		lda $03		    lda r0H
+.561b	48		pha		    pha
+.561c	a5 04		lda $04		    lda r1L
+.561e	48		pha		    pha
+.561f	a5 05		lda $05		    lda r1H
+.5621	48		pha		    pha
+.5622	a5 06		lda $06		    lda r2L
+.5624	48		pha		    pha
+.5625	a5 07		lda $07		    lda r2H
+.5627	48		pha		    pha
+=0					    exploc      := 0
+=21					    firstrow    := (STAT_Y - 2) / 8
+=22					    lastrow     := ((STAT_Y - 2) + 12 - 1) / 8
+=0					    row         := 0
+=2					    col         := ((COL_X - 2) / 8)
+=38					    lastcol     := (((COL_X - 2) + 280 - 1) / 8) + 1
+=288					    memsz       := (lastcol - col) * 8
+=47696					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5628	a9 50		lda #$50	        lda #<memloc
+.562a	85 02		sta $02		        sta r0L
+.562c	a9 ba		lda #$ba	        lda #>memloc
+.562e	85 03		sta $03		        sta r0H
+.5630	a9 00		lda #$00	        lda #<exploc
+.5632	85 04		sta $04		        sta r1L
+.5634	a9 00		lda #$00	        lda #>exploc
+.5636	85 05		sta $05		        sta r1H
+.5638	a9 20		lda #$20	        lda #<memsz
+.563a	85 06		sta $06		        sta r2L
+.563c	a9 01		lda #$01	        lda #>memsz
+.563e	85 07		sta $07		        sta r2H
+.5640	20 20 08	jsr $0820	        jsr CLR_RECT
+=289					        exploc := exploc + memsz + 1
+=48016					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5643	a9 90		lda #$90	        lda #<memloc
+.5645	85 02		sta $02		        sta r0L
+.5647	a9 bb		lda #$bb	        lda #>memloc
+.5649	85 03		sta $03		        sta r0H
+.564b	a9 21		lda #$21	        lda #<exploc
+.564d	85 04		sta $04		        sta r1L
+.564f	a9 01		lda #$01	        lda #>exploc
+.5651	85 05		sta $05		        sta r1H
+.5653	a9 20		lda #$20	        lda #<memsz
+.5655	85 06		sta $06		        sta r2L
+.5657	a9 01		lda #$01	        lda #>memsz
+.5659	85 07		sta $07		        sta r2H
+.565b	20 20 08	jsr $0820	        jsr CLR_RECT
+=578					        exploc := exploc + memsz + 1
+.565e	68		pla		    pla
+.565f	85 07		sta $07		    sta r2H
+.5661	68		pla		    pla
+.5662	85 06		sta $06		    sta r2L
+.5664	68		pla		    pla
+.5665	85 05		sta $05		    sta r1H
+.5667	68		pla		    pla
+.5668	85 04		sta $04		    sta r1L
+.566a	68		pla		    pla
+.566b	85 03		sta $03		    sta r0H
+.566d	68		pla		    pla
+.566e	85 02		sta $02		    sta r0L
+.5670	a0 00		ldy #$00	        ldy #$00
+.5672	b9 66 67	lda $6766,y	sl_old: lda respbuf,y
+.5675	99 c8 67	sta $67c8,y	        sta respold,y
+.5678	f0 05		beq $567f	        beq sl_d2
+.567a	c8		iny		        iny
+.567b	c0 2f		cpy #$2f	        cpy #47
+.567d	d0 f3		bne $5672	        bne sl_old
+.567f	20 b5 56	jsr $56b5	sl_d2:  jsr resp_show
+.5682	a9 07		lda #$07	        lda #$07
+.5684	20 38 08	jsr $0838	        jsr VDCLR
+.5687	a9 66		lda #$66	        lda #<respbuf
+.5689	85 14		sta $14		        sta r9L
+.568b	a9 67		lda #$67	        lda #>respbuf
+.568d	85 15		sta $15		        sta r9H
+.568f	a9 07		lda #$07	        lda #$07
+.5691	a2 02		ldx #$02	        ldx #$02
+.5693	20 35 08	jsr $0835	        jsr VDTEXT
 .5696	60		rts		        rts
-.5697					cmd_line:
-.5697	a9 05		lda #$05	        lda #$05
-.5699	20 38 08	jsr $0838	        jsr VDCLR
-.569c	a9 63		lda #$63	        lda #<vd_prompt
-.569e	85 14		sta $14		        sta r9L
-.56a0	a9 56		lda #$56	        lda #>vd_prompt
-.56a2	85 15		sta $15		        sta r9H
-.56a4	a9 05		lda #$05	        lda #$05
-.56a6	a2 00		ldx #$00	        ldx #$00
-.56a8	20 35 08	jsr $0835	        jsr VDTEXT
-.56ab	a9 ce		lda #$ce	        lda #<cmdbuf
-.56ad	85 14		sta $14		        sta r9L
-.56af	a9 66		lda #$66	        lda #>cmdbuf
-.56b1	85 15		sta $15		        sta r9H
-.56b3	a9 05		lda #$05	        lda #$05
-.56b5	a2 02		ldx #$02	        ldx #$02
-.56b7	20 35 08	jsr $0835	        jsr VDTEXT
+.5697					vd_clear_area:
+.5697	a9 02		lda #$02	        lda #$02
+.5699	48		pha		vca_l:  pha
+.569a	20 38 08	jsr $0838	        jsr VDCLR
+.569d	68		pla		        pla
+.569e	18		clc		        clc
+.569f	69 01		adc #$01	        adc #$01
+.56a1	c9 18		cmp #$18	        cmp #24
+.56a3	d0 f4		bne $5699	        bne vca_l
+.56a5	60		rts		        rts
+>56a6	3e 20 00			vd_prompt: .text "> ", $00
+.56a9					show_hint:
+.56a9	a9 10		lda #$10	        lda #<sh_hint
+.56ab	85 02		sta $02		        sta r0L
+.56ad	a9 66		lda #$66	        lda #>sh_hint
+.56af	85 03		sta $03		        sta r0H
+.56b1	20 01 56	jsr $5601	        jsr setline
+.56b4	60		rts		        rts
+.56b5					resp_show:
+.56b5	a9 01		lda #$01	        lda #$01
+.56b7	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
 .56ba	a9 18		lda #$18	        lda #COL_X
 .56bc	85 02		sta $02		        sta X1
 .56be	a9 00		lda #$00	        lda #$00
 .56c0	85 03		sta $03		        sta X1+1
-.56c2	a9 a0		lda #$a0	        lda #CMD_Y
+.56c2	a9 ac		lda #$ac	        lda #STAT_Y
 .56c4	85 04		sta $04		        sta Y1
-.56c6	a9 41		lda #$41	        lda #<oldbuf
+.56c6	a9 c8		lda #$c8	        lda #<respold
 .56c8	85 14		sta $14		        sta r9L
-.56ca	a9 67		lda #$67	        lda #>oldbuf
+.56ca	a9 67		lda #$67	        lda #>respold
 .56cc	85 15		sta $15		        sta r9H
-.56ce	20 1e c0	jsr $c01e	        jsr GPUTS                       ; cancel the shown glyphs
-.56d1	a0 00		ldy #$00	        ldy #$00
-.56d3	b9 ce 66	lda $66ce,y	cl_cp:  lda cmdbuf,y
-.56d6	99 41 67	sta $6741,y	        sta oldbuf,y
-.56d9	c8		iny		        iny
-.56da	c0 1f		cpy #$1f	        cpy #31
-.56dc	d0 f5		bne $56d3	        bne cl_cp
-.56de	a9 00		lda #$00	        lda #$00
-.56e0	99 41 67	sta $6741,y	        sta oldbuf,y
-.56e3	a9 18		lda #$18	        lda #COL_X
-.56e5	85 02		sta $02		        sta X1
-.56e7	a9 00		lda #$00	        lda #$00
-.56e9	85 03		sta $03		        sta X1+1
-.56eb	a9 a0		lda #$a0	        lda #CMD_Y
-.56ed	85 04		sta $04		        sta Y1
-.56ef	a9 41		lda #$41	        lda #<oldbuf
-.56f1	85 14		sta $14		        sta r9L
-.56f3	a9 67		lda #$67	        lda #>oldbuf
-.56f5	85 15		sta $15		        sta r9H
-.56f7	20 1e c0	jsr $c01e	        jsr GPUTS                       ; draw the new line
-.56fa	60		rts		        rts
-.56fb					refresh:
-.56fb	a9 01		lda #$01	        lda #$01
-.56fd	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
-.5700	ad e3 5f	lda $5fe3	        lda dirty
-.5703	f0 03		beq $5708	        beq _rf_clean
-.5705	20 c8 5c	jsr $5cc8	        jsr rows_wipe
-.5708					_rf_clean:
-.5708	ad cb 67	lda $67cb	        lda painted
-.570b	f0 03		beq $5710	        beq _rf_scan
-.570d	20 32 57	jsr $5732	        jsr paintrows
-.5710					_rf_scan:
-.5710	20 5e 58	jsr $585e	        jsr dirscan
-.5713	a9 ff		lda #$ff	        lda #$ff
-.5715	8d ca 67	sta $67ca	        sta prev_row
-.5718	20 32 57	jsr $5732	        jsr paintrows
-.571b	a9 01		lda #$01	        lda #$01
-.571d	8d cb 67	sta $67cb	        sta painted
-.5720	a9 a9		lda #$a9	        lda #<sh_hint
-.5722	85 02		sta $02		        sta r0L
-.5724	a9 65		lda #$65	        lda #>sh_hint
-.5726	85 03		sta $03		        sta r0H
-.5728	20 01 56	jsr $5601	        jsr setline
-.572b	60		rts		        rts
-.572c					repaint:
-.572c	20 32 57	jsr $5732	        jsr paintrows
-.572f	4c 6b 52	jmp $526b	        jmp shloop
-.5732					paintrows:
-.5732	a5 41		lda $41		        lda shcnt
-.5734	f0 2d		beq $5763	        beq pr_done                    ; empty directory: the row loop
-.5736	a9 00		lda #$00	        lda #$00                        ; below compares AFTER painting,
-.5738	85 42		sta $42		        sta rowi                        ; so 0 entries would paint 256 rows
-.573a	a5 42		lda $42		pr_l:   lda rowi
-.573c	aa		tax		        tax
-.573d	bd 7a 57	lda $577a,x	        lda shnamesL,x
-.5740	85 14		sta $14		        sta r9L
-.5742	bd 86 57	lda $5786,x	        lda shnamesH,x
-.5745	85 15		sta $15		        sta r9H
-.5747	a9 18		lda #$18	        lda #COL_X
-.5749	85 02		sta $02		        sta X1
-.574b	a9 00		lda #$00	        lda #$00
-.574d	85 03		sta $03		        sta X1+1
-.574f	a9 28		lda #$28	        lda #TOP_Y
-.5751	85 04		sta $04		        sta Y1
-.5753	a5 42		lda $42		        lda rowi
-.5755	20 64 57	jsr $5764	        jsr addrowy
-.5758	20 1e c0	jsr $c01e	        jsr GPUTS
-.575b	e6 42		inc $42		        inc rowi
-.575d	a5 42		lda $42		        lda rowi
-.575f	c5 41		cmp $41		        cmp shcnt
-.5761	d0 d7		bne $573a	        bne pr_l
-.5763					pr_done:
-.5763	60		rts		        rts
-.5764					addrowy:
-.5764	85 48		sta $48		        sta tmpa
-.5766	a5 48		lda $48		        lda tmpa
-.5768	0a		asl a		        asl
-.5769	0a		asl a		        asl
-.576a	0a		asl a		        asl                             ; row*8
-.576b	85 4b		sta $4b		        sta tmpb
-.576d	a5 42		lda $42		        lda rowi
-.576f	0a		asl a		        asl
-.5770	0a		asl a		        asl                             ; row*4
-.5771	18		clc		        clc
-.5772	65 4b		adc $4b		        adc tmpb
-.5774	18		clc		        clc
-.5775	65 04		adc $04		        adc Y1
-.5777	85 04		sta $04		        sta Y1
-.5779	60		rts		        rts
->577a	92 a3 b4 c5 d6 e7		shnamesL: .byte <sn1, <sn2, <sn3, <sn4, <sn5, <sn6
->5780	f8 09 1a 2b 3c 4d		          .byte <sn7, <sn8, <sn9, <sna, <snb, <snc
->5786	57 57 57 57 57 57		shnamesH: .byte >sn1, >sn2, >sn3, >sn4, >sn5, >sn6
->578c	57 58 58 58 58 58		          .byte >sn7, >sn8, >sn9, >sna, >snb, >snc
->5792	00 00 00 00 00 00 00 00		sn1:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->579a	00 00 00 00 00 00 00 00 00
->57a3	00 00 00 00 00 00 00 00		sn2:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->57ab	00 00 00 00 00 00 00 00 00
->57b4	00 00 00 00 00 00 00 00		sn3:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->57bc	00 00 00 00 00 00 00 00 00
->57c5	00 00 00 00 00 00 00 00		sn4:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->57cd	00 00 00 00 00 00 00 00 00
->57d6	00 00 00 00 00 00 00 00		sn5:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->57de	00 00 00 00 00 00 00 00 00
->57e7	00 00 00 00 00 00 00 00		sn6:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->57ef	00 00 00 00 00 00 00 00 00
->57f8	00 00 00 00 00 00 00 00		sn7:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5800	00 00 00 00 00 00 00 00 00
->5809	00 00 00 00 00 00 00 00		sn8:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5811	00 00 00 00 00 00 00 00 00
->581a	00 00 00 00 00 00 00 00		sn9:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5822	00 00 00 00 00 00 00 00 00
->582b	00 00 00 00 00 00 00 00		sna:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5833	00 00 00 00 00 00 00 00 00
->583c	00 00 00 00 00 00 00 00		snb:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5844	00 00 00 00 00 00 00 00 00
->584d	00 00 00 00 00 00 00 00		snc:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->5855	00 00 00 00 00 00 00 00 00
-.585e					dirscan:
-.585e	a9 00		lda #$00	        lda #$00
-.5860	85 41		sta $41		        sta shcnt
-.5862	a9 05		lda #$05	        lda #$05
-.5864	a2 08		ldx #$08	        ldx #$08
-.5866	a0 00		ldy #$00	        ldy #$00
-.5868	20 ba ff	jsr $ffba	        jsr SETLFS
-.586b	a9 01		lda #$01	        lda #$01
-.586d	a2 cd		ldx #$cd	        ldx #<dname
-.586f	a0 66		ldy #$66	        ldy #>dname
-.5871	20 bd ff	jsr $ffbd	        jsr SETNAM
-.5874	20 c0 ff	jsr $ffc0	        jsr OPEN
-.5877	a2 05		ldx #$05	        ldx #$05
-.5879	20 c6 ff	jsr $ffc6	        jsr CHKIN
-.587c	a9 01		lda #$01	        lda #$01
-.587e	8d fd 67	sta $67fd	        sta dsfirst
-.5881					ds_ent:
-.5881	a9 00		lda #$00	        lda #$00
-.5883	8d fc 67	sta $67fc	        sta dseof
-.5886	a0 00		ldy #$00	        ldy #$00
-.5888	20 cf ff	jsr $ffcf	ds_rd:  jsr CHRIN
-.588b	99 0f 68	sta $680f,y	        sta dline,y
-.588e	c8		iny		        iny
-.588f	20 b7 ff	jsr $ffb7	        jsr READST
-.5892	29 40		and #$40	        and #$40
-.5894	f0 06		beq $589c	        beq ds_more
-.5896	ee fc 67	inc $67fc	        inc dseof
-.5899	4c a0 58	jmp $58a0	        jmp ds_parse
-.589c					ds_more:
-.589c	c0 20		cpy #$20	        cpy #32
-.589e	d0 e8		bne $5888	        bne ds_rd
-.58a0					ds_parse:
-.58a0	ad fd 67	lda $67fd	        lda dsfirst
-.58a3	f0 08		beq $58ad	        beq ds_cnt
-.58a5	a9 00		lda #$00	        lda #$00
-.58a7	8d fd 67	sta $67fd	        sta dsfirst
-.58aa	4c ff 58	jmp $58ff	        jmp ds_next
-.58ad	ad 11 68	lda $6811	ds_cnt: lda dline+2
-.58b0	0d 12 68	ora $6812	        ora dline+3
-.58b3	d0 03		bne $58b8	        bne ds_xinit                    ; count > 0: look for the name
-.58b5	4c ff 58	jmp $58ff	        jmp ds_next                     ; count 0 = disk title
-.58b8					ds_xinit:
-.58b8	a2 00		ldx #$00	        ldx #$00
-.58ba	bd 0f 68	lda $680f,x	ds_q1:  lda dline,x
-.58bd	c9 22		cmp #$22	        cmp #$22
-.58bf	f0 08		beq $58c9	        beq ds_qgot
-.58c1	e8		inx		        inx
-.58c2	e0 20		cpx #$20	        cpx #32
-.58c4	d0 f4		bne $58ba	        bne ds_q1
-.58c6	4c ff 58	jmp $58ff	        jmp ds_next
-.58c9					ds_qgot:
-.58c9	e8		inx		        inx                             ; step past the opening quote
-.58ca	a0 00		ldy #$00	        ldy #$00
-.58cc	bd 0f 68	lda $680f,x	ds_nc:  lda dline,x
-.58cf	c9 22		cmp #$22	        cmp #$22
-.58d1	f0 09		beq $58dc	        beq ds_ncend
-.58d3	99 fe 67	sta $67fe,y	        sta fnbuf,y
-.58d6	e8		inx		        inx
-.58d7	c8		iny		        iny
-.58d8	c0 10		cpy #$10	        cpy #$10                        ; cap at 16 chars
-.58da	d0 f0		bne $58cc	        bne ds_nc
-.58dc					ds_ncend:
-.58dc	a9 00		lda #$00	        lda #$00
-.58de	99 fe 67	sta $67fe,y	        sta fnbuf,y                     ; terminator
-.58e1	a6 41		ldx $41		        ldx shcnt
-.58e3	e0 0a		cpx #$0a	        cpx #LIST_MAX
-.58e5	b0 18		bcs $58ff	        bcs ds_next
-.58e7	bd 7a 57	lda $577a,x	        lda shnamesL,x
-.58ea	85 02		sta $02		        sta r0L
-.58ec	bd 86 57	lda $5786,x	        lda shnamesH,x
-.58ef	85 03		sta $03		        sta r0H
-.58f1	a0 00		ldy #$00	        ldy #$00
-.58f3	b9 fe 67	lda $67fe,y	ds_cp:  lda fnbuf,y
-.58f6	91 02		sta ($02),y	        sta (r0),y
-.58f8	c8		iny		        iny
-.58f9	c0 11		cpy #$11	        cpy #$11
-.58fb	d0 f6		bne $58f3	        bne ds_cp
-.58fd	e6 41		inc $41		        inc shcnt
-.58ff					ds_next:
-.58ff	a9 00		lda #$00	        lda #$00
-.5901	8d fd 67	sta $67fd	        sta dsfirst
-.5904	ad fc 67	lda $67fc	        lda dseof
-.5907	d0 03		bne $590c	        bne ds_end
-.5909	4c 81 58	jmp $5881	        jmp ds_ent
-.590c					ds_end:
-.590c	20 cc ff	jsr $ffcc	        jsr CLRCHN
-.590f	a9 05		lda #$05	        lda #$05
-.5911	20 c3 ff	jsr $ffc3	        jsr CLOSE
-.5914	58		cli		        cli
-.5915	60		rts		        rts
-.5916					cmd_time:
-.5916	ad d2 66	lda $66d2	        lda cmdbuf+4
-.5919	c9 20		cmp #$20	        cmp #$20
-.591b	d0 0a		bne $5927	        bne _ct_show
-.591d	ad d3 66	lda $66d3	        lda cmdbuf+5
-.5920	c9 53		cmp #$53	        cmp #$53                        ; 'S' -> TIME SYNC
-.5922	d0 03		bne $5927	        bne _ct_show
-.5924	20 15 91	jsr $9115	        jsr NET_SYNC
-.5927					_ct_show:
-.5927	20 36 59	jsr $5936	        jsr fmt_time
-.592a	a9 e4		lda #$e4	        lda #<linebuf
-.592c	85 02		sta $02		        sta r0L
-.592e	a9 5f		lda #$5f	        lda #>linebuf
-.5930	85 03		sta $03		        sta r0H
-.5932	20 01 56	jsr $5601	        jsr setline
-.5935	60		rts		        rts
-.5936					fmt_time:
-.5936	ad 21 91	lda $9121	        lda NET_STATE
-.5939	f0 2e		beq $5969	        beq _ft_ok
-.593b	a2 00		ldx #$00	        ldx #$00
-.593d	bd 48 5f	lda $5f48,x	_ft_u:  lda msg_unsync,x
-.5940	f0 06		beq $5948	        beq _ft_u2
-.5942	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5945	e8		inx		        inx
-.5946	d0 f5		bne $593d	        bne _ft_u
-.5948	ac 21 91	ldy $9121	_ft_u2: ldy NET_STATE
-.594b	c0 05		cpy #$05	        cpy #$05
-.594d	90 02		bcc $5951	        bcc _ft_u3
-.594f	a0 05		ldy #$05	        ldy #$05
-.5951	b9 03 5f	lda $5f03,y	_ft_u3: lda tagL,y
-.5954	85 02		sta $02		        sta r0L
-.5956	b9 09 5f	lda $5f09,y	        lda tagH,y
-.5959	85 03		sta $03		        sta r0H
-.595b	a0 00		ldy #$00	        ldy #$00
-.595d	b1 02		lda ($02),y	_ft_u4: lda (r0),y
-.595f	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5962	f0 04		beq $5968	        beq _ft_r
-.5964	e8		inx		        inx
-.5965	c8		iny		        iny
-.5966	d0 f5		bne $595d	        bne _ft_u4
-.5968	60		rts		_ft_r:  rts
-.5969	a2 00		ldx #$00	_ft_ok: ldx #$00
-.596b	ad 0b dc	lda $dc0b	        lda TODHRS                      ; latches the TOD registers
-.596e	48		pha		        pha
-.596f	29 1f		and #$1f	        and #$1f
-.5971	20 10 5a	jsr $5a10	        jsr put_bcd
-.5974	a9 3a		lda #$3a	        lda #':'
-.5976	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5979	e8		inx		        inx
-.597a	ad 0a dc	lda $dc0a	        lda TODMIN
-.597d	20 10 5a	jsr $5a10	        jsr put_bcd
-.5980	a9 3a		lda #$3a	        lda #':'
-.5982	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5985	e8		inx		        inx
-.5986	ad 09 dc	lda $dc09	        lda TODSEC
-.5989	20 10 5a	jsr $5a10	        jsr put_bcd
-.598c	ad 08 dc	lda $dc08	        lda TODTEN                      ; releases them
-.598f	a9 20		lda #$20	        lda #' '
-.5991	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5994	e8		inx		        inx
-.5995	68		pla		        pla
-.5996	29 80		and #$80	        and #$80
-.5998	f0 04		beq $599e	        beq _ft_am
-.599a	a9 d0		lda #$d0	        lda #'P'
-.599c	d0 02		bne $59a0	        bne _ft_ap
-.599e	a9 c1		lda #$c1	_ft_am: lda #'A'
-.59a0	9d e4 5f	sta $5fe4,x	_ft_ap: sta linebuf,x
-.59a3	e8		inx		        inx
-.59a4	a9 cd		lda #$cd	        lda #'M'
-.59a6	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59a9	e8		inx		        inx
-.59aa	a9 20		lda #$20	        lda #' '
-.59ac	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59af	e8		inx		        inx
-.59b0	38		sec		        sec
-.59b1	ad 25 91	lda $9125	        lda NET_YEAR
-.59b4	e9 d0		sbc #$d0	        sbc #<2000
-.59b6	48		pha		        pha
-.59b7	ad 26 91	lda $9126	        lda NET_YEAR+1
-.59ba	e9 07		sbc #$07	        sbc #>2000
-.59bc	90 10		bcc $59ce	        bcc _ft_19
-.59be	a9 32		lda #$32	        lda #'2'
-.59c0	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59c3	e8		inx		        inx
-.59c4	a9 30		lda #$30	        lda #'0'
-.59c6	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59c9	e8		inx		        inx
-.59ca	68		pla		        pla
-.59cb	4c e0 59	jmp $59e0	        jmp _ft_y2
-.59ce	68		pla		_ft_19: pla
-.59cf	18		clc		        clc
-.59d0	69 64		adc #$64	        adc #100                        ; (y-2000)+100 = y-1900
-.59d2	48		pha		        pha
-.59d3	a9 31		lda #$31	        lda #'1'
-.59d5	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59d8	e8		inx		        inx
-.59d9	a9 39		lda #$39	        lda #'9'
-.59db	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59de	e8		inx		        inx
-.59df	68		pla		        pla
-.59e0	20 25 5a	jsr $5a25	_ft_y2: jsr put_dec2
-.59e3	a9 2f		lda #$2f	        lda #'/'
-.59e5	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59e8	e8		inx		        inx
-.59e9	ad 27 91	lda $9127	        lda NET_MON
-.59ec	20 25 5a	jsr $5a25	        jsr put_dec2
-.59ef	a9 2f		lda #$2f	        lda #'/'
-.59f1	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.59f4	e8		inx		        inx
-.59f5	ad 28 91	lda $9128	        lda NET_DAY
-.59f8	20 25 5a	jsr $5a25	        jsr put_dec2
-.59fb	a9 20		lda #$20	        lda #' '
-.59fd	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a00	e8		inx		        inx
-.5a01	a0 00		ldy #$00	        ldy #$00
-.5a03	b9 0f 5f	lda $5f0f,y	_ft_t:  lda tag0,y
-.5a06	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a09	f0 04		beq $5a0f	        beq _ft_r2
-.5a0b	e8		inx		        inx
-.5a0c	c8		iny		        iny
-.5a0d	d0 f4		bne $5a03	        bne _ft_t
-.5a0f	60		rts		_ft_r2: rts
-.5a10					put_bcd:
-.5a10	48		pha		        pha
-.5a11	4a		lsr a		        lsr
-.5a12	4a		lsr a		        lsr
-.5a13	4a		lsr a		        lsr
-.5a14	4a		lsr a		        lsr
-.5a15	09 30		ora #$30	        ora #$30
-.5a17	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a1a	e8		inx		        inx
-.5a1b	68		pla		        pla
-.5a1c	29 0f		and #$0f	        and #$0f
-.5a1e	09 30		ora #$30	        ora #$30
-.5a20	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a23	e8		inx		        inx
-.5a24	60		rts		        rts
-.5a25					put_dec2:
-.5a25	a0 30		ldy #$30	        ldy #$30
-.5a27	c9 0a		cmp #$0a	_pd_l:  cmp #10
-.5a29	90 05		bcc $5a30	        bcc _pd_d
-.5a2b	e9 0a		sbc #$0a	        sbc #10
-.5a2d	c8		iny		        iny
-.5a2e	d0 f7		bne $5a27	        bne _pd_l
-.5a30	48		pha		_pd_d:  pha
-.5a31	98		tya		        tya
-.5a32	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a35	e8		inx		        inx
-.5a36	68		pla		        pla
-.5a37	09 30		ora #$30	        ora #$30
-.5a39	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a3c	e8		inx		        inx
-.5a3d	60		rts		        rts
-.5a3e					cmd_ip:
-.5a3e	20 00 91	jsr $9100	        jsr NET_PRESENT
-.5a41	d0 0c		bne $5a4f	        bne _ci_p
-.5a43	a9 59		lda #$59	        lda #<msg_noult
-.5a45	85 02		sta $02		        sta r0L
-.5a47	a9 5f		lda #$5f	        lda #>msg_noult
-.5a49	85 03		sta $03		        sta r0H
-.5a4b	20 01 56	jsr $5601	        jsr setline
-.5a4e	60		rts		        rts
-.5a4f	20 06 91	jsr $9106	_ci_p:  jsr NET_GETIP
-.5a52	d0 0c		bne $5a60	        bne _ci_ok
-.5a54	a9 77		lda #$77	        lda #<msg_nonet
-.5a56	85 02		sta $02		        sta r0L
-.5a58	a9 5f		lda #$5f	        lda #>msg_nonet
-.5a5a	85 03		sta $03		        sta r0H
-.5a5c	20 01 56	jsr $5601	        jsr setline
-.5a5f	60		rts		        rts
-.5a60	a2 00		ldx #$00	_ci_ok: ldx #$00
-.5a62	bd c0 5f	lda $5fc0,x	_ci_c1: lda p_ip,x
-.5a65	f0 06		beq $5a6d	        beq _ci_c2
-.5a67	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a6a	e8		inx		        inx
-.5a6b	d0 f5		bne $5a62	        bne _ci_c1
-.5a6d	a0 00		ldy #$00	_ci_c2: ldy #$00
-.5a6f	b9 2f 91	lda $912f,y	_ci_c3: lda NET_IPSTR,y
-.5a72	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5a75	f0 04		beq $5a7b	        beq _ci_d
-.5a77	e8		inx		        inx
-.5a78	c8		iny		        iny
-.5a79	d0 f4		bne $5a6f	        bne _ci_c3
-.5a7b	a9 e4		lda #$e4	_ci_d:  lda #<linebuf
-.5a7d	85 02		sta $02		        sta r0L
-.5a7f	a9 5f		lda #$5f	        lda #>linebuf
-.5a81	85 03		sta $03		        sta r0H
-.5a83	20 01 56	jsr $5601	        jsr setline
-.5a86	60		rts		        rts
-.5a87					cmd_get:
-.5a87	20 00 91	jsr $9100	        jsr NET_PRESENT
-.5a8a	d0 0c		bne $5a98	        bne _cg_p
-.5a8c	a9 59		lda #$59	        lda #<msg_noult
-.5a8e	85 02		sta $02		        sta r0L
-.5a90	a9 5f		lda #$5f	        lda #>msg_noult
-.5a92	85 03		sta $03		        sta r0H
-.5a94	20 01 56	jsr $5601	        jsr setline
-.5a97	60		rts		        rts
-.5a98	a2 04		ldx #$04	_cg_p:  ldx #$04
-.5a9a	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = host, tok2buf = path
-.5a9d	ad ee 66	lda $66ee	        lda tokbuf
-.5aa0	d0 0c		bne $5aae	        bne _cg_h
-.5aa2	a9 82		lda #$82	        lda #<msg_getargs
-.5aa4	85 02		sta $02		        sta r0L
-.5aa6	a9 5f		lda #$5f	        lda #>msg_getargs
-.5aa8	85 03		sta $03		        sta r0H
-.5aaa	20 01 56	jsr $5601	        jsr setline
-.5aad	60		rts		        rts
-.5aae	ad 9c 66	lda $669c	_cg_h:  lda tok2buf
-.5ab1	d0 0a		bne $5abd	        bne _cg_ok
-.5ab3	a9 2f		lda #$2f	        lda #$2f                        ; missing path -> "/"
-.5ab5	8d 9c 66	sta $669c	        sta tok2buf
-.5ab8	a9 00		lda #$00	        lda #$00
-.5aba	8d 9d 66	sta $669d	        sta tok2buf+1
-.5abd	a2 00		ldx #$00	_cg_ok: ldx #$00
-.5abf	bd ee 66	lda $66ee,x	_cg_a1: lda tokbuf,x                    ; typed PETSCII -> ASCII
-.5ac2	f0 09		beq $5acd	        beq _cg_a2
-.5ac4	20 cc 5e	jsr $5ecc	        jsr p2a
-.5ac7	9d ee 66	sta $66ee,x	        sta tokbuf,x
-.5aca	e8		inx		        inx
-.5acb	d0 f2		bne $5abf	        bne _cg_a1
-.5acd	a2 00		ldx #$00	_cg_a2: ldx #$00
-.5acf	bd 9c 66	lda $669c,x	_cg_a3: lda tok2buf,x
-.5ad2	f0 09		beq $5add	        beq _cg_a4
-.5ad4	20 cc 5e	jsr $5ecc	        jsr p2a
-.5ad7	9d 9c 66	sta $669c,x	        sta tok2buf,x
-.5ada	e8		inx		        inx
-.5adb	d0 f2		bne $5acf	        bne _cg_a3
-.5add	a9 92		lda #$92	_cg_a4: lda #<msg_conn
-.5adf	85 02		sta $02		        sta r0L
-.5ae1	a9 5f		lda #$5f	        lda #>msg_conn
-.5ae3	85 03		sta $03		        sta r0H
-.5ae5	20 01 56	jsr $5601	        jsr setline                     ; "connecting..." while the Ultimate resolves
-.5ae8	a9 ee		lda #$ee	        lda #<tokbuf
-.5aea	85 02		sta $02		        sta r0L
-.5aec	a9 66		lda #$66	        lda #>tokbuf
-.5aee	85 03		sta $03		        sta r0H
-.5af0	a9 50		lda #$50	        lda #80
-.5af2	85 04		sta $04		        sta r1L
-.5af4	a9 00		lda #$00	        lda #$00
-.5af6	85 05		sta $05		        sta r1H
-.5af8	a9 07		lda #$07	        lda #$07                        ; tcp
-.5afa	20 09 91	jsr $9109	        jsr NET_OPEN
-.5afd	90 31		bcc $5b30	        bcc _cg_open
-.5aff	a2 00		ldx #$00	        ldx #$00
-.5b01	bd a0 5f	lda $5fa0,x	_cg_f1: lda msg_openf,x
-.5b04	f0 06		beq $5b0c	        beq _cg_f2
-.5b06	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5b09	e8		inx		        inx
-.5b0a	d0 f5		bne $5b01	        bne _cg_f1
-.5b0c	a0 00		ldy #$00	_cg_f2: ldy #$00
-.5b0e	b9 42 91	lda $9142,y	_cg_f3: lda NET_STAT,y
-.5b11	f0 0c		beq $5b1f	        beq _cg_f4
-.5b13	20 e2 5e	jsr $5ee2	        jsr a2p
-.5b16	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5b19	e8		inx		        inx
-.5b1a	c8		iny		        iny
-.5b1b	e0 2c		cpx #$2c	        cpx #44
-.5b1d	d0 ef		bne $5b0e	        bne _cg_f3
-.5b1f	a9 00		lda #$00	_cg_f4: lda #$00
-.5b21	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5b24	a9 e4		lda #$e4	        lda #<linebuf
-.5b26	85 02		sta $02		        sta r0L
-.5b28	a9 5f		lda #$5f	        lda #>linebuf
-.5b2a	85 03		sta $03		        sta r0H
-.5b2c	20 01 56	jsr $5601	        jsr setline
-.5b2f	60		rts		        rts
-.5b30					_cg_open:
-.5b30	a9 00		lda #$00	        lda #$00
-.5b32	8d e1 5f	sta $5fe1	        sta rqi
-.5b35	a9 c5		lda #$c5	        lda #<p_get
-.5b37	85 02		sta $02		        sta r0L
-.5b39	a9 5f		lda #$5f	        lda #>p_get
-.5b3b	85 03		sta $03		        sta r0H
-.5b3d	20 66 5e	jsr $5e66	        jsr rq_app
-.5b40	a9 9c		lda #$9c	        lda #<tok2buf
-.5b42	85 02		sta $02		        sta r0L
-.5b44	a9 66		lda #$66	        lda #>tok2buf
-.5b46	85 03		sta $03		        sta r0H
-.5b48	20 66 5e	jsr $5e66	        jsr rq_app
-.5b4b	a9 ca		lda #$ca	        lda #<p_http
-.5b4d	85 02		sta $02		        sta r0L
-.5b4f	a9 5f		lda #$5f	        lda #>p_http
-.5b51	85 03		sta $03		        sta r0H
-.5b53	20 66 5e	jsr $5e66	        jsr rq_app
-.5b56	a9 ee		lda #$ee	        lda #<tokbuf
-.5b58	85 02		sta $02		        sta r0L
-.5b5a	a9 66		lda #$66	        lda #>tokbuf
-.5b5c	85 03		sta $03		        sta r0H
-.5b5e	20 66 5e	jsr $5e66	        jsr rq_app
-.5b61	a9 dc		lda #$dc	        lda #<p_crlf2
-.5b63	85 02		sta $02		        sta r0L
-.5b65	a9 5f		lda #$5f	        lda #>p_crlf2
-.5b67	85 03		sta $03		        sta r0H
-.5b69	20 66 5e	jsr $5e66	        jsr rq_app
-.5b6c	a9 64		lda #$64	        lda #<reqbuf
-.5b6e	85 02		sta $02		        sta r0L
-.5b70	a9 60		lda #$60	        lda #>reqbuf
-.5b72	85 03		sta $03		        sta r0H
-.5b74	ae e1 5f	ldx $5fe1	        ldx rqi
-.5b77	ad 41 91	lda $9141	        lda NET_SOCK
-.5b7a	20 12 91	jsr $9112	        jsr NET_WRITE
-.5b7d	a9 32		lda #$32	        lda #50                         ; up to 2 s for the first bytes
-.5b7f	8d e2 5f	sta $5fe2	        sta tries
-.5b82	a9 f4		lda #$f4	_cg_rd: lda #<500
-.5b84	85 04		sta $04		        sta r1L
-.5b86	a9 01		lda #$01	        lda #>500
-.5b88	85 05		sta $05		        sta r1H
-.5b8a	ad 41 91	lda $9141	        lda NET_SOCK
-.5b8d	20 0f 91	jsr $910f	        jsr NET_READ
-.5b90	c9 00		cmp #$00	        cmp #$00
-.5b92	f0 1b		beq $5baf	        beq _cg_got
-.5b94	c9 01		cmp #$01	        cmp #$01
-.5b96	d0 05		bne $5b9d	        bne _cg_none
-.5b98	ce e2 5f	dec $5fe2	        dec tries
-.5b9b	d0 e5		bne $5b82	        bne _cg_rd
-.5b9d					_cg_none:
-.5b9d	ad 41 91	lda $9141	        lda NET_SOCK
-.5ba0	20 0c 91	jsr $910c	        jsr NET_CLOSE
-.5ba3	a9 ae		lda #$ae	        lda #<msg_nodata
-.5ba5	85 02		sta $02		        sta r0L
-.5ba7	a9 5f		lda #$5f	        lda #>msg_nodata
-.5ba9	85 03		sta $03		        sta r0H
-.5bab	20 01 56	jsr $5601	        jsr setline
-.5bae	60		rts		        rts
-.5baf					_cg_got:
-.5baf	ad 3f 91	lda $913f	        lda NET_LEN                     ; terminate the payload
-.5bb2	85 02		sta $02		        sta r0L
-.5bb4	ad 40 91	lda $9140	        lda NET_LEN+1
-.5bb7	85 03		sta $03		        sta r0H
-.5bb9	18		clc		        clc
-.5bba	a5 02		lda $02		        lda r0L
-.5bbc	69 02		adc #$02	        adc #<(NET_DATA+2)
-.5bbe	85 02		sta $02		        sta r0L
-.5bc0	a5 03		lda $03		        lda r0H
-.5bc2	69 88		adc #$88	        adc #>(NET_DATA+2)
-.5bc4	85 03		sta $03		        sta r0H
-.5bc6	a0 00		ldy #$00	        ldy #$00
-.5bc8	a9 00		lda #$00	        lda #$00
-.5bca	91 02		sta ($02),y	        sta (r0),y
-.5bcc	a9 02		lda #$02	        lda #<(NET_DATA+2)
-.5bce	85 4c		sta $4c		        sta gp
-.5bd0	a9 88		lda #$88	        lda #>(NET_DATA+2)
-.5bd2	85 4d		sta $4d		        sta gp+1
-.5bd4	20 7c 5e	jsr $5e7c	        jsr next_line                   ; -> linebuf (40) + vdline (78)
-.5bd7	a9 e4		lda #$e4	        lda #<linebuf
-.5bd9	85 02		sta $02		        sta r0L
-.5bdb	a9 5f		lda #$5f	        lda #>linebuf
-.5bdd	85 03		sta $03		        sta r0H
-.5bdf	20 01 56	jsr $5601	        jsr setline
-.5be2	20 c8 5c	jsr $5cc8	        jsr rows_wipe
-.5be5	a9 01		lda #$01	        lda #$01
-.5be7	8d e3 5f	sta $5fe3	        sta dirty
-.5bea	a9 00		lda #$00	        lda #$00
-.5bec	85 42		sta $42		        sta rowi
-.5bee	20 f8 5b	jsr $5bf8	        jsr show_body
-.5bf1	ad 41 91	lda $9141	        lda NET_SOCK
-.5bf4	20 0c 91	jsr $910c	        jsr NET_CLOSE                   ; one chunk is what we show
-.5bf7	60		rts		        rts
-.5bf8					show_body:
-.5bf8	20 7c 5e	jsr $5e7c	_sb_ln: jsr next_line
-.5bfb	b0 36		bcs $5c33	        bcs _sb_done                    ; end of data
-.5bfd	a9 18		lda #$18	        lda #COL_X
-.5bff	85 02		sta $02		        sta X1
-.5c01	a9 00		lda #$00	        lda #$00
-.5c03	85 03		sta $03		        sta X1+1
-.5c05	a9 28		lda #$28	        lda #TOP_Y
-.5c07	85 04		sta $04		        sta Y1
-.5c09	a5 42		lda $42		        lda rowi
-.5c0b	20 64 57	jsr $5764	        jsr addrowy
-.5c0e	a9 e4		lda #$e4	        lda #<linebuf
-.5c10	85 14		sta $14		        sta r9L
-.5c12	a9 5f		lda #$5f	        lda #>linebuf
-.5c14	85 15		sta $15		        sta r9H
-.5c16	20 1e c0	jsr $c01e	        jsr GPUTS
-.5c19	a9 14		lda #$14	        lda #<vdline
-.5c1b	85 14		sta $14		        sta r9L
-.5c1d	a9 60		lda #$60	        lda #>vdline
-.5c1f	85 15		sta $15		        sta r9H
-.5c21	a5 42		lda $42		        lda rowi
-.5c23	18		clc		        clc
-.5c24	69 09		adc #$09	        adc #$09
-.5c26	a2 02		ldx #$02	        ldx #$02
-.5c28	20 35 08	jsr $0835	        jsr VDTEXT
-.5c2b	e6 42		inc $42		        inc rowi
-.5c2d	a5 42		lda $42		        lda rowi
-.5c2f	c9 08		cmp #$08	        cmp #$08
-.5c31	d0 c5		bne $5bf8	        bne _sb_ln
-.5c33					_sb_done:
-.5c33	60		rts		        rts
-.5c34					cmd_cat:
-.5c34	20 c4 53	jsr $53c4	        jsr sh_argbuf
-.5c37	ad ee 66	lda $66ee	        lda tokbuf
-.5c3a	d0 03		bne $5c3f	        bne _cat_go
-.5c3c	4c 6a 53	jmp $536a	        jmp sp_unk_msg                  ; no filename
-.5c3f					_cat_go:
-.5c3f	a0 00		ldy #$00	        ldy #$00
-.5c41					_cat_len:
-.5c41	b9 ee 66	lda $66ee,y	        lda tokbuf,y
-.5c44	f0 05		beq $5c4b	        beq _cat_l2
-.5c46	c8		iny		        iny
-.5c47	c0 10		cpy #$10	        cpy #16
-.5c49	d0 f6		bne $5c41	        bne _cat_len
-.5c4b					_cat_l2:
-.5c4b	98		tya		        tya
-.5c4c	a2 ee		ldx #$ee	        ldx #<tokbuf
-.5c4e	a0 66		ldy #$66	        ldy #>tokbuf
-.5c50	20 bd ff	jsr $ffbd	        jsr SETNAM
-.5c53	a9 05		lda #$05	        lda #$05
-.5c55	a6 ba		ldx $ba		        ldx $ba                         ; last-used device (8)
-.5c57	a0 00		ldy #$00	        ldy #$00
-.5c59	20 ba ff	jsr $ffba	        jsr SETLFS
-.5c5c	20 c0 ff	jsr $ffc0	        jsr OPEN
-.5c5f	a2 05		ldx #$05	        ldx #$05
-.5c61	20 c6 ff	jsr $ffc6	        jsr CHKIN
-.5c64	a9 e4		lda #$e4	        lda #<catbuf
-.5c66	85 4c		sta $4c		        sta gp
-.5c68	a9 60		lda #$60	        lda #>catbuf
-.5c6a	85 4d		sta $4d		        sta gp+1
-.5c6c	a9 00		lda #$00	        lda #$00
-.5c6e	8d e5 62	sta $62e5	        sta catn
-.5c71	8d e6 62	sta $62e6	        sta catn+1
-.5c74					_cat_rd:
-.5c74	20 b7 ff	jsr $ffb7	        jsr READST                      ; check BEFORE the read (dirscan order)
-.5c77	29 40		and #$40	        and #$40
-.5c79	d0 1c		bne $5c97	        bne _cat_eof
-.5c7b	20 cf ff	jsr $ffcf	        jsr CHRIN
-.5c7e	a0 00		ldy #$00	        ldy #$00
-.5c80	91 4c		sta ($4c),y	        sta (gp),y
-.5c82	e6 4c		inc $4c		        inc gp
-.5c84	d0 02		bne $5c88	        bne _cat_i1
-.5c86	e6 4d		inc $4d		        inc gp+1
-.5c88					_cat_i1:
-.5c88	ee e5 62	inc $62e5	        inc catn
-.5c8b	d0 03		bne $5c90	        bne _cat_i2
-.5c8d	ee e6 62	inc $62e6	        inc catn+1
-.5c90					_cat_i2:
-.5c90	ad e6 62	lda $62e6	        lda catn+1
-.5c93	c9 02		cmp #$02	        cmp #$02                        ; cap at 512 bytes
-.5c95	d0 dd		bne $5c74	        bne _cat_rd
-.5c97					_cat_eof:
-.5c97	a0 00		ldy #$00	        ldy #$00
-.5c99	a9 00		lda #$00	        lda #$00
-.5c9b	91 4c		sta ($4c),y	        sta (gp),y                      ; terminate for next_line
-.5c9d	20 cc ff	jsr $ffcc	        jsr CLRCHN
-.5ca0	a9 05		lda #$05	        lda #$05
-.5ca2	20 c3 ff	jsr $ffc3	        jsr CLOSE
-.5ca5	a9 ee		lda #$ee	        lda #<tokbuf                    ; filename on the response line
-.5ca7	85 02		sta $02		        sta r0L
-.5ca9	a9 66		lda #$66	        lda #>tokbuf
-.5cab	85 03		sta $03		        sta r0H
-.5cad	20 01 56	jsr $5601	        jsr setline
-.5cb0	20 c8 5c	jsr $5cc8	        jsr rows_wipe
-.5cb3	a9 01		lda #$01	        lda #$01
-.5cb5	8d e3 5f	sta $5fe3	        sta dirty
-.5cb8	a9 00		lda #$00	        lda #$00
-.5cba	85 42		sta $42		        sta rowi
-.5cbc	a9 e4		lda #$e4	        lda #<catbuf
-.5cbe	85 4c		sta $4c		        sta gp
-.5cc0	a9 60		lda #$60	        lda #>catbuf
-.5cc2	85 4d		sta $4d		        sta gp+1
-.5cc4	20 f8 5b	jsr $5bf8	        jsr show_body
-.5cc7	60		rts		        rts
-.5cc8					rows_wipe:
+.56ce	a9 00		lda #$00	        lda #$00
+.56d0	85 03		sta $03		        sta X1+1
+.56d2	a9 ac		lda #$ac	        lda #STAT_Y
+.56d4	85 04		sta $04		        sta Y1
+.56d6	20 1e c0	jsr $c01e	        jsr GPUTS
+.56d9	60		rts		        rts
+.56da					cmd_line:
+.56da	a9 05		lda #$05	        lda #$05
+.56dc	20 38 08	jsr $0838	        jsr VDCLR
+.56df	a9 a6		lda #$a6	        lda #<vd_prompt
+.56e1	85 14		sta $14		        sta r9L
+.56e3	a9 56		lda #$56	        lda #>vd_prompt
+.56e5	85 15		sta $15		        sta r9H
+.56e7	a9 05		lda #$05	        lda #$05
+.56e9	a2 00		ldx #$00	        ldx #$00
+.56eb	20 35 08	jsr $0835	        jsr VDTEXT
+.56ee	a9 35		lda #$35	        lda #<cmdbuf
+.56f0	85 14		sta $14		        sta r9L
+.56f2	a9 67		lda #$67	        lda #>cmdbuf
+.56f4	85 15		sta $15		        sta r9H
+.56f6	a9 05		lda #$05	        lda #$05
+.56f8	a2 02		ldx #$02	        ldx #$02
+.56fa	20 35 08	jsr $0835	        jsr VDTEXT
+.56fd	a9 18		lda #$18	        lda #COL_X
+.56ff	85 02		sta $02		        sta X1
+.5701	a9 00		lda #$00	        lda #$00
+.5703	85 03		sta $03		        sta X1+1
+.5705	a9 a0		lda #$a0	        lda #CMD_Y
+.5707	85 04		sta $04		        sta Y1
+.5709	a9 a8		lda #$a8	        lda #<oldbuf
+.570b	85 14		sta $14		        sta r9L
+.570d	a9 67		lda #$67	        lda #>oldbuf
+.570f	85 15		sta $15		        sta r9H
+.5711	20 1e c0	jsr $c01e	        jsr GPUTS                       ; cancel the shown glyphs
+.5714	a0 00		ldy #$00	        ldy #$00
+.5716	b9 35 67	lda $6735,y	cl_cp:  lda cmdbuf,y
+.5719	99 a8 67	sta $67a8,y	        sta oldbuf,y
+.571c	c8		iny		        iny
+.571d	c0 1f		cpy #$1f	        cpy #31
+.571f	d0 f5		bne $5716	        bne cl_cp
+.5721	a9 00		lda #$00	        lda #$00
+.5723	99 a8 67	sta $67a8,y	        sta oldbuf,y
+.5726	a9 18		lda #$18	        lda #COL_X
+.5728	85 02		sta $02		        sta X1
+.572a	a9 00		lda #$00	        lda #$00
+.572c	85 03		sta $03		        sta X1+1
+.572e	a9 a0		lda #$a0	        lda #CMD_Y
+.5730	85 04		sta $04		        sta Y1
+.5732	a9 a8		lda #$a8	        lda #<oldbuf
+.5734	85 14		sta $14		        sta r9L
+.5736	a9 67		lda #$67	        lda #>oldbuf
+.5738	85 15		sta $15		        sta r9H
+.573a	20 1e c0	jsr $c01e	        jsr GPUTS                       ; draw the new line
+.573d	60		rts		        rts
+.573e					refresh:
+.573e	a9 01		lda #$01	        lda #$01
+.5740	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
+.5743	ad 4a 60	lda $604a	        lda dirty
+.5746	f0 03		beq $574b	        beq _rf_clean
+.5748	20 0b 5d	jsr $5d0b	        jsr rows_wipe
+.574b					_rf_clean:
+.574b	ad 32 68	lda $6832	        lda painted
+.574e	f0 03		beq $5753	        beq _rf_scan
+.5750	20 75 57	jsr $5775	        jsr paintrows
+.5753					_rf_scan:
+.5753	20 a1 58	jsr $58a1	        jsr dirscan
+.5756	a9 ff		lda #$ff	        lda #$ff
+.5758	8d 31 68	sta $6831	        sta prev_row
+.575b	20 75 57	jsr $5775	        jsr paintrows
+.575e	a9 01		lda #$01	        lda #$01
+.5760	8d 32 68	sta $6832	        sta painted
+.5763	a9 10		lda #$10	        lda #<sh_hint
+.5765	85 02		sta $02		        sta r0L
+.5767	a9 66		lda #$66	        lda #>sh_hint
+.5769	85 03		sta $03		        sta r0H
+.576b	20 01 56	jsr $5601	        jsr setline
+.576e	60		rts		        rts
+.576f					repaint:
+.576f	20 75 57	jsr $5775	        jsr paintrows
+.5772	4c 6b 52	jmp $526b	        jmp shloop
+.5775					paintrows:
+.5775	a5 41		lda $41		        lda shcnt
+.5777	f0 2d		beq $57a6	        beq pr_done                    ; empty directory: the row loop
+.5779	a9 00		lda #$00	        lda #$00                        ; below compares AFTER painting,
+.577b	85 42		sta $42		        sta rowi                        ; so 0 entries would paint 256 rows
+.577d	a5 42		lda $42		pr_l:   lda rowi
+.577f	aa		tax		        tax
+.5780	bd bd 57	lda $57bd,x	        lda shnamesL,x
+.5783	85 14		sta $14		        sta r9L
+.5785	bd c9 57	lda $57c9,x	        lda shnamesH,x
+.5788	85 15		sta $15		        sta r9H
+.578a	a9 18		lda #$18	        lda #COL_X
+.578c	85 02		sta $02		        sta X1
+.578e	a9 00		lda #$00	        lda #$00
+.5790	85 03		sta $03		        sta X1+1
+.5792	a9 28		lda #$28	        lda #TOP_Y
+.5794	85 04		sta $04		        sta Y1
+.5796	a5 42		lda $42		        lda rowi
+.5798	20 a7 57	jsr $57a7	        jsr addrowy
+.579b	20 1e c0	jsr $c01e	        jsr GPUTS
+.579e	e6 42		inc $42		        inc rowi
+.57a0	a5 42		lda $42		        lda rowi
+.57a2	c5 41		cmp $41		        cmp shcnt
+.57a4	d0 d7		bne $577d	        bne pr_l
+.57a6					pr_done:
+.57a6	60		rts		        rts
+.57a7					addrowy:
+.57a7	85 48		sta $48		        sta tmpa
+.57a9	a5 48		lda $48		        lda tmpa
+.57ab	0a		asl a		        asl
+.57ac	0a		asl a		        asl
+.57ad	0a		asl a		        asl                             ; row*8
+.57ae	85 4b		sta $4b		        sta tmpb
+.57b0	a5 42		lda $42		        lda rowi
+.57b2	0a		asl a		        asl
+.57b3	0a		asl a		        asl                             ; row*4
+.57b4	18		clc		        clc
+.57b5	65 4b		adc $4b		        adc tmpb
+.57b7	18		clc		        clc
+.57b8	65 04		adc $04		        adc Y1
+.57ba	85 04		sta $04		        sta Y1
+.57bc	60		rts		        rts
+>57bd	d5 e6 f7 08 19 2a		shnamesL: .byte <sn1, <sn2, <sn3, <sn4, <sn5, <sn6
+>57c3	3b 4c 5d 6e 7f 90		          .byte <sn7, <sn8, <sn9, <sna, <snb, <snc
+>57c9	57 57 57 58 58 58		shnamesH: .byte >sn1, >sn2, >sn3, >sn4, >sn5, >sn6
+>57cf	58 58 58 58 58 58		          .byte >sn7, >sn8, >sn9, >sna, >snb, >snc
+>57d5	00 00 00 00 00 00 00 00		sn1:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>57dd	00 00 00 00 00 00 00 00 00
+>57e6	00 00 00 00 00 00 00 00		sn2:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>57ee	00 00 00 00 00 00 00 00 00
+>57f7	00 00 00 00 00 00 00 00		sn3:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>57ff	00 00 00 00 00 00 00 00 00
+>5808	00 00 00 00 00 00 00 00		sn4:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5810	00 00 00 00 00 00 00 00 00
+>5819	00 00 00 00 00 00 00 00		sn5:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5821	00 00 00 00 00 00 00 00 00
+>582a	00 00 00 00 00 00 00 00		sn6:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5832	00 00 00 00 00 00 00 00 00
+>583b	00 00 00 00 00 00 00 00		sn7:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5843	00 00 00 00 00 00 00 00 00
+>584c	00 00 00 00 00 00 00 00		sn8:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5854	00 00 00 00 00 00 00 00 00
+>585d	00 00 00 00 00 00 00 00		sn9:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5865	00 00 00 00 00 00 00 00 00
+>586e	00 00 00 00 00 00 00 00		sna:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5876	00 00 00 00 00 00 00 00 00
+>587f	00 00 00 00 00 00 00 00		snb:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5887	00 00 00 00 00 00 00 00 00
+>5890	00 00 00 00 00 00 00 00		snc:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>5898	00 00 00 00 00 00 00 00 00
+.58a1					dirscan:
+.58a1	a9 00		lda #$00	        lda #$00
+.58a3	85 41		sta $41		        sta shcnt
+.58a5	a9 05		lda #$05	        lda #$05
+.58a7	a2 08		ldx #$08	        ldx #$08
+.58a9	a0 00		ldy #$00	        ldy #$00
+.58ab	20 ba ff	jsr $ffba	        jsr SETLFS
+.58ae	a9 01		lda #$01	        lda #$01
+.58b0	a2 34		ldx #$34	        ldx #<dname
+.58b2	a0 67		ldy #$67	        ldy #>dname
+.58b4	20 bd ff	jsr $ffbd	        jsr SETNAM
+.58b7	20 c0 ff	jsr $ffc0	        jsr OPEN
+.58ba	a2 05		ldx #$05	        ldx #$05
+.58bc	20 c6 ff	jsr $ffc6	        jsr CHKIN
+.58bf	a9 01		lda #$01	        lda #$01
+.58c1	8d 64 68	sta $6864	        sta dsfirst
+.58c4					ds_ent:
+.58c4	a9 00		lda #$00	        lda #$00
+.58c6	8d 63 68	sta $6863	        sta dseof
+.58c9	a0 00		ldy #$00	        ldy #$00
+.58cb	20 cf ff	jsr $ffcf	ds_rd:  jsr CHRIN
+.58ce	99 76 68	sta $6876,y	        sta dline,y
+.58d1	c8		iny		        iny
+.58d2	20 b7 ff	jsr $ffb7	        jsr READST
+.58d5	29 40		and #$40	        and #$40
+.58d7	f0 06		beq $58df	        beq ds_more
+.58d9	ee 63 68	inc $6863	        inc dseof
+.58dc	4c e3 58	jmp $58e3	        jmp ds_parse
+.58df					ds_more:
+.58df	c0 20		cpy #$20	        cpy #32
+.58e1	d0 e8		bne $58cb	        bne ds_rd
+.58e3					ds_parse:
+.58e3	ad 64 68	lda $6864	        lda dsfirst
+.58e6	f0 08		beq $58f0	        beq ds_cnt
+.58e8	a9 00		lda #$00	        lda #$00
+.58ea	8d 64 68	sta $6864	        sta dsfirst
+.58ed	4c 42 59	jmp $5942	        jmp ds_next
+.58f0	ad 78 68	lda $6878	ds_cnt: lda dline+2
+.58f3	0d 79 68	ora $6879	        ora dline+3
+.58f6	d0 03		bne $58fb	        bne ds_xinit                    ; count > 0: look for the name
+.58f8	4c 42 59	jmp $5942	        jmp ds_next                     ; count 0 = disk title
+.58fb					ds_xinit:
+.58fb	a2 00		ldx #$00	        ldx #$00
+.58fd	bd 76 68	lda $6876,x	ds_q1:  lda dline,x
+.5900	c9 22		cmp #$22	        cmp #$22
+.5902	f0 08		beq $590c	        beq ds_qgot
+.5904	e8		inx		        inx
+.5905	e0 20		cpx #$20	        cpx #32
+.5907	d0 f4		bne $58fd	        bne ds_q1
+.5909	4c 42 59	jmp $5942	        jmp ds_next
+.590c					ds_qgot:
+.590c	e8		inx		        inx                             ; step past the opening quote
+.590d	a0 00		ldy #$00	        ldy #$00
+.590f	bd 76 68	lda $6876,x	ds_nc:  lda dline,x
+.5912	c9 22		cmp #$22	        cmp #$22
+.5914	f0 09		beq $591f	        beq ds_ncend
+.5916	99 65 68	sta $6865,y	        sta fnbuf,y
+.5919	e8		inx		        inx
+.591a	c8		iny		        iny
+.591b	c0 10		cpy #$10	        cpy #$10                        ; cap at 16 chars
+.591d	d0 f0		bne $590f	        bne ds_nc
+.591f					ds_ncend:
+.591f	a9 00		lda #$00	        lda #$00
+.5921	99 65 68	sta $6865,y	        sta fnbuf,y                     ; terminator
+.5924	a6 41		ldx $41		        ldx shcnt
+.5926	e0 0a		cpx #$0a	        cpx #LIST_MAX
+.5928	b0 18		bcs $5942	        bcs ds_next
+.592a	bd bd 57	lda $57bd,x	        lda shnamesL,x
+.592d	85 02		sta $02		        sta r0L
+.592f	bd c9 57	lda $57c9,x	        lda shnamesH,x
+.5932	85 03		sta $03		        sta r0H
+.5934	a0 00		ldy #$00	        ldy #$00
+.5936	b9 65 68	lda $6865,y	ds_cp:  lda fnbuf,y
+.5939	91 02		sta ($02),y	        sta (r0),y
+.593b	c8		iny		        iny
+.593c	c0 11		cpy #$11	        cpy #$11
+.593e	d0 f6		bne $5936	        bne ds_cp
+.5940	e6 41		inc $41		        inc shcnt
+.5942					ds_next:
+.5942	a9 00		lda #$00	        lda #$00
+.5944	8d 64 68	sta $6864	        sta dsfirst
+.5947	ad 63 68	lda $6863	        lda dseof
+.594a	d0 03		bne $594f	        bne ds_end
+.594c	4c c4 58	jmp $58c4	        jmp ds_ent
+.594f					ds_end:
+.594f	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.5952	a9 05		lda #$05	        lda #$05
+.5954	20 c3 ff	jsr $ffc3	        jsr CLOSE
+.5957	58		cli		        cli
+.5958	60		rts		        rts
+.5959					cmd_time:
+.5959	ad 39 67	lda $6739	        lda cmdbuf+4
+.595c	c9 20		cmp #$20	        cmp #$20
+.595e	d0 0a		bne $596a	        bne _ct_show
+.5960	ad 3a 67	lda $673a	        lda cmdbuf+5
+.5963	c9 53		cmp #$53	        cmp #$53                        ; 'S' -> TIME SYNC
+.5965	d0 03		bne $596a	        bne _ct_show
+.5967	20 15 91	jsr $9115	        jsr NET_SYNC
+.596a					_ct_show:
+.596a	20 79 59	jsr $5979	        jsr fmt_time
+.596d	a9 4b		lda #$4b	        lda #<linebuf
+.596f	85 02		sta $02		        sta r0L
+.5971	a9 60		lda #$60	        lda #>linebuf
+.5973	85 03		sta $03		        sta r0H
+.5975	20 01 56	jsr $5601	        jsr setline
+.5978	60		rts		        rts
+.5979					fmt_time:
+.5979	ad 21 91	lda $9121	        lda NET_STATE
+.597c	f0 2e		beq $59ac	        beq _ft_ok
+.597e	a2 00		ldx #$00	        ldx #$00
+.5980	bd af 5f	lda $5faf,x	_ft_u:  lda msg_unsync,x
+.5983	f0 06		beq $598b	        beq _ft_u2
+.5985	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5988	e8		inx		        inx
+.5989	d0 f5		bne $5980	        bne _ft_u
+.598b	ac 21 91	ldy $9121	_ft_u2: ldy NET_STATE
+.598e	c0 05		cpy #$05	        cpy #$05
+.5990	90 02		bcc $5994	        bcc _ft_u3
+.5992	a0 05		ldy #$05	        ldy #$05
+.5994	b9 6a 5f	lda $5f6a,y	_ft_u3: lda tagL,y
+.5997	85 02		sta $02		        sta r0L
+.5999	b9 70 5f	lda $5f70,y	        lda tagH,y
+.599c	85 03		sta $03		        sta r0H
+.599e	a0 00		ldy #$00	        ldy #$00
+.59a0	b1 02		lda ($02),y	_ft_u4: lda (r0),y
+.59a2	9d 4b 60	sta $604b,x	        sta linebuf,x
+.59a5	f0 04		beq $59ab	        beq _ft_r
+.59a7	e8		inx		        inx
+.59a8	c8		iny		        iny
+.59a9	d0 f5		bne $59a0	        bne _ft_u4
+.59ab	60		rts		_ft_r:  rts
+.59ac	a2 00		ldx #$00	_ft_ok: ldx #$00
+.59ae	ad 0b dc	lda $dc0b	        lda TODHRS                      ; latches the TOD registers
+.59b1	48		pha		        pha
+.59b2	29 1f		and #$1f	        and #$1f
+.59b4	20 53 5a	jsr $5a53	        jsr put_bcd
+.59b7	a9 3a		lda #$3a	        lda #':'
+.59b9	9d 4b 60	sta $604b,x	        sta linebuf,x
+.59bc	e8		inx		        inx
+.59bd	ad 0a dc	lda $dc0a	        lda TODMIN
+.59c0	20 53 5a	jsr $5a53	        jsr put_bcd
+.59c3	a9 3a		lda #$3a	        lda #':'
+.59c5	9d 4b 60	sta $604b,x	        sta linebuf,x
+.59c8	e8		inx		        inx
+.59c9	ad 09 dc	lda $dc09	        lda TODSEC
+.59cc	20 53 5a	jsr $5a53	        jsr put_bcd
+.59cf	ad 08 dc	lda $dc08	        lda TODTEN                      ; releases them
+.59d2	a9 20		lda #$20	        lda #' '
+.59d4	9d 4b 60	sta $604b,x	        sta linebuf,x
+.59d7	e8		inx		        inx
+.59d8	68		pla		        pla
+.59d9	29 80		and #$80	        and #$80
+.59db	f0 04		beq $59e1	        beq _ft_am
+.59dd	a9 d0		lda #$d0	        lda #'P'
+.59df	d0 02		bne $59e3	        bne _ft_ap
+.59e1	a9 c1		lda #$c1	_ft_am: lda #'A'
+.59e3	9d 4b 60	sta $604b,x	_ft_ap: sta linebuf,x
+.59e6	e8		inx		        inx
+.59e7	a9 cd		lda #$cd	        lda #'M'
+.59e9	9d 4b 60	sta $604b,x	        sta linebuf,x
+.59ec	e8		inx		        inx
+.59ed	a9 20		lda #$20	        lda #' '
+.59ef	9d 4b 60	sta $604b,x	        sta linebuf,x
+.59f2	e8		inx		        inx
+.59f3	38		sec		        sec
+.59f4	ad 25 91	lda $9125	        lda NET_YEAR
+.59f7	e9 d0		sbc #$d0	        sbc #<2000
+.59f9	48		pha		        pha
+.59fa	ad 26 91	lda $9126	        lda NET_YEAR+1
+.59fd	e9 07		sbc #$07	        sbc #>2000
+.59ff	90 10		bcc $5a11	        bcc _ft_19
+.5a01	a9 32		lda #$32	        lda #'2'
+.5a03	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a06	e8		inx		        inx
+.5a07	a9 30		lda #$30	        lda #'0'
+.5a09	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a0c	e8		inx		        inx
+.5a0d	68		pla		        pla
+.5a0e	4c 23 5a	jmp $5a23	        jmp _ft_y2
+.5a11	68		pla		_ft_19: pla
+.5a12	18		clc		        clc
+.5a13	69 64		adc #$64	        adc #100                        ; (y-2000)+100 = y-1900
+.5a15	48		pha		        pha
+.5a16	a9 31		lda #$31	        lda #'1'
+.5a18	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a1b	e8		inx		        inx
+.5a1c	a9 39		lda #$39	        lda #'9'
+.5a1e	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a21	e8		inx		        inx
+.5a22	68		pla		        pla
+.5a23	20 68 5a	jsr $5a68	_ft_y2: jsr put_dec2
+.5a26	a9 2f		lda #$2f	        lda #'/'
+.5a28	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a2b	e8		inx		        inx
+.5a2c	ad 27 91	lda $9127	        lda NET_MON
+.5a2f	20 68 5a	jsr $5a68	        jsr put_dec2
+.5a32	a9 2f		lda #$2f	        lda #'/'
+.5a34	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a37	e8		inx		        inx
+.5a38	ad 28 91	lda $9128	        lda NET_DAY
+.5a3b	20 68 5a	jsr $5a68	        jsr put_dec2
+.5a3e	a9 20		lda #$20	        lda #' '
+.5a40	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a43	e8		inx		        inx
+.5a44	a0 00		ldy #$00	        ldy #$00
+.5a46	b9 76 5f	lda $5f76,y	_ft_t:  lda tag0,y
+.5a49	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a4c	f0 04		beq $5a52	        beq _ft_r2
+.5a4e	e8		inx		        inx
+.5a4f	c8		iny		        iny
+.5a50	d0 f4		bne $5a46	        bne _ft_t
+.5a52	60		rts		_ft_r2: rts
+.5a53					put_bcd:
+.5a53	48		pha		        pha
+.5a54	4a		lsr a		        lsr
+.5a55	4a		lsr a		        lsr
+.5a56	4a		lsr a		        lsr
+.5a57	4a		lsr a		        lsr
+.5a58	09 30		ora #$30	        ora #$30
+.5a5a	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a5d	e8		inx		        inx
+.5a5e	68		pla		        pla
+.5a5f	29 0f		and #$0f	        and #$0f
+.5a61	09 30		ora #$30	        ora #$30
+.5a63	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a66	e8		inx		        inx
+.5a67	60		rts		        rts
+.5a68					put_dec2:
+.5a68	a0 30		ldy #$30	        ldy #$30
+.5a6a	c9 0a		cmp #$0a	_pd_l:  cmp #10
+.5a6c	90 05		bcc $5a73	        bcc _pd_d
+.5a6e	e9 0a		sbc #$0a	        sbc #10
+.5a70	c8		iny		        iny
+.5a71	d0 f7		bne $5a6a	        bne _pd_l
+.5a73	48		pha		_pd_d:  pha
+.5a74	98		tya		        tya
+.5a75	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a78	e8		inx		        inx
+.5a79	68		pla		        pla
+.5a7a	09 30		ora #$30	        ora #$30
+.5a7c	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5a7f	e8		inx		        inx
+.5a80	60		rts		        rts
+.5a81					cmd_ip:
+.5a81	20 00 91	jsr $9100	        jsr NET_PRESENT
+.5a84	d0 0c		bne $5a92	        bne _ci_p
+.5a86	a9 c0		lda #$c0	        lda #<msg_noult
+.5a88	85 02		sta $02		        sta r0L
+.5a8a	a9 5f		lda #$5f	        lda #>msg_noult
+.5a8c	85 03		sta $03		        sta r0H
+.5a8e	20 01 56	jsr $5601	        jsr setline
+.5a91	60		rts		        rts
+.5a92	20 06 91	jsr $9106	_ci_p:  jsr NET_GETIP
+.5a95	d0 0c		bne $5aa3	        bne _ci_ok
+.5a97	a9 de		lda #$de	        lda #<msg_nonet
+.5a99	85 02		sta $02		        sta r0L
+.5a9b	a9 5f		lda #$5f	        lda #>msg_nonet
+.5a9d	85 03		sta $03		        sta r0H
+.5a9f	20 01 56	jsr $5601	        jsr setline
+.5aa2	60		rts		        rts
+.5aa3	a2 00		ldx #$00	_ci_ok: ldx #$00
+.5aa5	bd 27 60	lda $6027,x	_ci_c1: lda p_ip,x
+.5aa8	f0 06		beq $5ab0	        beq _ci_c2
+.5aaa	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5aad	e8		inx		        inx
+.5aae	d0 f5		bne $5aa5	        bne _ci_c1
+.5ab0	a0 00		ldy #$00	_ci_c2: ldy #$00
+.5ab2	b9 2f 91	lda $912f,y	_ci_c3: lda NET_IPSTR,y
+.5ab5	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5ab8	f0 04		beq $5abe	        beq _ci_d
+.5aba	e8		inx		        inx
+.5abb	c8		iny		        iny
+.5abc	d0 f4		bne $5ab2	        bne _ci_c3
+.5abe	a9 4b		lda #$4b	_ci_d:  lda #<linebuf
+.5ac0	85 02		sta $02		        sta r0L
+.5ac2	a9 60		lda #$60	        lda #>linebuf
+.5ac4	85 03		sta $03		        sta r0H
+.5ac6	20 01 56	jsr $5601	        jsr setline
+.5ac9	60		rts		        rts
+.5aca					cmd_get:
+.5aca	20 00 91	jsr $9100	        jsr NET_PRESENT
+.5acd	d0 0c		bne $5adb	        bne _cg_p
+.5acf	a9 c0		lda #$c0	        lda #<msg_noult
+.5ad1	85 02		sta $02		        sta r0L
+.5ad3	a9 5f		lda #$5f	        lda #>msg_noult
+.5ad5	85 03		sta $03		        sta r0H
+.5ad7	20 01 56	jsr $5601	        jsr setline
+.5ada	60		rts		        rts
+.5adb	a2 04		ldx #$04	_cg_p:  ldx #$04
+.5add	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = host, tok2buf = path
+.5ae0	ad 55 67	lda $6755	        lda tokbuf
+.5ae3	d0 0c		bne $5af1	        bne _cg_h
+.5ae5	a9 e9		lda #$e9	        lda #<msg_getargs
+.5ae7	85 02		sta $02		        sta r0L
+.5ae9	a9 5f		lda #$5f	        lda #>msg_getargs
+.5aeb	85 03		sta $03		        sta r0H
+.5aed	20 01 56	jsr $5601	        jsr setline
+.5af0	60		rts		        rts
+.5af1	ad 03 67	lda $6703	_cg_h:  lda tok2buf
+.5af4	d0 0a		bne $5b00	        bne _cg_ok
+.5af6	a9 2f		lda #$2f	        lda #$2f                        ; missing path -> "/"
+.5af8	8d 03 67	sta $6703	        sta tok2buf
+.5afb	a9 00		lda #$00	        lda #$00
+.5afd	8d 04 67	sta $6704	        sta tok2buf+1
+.5b00	a2 00		ldx #$00	_cg_ok: ldx #$00
+.5b02	bd 55 67	lda $6755,x	_cg_a1: lda tokbuf,x                    ; typed PETSCII -> ASCII
+.5b05	f0 09		beq $5b10	        beq _cg_a2
+.5b07	20 33 5f	jsr $5f33	        jsr p2a
+.5b0a	9d 55 67	sta $6755,x	        sta tokbuf,x
+.5b0d	e8		inx		        inx
+.5b0e	d0 f2		bne $5b02	        bne _cg_a1
+.5b10	a2 00		ldx #$00	_cg_a2: ldx #$00
+.5b12	bd 03 67	lda $6703,x	_cg_a3: lda tok2buf,x
+.5b15	f0 09		beq $5b20	        beq _cg_a4
+.5b17	20 33 5f	jsr $5f33	        jsr p2a
+.5b1a	9d 03 67	sta $6703,x	        sta tok2buf,x
+.5b1d	e8		inx		        inx
+.5b1e	d0 f2		bne $5b12	        bne _cg_a3
+.5b20	a9 f9		lda #$f9	_cg_a4: lda #<msg_conn
+.5b22	85 02		sta $02		        sta r0L
+.5b24	a9 5f		lda #$5f	        lda #>msg_conn
+.5b26	85 03		sta $03		        sta r0H
+.5b28	20 01 56	jsr $5601	        jsr setline                     ; "connecting..." while the Ultimate resolves
+.5b2b	a9 55		lda #$55	        lda #<tokbuf
+.5b2d	85 02		sta $02		        sta r0L
+.5b2f	a9 67		lda #$67	        lda #>tokbuf
+.5b31	85 03		sta $03		        sta r0H
+.5b33	a9 50		lda #$50	        lda #80
+.5b35	85 04		sta $04		        sta r1L
+.5b37	a9 00		lda #$00	        lda #$00
+.5b39	85 05		sta $05		        sta r1H
+.5b3b	a9 07		lda #$07	        lda #$07                        ; tcp
+.5b3d	20 09 91	jsr $9109	        jsr NET_OPEN
+.5b40	90 31		bcc $5b73	        bcc _cg_open
+.5b42	a2 00		ldx #$00	        ldx #$00
+.5b44	bd 07 60	lda $6007,x	_cg_f1: lda msg_openf,x
+.5b47	f0 06		beq $5b4f	        beq _cg_f2
+.5b49	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5b4c	e8		inx		        inx
+.5b4d	d0 f5		bne $5b44	        bne _cg_f1
+.5b4f	a0 00		ldy #$00	_cg_f2: ldy #$00
+.5b51	b9 42 91	lda $9142,y	_cg_f3: lda NET_STAT,y
+.5b54	f0 0c		beq $5b62	        beq _cg_f4
+.5b56	20 49 5f	jsr $5f49	        jsr a2p
+.5b59	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5b5c	e8		inx		        inx
+.5b5d	c8		iny		        iny
+.5b5e	e0 2c		cpx #$2c	        cpx #44
+.5b60	d0 ef		bne $5b51	        bne _cg_f3
+.5b62	a9 00		lda #$00	_cg_f4: lda #$00
+.5b64	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5b67	a9 4b		lda #$4b	        lda #<linebuf
+.5b69	85 02		sta $02		        sta r0L
+.5b6b	a9 60		lda #$60	        lda #>linebuf
+.5b6d	85 03		sta $03		        sta r0H
+.5b6f	20 01 56	jsr $5601	        jsr setline
+.5b72	60		rts		        rts
+.5b73					_cg_open:
+.5b73	a9 00		lda #$00	        lda #$00
+.5b75	8d 48 60	sta $6048	        sta rqi
+.5b78	a9 2c		lda #$2c	        lda #<p_get
+.5b7a	85 02		sta $02		        sta r0L
+.5b7c	a9 60		lda #$60	        lda #>p_get
+.5b7e	85 03		sta $03		        sta r0H
+.5b80	20 cd 5e	jsr $5ecd	        jsr rq_app
+.5b83	a9 03		lda #$03	        lda #<tok2buf
+.5b85	85 02		sta $02		        sta r0L
+.5b87	a9 67		lda #$67	        lda #>tok2buf
+.5b89	85 03		sta $03		        sta r0H
+.5b8b	20 cd 5e	jsr $5ecd	        jsr rq_app
+.5b8e	a9 31		lda #$31	        lda #<p_http
+.5b90	85 02		sta $02		        sta r0L
+.5b92	a9 60		lda #$60	        lda #>p_http
+.5b94	85 03		sta $03		        sta r0H
+.5b96	20 cd 5e	jsr $5ecd	        jsr rq_app
+.5b99	a9 55		lda #$55	        lda #<tokbuf
+.5b9b	85 02		sta $02		        sta r0L
+.5b9d	a9 67		lda #$67	        lda #>tokbuf
+.5b9f	85 03		sta $03		        sta r0H
+.5ba1	20 cd 5e	jsr $5ecd	        jsr rq_app
+.5ba4	a9 43		lda #$43	        lda #<p_crlf2
+.5ba6	85 02		sta $02		        sta r0L
+.5ba8	a9 60		lda #$60	        lda #>p_crlf2
+.5baa	85 03		sta $03		        sta r0H
+.5bac	20 cd 5e	jsr $5ecd	        jsr rq_app
+.5baf	a9 cb		lda #$cb	        lda #<reqbuf
+.5bb1	85 02		sta $02		        sta r0L
+.5bb3	a9 60		lda #$60	        lda #>reqbuf
+.5bb5	85 03		sta $03		        sta r0H
+.5bb7	ae 48 60	ldx $6048	        ldx rqi
+.5bba	ad 41 91	lda $9141	        lda NET_SOCK
+.5bbd	20 12 91	jsr $9112	        jsr NET_WRITE
+.5bc0	a9 32		lda #$32	        lda #50                         ; up to 2 s for the first bytes
+.5bc2	8d 49 60	sta $6049	        sta tries
+.5bc5	a9 f4		lda #$f4	_cg_rd: lda #<500
+.5bc7	85 04		sta $04		        sta r1L
+.5bc9	a9 01		lda #$01	        lda #>500
+.5bcb	85 05		sta $05		        sta r1H
+.5bcd	ad 41 91	lda $9141	        lda NET_SOCK
+.5bd0	20 0f 91	jsr $910f	        jsr NET_READ
+.5bd3	c9 00		cmp #$00	        cmp #$00
+.5bd5	f0 1b		beq $5bf2	        beq _cg_got
+.5bd7	c9 01		cmp #$01	        cmp #$01
+.5bd9	d0 05		bne $5be0	        bne _cg_none
+.5bdb	ce 49 60	dec $6049	        dec tries
+.5bde	d0 e5		bne $5bc5	        bne _cg_rd
+.5be0					_cg_none:
+.5be0	ad 41 91	lda $9141	        lda NET_SOCK
+.5be3	20 0c 91	jsr $910c	        jsr NET_CLOSE
+.5be6	a9 15		lda #$15	        lda #<msg_nodata
+.5be8	85 02		sta $02		        sta r0L
+.5bea	a9 60		lda #$60	        lda #>msg_nodata
+.5bec	85 03		sta $03		        sta r0H
+.5bee	20 01 56	jsr $5601	        jsr setline
+.5bf1	60		rts		        rts
+.5bf2					_cg_got:
+.5bf2	ad 3f 91	lda $913f	        lda NET_LEN                     ; terminate the payload
+.5bf5	85 02		sta $02		        sta r0L
+.5bf7	ad 40 91	lda $9140	        lda NET_LEN+1
+.5bfa	85 03		sta $03		        sta r0H
+.5bfc	18		clc		        clc
+.5bfd	a5 02		lda $02		        lda r0L
+.5bff	69 02		adc #$02	        adc #<(NET_DATA+2)
+.5c01	85 02		sta $02		        sta r0L
+.5c03	a5 03		lda $03		        lda r0H
+.5c05	69 88		adc #$88	        adc #>(NET_DATA+2)
+.5c07	85 03		sta $03		        sta r0H
+.5c09	a0 00		ldy #$00	        ldy #$00
+.5c0b	a9 00		lda #$00	        lda #$00
+.5c0d	91 02		sta ($02),y	        sta (r0),y
+.5c0f	a9 02		lda #$02	        lda #<(NET_DATA+2)
+.5c11	85 4c		sta $4c		        sta gp
+.5c13	a9 88		lda #$88	        lda #>(NET_DATA+2)
+.5c15	85 4d		sta $4d		        sta gp+1
+.5c17	20 e3 5e	jsr $5ee3	        jsr next_line                   ; -> linebuf (40) + vdline (78)
+.5c1a	a9 4b		lda #$4b	        lda #<linebuf
+.5c1c	85 02		sta $02		        sta r0L
+.5c1e	a9 60		lda #$60	        lda #>linebuf
+.5c20	85 03		sta $03		        sta r0H
+.5c22	20 01 56	jsr $5601	        jsr setline
+.5c25	20 0b 5d	jsr $5d0b	        jsr rows_wipe
+.5c28	a9 01		lda #$01	        lda #$01
+.5c2a	8d 4a 60	sta $604a	        sta dirty
+.5c2d	a9 00		lda #$00	        lda #$00
+.5c2f	85 42		sta $42		        sta rowi
+.5c31	20 3b 5c	jsr $5c3b	        jsr show_body
+.5c34	ad 41 91	lda $9141	        lda NET_SOCK
+.5c37	20 0c 91	jsr $910c	        jsr NET_CLOSE                   ; one chunk is what we show
+.5c3a	60		rts		        rts
+.5c3b					show_body:
+.5c3b	20 e3 5e	jsr $5ee3	_sb_ln: jsr next_line
+.5c3e	b0 36		bcs $5c76	        bcs _sb_done                    ; end of data
+.5c40	a9 18		lda #$18	        lda #COL_X
+.5c42	85 02		sta $02		        sta X1
+.5c44	a9 00		lda #$00	        lda #$00
+.5c46	85 03		sta $03		        sta X1+1
+.5c48	a9 28		lda #$28	        lda #TOP_Y
+.5c4a	85 04		sta $04		        sta Y1
+.5c4c	a5 42		lda $42		        lda rowi
+.5c4e	20 a7 57	jsr $57a7	        jsr addrowy
+.5c51	a9 4b		lda #$4b	        lda #<linebuf
+.5c53	85 14		sta $14		        sta r9L
+.5c55	a9 60		lda #$60	        lda #>linebuf
+.5c57	85 15		sta $15		        sta r9H
+.5c59	20 1e c0	jsr $c01e	        jsr GPUTS
+.5c5c	a9 7b		lda #$7b	        lda #<vdline
+.5c5e	85 14		sta $14		        sta r9L
+.5c60	a9 60		lda #$60	        lda #>vdline
+.5c62	85 15		sta $15		        sta r9H
+.5c64	a5 42		lda $42		        lda rowi
+.5c66	18		clc		        clc
+.5c67	69 09		adc #$09	        adc #$09
+.5c69	a2 02		ldx #$02	        ldx #$02
+.5c6b	20 35 08	jsr $0835	        jsr VDTEXT
+.5c6e	e6 42		inc $42		        inc rowi
+.5c70	a5 42		lda $42		        lda rowi
+.5c72	c9 08		cmp #$08	        cmp #$08
+.5c74	d0 c5		bne $5c3b	        bne _sb_ln
+.5c76					_sb_done:
+.5c76	60		rts		        rts
+.5c77					cmd_cat:
+.5c77	20 c4 53	jsr $53c4	        jsr sh_argbuf
+.5c7a	ad 55 67	lda $6755	        lda tokbuf
+.5c7d	d0 03		bne $5c82	        bne _cat_go
+.5c7f	4c 6a 53	jmp $536a	        jmp sp_unk_msg                  ; no filename
+.5c82					_cat_go:
+.5c82	a0 00		ldy #$00	        ldy #$00
+.5c84					_cat_len:
+.5c84	b9 55 67	lda $6755,y	        lda tokbuf,y
+.5c87	f0 05		beq $5c8e	        beq _cat_l2
+.5c89	c8		iny		        iny
+.5c8a	c0 10		cpy #$10	        cpy #16
+.5c8c	d0 f6		bne $5c84	        bne _cat_len
+.5c8e					_cat_l2:
+.5c8e	98		tya		        tya
+.5c8f	a2 55		ldx #$55	        ldx #<tokbuf
+.5c91	a0 67		ldy #$67	        ldy #>tokbuf
+.5c93	20 bd ff	jsr $ffbd	        jsr SETNAM
+.5c96	a9 05		lda #$05	        lda #$05
+.5c98	a6 ba		ldx $ba		        ldx $ba                         ; last-used device (8)
+.5c9a	a0 00		ldy #$00	        ldy #$00
+.5c9c	20 ba ff	jsr $ffba	        jsr SETLFS
+.5c9f	20 c0 ff	jsr $ffc0	        jsr OPEN
+.5ca2	a2 05		ldx #$05	        ldx #$05
+.5ca4	20 c6 ff	jsr $ffc6	        jsr CHKIN
+.5ca7	a9 4b		lda #$4b	        lda #<catbuf
+.5ca9	85 4c		sta $4c		        sta gp
+.5cab	a9 61		lda #$61	        lda #>catbuf
+.5cad	85 4d		sta $4d		        sta gp+1
+.5caf	a9 00		lda #$00	        lda #$00
+.5cb1	8d 4c 63	sta $634c	        sta catn
+.5cb4	8d 4d 63	sta $634d	        sta catn+1
+.5cb7					_cat_rd:
+.5cb7	20 b7 ff	jsr $ffb7	        jsr READST                      ; check BEFORE the read (dirscan order)
+.5cba	29 40		and #$40	        and #$40
+.5cbc	d0 1c		bne $5cda	        bne _cat_eof
+.5cbe	20 cf ff	jsr $ffcf	        jsr CHRIN
+.5cc1	a0 00		ldy #$00	        ldy #$00
+.5cc3	91 4c		sta ($4c),y	        sta (gp),y
+.5cc5	e6 4c		inc $4c		        inc gp
+.5cc7	d0 02		bne $5ccb	        bne _cat_i1
+.5cc9	e6 4d		inc $4d		        inc gp+1
+.5ccb					_cat_i1:
+.5ccb	ee 4c 63	inc $634c	        inc catn
+.5cce	d0 03		bne $5cd3	        bne _cat_i2
+.5cd0	ee 4d 63	inc $634d	        inc catn+1
+.5cd3					_cat_i2:
+.5cd3	ad 4d 63	lda $634d	        lda catn+1
+.5cd6	c9 02		cmp #$02	        cmp #$02                        ; cap at 512 bytes
+.5cd8	d0 dd		bne $5cb7	        bne _cat_rd
+.5cda					_cat_eof:
+.5cda	a0 00		ldy #$00	        ldy #$00
+.5cdc	a9 00		lda #$00	        lda #$00
+.5cde	91 4c		sta ($4c),y	        sta (gp),y                      ; terminate for next_line
+.5ce0	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.5ce3	a9 05		lda #$05	        lda #$05
+.5ce5	20 c3 ff	jsr $ffc3	        jsr CLOSE
+.5ce8	a9 55		lda #$55	        lda #<tokbuf                    ; filename on the response line
+.5cea	85 02		sta $02		        sta r0L
+.5cec	a9 67		lda #$67	        lda #>tokbuf
+.5cee	85 03		sta $03		        sta r0H
+.5cf0	20 01 56	jsr $5601	        jsr setline
+.5cf3	20 0b 5d	jsr $5d0b	        jsr rows_wipe
+.5cf6	a9 01		lda #$01	        lda #$01
+.5cf8	8d 4a 60	sta $604a	        sta dirty
+.5cfb	a9 00		lda #$00	        lda #$00
+.5cfd	85 42		sta $42		        sta rowi
+.5cff	a9 4b		lda #$4b	        lda #<catbuf
+.5d01	85 4c		sta $4c		        sta gp
+.5d03	a9 61		lda #$61	        lda #>catbuf
+.5d05	85 4d		sta $4d		        sta gp+1
+.5d07	20 3b 5c	jsr $5c3b	        jsr show_body
+.5d0a	60		rts		        rts
+.5d0b					rows_wipe:
+.5d0b	a5 02		lda $02		    lda r0L
+.5d0d	48		pha		    pha
+.5d0e	a5 03		lda $03		    lda r0H
+.5d10	48		pha		    pha
+.5d11	a5 04		lda $04		    lda r1L
+.5d13	48		pha		    pha
+.5d14	a5 05		lda $05		    lda r1H
+.5d16	48		pha		    pha
+.5d17	a5 06		lda $06		    lda r2L
+.5d19	48		pha		    pha
+.5d1a	a5 07		lda $07		    lda r2H
+.5d1c	48		pha		    pha
 =0					    exploc      := 0
 =5					    firstrow    := 40 / 8
 =19					    lastrow     := (40 + 120 - 1) / 8
@@ -1857,781 +1919,793 @@
 =37					    lastcol     := ((24 + 272 - 1) / 8) + 1
 =272					    memsz       := (lastcol - col) * 8
 =42584					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5cc8	a9 58		lda #$58	        lda #<memloc
-.5cca	85 02		sta $02		        sta r0L
-.5ccc	a9 a6		lda #$a6	        lda #>memloc
-.5cce	85 03		sta $03		        sta r0H
-.5cd0	a9 00		lda #$00	        lda #<exploc
-.5cd2	85 04		sta $04		        sta r1L
-.5cd4	a9 00		lda #$00	        lda #>exploc
-.5cd6	85 05		sta $05		        sta r1H
-.5cd8	a9 10		lda #$10	        lda #<memsz
-.5cda	85 06		sta $06		        sta r2L
-.5cdc	a9 01		lda #$01	        lda #>memsz
-.5cde	85 07		sta $07		        sta r2H
-.5ce0	20 20 08	jsr $0820	        jsr CLR_RECT
+.5d1d	a9 58		lda #$58	        lda #<memloc
+.5d1f	85 02		sta $02		        sta r0L
+.5d21	a9 a6		lda #$a6	        lda #>memloc
+.5d23	85 03		sta $03		        sta r0H
+.5d25	a9 00		lda #$00	        lda #<exploc
+.5d27	85 04		sta $04		        sta r1L
+.5d29	a9 00		lda #$00	        lda #>exploc
+.5d2b	85 05		sta $05		        sta r1H
+.5d2d	a9 10		lda #$10	        lda #<memsz
+.5d2f	85 06		sta $06		        sta r2L
+.5d31	a9 01		lda #$01	        lda #>memsz
+.5d33	85 07		sta $07		        sta r2H
+.5d35	20 20 08	jsr $0820	        jsr CLR_RECT
 =273					        exploc := exploc + memsz + 1
 =42904					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5ce3	a9 98		lda #$98	        lda #<memloc
-.5ce5	85 02		sta $02		        sta r0L
-.5ce7	a9 a7		lda #$a7	        lda #>memloc
-.5ce9	85 03		sta $03		        sta r0H
-.5ceb	a9 11		lda #$11	        lda #<exploc
-.5ced	85 04		sta $04		        sta r1L
-.5cef	a9 01		lda #$01	        lda #>exploc
-.5cf1	85 05		sta $05		        sta r1H
-.5cf3	a9 10		lda #$10	        lda #<memsz
-.5cf5	85 06		sta $06		        sta r2L
-.5cf7	a9 01		lda #$01	        lda #>memsz
-.5cf9	85 07		sta $07		        sta r2H
-.5cfb	20 20 08	jsr $0820	        jsr CLR_RECT
+.5d38	a9 98		lda #$98	        lda #<memloc
+.5d3a	85 02		sta $02		        sta r0L
+.5d3c	a9 a7		lda #$a7	        lda #>memloc
+.5d3e	85 03		sta $03		        sta r0H
+.5d40	a9 11		lda #$11	        lda #<exploc
+.5d42	85 04		sta $04		        sta r1L
+.5d44	a9 01		lda #$01	        lda #>exploc
+.5d46	85 05		sta $05		        sta r1H
+.5d48	a9 10		lda #$10	        lda #<memsz
+.5d4a	85 06		sta $06		        sta r2L
+.5d4c	a9 01		lda #$01	        lda #>memsz
+.5d4e	85 07		sta $07		        sta r2H
+.5d50	20 20 08	jsr $0820	        jsr CLR_RECT
 =546					        exploc := exploc + memsz + 1
 =43224					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5cfe	a9 d8		lda #$d8	        lda #<memloc
-.5d00	85 02		sta $02		        sta r0L
-.5d02	a9 a8		lda #$a8	        lda #>memloc
-.5d04	85 03		sta $03		        sta r0H
-.5d06	a9 22		lda #$22	        lda #<exploc
-.5d08	85 04		sta $04		        sta r1L
-.5d0a	a9 02		lda #$02	        lda #>exploc
-.5d0c	85 05		sta $05		        sta r1H
-.5d0e	a9 10		lda #$10	        lda #<memsz
-.5d10	85 06		sta $06		        sta r2L
-.5d12	a9 01		lda #$01	        lda #>memsz
-.5d14	85 07		sta $07		        sta r2H
-.5d16	20 20 08	jsr $0820	        jsr CLR_RECT
+.5d53	a9 d8		lda #$d8	        lda #<memloc
+.5d55	85 02		sta $02		        sta r0L
+.5d57	a9 a8		lda #$a8	        lda #>memloc
+.5d59	85 03		sta $03		        sta r0H
+.5d5b	a9 22		lda #$22	        lda #<exploc
+.5d5d	85 04		sta $04		        sta r1L
+.5d5f	a9 02		lda #$02	        lda #>exploc
+.5d61	85 05		sta $05		        sta r1H
+.5d63	a9 10		lda #$10	        lda #<memsz
+.5d65	85 06		sta $06		        sta r2L
+.5d67	a9 01		lda #$01	        lda #>memsz
+.5d69	85 07		sta $07		        sta r2H
+.5d6b	20 20 08	jsr $0820	        jsr CLR_RECT
 =819					        exploc := exploc + memsz + 1
 =43544					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5d19	a9 18		lda #$18	        lda #<memloc
-.5d1b	85 02		sta $02		        sta r0L
-.5d1d	a9 aa		lda #$aa	        lda #>memloc
-.5d1f	85 03		sta $03		        sta r0H
-.5d21	a9 33		lda #$33	        lda #<exploc
-.5d23	85 04		sta $04		        sta r1L
-.5d25	a9 03		lda #$03	        lda #>exploc
-.5d27	85 05		sta $05		        sta r1H
-.5d29	a9 10		lda #$10	        lda #<memsz
-.5d2b	85 06		sta $06		        sta r2L
-.5d2d	a9 01		lda #$01	        lda #>memsz
-.5d2f	85 07		sta $07		        sta r2H
-.5d31	20 20 08	jsr $0820	        jsr CLR_RECT
+.5d6e	a9 18		lda #$18	        lda #<memloc
+.5d70	85 02		sta $02		        sta r0L
+.5d72	a9 aa		lda #$aa	        lda #>memloc
+.5d74	85 03		sta $03		        sta r0H
+.5d76	a9 33		lda #$33	        lda #<exploc
+.5d78	85 04		sta $04		        sta r1L
+.5d7a	a9 03		lda #$03	        lda #>exploc
+.5d7c	85 05		sta $05		        sta r1H
+.5d7e	a9 10		lda #$10	        lda #<memsz
+.5d80	85 06		sta $06		        sta r2L
+.5d82	a9 01		lda #$01	        lda #>memsz
+.5d84	85 07		sta $07		        sta r2H
+.5d86	20 20 08	jsr $0820	        jsr CLR_RECT
 =1092					        exploc := exploc + memsz + 1
 =43864					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5d34	a9 58		lda #$58	        lda #<memloc
-.5d36	85 02		sta $02		        sta r0L
-.5d38	a9 ab		lda #$ab	        lda #>memloc
-.5d3a	85 03		sta $03		        sta r0H
-.5d3c	a9 44		lda #$44	        lda #<exploc
-.5d3e	85 04		sta $04		        sta r1L
-.5d40	a9 04		lda #$04	        lda #>exploc
-.5d42	85 05		sta $05		        sta r1H
-.5d44	a9 10		lda #$10	        lda #<memsz
-.5d46	85 06		sta $06		        sta r2L
-.5d48	a9 01		lda #$01	        lda #>memsz
-.5d4a	85 07		sta $07		        sta r2H
-.5d4c	20 20 08	jsr $0820	        jsr CLR_RECT
+.5d89	a9 58		lda #$58	        lda #<memloc
+.5d8b	85 02		sta $02		        sta r0L
+.5d8d	a9 ab		lda #$ab	        lda #>memloc
+.5d8f	85 03		sta $03		        sta r0H
+.5d91	a9 44		lda #$44	        lda #<exploc
+.5d93	85 04		sta $04		        sta r1L
+.5d95	a9 04		lda #$04	        lda #>exploc
+.5d97	85 05		sta $05		        sta r1H
+.5d99	a9 10		lda #$10	        lda #<memsz
+.5d9b	85 06		sta $06		        sta r2L
+.5d9d	a9 01		lda #$01	        lda #>memsz
+.5d9f	85 07		sta $07		        sta r2H
+.5da1	20 20 08	jsr $0820	        jsr CLR_RECT
 =1365					        exploc := exploc + memsz + 1
 =44184					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5d4f	a9 98		lda #$98	        lda #<memloc
-.5d51	85 02		sta $02		        sta r0L
-.5d53	a9 ac		lda #$ac	        lda #>memloc
-.5d55	85 03		sta $03		        sta r0H
-.5d57	a9 55		lda #$55	        lda #<exploc
-.5d59	85 04		sta $04		        sta r1L
-.5d5b	a9 05		lda #$05	        lda #>exploc
-.5d5d	85 05		sta $05		        sta r1H
-.5d5f	a9 10		lda #$10	        lda #<memsz
-.5d61	85 06		sta $06		        sta r2L
-.5d63	a9 01		lda #$01	        lda #>memsz
-.5d65	85 07		sta $07		        sta r2H
-.5d67	20 20 08	jsr $0820	        jsr CLR_RECT
+.5da4	a9 98		lda #$98	        lda #<memloc
+.5da6	85 02		sta $02		        sta r0L
+.5da8	a9 ac		lda #$ac	        lda #>memloc
+.5daa	85 03		sta $03		        sta r0H
+.5dac	a9 55		lda #$55	        lda #<exploc
+.5dae	85 04		sta $04		        sta r1L
+.5db0	a9 05		lda #$05	        lda #>exploc
+.5db2	85 05		sta $05		        sta r1H
+.5db4	a9 10		lda #$10	        lda #<memsz
+.5db6	85 06		sta $06		        sta r2L
+.5db8	a9 01		lda #$01	        lda #>memsz
+.5dba	85 07		sta $07		        sta r2H
+.5dbc	20 20 08	jsr $0820	        jsr CLR_RECT
 =1638					        exploc := exploc + memsz + 1
 =44504					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5d6a	a9 d8		lda #$d8	        lda #<memloc
-.5d6c	85 02		sta $02		        sta r0L
-.5d6e	a9 ad		lda #$ad	        lda #>memloc
-.5d70	85 03		sta $03		        sta r0H
-.5d72	a9 66		lda #$66	        lda #<exploc
-.5d74	85 04		sta $04		        sta r1L
-.5d76	a9 06		lda #$06	        lda #>exploc
-.5d78	85 05		sta $05		        sta r1H
-.5d7a	a9 10		lda #$10	        lda #<memsz
-.5d7c	85 06		sta $06		        sta r2L
-.5d7e	a9 01		lda #$01	        lda #>memsz
-.5d80	85 07		sta $07		        sta r2H
-.5d82	20 20 08	jsr $0820	        jsr CLR_RECT
+.5dbf	a9 d8		lda #$d8	        lda #<memloc
+.5dc1	85 02		sta $02		        sta r0L
+.5dc3	a9 ad		lda #$ad	        lda #>memloc
+.5dc5	85 03		sta $03		        sta r0H
+.5dc7	a9 66		lda #$66	        lda #<exploc
+.5dc9	85 04		sta $04		        sta r1L
+.5dcb	a9 06		lda #$06	        lda #>exploc
+.5dcd	85 05		sta $05		        sta r1H
+.5dcf	a9 10		lda #$10	        lda #<memsz
+.5dd1	85 06		sta $06		        sta r2L
+.5dd3	a9 01		lda #$01	        lda #>memsz
+.5dd5	85 07		sta $07		        sta r2H
+.5dd7	20 20 08	jsr $0820	        jsr CLR_RECT
 =1911					        exploc := exploc + memsz + 1
 =44824					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5d85	a9 18		lda #$18	        lda #<memloc
-.5d87	85 02		sta $02		        sta r0L
-.5d89	a9 af		lda #$af	        lda #>memloc
-.5d8b	85 03		sta $03		        sta r0H
-.5d8d	a9 77		lda #$77	        lda #<exploc
-.5d8f	85 04		sta $04		        sta r1L
-.5d91	a9 07		lda #$07	        lda #>exploc
-.5d93	85 05		sta $05		        sta r1H
-.5d95	a9 10		lda #$10	        lda #<memsz
-.5d97	85 06		sta $06		        sta r2L
-.5d99	a9 01		lda #$01	        lda #>memsz
-.5d9b	85 07		sta $07		        sta r2H
-.5d9d	20 20 08	jsr $0820	        jsr CLR_RECT
+.5dda	a9 18		lda #$18	        lda #<memloc
+.5ddc	85 02		sta $02		        sta r0L
+.5dde	a9 af		lda #$af	        lda #>memloc
+.5de0	85 03		sta $03		        sta r0H
+.5de2	a9 77		lda #$77	        lda #<exploc
+.5de4	85 04		sta $04		        sta r1L
+.5de6	a9 07		lda #$07	        lda #>exploc
+.5de8	85 05		sta $05		        sta r1H
+.5dea	a9 10		lda #$10	        lda #<memsz
+.5dec	85 06		sta $06		        sta r2L
+.5dee	a9 01		lda #$01	        lda #>memsz
+.5df0	85 07		sta $07		        sta r2H
+.5df2	20 20 08	jsr $0820	        jsr CLR_RECT
 =2184					        exploc := exploc + memsz + 1
 =45144					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5da0	a9 58		lda #$58	        lda #<memloc
-.5da2	85 02		sta $02		        sta r0L
-.5da4	a9 b0		lda #$b0	        lda #>memloc
-.5da6	85 03		sta $03		        sta r0H
-.5da8	a9 88		lda #$88	        lda #<exploc
-.5daa	85 04		sta $04		        sta r1L
-.5dac	a9 08		lda #$08	        lda #>exploc
-.5dae	85 05		sta $05		        sta r1H
-.5db0	a9 10		lda #$10	        lda #<memsz
-.5db2	85 06		sta $06		        sta r2L
-.5db4	a9 01		lda #$01	        lda #>memsz
-.5db6	85 07		sta $07		        sta r2H
-.5db8	20 20 08	jsr $0820	        jsr CLR_RECT
+.5df5	a9 58		lda #$58	        lda #<memloc
+.5df7	85 02		sta $02		        sta r0L
+.5df9	a9 b0		lda #$b0	        lda #>memloc
+.5dfb	85 03		sta $03		        sta r0H
+.5dfd	a9 88		lda #$88	        lda #<exploc
+.5dff	85 04		sta $04		        sta r1L
+.5e01	a9 08		lda #$08	        lda #>exploc
+.5e03	85 05		sta $05		        sta r1H
+.5e05	a9 10		lda #$10	        lda #<memsz
+.5e07	85 06		sta $06		        sta r2L
+.5e09	a9 01		lda #$01	        lda #>memsz
+.5e0b	85 07		sta $07		        sta r2H
+.5e0d	20 20 08	jsr $0820	        jsr CLR_RECT
 =2457					        exploc := exploc + memsz + 1
 =45464					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5dbb	a9 98		lda #$98	        lda #<memloc
-.5dbd	85 02		sta $02		        sta r0L
-.5dbf	a9 b1		lda #$b1	        lda #>memloc
-.5dc1	85 03		sta $03		        sta r0H
-.5dc3	a9 99		lda #$99	        lda #<exploc
-.5dc5	85 04		sta $04		        sta r1L
-.5dc7	a9 09		lda #$09	        lda #>exploc
-.5dc9	85 05		sta $05		        sta r1H
-.5dcb	a9 10		lda #$10	        lda #<memsz
-.5dcd	85 06		sta $06		        sta r2L
-.5dcf	a9 01		lda #$01	        lda #>memsz
-.5dd1	85 07		sta $07		        sta r2H
-.5dd3	20 20 08	jsr $0820	        jsr CLR_RECT
+.5e10	a9 98		lda #$98	        lda #<memloc
+.5e12	85 02		sta $02		        sta r0L
+.5e14	a9 b1		lda #$b1	        lda #>memloc
+.5e16	85 03		sta $03		        sta r0H
+.5e18	a9 99		lda #$99	        lda #<exploc
+.5e1a	85 04		sta $04		        sta r1L
+.5e1c	a9 09		lda #$09	        lda #>exploc
+.5e1e	85 05		sta $05		        sta r1H
+.5e20	a9 10		lda #$10	        lda #<memsz
+.5e22	85 06		sta $06		        sta r2L
+.5e24	a9 01		lda #$01	        lda #>memsz
+.5e26	85 07		sta $07		        sta r2H
+.5e28	20 20 08	jsr $0820	        jsr CLR_RECT
 =2730					        exploc := exploc + memsz + 1
 =45784					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5dd6	a9 d8		lda #$d8	        lda #<memloc
-.5dd8	85 02		sta $02		        sta r0L
-.5dda	a9 b2		lda #$b2	        lda #>memloc
-.5ddc	85 03		sta $03		        sta r0H
-.5dde	a9 aa		lda #$aa	        lda #<exploc
-.5de0	85 04		sta $04		        sta r1L
-.5de2	a9 0a		lda #$0a	        lda #>exploc
-.5de4	85 05		sta $05		        sta r1H
-.5de6	a9 10		lda #$10	        lda #<memsz
-.5de8	85 06		sta $06		        sta r2L
-.5dea	a9 01		lda #$01	        lda #>memsz
-.5dec	85 07		sta $07		        sta r2H
-.5dee	20 20 08	jsr $0820	        jsr CLR_RECT
+.5e2b	a9 d8		lda #$d8	        lda #<memloc
+.5e2d	85 02		sta $02		        sta r0L
+.5e2f	a9 b2		lda #$b2	        lda #>memloc
+.5e31	85 03		sta $03		        sta r0H
+.5e33	a9 aa		lda #$aa	        lda #<exploc
+.5e35	85 04		sta $04		        sta r1L
+.5e37	a9 0a		lda #$0a	        lda #>exploc
+.5e39	85 05		sta $05		        sta r1H
+.5e3b	a9 10		lda #$10	        lda #<memsz
+.5e3d	85 06		sta $06		        sta r2L
+.5e3f	a9 01		lda #$01	        lda #>memsz
+.5e41	85 07		sta $07		        sta r2H
+.5e43	20 20 08	jsr $0820	        jsr CLR_RECT
 =3003					        exploc := exploc + memsz + 1
 =46104					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5df1	a9 18		lda #$18	        lda #<memloc
-.5df3	85 02		sta $02		        sta r0L
-.5df5	a9 b4		lda #$b4	        lda #>memloc
-.5df7	85 03		sta $03		        sta r0H
-.5df9	a9 bb		lda #$bb	        lda #<exploc
-.5dfb	85 04		sta $04		        sta r1L
-.5dfd	a9 0b		lda #$0b	        lda #>exploc
-.5dff	85 05		sta $05		        sta r1H
-.5e01	a9 10		lda #$10	        lda #<memsz
-.5e03	85 06		sta $06		        sta r2L
-.5e05	a9 01		lda #$01	        lda #>memsz
-.5e07	85 07		sta $07		        sta r2H
-.5e09	20 20 08	jsr $0820	        jsr CLR_RECT
+.5e46	a9 18		lda #$18	        lda #<memloc
+.5e48	85 02		sta $02		        sta r0L
+.5e4a	a9 b4		lda #$b4	        lda #>memloc
+.5e4c	85 03		sta $03		        sta r0H
+.5e4e	a9 bb		lda #$bb	        lda #<exploc
+.5e50	85 04		sta $04		        sta r1L
+.5e52	a9 0b		lda #$0b	        lda #>exploc
+.5e54	85 05		sta $05		        sta r1H
+.5e56	a9 10		lda #$10	        lda #<memsz
+.5e58	85 06		sta $06		        sta r2L
+.5e5a	a9 01		lda #$01	        lda #>memsz
+.5e5c	85 07		sta $07		        sta r2H
+.5e5e	20 20 08	jsr $0820	        jsr CLR_RECT
 =3276					        exploc := exploc + memsz + 1
 =46424					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5e0c	a9 58		lda #$58	        lda #<memloc
-.5e0e	85 02		sta $02		        sta r0L
-.5e10	a9 b5		lda #$b5	        lda #>memloc
-.5e12	85 03		sta $03		        sta r0H
-.5e14	a9 cc		lda #$cc	        lda #<exploc
-.5e16	85 04		sta $04		        sta r1L
-.5e18	a9 0c		lda #$0c	        lda #>exploc
-.5e1a	85 05		sta $05		        sta r1H
-.5e1c	a9 10		lda #$10	        lda #<memsz
-.5e1e	85 06		sta $06		        sta r2L
-.5e20	a9 01		lda #$01	        lda #>memsz
-.5e22	85 07		sta $07		        sta r2H
-.5e24	20 20 08	jsr $0820	        jsr CLR_RECT
+.5e61	a9 58		lda #$58	        lda #<memloc
+.5e63	85 02		sta $02		        sta r0L
+.5e65	a9 b5		lda #$b5	        lda #>memloc
+.5e67	85 03		sta $03		        sta r0H
+.5e69	a9 cc		lda #$cc	        lda #<exploc
+.5e6b	85 04		sta $04		        sta r1L
+.5e6d	a9 0c		lda #$0c	        lda #>exploc
+.5e6f	85 05		sta $05		        sta r1H
+.5e71	a9 10		lda #$10	        lda #<memsz
+.5e73	85 06		sta $06		        sta r2L
+.5e75	a9 01		lda #$01	        lda #>memsz
+.5e77	85 07		sta $07		        sta r2H
+.5e79	20 20 08	jsr $0820	        jsr CLR_RECT
 =3549					        exploc := exploc + memsz + 1
 =46744					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5e27	a9 98		lda #$98	        lda #<memloc
-.5e29	85 02		sta $02		        sta r0L
-.5e2b	a9 b6		lda #$b6	        lda #>memloc
-.5e2d	85 03		sta $03		        sta r0H
-.5e2f	a9 dd		lda #$dd	        lda #<exploc
-.5e31	85 04		sta $04		        sta r1L
-.5e33	a9 0d		lda #$0d	        lda #>exploc
-.5e35	85 05		sta $05		        sta r1H
-.5e37	a9 10		lda #$10	        lda #<memsz
-.5e39	85 06		sta $06		        sta r2L
-.5e3b	a9 01		lda #$01	        lda #>memsz
-.5e3d	85 07		sta $07		        sta r2H
-.5e3f	20 20 08	jsr $0820	        jsr CLR_RECT
+.5e7c	a9 98		lda #$98	        lda #<memloc
+.5e7e	85 02		sta $02		        sta r0L
+.5e80	a9 b6		lda #$b6	        lda #>memloc
+.5e82	85 03		sta $03		        sta r0H
+.5e84	a9 dd		lda #$dd	        lda #<exploc
+.5e86	85 04		sta $04		        sta r1L
+.5e88	a9 0d		lda #$0d	        lda #>exploc
+.5e8a	85 05		sta $05		        sta r1H
+.5e8c	a9 10		lda #$10	        lda #<memsz
+.5e8e	85 06		sta $06		        sta r2L
+.5e90	a9 01		lda #$01	        lda #>memsz
+.5e92	85 07		sta $07		        sta r2H
+.5e94	20 20 08	jsr $0820	        jsr CLR_RECT
 =3822					        exploc := exploc + memsz + 1
 =47064					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5e42	a9 d8		lda #$d8	        lda #<memloc
-.5e44	85 02		sta $02		        sta r0L
-.5e46	a9 b7		lda #$b7	        lda #>memloc
-.5e48	85 03		sta $03		        sta r0H
-.5e4a	a9 ee		lda #$ee	        lda #<exploc
-.5e4c	85 04		sta $04		        sta r1L
-.5e4e	a9 0e		lda #$0e	        lda #>exploc
-.5e50	85 05		sta $05		        sta r1H
-.5e52	a9 10		lda #$10	        lda #<memsz
-.5e54	85 06		sta $06		        sta r2L
-.5e56	a9 01		lda #$01	        lda #>memsz
-.5e58	85 07		sta $07		        sta r2H
-.5e5a	20 20 08	jsr $0820	        jsr CLR_RECT
+.5e97	a9 d8		lda #$d8	        lda #<memloc
+.5e99	85 02		sta $02		        sta r0L
+.5e9b	a9 b7		lda #$b7	        lda #>memloc
+.5e9d	85 03		sta $03		        sta r0H
+.5e9f	a9 ee		lda #$ee	        lda #<exploc
+.5ea1	85 04		sta $04		        sta r1L
+.5ea3	a9 0e		lda #$0e	        lda #>exploc
+.5ea5	85 05		sta $05		        sta r1H
+.5ea7	a9 10		lda #$10	        lda #<memsz
+.5ea9	85 06		sta $06		        sta r2L
+.5eab	a9 01		lda #$01	        lda #>memsz
+.5ead	85 07		sta $07		        sta r2H
+.5eaf	20 20 08	jsr $0820	        jsr CLR_RECT
 =4095					        exploc := exploc + memsz + 1
-.5e5d	a9 00		lda #$00	        lda #$00
-.5e5f	8d e3 5f	sta $5fe3	        sta dirty
-.5e62	8d cb 67	sta $67cb	        sta painted
-.5e65	60		rts		        rts
-.5e66	ae e1 5f	ldx $5fe1	rq_app: ldx rqi
-.5e69	a0 00		ldy #$00	        ldy #$00
-.5e6b	b1 02		lda ($02),y	_rq_l:  lda (r0),y
-.5e6d	f0 09		beq $5e78	        beq _rq_d
-.5e6f	9d 64 60	sta $6064,x	        sta reqbuf,x
-.5e72	e8		inx		        inx
-.5e73	c8		iny		        iny
-.5e74	e0 78		cpx #$78	        cpx #120
-.5e76	d0 f3		bne $5e6b	        bne _rq_l
-.5e78	8e e1 5f	stx $5fe1	_rq_d:  stx rqi
-.5e7b	60		rts		        rts
-.5e7c					next_line:
-.5e7c	a0 00		ldy #$00	        ldy #$00
-.5e7e	b1 4c		lda ($4c),y	        lda (gp),y
-.5e80	d0 02		bne $5e84	        bne _nl_go
-.5e82	38		sec		        sec
-.5e83	60		rts		        rts
-.5e84	a2 00		ldx #$00	_nl_go: ldx #$00
-.5e86	b1 4c		lda ($4c),y	_nl_l:  lda (gp),y
-.5e88	f0 23		beq $5ead	        beq _nl_e
-.5e8a	c9 0a		cmp #$0a	        cmp #$0a
-.5e8c	f0 1f		beq $5ead	        beq _nl_e
-.5e8e	c9 0d		cmp #$0d	        cmp #$0d
-.5e90	f0 18		beq $5eaa	        beq _nl_s
-.5e92	c9 09		cmp #$09	        cmp #$09
-.5e94	d0 02		bne $5e98	        bne _nl_c
-.5e96	a9 20		lda #$20	        lda #$20
-.5e98	20 e2 5e	jsr $5ee2	_nl_c:  jsr a2p
-.5e9b	e0 4e		cpx #$4e	        cpx #78
-.5e9d	b0 0b		bcs $5eaa	        bcs _nl_s
-.5e9f	9d 14 60	sta $6014,x	        sta vdline,x
-.5ea2	e0 28		cpx #$28	        cpx #40
-.5ea4	b0 03		bcs $5ea9	        bcs _nl_x
-.5ea6	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.5ea9	e8		inx		_nl_x:  inx
-.5eaa	c8		iny		_nl_s:  iny
-.5eab	d0 d9		bne $5e86	        bne _nl_l
-.5ead	a9 00		lda #$00	_nl_e:  lda #$00
-.5eaf	9d 14 60	sta $6014,x	        sta vdline,x
-.5eb2	e0 28		cpx #$28	        cpx #40
-.5eb4	90 02		bcc $5eb8	        bcc _nl_t
-.5eb6	a2 28		ldx #$28	        ldx #40
-.5eb8	9d e4 5f	sta $5fe4,x	_nl_t:  sta linebuf,x
-.5ebb	b1 4c		lda ($4c),y	        lda (gp),y
-.5ebd	f0 01		beq $5ec0	        beq _nl_adv
-.5ebf	c8		iny		        iny
-.5ec0					_nl_adv:
-.5ec0	98		tya		        tya
-.5ec1	18		clc		        clc
-.5ec2	65 4c		adc $4c		        adc gp
-.5ec4	85 4c		sta $4c		        sta gp
-.5ec6	90 02		bcc $5eca	        bcc _nl_r
-.5ec8	e6 4d		inc $4d		        inc gp+1
-.5eca	18		clc		_nl_r:  clc
-.5ecb	60		rts		        rts
-.5ecc	c9 41		cmp #$41	p2a:    cmp #$41
-.5ece	90 11		bcc $5ee1	        bcc _p2a_r
-.5ed0	c9 5b		cmp #$5b	        cmp #$5b
-.5ed2	b0 03		bcs $5ed7	        bcs _p2a_u
-.5ed4	09 20		ora #$20	        ora #$20
-.5ed6	60		rts		        rts
-.5ed7	c9 c1		cmp #$c1	_p2a_u: cmp #$c1
-.5ed9	90 06		bcc $5ee1	        bcc _p2a_r
-.5edb	c9 db		cmp #$db	        cmp #$db
-.5edd	b0 02		bcs $5ee1	        bcs _p2a_r
-.5edf	29 7f		and #$7f	        and #$7f
-.5ee1	60		rts		_p2a_r: rts
-.5ee2	c9 20		cmp #$20	a2p:    cmp #$20
-.5ee4	90 1a		bcc $5f00	        bcc _a2p_dot
-.5ee6	c9 7f		cmp #$7f	        cmp #$7f
-.5ee8	b0 16		bcs $5f00	        bcs _a2p_dot
-.5eea	c9 61		cmp #$61	        cmp #$61
-.5eec	90 07		bcc $5ef5	        bcc _a2p_up
-.5eee	c9 7b		cmp #$7b	        cmp #$7b
-.5ef0	b0 0d		bcs $5eff	        bcs _a2p_r
-.5ef2	29 df		and #$df	        and #$df
-.5ef4	60		rts		        rts
-.5ef5					_a2p_up:
-.5ef5	c9 41		cmp #$41	        cmp #$41
-.5ef7	90 06		bcc $5eff	        bcc _a2p_r
-.5ef9	c9 5b		cmp #$5b	        cmp #$5b
-.5efb	b0 02		bcs $5eff	        bcs _a2p_r
-.5efd	09 80		ora #$80	        ora #$80
-.5eff	60		rts		_a2p_r: rts
-.5f00					_a2p_dot:
-.5f00	a9 2e		lda #$2e	        lda #$2e
-.5f02	60		rts		        rts
->5f03	0f 13 1c 27 33 3f		tagL:   .byte <tag0, <tag1, <tag2, <tag3, <tag4, <tag5
->5f09	5f 5f 5f 5f 5f 5f		tagH:   .byte >tag0, >tag1, >tag2, >tag3, >tag4, >tag5
->5f0f	4e 54 50 00			tag0:   .text "ntp", 0
->5f13	4e 4f 20 52 45 50 4c 59		tag1:   .text "no reply", 0
->5f1b	00
->5f1c	4e 4f 20 4e 45 54 57 4f		tag2:   .text "no network", 0
->5f24	52 4b 00
->5f27	4e 4f 20 55 4c 54 49 4d		tag3:   .text "no ultimate", 0
->5f2f	41 54 45 00
->5f33	4e 4f 20 4e 54 50 20 48		tag4:   .text "no ntp host", 0
->5f3b	4f 53 54 00
->5f3f	55 4e 53 59 4e 43 45 44		tag5:   .text "unsynced", 0
->5f47	00
->5f48	43 4c 4f 43 4b 20 55 4e		msg_unsync: .text "clock unsynced: ", 0
->5f50	53 59 4e 43 45 44 3a 20 00
->5f59	4e 4f 20 55 4c 54 49 4d		msg_noult:  .text "no ultimate command interface", 0
->5f61	41 54 45 20 43 4f 4d 4d 41 4e 44 20 49 4e 54 45
->5f71	52 46 41 43 45 00
->5f77	4e 4f 20 4e 45 54 57 4f		msg_nonet:  .text "no network", 0
->5f7f	52 4b 00
->5f82	4e 45 45 44 3a 20 48 4f		msg_getargs: .text "need: host path", 0
->5f8a	53 54 20 50 41 54 48 00
->5f92	43 4f 4e 4e 45 43 54 49		msg_conn:   .text "connecting...", 0
->5f9a	4e 47 2e 2e 2e 00
->5fa0	4f 50 45 4e 20 46 41 49		msg_openf:  .text "open failed: ", 0
->5fa8	4c 45 44 3a 20 00
->5fae	4e 4f 20 44 41 54 41 20		msg_nodata: .text "no data from host", 0
->5fb6	46 52 4f 4d 20 48 4f 53 54 00
->5fc0	49 50 3a 20 00			p_ip:       .text "ip: ", 0
->5fc5	47 45 54 20 00			p_get:   .byte $47,$45,$54,$20,$00                              ; "GET "
->5fca	20 48 54 54 50 2f 31 2e		p_http:  .byte $20,$48,$54,$54,$50,$2f,$31,$2e,$30,$0d,$0a       ; " HTTP/1.0\r\n"
->5fd2	30 0d 0a
->5fd5	48 6f 73 74 3a 20 00		         .byte $48,$6f,$73,$74,$3a,$20,$00                       ; "Host: "
->5fdc	0d 0a 0d 0a 00			p_crlf2: .byte $0d,$0a,$0d,$0a,$00
->5fe1	00				rqi:     .byte 0
->5fe2	00				tries:   .byte 0
->5fe3	00				dirty:   .byte 0
+.5eb2	68		pla		    pla
+.5eb3	85 07		sta $07		    sta r2H
+.5eb5	68		pla		    pla
+.5eb6	85 06		sta $06		    sta r2L
+.5eb8	68		pla		    pla
+.5eb9	85 05		sta $05		    sta r1H
+.5ebb	68		pla		    pla
+.5ebc	85 04		sta $04		    sta r1L
+.5ebe	68		pla		    pla
+.5ebf	85 03		sta $03		    sta r0H
+.5ec1	68		pla		    pla
+.5ec2	85 02		sta $02		    sta r0L
+.5ec4	a9 00		lda #$00	        lda #$00
+.5ec6	8d 4a 60	sta $604a	        sta dirty
+.5ec9	8d 32 68	sta $6832	        sta painted
+.5ecc	60		rts		        rts
+.5ecd	ae 48 60	ldx $6048	rq_app: ldx rqi
+.5ed0	a0 00		ldy #$00	        ldy #$00
+.5ed2	b1 02		lda ($02),y	_rq_l:  lda (r0),y
+.5ed4	f0 09		beq $5edf	        beq _rq_d
+.5ed6	9d cb 60	sta $60cb,x	        sta reqbuf,x
+.5ed9	e8		inx		        inx
+.5eda	c8		iny		        iny
+.5edb	e0 78		cpx #$78	        cpx #120
+.5edd	d0 f3		bne $5ed2	        bne _rq_l
+.5edf	8e 48 60	stx $6048	_rq_d:  stx rqi
+.5ee2	60		rts		        rts
+.5ee3					next_line:
+.5ee3	a0 00		ldy #$00	        ldy #$00
+.5ee5	b1 4c		lda ($4c),y	        lda (gp),y
+.5ee7	d0 02		bne $5eeb	        bne _nl_go
+.5ee9	38		sec		        sec
+.5eea	60		rts		        rts
+.5eeb	a2 00		ldx #$00	_nl_go: ldx #$00
+.5eed	b1 4c		lda ($4c),y	_nl_l:  lda (gp),y
+.5eef	f0 23		beq $5f14	        beq _nl_e
+.5ef1	c9 0a		cmp #$0a	        cmp #$0a
+.5ef3	f0 1f		beq $5f14	        beq _nl_e
+.5ef5	c9 0d		cmp #$0d	        cmp #$0d
+.5ef7	f0 18		beq $5f11	        beq _nl_s
+.5ef9	c9 09		cmp #$09	        cmp #$09
+.5efb	d0 02		bne $5eff	        bne _nl_c
+.5efd	a9 20		lda #$20	        lda #$20
+.5eff	20 49 5f	jsr $5f49	_nl_c:  jsr a2p
+.5f02	e0 4e		cpx #$4e	        cpx #78
+.5f04	b0 0b		bcs $5f11	        bcs _nl_s
+.5f06	9d 7b 60	sta $607b,x	        sta vdline,x
+.5f09	e0 28		cpx #$28	        cpx #40
+.5f0b	b0 03		bcs $5f10	        bcs _nl_x
+.5f0d	9d 4b 60	sta $604b,x	        sta linebuf,x
+.5f10	e8		inx		_nl_x:  inx
+.5f11	c8		iny		_nl_s:  iny
+.5f12	d0 d9		bne $5eed	        bne _nl_l
+.5f14	a9 00		lda #$00	_nl_e:  lda #$00
+.5f16	9d 7b 60	sta $607b,x	        sta vdline,x
+.5f19	e0 28		cpx #$28	        cpx #40
+.5f1b	90 02		bcc $5f1f	        bcc _nl_t
+.5f1d	a2 28		ldx #$28	        ldx #40
+.5f1f	9d 4b 60	sta $604b,x	_nl_t:  sta linebuf,x
+.5f22	b1 4c		lda ($4c),y	        lda (gp),y
+.5f24	f0 01		beq $5f27	        beq _nl_adv
+.5f26	c8		iny		        iny
+.5f27					_nl_adv:
+.5f27	98		tya		        tya
+.5f28	18		clc		        clc
+.5f29	65 4c		adc $4c		        adc gp
+.5f2b	85 4c		sta $4c		        sta gp
+.5f2d	90 02		bcc $5f31	        bcc _nl_r
+.5f2f	e6 4d		inc $4d		        inc gp+1
+.5f31	18		clc		_nl_r:  clc
+.5f32	60		rts		        rts
+.5f33	c9 41		cmp #$41	p2a:    cmp #$41
+.5f35	90 11		bcc $5f48	        bcc _p2a_r
+.5f37	c9 5b		cmp #$5b	        cmp #$5b
+.5f39	b0 03		bcs $5f3e	        bcs _p2a_u
+.5f3b	09 20		ora #$20	        ora #$20
+.5f3d	60		rts		        rts
+.5f3e	c9 c1		cmp #$c1	_p2a_u: cmp #$c1
+.5f40	90 06		bcc $5f48	        bcc _p2a_r
+.5f42	c9 db		cmp #$db	        cmp #$db
+.5f44	b0 02		bcs $5f48	        bcs _p2a_r
+.5f46	29 7f		and #$7f	        and #$7f
+.5f48	60		rts		_p2a_r: rts
+.5f49	c9 20		cmp #$20	a2p:    cmp #$20
+.5f4b	90 1a		bcc $5f67	        bcc _a2p_dot
+.5f4d	c9 7f		cmp #$7f	        cmp #$7f
+.5f4f	b0 16		bcs $5f67	        bcs _a2p_dot
+.5f51	c9 61		cmp #$61	        cmp #$61
+.5f53	90 07		bcc $5f5c	        bcc _a2p_up
+.5f55	c9 7b		cmp #$7b	        cmp #$7b
+.5f57	b0 0d		bcs $5f66	        bcs _a2p_r
+.5f59	29 df		and #$df	        and #$df
+.5f5b	60		rts		        rts
+.5f5c					_a2p_up:
+.5f5c	c9 41		cmp #$41	        cmp #$41
+.5f5e	90 06		bcc $5f66	        bcc _a2p_r
+.5f60	c9 5b		cmp #$5b	        cmp #$5b
+.5f62	b0 02		bcs $5f66	        bcs _a2p_r
+.5f64	09 80		ora #$80	        ora #$80
+.5f66	60		rts		_a2p_r: rts
+.5f67					_a2p_dot:
+.5f67	a9 2e		lda #$2e	        lda #$2e
+.5f69	60		rts		        rts
+>5f6a	76 7a 83 8e 9a a6		tagL:   .byte <tag0, <tag1, <tag2, <tag3, <tag4, <tag5
+>5f70	5f 5f 5f 5f 5f 5f		tagH:   .byte >tag0, >tag1, >tag2, >tag3, >tag4, >tag5
+>5f76	4e 54 50 00			tag0:   .text "ntp", 0
+>5f7a	4e 4f 20 52 45 50 4c 59		tag1:   .text "no reply", 0
+>5f82	00
+>5f83	4e 4f 20 4e 45 54 57 4f		tag2:   .text "no network", 0
+>5f8b	52 4b 00
+>5f8e	4e 4f 20 55 4c 54 49 4d		tag3:   .text "no ultimate", 0
+>5f96	41 54 45 00
+>5f9a	4e 4f 20 4e 54 50 20 48		tag4:   .text "no ntp host", 0
+>5fa2	4f 53 54 00
+>5fa6	55 4e 53 59 4e 43 45 44		tag5:   .text "unsynced", 0
+>5fae	00
+>5faf	43 4c 4f 43 4b 20 55 4e		msg_unsync: .text "clock unsynced: ", 0
+>5fb7	53 59 4e 43 45 44 3a 20 00
+>5fc0	4e 4f 20 55 4c 54 49 4d		msg_noult:  .text "no ultimate command interface", 0
+>5fc8	41 54 45 20 43 4f 4d 4d 41 4e 44 20 49 4e 54 45
+>5fd8	52 46 41 43 45 00
+>5fde	4e 4f 20 4e 45 54 57 4f		msg_nonet:  .text "no network", 0
+>5fe6	52 4b 00
+>5fe9	4e 45 45 44 3a 20 48 4f		msg_getargs: .text "need: host path", 0
+>5ff1	53 54 20 50 41 54 48 00
+>5ff9	43 4f 4e 4e 45 43 54 49		msg_conn:   .text "connecting...", 0
+>6001	4e 47 2e 2e 2e 00
+>6007	4f 50 45 4e 20 46 41 49		msg_openf:  .text "open failed: ", 0
+>600f	4c 45 44 3a 20 00
+>6015	4e 4f 20 44 41 54 41 20		msg_nodata: .text "no data from host", 0
+>601d	46 52 4f 4d 20 48 4f 53 54 00
+>6027	49 50 3a 20 00			p_ip:       .text "ip: ", 0
+>602c	47 45 54 20 00			p_get:   .byte $47,$45,$54,$20,$00                              ; "GET "
+>6031	20 48 54 54 50 2f 31 2e		p_http:  .byte $20,$48,$54,$54,$50,$2f,$31,$2e,$30,$0d,$0a       ; " HTTP/1.0\r\n"
+>6039	30 0d 0a
+>603c	48 6f 73 74 3a 20 00		         .byte $48,$6f,$73,$74,$3a,$20,$00                       ; "Host: "
+>6043	0d 0a 0d 0a 00			p_crlf2: .byte $0d,$0a,$0d,$0a,$00
+>6048	00				rqi:     .byte 0
+>6049	00				tries:   .byte 0
+>604a	00				dirty:   .byte 0
 =$4c					gp       = $4c                          ; line pointer (apps own $40-$4f)
->5fe4	00 00 00 00 00 00 00 00		linebuf: .fill 48, 0
->5fec	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->5ffc	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->600c	00 00 00 00 00 00 00 00
->6014	00 00 00 00 00 00 00 00		vdline:  .fill 80, 0
->601c	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>604b	00 00 00 00 00 00 00 00		linebuf: .fill 48, 0
+>6053	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6063	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6073	00 00 00 00 00 00 00 00
+>607b	00 00 00 00 00 00 00 00		vdline:  .fill 80, 0
+>6083	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 3 times (48 bytes)...
->605c	00 00 00 00 00 00 00 00
->6064	00 00 00 00 00 00 00 00		reqbuf:  .fill 128, 0
->606c	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>60c3	00 00 00 00 00 00 00 00
+>60cb	00 00 00 00 00 00 00 00		reqbuf:  .fill 128, 0
+>60d3	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 6 times (96 bytes)...
->60dc	00 00 00 00 00 00 00 00
->60e4	00 00 00 00 00 00 00 00		catbuf:  .fill 513, 0
->60ec	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6143	00 00 00 00 00 00 00 00
+>614b	00 00 00 00 00 00 00 00		catbuf:  .fill 513, 0
+>6153	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 30 times (480 bytes)...
->62dc	00 00 00 00 00 00 00 00 00
->62e5	00 00				catn:    .word 0
->62e7	00 00				pkaddr:  .word 0
->62e9	00				pkval:   .byte 0
->62ea	00				pkaL:    .byte 0
->62eb	00				pkaH:    .byte 0
-.62ec					cmd_peek:
-.62ec	a2 05		ldx #$05	        ldx #$05                        ; after "PEEK " (4-char verb + space)
-.62ee	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = hex address
-.62f1	ad ee 66	lda $66ee	        lda tokbuf
-.62f4	d0 03		bne $62f9	        bne _pk_go
-.62f6	4c 6a 53	jmp $536a	        jmp sp_unk_msg
-.62f9	a9 ee		lda #$ee	_pk_go: lda #<tokbuf
-.62fb	85 02		sta $02		        sta r0L
-.62fd	a9 66		lda #$66	        lda #>tokbuf
-.62ff	85 03		sta $03		        sta r0H
-.6301	20 dc 63	jsr $63dc	        jsr parse_hex                   ; -> pkaddr (16-bit)
-.6304	ad e7 62	lda $62e7	        lda pkaddr
-.6307	85 02		sta $02		        sta r0L
-.6309	ad e8 62	lda $62e8	        lda pkaddr+1
-.630c	85 03		sta $03		        sta r0H
-.630e	a0 00		ldy #$00	        ldy #$00
-.6310	b1 02		lda ($02),y	        lda (r0),y
-.6312	8d e9 62	sta $62e9	        sta pkval
-.6315	20 8d 63	jsr $638d	        jsr fmt_peek                    ; linebuf = "$AAAA: $VV"
-.6318	a9 e4		lda #$e4	        lda #<linebuf
-.631a	85 02		sta $02		        sta r0L
-.631c	a9 5f		lda #$5f	        lda #>linebuf
-.631e	85 03		sta $03		        sta r0H
-.6320	20 01 56	jsr $5601	        jsr setline
-.6323	60		rts		        rts
-.6324					cmd_poke:
-.6324	a2 05		ldx #$05	        ldx #$05                        ; after "POKE "
-.6326	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = addr, tok2buf = val
-.6329	ad ee 66	lda $66ee	        lda tokbuf
-.632c	d0 03		bne $6331	        bne _po_go
-.632e	4c 6a 53	jmp $536a	        jmp sp_unk_msg
-.6331	ad 9c 66	lda $669c	_po_go: lda tok2buf
-.6334	d0 03		bne $6339	        bne _po_v
-.6336	4c 6a 53	jmp $536a	        jmp sp_unk_msg
-.6339	a9 ee		lda #$ee	_po_v:  lda #<tokbuf
-.633b	85 02		sta $02		        sta r0L
-.633d	a9 66		lda #$66	        lda #>tokbuf
-.633f	85 03		sta $03		        sta r0H
-.6341	20 dc 63	jsr $63dc	        jsr parse_hex
-.6344	ad e7 62	lda $62e7	        lda pkaddr
-.6347	8d ea 62	sta $62ea	        sta pkaL
-.634a	ad e8 62	lda $62e8	        lda pkaddr+1
-.634d	8d eb 62	sta $62eb	        sta pkaH
-.6350	a9 9c		lda #$9c	        lda #<tok2buf
-.6352	85 02		sta $02		        sta r0L
-.6354	a9 66		lda #$66	        lda #>tok2buf
-.6356	85 03		sta $03		        sta r0H
-.6358	20 dc 63	jsr $63dc	        jsr parse_hex
-.635b	ad e7 62	lda $62e7	        lda pkaddr
-.635e	8d e9 62	sta $62e9	        sta pkval                       ; low byte of the value
-.6361	ad ea 62	lda $62ea	        lda pkaL
-.6364	85 02		sta $02		        sta r0L
-.6366	ad eb 62	lda $62eb	        lda pkaH
-.6369	85 03		sta $03		        sta r0H
-.636b	ad e9 62	lda $62e9	        lda pkval
-.636e	a0 00		ldy #$00	        ldy #$00
-.6370	91 02		sta ($02),y	        sta (r0),y
-.6372	ad ea 62	lda $62ea	        lda pkaL
-.6375	8d e7 62	sta $62e7	        sta pkaddr
-.6378	ad eb 62	lda $62eb	        lda pkaH
-.637b	8d e8 62	sta $62e8	        sta pkaddr+1
-.637e	20 8d 63	jsr $638d	        jsr fmt_peek
-.6381	a9 e4		lda #$e4	        lda #<linebuf
-.6383	85 02		sta $02		        sta r0L
-.6385	a9 5f		lda #$5f	        lda #>linebuf
-.6387	85 03		sta $03		        sta r0H
-.6389	20 01 56	jsr $5601	        jsr setline
-.638c	60		rts		        rts
-.638d					fmt_peek:
-.638d	a2 00		ldx #$00	        ldx #$00
-.638f	a9 24		lda #$24	        lda #'$'
-.6391	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.6394	e8		inx		        inx
-.6395	ad e8 62	lda $62e8	        lda pkaddr+1
-.6398	20 bf 63	jsr $63bf	        jsr put_hex2
-.639b	ad e7 62	lda $62e7	        lda pkaddr
-.639e	20 bf 63	jsr $63bf	        jsr put_hex2
-.63a1	a9 3a		lda #$3a	        lda #':'
-.63a3	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.63a6	e8		inx		        inx
-.63a7	a9 20		lda #$20	        lda #' '
-.63a9	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.63ac	e8		inx		        inx
-.63ad	a9 24		lda #$24	        lda #'$'
-.63af	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.63b2	e8		inx		        inx
-.63b3	ad e9 62	lda $62e9	        lda pkval
-.63b6	20 bf 63	jsr $63bf	        jsr put_hex2
-.63b9	a9 00		lda #$00	        lda #$00
-.63bb	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.63be	60		rts		        rts
-.63bf					put_hex2:
-.63bf	48		pha		        pha
-.63c0	4a		lsr a		        lsr
-.63c1	4a		lsr a		        lsr
-.63c2	4a		lsr a		        lsr
-.63c3	4a		lsr a		        lsr
-.63c4	20 ca 63	jsr $63ca	        jsr _ph_nib
-.63c7	68		pla		        pla
-.63c8	29 0f		and #$0f	        and #$0f
-.63ca					_ph_nib:
-.63ca	c9 0a		cmp #$0a	        cmp #10
-.63cc	90 06		bcc $63d4	        bcc _ph_dig
-.63ce	18		clc		        clc
-.63cf	69 b7		adc #$b7	        adc #$c1-10                     ; A-F -> $c1-$c6 (shifted uppercase)
-.63d1	4c d7 63	jmp $63d7	        jmp _ph_put
-.63d4					_ph_dig:
-.63d4	18		clc		        clc
-.63d5	69 30		adc #$30	        adc #$30                        ; 0-9 -> $30-$39
-.63d7					_ph_put:
-.63d7	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.63da	e8		inx		        inx
-.63db	60		rts		        rts
-.63dc					parse_hex:
-.63dc	a9 00		lda #$00	        lda #$00
-.63de	8d e7 62	sta $62e7	        sta pkaddr
-.63e1	8d e8 62	sta $62e8	        sta pkaddr+1
-.63e4	a0 00		ldy #$00	        ldy #$00
-.63e6	b1 02		lda ($02),y	_hx_l:  lda (r0),y
-.63e8	20 04 64	jsr $6404	        jsr hex_nib                     ; A -> 0-15, C=1 if not a hex digit
-.63eb	b0 16		bcs $6403	        bcs _hx_d
-.63ed	a2 04		ldx #$04	        ldx #$04
-.63ef	0e e7 62	asl $62e7	_hx_s:  asl pkaddr
-.63f2	2e e8 62	rol $62e8	        rol pkaddr+1
-.63f5	ca		dex		        dex
-.63f6	d0 f7		bne $63ef	        bne _hx_s
-.63f8	0d e7 62	ora $62e7	        ora pkaddr
-.63fb	8d e7 62	sta $62e7	        sta pkaddr
-.63fe	c8		iny		        iny
-.63ff	c0 04		cpy #$04	        cpy #$04                        ; 4 hex digits max
-.6401	d0 e3		bne $63e6	        bne _hx_l
-.6403	60		rts		_hx_d:  rts
-.6404					hex_nib:
-.6404	c9 30		cmp #$30	        cmp #$30                        ; '0'
-.6406	90 18		bcc $6420	        bcc _hn_bad
-.6408	c9 3a		cmp #$3a	        cmp #$3a                        ; '9'+1
-.640a	b0 05		bcs $6411	        bcs _hn_af
-.640c	38		sec		        sec
-.640d	e9 30		sbc #$30	        sbc #$30
-.640f	18		clc		        clc
-.6410	60		rts		        rts
-.6411	29 df		and #$df	_hn_af: and #$df                        ; force upper-case ($61-$66 -> $41-$46)
-.6413	c9 41		cmp #$41	        cmp #$41                        ; 'A'
-.6415	90 09		bcc $6420	        bcc _hn_bad
-.6417	c9 47		cmp #$47	        cmp #$47                        ; 'F'+1
-.6419	b0 05		bcs $6420	        bcs _hn_bad
-.641b	38		sec		        sec
-.641c	e9 37		sbc #$37	        sbc #$37                        ; 'A'($41) - 10
-.641e	18		clc		        clc
-.641f	60		rts		        rts
-.6420					_hn_bad:
-.6420	38		sec		        sec
-.6421	60		rts		        rts
-.6422					cmd_help:
-.6422	a9 a9		lda #$a9	        lda #<sh_hint
-.6424	85 02		sta $02		        sta r0L
-.6426	a9 65		lda #$65	        lda #>sh_hint
-.6428	85 03		sta $03		        sta r0H
-.642a	20 01 56	jsr $5601	        jsr setline
-.642d	a9 d7		lda #$d7	        lda #<help_text
-.642f	85 4c		sta $4c		        sta gp
-.6431	a9 65		lda #$65	        lda #>help_text
-.6433	85 4d		sta $4d		        sta gp+1
-.6435	20 c8 5c	jsr $5cc8	        jsr rows_wipe
-.6438	a9 01		lda #$01	        lda #$01
-.643a	8d e3 5f	sta $5fe3	        sta dirty
-.643d	a9 00		lda #$00	        lda #$00
-.643f	85 42		sta $42		        sta rowi
-.6441	20 f8 5b	jsr $5bf8	        jsr show_body
-.6444	60		rts		        rts
-.6445					cmd_cd:
-.6445	a2 03		ldx #$03	        ldx #$03                        ; "CD " -> arg at cmdbuf+3
-.6447	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = path
-.644a	a9 01		lda #$01	        lda #$01
-.644c	8d 64 60	sta $6064	        sta reqbuf
-.644f	a9 11		lda #$11	        lda #$11
-.6451	8d 65 60	sta $6065	        sta reqbuf+1
-.6454	a0 00		ldy #$00	        ldy #$00
-.6456	b9 ee 66	lda $66ee,y	_cd_c:  lda tokbuf,y
-.6459	f0 08		beq $6463	        beq _cd_d
-.645b	99 66 60	sta $6066,y	        sta reqbuf+2,y
-.645e	c8		iny		        iny
-.645f	c0 20		cpy #$20	        cpy #$20
-.6461	d0 f3		bne $6456	        bne _cd_c
-.6463	98		tya		_cd_d:  tya
-.6464	18		clc		        clc
-.6465	69 02		adc #$02	        adc #$02                        ; length = 2 header + path
-.6467	48		pha		        pha
-.6468	a9 64		lda #$64	        lda #<reqbuf
-.646a	85 02		sta $02		        sta r0L
-.646c	a9 60		lda #$60	        lda #>reqbuf
-.646e	85 03		sta $03		        sta r0H
-.6470	68		pla		        pla
-.6471	20 03 91	jsr $9103	        jsr NET_CMD
-.6474	a9 42		lda #$42	        lda #<NET_STAT                  ; "00,OK" or "83,NO SUCH DIRECTORY"
-.6476	85 02		sta $02		        sta r0L
-.6478	a9 91		lda #$91	        lda #>NET_STAT
-.647a	85 03		sta $03		        sta r0H
-.647c	20 01 56	jsr $5601	        jsr setline
-.647f	60		rts		        rts
-.6480					cmd_pwd:
-.6480	a9 01		lda #$01	        lda #$01
-.6482	8d 64 60	sta $6064	        sta reqbuf
-.6485	a9 12		lda #$12	        lda #$12
-.6487	8d 65 60	sta $6065	        sta reqbuf+1
-.648a	a9 64		lda #$64	        lda #<reqbuf
-.648c	85 02		sta $02		        sta r0L
-.648e	a9 60		lda #$60	        lda #>reqbuf
-.6490	85 03		sta $03		        sta r0H
-.6492	a9 02		lda #$02	        lda #$02
-.6494	20 03 91	jsr $9103	        jsr NET_CMD
-.6497	a9 00		lda #$00	        lda #<NET_DATA
-.6499	85 02		sta $02		        sta r0L
-.649b	a9 88		lda #$88	        lda #>NET_DATA
-.649d	85 03		sta $03		        sta r0H
-.649f	20 01 56	jsr $5601	        jsr setline
-.64a2	60		rts		        rts
-.64a3					cmd_ls:
-.64a3	a9 01		lda #$01	        lda #$01
-.64a5	8d 64 60	sta $6064	        sta reqbuf
-.64a8	a9 13		lda #$13	        lda #$13                        ; OPEN_DIR
-.64aa	8d 65 60	sta $6065	        sta reqbuf+1
-.64ad	a9 64		lda #$64	        lda #<reqbuf
-.64af	85 02		sta $02		        sta r0L
-.64b1	a9 60		lda #$60	        lda #>reqbuf
-.64b3	85 03		sta $03		        sta r0H
-.64b5	a9 02		lda #$02	        lda #$02
-.64b7	20 03 91	jsr $9103	        jsr NET_CMD
-.64ba	a9 01		lda #$01	        lda #$01
-.64bc	8d 62 91	sta $9162	        sta NET_DIRMODE                 ; null-separate + count each entry
-.64bf	a9 01		lda #$01	        lda #$01
-.64c1	8d 64 60	sta $6064	        sta reqbuf
-.64c4	a9 14		lda #$14	        lda #$14                        ; READ_DIR
-.64c6	8d 65 60	sta $6065	        sta reqbuf+1
-.64c9	a9 64		lda #$64	        lda #<reqbuf
-.64cb	85 02		sta $02		        sta r0L
-.64cd	a9 60		lda #$60	        lda #>reqbuf
-.64cf	85 03		sta $03		        sta r0H
-.64d1	a9 02		lda #$02	        lda #$02
-.64d3	20 03 91	jsr $9103	        jsr NET_CMD
-.64d6	a9 00		lda #$00	        lda #$00
-.64d8	8d 62 91	sta $9162	        sta NET_DIRMODE
-.64db	20 c8 5c	jsr $5cc8	        jsr rows_wipe
-.64de	a9 01		lda #$01	        lda #$01
-.64e0	8d e3 5f	sta $5fe3	        sta dirty
-.64e3	a9 00		lda #$00	        lda #$00
-.64e5	85 42		sta $42		        sta rowi
-.64e7	a9 00		lda #$00	        lda #<NET_DATA
-.64e9	85 4c		sta $4c		        sta gp
-.64eb	a9 88		lda #$88	        lda #>NET_DATA
-.64ed	85 4d		sta $4d		        sta gp+1
-.64ef	ad 63 91	lda $9163	        lda NET_DIRN
-.64f2	8d 84 65	sta $6584	        sta lsleft
-.64f5	ad 84 65	lda $6584	_ls_e:  lda lsleft
-.64f8	f0 7e		beq $6578	        beq _ls_done
-.64fa	a5 42		lda $42		        lda rowi
-.64fc	c9 08		cmp #$08	        cmp #$08
-.64fe	b0 78		bcs $6578	        bcs _ls_done
-.6500	a0 00		ldy #$00	        ldy #$00
-.6502	b1 4c		lda ($4c),y	        lda (gp),y
-.6504	29 40		and #$40	        and #$40                        ; DIR bit -> leading "/"
-.6506	f0 04		beq $650c	        beq _ls_sp
-.6508	a9 2f		lda #$2f	        lda #$2f                        ; '/'
-.650a	d0 02		bne $650e	        bne _ls_pfx
-.650c	a9 20		lda #$20	_ls_sp: lda #$20                        ; ' '
-.650e					_ls_pfx:
-.650e	8d e4 5f	sta $5fe4	        sta linebuf
-.6511	8d 14 60	sta $6014	        sta vdline
-.6514	e6 4c		inc $4c		        inc gp                          ; past the attrib byte
-.6516	d0 02		bne $651a	        bne _ls_n1
-.6518	e6 4d		inc $4d		        inc gp+1
-.651a	a2 01		ldx #$01	_ls_n1: ldx #$01                        ; linebuf index (after the prefix)
-.651c	a0 00		ldy #$00	_ls_nc: ldy #$00
-.651e	b1 4c		lda ($4c),y	        lda (gp),y
-.6520	e6 4c		inc $4c		        inc gp
-.6522	d0 02		bne $6526	        bne _ls_n2
-.6524	e6 4d		inc $4d		        inc gp+1
-.6526	c9 00		cmp #$00	_ls_n2: cmp #$00
-.6528	f0 10		beq $653a	        beq _ls_draw
-.652a	20 e2 5e	jsr $5ee2	        jsr a2p
-.652d	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.6530	e0 26		cpx #$26	        cpx #38
-.6532	b0 e8		bcs $651c	        bcs _ls_nc                      ; keep advancing gp to the terminator
-.6534	9d 14 60	sta $6014,x	        sta vdline,x
-.6537	e8		inx		        inx
-.6538	d0 e2		bne $651c	        bne _ls_nc
-.653a					_ls_draw:
-.653a	a9 00		lda #$00	        lda #$00
-.653c	9d e4 5f	sta $5fe4,x	        sta linebuf,x
-.653f	9d 14 60	sta $6014,x	        sta vdline,x
-.6542	a9 18		lda #$18	        lda #COL_X
-.6544	85 02		sta $02		        sta X1
-.6546	a9 00		lda #$00	        lda #$00
-.6548	85 03		sta $03		        sta X1+1
-.654a	a9 28		lda #$28	        lda #TOP_Y
-.654c	85 04		sta $04		        sta Y1
-.654e	a5 42		lda $42		        lda rowi
-.6550	20 64 57	jsr $5764	        jsr addrowy
-.6553	a9 e4		lda #$e4	        lda #<linebuf
-.6555	85 14		sta $14		        sta r9L
-.6557	a9 5f		lda #$5f	        lda #>linebuf
-.6559	85 15		sta $15		        sta r9H
-.655b	20 1e c0	jsr $c01e	        jsr GPUTS
-.655e	a9 14		lda #$14	        lda #<vdline
-.6560	85 14		sta $14		        sta r9L
-.6562	a9 60		lda #$60	        lda #>vdline
-.6564	85 15		sta $15		        sta r9H
-.6566	a5 42		lda $42		        lda rowi
-.6568	18		clc		        clc
-.6569	69 09		adc #$09	        adc #$09
-.656b	a2 02		ldx #$02	        ldx #$02
-.656d	20 35 08	jsr $0835	        jsr VDTEXT
-.6570	e6 42		inc $42		        inc rowi
-.6572	ce 84 65	dec $6584	        dec lsleft
-.6575	4c f5 64	jmp $64f5	        jmp _ls_e
-.6578					_ls_done:
-.6578	a9 42		lda #$42	        lda #<NET_STAT                  ; status line ("00,OK"/"01,EMPTY"/"86,..")
-.657a	85 02		sta $02		        sta r0L
-.657c	a9 91		lda #$91	        lda #>NET_STAT
-.657e	85 03		sta $03		        sta r0H
-.6580	20 01 56	jsr $5601	        jsr setline
-.6583	60		rts		        rts
->6584	00				lsleft:  .byte 0
->6585	55 4f 53 2d 44 45 53 4b		dskstr: .text "uos-desktop", 0
->658d	54 4f 50 00
->6591	c3 4f 4d 4d 41 4e 44 20		sh_title: .text "Command shell", 0
->6599	53 48 45 4c 4c 00
->659f	d5 4c 54 cf d3 20 30 2e		shver:  .text "UltOS 0.3", 0
->65a7	33 00
->65a9	c4 c9 d2 20 c3 c1 d4 20		sh_hint: .text "DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT", 0
->65b1	d2 d5 ce 20 c4 c5 cc 20 c3 cf d0 d9 20 d2 c5 ce
->65c1	20 d6 c5 d2 20 c9 d0 20 d4 c9 cd c5 20 c7 c5 d4
->65d1	20 c5 d8 c9 d4 00
->65d7	44 49 52 20 43 41 54 20		help_text: .byte 68,73,82,32,67,65,84,32,82,85,78,32,68,69,76,32,67,79,80,89,32,82,69,78,32,86,69,82,13,73,80,32,84,73,77,69,32,71,69,84,32,80,69,69,75,32,80,79,75,69,32,69,88,73,84,13,67,68,32,80,65,84,72,32,32,67,72,65,78,71,69,32,85,76,84,32,68,73,82,13,80,87,68,32,32,83,72,79,87,32,80,65,84,72,32,32,32,76,83,32,32,76,73,83,84,32,68,73,82,13,80,69,69,75,32,65,65,65,65,32,32,32,80,79,75,69,32,65,65,65,65,32,86,86,13,0
->65df	52 55 4e 20 44 45 4c 20 43 4f 50 59 20 52 45 4e
->65ef	20 56 45 52 0d 49 50 20 54 49 4d 45 20 47 45 54
->65ff	20 50 45 45 4b 20 50 4f 4b 45 20 45 58 49 54 0d
->660f	43 44 20 50 41 54 48 20 20 43 48 41 4e 47 45 20
->661f	55 4c 54 20 44 49 52 0d 50 57 44 20 20 53 48 4f
->662f	57 20 50 41 54 48 20 20 20 4c 53 20 20 4c 49 53
->663f	54 20 44 49 52 0d 50 45 45 4b 20 41 41 41 41 20
->664f	20 20 50 4f 4b 45 20 41 41 41 41 20 56 56 0d 00
->665f	53 30 3a 00			p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
->6663	44 49 52 00			msg_dird: .text "dir", 0
->6667	44 45 4c 45 54 45 44 00		msg_deld: .text "deleted", 0
->666f	43 4f 50 49 45 44 00		msg_copd: .text "copied", 0
->6676	52 45 4e 41 4d 45 44 00		msg_rend: .text "renamed", 0
->667e	4e 45 45 44 3a 20 4f 4c		msg_args: .text "need: old new", 0
->6686	44 20 4e 45 57 00
->668c	3f 00				msg_unk: .text "?", 0
->668e	43 30 3a 00			p_copy: .byte $43,$30,$3a,$00           ; "C0:" unshifted
->6692	52 30 3a 00			p_ren:  .byte $52,$30,$3a,$00           ; "R0:" unshifted
->6696	3d 30 3a 00			p_eq0:  .byte $3d,$30,$3a,$00           ; "=0:"
->669a	3d 00				p_eq:   .byte $3d,$00                   ; "="
->669c	00 00 00 00 00 00 00 00		tok2buf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->66a4	00 00 00 00 00 00 00 00 00
->66ad	00 00 00 00 00 00 00 00		stbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->66b5	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->66c5	00 00 00 00 00 00 00 00
->66cd	24				dname:  .text "$"
->66ce	00 00 00 00 00 00 00 00		cmdbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->66d6	00 00 00 00 00 00 00 00 00
->66df	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->66e7	00 00 00 00 00 00 00
->66ee	00 00 00 00 00 00 00 00		tokbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->66f6	00 00 00 00 00 00 00 00 00
->66ff	00 00 00 00 00 00 00 00		respbuf: .fill 48, 0
->6707	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->6717	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->6727	00 00 00 00 00 00 00 00
->672f	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->6737	00 00 00 00 00 00 00 00 00 00
->6741	00 00 00 00 00 00 00 00		oldbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->6749	00 00 00 00 00 00 00 00 00
->6752	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->675a	00 00 00 00 00 00 00
->6761	00 00 00 00 00 00 00 00		respold: .fill 48, 0
->6769	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->6779	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->6789	00 00 00 00 00 00 00 00
->6791	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->6799	00 00 00 00 00 00 00 00 00 00
->67a3	00 00 00 00 00 00 00 00		oldmode:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->67ab	00 00 00 00 00 00 00 00 00 00 00 00
->67b7	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->67bf	00 00 00 00 00 00 00 00 00 00
->67c9	00				namlen: .byte 0
->67ca	00				prev_row: .byte 0
->67cb	00				painted: .byte 0                        ; rows are on screen (XOR bookkeeping)
->67cc	00				fci:    .byte 0
->67cd	00 00 00 00 00 00 00 00		fncmd:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0     ; "C0:"+16+"=0:"+16+NUL = 39
->67d5	00 00 00 00 00 00 00 00 00
->67de	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->67e6	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->67f6	00 00 00 00 00 00		        .byte 0,0,0,0,0,0
->67fc	00				dseof:  .byte 0
->67fd	00				dsfirst: .byte 0
->67fe	00 00 00 00 00 00 00 00		fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->6806	00 00 00 00 00 00 00 00 00
->680f	00 00 00 00 00 00 00 00		dline:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
->6817	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->6827	00 00 00 00 00 00 00 00
+>6343	00 00 00 00 00 00 00 00 00
+>634c	00 00				catn:    .word 0
+>634e	00 00				pkaddr:  .word 0
+>6350	00				pkval:   .byte 0
+>6351	00				pkaL:    .byte 0
+>6352	00				pkaH:    .byte 0
+.6353					cmd_peek:
+.6353	a2 05		ldx #$05	        ldx #$05                        ; after "PEEK " (4-char verb + space)
+.6355	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = hex address
+.6358	ad 55 67	lda $6755	        lda tokbuf
+.635b	d0 03		bne $6360	        bne _pk_go
+.635d	4c 6a 53	jmp $536a	        jmp sp_unk_msg
+.6360	a9 55		lda #$55	_pk_go: lda #<tokbuf
+.6362	85 02		sta $02		        sta r0L
+.6364	a9 67		lda #$67	        lda #>tokbuf
+.6366	85 03		sta $03		        sta r0H
+.6368	20 43 64	jsr $6443	        jsr parse_hex                   ; -> pkaddr (16-bit)
+.636b	ad 4e 63	lda $634e	        lda pkaddr
+.636e	85 02		sta $02		        sta r0L
+.6370	ad 4f 63	lda $634f	        lda pkaddr+1
+.6373	85 03		sta $03		        sta r0H
+.6375	a0 00		ldy #$00	        ldy #$00
+.6377	b1 02		lda ($02),y	        lda (r0),y
+.6379	8d 50 63	sta $6350	        sta pkval
+.637c	20 f4 63	jsr $63f4	        jsr fmt_peek                    ; linebuf = "$AAAA: $VV"
+.637f	a9 4b		lda #$4b	        lda #<linebuf
+.6381	85 02		sta $02		        sta r0L
+.6383	a9 60		lda #$60	        lda #>linebuf
+.6385	85 03		sta $03		        sta r0H
+.6387	20 01 56	jsr $5601	        jsr setline
+.638a	60		rts		        rts
+.638b					cmd_poke:
+.638b	a2 05		ldx #$05	        ldx #$05                        ; after "POKE "
+.638d	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = addr, tok2buf = val
+.6390	ad 55 67	lda $6755	        lda tokbuf
+.6393	d0 03		bne $6398	        bne _po_go
+.6395	4c 6a 53	jmp $536a	        jmp sp_unk_msg
+.6398	ad 03 67	lda $6703	_po_go: lda tok2buf
+.639b	d0 03		bne $63a0	        bne _po_v
+.639d	4c 6a 53	jmp $536a	        jmp sp_unk_msg
+.63a0	a9 55		lda #$55	_po_v:  lda #<tokbuf
+.63a2	85 02		sta $02		        sta r0L
+.63a4	a9 67		lda #$67	        lda #>tokbuf
+.63a6	85 03		sta $03		        sta r0H
+.63a8	20 43 64	jsr $6443	        jsr parse_hex
+.63ab	ad 4e 63	lda $634e	        lda pkaddr
+.63ae	8d 51 63	sta $6351	        sta pkaL
+.63b1	ad 4f 63	lda $634f	        lda pkaddr+1
+.63b4	8d 52 63	sta $6352	        sta pkaH
+.63b7	a9 03		lda #$03	        lda #<tok2buf
+.63b9	85 02		sta $02		        sta r0L
+.63bb	a9 67		lda #$67	        lda #>tok2buf
+.63bd	85 03		sta $03		        sta r0H
+.63bf	20 43 64	jsr $6443	        jsr parse_hex
+.63c2	ad 4e 63	lda $634e	        lda pkaddr
+.63c5	8d 50 63	sta $6350	        sta pkval                       ; low byte of the value
+.63c8	ad 51 63	lda $6351	        lda pkaL
+.63cb	85 02		sta $02		        sta r0L
+.63cd	ad 52 63	lda $6352	        lda pkaH
+.63d0	85 03		sta $03		        sta r0H
+.63d2	ad 50 63	lda $6350	        lda pkval
+.63d5	a0 00		ldy #$00	        ldy #$00
+.63d7	91 02		sta ($02),y	        sta (r0),y
+.63d9	ad 51 63	lda $6351	        lda pkaL
+.63dc	8d 4e 63	sta $634e	        sta pkaddr
+.63df	ad 52 63	lda $6352	        lda pkaH
+.63e2	8d 4f 63	sta $634f	        sta pkaddr+1
+.63e5	20 f4 63	jsr $63f4	        jsr fmt_peek
+.63e8	a9 4b		lda #$4b	        lda #<linebuf
+.63ea	85 02		sta $02		        sta r0L
+.63ec	a9 60		lda #$60	        lda #>linebuf
+.63ee	85 03		sta $03		        sta r0H
+.63f0	20 01 56	jsr $5601	        jsr setline
+.63f3	60		rts		        rts
+.63f4					fmt_peek:
+.63f4	a2 00		ldx #$00	        ldx #$00
+.63f6	a9 24		lda #$24	        lda #'$'
+.63f8	9d 4b 60	sta $604b,x	        sta linebuf,x
+.63fb	e8		inx		        inx
+.63fc	ad 4f 63	lda $634f	        lda pkaddr+1
+.63ff	20 26 64	jsr $6426	        jsr put_hex2
+.6402	ad 4e 63	lda $634e	        lda pkaddr
+.6405	20 26 64	jsr $6426	        jsr put_hex2
+.6408	a9 3a		lda #$3a	        lda #':'
+.640a	9d 4b 60	sta $604b,x	        sta linebuf,x
+.640d	e8		inx		        inx
+.640e	a9 20		lda #$20	        lda #' '
+.6410	9d 4b 60	sta $604b,x	        sta linebuf,x
+.6413	e8		inx		        inx
+.6414	a9 24		lda #$24	        lda #'$'
+.6416	9d 4b 60	sta $604b,x	        sta linebuf,x
+.6419	e8		inx		        inx
+.641a	ad 50 63	lda $6350	        lda pkval
+.641d	20 26 64	jsr $6426	        jsr put_hex2
+.6420	a9 00		lda #$00	        lda #$00
+.6422	9d 4b 60	sta $604b,x	        sta linebuf,x
+.6425	60		rts		        rts
+.6426					put_hex2:
+.6426	48		pha		        pha
+.6427	4a		lsr a		        lsr
+.6428	4a		lsr a		        lsr
+.6429	4a		lsr a		        lsr
+.642a	4a		lsr a		        lsr
+.642b	20 31 64	jsr $6431	        jsr _ph_nib
+.642e	68		pla		        pla
+.642f	29 0f		and #$0f	        and #$0f
+.6431					_ph_nib:
+.6431	c9 0a		cmp #$0a	        cmp #10
+.6433	90 06		bcc $643b	        bcc _ph_dig
+.6435	18		clc		        clc
+.6436	69 b7		adc #$b7	        adc #$c1-10                     ; A-F -> $c1-$c6 (shifted uppercase)
+.6438	4c 3e 64	jmp $643e	        jmp _ph_put
+.643b					_ph_dig:
+.643b	18		clc		        clc
+.643c	69 30		adc #$30	        adc #$30                        ; 0-9 -> $30-$39
+.643e					_ph_put:
+.643e	9d 4b 60	sta $604b,x	        sta linebuf,x
+.6441	e8		inx		        inx
+.6442	60		rts		        rts
+.6443					parse_hex:
+.6443	a9 00		lda #$00	        lda #$00
+.6445	8d 4e 63	sta $634e	        sta pkaddr
+.6448	8d 4f 63	sta $634f	        sta pkaddr+1
+.644b	a0 00		ldy #$00	        ldy #$00
+.644d	b1 02		lda ($02),y	_hx_l:  lda (r0),y
+.644f	20 6b 64	jsr $646b	        jsr hex_nib                     ; A -> 0-15, C=1 if not a hex digit
+.6452	b0 16		bcs $646a	        bcs _hx_d
+.6454	a2 04		ldx #$04	        ldx #$04
+.6456	0e 4e 63	asl $634e	_hx_s:  asl pkaddr
+.6459	2e 4f 63	rol $634f	        rol pkaddr+1
+.645c	ca		dex		        dex
+.645d	d0 f7		bne $6456	        bne _hx_s
+.645f	0d 4e 63	ora $634e	        ora pkaddr
+.6462	8d 4e 63	sta $634e	        sta pkaddr
+.6465	c8		iny		        iny
+.6466	c0 04		cpy #$04	        cpy #$04                        ; 4 hex digits max
+.6468	d0 e3		bne $644d	        bne _hx_l
+.646a	60		rts		_hx_d:  rts
+.646b					hex_nib:
+.646b	c9 30		cmp #$30	        cmp #$30                        ; '0'
+.646d	90 18		bcc $6487	        bcc _hn_bad
+.646f	c9 3a		cmp #$3a	        cmp #$3a                        ; '9'+1
+.6471	b0 05		bcs $6478	        bcs _hn_af
+.6473	38		sec		        sec
+.6474	e9 30		sbc #$30	        sbc #$30
+.6476	18		clc		        clc
+.6477	60		rts		        rts
+.6478	29 df		and #$df	_hn_af: and #$df                        ; force upper-case ($61-$66 -> $41-$46)
+.647a	c9 41		cmp #$41	        cmp #$41                        ; 'A'
+.647c	90 09		bcc $6487	        bcc _hn_bad
+.647e	c9 47		cmp #$47	        cmp #$47                        ; 'F'+1
+.6480	b0 05		bcs $6487	        bcs _hn_bad
+.6482	38		sec		        sec
+.6483	e9 37		sbc #$37	        sbc #$37                        ; 'A'($41) - 10
+.6485	18		clc		        clc
+.6486	60		rts		        rts
+.6487					_hn_bad:
+.6487	38		sec		        sec
+.6488	60		rts		        rts
+.6489					cmd_help:
+.6489	a9 10		lda #$10	        lda #<sh_hint
+.648b	85 02		sta $02		        sta r0L
+.648d	a9 66		lda #$66	        lda #>sh_hint
+.648f	85 03		sta $03		        sta r0H
+.6491	20 01 56	jsr $5601	        jsr setline
+.6494	a9 3e		lda #$3e	        lda #<help_text
+.6496	85 4c		sta $4c		        sta gp
+.6498	a9 66		lda #$66	        lda #>help_text
+.649a	85 4d		sta $4d		        sta gp+1
+.649c	20 0b 5d	jsr $5d0b	        jsr rows_wipe
+.649f	a9 01		lda #$01	        lda #$01
+.64a1	8d 4a 60	sta $604a	        sta dirty
+.64a4	a9 00		lda #$00	        lda #$00
+.64a6	85 42		sta $42		        sta rowi
+.64a8	20 3b 5c	jsr $5c3b	        jsr show_body
+.64ab	60		rts		        rts
+.64ac					cmd_cd:
+.64ac	a2 03		ldx #$03	        ldx #$03                        ; "CD " -> arg at cmdbuf+3
+.64ae	20 e9 53	jsr $53e9	        jsr sh_args2                    ; tokbuf = path
+.64b1	a9 01		lda #$01	        lda #$01
+.64b3	8d cb 60	sta $60cb	        sta reqbuf
+.64b6	a9 11		lda #$11	        lda #$11
+.64b8	8d cc 60	sta $60cc	        sta reqbuf+1
+.64bb	a0 00		ldy #$00	        ldy #$00
+.64bd	b9 55 67	lda $6755,y	_cd_c:  lda tokbuf,y
+.64c0	f0 08		beq $64ca	        beq _cd_d
+.64c2	99 cd 60	sta $60cd,y	        sta reqbuf+2,y
+.64c5	c8		iny		        iny
+.64c6	c0 20		cpy #$20	        cpy #$20
+.64c8	d0 f3		bne $64bd	        bne _cd_c
+.64ca	98		tya		_cd_d:  tya
+.64cb	18		clc		        clc
+.64cc	69 02		adc #$02	        adc #$02                        ; length = 2 header + path
+.64ce	48		pha		        pha
+.64cf	a9 cb		lda #$cb	        lda #<reqbuf
+.64d1	85 02		sta $02		        sta r0L
+.64d3	a9 60		lda #$60	        lda #>reqbuf
+.64d5	85 03		sta $03		        sta r0H
+.64d7	68		pla		        pla
+.64d8	20 03 91	jsr $9103	        jsr NET_CMD
+.64db	a9 42		lda #$42	        lda #<NET_STAT                  ; "00,OK" or "83,NO SUCH DIRECTORY"
+.64dd	85 02		sta $02		        sta r0L
+.64df	a9 91		lda #$91	        lda #>NET_STAT
+.64e1	85 03		sta $03		        sta r0H
+.64e3	20 01 56	jsr $5601	        jsr setline
+.64e6	60		rts		        rts
+.64e7					cmd_pwd:
+.64e7	a9 01		lda #$01	        lda #$01
+.64e9	8d cb 60	sta $60cb	        sta reqbuf
+.64ec	a9 12		lda #$12	        lda #$12
+.64ee	8d cc 60	sta $60cc	        sta reqbuf+1
+.64f1	a9 cb		lda #$cb	        lda #<reqbuf
+.64f3	85 02		sta $02		        sta r0L
+.64f5	a9 60		lda #$60	        lda #>reqbuf
+.64f7	85 03		sta $03		        sta r0H
+.64f9	a9 02		lda #$02	        lda #$02
+.64fb	20 03 91	jsr $9103	        jsr NET_CMD
+.64fe	a9 00		lda #$00	        lda #<NET_DATA
+.6500	85 02		sta $02		        sta r0L
+.6502	a9 88		lda #$88	        lda #>NET_DATA
+.6504	85 03		sta $03		        sta r0H
+.6506	20 01 56	jsr $5601	        jsr setline
+.6509	60		rts		        rts
+.650a					cmd_ls:
+.650a	a9 01		lda #$01	        lda #$01
+.650c	8d cb 60	sta $60cb	        sta reqbuf
+.650f	a9 13		lda #$13	        lda #$13                        ; OPEN_DIR
+.6511	8d cc 60	sta $60cc	        sta reqbuf+1
+.6514	a9 cb		lda #$cb	        lda #<reqbuf
+.6516	85 02		sta $02		        sta r0L
+.6518	a9 60		lda #$60	        lda #>reqbuf
+.651a	85 03		sta $03		        sta r0H
+.651c	a9 02		lda #$02	        lda #$02
+.651e	20 03 91	jsr $9103	        jsr NET_CMD
+.6521	a9 01		lda #$01	        lda #$01
+.6523	8d 62 91	sta $9162	        sta NET_DIRMODE                 ; null-separate + count each entry
+.6526	a9 01		lda #$01	        lda #$01
+.6528	8d cb 60	sta $60cb	        sta reqbuf
+.652b	a9 14		lda #$14	        lda #$14                        ; READ_DIR
+.652d	8d cc 60	sta $60cc	        sta reqbuf+1
+.6530	a9 cb		lda #$cb	        lda #<reqbuf
+.6532	85 02		sta $02		        sta r0L
+.6534	a9 60		lda #$60	        lda #>reqbuf
+.6536	85 03		sta $03		        sta r0H
+.6538	a9 02		lda #$02	        lda #$02
+.653a	20 03 91	jsr $9103	        jsr NET_CMD
+.653d	a9 00		lda #$00	        lda #$00
+.653f	8d 62 91	sta $9162	        sta NET_DIRMODE
+.6542	20 0b 5d	jsr $5d0b	        jsr rows_wipe
+.6545	a9 01		lda #$01	        lda #$01
+.6547	8d 4a 60	sta $604a	        sta dirty
+.654a	a9 00		lda #$00	        lda #$00
+.654c	85 42		sta $42		        sta rowi
+.654e	a9 00		lda #$00	        lda #<NET_DATA
+.6550	85 4c		sta $4c		        sta gp
+.6552	a9 88		lda #$88	        lda #>NET_DATA
+.6554	85 4d		sta $4d		        sta gp+1
+.6556	ad 63 91	lda $9163	        lda NET_DIRN
+.6559	8d eb 65	sta $65eb	        sta lsleft
+.655c	ad eb 65	lda $65eb	_ls_e:  lda lsleft
+.655f	f0 7e		beq $65df	        beq _ls_done
+.6561	a5 42		lda $42		        lda rowi
+.6563	c9 08		cmp #$08	        cmp #$08
+.6565	b0 78		bcs $65df	        bcs _ls_done
+.6567	a0 00		ldy #$00	        ldy #$00
+.6569	b1 4c		lda ($4c),y	        lda (gp),y
+.656b	29 40		and #$40	        and #$40                        ; DIR bit -> leading "/"
+.656d	f0 04		beq $6573	        beq _ls_sp
+.656f	a9 2f		lda #$2f	        lda #$2f                        ; '/'
+.6571	d0 02		bne $6575	        bne _ls_pfx
+.6573	a9 20		lda #$20	_ls_sp: lda #$20                        ; ' '
+.6575					_ls_pfx:
+.6575	8d 4b 60	sta $604b	        sta linebuf
+.6578	8d 7b 60	sta $607b	        sta vdline
+.657b	e6 4c		inc $4c		        inc gp                          ; past the attrib byte
+.657d	d0 02		bne $6581	        bne _ls_n1
+.657f	e6 4d		inc $4d		        inc gp+1
+.6581	a2 01		ldx #$01	_ls_n1: ldx #$01                        ; linebuf index (after the prefix)
+.6583	a0 00		ldy #$00	_ls_nc: ldy #$00
+.6585	b1 4c		lda ($4c),y	        lda (gp),y
+.6587	e6 4c		inc $4c		        inc gp
+.6589	d0 02		bne $658d	        bne _ls_n2
+.658b	e6 4d		inc $4d		        inc gp+1
+.658d	c9 00		cmp #$00	_ls_n2: cmp #$00
+.658f	f0 10		beq $65a1	        beq _ls_draw
+.6591	20 49 5f	jsr $5f49	        jsr a2p
+.6594	9d 4b 60	sta $604b,x	        sta linebuf,x
+.6597	e0 26		cpx #$26	        cpx #38
+.6599	b0 e8		bcs $6583	        bcs _ls_nc                      ; keep advancing gp to the terminator
+.659b	9d 7b 60	sta $607b,x	        sta vdline,x
+.659e	e8		inx		        inx
+.659f	d0 e2		bne $6583	        bne _ls_nc
+.65a1					_ls_draw:
+.65a1	a9 00		lda #$00	        lda #$00
+.65a3	9d 4b 60	sta $604b,x	        sta linebuf,x
+.65a6	9d 7b 60	sta $607b,x	        sta vdline,x
+.65a9	a9 18		lda #$18	        lda #COL_X
+.65ab	85 02		sta $02		        sta X1
+.65ad	a9 00		lda #$00	        lda #$00
+.65af	85 03		sta $03		        sta X1+1
+.65b1	a9 28		lda #$28	        lda #TOP_Y
+.65b3	85 04		sta $04		        sta Y1
+.65b5	a5 42		lda $42		        lda rowi
+.65b7	20 a7 57	jsr $57a7	        jsr addrowy
+.65ba	a9 4b		lda #$4b	        lda #<linebuf
+.65bc	85 14		sta $14		        sta r9L
+.65be	a9 60		lda #$60	        lda #>linebuf
+.65c0	85 15		sta $15		        sta r9H
+.65c2	20 1e c0	jsr $c01e	        jsr GPUTS
+.65c5	a9 7b		lda #$7b	        lda #<vdline
+.65c7	85 14		sta $14		        sta r9L
+.65c9	a9 60		lda #$60	        lda #>vdline
+.65cb	85 15		sta $15		        sta r9H
+.65cd	a5 42		lda $42		        lda rowi
+.65cf	18		clc		        clc
+.65d0	69 09		adc #$09	        adc #$09
+.65d2	a2 02		ldx #$02	        ldx #$02
+.65d4	20 35 08	jsr $0835	        jsr VDTEXT
+.65d7	e6 42		inc $42		        inc rowi
+.65d9	ce eb 65	dec $65eb	        dec lsleft
+.65dc	4c 5c 65	jmp $655c	        jmp _ls_e
+.65df					_ls_done:
+.65df	a9 42		lda #$42	        lda #<NET_STAT                  ; status line ("00,OK"/"01,EMPTY"/"86,..")
+.65e1	85 02		sta $02		        sta r0L
+.65e3	a9 91		lda #$91	        lda #>NET_STAT
+.65e5	85 03		sta $03		        sta r0H
+.65e7	20 01 56	jsr $5601	        jsr setline
+.65ea	60		rts		        rts
+>65eb	00				lsleft:  .byte 0
+>65ec	55 4f 53 2d 44 45 53 4b		dskstr: .text "uos-desktop", 0
+>65f4	54 4f 50 00
+>65f8	c3 4f 4d 4d 41 4e 44 20		sh_title: .text "Command shell", 0
+>6600	53 48 45 4c 4c 00
+>6606	d5 4c 54 cf d3 20 30 2e		shver:  .text "UltOS 0.3", 0
+>660e	33 00
+>6610	c4 c9 d2 20 c3 c1 d4 20		sh_hint: .text "DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT", 0
+>6618	d2 d5 ce 20 c4 c5 cc 20 c3 cf d0 d9 20 d2 c5 ce
+>6628	20 d6 c5 d2 20 c9 d0 20 d4 c9 cd c5 20 c7 c5 d4
+>6638	20 c5 d8 c9 d4 00
+>663e	44 49 52 20 43 41 54 20		help_text: .byte 68,73,82,32,67,65,84,32,82,85,78,32,68,69,76,32,67,79,80,89,32,82,69,78,32,86,69,82,13,73,80,32,84,73,77,69,32,71,69,84,32,80,69,69,75,32,80,79,75,69,32,69,88,73,84,13,67,68,32,80,65,84,72,32,32,67,72,65,78,71,69,32,85,76,84,32,68,73,82,13,80,87,68,32,32,83,72,79,87,32,80,65,84,72,32,32,32,76,83,32,32,76,73,83,84,32,68,73,82,13,80,69,69,75,32,65,65,65,65,32,32,32,80,79,75,69,32,65,65,65,65,32,86,86,13,0
+>6646	52 55 4e 20 44 45 4c 20 43 4f 50 59 20 52 45 4e
+>6656	20 56 45 52 0d 49 50 20 54 49 4d 45 20 47 45 54
+>6666	20 50 45 45 4b 20 50 4f 4b 45 20 45 58 49 54 0d
+>6676	43 44 20 50 41 54 48 20 20 43 48 41 4e 47 45 20
+>6686	55 4c 54 20 44 49 52 0d 50 57 44 20 20 53 48 4f
+>6696	57 20 50 41 54 48 20 20 20 4c 53 20 20 4c 49 53
+>66a6	54 20 44 49 52 0d 50 45 45 4b 20 41 41 41 41 20
+>66b6	20 20 50 4f 4b 45 20 41 41 41 41 20 56 56 0d 00
+>66c6	53 30 3a 00			p_del2: .byte $53,$30,$3a,$00           ; "S0:" unshifted (64tass .text
+>66ca	44 49 52 00			msg_dird: .text "dir", 0
+>66ce	44 45 4c 45 54 45 44 00		msg_deld: .text "deleted", 0
+>66d6	43 4f 50 49 45 44 00		msg_copd: .text "copied", 0
+>66dd	52 45 4e 41 4d 45 44 00		msg_rend: .text "renamed", 0
+>66e5	4e 45 45 44 3a 20 4f 4c		msg_args: .text "need: old new", 0
+>66ed	44 20 4e 45 57 00
+>66f3	3f 00				msg_unk: .text "?", 0
+>66f5	43 30 3a 00			p_copy: .byte $43,$30,$3a,$00           ; "C0:" unshifted
+>66f9	52 30 3a 00			p_ren:  .byte $52,$30,$3a,$00           ; "R0:" unshifted
+>66fd	3d 30 3a 00			p_eq0:  .byte $3d,$30,$3a,$00           ; "=0:"
+>6701	3d 00				p_eq:   .byte $3d,$00                   ; "="
+>6703	00 00 00 00 00 00 00 00		tok2buf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>670b	00 00 00 00 00 00 00 00 00
+>6714	00 00 00 00 00 00 00 00		stbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>671c	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>672c	00 00 00 00 00 00 00 00
+>6734	24				dname:  .text "$"
+>6735	00 00 00 00 00 00 00 00		cmdbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>673d	00 00 00 00 00 00 00 00 00
+>6746	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>674e	00 00 00 00 00 00 00
+>6755	00 00 00 00 00 00 00 00		tokbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>675d	00 00 00 00 00 00 00 00 00
+>6766	00 00 00 00 00 00 00 00		respbuf: .fill 48, 0
+>676e	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>677e	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>678e	00 00 00 00 00 00 00 00
+>6796	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>679e	00 00 00 00 00 00 00 00 00 00
+>67a8	00 00 00 00 00 00 00 00		oldbuf: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>67b0	00 00 00 00 00 00 00 00 00
+>67b9	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>67c1	00 00 00 00 00 00 00
+>67c8	00 00 00 00 00 00 00 00		respold: .fill 48, 0
+>67d0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>67e0	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>67f0	00 00 00 00 00 00 00 00
+>67f8	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6800	00 00 00 00 00 00 00 00 00 00
+>680a	00 00 00 00 00 00 00 00		oldmode:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6812	00 00 00 00 00 00 00 00 00 00 00 00
+>681e	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6826	00 00 00 00 00 00 00 00 00 00
+>6830	00				namlen: .byte 0
+>6831	00				prev_row: .byte 0
+>6832	00				painted: .byte 0                        ; rows are on screen (XOR bookkeeping)
+>6833	00				fci:    .byte 0
+>6834	00 00 00 00 00 00 00 00		fncmd:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0     ; "C0:"+16+"=0:"+16+NUL = 39
+>683c	00 00 00 00 00 00 00 00 00
+>6845	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>684d	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>685d	00 00 00 00 00 00		        .byte 0,0,0,0,0,0
+>6863	00				dseof:  .byte 0
+>6864	00				dsfirst: .byte 0
+>6865	00 00 00 00 00 00 00 00		fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>686d	00 00 00 00 00 00 00 00 00
+>6876	00 00 00 00 00 00 00 00		dline:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>687e	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>688e	00 00 00 00 00 00 00 00
 
 ;******  End of listing

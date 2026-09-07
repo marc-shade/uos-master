@@ -810,6 +810,10 @@ _return:
 ; Fetches from $0000 (bank 0)
 ;       r0 = 64 address
 ;       r1 = size in bytes
+; NOTE: CLOBBERS r0/r1/r2 (== X1/Y1/X2, the gfx pixel coordinates).
+; The ClrRect MACRO saves/restores them around the fetches — keep any
+; new direct CLR_RECT callers doing the same, or the next draw plots
+; with a garbage Y high byte (the fmgr's invisible list rows).
 ; ==========================================================
 CLEAR_RECT:
         lda r0L                 ; source addr
@@ -822,7 +826,7 @@ CLEAR_RECT:
         sta REU_PARAMS+3
         lda #$00                        ; bank 0
         sta REU_PARAMS+4                ; expansion bank #
-        lda r2L                        ; bytes to move         
+        lda r2L                        ; bytes to move
         sta REU_PARAMS+5
         lda r2H
         sta REU_PARAMS+6

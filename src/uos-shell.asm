@@ -566,18 +566,10 @@ sl_cp:  lda (r0),y
         bne sl_cp
 sl_d:   lda #$00
         sta respbuf,y
-        ; erase what is currently shown (XOR of the old string)
-        lda #COL_X
-        sta X1
-        lda #$00
-        sta X1+1
-        lda #STAT_Y
-        sta Y1
-        lda #<respold
-        sta r9L
-        lda #>respold
-        sta r9H
-        jsr GPUTS
+        ; wipe the line region whole: XOR-redrawing respold only undoes
+        ; pixels that are exactly respold's, and any stray draw over the
+        ; line in between left ghost residue (the "BIR" first glyph)
+        #ClrRect (COL_X - 2), (STAT_Y - 2), 280, 12
         ; publish the new text as the shown string, then draw it
         ldy #$00
 sl_old: lda respbuf,y

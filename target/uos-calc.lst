@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-calc.prg -L target/uos-calc.lst src/uos-calc.asm
-; Mon Sep  7 11:53:13 2026
+; Mon Sep  7 15:00:46 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -579,7 +579,7 @@
 .51dc	c8		iny		    iny
 .51dd	a9 0c		lda #$0c	    lda #12
 .51df	85 04		sta $04		    sta Y1
-.51e1	a9 c9		lda #$c9	    lda #<c_title
+.51e1	a9 ed		lda #$ed	    lda #<c_title
 .51e3	85 14		sta $14		    sta r9L
 .51e5	a9 55		lda #$55	    lda #>c_title
 .51e7	85 15		sta $15		    sta r9H
@@ -591,7 +591,7 @@
 .51f4	c8		iny		    iny
 .51f5	a9 b6		lda #$b6	    lda #182
 .51f7	85 04		sta $04		    sta Y1
-.51f9	a9 d4		lda #$d4	    lda #<c_hint
+.51f9	a9 f8		lda #$f8	    lda #<c_hint
 .51fb	85 14		sta $14		    sta r9L
 .51fd	a9 55		lda #$55	    lda #>c_hint
 .51ff	85 15		sta $15		    sta r9H
@@ -604,14 +604,14 @@
 .520c	69 01		adc #$01	        adc #$01
 .520e	c9 18		cmp #$18	        cmp #24
 .5210	d0 f4		bne $5206	        bne _cvc
-.5212	a9 c9		lda #$c9	        lda #<c_title
+.5212	a9 ed		lda #$ed	        lda #<c_title
 .5214	85 14		sta $14		        sta r9L
 .5216	a9 55		lda #$55	        lda #>c_title
 .5218	85 15		sta $15		        sta r9H
 .521a	a9 02		lda #$02	        lda #$02
 .521c	a2 00		ldx #$00	        ldx #$00
 .521e	20 35 08	jsr $0835	        jsr VDTEXT
-.5221	a9 d4		lda #$d4	        lda #<c_hint
+.5221	a9 f8		lda #$f8	        lda #<c_hint
 .5223	85 14		sta $14		        sta r9L
 .5225	a9 55		lda #$55	        lda #>c_hint
 .5227	85 15		sta $15		        sta r9H
@@ -988,21 +988,33 @@
 .54ee	c9 01		cmp #$01	        cmp #$01
 .54f0	d0 0d		bne $54ff	        bne _sh_ovf
 .54f2	a0 00		ldy #$00	        ldy #$00
-.54f4	b9 fa 55	lda $55fa,y	_sh_es: lda c_div0,y
+.54f4	b9 1e 56	lda $561e,y	_sh_es: lda c_div0,y
 .54f7	f0 16		beq $550f	        beq _sh_draw
-.54f9	99 04 56	sta $5604,y	        sta dispbuf,y
+.54f9	99 28 56	sta $5628,y	        sta dispbuf,y
 .54fc	c8		iny		        iny
 .54fd	d0 f5		bne $54f4	        bne _sh_es
 .54ff					_sh_ovf:
 .54ff	a0 00		ldy #$00	        ldy #$00
-.5501	b9 00 56	lda $5600,y	_sh_eo: lda c_ovf,y
+.5501	b9 24 56	lda $5624,y	_sh_eo: lda c_ovf,y
 .5504	f0 09		beq $550f	        beq _sh_draw
-.5506	99 04 56	sta $5604,y	        sta dispbuf,y
+.5506	99 28 56	sta $5628,y	        sta dispbuf,y
 .5509	c8		iny		        iny
 .550a	d0 f5		bne $5501	        bne _sh_eo
 .550c					_sh_num:
-.550c	20 6c 55	jsr $556c	        jsr fmt_dec
+.550c	20 90 55	jsr $5590	        jsr fmt_dec
 .550f					_sh_draw:
+.550f	a5 02		lda $02		    lda r0L
+.5511	48		pha		    pha
+.5512	a5 03		lda $03		    lda r0H
+.5514	48		pha		    pha
+.5515	a5 04		lda $04		    lda r1L
+.5517	48		pha		    pha
+.5518	a5 05		lda $05		    lda r1H
+.551a	48		pha		    pha
+.551b	a5 06		lda $06		    lda r2L
+.551d	48		pha		    pha
+.551e	a5 07		lda $07		    lda r2H
+.5520	48		pha		    pha
 =0					    exploc      := 0
 =5					    firstrow    := CDY / 8
 =6					    lastrow     := (CDY + 12 - 1) / 8
@@ -1011,113 +1023,125 @@
 =27					    lastcol     := ((CDX + 200 - 1) / 8) + 1
 =200					    memsz       := (lastcol - col) * 8
 =42576					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.550f	a9 50		lda #$50	        lda #<memloc
-.5511	85 02		sta $02		        sta r0L
-.5513	a9 a6		lda #$a6	        lda #>memloc
-.5515	85 03		sta $03		        sta r0H
-.5517	a9 00		lda #$00	        lda #<exploc
-.5519	85 04		sta $04		        sta r1L
-.551b	a9 00		lda #$00	        lda #>exploc
-.551d	85 05		sta $05		        sta r1H
-.551f	a9 c8		lda #$c8	        lda #<memsz
-.5521	85 06		sta $06		        sta r2L
-.5523	a9 00		lda #$00	        lda #>memsz
-.5525	85 07		sta $07		        sta r2H
-.5527	20 20 08	jsr $0820	        jsr CLR_RECT
+.5521	a9 50		lda #$50	        lda #<memloc
+.5523	85 02		sta $02		        sta r0L
+.5525	a9 a6		lda #$a6	        lda #>memloc
+.5527	85 03		sta $03		        sta r0H
+.5529	a9 00		lda #$00	        lda #<exploc
+.552b	85 04		sta $04		        sta r1L
+.552d	a9 00		lda #$00	        lda #>exploc
+.552f	85 05		sta $05		        sta r1H
+.5531	a9 c8		lda #$c8	        lda #<memsz
+.5533	85 06		sta $06		        sta r2L
+.5535	a9 00		lda #$00	        lda #>memsz
+.5537	85 07		sta $07		        sta r2H
+.5539	20 20 08	jsr $0820	        jsr CLR_RECT
 =201					        exploc := exploc + memsz + 1
 =42896					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.552a	a9 90		lda #$90	        lda #<memloc
-.552c	85 02		sta $02		        sta r0L
-.552e	a9 a7		lda #$a7	        lda #>memloc
-.5530	85 03		sta $03		        sta r0H
-.5532	a9 c9		lda #$c9	        lda #<exploc
-.5534	85 04		sta $04		        sta r1L
-.5536	a9 00		lda #$00	        lda #>exploc
-.5538	85 05		sta $05		        sta r1H
-.553a	a9 c8		lda #$c8	        lda #<memsz
-.553c	85 06		sta $06		        sta r2L
-.553e	a9 00		lda #$00	        lda #>memsz
-.5540	85 07		sta $07		        sta r2H
-.5542	20 20 08	jsr $0820	        jsr CLR_RECT
+.553c	a9 90		lda #$90	        lda #<memloc
+.553e	85 02		sta $02		        sta r0L
+.5540	a9 a7		lda #$a7	        lda #>memloc
+.5542	85 03		sta $03		        sta r0H
+.5544	a9 c9		lda #$c9	        lda #<exploc
+.5546	85 04		sta $04		        sta r1L
+.5548	a9 00		lda #$00	        lda #>exploc
+.554a	85 05		sta $05		        sta r1H
+.554c	a9 c8		lda #$c8	        lda #<memsz
+.554e	85 06		sta $06		        sta r2L
+.5550	a9 00		lda #$00	        lda #>memsz
+.5552	85 07		sta $07		        sta r2H
+.5554	20 20 08	jsr $0820	        jsr CLR_RECT
 =402					        exploc := exploc + memsz + 1
-.5545	a9 10		lda #$10	        lda #CDX
-.5547	85 02		sta $02		        sta X1
-.5549	a9 00		lda #$00	        lda #$00
-.554b	85 03		sta $03		        sta X1+1
-.554d	a9 28		lda #$28	        lda #CDY
-.554f	85 04		sta $04		        sta Y1
-.5551	a9 04		lda #$04	        lda #<dispbuf
-.5553	85 14		sta $14		        sta r9L
-.5555	a9 56		lda #$56	        lda #>dispbuf
-.5557	85 15		sta $15		        sta r9H
-.5559	20 1e c0	jsr $c01e	        jsr GPUTS
-.555c	a9 04		lda #$04	        lda #<dispbuf
-.555e	85 14		sta $14		        sta r9L
-.5560	a9 56		lda #$56	        lda #>dispbuf
-.5562	85 15		sta $15		        sta r9H
-.5564	a9 08		lda #$08	        lda #$08                        ; VDC row 8
-.5566	a2 00		ldx #$00	        ldx #$00
-.5568	20 35 08	jsr $0835	        jsr VDTEXT
-.556b	60		rts		        rts
-.556c					fmt_dec:
-.556c	a5 48		lda $48		        lda c_tmp
-.556e	05 49		ora $49		        ora c_tmp+1
-.5570	d0 0b		bne $557d	        bne _fd_nz
-.5572	a9 30		lda #$30	        lda #$30
-.5574	8d 04 56	sta $5604	        sta dispbuf
-.5577	a9 00		lda #$00	        lda #$00
-.5579	8d 05 56	sta $5605	        sta dispbuf+1
-.557c	60		rts		        rts
-.557d	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
-.557f	85 4a		sta $4a		        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
-.5581	20 a3 55	jsr $55a3	_fd_l:  jsr d10tmp
-.5584	a5 4d		lda $4d		        lda c_rem
-.5586	18		clc		        clc
-.5587	69 30		adc #$30	        adc #$30
-.5589	48		pha		        pha                             ; digits pushed least-significant first
-.558a	e6 4a		inc $4a		        inc c_tmp2
-.558c	a5 48		lda $48		        lda c_tmp
-.558e	05 49		ora $49		        ora c_tmp+1
-.5590	d0 ef		bne $5581	        bne _fd_l
-.5592	a0 00		ldy #$00	        ldy #$00
-.5594	68		pla		_fd_c:  pla
-.5595	99 04 56	sta $5604,y	        sta dispbuf,y
-.5598	c8		iny		        iny
-.5599	c6 4a		dec $4a		        dec c_tmp2
-.559b	d0 f7		bne $5594	        bne _fd_c
-.559d	a9 00		lda #$00	        lda #$00
-.559f	99 04 56	sta $5604,y	        sta dispbuf,y
-.55a2	60		rts		        rts
-.55a3					d10tmp:
-.55a3	a9 00		lda #$00	        lda #$00
-.55a5	85 4d		sta $4d		        sta c_rem
-.55a7	85 4e		sta $4e		        sta c_rem+1
-.55a9	a2 10		ldx #$10	        ldx #$10
-.55ab	06 48		asl $48		_d1l:   asl c_tmp
-.55ad	26 49		rol $49		        rol c_tmp+1                     ; shift the FULL 16-bit dividend
-.55af	26 4d		rol $4d		        rol c_rem
-.55b1	26 4e		rol $4e		        rol c_rem+1
-.55b3	a5 4d		lda $4d		        lda c_rem
-.55b5	38		sec		        sec
-.55b6	e9 0a		sbc #$0a	        sbc #$0a
-.55b8	a8		tay		        tay
-.55b9	a5 4e		lda $4e		        lda c_rem+1
-.55bb	e9 00		sbc #$00	        sbc #$00
-.55bd	90 06		bcc $55c5	        bcc _d1n
-.55bf	85 4e		sta $4e		        sta c_rem+1
-.55c1	84 4d		sty $4d		        sty c_rem
-.55c3	e6 48		inc $48		        inc c_tmp
-.55c5	ca		dex		_d1n:   dex
-.55c6	d0 e3		bne $55ab	        bne _d1l
-.55c8	60		rts		        rts
->55c9	c3 41 4c 43 55 4c 41 54		c_title: .text "Calculator", $00
->55d1	4f 52 00
->55d4	30 2d 39 20 2b 20 2d 20		c_hint:  .text "0-9 + - * / =  DEL  C=clear  ESC=exit", $00
->55dc	2a 20 2f 20 3d 20 20 c4 c5 cc 20 20 c3 3d 43 4c
->55ec	45 41 52 20 20 c5 d3 c3 3d 45 58 49 54 00
->55fa	44 49 56 2f 30 00		c_div0:  .byte $44,$49,$56,$2f,$30,$00          ; "DIV/0"
->5600	4f 56 46 00			c_ovf:   .byte $4f,$56,$46,$00                  ; "OVF"
->5604	00 00 00 00 00 00 00 00		dispbuf: .fill 8, 0
-.560c					calc_end:
+.5557	68		pla		    pla
+.5558	85 07		sta $07		    sta r2H
+.555a	68		pla		    pla
+.555b	85 06		sta $06		    sta r2L
+.555d	68		pla		    pla
+.555e	85 05		sta $05		    sta r1H
+.5560	68		pla		    pla
+.5561	85 04		sta $04		    sta r1L
+.5563	68		pla		    pla
+.5564	85 03		sta $03		    sta r0H
+.5566	68		pla		    pla
+.5567	85 02		sta $02		    sta r0L
+.5569	a9 10		lda #$10	        lda #CDX
+.556b	85 02		sta $02		        sta X1
+.556d	a9 00		lda #$00	        lda #$00
+.556f	85 03		sta $03		        sta X1+1
+.5571	a9 28		lda #$28	        lda #CDY
+.5573	85 04		sta $04		        sta Y1
+.5575	a9 28		lda #$28	        lda #<dispbuf
+.5577	85 14		sta $14		        sta r9L
+.5579	a9 56		lda #$56	        lda #>dispbuf
+.557b	85 15		sta $15		        sta r9H
+.557d	20 1e c0	jsr $c01e	        jsr GPUTS
+.5580	a9 28		lda #$28	        lda #<dispbuf
+.5582	85 14		sta $14		        sta r9L
+.5584	a9 56		lda #$56	        lda #>dispbuf
+.5586	85 15		sta $15		        sta r9H
+.5588	a9 08		lda #$08	        lda #$08                        ; VDC row 8
+.558a	a2 00		ldx #$00	        ldx #$00
+.558c	20 35 08	jsr $0835	        jsr VDTEXT
+.558f	60		rts		        rts
+.5590					fmt_dec:
+.5590	a5 48		lda $48		        lda c_tmp
+.5592	05 49		ora $49		        ora c_tmp+1
+.5594	d0 0b		bne $55a1	        bne _fd_nz
+.5596	a9 30		lda #$30	        lda #$30
+.5598	8d 28 56	sta $5628	        sta dispbuf
+.559b	a9 00		lda #$00	        lda #$00
+.559d	8d 29 56	sta $5629	        sta dispbuf+1
+.55a0	60		rts		        rts
+.55a1	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
+.55a3	85 4a		sta $4a		        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
+.55a5	20 c7 55	jsr $55c7	_fd_l:  jsr d10tmp
+.55a8	a5 4d		lda $4d		        lda c_rem
+.55aa	18		clc		        clc
+.55ab	69 30		adc #$30	        adc #$30
+.55ad	48		pha		        pha                             ; digits pushed least-significant first
+.55ae	e6 4a		inc $4a		        inc c_tmp2
+.55b0	a5 48		lda $48		        lda c_tmp
+.55b2	05 49		ora $49		        ora c_tmp+1
+.55b4	d0 ef		bne $55a5	        bne _fd_l
+.55b6	a0 00		ldy #$00	        ldy #$00
+.55b8	68		pla		_fd_c:  pla
+.55b9	99 28 56	sta $5628,y	        sta dispbuf,y
+.55bc	c8		iny		        iny
+.55bd	c6 4a		dec $4a		        dec c_tmp2
+.55bf	d0 f7		bne $55b8	        bne _fd_c
+.55c1	a9 00		lda #$00	        lda #$00
+.55c3	99 28 56	sta $5628,y	        sta dispbuf,y
+.55c6	60		rts		        rts
+.55c7					d10tmp:
+.55c7	a9 00		lda #$00	        lda #$00
+.55c9	85 4d		sta $4d		        sta c_rem
+.55cb	85 4e		sta $4e		        sta c_rem+1
+.55cd	a2 10		ldx #$10	        ldx #$10
+.55cf	06 48		asl $48		_d1l:   asl c_tmp
+.55d1	26 49		rol $49		        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.55d3	26 4d		rol $4d		        rol c_rem
+.55d5	26 4e		rol $4e		        rol c_rem+1
+.55d7	a5 4d		lda $4d		        lda c_rem
+.55d9	38		sec		        sec
+.55da	e9 0a		sbc #$0a	        sbc #$0a
+.55dc	a8		tay		        tay
+.55dd	a5 4e		lda $4e		        lda c_rem+1
+.55df	e9 00		sbc #$00	        sbc #$00
+.55e1	90 06		bcc $55e9	        bcc _d1n
+.55e3	85 4e		sta $4e		        sta c_rem+1
+.55e5	84 4d		sty $4d		        sty c_rem
+.55e7	e6 48		inc $48		        inc c_tmp
+.55e9	ca		dex		_d1n:   dex
+.55ea	d0 e3		bne $55cf	        bne _d1l
+.55ec	60		rts		        rts
+>55ed	c3 41 4c 43 55 4c 41 54		c_title: .text "Calculator", $00
+>55f5	4f 52 00
+>55f8	30 2d 39 20 2b 20 2d 20		c_hint:  .text "0-9 + - * / =  DEL  C=clear  ESC=exit", $00
+>5600	2a 20 2f 20 3d 20 20 c4 c5 cc 20 20 c3 3d 43 4c
+>5610	45 41 52 20 20 c5 d3 c3 3d 45 58 49 54 00
+>561e	44 49 56 2f 30 00		c_div0:  .byte $44,$49,$56,$2f,$30,$00          ; "DIV/0"
+>5624	4f 56 46 00			c_ovf:   .byte $4f,$56,$46,$00                  ; "OVF"
+>5628	00 00 00 00 00 00 00 00		dispbuf: .fill 8, 0
+.5630					calc_end:
 
 ;******  End of listing

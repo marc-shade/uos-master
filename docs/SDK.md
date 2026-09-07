@@ -325,6 +325,20 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
   latter silently rejected every A-F hex digit in the PEEK/POKE parser.
   Digits `$30-$39` and punctuation `$20-$3f` are identical in both, so only
   letters bite.
+* **`X1`/`Y1`/`X2` ARE `r0`/`r1`/`r2` — and `GFX_SETPIXEL` computes the
+  pixel address from the FULL 16-bit `Y1+1:Y1`.** Anything that clobbers
+  `r0`–`r2` between draws poisons the next draw's coordinate: the
+  `ClrRect` macro used to leave the clear-pattern address in `r1`, so
+  callers that only set `Y1`'s low byte plotted thousands of rows past
+  the bitmap (the file manager's list was invisible on the 40-col
+  screen, and the shell's response line grew ghost glyphs). The macro
+  now saves/restores `r0`–`r2` around the fetches — keep any direct
+  `CLR_RECT` caller doing the same, and never rely on another routine
+  leaving `Y1+1` zero.
+* **XOR-erase by redrawing is only exact when the pixels still are the
+  old string's.** Anything that drew over the region in between makes
+  the erase leave residue. Erase whole strips with `#ClrRect` (now
+  coordinate-safe) instead of redrawing the old text.
 
 ## Build and test
 

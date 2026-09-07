@@ -532,6 +532,24 @@ FetchRect .macro x, y, width, height
 
 ClrRect .macro x, y, width, height
 
+    ; save r0/r1/r2 — they ARE X1/Y1/X2 (the gfx pixel coordinates), and
+    ; GFX_SETPIXEL computes its bitmap pointer from the FULL 16-bit Y1.
+    ; This macro clobbers r1 with the clear-pattern address (high byte up
+    ; to $0c), so a draw after a ClrRect that only set Y1's low byte
+    ; plotted far outside the bitmap (the fmgr's invisible list rows).
+    lda r0L
+    pha
+    lda r0H
+    pha
+    lda r1L
+    pha
+    lda r1H
+    pha
+    lda r2L
+    pha
+    lda r2H
+    pha
+
     exploc      := 0
     firstrow    := \y / 8
     lastrow     := (\y + \height - 1) / 8
@@ -543,7 +561,7 @@ ClrRect .macro x, y, width, height
     lastcol     := ((\x + \width - 1) / 8) + 1
     memsz       := (lastcol - col) * 8
 
-    .for row := firstrow, row <= lastrow, row := row + 1 
+    .for row := firstrow, row <= lastrow, row := row + 1
 
         memloc := BITMAP_START + (row * 320) + (col * 8)
 
@@ -564,6 +582,20 @@ ClrRect .macro x, y, width, height
 
         exploc := exploc + memsz + 1
     .next
+
+    ; restore the caller's X1/Y1/X2
+    pla
+    sta r2H
+    pla
+    sta r2L
+    pla
+    sta r1H
+    pla
+    sta r1L
+    pla
+    sta r0H
+    pla
+    sta r0L
 
 .endm
 
