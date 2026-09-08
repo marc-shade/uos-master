@@ -174,6 +174,13 @@ def wait_rows(mon, pred, what, timeout=120):
     for i, r in enumerate(rows):
         if r:
             print(f"{i:2d}: {r}")
+    diagnostics = [mon.cmd("r"), "tick: " + mon.peek(TICK_VEC, 2).hex(),
+                   "NET ABI/state: " + mon.peek(0x9100, 0x6b).hex(),
+                   "VDC live: " + mon.peek(0xcc24, 1).hex()]
+    path = os.path.join(OUT, "failure-monitor.txt")
+    with open(path, "w") as report:
+        report.write("\n".join(diagnostics))
+    print(f"Monitor diagnostics: {path}")
     raise SystemExit(f"FAIL: {what} not seen within {timeout}s")
 
 
@@ -193,19 +200,24 @@ def check_driver_layout():
     inc = open(os.path.join(UOS, "src/routines.inc")).read()
     base = int(re.search(r"^NET_BASE\s*=\s*\$([0-9a-f]{4})", inc, re.M).group(1), 16)
     want = {m.group(1): base + int(m.group(2), 16)
-            for m in re.finditer(r"^(NET_[A-Z]+)\s*=\s*NET_BASE\+\$([0-9a-f]{2})", inc, re.M)}
+            for m in re.finditer(r"^(NET_[A-Z_]+)\s*=\s*NET_BASE\+\$([0-9a-f]{2})", inc, re.M)}
     prg = open(os.path.join(UOS, "target/uos-net.prg"), "rb").read()
-    assert prg[0] | prg[1] << 8 == base, "uos-net load address != NET_BASE"
+    origin = prg[0] | prg[1] << 8
+    assert origin == 0x8a00, "uos-net transport must follow the reply buffer"
+    assert hwlib.lst_symbol("uos-net", "uci_end") <= 0x9000, "UCI code overlaps controls"
     img = prg[2:]
     slots = 0
     for name, addr in want.items():
-        if addr - base <= 0x1e:
-            assert img[addr - base] == 0x4c, f"{name}: no jmp at ${addr:04x}"
+        if addr - base <= 0x1e or name == "NET_STREAM":
+            assert img[addr - origin] == 0x4c, f"{name}: no jmp at ${addr:04x}"
+            offset = addr - origin + 1
+            target = img[offset] | img[offset + 1] << 8
+            assert target == hwlib.lst_symbol("uos-net", name), f"{name}: wrong jump target"
             slots += 1
         else:
             got = hwlib.lst_symbol("uos-net", name)
             assert got == addr, f"{name}: routines.inc ${addr:04x} != module ${got:04x}"
-    end = base + len(img)
+    end = origin + len(img)
     assert end <= 0x9b00, f"uos-net overruns APP_ID_TBL: ends at ${end:04x}"
     drv = open(os.path.join(UOS, "target/uos-drv1351.prg"), "rb").read()
     assert drv[0] | drv[1] << 8 == 0x9e00 and drv[2 + 9] == 0x4c, "KEYIN_EXT slot"

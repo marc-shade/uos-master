@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-shell.prg -L target/uos-shell.lst src/uos-shell.asm
-; Mon Sep  7 15:41:06 2026
+; Tue Sep  8 13:40:44 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -179,6 +179,10 @@
 =37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
 =37218					NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
 =37219					NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+=37220					NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+=37223					NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+=37224					NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+=37225					NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
 =$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
 =$9e03					INIT_MOUSE      = $9e03
 =$9e09					KEYIN_EXT       = $9e09
@@ -2565,7 +2569,7 @@
 .6565	b0 78		bcs $65df	        bcs _ls_done
 .6567	a0 00		ldy #$00	        ldy #$00
 .6569	b1 4c		lda ($4c),y	        lda (gp),y
-.656b	29 40		and #$40	        and #$40                        ; DIR bit -> leading "/"
+.656b	29 10		and #$10	        and #$10                        ; FAT DIR attribute -> leading "/"
 .656d	f0 04		beq $6573	        beq _ls_sp
 .656f	a9 2f		lda #$2f	        lda #$2f                        ; '/'
 .6571	d0 02		bne $6575	        bne _ls_pfx

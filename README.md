@@ -26,6 +26,12 @@ system device after browsing another drive and returns to the desktop on error.
 See the [test and hardware evidence](docs/validation/2026-09-08-storage/README.md)
 for the exact checks, build hashes, screenshots and remaining limitations.
 
+The [Ultimate command service](docs/ULTIMATE-SERVICE.md) now streams reply
+packets without overrunning the fixed buffer, supports longer commands, and
+reports clipping. A physical C128 test streamed 1,096 directory entries.
+The desktop Ultimate browser/drive panel is the next application increment;
+the installed firmware's incomplete drive inventory still needs handling.
+
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 
 - **Networking** (`uos-net`, 2026-09-06) — a driver for the Ultimate II+ command

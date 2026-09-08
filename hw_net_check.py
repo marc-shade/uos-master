@@ -2,29 +2,30 @@
 """Hardware check for the self-setting clock and the network driver.
 
 Runs against the real C128 + Ultimate II+ (192.168.1.237) after deploy_hw.py.
-Three independent witnesses, none of them the OS's own word for it:
+Compare OS state, the cartridge's running clock and the display with the host:
 
   1. uos-net's data bytes over DMA: NET_STATE must be 0 (SNTP synced), the
-     interface address must be non-empty, and NET_HOUR/MIN must agree with
-     this host's clock in the record's zone (default UTC-4) within 2 min.
-  2. the Ultimate's own RTC through its REST API ("Clock Settings"): the
-     driver pushes date/time into it (DOS SET_TIME) after a sync. Reported,
-     not gated: this cartridge's RTC is frozen at 2015-10-13 16:52:55 and
-     ignores the (acknowledged) push.
+     interface address must be non-empty, and the recorded boot-sync timestamp
+     must be recent (no more than 6 hours old or 2 minutes in the future).
+  2. the running Ultimate RTC through DOS GET_TIME: two readings must
+     advance and agree with the host clock. REST Clock Settings are saved
+     configuration fields, not a live RTC reading.
   3. the 80-column display, copied out of VDC RAM with probes/vdcdump.bin
      (as hw_vdc_check.py does): row 0 must carry "HH:MM xM  ntp".
 
-Exit 0 = witnesses 1 and 3 agree (2 is informational, see above).
+Exit 0 = all three witnesses agree. Retains exact build hashes and results.
 """
 import datetime
 import importlib.util
+import hashlib
 import json
 import os
 import re
 import struct
 import sys
 import time
-import urllib.request
+import tempfile
+from pathlib import Path
 from importlib.machinery import SourceFileLoader
 
 _l = SourceFileLoader("cbm", "/home/marc/.claude/skills/commodore-basic/bin/cbm")
@@ -32,7 +33,6 @@ _s = importlib.util.spec_from_loader("cbm", _l)
 cbm = importlib.util.module_from_spec(_s)
 _l.exec_module(cbm)
 UOS = os.path.dirname(os.path.abspath(__file__))
-HOST = "http://192.168.1.237"
 TICK_VEC, TRAMP, DUMP = 0x033C, 0x7F00, 0x6000
 VEC0_OFF, VEC1_OFF = 0x50, 0x55
 
@@ -76,6 +76,8 @@ def vdc_rows(u):
 
 def main():
     u = cbm.Ultimate()
+    work = Path(tempfile.mkdtemp(prefix="uos-hardware-clock-"))
+    print(f"Clock evidence: {work}", flush=True)
     if u.read_mem(TICK_VEC, 2) == b"\x00\x00":
         cbm.die("tick vector is $0000: uOS desktop is not live (run deploy_hw.py)")
     # 1. the driver's own record of the sync
@@ -100,22 +102,22 @@ def main():
     print(f"host now {now:%Y-%m-%d %H:%M:%S} in that zone; sync happened {age:.0f}s ago")
     if not (-120 <= age <= 3600 * 6):
         cbm.die(f"FAIL: synced time is {age:.0f}s from this host's clock (allowed -120..21600)")
-    # 2. the Ultimate's RTC, pushed by the driver
-    with urllib.request.urlopen(HOST + "/v1/configs/Clock%20Settings", timeout=15) as r:
-        cs = json.loads(r.read())["Clock Settings"]
-    months = ["January", "February", "March", "April", "May", "June", "July", "August",
-              "September", "October", "November", "December"]
-    rtc = datetime.datetime(int(cs["Year"]), months.index(cs["Month"]) + 1, int(cs["Day"]),
-                            int(cs["Hours"]), int(cs["Minutes"]), int(cs["Seconds"]), tzinfo=now.tzinfo)
-    drift = (now - rtc).total_seconds()
-    # Informational only: on this Ultimate II+ the RTC reads a frozen
-    # 2015-10-13 16:52:55 before AND after the driver's DOS SET_TIME push
-    # (which the firmware acknowledges with "00,OK", 2026-09-06). A dead
-    # RTC cell/chip is a cartridge problem, not something the OS can fix,
-    # so it is reported, not gated.
-    rtc_ok = abs(drift) <= 180
-    print(f"Ultimate RTC reads {rtc:%Y-%m-%d %H:%M:%S}; drift {drift:+.0f}s -> "
-          f"{'set by the sync' if rtc_ok else 'NOT set (cartridge RTC frozen; push acknowledged, informational)'}")
+    # 2. DOS GET_TIME reads the running clock. REST Clock Settings are
+    # saved presets; their old 2015 values caused a false frozen-RTC diagnosis.
+    from hw_uci_check import Probe
+    probe = Probe(u, work)
+    runtime = []
+    for _ in range(2):
+        reply = probe.ok(b"\x01\x26")
+        assert not reply["clipped"] and len(reply["records"]) == 1
+        runtime.append(reply["records"][0][0].decode("ascii"))
+    stamps = [datetime.datetime.strptime(value, "%Y/%m/%d %H:%M:%S").replace(tzinfo=now.tzinfo)
+              for value in runtime]
+    now = datetime.datetime.now(now.tzinfo)
+    drift = (now - stamps[-1]).total_seconds()
+    assert stamps[1] > stamps[0], f"Runtime RTC did not advance: {runtime}"
+    assert abs(drift) <= 180, f"Runtime RTC differs from host by {drift:.0f}s: {runtime}"
+    print(f"Ultimate runtime RTC {runtime[0]} -> {runtime[1]}; host difference {drift:+.0f}s")
     # 3. the 80-column display. The 8563 drops random cells while the DMA
     # copy runs (documented in the driver), so a fresh write can read blank
     # in one snapshot; retry until a stable frame carries the clock.
@@ -138,8 +140,17 @@ def main():
     if delta > 180:
         cbm.die(f"FAIL: displayed {h24:02d}:{mm:02d} is {delta:.0f}s from the host clock")
     print(f"PASS: clock self-set from the network on the real C128 "
-          f"(driver: synced {age:.0f}s ago; Ultimate RTC: {'set' if rtc_ok else 'frozen, informational'}; "
+          f"(driver: synced {age:.0f}s ago; Ultimate RTC: advancing and correct; "
           f"80-col row 0: {clk.strip()!r})")
 
+    report = {"build": {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+                         for p in Path(UOS, "target").glob("*.prg")},
+              "net_state": state, "ip": ipstr, "synced_time": synced.isoformat(),
+              "runtime_rtc_readings": runtime, "rtc_host_difference_seconds": round(drift, 3),
+              "vdc_clock": clk.strip(), "checks": ["SNTP and interface address",
+              "runtime RTC advances and matches host", "VDC clock matches host"]}
+    (work / "report.json").write_text(json.dumps(report, indent=2) + "\n")
 
-main()
+
+if __name__ == "__main__":
+    main()

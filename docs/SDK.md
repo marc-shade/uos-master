@@ -10,14 +10,15 @@ build output; addresses are the fixed ABI the core and drivers export.
 |---|---|---|
 | `$0801-$0fff` | core `uos` | **must end below `$1000`** (the desktop loads there); check `Data: … $0801-$0fxx` after any core edit |
 | `$1000-$404f` | desktop `uos-desktop` | resident (`routines.inc` still says `DESK_END = $2fff`; the build output is the truth); `DESK_START = $1000` is the one-way re-entry point |
-| `$5000-$8fff` | the running app | `APP_START = $5000`; one app at a time, loaded over the previous one |
+| `$5000-$7fff` | app code/data, subject to reservations below | `APP_START = $5000`; one app at a time. The legacy `APP_END=$8fff` snapshot extent is not a grant of all that RAM to apps |
 | `$7350-$7358` | settings record | `SETREC`; the settings app image is padded up to it, see below |
 | `$7f00` | tick trampoline (CI only) | free for apps at run time |
 | `$8000` | sprites | pointer sprite; `$87f8` = sprite pointer (colour-RAM fills clobber it) |
 | `$8400-$87ff` | screen matrix / colour cells | hires colour |
 | `$8800-$89ff` | `NET_DATA` | uos-net's 512-byte reply buffer (socket payload at `+2`) |
+| `$8a00-$8cce` | UCI transport | resident code/private state, part of the `uos-net` PRG; must end before `$9000` |
 | `$9000-$90ff` | `APP_CTL_TBL` | control (button) hit-test table, 25 ten-byte slots (`APP_CTL_END = $9100`) |
-| `$9100-$9aff` | `uos-net` | Ultimate II+ command interface: network + SNTP clock (`NET_BASE = $9100`, jump table + data bytes, see below) |
+| `$9100-$9979` | network/clock services | fixed UCI/network ABI at `NET_BASE=$9100`; must end before `$9b00` |
 | `$9b00` | `APP_ID_TBL` | app-id counter (`RegisterApp`) |
 | `$9c00` | `uos-reu` | `REU_SIZE/STASH/FETCH/PARAMS` at `$9c00/03/06/09` |
 | `$9e00` | `uos-drv1351` | mouse driver + keyboard extension: `INIT_MOUSE = $9e03`, `KEYIN_EXT = $9e09`, `KEY_EXTSEEN = $9e0c` |
@@ -60,7 +61,7 @@ disk as an application.
 | `$0826` | `APP_LOADER` | KERNAL LOAD of the file buffer; carry clear on success, set on failure. `LOADERR` resets for each attempt and latches the KERNAL error |
 | `$0829` | `FILLFILE` | `r0` → `$00`-terminated name → file buffer (dynamic loading); at most 16 name bytes plus a terminator |
 | `$082c` | `KEYIN` | `A` = key event (0 = none): kernal GETIN **plus** the C128 keys the C64-mode kernal cannot see (`KEYIN_EXT` in drv1351 scans the VIC-IIe extended matrix: ESC → `$1b`, dedicated cursor keys → `$91/$11/$9d/$1d`, one event per press) and RUN/STOP → `$1b` for C64 keyboards |
-| `$082f` | `GETCAP` | `X` = capability id (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile) → `A/X` = driver base lo/hi, `0/0` absent |
+| `$082f` | `GETCAP` | Intended: X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile) → A/X = base lo/hi. **Dispatch is currently broken** (ID/stride/high-byte handling); repair is the next registry prerequisite |
 | `$0832` | `LAUNCH_APP` | Core-resident LOAD then `jmp APP_START` on success, `jmp DESK_START` on failure; the safe entry for an app replacing itself |
 | `$0835` | `VDTEXT` | 80-col: `A` = row 0-24, `X` = col 0-79, `r9` → PETSCII text; no-op without a VDC |
 | `$0838` | `VDCLR` | 80-col: `A` = row → 80 spaces; no-op without a VDC |
@@ -172,16 +173,18 @@ or wedged cartridge returns instead of hanging.
 | `$9112` | `NET_WRITE` | `A` = socket, `r0` → data, `X` = length (1..200) → `A` = status code |
 | `$9115` | `NET_SYNC` | the self-setting clock: interface present? address? SNTP (`pool.ntp.org`, UDP 123) → zone from the record → CIA #1 TOD (12 h BCD + PM, the 6526's hour-12 AM/PM inversion corrected by read-back) → the Ultimate's RTC (DOS `SET_TIME`). `A` = `NET_STATE` |
 | `$9118` | `NET_APPLYNTP` | a 48-byte NTP reply at `NET_DATA+2` → `NET_HOUR/MIN/SEC`, `NET_YEAR/MON/DAY/WDAY`, TOD; `A` = 0, or 1 for a zero timestamp |
-| `$911b` | `NET_RTCTIME` | the Ultimate's RTC as `"YYYY/MM/DD HH:MM:SS"` in `NET_DATA` (diagnostic: that RTC read 2015 before the driver started setting it) |
+| `$911b` | `NET_RTCTIME` | the running Ultimate RTC as `"YYYY/MM/DD HH:MM:SS"` in `NET_DATA`; use DOS GET_TIME for live readback, not saved REST Clock Settings fields |
+| `$9164` | `NET_STREAM` | `r0` → command, `r1` = length 2–896, `r3` → per-packet callback (0 = aggregate). See [UCI service contract](ULTIMATE-SERVICE.md) for binary data, cancellation, and overflow |
 | `$911e` | `NET_TZSHIFT` | `A` = signed quarter-hours → shifts the running TOD (settings `+`/`-`, no network round trip) |
 
 `NET_CMD` also drives the DOS directory commands (target `$01`): `CD` =
 `$01 $11 <path>`, `PWD` = `$01 $12` (path → `NET_DATA`), `LS` = `$01 $13`
 then `$01 $14` with `NET_DIRMODE` (`$9162`) set so each reply block (one
 entry: attribute byte + name) is kept null-separated and counted in
-`NET_DIRN` (`$9163`). The FAT directory attribute is bit 4 (`$10`); the existing shell
-`LS` prefix still tests `$40` and must be corrected when its UCI browser is
-updated. Do not copy that test into a new storage driver.
+`NET_DIRN` (`$9163`). The FAT directory attribute is bit 4 (`$10`), now used
+by the shell. Aggregate directory results retain only complete leading entries
+and set `NET_TRUNC` if the buffer fills. Use `NET_STREAM` to process larger
+directories without collecting the whole reply in this buffer.
 
 Data bytes (`NET_STATE = $9121`, then hour, min, sec, year word, month,
 day, weekday (0 = Sunday), zone, IP, IPSTR, LEN, SOCK, STAT) are plain RAM:
@@ -376,6 +379,9 @@ python3 tests/ci_storage.py                  # x64: directory/cache scrolling, b
 python3 tests/ci_storage.py --machine x128   # same, with VDC readback
 python3 tests/run_ci.py storage64 storage128 fm vdc copy edit calc # retained logs + exact build hashes
 python3 hw_storage_check.py                  # real C128: private test disk, scrolling, VIC/VDC readback, boot distributable
+python3 -m pip install -r tests/requirements-uci.txt # use a virtual environment
+python3 tests/ci_uci.py                       # assembled UCI driver: 14 protocol/CPU checks, no VICE needed
+python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)

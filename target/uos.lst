@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos.prg -L target/uos.lst src/uos.asm
-; Tue Sep  8 11:25:31 2026
+; Tue Sep  8 14:11:40 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -179,6 +179,10 @@
 =37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
 =37218					NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
 =37219					NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+=37220					NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+=37223					NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+=37224					NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+=37225					NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
 =$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
 =$9e03					INIT_MOUSE      = $9e03
 =$9e09					KEYIN_EXT       = $9e09
@@ -447,10 +451,10 @@
 .0942	a9 20		lda #$20	        lda #>$2000
 .0944	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
 .0947	20 03 9c	jsr $9c03	        jsr REU_STASH
-.094a	20 03 9e	jsr $9e03	        jsr INIT_MOUSE
-.094d	20 68 0f	jsr $0f68	        jsr VDPREF
-.0950	20 8b 0f	jsr $0f8b	        jsr VDSETUP
-.0953	20 15 91	jsr $9115	        jsr NET_SYNC
+.094a	20 68 0f	jsr $0f68	        jsr VDPREF
+.094d	20 8b 0f	jsr $0f8b	        jsr VDSETUP
+.0950	20 15 91	jsr $9115	        jsr NET_SYNC
+.0953	20 03 9e	jsr $9e03	        jsr INIT_MOUSE
 .0956	20 00 10	jsr $1000	        jsr DESK_START
 .0959					main_loop:
 .0959	20 7d 0b	jsr $0b7d	        jsr TICK

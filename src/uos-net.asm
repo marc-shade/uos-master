@@ -17,8 +17,9 @@
 ; clock the desktop displays, and pushes date/time into the Ultimate's
 ; own RTC (DOS SET_TIME) so file timestamps agree.
 ;
-; Fixed jump table at $9100 (NET_BASE in routines.inc). NET_STATE.. are plain bytes
-; the tests read back over the monitor / DMA.
+; Fixed jump table at $9100 (NET_BASE in routines.inc). The PRG starts at
+; $8a00 with the register transport; the $9000 control table is initialized
+; after all boot modules load. NET_STATE.. are plain bytes read by tests.
 ;==========================================================================
 .include "equates.inc"
 .include "io.inc"
@@ -62,6 +63,9 @@ TZ_DEFAULT      = $f0           ; -16 quarter-hours = UTC-4 (US Eastern, dayligh
 TMO_OUTER       = 5             ; wait budget: 5*65536 polls, ~11 s at 1 MHz
 NET_DATA_MAX    = 510           ; bytes kept of a reply (NET_DATA is 512)
 
+* = $8a00
+.include "uci-transport.inc"
+
 * = $9100
         jmp NET_PRESENT         ; $9100 A=1 when the command interface answers
         jmp NET_CMD             ; $9103 r0->bytes (target first), A=len -> A=status code, C=1 timeout/absent
@@ -89,220 +93,11 @@ NET_LEN:    .word 0             ; $913f payload length of the last reply / socke
 NET_SOCK:   .byte 0             ; $9141 last socket opened
 NET_STAT:   .fill 32, 0         ; $9142 last status line "NN,TEXT", 0-terminated
 NET_DIRMODE: .byte 0            ; $9162 1 = READ_DIR: null-separate + count each reply block
-NET_DIRN:   .byte 0             ; $9163 directory entry count after a dir read
-
-;--------------------------------------------------------------------------
-NET_PRESENT:
-        lda UCI_ID
-        cmp #$c9
-        bne np_no
-        lda UCI_ID              ; twice: an open bus does not hold $c9
-        cmp #$c9
-        bne np_no
-        lda #$01
-        rts
-np_no:  lda #$00
-        rts
-
-;--------------------------------------------------------------------------
-; bounded polling: tmo_init then tmo_tick per poll, C=1 when the budget
-; is spent (256*256*TMO_OUTER polls)
-tmo_init:
-        lda #$00
-        sta tmo0
-        sta tmo1
-        lda #TMO_OUTER
-        sta tmo2
-        rts
-tmo_tick:
-        dec tmo0
-        bne tt_ok
-        dec tmo1
-        bne tt_ok
-        dec tmo2
-        bne tt_ok
-        sec
-        rts
-tt_ok:  clc
-        rts
-
-; wait for the protocol state (STAT bits 5-4) to be idle; C=1 timeout
-wait_idle:
-        jsr tmo_init
-wi_l:   lda UCI_STAT
-        and #$30
-        beq wi_ok
-        jsr tmo_tick
-        bcc wi_l
-        rts
-wi_ok:  clc
-        rts
-
-; wait until the state is no longer "command busy" ($10); C=1 timeout
-wait_done:
-        jsr tmo_init
-wd_l:   lda UCI_STAT
-        and #$30
-        cmp #$10
-        bne wd_ok
-        jsr tmo_tick
-        bcc wd_l
-        rts
-wd_ok:  clc
-        rts
-
-;--------------------------------------------------------------------------
-; NET_CMD: push the A bytes at (r0) as one command, collect every data
-; block into NET_DATA (NET_LEN) and the status line into NET_STAT, release
-; the queues. A = numeric status code ("00,OK" -> 0), C=1 when the
-; interface is absent ($fe) or the transaction timed out ($ff).
-NET_CMD:
-        sta cmdlen
-        lda #$00
-        sta NET_LEN
-        sta NET_LEN+1
-        sta NET_STAT
-        sta NET_DATA
-        sta NET_DIRN
-        jsr NET_PRESENT
-        bne nc_go
-        lda #$fe
-        sec
-        rts
-nc_go:  jsr wait_idle
-        bcc nc_push
-        lda #$04                ; stuck in a previous transaction: abort it
-        sta UCI_CTRL
-        lda #$08
-        sta UCI_CTRL
-        jsr wait_idle
-        bcs nc_tmo
-nc_push:
-        ldy #$00
-nc_w:   lda (r0),y
-        sta UCI_CMD
-        iny
-        cpy cmdlen
-        bne nc_w
-        lda #$01                ; PUSH_CMD
-        sta UCI_CTRL
-        lda UCI_STAT
-        and #$08                ; ERROR: pushed while not idle
-        beq nc_wait
-        lda #$08                ; CLR_ERR
-        sta UCI_CTRL
-        jmp nc_tmo
-nc_wait:
-        jsr wait_done
-        bcs nc_tmo
-nc_more:
-        jsr read_data
-        jsr read_status
-        lda NET_DIRMODE         ; directory mode: each reply block is one
-        beq nc_nodir            ; entry -> keep read_data's $00 as a separator
-        inc NET_LEN             ; (advance past it) and count the entry
-        bne nc_dc
-        inc NET_LEN+1
-nc_dc:  inc NET_DIRN
-nc_nodir:
-        lda #$02                ; DATA_ACC: release the queues
-        sta UCI_CTRL
-        jsr tmo_init
-nc_acc: lda UCI_STAT
-        and #$02
-        beq nc_acc_ok
-        jsr tmo_tick
-        bcc nc_acc
-        jmp nc_tmo
-nc_acc_ok:
-        jsr wait_done
-        bcs nc_tmo
-        lda UCI_STAT
-        and #$30
-        beq nc_fin              ; idle: reply complete
-        jmp nc_more             ; another data block (multi-part reply)
-nc_fin: jsr stat_code
-        clc
-        rts
-nc_tmo: lda #$04                ; ABORT, leave the machine idle for the next call
-        sta UCI_CTRL
-        lda #$ff
-        sec
-        rts
-
-; append the data queue to NET_DATA at NET_LEN (capped, 0-terminated)
-read_data:
-        clc
-        lda #<NET_DATA
-        adc NET_LEN
-        sta r2L
-        lda #>NET_DATA
-        adc NET_LEN+1
-        sta r2H
-rd_l:   lda UCI_STAT
-        bpl rd_done             ; bit 7 = DATA_AV
-        lda UCI_RDAT
-        ldx NET_LEN+1
-        cpx #>NET_DATA_MAX
-        bcc rd_st
-        ldx NET_LEN
-        cpx #<NET_DATA_MAX
-        bcs rd_l                ; buffer full: drain and drop
-rd_st:  ldy #$00
-        sta (r2),y
-        inc r2L
-        bne rd_i
-        inc r2H
-rd_i:   inc NET_LEN
-        bne rd_l
-        inc NET_LEN+1
-        jmp rd_l
-rd_done:
-        lda #$00
-        ldy #$00
-        sta (r2),y
-        rts
-
-; the status queue -> NET_STAT (31 chars max, 0-terminated)
-read_status:
-        ldy #$00
-rs_l:   lda UCI_STAT
-        and #$40
-        beq rs_done
-        lda UCI_SDAT
-        cpy #31
-        bcs rs_l
-        sta NET_STAT,y
-        iny
-        bne rs_l
-rs_done:
-        lda #$00
-        sta NET_STAT,y
-        rts
-
-; A = two-digit code at the start of NET_STAT, $ff when malformed
-stat_code:
-        lda NET_STAT
-        sec
-        sbc #'0'
-        cmp #10
-        bcs sc_bad
-        sta tmpa
-        asl
-        asl
-        adc tmpa                ; *5 (no carry possible from the shifts of 0-9)
-        asl                     ; *10
-        sta tmpa
-        lda NET_STAT+1
-        sec
-        sbc #'0'
-        cmp #10
-        bcs sc_bad
-        clc
-        adc tmpa
-        rts
-sc_bad: lda #$ff
-        rts
+NET_DIRN:   .byte 0             ; $9163 complete directory entries retained
+        jmp NET_STREAM          ; $9164 r0=command, r1=len, r3=packet callback
+NET_TRUNC:  .byte 0             ; $9167 any data discarded by this transaction
+NET_PACKET_TRUNC: .byte 0       ; $9168 current packet was clipped
+NET_PACKETS: .word 0            ; $9169 number of reply packets delivered
 
 ;--------------------------------------------------------------------------
 ; NET_GETIP: first interface with a non-zero address -> NET_IP / NET_IPSTR
@@ -1179,13 +974,9 @@ m60_n:  dex
 
 ;--------------------------------------------------------------------------
 ; variables (driver-private)
-tmo0:     .byte 0
 hidx:     .byte 0
 failcode: .byte 0
 todraw:   .byte 0
-tmo1:     .byte 0
-tmo2:     .byte 0
-cmdlen:   .byte 0
 cmdlen2:  .byte 0
 ifcnt:    .byte 0
 ifidx:    .byte 0
@@ -1204,3 +995,4 @@ q3:       .byte 0
 tmpd:     .byte 0
 cmdb:     .fill 204, 0          ; command image: 3 header + up to 200 data / 4 + host
 net_end:
+        .cerror * > $9b00, "network driver overlaps app-ID table"

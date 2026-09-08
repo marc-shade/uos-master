@@ -121,6 +121,10 @@ NET_SOCK        = NET_BASE+$41
 NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
 NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
 NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
 NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
 
 ; drv1351 entry points: $9e00 = install1 (port 1), $9e03 = install2 (port 2),
@@ -152,4 +156,3 @@ GFX_LINE        = $c015
 GFX_CIRCLE      = $c018
 GPUTC           = $c01b
 GPUTS           = $c01e
-

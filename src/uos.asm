@@ -188,9 +188,6 @@ setup:
         sta REU_PARAMS+6
         jsr REU_STASH
 
-        ; set up the mouse irq
-        jsr INIT_MOUSE
-
         ; second display (8563 VDC): apply the persisted display mode
         ; (FR-S3 p2): "UOS-SET" carries the mode byte at $7355 — 0 = 40-col
         ; only. If the file is missing, the default is both (2).
@@ -200,6 +197,11 @@ setup:
         ; the self-setting clock: network check + SNTP through the
         ; Ultimate command interface (uos-net); NET_STATE says how it went
         jsr NET_SYNC
+
+        ; Install peripheral IRQ work after boot-time IEC/settings and
+        ; network I/O. A missing UOS-SET LOAD can stall with the mouse IRQ
+        ; already active; leave the standard KERNAL handler in place here.
+        jsr INIT_MOUSE
 
         ; start the application
         jsr DESK_START

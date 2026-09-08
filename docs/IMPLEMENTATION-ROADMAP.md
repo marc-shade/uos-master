@@ -51,7 +51,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 
 | Requirement | Current evidence | Remaining implementation | Acceptance evidence |
 |---|---|---|---|
-| FR-A1 discovery and FR-A2 drivers | Fixed GETCAP entries; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
+| FR-A1 discovery and FR-A2 drivers | Static GETCAP table; VDC/UCI probes; GETCAP dispatch ABI is broken | Repair GETCAP ID retention/stride/high-byte return; versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Everything boots in C64 mode | Native boot/kernel, 128 KiB bank management, KERNAL/MMU gateways, 2 MHz safe regions, ROM/IRQ/DMA ownership | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
 | Memory and FR-M1 | Fixed REU banks for bitmap/app/rectangle snapshots | Non-destructive size detection, ownership allocator, bounds checks, app heaps, RAM disks, persistence, no-REU fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | One loaded app, resident desktop, fixed tick vector; failed LOAD returns to desktop | Manifest/ABI and load-address validation, cooperative scheduling, suspend/resume, app switcher, cleanup of handles/controls | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
@@ -102,12 +102,12 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
-| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | DOS/network transport with 512-byte reply buffer | Real firmware protocol tests including absent target, oversized/multi-part replies, interrupted operations |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Shell CD/PWD/LS, bounded listing buffer | Browse a directory larger than the reply buffer; long names; no silent truncation; shared file picker |
+| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification | Capability registry and UI; resolve malformed drive inventory; interrupted operations and per-firmware protocol coverage |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Shell CD/PWD/LS; 1,096-entry physical UCI stream; desktop browser still absent | Interactive browsing beyond the reply buffer; long names; no silent truncation; shared file picker |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Absent from desktop | Mount supported D64/D71/D81/G64/G71 images from desktop; verify cartridge and IEC view; recover system disk and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
-| UCI-TIME | RTC read/write and offline date/time | CIA clock/SNTP; previous notes report frozen cartridge RTC | Verify actual RTC readback/power-cycle; show distinct system and cartridge clock status |
+| UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; old frozen-RTC diagnosis came from saved configuration fields | Power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
 | UCI-AUDIO | SID selection/configuration, audio routing/mixer, playback/record capabilities | Absent | Real output and supported chip/model configuration; unavailable hardware excluded by capability checks |
 | UCI-PRINT | Printer selection, job status, output-file retrieval | Absent | Desktop print job produces a verified readable output file or physical page |
 | UCI-TAPE | Tape image playback/capture and file management | Absent | Start/stop/capture, verify files, preserve desktop before incompatible launches |
@@ -173,14 +173,23 @@ experiment notes. Neither R1 nor the full OS is complete: disk-full/unplug/cance
 recovery, REL/VLIR, copy readback/cleanup, performance and broader device testing
 remain open.
 
-Next implementation: the Ultimate desktop browser and drive panel (R2), starting
-with a bounded streaming UCI directory service, target/drive discovery and
-system-volume preservation. The current shell's directory attribute test uses
-the wrong bit, and its fixed reply collection must not become the browser's
-large-directory implementation. Mount/eject operations must validate the actual
-drive inventory: the firmware may fall back to a different drive for an unknown
-IEC address. Native kernel and application parity work remain required after
-these initial desktop/storage increments.
+The first R2 service layer is also implemented: [packet streaming](ULTIMATE-SERVICE.md)
+with bounded buffers, full 512-byte file packets, commands through the 896-byte
+FIFO limit, explicit clipping, and cancellation. The shell now uses the correct
+directory attribute. [UCI validation](validation/2026-09-08-uci/README.md) covers
+the CPU/protocol cases, emulator regressions and physical cartridge streams.
+Mouse initialization now follows boot I/O after a startup stall in the optional
+settings load; repeated cold-boot/serial/input soak testing remains required.
+
+Next implementation: repair the existing GETCAP dispatch, then build the Ultimate
+desktop browser and drive panel with capability records and system-volume
+preservation. GETCAP currently loses the requested ID, advances by four bytes
+through three-byte entries, and fails to return the high address byte in X.
+The installed control target also reports four drives while sending only two
+records. Treat that inventory as incomplete. Mount/eject operations must validate
+the actual destination: the firmware may fall back to a different drive for an
+unknown IEC address. Native kernel and application parity work remain required
+after these initial desktop/storage increments.
 
 Before calling the complete OS finished, audit every FR in the original PRD,
 every row above, all named app/hardware/firmware combinations, documentation,

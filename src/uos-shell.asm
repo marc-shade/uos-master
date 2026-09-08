@@ -1795,7 +1795,7 @@ _ls_e:  lda lsleft
         ; entry: attrib at (gp), name until $00
         ldy #$00
         lda (gp),y
-        and #$40                        ; DIR bit -> leading "/"
+        and #$10                        ; FAT DIR attribute -> leading "/"
         beq _ls_sp
         lda #$2f                        ; '/'
         bne _ls_pfx
