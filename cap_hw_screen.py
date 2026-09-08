@@ -7,7 +7,8 @@ read is byte-identical to basic-901226-01 and $01 is not on the bus), so the
 CPU itself must lift the RAM out. This installs a one-shot IRQ wedge — hooked
 atomically through $0314 in a single DMA write, so it runs whatever app owns
 the CPU — that banks BASIC out ($01=$36, KERNAL stays in), copies 4000 bytes
-to free RAM at $4000-$4f9f, restores $01 and the zero page it borrowed
+to free RAM immediately after the resident desktop, restores $01 and the
+zero page it borrowed
 ($fb-$fe: the gfx engine's font pointer lives there), unhooks itself, chains
 to the previous handler, and raises a flag at $03fb. Two passes cover the
 8000-byte bitmap. Rendered mono, 2x, via PBM -> magick.
@@ -26,11 +27,15 @@ cbm = importlib.util.module_from_spec(importlib.util.spec_from_loader("cbm", _cb
 _cbm.exec_module(cbm)
 
 BITMAP = 0xA000
-STAGE = 0x4000            # 4000 bytes: $4000-$4f9f (free RAM between desktop and apps)
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+STAGE = 0x1000 + os.path.getsize(os.path.join(_ROOT, "target/uos-desktop.prg")) - 2
+                         # Stage after the entire resident desktop, which
+                         # has grown past $4000; never overwrite its tail.
 WEDGE = 0x0340            # cassette buffer; uOS only uses $033c/$033d there
 FLAG = 0x03FB
 IRQV = 0x0314
 CHUNK = 4000              # 15 full pages + 160 bytes
+assert STAGE + CHUNK <= 0x5000, "desktop leaves too little bitmap staging RAM"
 
 
 def wedge_code(src, old_lo, old_hi):

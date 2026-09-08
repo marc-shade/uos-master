@@ -424,11 +424,12 @@ vt_rep: lda vtsavL
         lda vtsavH
         sta vdcdpH
         jsr VDC_PUTS
-        ldx #$00                ; ~1.3 ms gap: let the chip's write settle
+        ldy #$00                ; 256 * ~5 cycles = ~1.3 ms at 1 MHz
 vt_gap: dey
         bne vt_gap
-        dex
-        bne vt_gap
+                                ; One loop. Nesting X=0 around this used
+                                ; ~327 ms PER PASS, freezing the input loop
+                                ; for seconds whenever a listing repainted.
         dec vtrep
         bne vt_rep
         ; Verify-and-repair. On the real 8563 a data write is occasionally

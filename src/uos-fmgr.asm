@@ -24,9 +24,10 @@
 .include "vic-ii.inc"
 .include "io.inc"
 
-DLOADAPP        = $0826
 LIST_MAX        := 10
-LISTN           := 11   ; list-state key table entries
+CACHE_MAX       := 64    ; bounded RAM cache; cursor refills it on demand
+CACHE_STEP      := CACHE_MAX - LIST_MAX + 1
+LISTN           := 13   ; list-state key table entries
 INPN            := 5    ; input-state key table entries
 COL_X           := 30
 CUR_X           := 22
@@ -34,7 +35,6 @@ TOP_Y           := 40    ; below the title text (drawn at y=14)
 ROW_PX          := 12
 ACT_Y           := 164   ; status/hint line
 IN_Y            := 176   ; input line (rename/copy text)
-COPAGES         := 64    ; cross-device copy read bound (64*256 = 16 KB)
 
 fmrow           = $40
 fmcnt           = $41
@@ -64,11 +64,25 @@ cdst            = $56    ; cross-device copy: the other device (8<->9)
 
         #RegisterApp
 
+        lda $ba                 ; device that loaded this application
+        bne fm_bootdev
+        lda #8
+fm_bootdev:
+        sta sysdev
+        lda #$00
+        sta fmrow
+        sta state
+        sta scroll
+        sta cachebase
+        sta cachebase+1
+        sta fmready
+        #ClrRect 16,8,288,180
+
         ; NOTE: #CreateWindow (SaveRect/ClrRect REU fills) destabilises the
         ; app when opened on top of the desktop — the CPU lands in data RAM.
         ; Kept as the outline + banner until upstream's window system is
         ; understood; the close box is the OS-level ESC path meanwhile.
-        #DrawRect 16,8,304,180,1
+        #DrawRect 16,8,288,180,1
         ; title text
         lda #24
         sta X1
@@ -116,10 +130,15 @@ cdst            = $56    ; cross-device copy: the other device (8<->9)
         jsr refresh
 
         ; ================= input loop =================
-fmloop: jsr KEYIN
+fmloop: lda #$01
+        sta fmready             ; published only after scan + both paints
+        jsr KEYIN
         sta keytmp      ; the key, kept for the editor path
         cmp #$00
         beq fmloop
+        lda #$00
+        sta fmready
+        lda keytmp
         jsr normkey
         sta keytmp
         lda state
@@ -221,6 +240,8 @@ listtbl:
         .byte $49, <show_info, >show_info
         .byte $38, <fmdev8, >fmdev8
         .byte $39, <fmdev9, >fmdev9
+        .byte $30, <fmdev10, >fmdev10
+        .byte $31, <fmdev11, >fmdev11
         .byte $42, <ask_copyx, >ask_copyx
 ; keys not in the input table (and >= $20) go to the editor add path
 
@@ -264,6 +285,8 @@ gl_cancel:
         jsr show_hint
         jmp inp_ret2
 gl_accept:
+        lda gllen
+        beq gl_cancel
         lda #$00
         sta state
         lda mode
@@ -289,6 +312,22 @@ fmdn:   lda fmcnt
         inx
         cpx fmcnt
         bcc cur_ok
+        lda morefiles
+        beq cur_ret
+        ; Keep the last nine entries when refilling, so down-scroll
+        ; moves the visible list by exactly one row across cache edges.
+        clc
+        lda cachebase
+        adc #CACHE_STEP
+        sta cachebase
+        bcc cur_next
+        inc cachebase+1
+cur_next:
+        lda #LIST_MAX-1
+        sta fmrow
+        lda #$00
+        sta scroll
+        jsr refresh
         jmp cur_ret
 cur_ret2:
         jmp fmloop
@@ -299,13 +338,32 @@ cur_ok:
         jmp repaint
 fmup_:
         ldx fmrow
+        bne cur_up
+        lda cachebase
+        ora cachebase+1
         beq cur_ret
+        sec
+        lda cachebase
+        sbc #CACHE_STEP
+        sta cachebase
+        lda cachebase+1
+        sbc #$00
+        sta cachebase+1
+        lda #CACHE_STEP-1
+        sta fmrow
+        lda #CACHE_STEP-LIST_MAX
+        sta scroll
+        jsr refresh
+        jmp cur_ret
+cur_up:
         dex
         stx fmrow
         jmp repaint
 
 ; ---------------- open path (row -> app) ----------------
 fmopen:
+        lda fmcnt
+        beq cur_ret
         lda fmrow
         tax
         lda fmnamesL,x
@@ -317,16 +375,18 @@ fmopen:
                                         ; over THIS code, so the kernal LOAD
                                         ; must not return into the fmgr
 fmescape:
-        lda #<dskstr
-        sta r0L
-        lda #>dskstr
-        sta r0H
-        jsr FILLFILE
-        jsr DLOADAPP
+        ; The desktop is resident. Reloading it uses the last IEC device,
+        ; which may now be an empty data disk on drive 9.
+        lda sysdev              ; subsequent desktop app loads use system disk
+        sta $ba
         jmp DESK_START
 
 ; ---------------- actions ----------------
 ask_scratch:
+        lda fmcnt
+        bne as_have
+        jmp fmloop
+as_have:
         ; prompt line: "DEL <name> (Y/N)"
         lda #$00
         sta fci
@@ -348,6 +408,10 @@ ask_scratch:
         jmp fmloop
 
 ask_rename:
+        lda fmcnt
+        bne ar_have
+        jmp fmloop
+ar_have:
         lda #<p_ren
         sta r0L
         lda #>p_ren
@@ -364,6 +428,10 @@ ask_rename:
         jmp fmloop
 
 ask_copy:
+        lda fmcnt
+        bne ac_have
+        jmp fmloop
+ac_have:
         lda #<p_cpy
         sta r0L
         lda #>p_cpy
@@ -382,6 +450,10 @@ ask_copy:
 ; 'B': same editor flow, but the accept path byte-stream copies the file
 ; to the other device (mode 3)
 ask_copyx:
+        lda fmcnt
+        bne ax_have
+        jmp fmloop
+ax_have:
         lda #<p_cpyx
         sta r0L
         lda #>p_cpyx
@@ -398,8 +470,11 @@ ask_copyx:
         jmp fmloop
 
 show_info:
-        ; status line = <name> B=nn <TYP> (blocks are 0 until the
-        ; dirscan type capture is fixed)
+        lda fmcnt
+        bne si_have
+        jmp fmloop
+si_have:
+        ; 16-bit block count; CMD/1581 files can exceed 255 blocks.
         lda #$00
         sta fci
         jsr apcur
@@ -410,6 +485,9 @@ show_info:
         jsr apstr
         ldx fmrow
         lda fmblockL,x
+        sta bnum
+        lda fmblockH,x
+        sta bnum+1
         jsr bin2dec
         ; type = 3 chars at fmtype + 3*row (zeroes = no type known)
         lda fmrow
@@ -439,6 +517,9 @@ do_scratch:
         jsr apcur
         jsr apnull
         jsr sendcmd
+        bcc scratch_ok
+        jmp dc_err
+scratch_ok:
         jsr refresh
         lda #<msg_scr
         sta r0L
@@ -466,6 +547,7 @@ do_rename:
         jsr apcur
         jsr apnull
         jsr sendcmd
+        bcs dc_err
         jsr refresh
         lda #<msg_ren
         sta r0L
@@ -497,13 +579,14 @@ do_copy:
         jsr apcur                       ; <old>
         jsr apnull
         jsr sendcmd
+        bcs dc_err
         jsr refresh
         lda #<msg_cpy
         sta r0L
         lda #>msg_cpy
         sta r0H
         jsr setline
-        jmp j_fmloop
+        rts
 dc_err:                                 ; reached by error paths only
         jsr refresh
         lda #<msg_err
@@ -511,141 +594,97 @@ dc_err:                                 ; reached by error paths only
         lda #>msg_err
         sta r0H
         jsr setline
-        jmp j_fmloop
+        rts
 
-; 'B': byte-stream copy of the selected file to the OTHER device (8<->9),
-; then a directory verify on the target (an emulator drive that never
-; received the bytes can still report the write clean, so the verify is
-; the only honest gate). 1541 traps honored: every read is page-bounded
-; (a missing SEQ file reads $00 forever on the real Ultimate drive), the
-; source is opened with a plain name (no type suffix reads any existing
-; file), and the verify uses its own logical file.
+; 'B': stream the selected file to the paired device (8/9 or 10/11).
+; Success requires EOF and clean drive/serial status, including CLOSE.
+; Tests separately reopen both disk images and compare every data byte.
 do_copyx:
         lda fmdev
         eor #$01
         sta cdst
         jsr dc_seqcopy
         bcs dc_err
-        jsr dc_verify
-        bcs dc_err
         jsr refresh
         lda cdst
-        cmp #$09
-        beq dc_msg9
-        lda #<msg_to8
-        jmp dc_msgh
-dc_msg9:
-        lda #<msg_to9
-dc_msgh:
+        sec
+        sbc #8
+        tax
+        lda copymsgL,x
         sta r0L
-        lda #>msg_to9
-        bcs dc_mh2
-        lda #>msg_to8
-dc_mh2:
+        lda copymsgH,x
         sta r0H
         jsr setline
-        jmp j_fmloop
-
-; directory verify on cdst: pattern-list "$0:<fnbuf2>" on its own logical
-; file and count quote chars (>=3 quotes = >=2 quoted entries = present;
-; the same reliable trick the editor uses for existence checks).
-dc_verify:
-        lda #$00
-        sta fci
-        lda #<p_d0
-        sta r0L
-        lda #>p_d0
-        sta r0H
-        jsr apstr                       ; "$0:"
-        lda #<fnbuf2
-        sta r0L
-        lda #>fnbuf2
-        sta r0H
-        jsr apstr                       ; <name>
-        jsr apnull
-        lda #$03
-        ldx cdst
-        ldy #$00
-        jsr SETLFS
-        lda fci
-        ldx #<fncmd
-        ldy #>fncmd
-        jsr SETNAM
-        jsr OPEN
-        ldx #$03
-        jsr CHKIN
-        ldx #$00                        ; byte bound
-        lda #$00
-        sta dnum                        ; quote count
-dv_l:   jsr READST
-        and #$40
-        bne dv_e
-        jsr CHRIN
-        cmp #$22                        ; '"'
-        bne dv_l1
-        inc dnum
-dv_l1:  inx
-        bne dv_l                        ; 256-byte hard bound: an absent
-        ; device reads $00 forever with no EOF flag on some hosts — the
-        ; quote count below then just reports the file absent
-dv_e:   jsr CLRCHN
-        lda #$03
-        jsr CLOSE
-        lda dnum
-        cmp #$03                        ; >=3 quotes -> file present
-        bcc dv_absent
-        clc                             ; C=0 = success (do_copyx: bcs dc_err)
-        rts
-dv_absent:
-        sec
         rts
 
-; byte-stream copy: source = selected row on fmdev (LFN 2/SA 2, name as
-; listed — no type suffix reads any existing file), dest = cdst (LFN 3/
-; SA 3, fnbuf2 + ",S,W"). Returns C=1 on failure (channels cleaned up).
+; Stream PRG/SEQ/USR files without changing their type or load-address
+; bytes. Every bus-direction change uses CLRCHN, then selects its channel
+; again. Counters live in RAM: CHKIN/CHKOUT overwrite X. The source's
+; directory block count bounds broken streams; files are not capped at 16K.
 dc_seqcopy:
-        ; dest name = fnbuf2 + ",S,W" in csrcbuf
+        lda #$00
+        sta cperror
+        sta cpcreated
+        lda fmrow
+        asl
+        clc
+        adc fmrow
+        tay
+        lda fmtype,y
+        jsr normkey
+        cmp #$50               ; PRG
+        beq dcs_typeok
+        cmp #$53               ; SEQ
+        beq dcs_typeok
+        cmp #$55               ; USR
+        beq dcs_typeok
+        sec                    ; REL requires record-aware copying
+        rts
+dcs_typeok:
+        sta w_sufx+1
+        ldx fmrow
+        clc
+        lda fmblockL,x
+        adc #$01
+        sta cpbudget
+        lda fmblockH,x
+        adc #$00
+        sta cpbudget+1
         ldy #$00
-dcs_n:  lda fnbuf2,y
+dcs_n:
+        lda fnbuf2,y
         beq dcs_s
         sta csrcbuf,y
         iny
-        cpy #17
+        cpy #16
         bne dcs_n
-dcs_s:  ldx #$00
-dcs_s2: lda w_sufx,x
-        beq dcs_s3
+dcs_s:
+        ldx #$00
+dcs_s2:
+        lda w_sufx,x
         sta csrcbuf,y
+        beq dcs_source
         iny
         inx
-        jmp dcs_s2
-dcs_s3: lda #$00
-        sta csrcbuf,y
-        ; --- open the source (existing file, plain name) ---
-        ldx fmrow                       ; r0 = fmnames[fmrow]
+        bne dcs_s2
+dcs_source:
+        jsr CLRCHN
+        ldx fmrow
         lda fmnamesL,x
         sta r0L
         lda fmnamesH,x
         sta r0H
-        jsr strlen
         lda #$02
-        ldx fmdev
         ldy #$02
-        jsr SETLFS
-        lda namlen
-        ldx r0L
-        ldy r0H
-        jsr SETNAM
-        jsr OPEN
-        jsr READST
-        and #$80
-        beq dcs_srcok
-        lda #$02
-        jsr CLOSE
-        sec
-        rts
-dcs_srcok:
-        ; --- open the destination ---
+        jsr openseq
+        bcc dcs_source_status
+        jmp dcs_error
+dcs_source_status:
+        lda fmdev
+        jsr drive_status
+        bcc dcs_dest
+        jmp dcs_error
+dcs_dest:
         lda #<csrcbuf
         sta r0L
         lda #>csrcbuf
@@ -656,78 +695,185 @@ dcs_srcok:
         ldy #$03
         jsr SETLFS
         lda namlen
-        ldx r0L
-        ldy r0H
+        ldx #<csrcbuf
+        ldy #>csrcbuf
         jsr SETNAM
         jsr OPEN
-        jsr READST
-        and #$80
-        beq dcs_dstok
-        lda #$02                        ; dest failed: drop the source
-        jsr CLOSE
-        lda #$03
-        jsr CLOSE
-        sec
-        rts
+        bcc dcs_dest_status
+        jmp dcs_error
+dcs_dest_status:
+        lda cdst
+        jsr drive_status
+        bcc dcs_dstok
+        jmp dcs_error
 dcs_dstok:
-        ; --- page-bounded copy loop (COPAGES * 256 bytes) ---
+        inc cpcreated
+dcs_pg:
+        jsr CLRCHN
         ldx #$02
         jsr CHKIN
-        ldx #COPAGES
-dcs_pg: ldy #$00
-dcs_rd: jsr CHRIN
+        bcc dcs_inputok
+        jmp dcs_error
+dcs_inputok:
+        ldy #$00
+dcs_rd:
+        jsr CHRIN
         sta cpbuf,y
-        jsr READST                      ; EOF rides with the final byte:
-        and #$40                        ; the byte just read is valid
-        bne dcs_weof
+        jsr READST
+        sta cpst
+        and #$bf
+        bne dcs_error
         iny
+        lda cpst
+        and #$40
+        bne dcs_weof
+        cpy #$00
         bne dcs_rd
-        lda #$00                        ; full page: write 256
-        sta dnum
-        jsr dcs_write
-        dex
-        bne dcs_pg
-        jmp dcs_fin                     ; 16 KB bound: stop reading
 dcs_weof:
-        iny                             ; partial page: bytes 0..Y
-        sty dnum
+        sty dnum               ; zero means a full 256-byte page
         jsr dcs_write
+        bcs dcs_error
+        lda cpst
+        and #$40
+        bne dcs_fin
+        ; A working stream terminates on EOF; the size bound is an error,
+        ; never a successful truncated copy.
+        lda cpbudget
+        bne dcs_dec
+        dec cpbudget+1
+dcs_dec:
+        dec cpbudget
+        lda cpbudget
+        ora cpbudget+1
+        beq dcs_error
+        jsr KEYIN
+        cmp #$1b
+        beq dcs_error
+        jmp dcs_pg
+dcs_error:
+        lda #$01
+        sta cperror
 dcs_fin:
         jsr CLRCHN
         lda #$02
         jsr CLOSE
         lda #$03
         jsr CLOSE
+        lda cpcreated
+        beq dcs_result
+        lda cdst
+        jsr drive_status       ; includes flush/disk-full failure at CLOSE
+        bcc dcs_result
+        inc cperror
+dcs_result:
+        cli
+        lda cperror
+        beq dcs_ok
+        sec
+        rts
+dcs_ok:
         clc
         rts
 
-dcs_write:                              ; dnum bytes of cpbuf -> dest
-        ; NOTE: no CLRCHN here — it would clear the destination OUTPUT
-        ; channel, and every page after the first would be written to the
-        ; screen. The input channel is re-pointed at the source instead.
+dcs_write:
+        jsr CLRCHN             ; UNTALK source before LISTEN destination
         ldx #$03
         jsr CHKOUT
+        bcs dcw_fail
         ldy #$00
-dcw_l:  lda cpbuf,y
+dcw_l:
+        lda cpbuf,y
         jsr CHROUT
+        jsr READST
+        bne dcw_fail
         iny
         cpy dnum
         bne dcw_l
-        ldx #$02
-        jsr CHKIN                       ; back to the source for next page
+        jsr CLRCHN             ; flush the last byte and UNLISTEN
+        clc
         rts
+dcw_fail:
+        sec
+        rts
+
+; A = IEC device -> read command-channel status WITHOUT closing channel
+; 15 (CLOSE 15 also closes data files on some drives). No logical-file
+; table entry is needed for TALK/secondary 15. Bounded, including timeout.
+drive_status:
+        pha
+        jsr CLRCHN
+        lda #$00
+        sta $90                ; fresh KERNAL serial status
+        sta statlen
+        pla
+        jsr TALK
+        lda #$6f
+        jsr TKSA
+status_read:
+        jsr ACPTR
+        ldx statlen
+        sta statusbuf,x
+        inc statlen
+        cmp #$0d
+        beq status_end
+        jsr READST
+        bne status_end
+        lda statlen
+        cmp #38
+        bcc status_read
+status_end:
+        jsr UNTLK
+        ldx statlen
+        lda #$00
+        sta statusbuf,x
+        lda statusbuf
+        cmp #$30
+        bne status_bad
+        lda statusbuf+1
+        cmp #$30
+        beq status_ok
+        cmp #$31
+        bne status_bad
+status_ok:
+        clc
+        rts
+status_bad:
+        sec
+        rts
+cpbudget: .word 0
+cperror: .byte 0
+cpcreated: .byte 0
+statlen: .byte 0
+statusbuf: .fill 40, 0
 
 ; ---------------- device switch keys ----------------
 fmdev8:
         lda #$08
         sta fmdev
+        jsr firstpage
         jsr refresh
         jmp j_fmloop
 fmdev9:
         lda #$09
+        bne fmdevice
+fmdev10:
+        lda #10
+        bne fmdevice
+fmdev11:
+        lda #11
+fmdevice:
         sta fmdev
+        jsr firstpage
         jsr refresh
         jmp j_fmloop
+
+firstpage:
+        lda #$00
+        sta fmrow
+        sta scroll
+        sta cachebase
+        sta cachebase+1
+        rts
 
 ; ---------------- building blocks ----------------
 ; append the (r0) $00-terminated string to fncmd at fci
@@ -834,7 +980,8 @@ sc_cr:  lda #$0d
         jsr CLRCHN
         lda #$0f
         jsr CLOSE
-        rts
+        lda fmdev
+        jmp drive_status
 
 ; shifted letters ($c1-$da) -> unshifted ($41-$5a)
 normkey:
@@ -846,46 +993,47 @@ normkey:
         sbc #$80
 nk_ret: rts
 
-; binary in A -> 3 ASCII digits in fncmd[fci..fci+2]; fci += 3
+; bnum word -> five decimal digits (leading spaces) in fncmd.
 bin2dec:
-        sta bnum
-        ldy #$30
-bd_h:   cmp #100
-        bcc bd_h1
-        sbc #100
-        iny
-        jmp bd_h
-bd_h1:  ldx fci
-        tya
-        sta fncmd,x             ; hundreds
-        ldy #$30
-bd_t:   cmp #10
-        bcc bd_t1
-        sbc #10
-        iny
-        jmp bd_t
-bd_t1:  sta dnum                ; remainder < 10
-        tya
-        sta fncmd+1,x           ; tens
-        lda dnum
-        clc
-        adc #$30
-        sta fncmd+2,x           ; ones
-        lda fncmd,x
+        ldy #$00
+        sty decseen
+bd_digit:
+        lda #$30
+        sta decdigit
+bd_sub:
+        sec
+        lda bnum
+        sbc decpowersL,y
+        tax
+        lda bnum+1
+        sbc decpowersH,y
+        bcc bd_emit
+        sta bnum+1
+        stx bnum
+        inc decdigit
+        bne bd_sub
+bd_emit:
+        lda decdigit
         cmp #$30
-        bne bd_end
-        lda #' '                ; $20
-        sta fncmd,x
-        lda fncmd+1,x
-        cmp #$30
-        bne bd_end
-        lda #' '
-        sta fncmd+1,x
-bd_end: lda fci
-        clc
-        adc #$03
-        sta fci
+        bne bd_seen
+        cpy #$04
+        beq bd_seen
+        ldx decseen
+        bne bd_seen
+        lda #$20
+        bne bd_put
+bd_seen:
+        inc decseen
+bd_put:
+        jsr apchr
+        iny
+        cpy #$05
+        bne bd_digit
         rts
+decpowersL: .byte <10000,<1000,<100,<10,<1
+decpowersH: .byte >10000,>1000,>100,>10,>1
+decdigit: .byte 0
+decseen: .byte 0
 
 ; ---------------- status line plumbing ----------------
 setline:                                ; r0 = $00-terminated string
@@ -915,6 +1063,7 @@ drawlinea:
         sta X1
         lda #$00
         sta X1+1
+        sta Y1+1
         lda #ACT_Y
         sta Y1
         lda #<linebuf
@@ -922,7 +1071,15 @@ drawlinea:
         lda #>linebuf
         sta r9H
         jsr GPUTS
-        rts
+        lda #21
+        jsr VDCLR
+        lda #<linebuf
+        sta r9L
+        lda #>linebuf
+        sta r9H
+        lda #21
+        ldx #0
+        jmp VDTEXT
 
 show_hint:
         lda #<p_hint
@@ -953,22 +1110,55 @@ gs_d:   lda #24
         lda #>glnold
         sta r9H
         jsr GPUTS
-        rts
+        lda #20
+        jsr VDCLR
+        lda #<glnold
+        sta r9L
+        lda #>glnold
+        sta r9H
+        lda #20
+        ldx #0
+        jmp VDTEXT
 
 ; blank the editor strip (leaving the rename/copy editor state)
 clr_inline:
         #ClrRect 24, (IN_Y - 2), 240, 12
-        rts
+        lda #20
+        jmp VDCLR
 
 ; ---------------- refresh after a mutation ----------------
 refresh:
+        lda #$00
+        sta fmready
+ref_scan:
         jsr dirscan
+        lda direrror
+        bne ref_draw
+        lda fmcnt
+        bne ref_draw
+        lda cachebase
+        ora cachebase+1
+        beq ref_draw
+        ; Deleting the last entry of a cached page must reveal its
+        ; predecessors rather than strand the user on an empty page.
+        sec
+        lda cachebase
+        sbc #CACHE_STEP
+        sta cachebase
+        lda cachebase+1
+        sbc #$00
+        sta cachebase+1
+        lda #$00
+        sta fmrow
+        sta scroll
+        jmp ref_scan
+ref_draw:
+        jsr show_device
         lda #$01
         jsr GFX_SETCOLOR
         lda fmrow
-        sec
-        sbc fmcnt               ; fmrow - fmcnt
-        bmi ref_ok              ; fmrow < fmcnt: in range
+        cmp fmcnt
+        bcc ref_ok
         lda fmcnt
         beq ref_zero
         sec
@@ -978,17 +1168,45 @@ refresh:
 ref_zero:
         lda #$00
         sta fmrow
-ref_ok: lda #$ff
-        sta prev_row
+ref_ok: jsr keepvisible
         jsr paintrows
+        lda direrror
+        beq ref_hint
+        lda #<msg_direrr
+        sta r0L
+        lda #>msg_direrr
+        sta r0H
+        jmp setline
+ref_hint:
         jsr show_hint
         rts
 
 repaint:
+        lda #$00
+        sta fmready
         lda #$01
         jsr GFX_SETCOLOR
+        jsr keepvisible
         jsr paintrows
         jmp fmloop
+
+; fmrow is a cache index; scroll is the first visible cache entry.
+keepvisible:
+        lda fmrow
+        cmp scroll
+        bcs kv_down
+        sta scroll
+kv_down:
+        sec
+        sbc scroll
+        cmp #LIST_MAX
+        bcc kv_done
+        lda fmrow
+        sec
+        sbc #LIST_MAX-1
+        sta scroll
+kv_done:
+        rts
 
 ; title-bar close box binds here (the CreateWindow macro expects ON_CLOSE)
 ON_CLOSE:
@@ -1000,16 +1218,22 @@ ON_CLOSE:
 ; marker-by-redrawing scheme relied on a false XOR model and left one
 ; '>' behind per move.)
 paintrows:
-        #ClrRect (CUR_X - 2), (TOP_Y - 2), 288, (LIST_MAX * ROW_PX) + 4
-        lda fmrow
-        sta prev_row
-        jsr marky
-        lda #$3e
-        jsr GPUTC
+        ; ClrRect rounds to 8-pixel cell bands. End below y=160 so list
+        ; redraws cannot erase the first scanlines of the status at y=164.
+        #ClrRect (CUR_X - 2), (TOP_Y - 2), 288, (LIST_MAX * ROW_PX)
         lda #$00
         sta rowi
 pr_l:
         lda rowi
+        clc
+        adc #$04
+        jsr VDCLR
+        lda rowi
+        clc
+        adc scroll
+        cmp fmcnt
+        bcs pr_nomark
+        sta rowindex
         tax
         lda fmnamesL,x
         sta r9L
@@ -1019,18 +1243,14 @@ pr_l:
         sta X1
         lda #$00
         sta X1+1
+        sta Y1+1
         lda #TOP_Y
         sta Y1
         lda rowi
         jsr addrowy
         jsr GPUTS
-        ; mirror the row on the 80-column display: marker at col 2,
-        ; name at col 4, rows 4.. (VDCLR first: names shrink after DEL)
-        lda rowi
-        clc
-        adc #$04
-        jsr VDCLR
-        ldx rowi
+        ; Rendering routines clobber registers; keep the cache index in RAM.
+        ldx rowindex
         lda fmnamesL,x
         sta r9L
         lda fmnamesH,x
@@ -1040,9 +1260,13 @@ pr_l:
         adc #$04
         ldx #$04
         jsr VDTEXT
-        lda rowi
+        lda rowindex
         cmp fmrow
         bne pr_nomark
+        lda rowi
+        jsr marky
+        lda #$3e
+        jsr GPUTC
         lda #<vd_mark
         sta r9L
         lda #>vd_mark
@@ -1055,18 +1279,8 @@ pr_l:
 pr_nomark:
         inc rowi
         lda rowi
-        cmp fmcnt
-        bne pr_l
-        ; blank the rows below the listing (entries removed by DEL)
-pr_tail:
-        lda rowi
         cmp #LIST_MAX
-        bcs pr_done
-        clc
-        adc #$04
-        jsr VDCLR
-        inc rowi
-        jmp pr_tail
+        bne pr_l
 pr_done:
         rts
 
@@ -1082,7 +1296,49 @@ vca_l:  pha
         bne vca_l
         rts
 vd_mark: .text ">", $00
-vd_dev8: .text "device 8", $00
+vd_dev8: .text "device 08", $00
+devhint: .text "disk 08  8/9/0/1=device  up/dn=scroll", 0
+vd_keys: .text "B: copy to paired drive. PRG/SEQ/USR supported; REL needs record copying", 0
+
+show_device:
+        lda #$30
+        sta devhint+5
+        sta vd_dev8+7
+        lda fmdev
+        cmp #10
+        bcc sd_one
+        sec
+        sbc #10
+        inc devhint+5
+        inc vd_dev8+7
+sd_one:
+        clc
+        adc #$30
+        sta devhint+6
+        sta vd_dev8+8
+        #ClrRect 24,24,264,8
+        #Text 24,24,devhint
+        lda #<vd_dev8
+        sta r9L
+        lda #>vd_dev8
+        sta r9H
+        lda #2
+        ldx #22
+        jsr VDTEXT
+        lda #<devhint
+        sta r9L
+        lda #>devhint
+        sta r9H
+        lda #3
+        ldx #0
+        jsr VDTEXT
+        lda #<vd_keys
+        sta r9L
+        lda #>vd_keys
+        sta r9H
+        lda #22
+        ldx #0
+        jmp VDTEXT
 
 ; set X1 = CUR_X word, Y1 = TOP_Y + A*ROW_PX (GPUTC call setup)
 marky:
@@ -1091,6 +1347,7 @@ marky:
         sta X1
         lda #$00
         sta X1+1
+        sta Y1+1
         lda #TOP_Y
         sta Y1
         lda vtmp2
@@ -1116,29 +1373,43 @@ addrowy:
         rts
 
 ; ---------- directory scan: names into fm buffers --------------------
-fmnamesL: .byte <fm1, <fm2, <fm3, <fm4, <fm5, <fm6
-          .byte <fm7, <fm8, <fm9, <fma, <fmb, <fmc
-fmnamesH: .byte >fm1, >fm2, >fm3, >fm4, >fm5, >fm6
-          .byte >fm7, >fm8, >fm9, >fma, >fmb, >fmc
-fmblockL: .byte 0,0,0,0,0,0,0,0,0,0,0,0
-fmtype:   .byte 0,0,0,0,0,0,0,0,0,0,0,0
-          .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm1:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm2:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm3:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm4:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm5:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm6:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm7:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm8:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fm9:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fma:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fmb:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-fmc:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+fmnamesL:
+        .for n := 0, n < CACHE_MAX, n += 1
+        .byte <(fmnames + n * 17)
+        .next
+fmnamesH:
+        .for n := 0, n < CACHE_MAX, n += 1
+        .byte >(fmnames + n * 17)
+        .next
+fmblockL: .fill CACHE_MAX, 0
+fmblockH: .fill CACHE_MAX, 0
+fmtype:   .fill CACHE_MAX * 3, 0
+fmnames:  .fill CACHE_MAX * 17, 0
+scroll:   .byte 0
+rowindex: .byte 0
+cachebase: .word 0          ; absolute directory ordinal of cache entry zero
+morefiles: .byte 0
+fmready:  .byte 0
+sysdev:   .byte 8
+scanindex: .word 0
+direrror: .byte 0
+dslink:   .byte 0
+dsblocks: .word 0
+dslen:    .byte 0
 
+; Read the directory as a BASIC program: load word, then linked lines
+; (link word, block-count word, zero-terminated text), ending in a zero
+; link. No fixed 32-byte record assumption: headers and device-specific
+; listings have different line lengths. No painting while IEC is active.
 dirscan:
         lda #$00
         sta fmcnt
+        sta morefiles
+        sta direrror
+        sta dseof
+        sta scanindex
+        sta scanindex+1
+        jsr CLRCHN
         lda #$05
         ldx fmdev
         ldy #$00
@@ -1148,209 +1419,181 @@ dirscan:
         ldy #>dname
         jsr SETNAM
         jsr OPEN
+        bcc ds_open
+        jmp ds_fail
+ds_open:
         ldx #$05
         jsr CHKIN
-        ; the $ stream = 32-byte records from byte 0; the first record's
-        ; first pair IS the load address (01 04), later records carry 01 01.
-        ; Record 0 is skipped: it is the disk-title line.
+        bcc ds_input
+        jmp ds_fail
+ds_input:
+        jsr ds_get               ; load-address low/high
+        jsr ds_get
         lda #$01
         sta dsfirst
 ds_ent:
+        jsr ds_get
+        sta dslink
+        jsr ds_get
+        ora dslink
+        bne ds_line
+        jmp ds_end               ; null BASIC link = directory end
+ds_line:
+        lda direrror
+        beq ds_readline
+        jmp ds_end
+ds_readline:
+        jsr ds_get
+        sta dsblocks
+        jsr ds_get
+        sta dsblocks+1
         lda #$00
-        sta dseof
-        ldy #$00
-ds_rd:  jsr CHRIN                       ; read one full 32-byte record.
-                                        ; Store BEFORE the status check:
-                                        ; the status latch still holds EOF
-                                        ; from the app's own LOAD here.
-        sta dline,y
-        iny
-        jsr READST
-        and #$40
-        beq ds_more
-        inc dseof                       ; EOF: parse this, then finish
-        jmp ds_parse
-ds_more:
-        cpy #32
-        bne ds_rd
+        sta dslen
+ds_text:
+        jsr ds_get
+        beq ds_parse
+        ldx dslen
+        cpx #63
+        bcc ds_savechar
+        jmp ds_fail
+ds_savechar:
+        sta dline,x
+        inc dslen
+        bne ds_text
 ds_parse:
-        ; a record is a file entry iff it carries a count > 0 AND a quoted
-        ; name. Record 0 is the disk title. The BLOCKS FREE trailer drops
-        ; out at the quote gate.
-        lda dsfirst
-        beq ds_cnt
+        ldx dslen
         lda #$00
-        sta dsfirst
-        jmp ds_next
-ds_cnt: lda dline+2
-        ora dline+3
-        bne ds_xinit                    ; count > 0: look for the name
-        jmp ds_next                     ; count 0 = disk title
-ds_xinit:
+        sta dline,x
+        sta dline+1,x
+        sta dline+2,x
+        lda dsfirst
+        beq ds_name
+        dec dsfirst
+        jmp ds_ent
+ds_name:
         ldx #$00
-ds_q1:  lda dline,x
-        cmp #$22
-        beq ds_qgot
+ds_q1:
+        cpx dslen
+        bcc ds_quotechar
+        jmp ds_ent
+ds_quotechar:
+        lda dline,x
         inx
-        cpx #32
+        cmp #$22
         bne ds_q1
-        jmp ds_next                     ; no quotes -> header/trailer line
-ds_qgot:
-        inx                             ; step past the opening quote
-        ldy #$00                        ; copy the name between the quotes
-ds_nc:  lda dline,x
+        ldy #$00
+ds_nc:
+        cpx dslen
+        bcc ds_namechar
+        jmp ds_fail
+ds_namechar:
+        lda dline,x
+        inx
         cmp #$22
         beq ds_ncend
+        cpy #16
+        bcc ds_savename
+        jmp ds_fail
+ds_savename:
         sta fnbuf,y
-        inx
         iny
-        cpy #$10                        ; cap at 16 chars
         bne ds_nc
 ds_ncend:
         lda #$00
-        sta fnbuf,y                     ; terminator (Y = copied length)
+        sta fnbuf,y
+        stx fmclose
+        ; Ignore earlier cache pages; zero-block files still count.
+        lda scanindex+1
+        cmp cachebase+1
+        bcc ds_skip
+        bne ds_store
+        lda scanindex
+        cmp cachebase
+        bcc ds_skip
+ds_store:
         ldx fmcnt
-        cpx #LIST_MAX
-        bcs ds_next
+        cpx #CACHE_MAX
+        bcc ds_slot
+        lda #$01
+        sta morefiles
+        jmp ds_end
+ds_slot:
         lda fmnamesL,x
         sta r0L
         lda fmnamesH,x
         sta r0H
+        lda dsblocks
+        sta fmblockL,x
+        lda dsblocks+1
+        sta fmblockH,x
         ldy #$00
-ds_cp:  lda fnbuf,y
+ds_cp:
+        lda fnbuf,y
         sta (r0),y
         iny
-        cpy #$11
+        cpy #17
         bne ds_cp
-        inc fmcnt                       ; v1-style single increment after copy
-ds_next:
-        lda #$00
-        sta dsfirst                     ; every later record uses [2..3]
-        lda dseof
-        bne ds_end
+        ; Type after closing quote: skip padding and unclosed marker.
+        ldx fmclose
+ds_typestart:
+        lda dline,x
+        cmp #$20
+        beq ds_typepad
+        cmp #$2a
+        bne ds_typegot
+ds_typepad:
+        inx
+        cpx dslen
+        bcc ds_typestart
+ds_typegot:
+        lda fmcnt
+        asl
+        clc
+        adc fmcnt
+        tay
+        lda dline,x
+        sta fmtype,y
+        lda dline+1,x
+        sta fmtype+1,y
+        lda dline+2,x
+        sta fmtype+2,y
+        inc fmcnt
+ds_skip:
+        inc scanindex
+        bne ds_continue
+        inc scanindex+1
+        beq ds_fail
+ds_continue:
         jmp ds_ent
+ds_fail:
+        lda #$01
+        sta direrror
 ds_end:
         jsr CLRCHN
         lda #$05
         jsr CLOSE
-        cli                             ; the serial OPEN/GETIN paths can
-        rts                             ; exit with IRQs masked (kernal
-                                        ; serial timeout under load) — the
-                                        ; keyboard IRQ must live for KEYIN
+        cli
+        rts
 
-; hide system components: compact the fm name list in place after the scan
-; (the in-parse version broke the first paint — see task notes; this runs
-; after the serial channel is closed)
-sysfilter:
+; CHRIN status is fresh only AFTER the read. Bit 6 accompanies a valid
+; final byte; other bits are errors. Remember EOF to bound malformed input.
+ds_get:
+        lda direrror
+        ora dseof
+        bne ds_bad
+        jsr CHRIN
+        sta cpbyte
+        jsr READST
+        sta dseof
+        and #$bf
+        beq ds_good
+        sta direrror
+ds_bad:
         lda #$00
-        sta rowi                        ; read index
-        sta fci                         ; write (keep) index
-sf_l:   lda rowi
-        cmp fmcnt
-        bcs sf_done
-        tax
-        lda fmnamesL,x
-        sta r0L
-        lda fmnamesH,x
-        sta r0H
-        ldy #$00
-sf_cp:  lda (r0),y
-        sta fnbuf,y                     ; row name into the compare buffer
-        beq sf_got
-        iny
-        cpy #17
-        bne sf_cp
-sf_got: jsr is_syscomp                  ; C=1 -> it IS a system component
-        bcs sf_drop
-        lda rowi
-        cmp fci
-        beq sf_step
-        ; keep this row but compacted down to the write slot
-        lda rowi                        ; r0 = read-row buffer
-        tax
-        lda fmnamesL,x
-        sta r0L
-        lda fmnamesH,x
-        sta r0H
-        lda fci                         ; r1 = write-slot buffer
-        tax
-        lda fmnamesL,x
-        sta r1L
-        lda fmnamesH,x
-        sta r1H
-        ldy #$00
-sf_mv:  lda (r0),y
-        sta (r1),y
-        iny
-        cpy #17
-        bne sf_mv
-sf_step:
-        inc fci
-sf_drop:
-        inc rowi
-        jmp sf_l
-sf_done:
-        lda fci
-        sta fmcnt
         rts
-
-is_syscomp:
-        ; does fnbuf match any entry in syscomps? C=0 keep, C=1 hide
-        lda #<syscomps
-        sta r1L
-        lda #>syscomps
-        sta r1H
-        lda #<syscomps
-        sta r2L
-        lda #>syscomps
-        sta r2H
-        ldx #$00
-is_l:   jsr cmpname                     ; C=1 -> fnbuf == (r1)
-        bcs is_yes
-        jsr nextentry                   ; r1 = r2 = next entry
-        inx
-        cpx #6
-        bne is_l
-        clc
-is_yes: rts
-
-cmpname:                                ; r1 = $00-terminated entry name
-        ldy #$00
-cn_l:   lda fnbuf,y
-        beq cn_end
-        cmp (r1),y
-        bne cn_no
-        iny
-        cpy #17
-        bne cn_l
-cn_no:  clc
+ds_good:
+        lda cpbyte
         rts
-cn_end: lda (r1),y
-        beq cn_yes
-        jmp cn_no
-cn_yes: sec
-        rts
-
-nextentry:                              ; r2 skips to after entry's $00,
-                                        ; then r1 = r2
-        ldy #$00
-ne_l:   lda (r2),y
-        beq ne_d
-        iny
-        jmp ne_l
-ne_d:   iny
-        tya
-        clc
-        adc r2L
-        sta r2L
-        bcc ne_r
-        inc r2H
-ne_r:   lda r2L
-        sta r1L
-        lda r2H
-        sta r1H
-        rts
-
 ; ---------- strings / buffers ----------------------------------------
 dskstr: .text "uos-desktop", 0
 fm_title: .text "File manager", 0
@@ -1385,7 +1628,12 @@ msg_ren: .text "renamed", 0
 msg_cpy: .text "copied", 0
 msg_to8: .text "copied to device 8", 0
 msg_to9: .text "copied to device 9", 0
+msg_to10: .text "copied to device 10", 0
+msg_to11: .text "copied to device 11", 0
+copymsgL: .byte <msg_to8,<msg_to9,<msg_to10,<msg_to11
+copymsgH: .byte >msg_to8,>msg_to9,>msg_to10,>msg_to11
 msg_err: .text "copy failed", 0
+msg_direrr: .text "directory read failed", 0
 csrcbuf: .fill 24, 0                      ; copy: dest name (name + ",S,W")
 cpbuf:   .fill 256, 0                     ; copy: one page in flight
 
@@ -1400,7 +1648,7 @@ dname:  .text "$"
 vtmp:   .byte 0
 vtmp2:  .byte 0
 prev_row: .byte 0
-bnum:   .byte 0
+bnum:   .word 0
 cpbyte: .byte 0
 cpst:   .byte 0
 errtag: .byte 0
@@ -1409,4 +1657,6 @@ linebuf:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 dseof:  .byte 0
 dsfirst: .byte 0
-dline:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+dline:  .fill 66, 0
+
+        .cerror * > SETREC, "file manager overlaps persistent settings"

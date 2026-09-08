@@ -149,6 +149,11 @@
 
 <main class="wrap">
 
+<p><strong>Current completion checklist (2026-09-08):</strong>
+<a href="IMPLEMENTATION-ROADMAP.md">Implementation roadmap and gap analysis</a>
+supersedes dated status claims below and adds the full application suite,
+Ultimate desktop features, and per-device hardware acceptance gates.</p>
+
 <!-- ============ 1. verified state ============ -->
 <h2 id="state"><span class="sec">01</span>Where the system stands &mdash; verified, not assumed</h2>
 <p class="lede">Everything below was exercised on the physical machine or in a hardware-matched emulator.
@@ -161,7 +166,7 @@ assumption that uOS "is just a demo".</p>
   <tr><td>Boot on real C128 (C64 mode, via U2+ <code>run_prg</code>)</td><td><span class="pill ok">verified</span></td><td>Repeatable one-command boot; ~15&nbsp;s to desktop</td></tr>
   <tr><td>Desktop + ultos menu / clock / quit</td><td><span class="pill ok">verified</span></td><td>Live on hardware, multiple sessions</td></tr>
   <tr><td>Tom+ USB mouse moves pointer (1351 protocol)</td><td><span class="pill ok">verified</span></td><td>Jittery; driver = <code>uos-drv1351</code></td></tr>
-  <tr><td>REU integration (512&nbsp;K test)</td><td><span class="pill ok">verified</span></td><td>uOS requires the REU &mdash; the one thing stock GEOS 2.0 cannot handle</td></tr>
+  <tr><td>REU integration (512&nbsp;K test)</td><td><span class="pill ok">verified</span></td><td>uOS uses REU snapshots; the initial GEOS installation on the reference machine had an input-driver conflict</td></tr>
   <tr><td>Applications launcher (v0.2, this fork)</td><td><span class="pill ok">verified</span></td><td>Live disk scan + clickable launch via new <code>FILLFILE</code> core export</td></tr>
   <tr><td>File manager + cross-device copy</td><td><span class="pill ok">verified</span></td><td>Dirscan/rename/scratch/copy + `B` byte-stream copy 8&lt;-&gt;9 with directory verify; <code>ci_fm</code> 18/18, <code>ci_copy</code> 7/7</td></tr>
   <tr><td>Keyboard input</td><td><span class="pill ok">verified</span></td><td><code>KEYIN</code> drives the fmgr/shell/editor/calculator; C128 ESC via the VIC-IIe extended matrix (<code>uos-drv1351</code>), hw-verified</td></tr>
@@ -185,7 +190,7 @@ assumption that uOS "is just a demo".</p>
   <tr><td>U2+ drive emulation</td><td>1541/1571/1581 (+&nbsp;SoftIEC bus&nbsp;10), true-drive &amp; flash timing modes</td><td>File system layer; native-mode DNP devices later</td><td><span class="pill info">kernal LOAD only</span></td></tr>
   <tr><td>U2+ network API</td><td class="mono" rowspan="2">&mdash;</td><td rowspan="2">A resident 6502 bridge can let the OS talk to the cartridge's REST interface (drive-image swap from the desktop!) &mdash; no other C128 OS has this</td><td><span class="pill info">future</span></td></tr>
   <tr><td>CPU</td><td>8502 1&nbsp;/&nbsp;2&nbsp;MHz &mdash; GEOS-class systems switch clocks; uOS runs 1&nbsp;MHz today</td><td><span class="pill info">future</span></td></tr>
-  <tr><td>MMU banks</td><td>16 banks &times; 64&nbsp;K, zero-page banking</td><td>Extended memory for large apps &mdash; unused by uOS</td><td><span class="pill crit">unused</span></td></tr>
+  <tr><td>MMU banks</td><td>Stock C128: two 64&nbsp;KiB RAM banks</td><td>Native bank management for large apps &mdash; unused by uOS</td><td><span class="pill crit">unused</span></td></tr>
 </table>
 </div>
 

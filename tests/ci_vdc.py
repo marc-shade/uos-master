@@ -243,7 +243,7 @@ def main():
         rows = wait_rows(mon, lambda r: r[2].startswith("File manager") and r[4].startswith("  >"),
                          "file manager rows")
         show(rows, "fmgr")
-        assert "device 8" in rows[2], rows[2]
+        assert "device 08" in rows[2], rows[2]
         assert rows[23].startswith("D=del"), rows[23]
         names = [r[4:].strip() for r in rows[4:14] if r.strip()]
         assert len(names) >= 5, names

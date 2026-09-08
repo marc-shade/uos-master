@@ -9,7 +9,7 @@ build output; addresses are the fixed ABI the core and drivers export.
 | Range | Owner | Notes |
 |---|---|---|
 | `$0801-$0fff` | core `uos` | **must end below `$1000`** (the desktop loads there); check `Data: … $0801-$0fxx` after any core edit |
-| `$1000-$4023` | desktop `uos-desktop` | resident (`routines.inc` still says `DESK_END = $2fff`; the build output is the truth); `DESK_START = $1000` is the one-way re-entry point |
+| `$1000-$404f` | desktop `uos-desktop` | resident (`routines.inc` still says `DESK_END = $2fff`; the build output is the truth); `DESK_START = $1000` is the one-way re-entry point |
 | `$5000-$8fff` | the running app | `APP_START = $5000`; one app at a time, loaded over the previous one |
 | `$7350-$7358` | settings record | `SETREC`; the settings app image is padded up to it, see below |
 | `$7f00` | tick trampoline (CI only) | free for apps at run time |
@@ -57,11 +57,11 @@ disk as an application.
 | `$0817/$081a/$081d` | `FS_APP/FS_SCREEN/FS_RECT` | REU stash/fetch of app / screen / rect |
 | `$0820` | `CLR_RECT` | |
 | `$0823` | `LOAD_IMM` | inline `$00`-terminated filename follows the `jsr` (see `loadfiles` in `uos.asm`) |
-| `$0826` | `APP_LOADER` | kernal LOAD of the file named in the file buffer; `LOADERR` latches the kernal error |
-| `$0829` | `FILLFILE` | `r0` → `$00`-terminated name → file buffer (dynamic loading) |
+| `$0826` | `APP_LOADER` | KERNAL LOAD of the file buffer; carry clear on success, set on failure. `LOADERR` resets for each attempt and latches the KERNAL error |
+| `$0829` | `FILLFILE` | `r0` → `$00`-terminated name → file buffer (dynamic loading); at most 16 name bytes plus a terminator |
 | `$082c` | `KEYIN` | `A` = key event (0 = none): kernal GETIN **plus** the C128 keys the C64-mode kernal cannot see (`KEYIN_EXT` in drv1351 scans the VIC-IIe extended matrix: ESC → `$1b`, dedicated cursor keys → `$91/$11/$9d/$1d`, one event per press) and RUN/STOP → `$1b` for C64 keyboards |
 | `$082f` | `GETCAP` | `X` = capability id (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile) → `A/X` = driver base lo/hi, `0/0` absent |
-| `$0832` | `LAUNCH_APP` | file buffer → LOAD + `jmp APP_START`, **core-resident** — the only safe way for an app to start another app (the load overwrites the caller) |
+| `$0832` | `LAUNCH_APP` | Core-resident LOAD then `jmp APP_START` on success, `jmp DESK_START` on failure; the safe entry for an app replacing itself |
 | `$0835` | `VDTEXT` | 80-col: `A` = row 0-24, `X` = col 0-79, `r9` → PETSCII text; no-op without a VDC |
 | `$0838` | `VDCLR` | 80-col: `A` = row → 80 spaces; no-op without a VDC |
 
@@ -69,10 +69,10 @@ Graphics (`$c000`…): `GFX_INIT $c000`, `GFX_ON $c006` (`A` = colour byte
 fg<<4|bg; `$00` means *skip the clear*), `GFX_OFF $c009`, `GFX_SETCOLOR
 $c00c` (1 = write, 0 = erase), `GFX_SETPIXEL $c00f`, `GFX_LINE $c015`,
 `GFX_CIRCLE $c018`, `GPUTC $c01b` (`A` = char at `X1/Y1`), `GPUTS $c01e`
-(`r9` → text at `X1/Y1`), `GFX_DRAWBYTEPATTERN $c021`. Text is an **XOR
-engine**: drawing a string twice erases it — keep the string you drew
-(`oldbuf` pattern in the shell) and redraw it to erase. **`GPUTS`/`GPUTC`
-clobber X and Y** — save a loop index before the call (the launcher's row
+(`r9` → text at `X1/Y1`), `GFX_DRAWBYTEPATTERN $c021`. Text uses the
+current pen: **pen 1 sets glyph bits, pen 0 clears them**. Drawing twice
+with pen 1 does not erase anything. Clear the affected strip before drawing
+replacement text. **`GPUTS`/`GPUTC` clobber X and Y** — save a loop index before the call (the launcher's row
 loop lost its index this way for a long time).
 
 VDC driver (`$cc00`…, fixed jump table; never mirror routine addresses by
@@ -103,7 +103,7 @@ loop:   jsr KEYIN                     ; OWN the keyboard: a private loop
         beq loop                      ; (the core loop's key read would race you)
         cmp #$1b                      ; ESC -> back to the desktop
         beq back
-        ...                           ; handle keys, redraw with XOR discipline
+        ...                           ; handle keys, clear strips before redrawing
         jmp loop
 back:   jmp DESK_START                ; one-way: DESK_START resets the stack
                                       ; and re-enters MAINLOOP (never RTS)
@@ -114,7 +114,9 @@ Rules learned on hardware and in CI:
 
 * **Start other apps only through `LAUNCH_APP`** (set the name with
   `FILLFILE` first). A `jsr APP_LOADER` from inside the app being replaced
-  returns into freshly loaded bytes.
+  returns into freshly loaded bytes. `LAUNCH_APP` returns to the desktop
+  if LOAD fails; it does not execute the old or partially loaded app.
+  App manifests and load-address validation remain to be implemented.
 * **Leave through `jmp DESK_START`.** It clears the bitmap, restores the
   pointer sprite, resets the stack and `jmp`s to `MAINLOOP`.
 * `RTS` from `DESK_START` (or from any one-way entry) pops an empty stack
@@ -177,7 +179,9 @@ or wedged cartridge returns instead of hanging.
 `$01 $11 <path>`, `PWD` = `$01 $12` (path → `NET_DATA`), `LS` = `$01 $13`
 then `$01 $14` with `NET_DIRMODE` (`$9162`) set so each reply block (one
 entry: attribute byte + name) is kept null-separated and counted in
-`NET_DIRN` (`$9163`). DIR entries have attribute bit 6.
+`NET_DIRN` (`$9163`). The FAT directory attribute is bit 4 (`$10`); the existing shell
+`LS` prefix still tests `$40` and must be corrected when its UCI browser is
+updated. Do not copy that test into a new storage driver.
 
 Data bytes (`NET_STATE = $9121`, then hour, min, sec, year word, month,
 day, weekday (0 = Sunday), zone, IP, IPSTR, LEN, SOCK, STAT) are plain RAM:
@@ -245,7 +249,7 @@ desktop entry.
 
 ## The calculator (`uos-calc`)
 
-The last app named in the PRD's FR-S5 ("editor, calculator, terminal").
+The calculator component of FR-S5; the standalone terminal remains open.
 Integer, 16-bit unsigned: digits build the entry, `+ - * /` chain
 immediate-execution (no precedence), `=`/RETURN folds the chain, `DEL`
 backspaces the entry, `C` clears, ESC exits. While an error is latched
@@ -257,33 +261,51 @@ drawn on both screens. Launchable from the Applications menu (popup
 "calculator" entry + the disk-scanning launcher), from the file manager
 (RETURN), and from the shell (`RUN UOS-CALC`).
 
-Two bugs this app fixed in the shared shift-subtract divider, both worth
-remembering for any future 16-bit work: the dividend's **high byte must
-participate in the shift** (`asl low` + `rol high` — shifting only the
-low byte leaves the high byte's bits un-consumed, so the remainder keeps
-doubling after the low byte empties and the digit loop never reaches 0),
-and a `cmp`-based success return must match its caller's `bcs`/`bcc`
-convention — the verify here returned carry-set on success while the
-caller branched to the error path on carry-set, so every copy reported
-failure.
+In a 16-bit shift/subtract divider, include the high byte in each shift
+(`asl low` / `rol high`) and retain the seventeenth remainder bit. Carry
+conventions must agree between every function and caller.
 
-## The file manager: cross-device copy and device switching
+## The file manager: browsing, file information, and copying
 
-`C` copies the file on the **current device** (the drive's own DOS COPY,
-`C0:<new>=<old>`). `B` copies the file **to the other device (8<->9)** as
-a kernal byte-stream copy (source read on the listing device with a plain
-name — no type suffix reads any existing file — dest written as
-`name,S,W`, 16 KB page-bounded read loop) and then **verifies the
-destination directory** before reporting `copied to device 9/8`; a write
-that never landed reports `copy failed`. `8`/`9` switch the listing
-device. Why explicit keys + a verify instead of auto-detecting the other
-drive from the serial status: under VICE an OPEN to an absent device
-returns no device-not-present flag (`ST` stays `$00`/`$20` regardless,
-probe: `probes/devprobe.asm`), and a guessed destination that silently
-drops the bytes is worse than an explicit key with an honest failure.
-1541 traps honored: the verify pattern-read uses its own logical file
-with a 256-byte hard bound (a missing SEQ file reads `$00` forever on the
-real Ultimate drive), and the copy read loop is page-bounded.
+The ten visible rows scroll through a 64-entry RAM cache. `cachebase` is a
+16-bit absolute directory ordinal; `fmrow` and `scroll` index that cache.
+At a cache edge the next scan retains the preceding nine visible entries.
+The cache bounds RAM consumption without limiting the directory to 64 files.
+The IEC parser follows linked BASIC lines and zero terminators, stores both
+block-count bytes and three type bytes, and accepts zero-block entries.
+It stops on EOF, a zero link, a serial error, or an overlong/malformed line.
+Empty/absent devices return to the input loop; actions cannot dereference an
+empty row. `fmready` is set after scanning and both display paints, allowing
+regressions to wait for real input readiness instead of the first LOAD bytes.
+On entry, `sysdev` remembers the device which loaded the app. ESC returns to
+the resident desktop and restores that device for subsequent app loads.
+
+`8`, `9`, `0`, `1` select devices 8, 9, 10, 11. `C` uses drive-side
+`C0:new=old`; `B` streams to the paired device (8/9 or 10/11). The latter
+preserves PRG/SEQ/USR type and every data byte, including PRG load addresses.
+REL copying still needs a record-aware implementation. The source block
+count bounds malformed streams; there is no successful truncation at 16 KiB.
+
+Each page direction change calls `CLRCHN`, then `CHKIN` or `CHKOUT` again.
+Counters live in RAM because those KERNAL calls overwrite X. Check OPEN and
+channel-selection carry, per-byte serial status, EOF on the final byte, and
+drive status after opening and closing the destination. Read channel 15 via
+TALK/TKSA/ACPTR/UNTLK without closing it while data channels are open.
+An existing destination is an error. Copy/rename handlers return to their
+caller instead of leaking a stack frame on each action.
+
+The regression extracts both copied files from private disk images and
+compares all 18,439 bytes. A directory entry alone cannot prove persistence
+or file integrity. Interrupted/failed copies may leave partial files;
+transactional staging/cleanup and copy-time readback verification remain
+roadmap work. No REL, arbitrary IEC-address, or physical cross-device-copy
+certification is implied by the PRG emulator test.
+
+`CLR_RECT` now zeros RAM without an REU zero-pattern dependency. Its arguments
+are `r0 = address`, `r2 = length`; zero length is a no-op, and `r0/r2` are
+consumed. The macro preserves coordinates. Its rectangles round outward to
+8-pixel bands, so list clears must stop below the status line's band.
+Full-screen/window snapshots still use the REU.
 
 ## The text editor (`uos-edit`)
 
@@ -332,13 +354,14 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
   callers that only set `Y1`'s low byte plotted thousands of rows past
   the bitmap (the file manager's list was invisible on the 40-col
   screen, and the shell's response line grew ghost glyphs). The macro
-  now saves/restores `r0`–`r2` around the fetches — keep any direct
+  now saves/restores `r0`–`r2` around the clears — keep any direct
   `CLR_RECT` caller doing the same, and never rely on another routine
   leaving `Y1+1` zero.
-* **XOR-erase by redrawing is only exact when the pixels still are the
-  old string's.** Anything that drew over the region in between makes
-  the erase leave residue. Erase whole strips with `#ClrRect` (now
-  coordinate-safe) instead of redrawing the old text.
+* Text is not XOR-drawn: use pen 0 to erase a known glyph or `#ClrRect`
+  to replace a whole strip. Clear boundaries must respect adjacent widgets.
+* VDC text uses three write passes plus readback repair. The inter-pass
+  delay is one 256-iteration loop (~1.3 ms at 1 MHz); an accidental nested
+  loop previously delayed each pass by roughly 327 ms.
 
 ## Build and test
 
@@ -348,7 +371,11 @@ UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings
 python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity, status line (14 checks)
 python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
 python3 tests/ci_calc.py                     # x64: the calculator (uos-calc) arithmetic, chains, OVF/DIV/0, backspace, exit (12 checks)
-python3 tests/ci_copy.py                     # x64 two drives, no warp: fmgr cross-device copy 8->9->8 + image persistence (7 checks)
+python3 tests/ci_copy.py                     # x64: >16 KiB PRG copies both ways, type/byte checks, existing destination rejection
+python3 tests/ci_storage.py                  # x64: directory/cache scrolling, bitmap restoration, empty/missing devices
+python3 tests/ci_storage.py --machine x128   # same, with VDC readback
+python3 tests/run_ci.py storage64 storage128 fm vdc copy edit calc # retained logs + exact build hashes
+python3 hw_storage_check.py                  # real C128: private test disk, scrolling, VIC/VDC readback, boot distributable
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)

@@ -187,22 +187,16 @@ def core_symbol(name):
 
 def parse_lst_symbols():
     """fmnamesL/fmnamesH addresses from the 64tass listing."""
-    lst = open(os.path.join(UOS, "target/uos-fmgr.lst"), "rb").read().decode(
-        "latin-1", errors="replace")
-    syms = {}
-    for name in ("L", "H"):
-        m = re.search(r"^>([0-9a-fA-F]+)\s+(?:[0-9a-fA-F]{2} ?)+\s*fmnames%s:"
-                      % name, lst, re.M)
-        if not m:
-            raise SystemExit(f"FAIL: fmnames{name} not found in listing")
-        syms["fmnames" + name] = int(m.group(1), 16)
-    return syms["fmnamesL"], syms["fmnamesH"]
+    return lst_symbol("uos-fmgr", "fmnamesL"), lst_symbol("uos-fmgr", "fmnamesH")
 
 
 def list_files(mon, cnt):
-    lo = mon.read_mem(NAMES_L, NAMES_L + 12 - 1, memspace=0)
+    if not cnt:
+        return []
+    assert cnt <= 64, f"invalid directory cache count: {cnt}"
+    lo = mon.read_mem(NAMES_L, NAMES_L + cnt - 1, memspace=0)
     mon.resume()
-    hi = mon.read_mem(NAMES_H, NAMES_H + 12 - 1, memspace=0)
+    hi = mon.read_mem(NAMES_H, NAMES_H + cnt - 1, memspace=0)
     mon.resume()
     files = []
     for i in range(cnt):

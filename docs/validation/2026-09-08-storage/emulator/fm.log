@@ -1,0 +1,52 @@
+PASS 0: boot chain complete, desktop at $1000
+PASS 0b: boot applied the persisted display mode = 1
+PASS 1: fmgr loaded via tick-vector trampoline
+      dir listing: [b'UOS', b'UOS-GFX', b'UOS-VDC', b'UOS-DRV1351', b'UOS-SPRITES', b'UOS-REU', b'UOS-NET', b'UOS-DESKTOP', b'UOS-SETTINGS', b'UOS-FMGR', b'UOS-SHELL', b'UOS-EDIT', b'UOS-CALC', b'UOS-SET']
+PASS 2: dirscan listing (component filter deferred)
+      screenshot: /var/tmp/arc-scratch/uos-ci/run/fm-initial.png
+PASS 3: cursor x3 down + x1 up -> fmrow=2
+      cursor screenshot: /var/tmp/arc-scratch/uos-ci/run/fm-cursor.png
+PASS 4: RENAME uos-vdc -> CI-RN shown in the list
+PASS 5: SCRATCH removes CI-RN; the 11th file scrolls into the list
+PASS 6: COPY as UOS-CPY appears in the list
+      screenshot: /var/tmp/arc-scratch/uos-ci/run/fm-actions.png
+PASS 6b: record memory image intact: 507302f0a50105
+PASS 7: RETURN open path — uos-settings code at $5000
+PASS 7b: display mode cycled, record save issued
+PASS 8: RUN/STOP (ESC alias) reload — desktop re-registered its APP_TICK
+      screenshot after ESC: /var/tmp/arc-scratch/uos-ci/run/fm-after-esc.png
+PASS 10a: shell loaded via tick-vector trampoline
+PASS 10b: VER responded on the response line
+      screenshot: /var/tmp/arc-scratch/uos-ci/run/shell-ver.png
+PASS 10c: DIR rescanned 10 entries, command line cleared
+      image file view: ['uos-edit', 'uos-calc', 'uos-set']
+PASS 10e: shell COPY (on the image) + REN (in the drive listing: ['01, FILES SCRATCHED,01,00', '01, FILES SCRATCHED,00,00'])
+PASS 10f: HELP lists the command set
+PASS 10g: IP / TIME / GET answer 'no ultimate' on a plain C64
+PASS 10h: CAT UOS-NET read 512 bytes to the viewer, shell back at prompt
+PASS 10i: POKE $02A7=$5A then PEEK reported it (resp=b'$02\xc17: $5\xc1')
+PASS 10j: PWD / LS / CD ran without crashing; shell still responsive
+PASS 10d: shell EXIT back to the desktop (tick dispatch live)
+CI PASS: 18/18 emulator-verifiable checks
+disk after run:
+OPENCBM: opening dynamic library libopencbm.so failed!
+D64 disk image recognised: /var/tmp/arc-scratch/uos-ci/run/ci.d64, 35 tracks.
+Unit 8 drive 0: D64 disk image attached: /var/tmp/arc-scratch/uos-ci/run/ci.d64.
+0 "ultos           " sh 2a
+9    "uos"              prg 
+12   "uos-gfx"          prg 
+1    "uos-cpy"          prg 
+2    "uos-drv1351"      prg 
+1    "uos-sprites"      prg 
+1    "uos-reu"          prg 
+11   "uos-net"          prg 
+49   "uos-desktop"      prg 
+36   "uos-settings"     prg 
+29   "uos-fmgr"         prg 
+25   "uos-shell"        prg 
+11   "uos-edit"         prg 
+7    "uos-calc"         prg 
+1    "uos-set"          prg 
+469 blocks free.
+Unit 8 drive 0: D64 disk image detached: /var/tmp/arc-scratch/uos-ci/run/ci.d64.
+

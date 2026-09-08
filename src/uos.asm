@@ -383,6 +383,8 @@ TOBASIC:
 ; Equivalent to LOAD"file",8,1
 ; ==========================================================
 LOADER:
+        lda #$00
+        sta LOADERR             ; this attempt owns the error latch
         LDY #$00        ; print file name being loaded
 _prloop:
         LDA file,Y
@@ -425,7 +427,7 @@ _error
 ftmp:   .byte $00
 LOADERR: .byte $00     ; last kernal LOAD error ($04 file not found, $05 device
                        ; not present, $1d load error); 0 until the first failure
-file:   .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+file:   .fill 17, 0              ; 16 filename bytes plus the terminator
 
 ; ==========================================================
 ; Fill File Buffer
@@ -475,6 +477,9 @@ la_bg:  jsr GFX_ON
         lda #$00
         sta $87f8
         jsr LOADER
+        bcc la_loaded
+        jmp DESK_START          ; a failed/partial load cannot enter APP_START
+la_loaded:
         jmp APP_START
 
 ; ==========================================================
@@ -807,30 +812,35 @@ _return:
 
 ; ==========================================================
 ; Clear Screen Rectangle
-; Fetches from $0000 (bank 0)
-;       r0 = 64 address
-;       r1 = size in bytes
-; NOTE: CLOBBERS r0/r1/r2 (== X1/Y1/X2, the gfx pixel coordinates).
-; The ClrRect MACRO saves/restores them around the fetches — keep any
-; new direct CLR_RECT callers doing the same, or the next draw plots
-; with a garbage Y high byte (the fmgr's invisible list rows).
+;       r0 = RAM address, r2 = byte count (zero is a no-op)
+; Clears RAM even without an REU. Advances r0 and consumes r2; r1 unused.
+; The ClrRect macro saves/restores r0/r1/r2 (X1/Y1/X2) around its band
+; clears. Direct callers must likewise preserve any live coordinates.
 ; ==========================================================
 CLEAR_RECT:
-        lda r0L                 ; source addr
-        sta REU_PARAMS
-        lda r0H
-        sta REU_PARAMS+1
-        lda r1L                        ; expanson ram addr
-        sta REU_PARAMS+2
-        lda r1H
-        sta REU_PARAMS+3
-        lda #$00                        ; bank 0
-        sta REU_PARAMS+4                ; expansion bank #
-        lda r2L                        ; bytes to move
-        sta REU_PARAMS+5
-        lda r2H
-        sta REU_PARAMS+6
-        jsr REU_FETCH
+        ; Clear RAM directly. Stores reach bitmap RAM even while BASIC
+        ; ROM is mapped over $a000-$bfff. Fetching a supposed zero pattern
+        ; from REU silently did nothing when no REU was configured.
+        lda r2L
+        ora r2H
+        beq cr_done
+        ldy #$00
+cr_loop:
+        lda #$00
+        sta (r0),y
+        inc r0L
+        bne cr_count
+        inc r0H
+cr_count:
+        lda r2L
+        bne cr_low
+        dec r2H
+cr_low:
+        dec r2L
+        lda r2L
+        ora r2H
+        bne cr_loop
+cr_done:
         rts
 
 ; ==========================================================
@@ -1036,3 +1046,4 @@ gc_done:
 
 capid:  .byte $00
 retval: .byte $00, $00
+        .cerror * > $1000, "core overlaps resident desktop"

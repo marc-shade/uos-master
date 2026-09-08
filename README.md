@@ -13,6 +13,19 @@ builds it out into a complete C128 OS — see [docs/roadmap.html](docs/roadmap.h
 [docs/SDK.md](docs/SDK.md) (application SDK: memory map, jump tables, app lifecycle,
 80-column companion API, CI).
 
+The current [completion roadmap and gap analysis](docs/IMPLEMENTATION-ROADMAP.md)
+tracks the remaining kernel, GEOS/Wheels application parity, Ultimate desktop
+integration, and expansion-hardware work. uOS is still under development;
+the basic editor and calculator are only the beginning of the application suite.
+
+## Storage and loader update (2026-09-08)
+
+The file manager now scrolls beyond its 64-entry cache, shows file metadata,
+selects devices 8–11, and streams copies beyond 16 KiB. App loading restores the
+system device after browsing another drive and returns to the desktop on error.
+See the [test and hardware evidence](docs/validation/2026-09-08-storage/README.md)
+for the exact checks, build hashes, screenshots and remaining limitations.
+
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 
 - **Networking** (`uos-net`, 2026-09-06) — a driver for the Ultimate II+ command
