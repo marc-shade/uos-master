@@ -76,10 +76,10 @@ class RenderBrowser(Browser):
                 return {'cycles':sum(counts.values()),'by_module':dict(counts),'instructions':steps}
             before = self.cpu.processorCycles
             if not self.stub():
-                assert (0x0801 <= pc < 0x1000 or 0x5000 <= pc < 0x6000
+                assert (0x0801 <= pc < 0x1000 or 0x5000 <= pc < 0x6900
                         or 0x8a00 <= pc < 0x9b00 or 0xc000 <= pc < 0xd000),hex(pc)
                 self.cpu.step()
-            module = ('core' if pc < 0x1000 else 'browser' if pc < 0x6000
+            module = ('core' if pc < 0x1000 else 'browser' if pc < 0x6900
                       else 'uci' if pc < 0xc000 else 'vic' if pc < 0xcc00 else 'vdc')
             counts[module] += self.cpu.processorCycles-before
         raise AssertionError('Renderer did not return to input')
@@ -112,6 +112,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--out',type=Path,required=True)
     parser.add_argument('--check-fresh',action='store_true')
+    parser.add_argument('--inventory-variants',action='store_true',
+                        help='focus on full, missing, unknown and changing drive rows')
     args = parser.parse_args()
     args.out.mkdir(parents=True,exist_ok=True)
     names = [b'long-'+b'x'*290+b'-END']+[f'folder-{i:04d}'.encode() for i in range(1,18)]
@@ -138,6 +140,31 @@ def main():
             (args.out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
         print(name,json.dumps(result),flush=True)
 
+    def finish():
+        assert report['build'] == build_hashes(), 'Build changed during profiling'
+        report['passed'] = True
+        (args.out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+
+    if args.inventory_variants:
+        record('initial')
+        record('partial-inventory', ord('D'))
+        b.bus.filesystem.inventory = bytes([4,0,8,1,2,9,1,15,10,0,80,4,1])
+        record('four-devices',ord('R'))
+        for i in range(3):
+            record(f'select-drive-{i+1}',0x11)
+        b.bus.filesystem.inventory = b'\0'
+        record('no-devices',ord('R'))
+        b.bus.filesystem.inventory = bytes([1,99,9,1])
+        record('unknown-type',ord('R'))
+        b.bus.filesystem.inventory = bytes([4,0,8,1,0,9,0])
+        b.bus.filesystem.power[0x35] = b'off'
+        record('reconciled-off',ord('R'))
+        b.bus.filesystem.inventory = b'bad'
+        record('invalid-inventory',ord('R'))
+        record('files-after-error',ord('D'))
+        finish()
+        return
+
     actions = [('initial',None),('down',0x11),('next',ord('N')),('previous',ord('B'))]
     if args.check_fresh:
         actions += [('name-right',0x1d),('name-left',0x9d),('path',ord('P')),
@@ -162,9 +189,15 @@ def main():
                          ('short-to-wide',0x91),('invalid-open',13),
                          ('clear-error',ord('R'))]:
             record(name,key)
-    assert report['build'] == build_hashes(), 'Build changed during profiling'
-    report['passed'] = True
-    (args.out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+        b.bus.filesystem.folders[b'/'] = [b'\x20'+b'long-' + b'z'*280+b'.d64']
+        for name,key in [('mount-source',ord('/')),('drive-panel',ord('D')),
+                         ('system-protected',ord('E')),('drive-select',0x11),
+                         ('mount-prompt',ord('M')),('mount-cancel',27),
+                         ('mount-confirm-prompt',ord('M')),('mounted',13),
+                         ('eject-prompt',ord('E')),('ejected',13),
+                         ('return-to-files',ord('D'))]:
+            record(name,key)
+    finish()
 
 
 if __name__=='__main__':

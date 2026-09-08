@@ -48,6 +48,22 @@ def test_status_and_binary_data():
     assert bus.commands == [b"\x04\x29\x01"] and bus.accepted == 1
 
 
+def test_file_read_empty_status():
+    # Dos::get_more_data sends no numeric status on successful file reads.
+    # Preserve the generic API's $ff return and the exact binary payload;
+    # command-specific file clients must interpret length/EOF/integrity.
+    payload = bytes((i*37) & 255 for i in range(129))
+    bus = UCIBus([(payload, b'')])
+    received = []
+    def collect(cpu, packet_bus):
+        received.append(bytes(packet_bus.ram[DATA:DATA+word(packet_bus, LENGTH)]))
+        return False
+    cpu, _ = run(bus, command=b'\x02\x04\x00\x04', stream=True, callback=collect)
+    assert cpu.a == 0xff and not cpu.p & cpu.CARRY
+    assert received == [payload] and not bus.ram[TRUNC]
+    assert bus.ram[0x9142] == 0 and bus.accepted == 1
+
+
 def test_aggregate_overflow():
     payload = bytes(i & 255 for i in range(896))
     bus = UCIBus([(payload, b"00,OK")])

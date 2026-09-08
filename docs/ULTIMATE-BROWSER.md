@@ -22,6 +22,7 @@ does not mount it in an IEC drive.
 | Scroll the full selected name | Left/right, 32 bytes per step | `<` / `>` |
 | Show full path instead of selected name | P; left/right to scroll | Click the path below the title, then `<` / `>` |
 | Refresh after a change or error | R | Leave/reopen, or use navigation controls |
+| Open drive panel | D | Drives at the right of the title |
 | Cancel an active directory scan | ESC | — |
 | Return to desktop | ESC when idle | Exit |
 
@@ -29,8 +30,44 @@ The item range appears below the details. `+` means another page exists.
 The VDC mirrors the list, details, range/error and keyboard help. The running
 desktop clock continues to update while the browser waits for input.
 Opening a regular file currently reports the cartridge's directory error;
-viewer/association launch, file operations and drive mount/eject are subsequent
-roadmap work.
+viewer/association launch and cartridge file operations remain roadmap work.
+
+## Drive panel
+
+Select a disk image, then press **D** or click **Drives**. Choose an IEC drive
+with Up/Down or a row click. **M / Mnt** prepares a mount; **E / Ejct** prepares
+an eject. The prompt includes the destination IEC number. **Enter / Yes** sends
+the operation; **Esc / No** cancels it. Esc again, D, Files or Back returns to
+the browser without changing its directory, page or selected file. R refreshes
+the drive inventory. The filename/path inspector remains available through
+Left/Right and P.
+
+The disk that loaded the app is protected. Its IEC number and any observed
+system-drive slot stay locked for this app session, even across refreshes.
+Returning to the desktop restores that load device. A second drive can therefore
+hold an image while applications continue to load from the system disk.
+In File Manager, keys 8/9/0/1 select IEC devices 8/9/10/11 to access their
+files. Extending its device selector to the rest of the IEC range remains open.
+
+The panel accepts a filename stem followed by D64/G64/D71/G71/D81 extensions;
+actual image compatibility is
+decided by the cartridge. It checks a fresh inventory before executing a
+confirmed operation. A changed record cancels the request and asks for review.
+Powered-off, unsupported, duplicate or invalid destinations cannot receive a
+mount/eject command. No implicit/zero drive ID is sent.
+
+The reference cartridge declares four devices but supplies two records. The
+panel reconciles this specific short form only when it contains two distinct
+emulated-drive IEC addresses and separate A/B power queries agree. It reports
+the other devices as unknown. Malformed or clipped responses disable operations.
+This does not certify the missing SoftwareIEC or printer records. See the
+[service protocol notes](ULTIMATE-SERVICE.md#drive-capability-records).
+
+The success message is **drive command accepted**. The installed UCI API does
+not return the mounted image's identity; checking its IEC contents remains a
+separate operation. Image creation, power/type/ROM/address changes, write
+protection, dirty-media handling and replacing/recovering the system volume
+remain open.
 
 ## Bounds and recovery
 
@@ -56,14 +93,16 @@ path. Navigation still uses the cartridge's current directory.
 
 ## Implementation and validation
 
-`src/uos-ultimate.asm` loads at `$5000` and must end before `$6000`. It reserves
+`src/uos-ultimate.asm` loads at `$5000` and must end before `$6900`. It includes
+`src/ultimate-drives.inc` and reserves
 these transient areas without padding them into its PRG:
 
 | Range | Use |
 |---|---|
-| `$6000–$6fff` | Eight 512-byte raw-name slots |
-| `$7000–$71ff` | Current path |
-| `$7400–$77ff` | Command construction (currently at most 513 bytes) |
+| `$6900–$70ff` | First four 512-byte raw-name slots |
+| `$7100–$72ff` | Current path |
+| `$7400–$7bff` | Last four 512-byte raw-name slots |
+| `$7c00–$7eff` | Command construction (currently at most 514 bytes) |
 | `$60–$6a` | App pointers, lengths and mouse coordinates |
 
 The settings record at `$7350` is preserved. Driver-private scratch at
@@ -71,13 +110,16 @@ The settings record at `$7350` is preserved. Driver-private scratch at
 `OS_TICK=$083b`, `KEYIN=$082c` and `READ_BUTTON=$083e` in its input loop;
 `ready=1` means input can be accepted, `0` means work is in progress and `$ff`
 marks exit. Desktop entry clears stale controls and redraws the screen.
-The current browser PRG occupies `$5000–$5dbd`, including its static buffers.
+The current browser PRG occupies `$5000–$6671`, including its static buffers.
+`cache_pages` supplies the eight slot addresses; the cache is not contiguous.
+The CI tick trampoline at `$7f00`, sprite data and screen matrix are preserved.
 
 The frame and toolbar are drawn once. Selection changes replace the two row
 markers and the selected-name details; name/path scrolling replaces only the
 details. Page changes replace the list, path, details and status. Each VDC field
 remembers its previous text length so shorter content clears its old tail.
-VIC erasure includes the full font height, from one pixel above the text origin
+The drive panel reuses the detail inspector and repaints its fields after an
+action. Switching panels redraws the frame. VIC erasure includes the full font height, from one pixel above the text origin
 through eight pixels below it, including descenders. List text starts at X=40
 and its marker at X=24 so their erase areas align with bitmap bytes.
 
@@ -85,14 +127,17 @@ and its marker at X=24 so their erase areas align with bitmap bytes.
 against a filesystem/register model. It checks 1,100-entry paging past ordinal
 255, 511-byte names, complete long command operands, empty/error/clipped replies,
 cancel/retry, mouse release actions across the VIC X-byte boundary, and memory
-guards. The graphics/input adapters deliberately clobber permitted scratch.
+guards. It also checks complete/reconciled/invalid inventory, independent power
+validation, system-drive locks, duplicate IDs, stale confirmation, cancellation,
+514-byte mount requests and firmware errors. The graphics/input adapters deliberately clobber permitted scratch.
 The model does not certify physical mouse or cartridge timing.
 
 `tests/profile_browser.py` also executes the assembled VIC graphics and VDC
 driver. Its `--check-fresh` mode compares every incremental frame with a fresh
 render of the same state, including complete VIC bitmap and VDC character and
 attribute memory. It covers long-to-short selections, page changes, empty and
-failed directory reads, retry, path/name switching, wide glyphs and descenders.
+failed directory reads, retry, path/name switching, wide glyphs, descenders,
+drive selection, confirmation/cancellation, mount/eject and returning to files.
 Instruction counts use immediate VDC readiness after a required poll; they
 exclude VIC bad lines, interrupts, DMA pauses and host latency.
 
@@ -115,23 +160,31 @@ VIC pixels after a selection round trip with a clock repaint. It navigates
 Root/Open/Parent, restores the two DOS paths, and leaves
 the desktop live. Its coordinate injection tests compiled hit detection and
 dispatch; it does not certify physical pointer movement or button presses.
-It does not remount drive B or modify files.
+Its default navigation check does not remount drive B or modify files.
+`--drives` creates a private scratch D64, mounts it on an initially empty B,
+uses File Manager to copy a system PRG into it, then ejects and checks every
+copied byte through the cartridge filesystem. It restores the DOS paths and
+removes its own fixture. The VDC capture helper preserves and verifies all
+borrowed RAM at `$7400–$7cf4`, which now contains four cached names.
 Physical checks leave quiet intervals around IEC I/O because cartridge DMA
 observations stop/resume the CPU. The
 [validation record](validation/2026-09-08-browser/README.md) preserves the
 failing baselines, diagnostic changes and exact build hashes.
 
 The [redraw validation](validation/2026-09-08-browser-redraw/README.md) covers
-the current build: 21 complete-frame comparisons, three emulator suites and
+the preceding browser build: 21 complete-frame comparisons, three emulator suites and
 physical navigation through a 1,096-entry directory to ordinal 256. Paired VDC
 captures agree on all seven sampled screens, including unused rows after Root.
 Preference preservation and exit to a live desktop pass.
 
-Observed physical selection changes took 0.52–0.64 s. The median of 32 page
-changes fell from 14.5 to 7.9 s; the current range was 6.46–9.24 s. These timings
-include host polling. Initial rendering still paints the complete frame, and
+The redraw optimization lowered the median of 32 page changes from 14.5 to
+7.9 s. The drive-panel build's physical repeat recorded 0.52–0.65 s selection
+changes and 6.46–9.35 s pages (median 7.92 s). These timings include host polling.
+Initial rendering still paints the complete frame, and
 repeated directory scanning and long-name rendering need further performance
 work.
 
-The [completion roadmap](IMPLEMENTATION-ROADMAP.md) tracks the remaining drive
-panel, hardware registry, file operations and full interactive VDC desktop.
+The [drive validation](validation/2026-09-08-ultimate-drives/README.md) records
+the expanded panel's checks and exact build hashes. The
+[completion roadmap](IMPLEMENTATION-ROADMAP.md) tracks the remaining drive
+controls, hardware registry, file operations and full interactive VDC desktop.

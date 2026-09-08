@@ -80,6 +80,12 @@ Apps with their own keyboard loops can call `OS_TICK`, `KEYIN` and
 The Ultimate browser demonstrates this and propagates the borrow when converting
 the nine-bit VIC sprite X coordinate to screen coordinates. Its buffer and input
 contracts are documented in the [browser guide](ULTIMATE-BROWSER.md).
+Its drive panel has private capability records and confirmation state. The
+browser now uses split filename caches at `$6900–$70ff` and `$7400–$7bff`, path
+storage at `$7100`, and commands at `$7c00`; do not assume the old contiguous
+cache at `$6000`. The host VDC capture helper borrows `$7400–$7cf4` only while
+the app is idle and restores that entire region, with a byte comparison, before
+input resumes. Apps executing code in that region cannot use this helper.
 
 Core control hit testing uses inclusive left/top and exclusive right/bottom
 edges, compares the complete nine-bit X coordinate, and scans all 25 slots
@@ -411,11 +417,13 @@ python3 tests/ci_core.py                      # assembled core: all 256 GETCAP I
 python3 tests/ci_desktop.py                   # assembled launcher: 0-6 apps, control callbacks and complete X-coordinate hit testing
 python3 tests/ci_vdc_protocol.py              # assembled VDC driver: register readiness, exact text/attributes, absent probe
 python3 tests/ci_vdc_capture.py               # IRQ capture: exact bytes, address drift/retry, timeout, guards and IRQ restoration
-python3 tests/ci_uci.py                       # assembled UCI driver: 14 protocol/CPU checks, no VICE needed
-python3 tests/ci_ultimate.py                  # assembled browser: paging, long names, mouse, failures, capture bounds
+python3 tests/ci_uci.py                       # assembled UCI driver: 15 protocol/CPU checks, no VICE needed
+python3 tests/ci_ultimate.py                  # browser/drive panel: paging, inventory, protection, mount/eject, bounds
+python3 tests/ci_capture_host.py              # borrowed VDC-capture RAM restored on success and observation/probe failure
 python3 tests/profile_browser.py --out /tmp/browser-render --check-fresh # actual graphics: cycles and fresh-frame comparison
 python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
 python3 hw_ultimate_check.py                 # real C128: browser navigation, complete names, VDC readback, path restoration
+python3 hw_ultimate_check.py --drives        # real C128: private D64 mount, IEC copy, byte verification and eject on empty B
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)

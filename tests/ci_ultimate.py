@@ -36,14 +36,31 @@ class FileSystem(UCIBus):
         self.folders = folders
         self.paths = {1: b'/shell-place', 2: b'/'}
         self.reject_open = False
+        self.inventory = bytes([4, 0, 8, 1, 0, 9, 1])
+        self.power = {0x34: b'on ', 0x35: b'on '}
+        self.control_status = b'00,OK'
+        self.media_status = b'00,OK'
+        self.media_reply = b''
+        self.media_commands = []
 
     def __setitem__(self, address, value):
         if address == 0xdf1c and value == 1:
             command = bytes(self.command)
-            assert command[0] == 2, f'Browser changed another DOS context: {command!r}'
+            assert command[0] in (2, 4), f'Browser changed another DOS context: {command!r}'
             op, path = command[1], self.paths[2]
             status, data = b'00,OK', b''
-            if op == 0x12:
+            if command[0] == 4:
+                status = self.control_status
+                if op == 0x29:
+                    assert command == b'\x04\x29\x01'
+                    data = self.inventory
+                else:
+                    assert op in self.power and len(command) == 2
+                    data = self.power[op]
+            elif op in (0x23, 0x24):
+                self.media_commands.append(command)
+                status, data = self.media_status, self.media_reply
+            elif op == 0x12:
                 data = path if path.endswith(b'/') else path + b'/'
             elif op == 0x11:
                 component = command[2:]
@@ -74,10 +91,10 @@ class Browser:
         self.sym = symbols()
         self.prg = (ROOT / 'target/uos-ultimate.prg').read_bytes()
         assert int.from_bytes(self.prg[:2], 'little') == 0x5000
-        assert 0x5000 + len(self.prg) - 2 <= 0x6000
+        assert 0x5000 + len(self.prg) - 2 <= 0x6900
         self.bus.ram[0x5000:0x5000 + len(self.prg)-2] = self.prg[2:]
         self.bus.ram[0x7350:0x7400] = bytes([0xb6]) * 0xb0
-        self.bus.ram[0x7800:0x8000] = bytes([0xc7]) * 0x800
+        self.bus.ram[0x7e02:0x8000] = bytes([0xc7]) * 0x1fe
         self.bus.ram[0x9000:0x9100] = bytes([0xd8]) * 0x100
         self.bus.ram[0xba] = 8
         self.cpu = MPU(memory=self.bus, pc=0x5000)
@@ -91,7 +108,9 @@ class Browser:
         return int.from_bytes(self.bus.ram[a:a+size], 'little')
 
     def names(self):
-        return [bytes(self.bus.ram[0x6000+i*512:0x6200+i*512]).split(b'\0')[0]
+        pages = self.bus.ram[self.sym['cache_pages']:self.sym['cache_pages']+8]
+        assert pages == bytes([0x69, 0x6b, 0x6d, 0x6f, 0x74, 0x76, 0x78, 0x7a])
+        return [bytes(self.bus.ram[pages[i]*256:pages[i]*256+512]).split(b'\0')[0]
                 for i in range(self.value('count'))]
 
     def cstring(self, address):
@@ -149,13 +168,13 @@ class Browser:
                 return
             left_loop = True
             if not self.stub():
-                assert (0x5000 <= self.cpu.pc < 0x6000 or 0x8a00 <= self.cpu.pc < 0x9b00), hex(self.cpu.pc)
+                assert (0x5000 <= self.cpu.pc < 0x6900 or 0x8a00 <= self.cpu.pc < 0x9b00), hex(self.cpu.pc)
                 self.cpu.step()
         raise AssertionError('Browser did not reach its input loop')
 
     def guards(self):
         assert self.bus.ram[0x7350:0x7400] == bytes([0xb6])*0xb0, 'Settings overwritten'
-        assert self.bus.ram[0x7800:0x8000] == bytes([0xc7])*0x800, 'Command buffer overflow'
+        assert self.bus.ram[0x7e02:0x8000] == bytes([0xc7])*0x1fe, 'Command buffer overflow'
         assert self.bus.ram[0x9000:0x9100] == bytes([0xd8])*0x100, 'Controls overwritten'
         assert self.bus.paths[1] == b'/shell-place'
         assert not self.bus.discarded, 'ACK discarded an unread packet'
@@ -229,6 +248,10 @@ def check_failures():
     b = Browser({b'/': []}, present=False)
     b.run()
     assert not b.names() and 'unavailable' in b.vdc[22]
+    b.run(ord('D'))
+    assert not b.value('drive_valid') and 'unavailable' in b.vdc[22]
+    b.run(27)
+    assert not b.value('driveview')
     b.run(27, leave=True)
     for packet in (b'\x10', b'\x10bad\0tail', b'\x10bad/path', b'\x10'+b'z'*600):
         b = Browser({b'/': [packet]})
@@ -266,7 +289,7 @@ def check_bounds():
     b = Browser({b'/': [b'\0'+name for name in names]})
     b.run()
     assert b.names() == names and b.value('more') == 0
-    assert b.bus.ram[0x6fff] == 0 and b.bus.ram[0x7000:0x7002] == b'/\0'
+    assert b.bus.ram[0x7bff] == 0 and b.bus.ram[0x7100:0x7102] == b'/\0'
     b.run(ord('N'))
     assert b.value('base', 2) == 0
     b = Browser({b'/': [b'\0'+f'file-{i}'.encode() for i in range(10)]})
@@ -286,6 +309,163 @@ def check_bounds():
     assert not b.names() and 'invalid' in b.vdc[22]
     b.run(ord('/'))
     assert b.bus.paths[2] == b'/' and 'empty' in b.vdc[22]
+
+
+def drive_browser(name=b'test.d64', inventory=None):
+    b = Browser({b'/': [b'\x20'+name]})
+    if inventory is not None:
+        b.bus.inventory = inventory
+    b.run()
+    b.run(ord('D'))
+    return b
+
+
+def check_drive_inventory():
+    full = bytes([4, 0, 8, 1, 2, 9, 1, 15, 10, 0, 80, 4, 0])
+    b = drive_browser(inventory=full)
+    assert b.value('drive_valid') == 1 and b.value('drive_count') == 4
+    assert '08 1541' in b.vdc[4] and 'system' in b.vdc[4]
+    assert '09 1581' in b.vdc[5] and 'soft IEC' in b.vdc[6] and 'printer' in b.vdc[7]
+    assert 'complete' in b.vdc[22]
+    assert not any(c[0] == 4 and c[1] in (0x34, 0x35) for c in b.bus.commands)
+    for inventory, valid, count in [(b'\0', 1, 0), (bytes([1, 0, 9, 1]), 1, 1),
+                                     (bytes([4, 0, 8, 1, 0, 9, 1]), 2, 2)]:
+        b = drive_browser(inventory=inventory)
+        assert (b.value('drive_valid'), b.value('drive_count')) == (valid, count)
+    assert 'other devices unknown' in b.vdc[22]
+    assert b.bus.commands[-3:] == [b'\x04\x29\x01', b'\x04\x34', b'\x04\x35']
+    b.bus.power[0x34] = b'on'
+    b.bus.power[0x35] = b'off'
+    b.bus.inventory = bytes([4, 0, 8, 1, 0, 9, 0])
+    b.run(ord('R'))
+    assert b.value('drive_valid') == 2 and 'off' in b.vdc[5]
+
+    malformed = [b'', bytes([5]), bytes([255])+bytes(12), full+b'x', full[:-1],
+                 bytes([3, 0, 8, 1, 0, 9, 1]), bytes([4, 0, 8, 1, 15, 9, 1]),
+                 bytes([4, 0, 8, 1, 0, 8, 1]), bytes([4, 0, 7, 1, 0, 9, 1]),
+                 bytes([1, 0, 31, 1]), bytes([1, 0, 9, 2]), b'x'*600]
+    for inventory in malformed:
+        b = drive_browser(inventory=inventory)
+        assert b.value('drive_valid') == 0 and b.value('drive_count') == 0, inventory
+        b.run(ord('E'))
+        b.run(13)
+        assert not b.bus.media_commands
+    for power in (b'', b'o', b'on\0', b'ON', b'off ', b'onn', b'x'*600):
+        b = drive_browser()
+        b.bus.power[0x35] = power
+        b.run(ord('R'))
+        assert b.value('drive_valid') == 0, power
+    b = drive_browser()
+    b.bus.power[0x35] = b'off'  # disagrees with record power=on
+    b.run(ord('R'))
+    assert b.value('drive_valid') == 0
+    b.bus.control_status = b'21,UNKNOWN COMMAND'
+    b.run(ord('R'))
+    assert b.value('drive_valid') == 0 and '21,' in b.vdc[22]
+
+
+def check_drive_safety():
+    b = drive_browser()
+    for key in ('M', 'E'):
+        b.run(ord(key))
+        assert not b.value('pending') and 'system drive protected' in b.vdc[22]
+        b.run(13)
+    assert not b.bus.media_commands
+    b.run(0x11)
+    b.run(ord('M'))
+    assert b.value('pending') == 0x23 and 'mount 09?' in b.vdc[22]
+    b.run(ord('N'))  # irrelevant keys cannot change a pending operation
+    assert b.value('pending') == 0x23
+    b.run(27)
+    assert b.value('driveview') == 1 and not b.value('pending')
+    assert not b.bus.media_commands
+    b.run(ord('E'))
+    b.bus.inventory = bytes([4, 0, 8, 1, 0, 10, 1])
+    b.run(13)
+    assert 'drives changed' in b.vdc[22] and not b.bus.media_commands
+    b.run(ord('M'))
+    b.run(13)
+    assert b.bus.media_commands == [b'\x02\x23\x0atest.d64']
+    # A system slot stays locked even if the external UI changes its IEC ID.
+    b.bus.inventory = bytes([4, 0, 12, 1, 0, 10, 1])
+    b.run(ord('R'))
+    b.run(0x91)
+    b.run(ord('E'))
+    assert 'system drive protected' in b.vdc[22] and not b.value('pending')
+    # Protect the actual load device, including a system disk on B / IEC 9.
+    b = Browser({b'/': [b'\x20test.d64']})
+    b.bus.ram[0xba] = 9
+    b.run()
+    b.run(ord('D'))
+    b.run(0x11)
+    b.run(ord('E'))
+    assert 'system drive protected' in b.vdc[22]
+    for inventory in (bytes([2, 0, 9, 1, 0, 9, 1]), bytes([2, 0, 9, 1, 15, 9, 1]),
+                      bytes([1, 0, 9, 0]), bytes([1, 0, 0, 1]), bytes([1, 80, 4, 1]),
+                      bytes([1, 99, 9, 1])):
+        b = drive_browser(inventory=inventory)
+        b.run(ord('E'))
+        b.run(13)
+        assert not b.bus.media_commands, inventory
+
+
+def check_drive_mount_eject():
+    name = b'z'*507+b'.D64'
+    names = [b'\x20'+f'item-{i}'.encode() for i in range(7)] + [b'\x20'+name]
+    b = Browser({b'/': names})
+    b.run()
+    for _ in range(7):
+        b.run(0x11)
+    b.click(275, 14)  # title switch; includes the nine-bit mouse coordinate
+    assert b.value('driveview') == 1
+    b.click(275, 54)  # select IEC 9
+    b.click(100, 176)  # mount
+    assert 'mount 09?' in b.vdc[22]
+    b.click(210, 176)  # yes
+    assert b.bus.media_commands == [b'\x02\x23\x09'+name]
+    assert len(b.bus.media_commands[0]) == 514
+    assert 'accepted' in b.vdc[22] and not b.value('pending')
+    b.click(135, 176)  # eject
+    assert 'eject 09?' in b.vdc[22]
+    b.run(13)
+    assert b.bus.media_commands[-1] == b'\x02\x24\x09'
+    b.click(280, 176)  # files, without leaving the application
+    assert not b.value('driveview') and b.value('selected') == 7
+    assert b.names() == [record[1:] for record in names]
+    b.run(27, leave=True)
+    for suffix in (b'.d64', b'.g64', b'.d71', b'.g71', b'.d81'):
+        b = drive_browser(b'disk'+suffix, bytes([1, 0, 9, 1]))
+        b.run(ord('M'))
+        b.run(13)
+        assert b.bus.media_commands == [b'\x02\x23\x09disk'+suffix]
+    for name in (b'a', b'.d64', b'disk.txt', b'disk.g81', b'disk.d64.bak'):
+        b = drive_browser(name, bytes([1, 0, 9, 1]))
+        b.run(ord('M'))
+        assert 'select a' in b.vdc[22] and not b.value('pending')
+    b = drive_browser()
+    b.bus.ram[b.sym['attrs']] = 0x10
+    b.run(ord('M'))
+    assert 'select a' in b.vdc[22]
+
+
+def check_drive_command_failures():
+    for status, data, wanted in [(b'89,NOT A DISK IMAGE', b'', '89,'),
+                                  (b'garbled', b'', 'garbled'),
+                                  (b'00,OK', b'x'*600, 'result unknown')]:
+        b = drive_browser(inventory=bytes([1, 0, 9, 1]))
+        b.bus.media_status, b.bus.media_reply = status, data
+        b.run(ord('M'))
+        b.run(13)
+        assert wanted in b.vdc[22], b.vdc[22]
+        assert len(b.bus.media_commands) == 1 and not b.value('pending')
+        b.run(13)
+        assert len(b.bus.media_commands) == 1  # never replay on another Enter
+    b = drive_browser()
+    b.run(0x11)
+    b.run(ord('E'))
+    b.bus.control_status = b'21,UNKNOWN COMMAND'
+    b.run(13)
+    assert not b.bus.media_commands and not b.value('pending')
 
 
 def check_capture_probe():
@@ -333,7 +513,8 @@ def main():
     report = {'build': {n: hashlib.sha256((ROOT/'target'/n).read_bytes()).hexdigest()
                         for n in ('uos.prg', 'uos-net.prg', 'uos-ultimate.prg')}, 'checks': []}
     for fn in (check_navigation, check_long_names, check_failures, check_display_fallback,
-               check_bounds, check_capture_probe):
+               check_bounds, check_drive_inventory, check_drive_safety,
+               check_drive_mount_eject, check_drive_command_failures, check_capture_probe):
         fn()
         report['checks'].append(fn.__name__)
         print(f'PASS: {fn.__name__}', flush=True)

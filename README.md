@@ -35,8 +35,11 @@ paging beyond entry 255. See the [browser guide](docs/ULTIMATE-BROWSER.md).
 Navigation now redraws changed fields, with complete VIC/VDC frame comparisons
 and physical timing recorded in the
 [redraw validation](docs/validation/2026-09-08-browser-redraw/README.md).
-The drive panel and mount/eject workflows remain in progress; the installed
-firmware's incomplete drive inventory still needs handling.
+Press **D** in the browser for drive selection and confirmed mount/eject.
+The system disk is protected, and a bounded reconciliation handles the reference
+cartridge's incomplete inventory. The [drive validation](docs/validation/2026-09-08-ultimate-drives/README.md)
+records the CPU, display, emulator and physical workflow checks. Further drive
+settings, file operations and the rest of the OS remain on the roadmap.
 
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 

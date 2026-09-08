@@ -40,26 +40,41 @@ class HardwareMonitor:
 
 
 def read_vdc(mon, work, metadata=None):
+    """Capture an idle app whose executable code is below $7400.
+
+    The probe borrows $7400..$7cf4. Preserve that region: the browser keeps
+    four complete filenames there. No input may be injected during capture.
+    """
     prg = work / "vdc-dump.prg"
     subprocess.run(["64tass", "-a", str(ROOT / "probes/vdc-irqdump.asm"),
                     "-o", str(prg)], check=True, capture_output=True)
     oldirq = mon.read_mem(0x0314, 0x0315)
     assert oldirq != b"\x00\x7c", "previous VDC dump still installed"
-    mon.write_mem(0x7c00, prg.read_bytes()[2:])
-    mon.write_mem(0x7cf0, oldirq + bytes(3))
-    mon.write_mem(0x0314, b"\x00\x7c")
-    # Ultimate RAM observations pause/resume the CPU. Let the short IRQ dump
-    # finish before polling through DMA. Each data read also verifies the
-    # VDC address increment; a quiet interval alone did not prevent drift.
-    time.sleep(2)
-    wait_for(lambda: mon.read_mem(0x7cf2, 0x7cf2) != b"\0", "VDC IRQ dump", 10)
-    result = bytes(mon.read_mem(0x7cf2, 0x7cf4))
-    if metadata is not None:
-        metadata.update(code=result[0], address_resyncs=int.from_bytes(result[1:], 'little'),
-                        probe_sha256=hashlib.sha256(prg.read_bytes()).hexdigest())
-    assert result[0] == 1, f"VDC capture failed (code {result[0]}; 2=timeout, 3=address drift)"
-    assert mon.read_mem(0x0314, 0x0315) == oldirq, "IRQ vector was not restored"
-    return bytes(mon.read_mem(0x7400, 0x7bcf))
+    saved = bytes(mon.read_mem(0x7400, 0x7cf4))
+    try:
+        mon.write_mem(0x7c00, prg.read_bytes()[2:])
+        mon.write_mem(0x7cf0, oldirq + bytes(3))
+        mon.write_mem(0x0314, b"\x00\x7c")
+        # Ultimate RAM observations pause/resume the CPU. Let the short IRQ
+        # dump finish before polling through DMA. Each data read also verifies
+        # the address increment; a quiet interval alone did not prevent drift.
+        time.sleep(2)
+        wait_for(lambda: mon.read_mem(0x7cf2, 0x7cf2) != b"\0", "VDC IRQ dump", 10)
+        result = bytes(mon.read_mem(0x7cf2, 0x7cf4))
+        if metadata is not None:
+            metadata.update(code=result[0], address_resyncs=int.from_bytes(result[1:], 'little'),
+                            probe_sha256=hashlib.sha256(prg.read_bytes()).hexdigest())
+        assert result[0] == 1, f"VDC capture failed (code {result[0]}; 2=timeout, 3=address drift)"
+        return bytes(mon.read_mem(0x7400, 0x7bcf))
+    finally:
+        # Restore the borrowed cache even on a failed capture. Never replace
+        # probe code while its IRQ hook remains installed.
+        wait_for(lambda: mon.read_mem(0x0314, 0x0315) == oldirq, "VDC IRQ restore", 10)
+        time.sleep(0.05)  # allow the probe's final indirect jump to complete
+        mon.write_mem(0x7400, saved)
+        assert bytes(mon.read_mem(0x7400, 0x7cf4)) == saved, "VDC capture RAM restore differs"
+        if metadata is not None:
+            metadata.update(work_ram_restored=True, saved_ram_sha256=hashlib.sha256(saved).hexdigest())
 
 
 def screen_code(petscii):

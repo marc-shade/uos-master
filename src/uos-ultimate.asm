@@ -13,9 +13,9 @@ DIR_DETAIL = 4
 DIR_STATUS = 8
 DIR_PATH = 16
 DIR_ALL = 31
-CACHE = $6000                   ; eight 512-byte filename slots, through $6fff
-PATHBUF = $7000                 ; 512 bytes, below the saved settings at $7350
-REQUEST = $7400                 ; transient command, at most 513 bytes here
+CACHE = $6900                   ; four slots here, four at $7400 (cache_pages)
+PATHBUF = $7100                 ; 512 bytes, below the saved settings at $7350
+REQUEST = $7c00                 ; 768 bytes; longest mount request is 514
 sptr = $60
 dptr = $62
 remain = $64
@@ -26,6 +26,9 @@ my = $6a
 * = APP_START
         #RegisterApp
         lda $ba
+        bne have_sysdev
+        lda #8                  ; same default as the resident app loader
+have_sysdev:
         sta sysdev
         lda #$00
         sta base
@@ -39,6 +42,12 @@ my = $6a
         sta pathlen
         sta pathlen+1
         sta ready
+        sta driveview
+        ldx #3
+clear_drive_locks:
+        sta drive_locks,x
+        dex
+        bpl clear_drive_locks
         jsr refresh
         jsr frame
         jsr paint
@@ -79,6 +88,12 @@ key_ascii:
         bcs normalized
         and #$df
 normalized:
+        ldx driveview
+        beq file_key
+        jsr drive_key
+        jsr paint
+        jmp input_loop
+file_key:
         ldx #key_count-1
 key_find:
         cmp keys,x
@@ -96,10 +111,10 @@ dispatch:
         jsr paint
         jmp input_loop
 
-keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50
+keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50,$44
 key_count = *-keys
-actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path
-actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path
+actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path,<drives
+actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path,>drives
 
 leave:
         lda #$ff
@@ -619,10 +634,7 @@ receive_slot:
         sbc #0
         sta lengthsH,x
         sta remain+1
-        txa
-        asl
-        clc
-        adc #>CACHE
+        lda cache_pages,x
         sta dptr+1
         lda #0
         sta dptr
@@ -675,10 +687,7 @@ row_source:
         sta remain
         lda lengthsH,x
         sta remain+1
-        txa
-        asl
-        clc
-        adc #>CACHE
+        lda cache_pages,x
         sta sptr+1
         lda #0
         sta sptr
@@ -760,7 +769,32 @@ frame_clear:
         #PenWrite
         lda #0
         sta Y1+1
-        #Text 24,14,title
+        ldx driveview
+        lda titlesL,x
+        sta r9L
+        lda titlesH,x
+        sta r9H
+        lda #24
+        sta X1
+        lda #0
+        sta X1+1
+        sta Y1+1
+        lda #14
+        sta Y1
+        jsr GPUTS
+        ldx driveview
+        lda switchesL,x
+        sta r9L
+        lda switchesH,x
+        sta r9H
+        lda #240
+        sta X1
+        lda #0
+        sta X1+1
+        sta Y1+1
+        lda #14
+        sta Y1
+        jsr GPUTS
         lda #2
 clear_vdc:
         pha
@@ -778,16 +812,18 @@ frame_lengths:
         bpl frame_lengths
         lda #$ff
         sta labelview
-        lda #<title
+        ldx driveview
+        lda titlesL,x
         sta r9L
-        lda #>title
+        lda titlesH,x
         sta r9H
         lda #2
         ldx #0
         jsr VDTEXT
-        lda #<help
+        ldx driveview
+        lda helpsL,x
         sta r9L
-        lda #>help
+        lda helpsH,x
         sta r9H
         lda #23
         ldx #0
@@ -796,12 +832,19 @@ frame_lengths:
         sta row
 toolbar:
         ldx row
+        lda driveview
+        beq file_button
+        txa
+        clc
+        adc #8
+        tax
+file_button:
         lda buttonL,x
         sta r9L
         lda buttonH,x
         sta r9H
         ; x = 18 + row*36, including the high bit for the right buttons.
-        txa
+        lda row
         asl
         asl
         sta draw_x
@@ -837,6 +880,10 @@ toolbar_y:
         rts
 
 paint:
+        lda driveview
+        beq paint_files
+        jmp drive_paint
+paint_files:
         lda dirty
         and #DIR_PATH
         beq paint_list_test
@@ -1232,23 +1279,40 @@ mouse_action:
         lda mx+1
         beq mouse_left
         cmp #1
-        bne mouse_none
+        bne mouse_reject
         lda mx
         cmp #48
-        bcs mouse_none
+        bcs mouse_reject
         bcc mouse_y
 mouse_left:
         lda mx
         cmp #16
-        bcc mouse_none
+        bcs mouse_y
+mouse_reject:
+        lda #0
+        rts
 mouse_y:
         lda my
+        cmp #14
+        bcc mouse_reject
+        cmp #24
+        bcs mouse_content
+        lda mx+1
+        bne mouse_switch
+        lda mx
+        cmp #240
+        bcc mouse_reject
+mouse_switch:
+        lda #$44
+        rts
+mouse_content:
+        lda my
         cmp #26
-        bcc mouse_none
+        bcc mouse_reject
         cmp #35
         bcc mouse_path
         cmp #40
-        bcc mouse_none
+        bcc mouse_reject
         cmp #136
         bcc mouse_row
         cmp #174
@@ -1280,6 +1344,13 @@ mouse_sub:
         inx
         bne mouse_button
 mouse_key:
+        lda driveview
+        beq mouse_file_key
+        txa
+        clc
+        adc #8
+        tax
+mouse_file_key:
         lda buttonkeys,x
         rts
 mouse_path:
@@ -1296,6 +1367,17 @@ mouse_row_div:
         inx
         bne mouse_row_div
 mouse_select:
+        lda driveview
+        beq mouse_file_select
+        cpx drive_count
+        bcs mouse_none
+        stx drive_selected
+        lda #0
+        sta pending
+        jsr drive_hint
+        jsr paint
+        jmp mouse_none
+mouse_file_select:
         cpx count
         bcs mouse_none
         lda #0
@@ -1308,7 +1390,8 @@ mouse_none:
         rts
 
 title: .text "Ultimate files",0
-help: .text "up/dn select  enter open  U parent  / root  N/B page  R retry  P path  ESC exit",0
+help: .text "up/dn select enter open U up / root N/B page R retry P path D drives ESC exit",0
+        .cerror *-help > 81, "browser help exceeds a VDC row"
 items_text: .text "items "
 name_label: .text "selected name (< > scroll)",0
 path_label: .text "current path (< > scroll) ",0
@@ -1325,8 +1408,12 @@ btn_prev: .text "prev",0
 btn_next: .text "next",0
 btn_exit: .text "exit",0
 buttonL: .byte <btn_left,<btn_right,<btn_open,<btn_up,<btn_root,<btn_prev,<btn_next,<btn_exit
+         .byte <btn_up,<btn_down,<btn_mount,<btn_eject,<btn_retry,<btn_yes,<btn_no,<btn_back
 buttonH: .byte >btn_left,>btn_right,>btn_open,>btn_up,>btn_root,>btn_prev,>btn_next,>btn_exit
+         .byte >btn_up,>btn_down,>btn_mount,>btn_eject,>btn_retry,>btn_yes,>btn_no,>btn_back
 buttonkeys: .byte $9d,$1d,$0d,$55,$2f,$42,$4e,$1b
+            .byte $91,$11,$4d,$45,$52,$0d,$1b,$44
+cache_pages: .byte $69,$6b,$6d,$6f,$74,$76,$78,$7a
 base: .word 0
 seen: .word 0
 pathlen: .word 0
@@ -1364,5 +1451,6 @@ lengthsH: .fill ROWS,0
 prefix: .byte 0,0,0
 status: .fill 34,0
 line: .fill 77,0
+.include "ultimate-drives.inc"
 browser_end:
         .cerror * > CACHE, "browser code overlaps filename cache"

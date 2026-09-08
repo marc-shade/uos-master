@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Exercise the Ultimate browser on the reference C128 without modifying files.
+"""Exercise the Ultimate browser on the reference C128.
 
 Boots the distributable on A. Captures an independent directory-packet oracle,
 navigates the actual app past ordinal 255, compares complete cached filenames
 and VDC text, restores both DOS contexts and leaves the desktop running.
-Drive B is not remounted. Physical mouse motion is not injected by this script.
+The default navigation check does not modify files or remount drive B.
+--drives uses a private scratch D64 on an initially empty B, copies one system
+file into it, verifies its complete contents, ejects it and removes the fixture.
+Physical mouse motion is not injected by this script.
 """
 import argparse
 import hashlib
@@ -13,11 +16,12 @@ from pathlib import Path
 import tempfile
 import time
 import urllib.request
+import urllib.parse
 
 from hw_storage_check import ci, HardwareMonitor, ROOT, read_vdc, screen_code, wait_for
 from hw_uci_check import Probe
 from hwlib import desk_tick, lst_symbol
-from ci_storage import launch_from_apps
+from ci_storage import FileManager, launch, launch_from_apps
 from cap_hw_screen import grab, render
 
 
@@ -50,7 +54,9 @@ class Browser:
     def __init__(self, mon):
         self.mon = mon
         self.sym = {name: lst_symbol('uos-ultimate', name) for name in
-                    ('ready', 'count', 'selected', 'base', 'more', 'pathlen', 'nameoff')}
+                    ('ready', 'count', 'selected', 'base', 'more', 'pathlen', 'nameoff',
+                     'cache_pages', 'driveview', 'drive_valid', 'drive_count',
+                     'drive_selected', 'drive_records', 'drive_locks', 'pending', 'status')}
 
     def read(self, address, size=1):
         return bytes(self.mon.read_mem(address, address+size-1))
@@ -63,9 +69,10 @@ class Browser:
 
     def press(self, key):
         wait_for(self.ready, 'browser input ready')
+        exit_app = key == 27 and not self.value('driveview')
         self.mon.write_mem(self.sym['ready'], b'\0')
         ci.inject_keys(self.mon, bytes([key]))
-        if key == 27:
+        if exit_app:
             wait_for(lambda: self.value('ready') == 0xff, 'browser exit', 120)
             assert ci.wait_desktop_live(self.mon, 120)
         else:
@@ -75,7 +82,8 @@ class Browser:
     def names(self):
         count = self.value('count')
         assert count <= 8
-        return [self.read(0x6000+i*512, 512).split(b'\0')[0] for i in range(count)]
+        pages = self.read(self.sym['cache_pages'], 8)
+        return [self.read(pages[i]*256, 512).split(b'\0')[0] for i in range(count)]
 
 
 def ascii_to_petscii(data):
@@ -120,12 +128,222 @@ def check_page(browser, expected, work, label):
     return [name.decode('utf-8', 'replace') for name in got]
 
 
+def drive_workflow(ult, mon, work, report):
+    def drives():
+        data = json.loads(ult.drives())
+        assert not data['errors'], data
+        return {name: value for record in data['drives'] for name, value in record.items()}
+
+    before = drives()
+    (work/'drives-before.json').write_text(json.dumps(before, indent=2)+'\n')
+    assert before['a']['bus_id'] == 8 and before['b']['bus_id'] == 9
+    assert before['a']['enabled'] and before['b']['enabled']
+    assert not before['b']['image_file'], 'Drive workflow requires initially empty B'
+    probe = Probe(ult, work)
+    original = {t: probe.ok(bytes([t, 0x12]))['records'][0][0] for t in (1, 2)}
+    settings = bytes(mon.read_mem(0x7350, 0x7358))
+    folder = '/Usb0/uos-drive-'+work.name.rsplit('-', 1)[-1]
+    fixture = folder+'/check.d64'
+    report.update(drive_workflow=True, fixture=fixture,
+                  dos_paths_before_hex={t:p.hex() for t,p in original.items()})
+    created_dir = created_image = False
+    active = None
+    browser = Browser(mon)
+
+    def save():
+        (work/'report.json').write_text(json.dumps(report, indent=2)+'\n')
+
+    def status():
+        return browser.read(browser.sym['status'], 34).split(b'\0')[0]
+
+    def capture(label):
+        first, second = {}, {}
+        one, two = read_vdc(mon, work, first), read_vdc(mon, work, second)
+        (work/f'{label}.vdc.bin').write_bytes(one)
+        (work/f'{label}.repeat.vdc.bin').write_bytes(two)
+        assert one[160:1920] == two[160:1920], f'{label}: VDC captures differ'
+        report.setdefault('captures', {})[label] = {'first':first, 'repeat':second}
+        bitmap = grab(ult, verbose=False)
+        (work/f'{label}.vic.bin').write_bytes(bitmap)
+        render(bitmap, str(work/f'{label}.png'))
+        return one
+
+    def open_browser(through_menu=False):
+        nonlocal active
+        active = 'browser'
+        if through_menu:
+            launch_from_apps(mon, work, quiet_io_seconds=30)
+        else:
+            launch(mon, b'UOS-ULTIMATE')
+            time.sleep(30)
+        prefix = (ROOT/'target/uos-ultimate.prg').read_bytes()[2:18]
+        wait_for(lambda: browser.read(0x5000, 16) == prefix, 'browser LOAD', 180)
+        wait_for(browser.ready, 'browser ready', 180)
+        assert browser.names() == [b'check.d64']
+
+    def exit_app():
+        nonlocal active
+        if active == 'browser':
+            if browser.value('driveview'):
+                browser.press(ord('D'))
+            browser.press(27)
+        elif active == 'file-manager':
+            ci.inject_keys(mon, b'\x1b')
+            assert ci.wait_desktop_live(mon, 120)
+        active = None
+
+    try:
+        probe.ok(b'\x02\x16'+folder.encode())
+        created_dir = True
+        response = json.loads(ult._expect_ok('PUT', '/v1/files'+urllib.parse.quote(fixture)+
+                                             ':create_d64?diskname=uosdrive', what='scratch D64 creation'))
+        assert not response['errors'], response
+        created_image = True
+        report['create_response'] = response
+        probe.ok(b'\x02\x11'+folder.encode())
+        inventory = probe.ok(b'\x04\x29\x01')['records'][0][0]
+        report['inventory_hex'] = inventory.hex()
+        open_browser(through_menu=True)
+        browser.press(ord('D'))
+        assert browser.value('drive_valid') in (1, 2) and browser.value('drive_count') >= 2
+        report['capabilities'] = {'valid':browser.value('drive_valid'),
+                                  'records_hex':browser.read(browser.sym['drive_records'], 12).hex()}
+        for key in (ord('M'), ord('E')):
+            browser.press(key)
+            assert status() == b'SYSTEM DRIVE PROTECTED' and not browser.value('pending')
+            browser.press(13)
+            assert drives() == before
+        report['checks'].append('system IEC 8 rejects both mount and eject; REST drive state unchanged')
+        browser.press(0x11)
+        browser.press(ord('M'))
+        assert status() == b'MOUNT 09? ENTER=YES ESC=NO'
+        screen = capture('mount-confirmation')
+        assert b'MOUNT 09?' == status()[:9]
+        wanted = bytes(map(screen_code, b'MOUNT 09? ENTER=YES ESC=NO')).ljust(80, b' ')
+        assert screen[22*80:23*80] == wanted
+        assert drives() == before, 'Media changed before confirmation'
+        browser.press(27)
+        assert not browser.value('pending') and drives() == before
+        browser.press(ord('M'))
+        browser.press(13)
+        mounted = drives()
+        (work/'drives-mounted.json').write_text(json.dumps(mounted, indent=2)+'\n')
+        assert mounted['a'] == before['a']
+        assert mounted['b']['image_file'] == 'check.d64', mounted['b']
+        assert mounted['b']['image_path'].rstrip('/') == folder, mounted['b']
+        assert status() == b'DRIVE COMMAND ACCEPTED'
+        report['checks'].append('cancel preserves both drives; confirmed browser mount selects the exact private image on B')
+        capture('mounted')
+        exit_app()
+        assert browser.read(0xba) == b'\x08'
+
+        active = 'file-manager'
+        launch(mon)
+        print('Waiting for File Manager IEC LOAD before DMA observations', flush=True)
+        time.sleep(30)
+        fm = FileManager(mon)
+        fm_prefix = (ROOT/'target/uos-fmgr.prg').read_bytes()[2:18]
+        wait_for(lambda: fm.read(0x5000, 16) == fm_prefix, 'File Manager LOAD', 180)
+        wait_for(fm.ready, 'File Manager ready', 180)
+        fm.goto(fm.names().index(b'UOS-SPRITES'))
+        fm.keys(b'BDRIVE-CHECK')
+        # No RAM observations while IEC COPY is active, for the same reason
+        # that LOAD has quiet windows. Only this scratch destination is written.
+        ci.inject_keys(mon, b'\r')
+        time.sleep(10)
+        wait_for(fm.ready, 'IEC copy finished', 180)
+        assert fm.read(fm.symbols['linebuf'], 38).split(b'\0')[0] == b'COPIED TO DEVICE 9'
+        ci.inject_keys(mon, b'9')
+        time.sleep(10)
+        wait_for(fm.ready, 'mounted IEC 9 directory', 180)
+        assert fm.names() == [b'DRIVE-CHECK'] and not fm.value('direrror')
+        capture('iec-copy')
+        report['checks'].append('File Manager loads from system A and copies UOS-SPRITES to mounted IEC 9 as DRIVE-CHECK')
+        exit_app()
+        assert browser.read(0xba) == b'\x08'
+
+        open_browser()
+        browser.press(ord('D'))
+        browser.press(0x11)
+        browser.press(ord('E'))
+        assert status() == b'EJECT 09? ENTER=YES ESC=NO'
+        browser.press(13)
+        assert drives() == before, 'Eject did not restore the original drive state'
+        capture('ejected')
+        exit_app()
+        # After eject flushes the image, verify every copied byte through the
+        # cartridge filesystem, independent of the File Manager's IEC reader.
+        probe.ok(b'\x02\x11'+fixture.encode())
+        probe.ok(b'\x02\x13')
+        entries = probe.ok(b'\x02\x14')['records']
+        report['image_directory_hex'] = [packet.hex() for packet, _ in entries]
+        assert all(packet and not clipped for packet, clipped in entries)
+        # D64 filesystems also emit a volume-label record (attribute $08).
+        files = [packet for packet, _ in entries if not packet[0] & 0x08]
+        assert len(files) == 1 and files[0][1:] == b'DRIVE-CHECK', entries
+        name = files[0][1:]
+        report['copied_name_hex'] = name.hex()
+        probe.ok(b'\x02\x02\x01'+name)
+        try:
+            result = probe.command(b'\x02\x04\x00\x04')
+            # Dos::get_more_data uses an empty status on successful file
+            # reads. Keep this exception specific to READ_DATA; exact bytes
+            # and a successful CLOSE below are required independently.
+            report['file_read_reply'] = {k:v for k,v in result.items() if k != 'records'}
+            assert not result['carry'] and not result['full'] and not result['clipped'], result
+            assert (result['code'] == 0 or
+                    (result['code'] == 255 and result['status'] == '')), result
+            assert all(not clipped for _, clipped in result['records'])
+            contents = b''.join(packet for packet, _ in result['records'])
+        finally:
+            probe.ok(b'\x02\x03')
+        (work/'copied.prg').write_bytes(contents)
+        expected = (ROOT/'target/uos-sprites.prg').read_bytes()
+        assert contents == expected, 'Copied IEC file contents differ'
+        report['copied_file'] = {'bytes':len(contents), 'sha256':hashlib.sha256(contents).hexdigest()}
+        report['checks'].append('confirmed browser eject restores empty B; every copied byte matches the system PRG')
+        assert bytes(mon.read_mem(0x7350, 0x7358)) == settings
+        assert probe.ok(b'\x01\x12')['records'][0][0] == original[1]
+    except BaseException as error:
+        report['failure'] = f'{type(error).__name__}: {error}'
+        raise
+    finally:
+        try:
+            exit_app()
+            state = drives()
+            if state['b']['image_file']:
+                path = state['b']['image_path'].rstrip('/')+'/'+state['b']['image_file']
+                assert path == fixture, 'Unexpected B media; refusing cleanup eject'
+                ult.unmount('b')
+            assert drives() == before
+            for target, path in original.items():
+                probe.ok(bytes([target, 0x11])+path)
+            if created_image:
+                probe.ok(b'\x02\x09'+fixture.encode())
+            if created_dir:
+                probe.ok(b'\x02\x09'+folder.encode())
+            report['paths_restored'] = report['fixture_removed'] = True
+            assert ci.wait_desktop_live(mon, 120)
+        except BaseException as error:
+            report['cleanup_failure'] = f'{type(error).__name__}: {error}'
+            raise
+        finally:
+            report['read_retries'] = ult.read_retries
+            save()
+    assert report['build'] == build_hashes()
+    report['passed'] = True
+    save()
+    print(f'HW-DRIVES PASS; desktop live, B empty, private image removed; evidence {work}', flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-boot', action='store_true')
     parser.add_argument('--capture-only', action='store_true',
                         help='check eight consecutive VDC captures of the idle desktop')
     parser.add_argument('--directory', default='/Usb0/c64/#-a/')
+    parser.add_argument('--drives', action='store_true',
+                        help='mount/copy/eject a private D64; requires initially empty drive B')
     args = parser.parse_args()
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-browser-'))
     print(f'Browser hardware evidence: {work}', flush=True)
@@ -147,6 +365,9 @@ def main():
     wait_for(lambda: mon.read_mem(0x033c, 0x033d) == desk_tick().to_bytes(2, 'little'),
              'desktop boot', 300)
     assert ci.wait_desktop_live(mon, 120)
+    if args.drives:
+        drive_workflow(ult, mon, work, report)
+        return
     if args.capture_only:
         report['capture_only'] = True
         report['captures'] = []
@@ -257,7 +478,7 @@ def main():
         report['checks'].append('32 Next actions cross ordinal 255; all eight names byte-exact against packet oracle')
         report['checks'].append('exact physical VDC filename rows on first and ordinal-256 pages')
         browser.press(ord('/'))
-        assert browser.read(0x7000, browser.value('pathlen', 2)) == b'/'
+        assert browser.read(0x7100, browser.value('pathlen', 2)) == b'/'
         report['root_page'] = check_page(browser, expected_root, work, 'root')
         report['checks'].append('Root clears unused list and detail rows, checked against a separate packet oracle')
         names = browser.names()
@@ -265,9 +486,9 @@ def main():
         for _ in range(index):
             browser.press(0x11)
         browser.press(13)
-        assert browser.read(0x7000, browser.value('pathlen', 2)).rstrip(b'/') == b'/Usb0'
+        assert browser.read(0x7100, browser.value('pathlen', 2)).rstrip(b'/') == b'/Usb0'
         browser.press(ord('U'))
-        assert browser.read(0x7000, browser.value('pathlen', 2)) == b'/'
+        assert browser.read(0x7100, browser.value('pathlen', 2)) == b'/'
         report['checks'].append('Root, select Usb0, Open and Parent navigate the real filesystem')
         assert bytes(mon.read_mem(0x7350, 0x7358)) == settings
         browser.press(27)

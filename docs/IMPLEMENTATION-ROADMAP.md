@@ -102,9 +102,9 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
-| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification | Capability registry and UI; resolve malformed drive inventory; interrupted operations and per-firmware protocol coverage |
+| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, interrupted operations and per-firmware protocol coverage |
 | UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser with eight-entry pages, selective redraw, long-name selection, keyboard/mouse controls and retry; physical browsing past ordinal 255 in a 1,096-entry directory | Faster long-directory scans, file operations/viewers, sorted/indexed listings, longer paths, shared file picker, Unicode display |
-| UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Absent from desktop | Mount supported D64/D71/D81/G64/G71 images from desktop; verify cartridge and IEC view; recover system disk and unsaved work |
+| UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
 | UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; old frozen-RTC diagnosis came from saved configuration fields | Power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
@@ -209,13 +209,24 @@ names, errors, empty pages and unsupported-symbol fallback. The
 instruction counts, physical timings and exact build hashes. Repeated scans
 and long-name rendering still need further performance work.
 
-Next implementation: build the drive panel and complete Ultimate file
-workflows, with capability records and system-volume preservation.
-The installed control target also reports four drives while sending only two
-records. Treat that inventory as incomplete. Mount/eject operations must validate
-the actual destination: the firmware may fall back to a different drive for an
-unknown IEC address. Native kernel and application parity work remain required
-after these initial desktop/storage increments.
+The browser now includes a drive panel with local capability records,
+confirmation, mount/eject, and system-drive protection. The installed count=4 /
+two-record reply is reconciled only for two distinct emulated drives with matching
+independent power queries. The missing peripheral records remain unknown. A fresh
+inventory must match the displayed selection before an operation is sent; zero,
+duplicate, powered-off and protected destinations are rejected. The
+[drive validation](validation/2026-09-08-ultimate-drives/README.md) records its
+protocol, display, emulator and physical workflow evidence. On the reference
+C128, the panel mounts a private D64 on B while retaining the system disk on A;
+File Manager copies a PRG to IEC 9; browser eject succeeds; all 129 copied bytes
+match through independent cartridge-file readback. The fixture is removed and
+both DOS contexts are restored. This certifies that D64/1541 workflow, not the
+other image formats or all drive-management/recovery requirements.
+
+Next implementation: complete Ultimate file operations and the remaining drive
+controls, then consolidate shared filesystem/capability services and file pickers.
+System-disk replacement/recovery, native kernel and application parity work remain
+required after these initial desktop/storage increments.
 
 Before calling the complete OS finished, audit every FR in the original PRD,
 every row above, all named app/hardware/firmware combinations, documentation,

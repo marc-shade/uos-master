@@ -2,8 +2,8 @@
 
 The resident `uos-net` module now offers packet streaming alongside the
 existing aggregate interface. The [desktop browser](ULTIMATE-BROWSER.md) uses
-it for filesystem navigation. Drive control and other desktop integrations
-remain on the completion roadmap.
+it for filesystem navigation and explicit drive mount/eject. Further drive
+controls and other desktop integrations remain on the completion roadmap.
 
 The [Ultimate register specification](https://1541u-documentation.readthedocs.io/en/latest/uci/core_uci_architecture.html)
 defines 896-byte command/data FIFOs and a 256-byte status FIFO. The uOS response
@@ -56,7 +56,11 @@ filling a page and restart a directory read to reach another page.
 
 Both calls return the two-digit firmware status in A with carry clear when
 the transaction completes. A nonzero status is still an operation failure.
-Malformed status text returns `$ff` with carry clear. Transport failures return
+Status text without two decimal digits returns `$ff` with carry clear. This
+includes an empty status: the inspected firmware's DOS `READ_DATA` path uses
+one on successful file reads. File clients must handle that command-specific
+case using transfer length, EOF, clipping and integrity checks; it is not a
+general success code for other commands. Transport failures return
 carry set:
 
 | A | Meaning |
@@ -100,7 +104,44 @@ response. The desktop service must reject or explicitly reconcile it before
 using it to authorize mount/eject choices. The two visible records alone do not
 certify SoftwareIEC or printer discovery.
 
-The browser now implements long-name selection and paginated browsing. The next
-layer needs capability records, explicit drive choice, and system-volume recovery
-before mount/eject workflows. The [completion roadmap](IMPLEMENTATION-ROADMAP.md)
-continues to track those requirements and the rest of the OS.
+## Drive capability records
+
+The browser's drive panel queries Control `$04 $29 $01` for effective IEC
+addresses. These are app-local records, not a system-wide hardware registry.
+It accepts a complete count/length match for up to four three-byte records;
+addresses must be 0–30 and power values 0/1. Unknown types remain visible but
+cannot authorize mount/eject. Types 0–3 identify emulated drives; SoftwareIEC
+(`$0f`) and printer (`$50`) records are informational.
+
+The installed `04 00 08 01 00 09 01` response is still incomplete. One bounded
+reconciliation handles exactly count=4 with two complete leading emulated-drive
+records. Both IEC addresses must be distinct and at least 8. Queries `$04 $34`
+and `$04 $35` must return matching power states (`on`, `on ` or `off`, with exact
+lengths). The panel then enables those physical-drive records and explicitly
+leaves the other devices unknown. Other shortened or malformed forms disable
+operations. A failed refresh clears prior capabilities before accepting input.
+
+Before mount/eject, the panel checks a powered emulated type, no duplicate
+enabled IEC address among the reported records, and system-volume protection.
+It cannot certify bus conflicts with missing records or external devices.
+Confirmation includes the destination
+number. Immediately before the command, it probes again and compares all cached
+records and their count. Any change cancels the pending action. Mount uses
+`02 23 <id> <full raw name>`; eject uses `02 24 <id>`. Zero/implicit IDs are never
+sent. The application's load device is protected by IEC ID and by any observed
+system slot; slot locks persist across refreshes for that app session.
+
+The [published DOS contract](https://1541u-documentation.readthedocs.io/en/master/uci/ultimate_dos_target.html#dos-cmd-mount-disk-0x23)
+describes fallback to a different drive for an unknown ID. The inspected newer
+[firmware source](https://github.com/GideonZ/1541ultimate/blob/a01c04e8267a0d916b7203cb34dcf1127f75981d/software/filemanager/dos.cc)
+restricts fallback to ID zero. The installed exact release is unknown, so the
+panel validates destinations before every operation. There is no atomic
+inventory-and-mount transaction: simultaneous external changes remain outside
+that guarantee. The same source does not propagate the underlying mount action's
+return value or provide a mounted-path UCI query. Therefore the UI reports command
+acceptance; the physical workflow separately verifies the cartridge and IEC views.
+
+Image compatibility remains a firmware decision. General capability discovery,
+mounted-image identity, write protection, dirty-media handling, system-volume
+replacement/recovery and the other drive controls remain on the
+[completion roadmap](IMPLEMENTATION-ROADMAP.md).
