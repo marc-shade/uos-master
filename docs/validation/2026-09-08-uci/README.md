@@ -2,7 +2,10 @@
 
 This increment follows storage commit `ed69fa7`. It implements the
 [packet-streaming service](../../ULTIMATE-SERVICE.md); the desktop browser,
-capability registry and drive panel remain roadmap work.
+capability registry and drive panel remain roadmap work. The GETCAP defect
+recorded in this checkpoint is corrected by the following core increment;
+see the [GETCAP validation](../2026-09-08-getcap/README.md) and
+[current SDK contract](../../SDK.md).
 
 ## Verified behavior
 

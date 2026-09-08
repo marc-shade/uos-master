@@ -988,11 +988,12 @@ vds_no:
         rts
 
 ; ==========================================================
-; Driver Registry (FR-A2)
+; Resident driver lookup (FR-A2 registry prerequisite)
 ; Capability ids: 1=gfx(VIC), 2=vdc, 3=reu, 4=keyin, 5=fillfile
-; GETCAP: X = capability id -> X/A = base lo/hi, or 0/0 = absent.
-; Modules self-register by being present; the registry is the OS-side
-; dispatch point for future dynamic modules (file-based drivers).
+; GETCAP: X = capability id -> A/X = base lo/hi, or 0/0 = unknown id.
+; Preserves Y, zero page, non-stack RAM and D/I flags. Other flags clobbered.
+; This static table locates resident software, not attached hardware. Use
+; the driver's presence check before accessing an optional peripheral.
 ; ==========================================================
 CAP_GFX         = $01
 CAP_VDC         = $02
@@ -1012,40 +1013,28 @@ CAPTBL:
         .byte CAP_FILLFILE
         .word $0829
 CAPTBLEND:
+        .cerror (CAPTBLEND-CAPTBL) % 3 != 0, "capability entry must have id and word address"
+        .cerror CAPTBLEND-CAPTBL == 0 || CAPTBLEND-CAPTBL > 255, "capability table size invalid"
 
 GETCAP_RT:
-        lda #$00                ; default: base = 0 (absent)
-        sta retval
-        sta retval+1
-        ldx #0
-gc_l:   lda CAPTBL,x
-        cmp #$ff
-        beq gc_none
-        cpx #13
-        bcs gc_none
-        cmp capid
-        bne gc_next3
-        inx
-        lda CAPTBL,x
-        sta retval              ; lo
-        inx
-        lda CAPTBL,x
-        sta retval+1            ; hi
-        jmp gc_done
-gc_next3:
+        txa                     ; retain the requested id while X scans entries
+        ldx #$00
+gc_l:   cmp CAPTBL,x
+        beq gc_found
         inx
         inx
         inx
-        inx
-        jmp gc_l
-gc_none:
+        cpx #CAPTBLEND-CAPTBL
+        bcc gc_l
         lda #$00
-        sta retval
-        sta retval+1
-gc_done:
-        lda retval
+        tax
         rts
-
-capid:  .byte $00
-retval: .byte $00, $00
+gc_found:
+        lda CAPTBL+1,x          ; low byte survives loading X with the high byte
+        pha
+        lda CAPTBL+2,x
+        tax
+        pla
+        rts
+getcap_end:
         .cerror * > $1000, "core overlaps resident desktop"

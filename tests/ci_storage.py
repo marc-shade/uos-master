@@ -92,6 +92,38 @@ def launch(mon, name=b"UOS-FMGR"):
     mon.resume()
 
 
+def check_getcap(mon, work):
+    """Call the public ABI from the idle desktop; also used on the real C128."""
+    vec = bytes(mon.read_mem(ci.TICK_VEC, ci.TICK_VEC + 1))
+    assert vec not in (b"\0\0", b"\0\x50"), "Desktop tick not available"
+    mon.resume()
+    probe = work / "getcap.prg"
+    subprocess.run(["64tass", "-a", str(Path(ci.UOS, "probes/getcap.asm")),
+                    "-o", str(probe)], check=True, capture_output=True)
+    mon.write_mem(0x5000, probe.read_bytes()[2:])
+    mon.write_mem(0x5f00, vec + b"\0")
+    mon.write_mem(0x6000, bytes([0xa5]) * 512)
+    mon.write_mem(ci.TICK_VEC, b"\0\x50")
+    mon.resume()
+
+    def read(address, count):
+        value = bytes(mon.read_mem(address, address + count - 1))
+        mon.resume()
+        return value
+
+    wait_for(lambda: read(0x5f02, 1) == b"\x01", "GETCAP probe", 30)
+    data = read(0x6000, 512)
+    (work / "getcap.bin").write_bytes(data)
+    expected = {1: 0xc000, 2: 0xcc00, 3: 0x9c00, 4: 0x082c, 5: 0x0829}
+    values = [data[i] | data[256 + i] << 8 for i in range(256)]
+    for i, value in enumerate(values):
+        assert value == expected.get(i, 0), f"GETCAP({i}) returned ${value:04x}"
+    assert read(ci.TICK_VEC, 2) == vec, "GETCAP probe did not restore desktop tick"
+    assert ci.wait_desktop_live(mon, 120), "Desktop stalled after GETCAP probe"
+    print("PASS: public GETCAP for all 256 IDs; desktop remains live", flush=True)
+    return {"ids": 256, "known_bases": expected, "unknown_result": 0}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--machine", choices=("x64", "x128"), default="x64")
@@ -133,6 +165,7 @@ def main():
                 time.sleep(0.1)
         assert mon is not None, "No VICE monitor"
         assert ci.wait_desktop_live(mon, 300), "No live desktop"
+        check_getcap(mon, work)
         launch(mon)
         fm = FileManager(mon)
         prefix = Path(ci.UOS, "target/uos-fmgr.prg").read_bytes()[2:18]

@@ -61,10 +61,17 @@ disk as an application.
 | `$0826` | `APP_LOADER` | KERNAL LOAD of the file buffer; carry clear on success, set on failure. `LOADERR` resets for each attempt and latches the KERNAL error |
 | `$0829` | `FILLFILE` | `r0` → `$00`-terminated name → file buffer (dynamic loading); at most 16 name bytes plus a terminator |
 | `$082c` | `KEYIN` | `A` = key event (0 = none): kernal GETIN **plus** the C128 keys the C64-mode kernal cannot see (`KEYIN_EXT` in drv1351 scans the VIC-IIe extended matrix: ESC → `$1b`, dedicated cursor keys → `$91/$11/$9d/$1d`, one event per press) and RUN/STOP → `$1b` for C64 keyboards |
-| `$082f` | `GETCAP` | Intended: X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile) → A/X = base lo/hi. **Dispatch is currently broken** (ID/stride/high-byte handling); repair is the next registry prerequisite |
+| `$082f` | `GETCAP` | X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile) → A/X = entry lo/hi; unknown ID → 0/0. Preserves Y, zero page, non-stack RAM and D/I flags; other flags clobbered |
 | `$0832` | `LAUNCH_APP` | Core-resident LOAD then `jmp APP_START` on success, `jmp DESK_START` on failure; the safe entry for an app replacing itself |
 | `$0835` | `VDTEXT` | 80-col: `A` = row 0-24, `X` = col 0-79, `r9` → PETSCII text; no-op without a VDC |
 | `$0838` | `VDCLR` | 80-col: `A` = row → 80 spaces; no-op without a VDC |
+
+`GETCAP` is a static lookup for resident software, not a hardware probe or
+version negotiation. IDs 1–5 return `$c000`, `$cc00`, `$9c00`, `$082c`, `$0829`
+respectively, including on a machine without the corresponding peripheral.
+Check the driver's documented presence result before optional hardware access.
+The earlier dispatch defect is fixed; `tests/ci_core.py` covers every 8-bit ID,
+and the storage suites exercise the public entry from the live desktop.
 
 Graphics (`$c000`…): `GFX_INIT $c000`, `GFX_ON $c006` (`A` = colour byte
 fg<<4|bg; `$00` means *skip the clear*), `GFX_OFF $c009`, `GFX_SETCOLOR
@@ -380,18 +387,19 @@ python3 tests/ci_storage.py --machine x128   # same, with VDC readback
 python3 tests/run_ci.py storage64 storage128 fm vdc copy edit calc # retained logs + exact build hashes
 python3 hw_storage_check.py                  # real C128: private test disk, scrolling, VIC/VDC readback, boot distributable
 python3 -m pip install -r tests/requirements-uci.txt # use a virtual environment
+python3 tests/ci_core.py                      # assembled core: all 256 GETCAP IDs, registers/stack/RAM
 python3 tests/ci_uci.py                       # assembled UCI driver: 14 protocol/CPU checks, no VICE needed
 python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)
-python3 hw_net_check.py                      # real C128: clock synced (driver bytes, Ultimate RTC via REST, row 0)
+python3 hw_net_check.py                      # real C128: driver sync, advancing DOS GET_TIME RTC, VDC clock
 python3 deploy_hw.py                         # real C128 via the Ultimate II+ REST API
 ```
 
 Never boot `target/ultos.d64` itself read-write in a test: copy it to a
 scratch image first (a settings SAVE otherwise lands in the committed file).
-Both CI scripts drive the OS through real code paths: keys through the
+The emulator scripts drive the OS through real code paths: keys through the
 kernal keyboard buffer (`$0277/$c6`, 10 bytes at a time), apps through a
 one-shot tick-vector trampoline, and they read results from memory (x64
 binary monitor) or VDC RAM (x128 text monitor, `bank vdc`).

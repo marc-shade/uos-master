@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos.prg -L target/uos.lst src/uos.asm
-; Tue Sep  8 14:11:40 2026
+; Tue Sep  8 15:15:20 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -1298,38 +1298,25 @@
 >0fb9	29 08				        .word $0829
 .0fbb					CAPTBLEND:
 .0fbb					GETCAP_RT:
-.0fbb	a9 00		lda #$00	        lda #$00                ; default: base = 0 (absent)
-.0fbd	8d fa 0f	sta $0ffa	        sta retval
-.0fc0	8d fb 0f	sta $0ffb	        sta retval+1
-.0fc3	a2 00		ldx #$00	        ldx #0
-.0fc5	bd ac 0f	lda $0fac,x	gc_l:   lda CAPTBL,x
-.0fc8	c9 ff		cmp #$ff	        cmp #$ff
-.0fca	f0 21		beq $0fed	        beq gc_none
-.0fcc	e0 0d		cpx #$0d	        cpx #13
-.0fce	b0 1d		bcs $0fed	        bcs gc_none
-.0fd0	cd f9 0f	cmp $0ff9	        cmp capid
-.0fd3	d0 11		bne $0fe6	        bne gc_next3
-.0fd5	e8		inx		        inx
-.0fd6	bd ac 0f	lda $0fac,x	        lda CAPTBL,x
-.0fd9	8d fa 0f	sta $0ffa	        sta retval              ; lo
-.0fdc	e8		inx		        inx
-.0fdd	bd ac 0f	lda $0fac,x	        lda CAPTBL,x
-.0fe0	8d fb 0f	sta $0ffb	        sta retval+1            ; hi
-.0fe3	4c f5 0f	jmp $0ff5	        jmp gc_done
-.0fe6					gc_next3:
-.0fe6	e8		inx		        inx
-.0fe7	e8		inx		        inx
-.0fe8	e8		inx		        inx
-.0fe9	e8		inx		        inx
-.0fea	4c c5 0f	jmp $0fc5	        jmp gc_l
-.0fed					gc_none:
-.0fed	a9 00		lda #$00	        lda #$00
-.0fef	8d fa 0f	sta $0ffa	        sta retval
-.0ff2	8d fb 0f	sta $0ffb	        sta retval+1
-.0ff5					gc_done:
-.0ff5	ad fa 0f	lda $0ffa	        lda retval
-.0ff8	60		rts		        rts
->0ff9	00				capid:  .byte $00
->0ffa	00 00				retval: .byte $00, $00
+.0fbb	8a		txa		        txa                     ; retain the requested id while X scans entries
+.0fbc	a2 00		ldx #$00	        ldx #$00
+.0fbe	dd ac 0f	cmp $0fac,x	gc_l:   cmp CAPTBL,x
+.0fc1	f0 0b		beq $0fce	        beq gc_found
+.0fc3	e8		inx		        inx
+.0fc4	e8		inx		        inx
+.0fc5	e8		inx		        inx
+.0fc6	e0 0f		cpx #$0f	        cpx #CAPTBLEND-CAPTBL
+.0fc8	90 f4		bcc $0fbe	        bcc gc_l
+.0fca	a9 00		lda #$00	        lda #$00
+.0fcc	aa		tax		        tax
+.0fcd	60		rts		        rts
+.0fce					gc_found:
+.0fce	bd ad 0f	lda $0fad,x	        lda CAPTBL+1,x          ; low byte survives loading X with the high byte
+.0fd1	48		pha		        pha
+.0fd2	bd ae 0f	lda $0fae,x	        lda CAPTBL+2,x
+.0fd5	aa		tax		        tax
+.0fd6	68		pla		        pla
+.0fd7	60		rts		        rts
+.0fd8					getcap_end:
 
 ;******  End of listing

@@ -51,7 +51,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 
 | Requirement | Current evidence | Remaining implementation | Acceptance evidence |
 |---|---|---|---|
-| FR-A1 discovery and FR-A2 drivers | Static GETCAP table; VDC/UCI probes; GETCAP dispatch ABI is broken | Repair GETCAP ID retention/stride/high-byte return; versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
+| FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Everything boots in C64 mode | Native boot/kernel, 128 KiB bank management, KERNAL/MMU gateways, 2 MHz safe regions, ROM/IRQ/DMA ownership | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
 | Memory and FR-M1 | Fixed REU banks for bitmap/app/rectangle snapshots | Non-destructive size detection, ownership allocator, bounds checks, app heaps, RAM disks, persistence, no-REU fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | One loaded app, resident desktop, fixed tick vector; failed LOAD returns to desktop | Manifest/ABI and load-address validation, cooperative scheduling, suspend/resume, app switcher, cleanup of handles/controls | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
@@ -181,10 +181,16 @@ the CPU/protocol cases, emulator regressions and physical cartridge streams.
 Mouse initialization now follows boot I/O after a startup stall in the optional
 settings load; repeated cold-boot/serial/input soak testing remains required.
 
-Next implementation: repair the existing GETCAP dispatch, then build the Ultimate
-desktop browser and drive panel with capability records and system-volume
-preservation. GETCAP currently loses the requested ID, advances by four bytes
-through three-byte entries, and fails to return the high address byte in X.
+GETCAP now retains the requested ID, scans complete three-byte entries and
+returns both address bytes. The CPU regression makes 1,024 calls across all
+256 IDs, checking unknown-ID results, stack balance and register/memory
+preservation. [GETCAP validation](validation/2026-09-08-getcap/README.md) also
+covers all IDs from live x64/x128 desktops and the physical C128, followed by
+storage/display/app regressions. It is a static resident-service lookup; a
+returned address does not prove an optional peripheral is present.
+
+Next implementation: build the Ultimate desktop browser and drive panel with
+capability records and system-volume preservation.
 The installed control target also reports four drives while sending only two
 records. Treat that inventory as incomplete. Mount/eject operations must validate
 the actual destination: the firmware may fall back to a different drive for an

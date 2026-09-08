@@ -19,7 +19,7 @@ import time
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "tests"))
 import ci_fm as ci
-from ci_storage import FileManager, launch, wait_for
+from ci_storage import FileManager, check_getcap, launch, wait_for
 from cap_hw_screen import grab, render
 from hwlib import desk_tick
 
@@ -69,6 +69,8 @@ def quick_check(ult, mon, work, report):
     wait_for(lambda: mon.read_mem(0x033c, 0x033d) == desk_tick().to_bytes(2, "little"),
              "desktop tick vector", 300)
     assert ci.wait_desktop_live(mon, 120)
+    report["getcap"] = check_getcap(mon, work)
+    report["checks"].append("public GETCAP returns correct bases for all 256 IDs")
     launch(mon)
     fm = FileManager(mon)
     prefix = (ROOT / "target/uos-fmgr.prg").read_bytes()[2:18]
