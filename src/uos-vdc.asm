@@ -60,14 +60,15 @@ vdcval          = $2c
         jmp VDC_BANNER          ; $cc21  header rows 0-1
 VDC_LIVE: .byte $00             ; $cc24  set to 1 by the core's VDSETUP once the 8563 is up
 
-; VDC access is WAIT-FREE. The `bit $d600 / bpl` ready-guard stalls the boot
-; on the real C128; register access needs no handshake, and back-to-back RAM
-; writes via r31 auto-increment are spaced by the loop overhead at 1 MHz
-; (proven on hardware, probes/vdc-fullinit.asm).
+; Runtime register access follows the selected-register ready handshake,
+; including address registers 18/19. The earlier wait-free register helpers
+; could lose an address update even though the later r31 data write waited.
+; Cold initialization stays separate; the presence probe uses a bounded wait.
 
 ; read register X -> A
 VDC_GETREG:
         stx VDC_ADDR
+        jsr vwait
         lda VDC_DATA
         rts
 
@@ -75,6 +76,7 @@ VDC_GETREG:
 VDC_SETREG:
         sta vdcval
         stx VDC_ADDR
+        jsr vwait
         lda vdcval
         sta VDC_DATA
         rts
@@ -364,16 +366,29 @@ VDC_INIT_TABLE:
 ; toggle — showed text). A deterministic read-back has no such dependency.
 VDC_PRESENT:
         ldx #1
-        jsr VDC_GETREG          ; r1: horizontal displayed
+        jsr vprobe_get          ; r1: horizontal displayed, bounded if absent
         cmp #$50                ; 80 columns, as VDC_INIT wrote
         bne vpr_no
         ldx #6
-        jsr VDC_GETREG          ; r6: vertical displayed
+        jsr vprobe_get          ; r6: vertical displayed
         cmp #$19                ; 25 rows
         bne vpr_no
         lda #$01
         rts
 vpr_no: lda #$00
+        rts
+vprobe_get:
+        stx VDC_ADDR
+        ldy #0
+vprobe_wait:
+        bit VDC_ADDR
+        bmi vprobe_ready
+        iny
+        bne vprobe_wait
+        lda #0
+        rts
+vprobe_ready:
+        lda VDC_DATA
         rts
 
 vdcpr:  .byte 0
@@ -411,12 +426,11 @@ vt_go:  pla
         sta vdcbpH
         php
         sei
-        ; Write the string THREE times with a short gap between passes.
-        ; Hardware readback showed isolated cells dropped by the 8563 even
-        ; behind the ready-wait and with no DMA on the bus, and a readback
-        ; immediately after the write returns the just-written latch, so it
-        ; cannot see the loss. Independent passes make a repeat loss of the
-        ; same cell negligible; the verify pass below catches the rest.
+        ; Retain the three write passes while the corrected register
+        ; handshake receives more hardware coverage. Earlier readback found
+        ; missing cells when only r31 data access waited: the address-register
+        ; helpers still bypassed readiness. Those observations alone do not
+        ; establish a chip defect or prove that repeated passes are needed.
         lda #$03
         sta vtrep
 vt_rep: lda vtsavL
@@ -432,12 +446,9 @@ vt_gap: dey
                                 ; for seconds whenever a listing repainted.
         dec vtrep
         bne vt_rep
-        ; Verify-and-repair. On the real 8563 a data write is occasionally
-        ; lost even behind the ready-wait (hardware readback 2026-09-06:
-        ; "uos-f" for "uos-fmgr", "u s-shell"), and the auto-increment still
-        ; advanced, so the loss is silent. Read every cell back and rewrite
-        ; any glyph or attribute that differs; two passes make a repeat
-        ; loss of the same cell negligible. Text volume is tiny.
+        ; Read every cell back and repair differing glyphs or attributes.
+        ; These two passes also predate the address-register handshake fix;
+        ; reducing them is a separate performance/physical-validation change.
         lda #$02
         sta vtpass
 vt_vp:  lda vtsavL

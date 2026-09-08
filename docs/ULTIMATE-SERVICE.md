@@ -1,8 +1,9 @@
 # Ultimate command service
 
 The resident `uos-net` module now offers packet streaming alongside the
-existing aggregate interface. This is a foundation for the planned desktop
-browser and drive panel; it does not yet implement that application's UI.
+existing aggregate interface. The [desktop browser](ULTIMATE-BROWSER.md) uses
+it for filesystem navigation. Drive control and other desktop integrations
+remain on the completion roadmap.
 
 The [Ultimate register specification](https://1541u-documentation.readthedocs.io/en/latest/uci/core_uci_architecture.html)
 defines 896-byte command/data FIFOs and a 256-byte status FIFO. The uOS response
@@ -99,7 +100,7 @@ response. The desktop service must reject or explicitly reconcile it before
 using it to authorize mount/eject choices. The two visible records alone do not
 certify SoftwareIEC or printer discovery.
 
-The next layer needs capability records, long-name display and selection,
-paginated browsing, explicit drive choice, and system-volume recovery before
-mount/eject workflows. The [completion roadmap](IMPLEMENTATION-ROADMAP.md)
+The browser now implements long-name selection and paginated browsing. The next
+layer needs capability records, explicit drive choice, and system-volume recovery
+before mount/eject workflows. The [completion roadmap](IMPLEMENTATION-ROADMAP.md)
 continues to track those requirements and the rest of the OS.

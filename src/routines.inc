@@ -35,6 +35,8 @@ GETCAP          = $082f
 LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
 VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
 VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+OS_TICK         = $083b  ; service the current once-per-second callback; clobbers callback registers
+READ_BUTTON     = $083e  ; A=0 while either mouse fire button is down; nonzero when released
 ; settings record (FR-S3): saved as "UOS-SET" by the settings app, loaded
 ; back at boot into the app region
 SETREC          = $7350

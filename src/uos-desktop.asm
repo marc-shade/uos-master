@@ -277,7 +277,7 @@ APPS_MAX        := 6
 APPS_X          := 70
 APPS_Y          := 60
 APPS_W          := 180
-APPS_ROW_H      := 14
+APPS_ROW_H      := 12            ; six rows end before the Cancel button
 
 apps_title:     .text "Applications", $00
 noapps:         .text "no apps found on disk", $00
@@ -313,30 +313,35 @@ _populate:
 
         ldx apps_count
         cpx #$01
-        bcc _r1skip
+        bcs _r1skip
         jmp _apps_ok
 _r1skip:
         #CreateButton 1,20,<APPS_LAUNCH_1, >APPS_LAUNCH_1, APPS_X+2, APPS_Y+18, APPS_X+APPS_W-4, APPS_Y+18+APPS_ROW_H, false
+        ldx apps_count         ; CreateButton/FIND_CTL clobber X
         cpx #$02
         bcs _r2
         jmp _apps_ok
 _r2:
         #CreateButton 1,21,<APPS_LAUNCH_2, >APPS_LAUNCH_2, APPS_X+2, APPS_Y+18+APPS_ROW_H, APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*2), false
+        ldx apps_count
         cpx #$03
         bcs _r3
         jmp _apps_ok
 _r3:
         #CreateButton 1,22,<APPS_LAUNCH_3, >APPS_LAUNCH_3, APPS_X+2, APPS_Y+18+(APPS_ROW_H*2), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*3), false
+        ldx apps_count
         cpx #$04
         bcs _r4
         jmp _apps_ok
 _r4:
         #CreateButton 1,23,<APPS_LAUNCH_4, >APPS_LAUNCH_4, APPS_X+2, APPS_Y+18+(APPS_ROW_H*3), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*4), false
+        ldx apps_count
         cpx #$05
         bcs _r5
         jmp _apps_ok
 _r5:
         #CreateButton 1,24,<APPS_LAUNCH_5, >APPS_LAUNCH_5, APPS_X+2, APPS_Y+18+(APPS_ROW_H*4), APPS_X+APPS_W-4, APPS_Y+18+(APPS_ROW_H*5), false
+        ldx apps_count
         cpx #$06
         bcs _r6
         jmp _apps_ok
@@ -372,26 +377,12 @@ _drrow:
         lda rowadd_hi,x
         sta r0H
         sta r9H
-        ; X1 = APPS_X+6 word; Y1 = APPS_Y+10 + row*APPS_ROW_H
+        ; Label origins use the same row spacing as the registered controls.
         lda #<APPS_X+6
         sta X1
         lda #>APPS_X+6
         sta X1+1
-        lda #APPS_Y+22          ; below the 14 px title bar (rows used to
-        sta Y1                  ; start at +10 and overprint the title)
-        txa                     ; row index -> y offset row*14
-        asl
-        sta vartmp1             ; 2*row
-        asl
-        sta vartmp2             ; 4*row
-        asl
-        sta vartmp3             ; 8*row
-        lda vartmp1
-        clc
-        adc vartmp2             ; 6*row
-        adc vartmp3             ; 14*row
-        clc
-        adc Y1
+        lda row_y,x
         sta Y1
         stx vartmp1             ; GPUTS clobbers X: keep the row index
         jsr GPUTS
@@ -411,30 +402,30 @@ _drrow:
 rows_drawn:
         .byte $00
 vartmp1: .byte $00
-vartmp2: .byte $00
-vartmp3: .byte $00
+row_y:  .byte APPS_Y+22, APPS_Y+22+APPS_ROW_H, APPS_Y+22+APPS_ROW_H*2
+        .byte APPS_Y+22+APPS_ROW_H*3, APPS_Y+22+APPS_ROW_H*4, APPS_Y+22+APPS_ROW_H*5
 APPS_LAUNCH_1:
-        lda #<row1
+        ldx #0
         jmp apps_launch
 APPS_LAUNCH_2:
-        lda #<row2
+        ldx #1
         jmp apps_launch
 APPS_LAUNCH_3:
-        lda #<row3
+        ldx #2
         jmp apps_launch
 APPS_LAUNCH_4:
-        lda #<row4
+        ldx #3
         jmp apps_launch
 APPS_LAUNCH_5:
-        lda #<row5
+        ldx #4
         jmp apps_launch
 APPS_LAUNCH_6:
-        lda #<row6
-        jmp apps_launch
+        ldx #5
 
 apps_launch:
+        lda rowadd_lo,x
         sta r0L
-        lda #>row1
+        lda rowadd_hi,x         ; row buffers may cross a page boundary
         sta r0H
         jsr FILLFILE
         jmp LAUNCH_APP          ; clears the screen; DESK_START drops the

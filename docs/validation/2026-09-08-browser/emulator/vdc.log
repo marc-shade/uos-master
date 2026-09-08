@@ -1,0 +1,115 @@
+PASS 0: uos-net layout matches routines.inc (12 jump slots, 19 data labels, ends $997a); KEYIN_EXT at $9e09
+---- VDC rows (boot) ----
+ 0: UltOS  80-column companion display                        12:10 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: desktop
+24: 0000-00-00  no ip  no ultimate
+PASS A: header rows 0-1 + row 2 'desktop' on the 80-col display; control table = 2 base buttons
+---- VDC rows (fmgr) ----
+ 0: UltOS  80-column companion display                        12:10 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: File manager          device 08
+ 3: disk 08  8/9/0/1=device  up/dn=scroll
+ 4:   > uos
+ 5:     uos-gfx
+ 6:     uos-vdc
+ 7:     uos-drv1351
+ 8:     uos-sprites
+ 9:     uos-reu
+10:     uos-net
+11:     uos-desktop
+12:     uos-settings
+13:     uos-fmgr
+21: D=del R=ren C=cpy I=info ESC=desk
+22: B: copy to paired drive. PRG/SEQ/USR supported; REL needs record copying
+23: D=del R=ren C=cpy I=info ESC=desk
+24: 0000-00-00  no ip  no ultimate
+PASS B: file manager mirrored (10 entries, marker on row 0, hint row)
+PASS C: ESC back to the desktop blanked the listing rows
+---- VDC rows (shell) ----
+ 0: UltOS  80-column companion display                        12:13 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Command shell       UltOS 0.3
+ 5: >
+ 7:   DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT
+23: DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT
+24: 0000-00-00  no ip  no ultimate
+---- VDC rows (after VER) ----
+ 0: UltOS  80-column companion display                        12:13 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Command shell       UltOS 0.3
+ 5: >
+ 7:   UltOS 0.3
+23: DIR CAT RUN DEL COPY REN VER IP TIME GET EXIT
+24: 0000-00-00  no ip  no ultimate
+PASS D: shell mirrored (header, VER response row 7, EXIT back to desktop)
+---- VDC rows (settings) ----
+ 0: UltOS  80-column companion display                        12:21 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Settings
+ 4:   display: both (40+80)
+ 5:   background: cyan
+ 6:   time zone:  utc-04:00
+23: D=display C=color +/-=zone ESC=back
+24: 0000-00-00  no ip  no ultimate
+---- VDC rows (after C) ----
+ 0: UltOS  80-column companion display                        12:21 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Settings
+ 4:   display: both (40+80)
+ 5:   background: purple
+ 6:   time zone:  utc-04:00
+23: D=display C=color +/-=zone ESC=back
+24: 0000-00-00  no ip  no ultimate
+PASS E: settings mirrored (mode + colour rows; C: 'cyan' -> 'purple'; ESC)
+---- VDC rows (launcher) ----
+ 0: UltOS  80-column companion display                        12:27 PM  no ultimate
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Applications
+ 4:     uos-settings
+ 5:     uos-fmgr
+ 6:     uos-shell
+ 7:     uos-edit
+ 8:     uos-calc
+ 9:     uos-ultimate
+24: 0000-00-00  no ip  no ultimate
+PASS F: launcher mirrored (6 apps: ['uos-settings', 'uos-fmgr', 'uos-shell', 'uos-edit', 'uos-calc', 'uos-ultimate']); gfx module intact
+PASS F2: closing the Applications window freed its controls (live slots [(0, 0), (0, 1)])
+---- VDC rows (clock) ----
+ 0: UltOS  80-column companion display                        12:29 PM  no ultimate
+PASS G: boot clock sync reported honestly (NET_STATE=3), row 0: '12:29 PM  no ultimate'
+---- VDC rows (after NTP apply) ----
+ 0: UltOS  80-column companion display                        01:47 PM  ntp
+PASS H: NTP reply -> 13:45:30 Sun 2026/09/06 local, CIA TOD $81:$45, row 0: '01:47 PM  ntp'
+PASS H2: row-24 status line: '2026-09-06  no ip  ntp'
+PASS I: NET_TZSHIFT +1 h -> 14:47, NET_TZ -12, row 0: '02:48 PM  ntp'
+PASS J: the C128 ESC key (VIC-IIe extended matrix) leaves the file manager; matrix line seen
+---- VDC rows (settings zone) ----
+ 0: UltOS  80-column companion display                        02:53 PM  ntp
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Settings
+ 4:   display: both (40+80)
+ 5:   background: purple
+ 6:   time zone:  utc-04:00
+23: D=display C=color +/-=zone ESC=back
+24: 2026-09-06  no ip  ntp
+PASS K: settings zone utc-04:00 -> + -> utc-03:00 (clock 15h) -> - -> utc-04:00 (14h); SETREC_TZ persisted
+---- VDC rows (computer) ----
+ 0: UltOS  80-column companion display                        03:02 PM  ntp
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Computer
+ 4:   UltOS 0.3 C128/8502
+ 5:   reu: 008 x 64k
+ 6:   ip: none
+ 7:   clock: ntp
+PASS L: Computer window rows: 'ip: none' / 'clock: ntp'; close freed its controls, row 2 back to 'desktop'
+---- VDC rows (Ultimate browser without cartridge interface) ----
+ 0: UltOS  80-column companion display                        03:05 PM  ntp
+ 1: ultos menu (40-col, bottom left): apps  file manager  settings  shell  quit
+ 2: Ultimate files
+13: selected name (< > scroll)
+22: Ultimate unavailable; R=retry
+23: up/dn select  enter open  U parent  / root  N/B page  R retry  P path  ESC exit
+24: 2026-09-06  no ip  ntp
+PASS M: Ultimate browser launches, explains absent interface, preserves settings and exits
+CI-VDC PASS: 15/15 companion-display checks

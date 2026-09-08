@@ -25,19 +25,21 @@ class Probe:
                         "-o", str(output)], check=True, capture_output=True)
         self.code = output.read_bytes()[2:]
 
-    def command(self, data):
+    def command(self, data, skip=0):
         assert 2 <= len(data) <= 896
+        assert 0 <= skip <= 65535
         assert ci.wait_desktop_live(self.mon, 30), "desktop not dispatching"
         tick = bytes(self.mon.read_mem(0x033c, 0x033d))
         self.mon.write_mem(0x5000, self.code)
         self.mon.write_mem(0x5500, data)
-        self.mon.write_mem(0x5f00, tick + len(data).to_bytes(2, "little") + bytes(9))
+        self.mon.write_mem(0x5f00, tick + len(data).to_bytes(2, "little") + bytes(9)
+                           + skip.to_bytes(2, "little"))
         self.mon.write_mem(0x033c, b"\x00\x50")
         wait_for(lambda: self.mon.read_mem(0x5f04, 0x5f04) == b"\x01", "UCI tick client", 90)
         meta = bytes(self.mon.read_mem(0x5f04, 0x5f0c))
         result, carry, count, full = meta[1], meta[2], int.from_bytes(meta[3:5], "little"), meta[5]
         end = int.from_bytes(meta[6:8], "little")
-        assert 0x6000 <= end <= 0x7c00, f"invalid capture end: {end:#x}"
+        assert 0x6000 <= end <= 0x7300, f"invalid capture end: {end:#x}"
         raw = bytes(self.mon.read_mem(0x6000, end - 1)) if end > 0x6000 else b""
         records, offset = [], 0
         while offset < len(raw):
@@ -47,14 +49,14 @@ class Probe:
             assert offset + size <= len(raw), "partial capture record"
             records.append((raw[offset:offset + size], clipped))
             offset += size
-        assert full or len(records) == count
+        assert full or len(records) == count - min(skip, count)
         status = bytes(self.mon.read_mem(0x9142, 0x9161)).split(b"\0")[0].decode("ascii", "replace")
         assert self.mon.read_mem(0x033c, 0x033d) == tick
         return {"code": result, "carry": carry, "count": count, "full": full,
                 "clipped": meta[8], "status": status, "records": records}
 
-    def ok(self, data):
-        result = self.command(data)
+    def ok(self, data, skip=0):
+        result = self.command(data, skip=skip)
         assert result["code"] == 0 and not result["carry"], result
         return result
 

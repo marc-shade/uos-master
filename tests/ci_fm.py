@@ -168,7 +168,7 @@ def read_name(mon, addr):
 
 
 def lst_symbol(module, name):
-    """Address of a data label in a module's 64tass listing (target/<module>.lst).
+    """Address of a label in a module's 64tass listing (target/<module>.lst).
     Never hardcode app-buffer addresses: every source edit moves them."""
     lst = open(os.path.join(UOS, f"target/{module}.lst"), "rb").read().decode(
         "latin-1", errors="replace")
@@ -176,6 +176,9 @@ def lst_symbol(module, name):
     # line) and ".addr\t\t\tlabel:" (label alone, data on the next line)
     m = re.search(r"^[.>]([0-9a-fA-F]{4})\s+(?:(?:[0-9a-fA-F]{2} ?)+\s+)?%s:"
                   % re.escape(name), lst, re.M)
+    if not m:
+        m = re.search(r"^=\$([0-9a-fA-F]{4})\s+%s\s*=" % re.escape(name),
+                      lst, re.M)
     if not m:
         raise SystemExit(f"FAIL: {name} not found in {module} listing")
     return int(m.group(1), 16)

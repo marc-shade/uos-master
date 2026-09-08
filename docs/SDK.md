@@ -9,7 +9,7 @@ build output; addresses are the fixed ABI the core and drivers export.
 | Range | Owner | Notes |
 |---|---|---|
 | `$0801-$0fff` | core `uos` | **must end below `$1000`** (the desktop loads there); check `Data: … $0801-$0fxx` after any core edit |
-| `$1000-$404f` | desktop `uos-desktop` | resident (`routines.inc` still says `DESK_END = $2fff`; the build output is the truth); `DESK_START = $1000` is the one-way re-entry point |
+| `$1000-$4048` | desktop `uos-desktop` | resident (`routines.inc` still says `DESK_END = $2fff`; the build output is the truth); `DESK_START = $1000` is the one-way re-entry point |
 | `$5000-$7fff` | app code/data, subject to reservations below | `APP_START = $5000`; one app at a time. The legacy `APP_END=$8fff` snapshot extent is not a grant of all that RAM to apps |
 | `$7350-$7358` | settings record | `SETREC`; the settings app image is padded up to it, see below |
 | `$7f00` | tick trampoline (CI only) | free for apps at run time |
@@ -65,6 +65,8 @@ disk as an application.
 | `$0832` | `LAUNCH_APP` | Core-resident LOAD then `jmp APP_START` on success, `jmp DESK_START` on failure; the safe entry for an app replacing itself |
 | `$0835` | `VDTEXT` | 80-col: `A` = row 0-24, `X` = col 0-79, `r9` → PETSCII text; no-op without a VDC |
 | `$0838` | `VDCLR` | 80-col: `A` = row → 80 spaces; no-op without a VDC |
+| `$083b` | `OS_TICK` | Service the registered callback once per second. Callback register/scratch clobbers apply; call outside UCI transactions |
+| `$083e` | `READ_BUTTON` | A = 0 if either mouse fire button is down, nonzero when released; preserves X/Y and the interrupt/decimal flags |
 
 `GETCAP` is a static lookup for resident software, not a hardware probe or
 version negotiation. IDs 1–5 return `$c000`, `$cc00`, `$9c00`, `$082c`, `$0829`
@@ -72,6 +74,18 @@ respectively, including on a machine without the corresponding peripheral.
 Check the driver's documented presence result before optional hardware access.
 The earlier dispatch defect is fixed; `tests/ci_core.py` covers every 8-bit ID,
 and the storage suites exercise the public entry from the live desktop.
+
+Apps with their own keyboard loops can call `OS_TICK`, `KEYIN` and
+`READ_BUTTON`; keep a release-edge latch to turn button state into clicks.
+The Ultimate browser demonstrates this and propagates the borrow when converting
+the nine-bit VIC sprite X coordinate to screen coordinates. Its buffer and input
+contracts are documented in the [browser guide](ULTIMATE-BROWSER.md).
+
+Core control hit testing uses inclusive left/top and exclusive right/bottom
+edges, compares the complete nine-bit X coordinate, and scans all 25 slots
+while ignoring freed entries. Reload an app count after `CreateButton` before
+testing it: control registration may change X. The launcher uses complete
+filename pointers per row; consecutive buffers need not share a high byte.
 
 Graphics (`$c000`…): `GFX_INIT $c000`, `GFX_ON $c006` (`A` = colour byte
 fg<<4|bg; `$00` means *skip the clear*), `GFX_OFF $c009`, `GFX_SETCOLOR
@@ -92,6 +106,12 @@ hand): `VDC_GETREG $cc00` (`X` = reg → `A`), `VDC_SETREG $cc03`,
 display is up). Apps use `VDTEXT/VDCLR` (or the driver slots directly) to
 mirror their state on the 80-column screen; rows 0-1 belong to the header,
 rows 2-23 to the running app, row 23 is used for key hints by convention.
+Runtime register helpers select the register, wait for bit 7 of `$d600`, then
+access `$d601`, as specified in the
+[Commodore 128 Programmer's Reference Guide](https://www.pagetable.com/docs/Commodore%20128%20Programmer%27s%20Reference%20Guide.pdf)
+(printed pages 296 and 306). Presence detection uses a bounded wait so a missing
+VDC returns false. Runtime waits remain unbounded after presence is established;
+cold initialization retains its separate register sequence.
 
 ## Application skeleton (what the fmgr, shell and settings do)
 
@@ -378,7 +398,7 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
 ```
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
 UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/CD/PWD/LS/IP/TIME/GET (18 checks)
-python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock/SNTP conversion, zone, C128 ESC key, control-table integrity, status line (14 checks)
+python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock, keys, controls, launcher, offline browser (15 checks)
 python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
 python3 tests/ci_calc.py                     # x64: the calculator (uos-calc) arithmetic, chains, OVF/DIV/0, backspace, exit (12 checks)
 python3 tests/ci_copy.py                     # x64: >16 KiB PRG copies both ways, type/byte checks, existing destination rejection
@@ -388,8 +408,12 @@ python3 tests/run_ci.py storage64 storage128 fm vdc copy edit calc # retained lo
 python3 hw_storage_check.py                  # real C128: private test disk, scrolling, VIC/VDC readback, boot distributable
 python3 -m pip install -r tests/requirements-uci.txt # use a virtual environment
 python3 tests/ci_core.py                      # assembled core: all 256 GETCAP IDs, registers/stack/RAM
+python3 tests/ci_desktop.py                   # assembled launcher: 0-6 apps, control callbacks and complete X-coordinate hit testing
+python3 tests/ci_vdc_protocol.py              # assembled VDC driver: register readiness, exact text/attributes, absent probe
 python3 tests/ci_uci.py                       # assembled UCI driver: 14 protocol/CPU checks, no VICE needed
+python3 tests/ci_ultimate.py                  # assembled browser: paging, long names, mouse, failures, capture bounds
 python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
+python3 hw_ultimate_check.py                 # real C128: browser navigation, complete names, VDC readback, path restoration
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)

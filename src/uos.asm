@@ -51,6 +51,8 @@
         jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
         jmp VDC_TEXT    ; 80-col companion: A=row X=col r9->PETSCII text (driver, no-op w/o VDC)
         jmp VDC_CLR     ; 80-col companion: A=row -> blank the row (driver, no-op w/o VDC)
+        jmp TICK        ; app input loops can keep the desktop clock serviced
+        jmp READ_BTN    ; shared, IRQ-guarded button read for either control port
 
 ; ==========================================================
 ; START
@@ -543,85 +545,70 @@ LOADIMM3:
 ; Checked whenever a mouse click occurs
 ; ==========================================================
 TESTCLICK:
+        ; Snapshot and normalize the full nine-bit sprite coordinate. In
+        ; particular X=232..255 borrows from the VIC high bit when -24.
+        php
+        sei
+        lda VIC_BASE + VIC_SPR_XMSb
+        and #1
+        sta r5H
+        sec
+        lda VIC_BASE + VIC_SPR0_X
+        sbc #24
+        sta r5L
+        lda r5H
+        sbc #0
+        sta r5H
+        lda VIC_BASE + VIC_SPR0_Y
+        sec
+        sbc #50
+        sta r6L
+        plp
         ldx #$00
         lda #25                 ; scan the whole bounded table (25 slots),
         sta r1                  ; not the counter: a freed slot in the middle
                                 ; must not hide the live ones after it
 
 _loopbtns:
-        bne _storemeta
-        jmp _badclick
-
-_storemeta:
-
         ; get app id; $ff = a freed slot whose stale coords must NOT match
         ; (RemoveButton only marked the id; the scan never checked it, so
         ; every "removed" button stayed clickable until its slot was reused)
         lda APP_CTL_BUF,x
         cmp #$ff
-        bne _liveslot
-        jmp _checknextbtn
-_liveslot:
+        beq _checknextbtn
+        ; Inclusive left/top, exclusive right/bottom. Compare high bytes
+        ; first so controls may span the 256-pixel boundary.
+        lda r5H
+        cmp APP_CTL_BUF+5,x
+        bcc _checknextbtn
+        bne _test_right
+        lda r5L
+        cmp APP_CTL_BUF+4,x
+        bcc _checknextbtn
+_test_right:
+        lda r5H
+        cmp APP_CTL_BUF+8,x
+        bcc _test_vertical
+        bne _checknextbtn
+        lda r5L
+        cmp APP_CTL_BUF+7,x
+        bcs _checknextbtn
+_test_vertical:
+        lda r6L
+        cmp APP_CTL_BUF+6,x
+        bcc _checknextbtn
+        cmp APP_CTL_BUF+9,x
+        bcs _checknextbtn
+        lda APP_CTL_BUF,x
         sta r2
-
-        ; get button id
         lda APP_CTL_BUF+1,x
         sta r3
-
-        ; get callback address
-        lda APP_CTL_BUF+2, x
+        lda APP_CTL_BUF+2,x
         sta r4L
-
-        lda APP_CTL_BUF+3, x
+        lda APP_CTL_BUF+3,x
         sta r4H
-
-        ; check if click is on button
-_x1a:
-        lda VIC_BASE + VIC_SPR0_X
-        sec
-        sbc #$18
-        clc
-        cmp APP_CTL_BUF+4,x
-        bcc _fardone1
-
-_x1b:
-        lda VIC_BASE + VIC_SPR_XMSb
-        and #%00000001
-        cmp APP_CTL_BUF+5,x
-        beq _y1
-_fardone1:
-        jmp _checknextbtn 
-_y1:
-        lda VIC_BASE + VIC_SPR0_Y
-        sec
-        sbc #$32
-        clc
-        cmp APP_CTL_BUF+6,x
-        bcs _x2a
-        jmp _checknextbtn 
-
-_x2a:
-        lda VIC_BASE + VIC_SPR0_X
-        sec
-        sbc #$18
-        sec
-        cmp APP_CTL_BUF+7,x
-        bcs _fardone2
-_x2b:
-        lda VIC_BASE + VIC_SPR_XMSb
-        and #%00000001
-        cmp APP_CTL_BUF+8,x
-        beq _y2
-_fardone2:
-        jmp _checknextbtn 
-_y2:
-        lda VIC_BASE + VIC_SPR0_Y
-        sec
-        sbc #$32
-        sec
-        cmp APP_CTL_BUF+9,x
-        bcc _goodclick
-        ;jmp _checknextbtn       
+        lda #1
+        rts
 
 _checknextbtn
         txa 
@@ -629,11 +616,7 @@ _checknextbtn
         adc #$0a
         tax 
         dec r1
-        jmp _loopbtns
-
-_goodclick:
-        lda #$01
-        rts
+        bne _loopbtns
 _badclick:
         lda #$00
         rts 

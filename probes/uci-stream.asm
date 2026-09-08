@@ -13,6 +13,7 @@ COUNT = $5f07
 FULL = $5f09
 ENDPTR = $5f0a
 CLIPPED = $5f0c
+SKIP = $5f0d
 
 * = $5000
         lda OLDTICK
@@ -56,8 +57,18 @@ receive:
         bne rc_counted
         inc COUNT+1
 rc_counted:
+        lda COUNT+1
+        cmp SKIP+1
+        bcc rc_skipped
+        bne rc_capture
+        lda COUNT
+        cmp SKIP
+        bcc rc_skipped
+        beq rc_skipped
+rc_capture:
         lda FULL
         beq rc_reserve
+rc_skipped:
         clc
         rts
 rc_reserve:
@@ -75,7 +86,7 @@ rc_reserve:
         sta candidate
         lda candidate+1
         adc NET_LEN+1
-        cmp #$7c
+        cmp #$73               ; stop before live SETREC preferences at $7350
         bcc rc_space
         bne rc_full
         lda candidate

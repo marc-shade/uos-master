@@ -124,6 +124,57 @@ def check_getcap(mon, work):
     return {"ids": 256, "known_bases": expected, "unknown_result": 0}
 
 
+def launch_from_apps(mon, work, quiet_io_seconds=0):
+    """Open Apps, verify live controls, hit the Ultimate row at screen x=240."""
+    def read(address, length):
+        data = bytes(mon.read_mem(address,address+length-1))
+        mon.resume()
+        return data
+
+    def controls():
+        data = read(0x9001,250)
+        return [data[i:i+10] for i in range(0,250,10) if data[i] != 0xff]
+
+    vec = read(ci.TICK_VEC,2)
+    menu = ci.lst_symbol('uos-desktop','MENU_APPS')
+    code = bytes([0xa2,vec[0],0xa0,vec[1],0x8e,0x3c,3,0x8c,0x3d,3,
+                  0x4c,menu&255,menu>>8])
+    mon.write_mem(ci.TRAMPOLINE,code)
+    mon.write_mem(ci.TICK_VEC,ci.TRAMPOLINE.to_bytes(2,'little'))
+    mon.resume()
+    if quiet_io_seconds:
+        print('Waiting for IEC directory scan before DMA observations',flush=True)
+        time.sleep(quiet_io_seconds)
+    wait_for(lambda: any(r[:2] == b'\x01\x1d' for r in controls()),
+             'Applications controls',120)
+    records = controls()
+    ids = [r[1] for r in records if r[0] == 1 and 20 <= r[1] <= 25]
+    assert ids == list(range(20,26)), f'Launcher app buttons: {ids}'
+    chosen = next(r for r in records if r[:2] == b'\x01\x19')
+    assert int.from_bytes(chosen[2:4],'little') == ci.lst_symbol('uos-desktop','APPS_LAUNCH_6')
+    (work/'launcher-controls.bin').write_bytes(b''.join(records))
+    prg = work/'launch-control.prg'
+    subprocess.run(['64tass','-a',str(Path(ci.UOS,'probes/launch-control.asm')),
+                    '-o',str(prg)],check=True,capture_output=True)
+    mon.write_mem(0x7f00,prg.read_bytes()[2:])
+    # 240+24 = 264: the low-byte borrow used to make this row unclickable.
+    mon.write_mem(0x7fe0,vec+ci.core_symbol('TESTCLICK').to_bytes(2,'little')+
+                  bytes([8,1,chosen[6]+4+50,0,0]))
+    load_error = ci.core_symbol('LOADERR')
+    mon.write_mem(load_error,b'\xff')
+    mon.write_mem(ci.TICK_VEC,b'\0\x7f')
+    mon.resume()
+    if quiet_io_seconds:
+        print('Waiting for IEC app LOAD before DMA observations',flush=True)
+        time.sleep(quiet_io_seconds)
+    wait_for(lambda: read(0x7fe7,1) == b'\x01','registered launcher hit',120)
+    assert read(0x7fe8,1) == b'\x01','Ultimate row was not clickable'
+    wait_for(lambda: read(load_error,1) != b'\xff','launcher LOAD started',30)
+    filename = read(ci.core_symbol('file'),17).split(b'\0')[0]
+    assert filename == b'UOS-ULTIMATE', f'Launcher filename: {filename!r}'
+    print('PASS: Apps registers six rows; right-edge hit invokes Ultimate callback',flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--machine", choices=("x64", "x128"), default="x64")
@@ -135,6 +186,7 @@ def main():
     subprocess.run(["c1541", "-format", "empty,09", "d64", str(disk9)],
                    check=True, capture_output=True)
     payload = work / "fixture.prg"
+    system_entries = len(list(Path(ci.UOS, "target").glob("*.prg")))
     payload.write_bytes(b"\x00\x50" + bytes(range(256)) * 2)
     for i in range(70):
         subprocess.run(["c1541", "-attach", str(disk8), "-write", str(payload),
@@ -166,6 +218,18 @@ def main():
         assert mon is not None, "No VICE monitor"
         assert ci.wait_desktop_live(mon, 300), "No live desktop"
         check_getcap(mon, work)
+        prefs = mon.read_mem(0x7350,0x7358); mon.resume()
+        launch_from_apps(mon,work)
+        browser_ready = ci.lst_symbol('uos-ultimate','ready')
+        def browser_state():
+            value = mon.read_mem(browser_ready,browser_ready)[0]
+            mon.resume()
+            return value
+        wait_for(lambda: browser_state() == 1,'browser ready after app-row launch')
+        assert mon.read_mem(0x7350,0x7358) == prefs
+        ci.inject_keys(mon,b'\x1b')
+        wait_for(lambda: browser_state() == 0xff,'browser exit')
+        assert ci.wait_desktop_live(mon,120)
         launch(mon)
         fm = FileManager(mon)
         prefix = Path(ci.UOS, "target/uos-fmgr.prg").read_bytes()[2:18]
@@ -185,13 +249,14 @@ def main():
         assert fm.value("scroll") == 1
         fm.goto(72)
         assert int.from_bytes(fm.read(fm.symbols["cachebase"], 2), "little") == 55
-        assert fm.names()[fm.read(ci.FMROW)[0]] == b"SCROLL-59"
+        assert fm.names()[fm.read(ci.FMROW)[0]] == f"SCROLL-{72-system_entries:02d}".encode()
         assert fm.read(0xa000, 8000, ram) != initial
         print("PASS: cursor scrolls past both the tenth entry and the cache boundary", flush=True)
 
-        fm.goto(82)
+        final_ordinal = system_entries + 69
+        fm.goto(final_ordinal)
         fm.keys(b"\x11\x11")
-        assert fm.ordinal() == 82
+        assert fm.ordinal() == final_ordinal
         fm.goto(0)
         fm.keys(b"\x91")
         assert fm.ordinal() == 0 and fm.value("scroll") == 0

@@ -29,8 +29,11 @@ for the exact checks, build hashes, screenshots and remaining limitations.
 The [Ultimate command service](docs/ULTIMATE-SERVICE.md) now streams reply
 packets without overrunning the fixed buffer, supports longer commands, and
 reports clipping. A physical C128 test streamed 1,096 directory entries.
-The desktop Ultimate browser/drive panel is the next application increment;
-the installed firmware's incomplete drive inventory still needs handling.
+The desktop launcher now includes **uos-ultimate**, an eight-row USB/filesystem
+browser with keyboard and mouse navigation, long-name scrolling, and directory
+paging beyond entry 255. See the [browser guide](docs/ULTIMATE-BROWSER.md).
+The drive panel and mount/eject workflows remain in progress; the installed
+firmware's incomplete drive inventory still needs handling.
 
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 

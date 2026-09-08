@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-shell.prg -L target/uos-shell.lst src/uos-shell.asm
-; Tue Sep  8 13:40:44 2026
+; Tue Sep  8 15:30:28 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -115,6 +115,8 @@
 =$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
 =$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
 =$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+=$083b					OS_TICK         = $083b  ; service the current once-per-second callback; clobbers callback registers
+=$083e					READ_BUTTON     = $083e  ; A=0 while either mouse fire button is down; nonzero when released
 =$7350					SETREC          = $7350
 =$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
 =$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)

@@ -317,6 +317,7 @@ def main():
         show(rows, "launcher")
         apps = [r.strip() for r in rows[4:10] if r.strip()]
         assert any("settings" in a for a in apps) and any("shell" in a for a in apps), apps
+        assert any("ultimate" in a for a in apps), apps
         # the launcher's CreateWindow stash/fetch used to DMA over the
         # graphics engine at $c000 (bad last-row math); prove the module is
         # byte-intact after the window opened
@@ -505,9 +506,23 @@ def main():
         print(f"PASS L: Computer window rows: {rows[6].strip()!r} / {rows[7].strip()!r}; close freed its controls, row 2 back to 'desktop'")
         passed += 1
 
+        settings_before = mon.peek(0x7350, 9)
+        mon.launch(b"UOS-ULTIMATE")
+        rows = wait_rows(mon, lambda r: r[2].startswith("Ultimate files")
+                         and "unavailable" in r[22], "Ultimate browser offline response")
+        show(rows, "Ultimate browser without cartridge interface")
+        assert mon.peek(0x7350, 9) == settings_before, "Browser overwrote saved preferences"
+        assert "N/B page" in rows[23] and "ESC exit" in rows[23]
+        subprocess.run(["magick", "import", "-display", disp, "-window", "root",
+                        os.path.join(OUT, "ci_ultimate_offline.png")], capture_output=True)
+        mon.keys(b"\x1b")
+        wait_rows(mon, lambda r: r[2].startswith("desktop"), "desktop after Ultimate browser")
+        print("PASS M: Ultimate browser launches, explains absent interface, preserves settings and exits")
+        passed += 1
+
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_vdc_final.png")], capture_output=True)
-        print(f"CI-VDC PASS: {passed}/14 companion-display checks")
+        print(f"CI-VDC PASS: {passed}/15 companion-display checks")
     finally:
         emu.terminate()
         xvfb.terminate()
