@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o target/uos-ultimate.prg -L target/uos-ultimate.lst src/uos-ultimate.asm
-; Tue Sep  8 17:09:06 2026
+; Tue Sep  8 17:45:27 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -255,6 +255,12 @@
 ;******  Return to file: src/uos-ultimate.asm
 
 =8					ROWS = 8
+=1					DIR_LIST = 1
+=2					DIR_SELECT = 2
+=4					DIR_DETAIL = 4
+=8					DIR_STATUS = 8
+=16					DIR_PATH = 16
+=31					DIR_ALL = 31
 =$6000					CACHE = $6000                   ; eight 512-byte filename slots, through $6fff
 =$7000					PATHBUF = $7000                 ; 512 bytes, below the saved settings at $7350
 =$7400					REQUEST = $7400                 ; transient command, at most 513 bytes here
@@ -267,1741 +273,1570 @@
 .5000	ee 00 9b	inc $9b00	    inc APP_ID_TBL
 .5003	ad 00 9b	lda $9b00	    lda APP_ID_TBL
 .5006	a5 ba		lda $ba		        lda $ba
-.5008	8d 0f 5e	sta $5e0f	        sta sysdev
+.5008	8d 06 5d	sta $5d06	        sta sysdev
 .500b	a9 00		lda #$00	        lda #$00
-.500d	8d 01 5e	sta $5e01	        sta base
-.5010	8d 02 5e	sta $5e02	        sta base+1
-.5013	8d 0b 5e	sta $5e0b	        sta selected
-.5016	8d 11 5e	sta $5e11	        sta held
-.5019	8d 12 5e	sta $5e12	        sta viewpath
-.501c	8d 07 5e	sta $5e07	        sta nameoff
-.501f	8d 08 5e	sta $5e08	        sta nameoff+1
+.500d	8d f8 5c	sta $5cf8	        sta base
+.5010	8d f9 5c	sta $5cf9	        sta base+1
+.5013	8d 02 5d	sta $5d02	        sta selected
+.5016	8d 08 5d	sta $5d08	        sta held
+.5019	8d 09 5d	sta $5d09	        sta viewpath
+.501c	8d fe 5c	sta $5cfe	        sta nameoff
+.501f	8d ff 5c	sta $5cff	        sta nameoff+1
 .5022	8d 00 70	sta $7000	        sta PATHBUF
-.5025	8d 05 5e	sta $5e05	        sta pathlen
-.5028	8d 06 5e	sta $5e06	        sta pathlen+1
-.502b	8d 10 5e	sta $5e10	        sta ready
-.502e	20 65 52	jsr $5265	        jsr refresh
-.5031	20 74 55	jsr $5574	        jsr paint
-.5034					input_loop:
-.5034	a9 01		lda #$01	        lda #$01
-.5036	8d 10 5e	sta $5e10	        sta ready
-.5039	20 3b 08	jsr $083b	        jsr OS_TICK
-.503c	20 2c 08	jsr $082c	        jsr KEYIN
-.503f	d0 1c		bne $505d	        bne key_event
-.5041	20 3e 08	jsr $083e	        jsr READ_BUTTON
-.5044	d0 08		bne $504e	        bne released
-.5046	a9 01		lda #$01	        lda #$01
-.5048	8d 11 5e	sta $5e11	        sta held
-.504b	4c 34 50	jmp $5034	        jmp input_loop
-.504e					released:
-.504e	ad 11 5e	lda $5e11	        lda held
-.5051	f0 e1		beq $5034	        beq input_loop
-.5053	a9 00		lda #$00	        lda #$00
-.5055	8d 11 5e	sta $5e11	        sta held
-.5058	20 0b 5c	jsr $5c0b	        jsr mouse_action
-.505b	f0 d7		beq $5034	        beq input_loop
-.505d					key_event:
-.505d	8d 13 5e	sta $5e13	        sta key
-.5060	a9 00		lda #$00	        lda #$00
-.5062	8d 10 5e	sta $5e10	        sta ready
-.5065	ad 13 5e	lda $5e13	        lda key
-.5068	c9 c1		cmp #$c1	        cmp #$c1
-.506a	90 06		bcc $5072	        bcc key_ascii
-.506c	c9 db		cmp #$db	        cmp #$db
-.506e	b0 02		bcs $5072	        bcs key_ascii
-.5070	29 7f		and #$7f	        and #$7f               ; shifted PETSCII letters use the same shortcuts
-.5072					key_ascii:
-.5072	c9 61		cmp #$61	        cmp #$61
-.5074	90 06		bcc $507c	        bcc normalized
-.5076	c9 7b		cmp #$7b	        cmp #$7b
-.5078	b0 02		bcs $507c	        bcs normalized
-.507a	29 df		and #$df	        and #$df
-.507c					normalized:
-.507c	a2 0b		ldx #$0b	        ldx #key_count-1
-.507e					key_find:
-.507e	dd 9e 50	cmp $509e,x	        cmp keys,x
-.5081	f0 06		beq $5089	        beq key_found
-.5083	ca		dex		        dex
-.5084	10 f8		bpl $507e	        bpl key_find
-.5086	4c 34 50	jmp $5034	        jmp input_loop
-.5089					key_found:
-.5089	bd aa 50	lda $50aa,x	        lda actionsL,x
-.508c	8d 96 50	sta $5096	        sta dispatch+1
-.508f	bd b6 50	lda $50b6,x	        lda actionsH,x
-.5092	8d 97 50	sta $5097	        sta dispatch+2
-.5095					dispatch:
-.5095	20 ff ff	jsr $ffff	        jsr $ffff
-.5098	20 74 55	jsr $5574	        jsr paint
-.509b	4c 34 50	jmp $5034	        jmp input_loop
->509e	11 91 0d 1b 55 2f 4e 42		keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50
->50a6	52 9d 1d 50
+.5025	8d fc 5c	sta $5cfc	        sta pathlen
+.5028	8d fd 5c	sta $5cfd	        sta pathlen+1
+.502b	8d 07 5d	sta $5d07	        sta ready
+.502e	20 82 52	jsr $5282	        jsr refresh
+.5031	20 9a 55	jsr $559a	        jsr frame
+.5034	20 25 58	jsr $5825	        jsr paint
+.5037					input_loop:
+.5037	a9 01		lda #$01	        lda #$01
+.5039	8d 07 5d	sta $5d07	        sta ready
+.503c	20 3b 08	jsr $083b	        jsr OS_TICK
+.503f	20 2c 08	jsr $082c	        jsr KEYIN
+.5042	d0 1c		bne $5060	        bne key_event
+.5044	20 3e 08	jsr $083e	        jsr READ_BUTTON
+.5047	d0 08		bne $5051	        bne released
+.5049	a9 01		lda #$01	        lda #$01
+.504b	8d 08 5d	sta $5d08	        sta held
+.504e	4c 37 50	jmp $5037	        jmp input_loop
+.5051					released:
+.5051	ad 08 5d	lda $5d08	        lda held
+.5054	f0 e1		beq $5037	        beq input_loop
+.5056	a9 00		lda #$00	        lda #$00
+.5058	8d 08 5d	sta $5d08	        sta held
+.505b	20 01 5b	jsr $5b01	        jsr mouse_action
+.505e	f0 d7		beq $5037	        beq input_loop
+.5060					key_event:
+.5060	8d 0a 5d	sta $5d0a	        sta key
+.5063	a9 00		lda #$00	        lda #$00
+.5065	8d 07 5d	sta $5d07	        sta ready
+.5068	8d 11 5d	sta $5d11	        sta dirty
+.506b	ad 0a 5d	lda $5d0a	        lda key
+.506e	c9 c1		cmp #$c1	        cmp #$c1
+.5070	90 06		bcc $5078	        bcc key_ascii
+.5072	c9 db		cmp #$db	        cmp #$db
+.5074	b0 02		bcs $5078	        bcs key_ascii
+.5076	29 7f		and #$7f	        and #$7f               ; shifted PETSCII letters use the same shortcuts
+.5078					key_ascii:
+.5078	c9 61		cmp #$61	        cmp #$61
+.507a	90 06		bcc $5082	        bcc normalized
+.507c	c9 7b		cmp #$7b	        cmp #$7b
+.507e	b0 02		bcs $5082	        bcs normalized
+.5080	29 df		and #$df	        and #$df
+.5082					normalized:
+.5082	a2 0b		ldx #$0b	        ldx #key_count-1
+.5084					key_find:
+.5084	dd a4 50	cmp $50a4,x	        cmp keys,x
+.5087	f0 06		beq $508f	        beq key_found
+.5089	ca		dex		        dex
+.508a	10 f8		bpl $5084	        bpl key_find
+.508c	4c 37 50	jmp $5037	        jmp input_loop
+.508f					key_found:
+.508f	bd b0 50	lda $50b0,x	        lda actionsL,x
+.5092	8d 9c 50	sta $509c	        sta dispatch+1
+.5095	bd bc 50	lda $50bc,x	        lda actionsH,x
+.5098	8d 9d 50	sta $509d	        sta dispatch+2
+.509b					dispatch:
+.509b	20 ff ff	jsr $ffff	        jsr $ffff
+.509e	20 25 58	jsr $5825	        jsr paint
+.50a1	4c 37 50	jmp $5037	        jmp input_loop
+>50a4	11 91 0d 1b 55 2f 4e 42		keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50
+>50ac	52 9d 1d 50
 =12					key_count = *-keys
->50aa	d5 eb c3 c2 b0 a7 0d 2b		actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path
->50b2	65 67 7e 56
->50b6	50 50 51 50 51 51 51 51		actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path
->50be	52 51 51 51
-.50c2					leave:
-.50c2	a9 ff		lda #$ff	        lda #$ff
-.50c4	8d 10 5e	sta $5e10	        sta ready
-.50c7	ad 0f 5e	lda $5e0f	        lda sysdev
-.50ca	85 ba		sta $ba		        sta $ba
-.50cc	ce 00 9b	dec $9b00	    dec APP_ID_TBL
-.50cf	ad 00 9b	lda $9b00	    lda APP_ID_TBL
-.50d2	4c 00 10	jmp $1000	        jmp DESK_START
-.50d5					down:
-.50d5	ad 0c 5e	lda $5e0c	        lda count
-.50d8	f0 6f		beq $5149	        beq action_done
-.50da	ad 0b 5e	lda $5e0b	        lda selected
-.50dd	18		clc		        clc
-.50de	69 01		adc #$01	        adc #1
-.50e0	cd 0c 5e	cmp $5e0c	        cmp count
-.50e3	b0 28		bcs $510d	        bcs nextpage
-.50e5	8d 0b 5e	sta $5e0b	        sta selected
-.50e8	4c 4a 51	jmp $514a	        jmp reset_view
-.50eb					up:
-.50eb	ad 0b 5e	lda $5e0b	        lda selected
-.50ee	f0 06		beq $50f6	        beq up_page
-.50f0	ce 0b 5e	dec $5e0b	        dec selected
-.50f3	4c 4a 51	jmp $514a	        jmp reset_view
-.50f6					up_page:
-.50f6	ad 01 5e	lda $5e01	        lda base
-.50f9	0d 02 5e	ora $5e02	        ora base+1
-.50fc	f0 4b		beq $5149	        beq action_done
-.50fe	20 2b 51	jsr $512b	        jsr prevpage
-.5101	ad 0c 5e	lda $5e0c	        lda count
-.5104	f0 43		beq $5149	        beq action_done
-.5106	38		sec		        sec
-.5107	e9 01		sbc #$01	        sbc #1
-.5109	8d 0b 5e	sta $5e0b	        sta selected
-.510c	60		rts		        rts
-.510d					nextpage:
-.510d	ad 0d 5e	lda $5e0d	        lda more
-.5110	f0 37		beq $5149	        beq action_done
-.5112	18		clc		        clc
-.5113	ad 01 5e	lda $5e01	        lda base
-.5116	69 08		adc #$08	        adc #ROWS
-.5118	8d 01 5e	sta $5e01	        sta base
-.511b	90 24		bcc $5141	        bcc page_changed
-.511d	ee 02 5e	inc $5e02	        inc base+1
-.5120	d0 1f		bne $5141	        bne page_changed
-.5122	a9 f8		lda #$f8	        lda #$f8                ; do not wrap directory ordinals to zero
-.5124	8d 01 5e	sta $5e01	        sta base
-.5127	ce 02 5e	dec $5e02	        dec base+1
-.512a	60		rts		        rts
-.512b					prevpage:
-.512b	ad 01 5e	lda $5e01	        lda base
-.512e	0d 02 5e	ora $5e02	        ora base+1
-.5131	f0 16		beq $5149	        beq action_done
-.5133	38		sec		        sec
-.5134	ad 01 5e	lda $5e01	        lda base
-.5137	e9 08		sbc #$08	        sbc #ROWS
-.5139	8d 01 5e	sta $5e01	        sta base
-.513c	b0 03		bcs $5141	        bcs page_changed
-.513e	ce 02 5e	dec $5e02	        dec base+1
-.5141					page_changed:
-.5141	a9 00		lda #$00	        lda #$00
-.5143	8d 0b 5e	sta $5e0b	        sta selected
-.5146	4c 65 52	jmp $5265	        jmp refresh
-.5149					action_done:
-.5149	60		rts		        rts
-.514a					reset_view:
-.514a	a9 00		lda #$00	        lda #$00
-.514c	8d 07 5e	sta $5e07	        sta nameoff
-.514f	8d 08 5e	sta $5e08	        sta nameoff+1
-.5152	8d 12 5e	sta $5e12	        sta viewpath
-.5155	60		rts		        rts
-.5156					toggle_path:
-.5156	ad 12 5e	lda $5e12	        lda viewpath
-.5159	49 01		eor #$01	        eor #1
-.515b	8d 12 5e	sta $5e12	        sta viewpath
-.515e	a9 00		lda #$00	        lda #$00
-.5160	8d 07 5e	sta $5e07	        sta nameoff
-.5163	8d 08 5e	sta $5e08	        sta nameoff+1
-.5166	60		rts		        rts
-.5167					left:
-.5167	ad 07 5e	lda $5e07	        lda nameoff
-.516a	0d 08 5e	ora $5e08	        ora nameoff+1
-.516d	f0 da		beq $5149	        beq action_done
-.516f	38		sec		        sec
-.5170	ad 07 5e	lda $5e07	        lda nameoff
-.5173	e9 20		sbc #$20	        sbc #32
-.5175	8d 07 5e	sta $5e07	        sta nameoff
-.5178	b0 cf		bcs $5149	        bcs action_done
-.517a	ce 08 5e	dec $5e08	        dec nameoff+1
-.517d	60		rts		        rts
-.517e					right:
-.517e	20 0b 55	jsr $550b	        jsr detail_source
-.5181	18		clc		        clc
-.5182	ad 07 5e	lda $5e07	        lda nameoff
-.5185	69 20		adc #$20	        adc #32
-.5187	85 66		sta $66		        sta number
-.5189	ad 08 5e	lda $5e08	        lda nameoff+1
-.518c	69 00		adc #$00	        adc #0
-.518e	85 67		sta $67		        sta number+1
-.5190	c5 65		cmp $65		        cmp remain+1
-.5192	90 08		bcc $519c	        bcc right_go
-.5194	d0 b3		bne $5149	        bne action_done
-.5196	a5 66		lda $66		        lda number
-.5198	c5 64		cmp $64		        cmp remain
-.519a	b0 ad		bcs $5149	        bcs action_done
-.519c					right_go:
-.519c	a5 66		lda $66		        lda number
-.519e	8d 07 5e	sta $5e07	        sta nameoff
-.51a1	a5 67		lda $67		        lda number+1
-.51a3	8d 08 5e	sta $5e08	        sta nameoff+1
-.51a6	60		rts		        rts
-.51a7					root:
-.51a7	a9 2f		lda #$2f	        lda #$2f
-.51a9	8d 02 74	sta $7402	        sta REQUEST+2
-.51ac	a9 03		lda #$03	        lda #3
-.51ae	d0 0a		bne $51ba	        bne chdir_short
-.51b0					parent:
-.51b0	a9 2e		lda #$2e	        lda #$2e
-.51b2	8d 02 74	sta $7402	        sta REQUEST+2
-.51b5	8d 03 74	sta $7403	        sta REQUEST+3
-.51b8	a9 04		lda #$04	        lda #4
-.51ba					chdir_short:
-.51ba	85 04		sta $04		        sta r1L
-.51bc	a9 00		lda #$00	        lda #0
-.51be	85 05		sta $05		        sta r1H
-.51c0	4c ef 51	jmp $51ef	        jmp chdir
-.51c3					open_entry:
-.51c3	ad 0c 5e	lda $5e0c	        lda count
-.51c6	f0 81		beq $5149	        beq action_done
-.51c8	20 f2 54	jsr $54f2	        jsr selected_source
-.51cb	a9 02		lda #$02	        lda #<REQUEST+2
-.51cd	85 62		sta $62		        sta dptr
-.51cf	a9 74		lda #$74	        lda #>REQUEST+2
-.51d1	85 63		sta $63		        sta dptr+1
-.51d3	a5 64		lda $64		        lda remain
-.51d5	18		clc		        clc
-.51d6	69 02		adc #$02	        adc #2
-.51d8	8d 09 5e	sta $5e09	        sta commandlen
-.51db	a5 65		lda $65		        lda remain+1
-.51dd	69 00		adc #$00	        adc #0
-.51df	8d 0a 5e	sta $5e0a	        sta commandlen+1
-.51e2	20 c7 54	jsr $54c7	        jsr copy_bytes
-.51e5	ad 09 5e	lda $5e09	        lda commandlen
-.51e8	85 04		sta $04		        sta r1L
-.51ea	ad 0a 5e	lda $5e0a	        lda commandlen+1
-.51ed	85 05		sta $05		        sta r1H
-.51ef					chdir:
-.51ef	a9 11		lda #$11	        lda #$11
-.51f1	8d 01 74	sta $7401	        sta REQUEST+1
-.51f4	20 25 52	jsr $5225	        jsr command_stream
-.51f7	b0 42		bcs $523b	        bcs command_error
-.51f9	c9 00		cmp #$00	        cmp #0
-.51fb	d0 47		bne $5244	        bne firmware_error
-.51fd	a9 00		lda #$00	        lda #0
-.51ff	8d 01 5e	sta $5e01	        sta base
-.5202	8d 02 5e	sta $5e02	        sta base+1
-.5205	8d 0b 5e	sta $5e0b	        sta selected
-.5208	4c 65 52	jmp $5265	        jmp refresh
-.520b					command:
-.520b	8d 01 74	sta $7401	        sta REQUEST+1
-.520e	a9 02		lda #$02	        lda #2
-.5210	8d 00 74	sta $7400	        sta REQUEST
-.5213	a9 00		lda #$00	        lda #0
-.5215	8d 62 91	sta $9162	        sta NET_DIRMODE
-.5218	a9 00		lda #$00	        lda #<REQUEST
-.521a	85 02		sta $02		        sta r0L
-.521c	a9 74		lda #$74	        lda #>REQUEST
-.521e	85 03		sta $03		        sta r0H
-.5220	a9 02		lda #$02	        lda #2
-.5222	4c 03 91	jmp $9103	        jmp NET_CMD
-.5225					command_stream:
-.5225	a9 00		lda #$00	        lda #0
-.5227	85 08		sta $08		        sta r3L
-.5229	85 09		sta $09		        sta r3H
-.522b					stream:
-.522b	a9 02		lda #$02	        lda #2
-.522d	8d 00 74	sta $7400	        sta REQUEST
-.5230	a9 00		lda #$00	        lda #<REQUEST
-.5232	85 02		sta $02		        sta r0L
-.5234	a9 74		lda #$74	        lda #>REQUEST
-.5236	85 03		sta $03		        sta r0H
-.5238	4c 64 91	jmp $9164	        jmp NET_STREAM
-.523b					command_error:
-.523b	90 07		bcc $5244	        bcc firmware_error
-.523d	a9 6a		lda #$6a	        lda #<transport_error
-.523f	a2 5d		ldx #$5d	        ldx #>transport_error
-.5241	4c a0 53	jmp $53a0	        jmp set_status
-.5244					firmware_error:
-.5244	a9 42		lda #$42	        lda #<NET_STAT
-.5246	85 60		sta $60		        sta sptr
-.5248	a9 91		lda #$91	        lda #>NET_STAT
-.524a	85 61		sta $61		        sta sptr+1
-.524c	a9 1f		lda #$1f	        lda #31
-.524e	85 64		sta $64		        sta remain
-.5250	a9 00		lda #$00	        lda #0
-.5252	85 65		sta $65		        sta remain+1
-.5254	a2 1f		ldx #$1f	        ldx #31
-.5256	20 2d 55	jsr $552d	        jsr text_chunk
-.5259	a2 1f		ldx #$1f	        ldx #31
-.525b					error_copy:
-.525b	bd 57 5e	lda $5e57,x	        lda line,x
-.525e	9d 35 5e	sta $5e35,x	        sta status,x
-.5261	ca		dex		        dex
-.5262	10 f7		bpl $525b	        bpl error_copy
-.5264	60		rts		        rts
-.5265					refresh:
-.5265	20 4a 51	jsr $514a	        jsr reset_view
-.5268	a9 00		lda #$00	        lda #0
-.526a	8d 0c 5e	sta $5e0c	        sta count
-.526d	8d 0d 5e	sta $5e0d	        sta more
-.5270	8d 0e 5e	sta $5e0e	        sta scanerror
-.5273	8d 03 5e	sta $5e03	        sta seen
-.5276	8d 04 5e	sta $5e04	        sta seen+1
-.5279	a9 12		lda #$12	        lda #$12
-.527b	20 0b 52	jsr $520b	        jsr command
-.527e	b0 bb		bcs $523b	        bcs command_error
-.5280	c9 00		cmp #$00	        cmp #0
-.5282	d0 c0		bne $5244	        bne firmware_error
-.5284	ad 67 91	lda $9167	        lda NET_TRUNC
-.5287	f0 03		beq $528c	        beq path_fits
-.5289	4c 9c 53	jmp $539c	        jmp invalid_reply
-.528c					path_fits:
-.528c	ad 3f 91	lda $913f	        lda NET_LEN
-.528f	8d 05 5e	sta $5e05	        sta pathlen
-.5292	85 64		sta $64		        sta remain
-.5294	ad 40 91	lda $9140	        lda NET_LEN+1
-.5297	8d 06 5e	sta $5e06	        sta pathlen+1
-.529a	85 65		sta $65		        sta remain+1
-.529c	a9 00		lda #$00	        lda #<NET_DATA
-.529e	85 60		sta $60		        sta sptr
-.52a0	a9 88		lda #$88	        lda #>NET_DATA
-.52a2	85 61		sta $61		        sta sptr+1
-.52a4	a9 00		lda #$00	        lda #<PATHBUF
-.52a6	85 62		sta $62		        sta dptr
-.52a8	a9 70		lda #$70	        lda #>PATHBUF
-.52aa	85 63		sta $63		        sta dptr+1
-.52ac	20 c7 54	jsr $54c7	        jsr copy_bytes
-.52af	a9 00		lda #$00	        lda #0
-.52b1	a8		tay		        tay
-.52b2	91 62		sta ($62),y	        sta (dptr),y
-.52b4	a9 13		lda #$13	        lda #$13
-.52b6	20 0b 52	jsr $520b	        jsr command
-.52b9	90 03		bcc $52be	        bcc directory_status
-.52bb	4c 3b 52	jmp $523b	        jmp command_error
-.52be					directory_status:
-.52be	c9 01		cmp #$01	        cmp #1
-.52c0	d0 03		bne $52c5	        bne directory_nonempty
-.52c2	4c 8e 53	jmp $538e	        jmp empty
-.52c5					directory_nonempty:
-.52c5	c9 00		cmp #$00	        cmp #0
-.52c7	f0 03		beq $52cc	        beq directory_start
-.52c9	4c 44 52	jmp $5244	        jmp firmware_error
-.52cc					directory_start:
-.52cc	a9 14		lda #$14	        lda #$14
-.52ce	8d 01 74	sta $7401	        sta REQUEST+1
-.52d1	a9 02		lda #$02	        lda #2
-.52d3	85 04		sta $04		        sta r1L
-.52d5	a9 00		lda #$00	        lda #0
-.52d7	85 05		sta $05		        sta r1H
-.52d9	a9 0d		lda #$0d	        lda #<receive
-.52db	85 08		sta $08		        sta r3L
-.52dd	a9 54		lda #$54	        lda #>receive
-.52df	85 09		sta $09		        sta r3H
-.52e1	20 2b 52	jsr $522b	        jsr stream
-.52e4	90 2b		bcc $5311	        bcc scan_finished
-.52e6	c9 fd		cmp #$fd	        cmp #$fd
-.52e8	d0 0a		bne $52f4	        bne scan_failed
-.52ea	ad 0e 5e	lda $5e0e	        lda scanerror
-.52ed	d0 05		bne $52f4	        bne scan_failed
-.52ef	ad 0d 5e	lda $5e0d	        lda more
-.52f2	d0 21		bne $5315	        bne listed
-.52f4					scan_failed:
-.52f4	a9 00		lda #$00	        lda #0
-.52f6	8d 0c 5e	sta $5e0c	        sta count
-.52f9	8d 0d 5e	sta $5e0d	        sta more
-.52fc	ad 0e 5e	lda $5e0e	        lda scanerror
-.52ff	c9 02		cmp #$02	        cmp #2
-.5301	d0 03		bne $5306	        bne scan_not_cancelled
-.5303	4c 95 53	jmp $5395	        jmp cancelled
-.5306					scan_not_cancelled:
-.5306	c9 01		cmp #$01	        cmp #1
-.5308	d0 03		bne $530d	        bne scan_transport
-.530a	4c 9c 53	jmp $539c	        jmp invalid_reply
-.530d					scan_transport:
-.530d	38		sec		        sec
-.530e	4c 3b 52	jmp $523b	        jmp command_error
-.5311					scan_finished:
-.5311	c9 00		cmp #$00	        cmp #0
-.5313	d0 6e		bne $5383	        bne scan_firmware
-.5315					listed:
-.5315	ad 0c 5e	lda $5e0c	        lda count
-.5318	f0 74		beq $538e	        beq empty
-.531a	ad 0b 5e	lda $5e0b	        lda selected
-.531d	cd 0c 5e	cmp $5e0c	        cmp count
-.5320	90 05		bcc $5327	        bcc listing_status
-.5322	a9 00		lda #$00	        lda #0
-.5324	8d 0b 5e	sta $5e0b	        sta selected
-.5327					listing_status:
-.5327	a2 05		ldx #$05	        ldx #5
-.5329					item_prefix:
-.5329	bd 0e 5d	lda $5d0e,x	        lda items_text,x
-.532c	9d 35 5e	sta $5e35,x	        sta status,x
-.532f	ca		dex		        dex
-.5330	10 f7		bpl $5329	        bpl item_prefix
-.5332	a9 06		lda #$06	        lda #6
-.5334	8d 18 5e	sta $5e18	        sta statuspos
-.5337	18		clc		        clc
-.5338	ad 01 5e	lda $5e01	        lda base
-.533b	69 01		adc #$01	        adc #1
-.533d	85 66		sta $66		        sta number
-.533f	ad 02 5e	lda $5e02	        lda base+1
-.5342	69 00		adc #$00	        adc #0
-.5344	85 67		sta $67		        sta number+1
-.5346	20 b8 53	jsr $53b8	        jsr decimal_word
-.5349	ae 18 5e	ldx $5e18	        ldx statuspos
-.534c	a9 2d		lda #$2d	        lda #$2d
-.534e	9d 35 5e	sta $5e35,x	        sta status,x
-.5351	ee 18 5e	inc $5e18	        inc statuspos
-.5354	18		clc		        clc
-.5355	ad 01 5e	lda $5e01	        lda base
-.5358	6d 0c 5e	adc $5e0c	        adc count
-.535b	85 66		sta $66		        sta number
-.535d	ad 02 5e	lda $5e02	        lda base+1
-.5360	69 00		adc #$00	        adc #0
-.5362	85 67		sta $67		        sta number+1
-.5364	20 b8 53	jsr $53b8	        jsr decimal_word
-.5367	ae 18 5e	ldx $5e18	        ldx statuspos
-.536a	a9 20		lda #$20	        lda #$20
-.536c	9d 35 5e	sta $5e35,x	        sta status,x
-.536f	e8		inx		        inx
-.5370	a9 2e		lda #$2e	        lda #$2e
-.5372	ac 0d 5e	ldy $5e0d	        ldy more
-.5375	f0 02		beq $5379	        beq item_suffix
-.5377	a9 2b		lda #$2b	        lda #$2b
-.5379					item_suffix:
-.5379	9d 35 5e	sta $5e35,x	        sta status,x
-.537c	e8		inx		        inx
-.537d	a9 00		lda #$00	        lda #0
-.537f	9d 35 5e	sta $5e35,x	        sta status,x
-.5382	60		rts		        rts
-.5383					scan_firmware:
-.5383	48		pha		        pha
-.5384	a9 00		lda #$00	        lda #0
-.5386	8d 0c 5e	sta $5e0c	        sta count
-.5389	68		pla		        pla
-.538a	18		clc		        clc
-.538b	4c 3b 52	jmp $523b	        jmp command_error
-.538e					empty:
-.538e	a9 49		lda #$49	        lda #<empty_text
-.5390	a2 5d		ldx #$5d	        ldx #>empty_text
-.5392	4c a0 53	jmp $53a0	        jmp set_status
-.5395					cancelled:
-.5395	a9 aa		lda #$aa	        lda #<cancel_text
-.5397	a2 5d		ldx #$5d	        ldx #>cancel_text
-.5399	4c a0 53	jmp $53a0	        jmp set_status
-.539c					invalid_reply:
-.539c	a9 88		lda #$88	        lda #<invalid_text
-.539e	a2 5d		ldx #$5d	        ldx #>invalid_text
-.53a0					set_status:
-.53a0	85 60		sta $60		        sta sptr
-.53a2	86 61		stx $61		        stx sptr+1
-.53a4	a0 00		ldy #$00	        ldy #0
-.53a6					status_copy:
-.53a6	b1 60		lda ($60),y	        lda (sptr),y
-.53a8	99 35 5e	sta $5e35,y	        sta status,y
-.53ab	f0 0a		beq $53b7	        beq status_done
-.53ad	c8		iny		        iny
-.53ae	c0 21		cpy #$21	        cpy #33
-.53b0	d0 f4		bne $53a6	        bne status_copy
-.53b2	a9 00		lda #$00	        lda #0
-.53b4	99 35 5e	sta $5e35,y	        sta status,y
-.53b7					status_done:
-.53b7	60		rts		        rts
-.53b8					decimal_word:
-.53b8	a9 00		lda #$00	        lda #0
-.53ba	8d 19 5e	sta $5e19	        sta started
-.53bd	a0 00		ldy #$00	        ldy #0
-.53bf					decimal_digit:
-.53bf	a2 00		ldx #$00	        ldx #0
-.53c1					decimal_sub:
-.53c1	a5 67		lda $67		        lda number+1
-.53c3	d9 04 54	cmp $5404,y	        cmp divisors+1,y
-.53c6	90 1b		bcc $53e3	        bcc decimal_emit
-.53c8	d0 07		bne $53d1	        bne decimal_take
-.53ca	a5 66		lda $66		        lda number
-.53cc	d9 03 54	cmp $5403,y	        cmp divisors,y
-.53cf	90 12		bcc $53e3	        bcc decimal_emit
-.53d1					decimal_take:
-.53d1	38		sec		        sec
-.53d2	a5 66		lda $66		        lda number
-.53d4	f9 03 54	sbc $5403,y	        sbc divisors,y
-.53d7	85 66		sta $66		        sta number
-.53d9	a5 67		lda $67		        lda number+1
-.53db	f9 04 54	sbc $5404,y	        sbc divisors+1,y
-.53de	85 67		sta $67		        sta number+1
-.53e0	e8		inx		        inx
-.53e1	d0 de		bne $53c1	        bne decimal_sub
-.53e3					decimal_emit:
-.53e3	8a		txa		        txa
-.53e4	0d 19 5e	ora $5e19	        ora started
-.53e7	d0 04		bne $53ed	        bne decimal_write
-.53e9	c0 08		cpy #$08	        cpy #8
-.53eb	d0 0f		bne $53fc	        bne decimal_next
-.53ed					decimal_write:
-.53ed	8a		txa		        txa
-.53ee	09 30		ora #$30	        ora #$30
-.53f0	ae 18 5e	ldx $5e18	        ldx statuspos
-.53f3	9d 35 5e	sta $5e35,x	        sta status,x
-.53f6	ee 18 5e	inc $5e18	        inc statuspos
-.53f9	ee 19 5e	inc $5e19	        inc started
-.53fc					decimal_next:
-.53fc	c8		iny		        iny
-.53fd	c8		iny		        iny
-.53fe	c0 0a		cpy #$0a	        cpy #10
-.5400	d0 bd		bne $53bf	        bne decimal_digit
-.5402	60		rts		        rts
->5403	10 27 e8 03 64 00 0a 00		divisors: .word 10000,1000,100,10,1
->540b	01 00
-.540d					receive:
-.540d	20 2c 08	jsr $082c	        jsr KEYIN
-.5410	c9 1b		cmp #$1b	        cmp #$1b
-.5412	d0 04		bne $5418	        bne receive_data
-.5414	a9 02		lda #$02	        lda #2
-.5416	d0 61		bne $5479	        bne receive_bad
-.5418					receive_data:
-.5418	ad 3f 91	lda $913f	        lda NET_LEN
-.541b	0d 40 91	ora $9140	        ora NET_LEN+1
-.541e	f0 55		beq $5475	        beq receive_ok           ; status-only packet
-.5420	ad 68 91	lda $9168	        lda NET_PACKET_TRUNC
-.5423	d0 52		bne $5477	        bne receive_invalid
-.5425	ad 40 91	lda $9140	        lda NET_LEN+1
-.5428	d0 07		bne $5431	        bne receive_name
-.542a	ad 3f 91	lda $913f	        lda NET_LEN
-.542d	c9 02		cmp #$02	        cmp #2
-.542f	90 46		bcc $5477	        bcc receive_invalid
-.5431					receive_name:
-.5431	a9 01		lda #$01	        lda #<NET_DATA+1
-.5433	85 60		sta $60		        sta sptr
-.5435	a9 88		lda #$88	        lda #>NET_DATA+1
-.5437	85 61		sta $61		        sta sptr+1
-.5439	38		sec		        sec
-.543a	ad 3f 91	lda $913f	        lda NET_LEN
-.543d	e9 01		sbc #$01	        sbc #1
-.543f	85 64		sta $64		        sta remain
-.5441	ad 40 91	lda $9140	        lda NET_LEN+1
-.5444	e9 00		sbc #$00	        sbc #0
-.5446	85 65		sta $65		        sta remain+1
-.5448	a0 00		ldy #$00	        ldy #0
-.544a					validate_name:
-.544a	b1 60		lda ($60),y	        lda (sptr),y
-.544c	f0 29		beq $5477	        beq receive_invalid
-.544e	c9 2f		cmp #$2f	        cmp #$2f
-.5450	f0 25		beq $5477	        beq receive_invalid
-.5452	20 e3 54	jsr $54e3	        jsr advance_source
-.5455	a5 64		lda $64		        lda remain
-.5457	05 65		ora $65		        ora remain+1
-.5459	d0 ef		bne $544a	        bne validate_name
-.545b	ad 04 5e	lda $5e04	        lda seen+1
-.545e	cd 02 5e	cmp $5e02	        cmp base+1
-.5461	90 0a		bcc $546d	        bcc receive_skip
-.5463	d0 19		bne $547e	        bne receive_save
-.5465	ad 03 5e	lda $5e03	        lda seen
-.5468	cd 01 5e	cmp $5e01	        cmp base
-.546b	b0 11		bcs $547e	        bcs receive_save
-.546d					receive_skip:
-.546d	ee 03 5e	inc $5e03	        inc seen
-.5470	d0 03		bne $5475	        bne receive_ok
-.5472	ee 04 5e	inc $5e04	        inc seen+1
-.5475					receive_ok:
-.5475	18		clc		        clc
-.5476	60		rts		        rts
-.5477					receive_invalid:
-.5477	a9 01		lda #$01	        lda #1
-.5479					receive_bad:
-.5479	8d 0e 5e	sta $5e0e	        sta scanerror
-.547c	38		sec		        sec
-.547d	60		rts		        rts
-.547e					receive_save:
-.547e	ae 0c 5e	ldx $5e0c	        ldx count
-.5481	e0 08		cpx #$08	        cpx #ROWS
-.5483	90 07		bcc $548c	        bcc receive_slot
-.5485	a9 01		lda #$01	        lda #1
-.5487	8d 0d 5e	sta $5e0d	        sta more
-.548a	38		sec		        sec
-.548b	60		rts		        rts
-.548c					receive_slot:
-.548c	ad 00 88	lda $8800	        lda NET_DATA
-.548f	9d 1a 5e	sta $5e1a,x	        sta attrs,x
-.5492	38		sec		        sec
-.5493	ad 3f 91	lda $913f	        lda NET_LEN
-.5496	e9 01		sbc #$01	        sbc #1
-.5498	9d 22 5e	sta $5e22,x	        sta lengthsL,x
-.549b	85 64		sta $64		        sta remain
-.549d	ad 40 91	lda $9140	        lda NET_LEN+1
-.54a0	e9 00		sbc #$00	        sbc #0
-.54a2	9d 2a 5e	sta $5e2a,x	        sta lengthsH,x
-.54a5	85 65		sta $65		        sta remain+1
-.54a7	8a		txa		        txa
-.54a8	0a		asl a		        asl
-.54a9	18		clc		        clc
-.54aa	69 60		adc #$60	        adc #>CACHE
-.54ac	85 63		sta $63		        sta dptr+1
-.54ae	a9 00		lda #$00	        lda #0
-.54b0	85 62		sta $62		        sta dptr
-.54b2	a9 01		lda #$01	        lda #<NET_DATA+1
-.54b4	85 60		sta $60		        sta sptr
-.54b6	a9 88		lda #$88	        lda #>NET_DATA+1
-.54b8	85 61		sta $61		        sta sptr+1
-.54ba	20 c7 54	jsr $54c7	        jsr copy_bytes
-.54bd	a9 00		lda #$00	        lda #0
-.54bf	a8		tay		        tay
-.54c0	91 62		sta ($62),y	        sta (dptr),y
-.54c2	ee 0c 5e	inc $5e0c	        inc count
-.54c5	18		clc		        clc
-.54c6	60		rts		        rts
-.54c7					copy_bytes:
-.54c7	a5 64		lda $64		        lda remain
-.54c9	05 65		ora $65		        ora remain+1
-.54cb	f0 15		beq $54e2	        beq copy_done
-.54cd	a0 00		ldy #$00	        ldy #0
-.54cf					copy_loop:
-.54cf	b1 60		lda ($60),y	        lda (sptr),y
-.54d1	91 62		sta ($62),y	        sta (dptr),y
-.54d3	e6 62		inc $62		        inc dptr
-.54d5	d0 02		bne $54d9	        bne copy_advance
-.54d7	e6 63		inc $63		        inc dptr+1
-.54d9					copy_advance:
-.54d9	20 e3 54	jsr $54e3	        jsr advance_source
-.54dc	a5 64		lda $64		        lda remain
-.54de	05 65		ora $65		        ora remain+1
-.54e0	d0 ed		bne $54cf	        bne copy_loop
-.54e2					copy_done:
-.54e2	60		rts		        rts
-.54e3					advance_source:
-.54e3	e6 60		inc $60		        inc sptr
-.54e5	d0 02		bne $54e9	        bne source_count
-.54e7	e6 61		inc $61		        inc sptr+1
-.54e9					source_count:
-.54e9	a5 64		lda $64		        lda remain
-.54eb	d0 02		bne $54ef	        bne source_low
-.54ed	c6 65		dec $65		        dec remain+1
-.54ef					source_low:
-.54ef	c6 64		dec $64		        dec remain
-.54f1	60		rts		        rts
-.54f2					selected_source:
-.54f2	ae 0b 5e	ldx $5e0b	        ldx selected
-.54f5					row_source:
-.54f5	bd 22 5e	lda $5e22,x	        lda lengthsL,x
-.54f8	85 64		sta $64		        sta remain
-.54fa	bd 2a 5e	lda $5e2a,x	        lda lengthsH,x
-.54fd	85 65		sta $65		        sta remain+1
-.54ff	8a		txa		        txa
-.5500	0a		asl a		        asl
-.5501	18		clc		        clc
-.5502	69 60		adc #$60	        adc #>CACHE
-.5504	85 61		sta $61		        sta sptr+1
-.5506	a9 00		lda #$00	        lda #0
-.5508	85 60		sta $60		        sta sptr
-.550a	60		rts		        rts
-.550b					detail_source:
-.550b	ad 12 5e	lda $5e12	        lda viewpath
-.550e	d0 0a		bne $551a	        bne path_source
-.5510	ad 0c 5e	lda $5e0c	        lda count
-.5513	d0 dd		bne $54f2	        bne selected_source
-.5515	85 64		sta $64		        sta remain
-.5517	85 65		sta $65		        sta remain+1
-.5519	60		rts		        rts
-.551a					path_source:
-.551a	a9 00		lda #$00	        lda #<PATHBUF
-.551c	85 60		sta $60		        sta sptr
-.551e	a9 70		lda #$70	        lda #>PATHBUF
-.5520	85 61		sta $61		        sta sptr+1
-.5522	ad 05 5e	lda $5e05	        lda pathlen
-.5525	85 64		sta $64		        sta remain
-.5527	ad 06 5e	lda $5e06	        lda pathlen+1
-.552a	85 65		sta $65		        sta remain+1
-.552c	60		rts		        rts
-.552d					text_chunk:
-.552d	8e 14 5e	stx $5e14	        stx width
-.5530	a2 00		ldx #$00	        ldx #0
-.5532	a0 00		ldy #$00	        ldy #0
-.5534					chunk_loop:
-.5534	a5 64		lda $64		        lda remain
-.5536	05 65		ora $65		        ora remain+1
-.5538	f0 13		beq $554d	        beq chunk_done
-.553a	b1 60		lda ($60),y	        lda (sptr),y
-.553c	f0 0f		beq $554d	        beq chunk_done
-.553e	20 53 55	jsr $5553	        jsr ascii_text
-.5541	9d 57 5e	sta $5e57,x	        sta line,x
-.5544	20 e3 54	jsr $54e3	        jsr advance_source
-.5547	e8		inx		        inx
-.5548	ec 14 5e	cpx $5e14	        cpx width
-.554b	d0 e7		bne $5534	        bne chunk_loop
-.554d					chunk_done:
-.554d	a9 00		lda #$00	        lda #0
-.554f	9d 57 5e	sta $5e57,x	        sta line,x
-.5552	60		rts		        rts
-.5553					ascii_text:
-.5553	c9 20		cmp #$20	        cmp #$20
-.5555	90 1a		bcc $5571	        bcc ascii_dot
-.5557	c9 7f		cmp #$7f	        cmp #$7f
-.5559	b0 16		bcs $5571	        bcs ascii_dot
-.555b	c9 61		cmp #$61	        cmp #$61
-.555d	90 07		bcc $5566	        bcc ascii_upper
-.555f	c9 7b		cmp #$7b	        cmp #$7b
-.5561	b0 0d		bcs $5570	        bcs ascii_done
-.5563	29 df		and #$df	        and #$df
-.5565	60		rts		        rts
-.5566					ascii_upper:
-.5566	c9 41		cmp #$41	        cmp #$41
-.5568	90 06		bcc $5570	        bcc ascii_done
-.556a	c9 5b		cmp #$5b	        cmp #$5b
-.556c	b0 02		bcs $5570	        bcs ascii_done
-.556e	09 80		ora #$80	        ora #$80
-.5570					ascii_done:
-.5570	60		rts		        rts
-.5571					ascii_dot:
-.5571	a9 2e		lda #$2e	        lda #$2e
-.5573	60		rts		        rts
-.5574					paint:
-.5574	a5 02		lda $02		    lda r0L
-.5576	48		pha		    pha
-.5577	a5 03		lda $03		    lda r0H
-.5579	48		pha		    pha
-.557a	a5 04		lda $04		    lda r1L
-.557c	48		pha		    pha
-.557d	a5 05		lda $05		    lda r1H
-.557f	48		pha		    pha
-.5580	a5 06		lda $06		    lda r2L
-.5582	48		pha		    pha
-.5583	a5 07		lda $07		    lda r2H
-.5585	48		pha		    pha
-=0					    exploc      := 0
-=1					    firstrow    := 8 / 8
-=23					    lastrow     := (8 + 180 - 1) / 8
-=0					    row         := 0
-=2					    col         := (16 / 8)
-=38					    lastcol     := ((16 + 288 - 1) / 8) + 1
-=288					    memsz       := (lastcol - col) * 8
-=41296					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5586	a9 50		lda #$50	        lda #<memloc
-.5588	85 02		sta $02		        sta r0L
-.558a	a9 a1		lda #$a1	        lda #>memloc
-.558c	85 03		sta $03		        sta r0H
-.558e	a9 00		lda #$00	        lda #<exploc
-.5590	85 04		sta $04		        sta r1L
-.5592	a9 00		lda #$00	        lda #>exploc
-.5594	85 05		sta $05		        sta r1H
-.5596	a9 20		lda #$20	        lda #<memsz
-.5598	85 06		sta $06		        sta r2L
-.559a	a9 01		lda #$01	        lda #>memsz
-.559c	85 07		sta $07		        sta r2H
-.559e	20 20 08	jsr $0820	        jsr CLR_RECT
-=289					        exploc := exploc + memsz + 1
-=41616					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.55a1	a9 90		lda #$90	        lda #<memloc
-.55a3	85 02		sta $02		        sta r0L
-.55a5	a9 a2		lda #$a2	        lda #>memloc
-.55a7	85 03		sta $03		        sta r0H
-.55a9	a9 21		lda #$21	        lda #<exploc
-.55ab	85 04		sta $04		        sta r1L
-.55ad	a9 01		lda #$01	        lda #>exploc
-.55af	85 05		sta $05		        sta r1H
-.55b1	a9 20		lda #$20	        lda #<memsz
-.55b3	85 06		sta $06		        sta r2L
-.55b5	a9 01		lda #$01	        lda #>memsz
-.55b7	85 07		sta $07		        sta r2H
-.55b9	20 20 08	jsr $0820	        jsr CLR_RECT
-=578					        exploc := exploc + memsz + 1
-=41936					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.55bc	a9 d0		lda #$d0	        lda #<memloc
-.55be	85 02		sta $02		        sta r0L
-.55c0	a9 a3		lda #$a3	        lda #>memloc
-.55c2	85 03		sta $03		        sta r0H
-.55c4	a9 42		lda #$42	        lda #<exploc
-.55c6	85 04		sta $04		        sta r1L
-.55c8	a9 02		lda #$02	        lda #>exploc
-.55ca	85 05		sta $05		        sta r1H
-.55cc	a9 20		lda #$20	        lda #<memsz
-.55ce	85 06		sta $06		        sta r2L
-.55d0	a9 01		lda #$01	        lda #>memsz
-.55d2	85 07		sta $07		        sta r2H
-.55d4	20 20 08	jsr $0820	        jsr CLR_RECT
-=867					        exploc := exploc + memsz + 1
-=42256					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.55d7	a9 10		lda #$10	        lda #<memloc
-.55d9	85 02		sta $02		        sta r0L
-.55db	a9 a5		lda #$a5	        lda #>memloc
-.55dd	85 03		sta $03		        sta r0H
-.55df	a9 63		lda #$63	        lda #<exploc
-.55e1	85 04		sta $04		        sta r1L
-.55e3	a9 03		lda #$03	        lda #>exploc
-.55e5	85 05		sta $05		        sta r1H
-.55e7	a9 20		lda #$20	        lda #<memsz
-.55e9	85 06		sta $06		        sta r2L
-.55eb	a9 01		lda #$01	        lda #>memsz
-.55ed	85 07		sta $07		        sta r2H
-.55ef	20 20 08	jsr $0820	        jsr CLR_RECT
-=1156					        exploc := exploc + memsz + 1
-=42576					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.55f2	a9 50		lda #$50	        lda #<memloc
-.55f4	85 02		sta $02		        sta r0L
-.55f6	a9 a6		lda #$a6	        lda #>memloc
-.55f8	85 03		sta $03		        sta r0H
-.55fa	a9 84		lda #$84	        lda #<exploc
-.55fc	85 04		sta $04		        sta r1L
-.55fe	a9 04		lda #$04	        lda #>exploc
-.5600	85 05		sta $05		        sta r1H
-.5602	a9 20		lda #$20	        lda #<memsz
-.5604	85 06		sta $06		        sta r2L
-.5606	a9 01		lda #$01	        lda #>memsz
-.5608	85 07		sta $07		        sta r2H
-.560a	20 20 08	jsr $0820	        jsr CLR_RECT
-=1445					        exploc := exploc + memsz + 1
-=42896					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.560d	a9 90		lda #$90	        lda #<memloc
-.560f	85 02		sta $02		        sta r0L
-.5611	a9 a7		lda #$a7	        lda #>memloc
-.5613	85 03		sta $03		        sta r0H
-.5615	a9 a5		lda #$a5	        lda #<exploc
-.5617	85 04		sta $04		        sta r1L
-.5619	a9 05		lda #$05	        lda #>exploc
-.561b	85 05		sta $05		        sta r1H
-.561d	a9 20		lda #$20	        lda #<memsz
-.561f	85 06		sta $06		        sta r2L
-.5621	a9 01		lda #$01	        lda #>memsz
-.5623	85 07		sta $07		        sta r2H
-.5625	20 20 08	jsr $0820	        jsr CLR_RECT
-=1734					        exploc := exploc + memsz + 1
-=43216					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5628	a9 d0		lda #$d0	        lda #<memloc
-.562a	85 02		sta $02		        sta r0L
-.562c	a9 a8		lda #$a8	        lda #>memloc
-.562e	85 03		sta $03		        sta r0H
-.5630	a9 c6		lda #$c6	        lda #<exploc
-.5632	85 04		sta $04		        sta r1L
-.5634	a9 06		lda #$06	        lda #>exploc
-.5636	85 05		sta $05		        sta r1H
-.5638	a9 20		lda #$20	        lda #<memsz
-.563a	85 06		sta $06		        sta r2L
-.563c	a9 01		lda #$01	        lda #>memsz
-.563e	85 07		sta $07		        sta r2H
-.5640	20 20 08	jsr $0820	        jsr CLR_RECT
-=2023					        exploc := exploc + memsz + 1
-=43536					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5643	a9 10		lda #$10	        lda #<memloc
-.5645	85 02		sta $02		        sta r0L
-.5647	a9 aa		lda #$aa	        lda #>memloc
-.5649	85 03		sta $03		        sta r0H
-.564b	a9 e7		lda #$e7	        lda #<exploc
-.564d	85 04		sta $04		        sta r1L
-.564f	a9 07		lda #$07	        lda #>exploc
-.5651	85 05		sta $05		        sta r1H
-.5653	a9 20		lda #$20	        lda #<memsz
-.5655	85 06		sta $06		        sta r2L
-.5657	a9 01		lda #$01	        lda #>memsz
-.5659	85 07		sta $07		        sta r2H
-.565b	20 20 08	jsr $0820	        jsr CLR_RECT
-=2312					        exploc := exploc + memsz + 1
-=43856					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.565e	a9 50		lda #$50	        lda #<memloc
-.5660	85 02		sta $02		        sta r0L
-.5662	a9 ab		lda #$ab	        lda #>memloc
-.5664	85 03		sta $03		        sta r0H
-.5666	a9 08		lda #$08	        lda #<exploc
-.5668	85 04		sta $04		        sta r1L
-.566a	a9 09		lda #$09	        lda #>exploc
-.566c	85 05		sta $05		        sta r1H
-.566e	a9 20		lda #$20	        lda #<memsz
-.5670	85 06		sta $06		        sta r2L
-.5672	a9 01		lda #$01	        lda #>memsz
-.5674	85 07		sta $07		        sta r2H
-.5676	20 20 08	jsr $0820	        jsr CLR_RECT
-=2601					        exploc := exploc + memsz + 1
-=44176					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5679	a9 90		lda #$90	        lda #<memloc
-.567b	85 02		sta $02		        sta r0L
-.567d	a9 ac		lda #$ac	        lda #>memloc
-.567f	85 03		sta $03		        sta r0H
-.5681	a9 29		lda #$29	        lda #<exploc
-.5683	85 04		sta $04		        sta r1L
-.5685	a9 0a		lda #$0a	        lda #>exploc
-.5687	85 05		sta $05		        sta r1H
-.5689	a9 20		lda #$20	        lda #<memsz
-.568b	85 06		sta $06		        sta r2L
-.568d	a9 01		lda #$01	        lda #>memsz
-.568f	85 07		sta $07		        sta r2H
-.5691	20 20 08	jsr $0820	        jsr CLR_RECT
-=2890					        exploc := exploc + memsz + 1
-=44496					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5694	a9 d0		lda #$d0	        lda #<memloc
-.5696	85 02		sta $02		        sta r0L
-.5698	a9 ad		lda #$ad	        lda #>memloc
-.569a	85 03		sta $03		        sta r0H
-.569c	a9 4a		lda #$4a	        lda #<exploc
-.569e	85 04		sta $04		        sta r1L
-.56a0	a9 0b		lda #$0b	        lda #>exploc
-.56a2	85 05		sta $05		        sta r1H
-.56a4	a9 20		lda #$20	        lda #<memsz
-.56a6	85 06		sta $06		        sta r2L
-.56a8	a9 01		lda #$01	        lda #>memsz
-.56aa	85 07		sta $07		        sta r2H
-.56ac	20 20 08	jsr $0820	        jsr CLR_RECT
-=3179					        exploc := exploc + memsz + 1
-=44816					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.56af	a9 10		lda #$10	        lda #<memloc
-.56b1	85 02		sta $02		        sta r0L
-.56b3	a9 af		lda #$af	        lda #>memloc
-.56b5	85 03		sta $03		        sta r0H
-.56b7	a9 6b		lda #$6b	        lda #<exploc
-.56b9	85 04		sta $04		        sta r1L
-.56bb	a9 0c		lda #$0c	        lda #>exploc
-.56bd	85 05		sta $05		        sta r1H
-.56bf	a9 20		lda #$20	        lda #<memsz
-.56c1	85 06		sta $06		        sta r2L
-.56c3	a9 01		lda #$01	        lda #>memsz
-.56c5	85 07		sta $07		        sta r2H
-.56c7	20 20 08	jsr $0820	        jsr CLR_RECT
-=3468					        exploc := exploc + memsz + 1
-=45136					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.56ca	a9 50		lda #$50	        lda #<memloc
-.56cc	85 02		sta $02		        sta r0L
-.56ce	a9 b0		lda #$b0	        lda #>memloc
-.56d0	85 03		sta $03		        sta r0H
-.56d2	a9 8c		lda #$8c	        lda #<exploc
-.56d4	85 04		sta $04		        sta r1L
-.56d6	a9 0d		lda #$0d	        lda #>exploc
-.56d8	85 05		sta $05		        sta r1H
-.56da	a9 20		lda #$20	        lda #<memsz
-.56dc	85 06		sta $06		        sta r2L
-.56de	a9 01		lda #$01	        lda #>memsz
-.56e0	85 07		sta $07		        sta r2H
-.56e2	20 20 08	jsr $0820	        jsr CLR_RECT
-=3757					        exploc := exploc + memsz + 1
-=45456					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.56e5	a9 90		lda #$90	        lda #<memloc
-.56e7	85 02		sta $02		        sta r0L
-.56e9	a9 b1		lda #$b1	        lda #>memloc
-.56eb	85 03		sta $03		        sta r0H
-.56ed	a9 ad		lda #$ad	        lda #<exploc
-.56ef	85 04		sta $04		        sta r1L
-.56f1	a9 0e		lda #$0e	        lda #>exploc
-.56f3	85 05		sta $05		        sta r1H
-.56f5	a9 20		lda #$20	        lda #<memsz
-.56f7	85 06		sta $06		        sta r2L
-.56f9	a9 01		lda #$01	        lda #>memsz
-.56fb	85 07		sta $07		        sta r2H
-.56fd	20 20 08	jsr $0820	        jsr CLR_RECT
-=4046					        exploc := exploc + memsz + 1
-=45776					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5700	a9 d0		lda #$d0	        lda #<memloc
-.5702	85 02		sta $02		        sta r0L
-.5704	a9 b2		lda #$b2	        lda #>memloc
-.5706	85 03		sta $03		        sta r0H
-.5708	a9 ce		lda #$ce	        lda #<exploc
-.570a	85 04		sta $04		        sta r1L
-.570c	a9 0f		lda #$0f	        lda #>exploc
-.570e	85 05		sta $05		        sta r1H
-.5710	a9 20		lda #$20	        lda #<memsz
-.5712	85 06		sta $06		        sta r2L
-.5714	a9 01		lda #$01	        lda #>memsz
-.5716	85 07		sta $07		        sta r2H
-.5718	20 20 08	jsr $0820	        jsr CLR_RECT
-=4335					        exploc := exploc + memsz + 1
-=46096					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.571b	a9 10		lda #$10	        lda #<memloc
-.571d	85 02		sta $02		        sta r0L
-.571f	a9 b4		lda #$b4	        lda #>memloc
-.5721	85 03		sta $03		        sta r0H
-.5723	a9 ef		lda #$ef	        lda #<exploc
-.5725	85 04		sta $04		        sta r1L
-.5727	a9 10		lda #$10	        lda #>exploc
-.5729	85 05		sta $05		        sta r1H
-.572b	a9 20		lda #$20	        lda #<memsz
-.572d	85 06		sta $06		        sta r2L
-.572f	a9 01		lda #$01	        lda #>memsz
-.5731	85 07		sta $07		        sta r2H
-.5733	20 20 08	jsr $0820	        jsr CLR_RECT
-=4624					        exploc := exploc + memsz + 1
-=46416					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5736	a9 50		lda #$50	        lda #<memloc
-.5738	85 02		sta $02		        sta r0L
-.573a	a9 b5		lda #$b5	        lda #>memloc
-.573c	85 03		sta $03		        sta r0H
-.573e	a9 10		lda #$10	        lda #<exploc
-.5740	85 04		sta $04		        sta r1L
-.5742	a9 12		lda #$12	        lda #>exploc
-.5744	85 05		sta $05		        sta r1H
-.5746	a9 20		lda #$20	        lda #<memsz
-.5748	85 06		sta $06		        sta r2L
-.574a	a9 01		lda #$01	        lda #>memsz
-.574c	85 07		sta $07		        sta r2H
-.574e	20 20 08	jsr $0820	        jsr CLR_RECT
-=4913					        exploc := exploc + memsz + 1
-=46736					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5751	a9 90		lda #$90	        lda #<memloc
-.5753	85 02		sta $02		        sta r0L
-.5755	a9 b6		lda #$b6	        lda #>memloc
-.5757	85 03		sta $03		        sta r0H
-.5759	a9 31		lda #$31	        lda #<exploc
-.575b	85 04		sta $04		        sta r1L
-.575d	a9 13		lda #$13	        lda #>exploc
-.575f	85 05		sta $05		        sta r1H
-.5761	a9 20		lda #$20	        lda #<memsz
-.5763	85 06		sta $06		        sta r2L
-.5765	a9 01		lda #$01	        lda #>memsz
-.5767	85 07		sta $07		        sta r2H
-.5769	20 20 08	jsr $0820	        jsr CLR_RECT
-=5202					        exploc := exploc + memsz + 1
-=47056					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.576c	a9 d0		lda #$d0	        lda #<memloc
-.576e	85 02		sta $02		        sta r0L
-.5770	a9 b7		lda #$b7	        lda #>memloc
-.5772	85 03		sta $03		        sta r0H
-.5774	a9 52		lda #$52	        lda #<exploc
-.5776	85 04		sta $04		        sta r1L
-.5778	a9 14		lda #$14	        lda #>exploc
-.577a	85 05		sta $05		        sta r1H
-.577c	a9 20		lda #$20	        lda #<memsz
-.577e	85 06		sta $06		        sta r2L
-.5780	a9 01		lda #$01	        lda #>memsz
-.5782	85 07		sta $07		        sta r2H
-.5784	20 20 08	jsr $0820	        jsr CLR_RECT
-=5491					        exploc := exploc + memsz + 1
-=47376					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.5787	a9 10		lda #$10	        lda #<memloc
-.5789	85 02		sta $02		        sta r0L
-.578b	a9 b9		lda #$b9	        lda #>memloc
-.578d	85 03		sta $03		        sta r0H
-.578f	a9 73		lda #$73	        lda #<exploc
-.5791	85 04		sta $04		        sta r1L
-.5793	a9 15		lda #$15	        lda #>exploc
-.5795	85 05		sta $05		        sta r1H
-.5797	a9 20		lda #$20	        lda #<memsz
-.5799	85 06		sta $06		        sta r2L
-.579b	a9 01		lda #$01	        lda #>memsz
-.579d	85 07		sta $07		        sta r2H
-.579f	20 20 08	jsr $0820	        jsr CLR_RECT
-=5780					        exploc := exploc + memsz + 1
-=47696					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.57a2	a9 50		lda #$50	        lda #<memloc
-.57a4	85 02		sta $02		        sta r0L
-.57a6	a9 ba		lda #$ba	        lda #>memloc
-.57a8	85 03		sta $03		        sta r0H
-.57aa	a9 94		lda #$94	        lda #<exploc
-.57ac	85 04		sta $04		        sta r1L
-.57ae	a9 16		lda #$16	        lda #>exploc
-.57b0	85 05		sta $05		        sta r1H
-.57b2	a9 20		lda #$20	        lda #<memsz
-.57b4	85 06		sta $06		        sta r2L
-.57b6	a9 01		lda #$01	        lda #>memsz
-.57b8	85 07		sta $07		        sta r2H
-.57ba	20 20 08	jsr $0820	        jsr CLR_RECT
-=6069					        exploc := exploc + memsz + 1
-=48016					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.57bd	a9 90		lda #$90	        lda #<memloc
-.57bf	85 02		sta $02		        sta r0L
-.57c1	a9 bb		lda #$bb	        lda #>memloc
-.57c3	85 03		sta $03		        sta r0H
-.57c5	a9 b5		lda #$b5	        lda #<exploc
-.57c7	85 04		sta $04		        sta r1L
-.57c9	a9 17		lda #$17	        lda #>exploc
-.57cb	85 05		sta $05		        sta r1H
-.57cd	a9 20		lda #$20	        lda #<memsz
-.57cf	85 06		sta $06		        sta r2L
-.57d1	a9 01		lda #$01	        lda #>memsz
-.57d3	85 07		sta $07		        sta r2H
-.57d5	20 20 08	jsr $0820	        jsr CLR_RECT
-=6358					        exploc := exploc + memsz + 1
-=48336					        memloc := BITMAP_START + (row * 320) + (col * 8)
-.57d8	a9 d0		lda #$d0	        lda #<memloc
-.57da	85 02		sta $02		        sta r0L
-.57dc	a9 bc		lda #$bc	        lda #>memloc
-.57de	85 03		sta $03		        sta r0H
-.57e0	a9 d6		lda #$d6	        lda #<exploc
-.57e2	85 04		sta $04		        sta r1L
-.57e4	a9 18		lda #$18	        lda #>exploc
-.57e6	85 05		sta $05		        sta r1H
-.57e8	a9 20		lda #$20	        lda #<memsz
-.57ea	85 06		sta $06		        sta r2L
-.57ec	a9 01		lda #$01	        lda #>memsz
-.57ee	85 07		sta $07		        sta r2H
-.57f0	20 20 08	jsr $0820	        jsr CLR_RECT
-=6647					        exploc := exploc + memsz + 1
-.57f3	68		pla		    pla
-.57f4	85 07		sta $07		    sta r2H
-.57f6	68		pla		    pla
-.57f7	85 06		sta $06		    sta r2L
-.57f9	68		pla		    pla
-.57fa	85 05		sta $05		    sta r1H
-.57fc	68		pla		    pla
-.57fd	85 04		sta $04		    sta r1L
-.57ff	68		pla		    pla
-.5800	85 03		sta $03		    sta r0H
-.5802	68		pla		    pla
-.5803	85 02		sta $02		    sta r0L
-.5805	a9 00		lda #$00	        lda #$00
-.5807	85 03		sta $03		        sta X1+1
-.5809	a9 10		lda #$10	        lda #16
-.580b	85 02		sta $02		        sta X1
-.580d	a9 01		lda #$01	        lda #$01
-.580f	85 07		sta $07		        sta X2+1
-.5811	a9 30		lda #$30	        lda #16 + 288-256
-.5813	85 06		sta $06		        sta X2
-.5815	a9 08		lda #$08	        lda #8
-.5817	85 04		sta $04		        sta Y1
-.5819	a9 08		lda #$08	        lda #8
-.581b	85 08		sta $08		        sta Y2
-.581d	a9 00		lda #$00	        lda #$00
-.581f	85 05		sta $05		        sta Y1+1
-.5821	85 09		sta $09		        sta Y2+1
-.5823	20 15 c0	jsr $c015	        jsr GFX_LINE
-.5826	a9 00		lda #$00	        lda #$00
-.5828	85 03		sta $03		        sta X1+1
-.582a	a9 10		lda #$10	        lda #16
-.582c	85 02		sta $02		        sta X1
-.582e	a9 01		lda #$01	        lda #$01
-.5830	85 07		sta $07		        sta X2+1
-.5832	a9 30		lda #$30	        lda #16 + 288-256
-.5834	85 06		sta $06		        sta X2
-.5836	a9 bc		lda #$bc	        lda #8 + 180
-.5838	85 04		sta $04		        sta Y1
-.583a	a9 bc		lda #$bc	        lda #8 + 180
-.583c	85 08		sta $08		        sta Y2
-.583e	a9 00		lda #$00	        lda #$00
-.5840	85 05		sta $05		        sta Y1+1
-.5842	85 09		sta $09		        sta Y2+1
-.5844	20 15 c0	jsr $c015	        jsr GFX_LINE
-.5847	a9 00		lda #$00	        lda #$00
-.5849	85 03		sta $03		        sta X1+1
-.584b	a9 10		lda #$10	        lda #16
-.584d	85 02		sta $02		        sta X1
-.584f	a9 00		lda #$00	        lda #$00
-.5851	85 07		sta $07		        sta X2+1
-.5853	a9 10		lda #$10	        lda #16
-.5855	85 06		sta $06		        sta X2
-.5857	a9 08		lda #$08	        lda #8
-.5859	85 04		sta $04		        sta Y1
-.585b	a9 bc		lda #$bc	        lda #8 + 180
-.585d	85 08		sta $08		        sta Y2
-.585f	a9 00		lda #$00	        lda #$00
-.5861	85 05		sta $05		        sta Y1+1
-.5863	85 09		sta $09		        sta Y2+1
-.5865	20 15 c0	jsr $c015	        jsr GFX_LINE
-.5868	a9 01		lda #$01	        lda #$01
-.586a	85 03		sta $03		        sta X1+1
-.586c	a9 30		lda #$30	        lda #16 + 288-256
-.586e	85 02		sta $02		        sta X1
-.5870	a9 01		lda #$01	        lda #$01
-.5872	85 07		sta $07		        sta X2+1
-.5874	a9 30		lda #$30	        lda #16 + 288-256
-.5876	85 06		sta $06		        sta X2
-.5878	a9 08		lda #$08	        lda #8
-.587a	85 04		sta $04		        sta Y1
-.587c	a9 bc		lda #$bc	        lda #8 + 180
-.587e	85 08		sta $08		        sta Y2
-.5880	a9 00		lda #$00	        lda #$00
-.5882	85 05		sta $05		        sta Y1+1
-.5884	85 09		sta $09		        sta Y2+1
-.5886	20 15 c0	jsr $c015	        jsr GFX_LINE
-.5889	a9 00		lda #$00	        lda #$00
-.588b	85 03		sta $03		        sta X1+1
-.588d	a9 15		lda #$15	        lda #16+5
-.588f	85 02		sta $02		        sta X1
-.5891	a9 01		lda #$01	        lda #$01
-.5893	85 07		sta $07		        sta X2+1
-.5895	a9 35		lda #$35	        lda #16+288+5-256
-.5897	85 06		sta $06		        sta X2
-.5899	a9 bd		lda #$bd	        lda #8+180+1
-.589b	85 04		sta $04		        sta Y1
-.589d	a9 bd		lda #$bd	        lda #8+180+1
-.589f	85 08		sta $08		        sta Y2
-.58a1	a9 00		lda #$00	        lda #$00
-.58a3	85 05		sta $05		        sta Y1+1
-.58a5	85 09		sta $09		        sta Y2+1
-.58a7	20 15 c0	jsr $c015	        jsr GFX_LINE
-.58aa	a9 00		lda #$00	        lda #$00
-.58ac	85 03		sta $03		        sta X1+1
-.58ae	a9 15		lda #$15	        lda #16+5
-.58b0	85 02		sta $02		        sta X1
-.58b2	a9 01		lda #$01	        lda #$01
-.58b4	85 07		sta $07		        sta X2+1
-.58b6	a9 35		lda #$35	        lda #16+288+5-256
-.58b8	85 06		sta $06		        sta X2
-.58ba	a9 be		lda #$be	        lda #8+180+2
-.58bc	85 04		sta $04		        sta Y1
-.58be	a9 be		lda #$be	        lda #8+180+2
-.58c0	85 08		sta $08		        sta Y2
-.58c2	a9 00		lda #$00	        lda #$00
-.58c4	85 05		sta $05		        sta Y1+1
-.58c6	85 09		sta $09		        sta Y2+1
-.58c8	20 15 c0	jsr $c015	        jsr GFX_LINE
-.58cb	a9 00		lda #$00	        lda #$00
-.58cd	85 03		sta $03		        sta X1+1
-.58cf	a9 15		lda #$15	        lda #16+5
-.58d1	85 02		sta $02		        sta X1
-.58d3	a9 01		lda #$01	        lda #$01
-.58d5	85 07		sta $07		        sta X2+1
-.58d7	a9 35		lda #$35	        lda #16+288+5-256
-.58d9	85 06		sta $06		        sta X2
-.58db	a9 bf		lda #$bf	        lda #8+180+3
-.58dd	85 04		sta $04		        sta Y1
-.58df	a9 bf		lda #$bf	        lda #8+180+3
-.58e1	85 08		sta $08		        sta Y2
-.58e3	a9 00		lda #$00	        lda #$00
-.58e5	85 05		sta $05		        sta Y1+1
-.58e7	85 09		sta $09		        sta Y2+1
-.58e9	20 15 c0	jsr $c015	        jsr GFX_LINE
-.58ec	a9 00		lda #$00	        lda #$00
-.58ee	85 03		sta $03		        sta X1+1
-.58f0	a9 15		lda #$15	        lda #16+5
-.58f2	85 02		sta $02		        sta X1
-.58f4	a9 01		lda #$01	        lda #$01
-.58f6	85 07		sta $07		        sta X2+1
-.58f8	a9 35		lda #$35	        lda #16+288+5-256
-.58fa	85 06		sta $06		        sta X2
-.58fc	a9 c0		lda #$c0	        lda #8+180+4
-.58fe	85 04		sta $04		        sta Y1
-.5900	a9 c0		lda #$c0	        lda #8+180+4
-.5902	85 08		sta $08		        sta Y2
-.5904	a9 00		lda #$00	        lda #$00
-.5906	85 05		sta $05		        sta Y1+1
-.5908	85 09		sta $09		        sta Y2+1
-.590a	20 15 c0	jsr $c015	        jsr GFX_LINE
-.590d	a9 00		lda #$00	        lda #$00
-.590f	85 03		sta $03		        sta X1+1
-.5911	a9 15		lda #$15	        lda #16+5
-.5913	85 02		sta $02		        sta X1
-.5915	a9 01		lda #$01	        lda #$01
-.5917	85 07		sta $07		        sta X2+1
-.5919	a9 35		lda #$35	        lda #16+288+5-256
-.591b	85 06		sta $06		        sta X2
-.591d	a9 c1		lda #$c1	        lda #8+180+5
-.591f	85 04		sta $04		        sta Y1
-.5921	a9 c1		lda #$c1	        lda #8+180+5
-.5923	85 08		sta $08		        sta Y2
-.5925	a9 00		lda #$00	        lda #$00
-.5927	85 05		sta $05		        sta Y1+1
-.5929	85 09		sta $09		        sta Y2+1
-.592b	20 15 c0	jsr $c015	        jsr GFX_LINE
-.592e	a9 01		lda #$01	        lda #$01
-.5930	85 03		sta $03		        sta X1+1
-.5932	a9 31		lda #$31	        lda #16+288+1-256
-.5934	85 02		sta $02		        sta X1
-.5936	a9 01		lda #$01	        lda #$01
-.5938	85 07		sta $07		        sta X2+1
-.593a	a9 31		lda #$31	        lda #16+288+1-256
-.593c	85 06		sta $06		        sta X2
-.593e	a9 0d		lda #$0d	        lda #8+5
-.5940	85 04		sta $04		        sta Y1
-.5942	a9 c1		lda #$c1	        lda #8+180+5
-.5944	85 08		sta $08		        sta Y2
-.5946	a9 00		lda #$00	        lda #$00
-.5948	85 05		sta $05		        sta Y1+1
-.594a	85 09		sta $09		        sta Y2+1
-.594c	20 15 c0	jsr $c015	        jsr GFX_LINE
-.594f	a9 01		lda #$01	        lda #$01
-.5951	85 03		sta $03		        sta X1+1
-.5953	a9 32		lda #$32	        lda #16+288+2-256
-.5955	85 02		sta $02		        sta X1
-.5957	a9 01		lda #$01	        lda #$01
-.5959	85 07		sta $07		        sta X2+1
-.595b	a9 32		lda #$32	        lda #16+288+2-256
-.595d	85 06		sta $06		        sta X2
-.595f	a9 0d		lda #$0d	        lda #8+5
-.5961	85 04		sta $04		        sta Y1
-.5963	a9 c1		lda #$c1	        lda #8+180+5
-.5965	85 08		sta $08		        sta Y2
-.5967	a9 00		lda #$00	        lda #$00
-.5969	85 05		sta $05		        sta Y1+1
-.596b	85 09		sta $09		        sta Y2+1
-.596d	20 15 c0	jsr $c015	        jsr GFX_LINE
-.5970	a9 01		lda #$01	        lda #$01
-.5972	85 03		sta $03		        sta X1+1
-.5974	a9 33		lda #$33	        lda #16+288+3-256
-.5976	85 02		sta $02		        sta X1
-.5978	a9 01		lda #$01	        lda #$01
-.597a	85 07		sta $07		        sta X2+1
-.597c	a9 33		lda #$33	        lda #16+288+3-256
-.597e	85 06		sta $06		        sta X2
-.5980	a9 0d		lda #$0d	        lda #8+5
-.5982	85 04		sta $04		        sta Y1
-.5984	a9 c1		lda #$c1	        lda #8+180+5
-.5986	85 08		sta $08		        sta Y2
-.5988	a9 00		lda #$00	        lda #$00
-.598a	85 05		sta $05		        sta Y1+1
-.598c	85 09		sta $09		        sta Y2+1
-.598e	20 15 c0	jsr $c015	        jsr GFX_LINE
-.5991	a9 01		lda #$01	        lda #$01
-.5993	85 03		sta $03		        sta X1+1
-.5995	a9 34		lda #$34	        lda #16+288+4-256
-.5997	85 02		sta $02		        sta X1
-.5999	a9 01		lda #$01	        lda #$01
-.599b	85 07		sta $07		        sta X2+1
-.599d	a9 34		lda #$34	        lda #16+288+4-256
-.599f	85 06		sta $06		        sta X2
-.59a1	a9 0d		lda #$0d	        lda #8+5
-.59a3	85 04		sta $04		        sta Y1
-.59a5	a9 c1		lda #$c1	        lda #8+180+5
-.59a7	85 08		sta $08		        sta Y2
-.59a9	a9 00		lda #$00	        lda #$00
-.59ab	85 05		sta $05		        sta Y1+1
-.59ad	85 09		sta $09		        sta Y2+1
-.59af	20 15 c0	jsr $c015	        jsr GFX_LINE
-.59b2	a9 01		lda #$01	        lda #$01
-.59b4	85 03		sta $03		        sta X1+1
-.59b6	a9 35		lda #$35	        lda #16+288+5-256
-.59b8	85 02		sta $02		        sta X1
-.59ba	a9 01		lda #$01	        lda #$01
-.59bc	85 07		sta $07		        sta X2+1
-.59be	a9 35		lda #$35	        lda #16+288+5-256
-.59c0	85 06		sta $06		        sta X2
-.59c2	a9 0d		lda #$0d	        lda #8+5
-.59c4	85 04		sta $04		        sta Y1
-.59c6	a9 c1		lda #$c1	        lda #8+180+5
-.59c8	85 08		sta $08		        sta Y2
-.59ca	a9 00		lda #$00	        lda #$00
-.59cc	85 05		sta $05		        sta Y1+1
-.59ce	85 09		sta $09		        sta Y2+1
-.59d0	20 15 c0	jsr $c015	        jsr GFX_LINE
-.59d3	a9 01		lda #$01	    LDA #$01
-.59d5	20 0c c0	jsr $c00c	    JSR GFX_SETCOLOR
-.59d8	a9 18		lda #$18	    lda #24
-.59da	85 02		sta $02		    sta X1
-.59dc	a9 00		lda #$00	    lda #$00
-.59de	85 03		sta $03		    sta X1+1
-.59e0	c8		iny		    iny
-.59e1	a9 0e		lda #$0e	    lda #14
-.59e3	85 04		sta $04		    sta Y1
-.59e5	a9 af		lda #$af	    lda #<title
-.59e7	85 14		sta $14		    sta r9L
-.59e9	a9 5c		lda #$5c	    lda #>title
-.59eb	85 15		sta $15		    sta r9H
-.59ed	20 1e c0	jsr $c01e	    jsr GPUTS
-.59f0	a9 02		lda #$02	        lda #2
-.59f2					clear_vdc:
-.59f2	48		pha		        pha
-.59f3	20 38 08	jsr $0838	        jsr VDCLR
-.59f6	68		pla		        pla
-.59f7	18		clc		        clc
-.59f8	69 01		adc #$01	        adc #1
-.59fa	c9 18		cmp #$18	        cmp #24
-.59fc	d0 f4		bne $59f2	        bne clear_vdc
-.59fe	a9 af		lda #$af	        lda #<title
-.5a00	85 14		sta $14		        sta r9L
-.5a02	a9 5c		lda #$5c	        lda #>title
-.5a04	85 15		sta $15		        sta r9H
-.5a06	a9 02		lda #$02	        lda #2
-.5a08	a2 00		ldx #$00	        ldx #0
-.5a0a	20 35 08	jsr $0835	        jsr VDTEXT
-.5a0d	20 1a 55	jsr $551a	        jsr path_source
-.5a10	a2 4c		ldx #$4c	        ldx #76
-.5a12	20 2d 55	jsr $552d	        jsr text_chunk
-.5a15	a9 03		lda #$03	        lda #3
-.5a17	a2 00		ldx #$00	        ldx #0
-.5a19	20 03 5c	jsr $5c03	        jsr vdc_line
-.5a1c	a9 00		lda #$00	        lda #0
-.5a1e	8d 79 5e	sta $5e79	        sta line+34
-.5a21	a9 1a		lda #$1a	        lda #26
-.5a23	20 f3 5b	jsr $5bf3	        jsr vic_line
-.5a26	a9 00		lda #$00	        lda #0
-.5a28	8d 15 5e	sta $5e15	        sta row
-.5a2b					paint_rows:
-.5a2b	ae 15 5e	ldx $5e15	        ldx row
-.5a2e	ec 0c 5e	cpx $5e0c	        cpx count
-.5a31	90 03		bcc $5a36	        bcc paint_row
-.5a33	4c f1 5a	jmp $5af1	        jmp paint_details
-.5a36					paint_row:
-.5a36	20 f5 54	jsr $54f5	        jsr row_source
-.5a39	a2 4a		ldx #$4a	        ldx #74
-.5a3b	20 2d 55	jsr $552d	        jsr text_chunk
-.5a3e	a5 64		lda $64		        lda remain
-.5a40	05 65		ora $65		        ora remain+1
-.5a42	f0 05		beq $5a49	        beq row_vdc_fits
-.5a44	a9 3e		lda #$3e	        lda #$3e
-.5a46	8d a0 5e	sta $5ea0	        sta line+73
-.5a49					row_vdc_fits:
-.5a49	a9 57		lda #$57	        lda #<line
-.5a4b	85 14		sta $14		        sta r9L
-.5a4d	a9 5e		lda #$5e	        lda #>line
-.5a4f	85 15		sta $15		        sta r9H
-.5a51	ad 15 5e	lda $5e15	        lda row
-.5a54	18		clc		        clc
-.5a55	69 04		adc #$04	        adc #4
-.5a57	a2 03		ldx #$03	        ldx #3
-.5a59	20 35 08	jsr $0835	        jsr VDTEXT
-.5a5c	ae 15 5e	ldx $5e15	        ldx row
-.5a5f	bd 2a 5e	lda $5e2a,x	        lda lengthsH,x
-.5a62	d0 07		bne $5a6b	        bne row_vic_long
-.5a64	bd 22 5e	lda $5e22,x	        lda lengthsL,x
-.5a67	c9 20		cmp #$20	        cmp #32
-.5a69	90 05		bcc $5a70	        bcc row_vic_fits
-.5a6b					row_vic_long:
-.5a6b	a9 3e		lda #$3e	        lda #$3e
-.5a6d	8d 75 5e	sta $5e75	        sta line+30
-.5a70					row_vic_fits:
-.5a70	a9 00		lda #$00	        lda #0
-.5a72	8d 76 5e	sta $5e76	        sta line+31
-.5a75	ad 15 5e	lda $5e15	        lda row
-.5a78	0a		asl a		        asl
-.5a79	8d 16 5e	sta $5e16	        sta draw_y
-.5a7c	0a		asl a		        asl
-.5a7d	18		clc		        clc
-.5a7e	6d 16 5e	adc $5e16	        adc draw_y
-.5a81	0a		asl a		        asl
-.5a82	18		clc		        clc
-.5a83	69 28		adc #$28	        adc #40
-.5a85	8d 16 5e	sta $5e16	        sta draw_y
-.5a88	a9 26		lda #$26	        lda #38
-.5a8a	85 02		sta $02		        sta X1
-.5a8c	a9 00		lda #$00	        lda #0
-.5a8e	85 03		sta $03		        sta X1+1
-.5a90	ad 16 5e	lda $5e16	        lda draw_y
-.5a93	85 04		sta $04		        sta Y1
-.5a95	20 ea 5b	jsr $5bea	        jsr line_pointer
-.5a98	20 1e c0	jsr $c01e	        jsr GPUTS
-.5a9b	a9 20		lda #$20	        lda #$20
-.5a9d	8d 32 5e	sta $5e32	        sta prefix
-.5aa0	ad 15 5e	lda $5e15	        lda row
-.5aa3	cd 0b 5e	cmp $5e0b	        cmp selected
-.5aa6	d0 05		bne $5aad	        bne prefix_kind
-.5aa8	a9 3e		lda #$3e	        lda #$3e
-.5aaa	8d 32 5e	sta $5e32	        sta prefix
-.5aad					prefix_kind:
-.5aad	ae 15 5e	ldx $5e15	        ldx row
-.5ab0	bd 1a 5e	lda $5e1a,x	        lda attrs,x
-.5ab3	29 10		and #$10	        and #$10
-.5ab5	f0 04		beq $5abb	        beq prefix_file
-.5ab7	a9 2f		lda #$2f	        lda #$2f
-.5ab9	d0 02		bne $5abd	        bne prefix_save
-.5abb					prefix_file:
-.5abb	a9 20		lda #$20	        lda #$20
-.5abd					prefix_save:
-.5abd	8d 33 5e	sta $5e33	        sta prefix+1
-.5ac0	a9 32		lda #$32	        lda #<prefix
-.5ac2	85 14		sta $14		        sta r9L
-.5ac4	a9 5e		lda #$5e	        lda #>prefix
-.5ac6	85 15		sta $15		        sta r9H
-.5ac8	a9 16		lda #$16	        lda #22
-.5aca	85 02		sta $02		        sta X1
+>50b0	db f1 dd c8 ca c1 13 31		actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path
+>50b8	82 77 90 64
+>50bc	50 50 51 50 51 51 51 51		actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path
+>50c4	52 51 51 51
+.50c8					leave:
+.50c8	a9 ff		lda #$ff	        lda #$ff
+.50ca	8d 07 5d	sta $5d07	        sta ready
+.50cd	ad 06 5d	lda $5d06	        lda sysdev
+.50d0	85 ba		sta $ba		        sta $ba
+.50d2	ce 00 9b	dec $9b00	    dec APP_ID_TBL
+.50d5	ad 00 9b	lda $9b00	    lda APP_ID_TBL
+.50d8	4c 00 10	jmp $1000	        jmp DESK_START
+.50db					down:
+.50db	ad 03 5d	lda $5d03	        lda count
+.50de	f0 6f		beq $514f	        beq action_done
+.50e0	ad 02 5d	lda $5d02	        lda selected
+.50e3	18		clc		        clc
+.50e4	69 01		adc #$01	        adc #1
+.50e6	cd 03 5d	cmp $5d03	        cmp count
+.50e9	b0 28		bcs $5113	        bcs nextpage
+.50eb	8d 02 5d	sta $5d02	        sta selected
+.50ee	4c 50 51	jmp $5150	        jmp reset_view
+.50f1					up:
+.50f1	ad 02 5d	lda $5d02	        lda selected
+.50f4	f0 06		beq $50fc	        beq up_page
+.50f6	ce 02 5d	dec $5d02	        dec selected
+.50f9	4c 50 51	jmp $5150	        jmp reset_view
+.50fc					up_page:
+.50fc	ad f8 5c	lda $5cf8	        lda base
+.50ff	0d f9 5c	ora $5cf9	        ora base+1
+.5102	f0 4b		beq $514f	        beq action_done
+.5104	20 31 51	jsr $5131	        jsr prevpage
+.5107	ad 03 5d	lda $5d03	        lda count
+.510a	f0 43		beq $514f	        beq action_done
+.510c	38		sec		        sec
+.510d	e9 01		sbc #$01	        sbc #1
+.510f	8d 02 5d	sta $5d02	        sta selected
+.5112	60		rts		        rts
+.5113					nextpage:
+.5113	ad 04 5d	lda $5d04	        lda more
+.5116	f0 37		beq $514f	        beq action_done
+.5118	18		clc		        clc
+.5119	ad f8 5c	lda $5cf8	        lda base
+.511c	69 08		adc #$08	        adc #ROWS
+.511e	8d f8 5c	sta $5cf8	        sta base
+.5121	90 24		bcc $5147	        bcc page_changed
+.5123	ee f9 5c	inc $5cf9	        inc base+1
+.5126	d0 1f		bne $5147	        bne page_changed
+.5128	a9 f8		lda #$f8	        lda #$f8                ; do not wrap directory ordinals to zero
+.512a	8d f8 5c	sta $5cf8	        sta base
+.512d	ce f9 5c	dec $5cf9	        dec base+1
+.5130	60		rts		        rts
+.5131					prevpage:
+.5131	ad f8 5c	lda $5cf8	        lda base
+.5134	0d f9 5c	ora $5cf9	        ora base+1
+.5137	f0 16		beq $514f	        beq action_done
+.5139	38		sec		        sec
+.513a	ad f8 5c	lda $5cf8	        lda base
+.513d	e9 08		sbc #$08	        sbc #ROWS
+.513f	8d f8 5c	sta $5cf8	        sta base
+.5142	b0 03		bcs $5147	        bcs page_changed
+.5144	ce f9 5c	dec $5cf9	        dec base+1
+.5147					page_changed:
+.5147	a9 00		lda #$00	        lda #$00
+.5149	8d 02 5d	sta $5d02	        sta selected
+.514c	4c 82 52	jmp $5282	        jmp refresh
+.514f					action_done:
+.514f	60		rts		        rts
+.5150					reset_view:
+.5150	a9 00		lda #$00	        lda #$00
+.5152	8d fe 5c	sta $5cfe	        sta nameoff
+.5155	8d ff 5c	sta $5cff	        sta nameoff+1
+.5158	8d 09 5d	sta $5d09	        sta viewpath
+.515b	ad 11 5d	lda $5d11	        lda dirty
+.515e	09 06		ora #$06	        ora #DIR_SELECT|DIR_DETAIL
+.5160	8d 11 5d	sta $5d11	        sta dirty
+.5163	60		rts		        rts
+.5164					toggle_path:
+.5164	ad 09 5d	lda $5d09	        lda viewpath
+.5167	49 01		eor #$01	        eor #1
+.5169	8d 09 5d	sta $5d09	        sta viewpath
+.516c	a9 00		lda #$00	        lda #$00
+.516e	8d fe 5c	sta $5cfe	        sta nameoff
+.5171	8d ff 5c	sta $5cff	        sta nameoff+1
+.5174	4c b8 51	jmp $51b8	        jmp dirty_detail
+.5177					left:
+.5177	ad fe 5c	lda $5cfe	        lda nameoff
+.517a	0d ff 5c	ora $5cff	        ora nameoff+1
+.517d	f0 d0		beq $514f	        beq action_done
+.517f	38		sec		        sec
+.5180	ad fe 5c	lda $5cfe	        lda nameoff
+.5183	e9 20		sbc #$20	        sbc #32
+.5185	8d fe 5c	sta $5cfe	        sta nameoff
+.5188	b0 2e		bcs $51b8	        bcs dirty_detail
+.518a	ce ff 5c	dec $5cff	        dec nameoff+1
+.518d	4c b8 51	jmp $51b8	        jmp dirty_detail
+.5190					right:
+.5190	20 35 55	jsr $5535	        jsr detail_source
+.5193	18		clc		        clc
+.5194	ad fe 5c	lda $5cfe	        lda nameoff
+.5197	69 20		adc #$20	        adc #32
+.5199	85 66		sta $66		        sta number
+.519b	ad ff 5c	lda $5cff	        lda nameoff+1
+.519e	69 00		adc #$00	        adc #0
+.51a0	85 67		sta $67		        sta number+1
+.51a2	c5 65		cmp $65		        cmp remain+1
+.51a4	90 08		bcc $51ae	        bcc right_go
+.51a6	d0 a7		bne $514f	        bne action_done
+.51a8	a5 66		lda $66		        lda number
+.51aa	c5 64		cmp $64		        cmp remain
+.51ac	b0 a1		bcs $514f	        bcs action_done
+.51ae					right_go:
+.51ae	a5 66		lda $66		        lda number
+.51b0	8d fe 5c	sta $5cfe	        sta nameoff
+.51b3	a5 67		lda $67		        lda number+1
+.51b5	8d ff 5c	sta $5cff	        sta nameoff+1
+.51b8					dirty_detail:
+.51b8	ad 11 5d	lda $5d11	        lda dirty
+.51bb	09 04		ora #$04	        ora #DIR_DETAIL
+.51bd	8d 11 5d	sta $5d11	        sta dirty
+.51c0	60		rts		        rts
+.51c1					root:
+.51c1	a9 2f		lda #$2f	        lda #$2f
+.51c3	8d 02 74	sta $7402	        sta REQUEST+2
+.51c6	a9 03		lda #$03	        lda #3
+.51c8	d0 0a		bne $51d4	        bne chdir_short
+.51ca					parent:
+.51ca	a9 2e		lda #$2e	        lda #$2e
+.51cc	8d 02 74	sta $7402	        sta REQUEST+2
+.51cf	8d 03 74	sta $7403	        sta REQUEST+3
+.51d2	a9 04		lda #$04	        lda #4
+.51d4					chdir_short:
+.51d4	85 04		sta $04		        sta r1L
+.51d6	a9 00		lda #$00	        lda #0
+.51d8	85 05		sta $05		        sta r1H
+.51da	4c 0a 52	jmp $520a	        jmp chdir
+.51dd					open_entry:
+.51dd	ad 03 5d	lda $5d03	        lda count
+.51e0	d0 01		bne $51e3	        bne open_selected
+.51e2	60		rts		        rts
+.51e3					open_selected:
+.51e3	20 1c 55	jsr $551c	        jsr selected_source
+.51e6	a9 02		lda #$02	        lda #<REQUEST+2
+.51e8	85 62		sta $62		        sta dptr
+.51ea	a9 74		lda #$74	        lda #>REQUEST+2
+.51ec	85 63		sta $63		        sta dptr+1
+.51ee	a5 64		lda $64		        lda remain
+.51f0	18		clc		        clc
+.51f1	69 02		adc #$02	        adc #2
+.51f3	8d 00 5d	sta $5d00	        sta commandlen
+.51f6	a5 65		lda $65		        lda remain+1
+.51f8	69 00		adc #$00	        adc #0
+.51fa	8d 01 5d	sta $5d01	        sta commandlen+1
+.51fd	20 f1 54	jsr $54f1	        jsr copy_bytes
+.5200	ad 00 5d	lda $5d00	        lda commandlen
+.5203	85 04		sta $04		        sta r1L
+.5205	ad 01 5d	lda $5d01	        lda commandlen+1
+.5208	85 05		sta $05		        sta r1H
+.520a					chdir:
+.520a	a9 11		lda #$11	        lda #$11
+.520c	8d 01 74	sta $7401	        sta REQUEST+1
+.520f	20 40 52	jsr $5240	        jsr command_stream
+.5212	b0 42		bcs $5256	        bcs command_error
+.5214	c9 00		cmp #$00	        cmp #0
+.5216	d0 47		bne $525f	        bne firmware_error
+.5218	a9 00		lda #$00	        lda #0
+.521a	8d f8 5c	sta $5cf8	        sta base
+.521d	8d f9 5c	sta $5cf9	        sta base+1
+.5220	8d 02 5d	sta $5d02	        sta selected
+.5223	4c 82 52	jmp $5282	        jmp refresh
+.5226					command:
+.5226	8d 01 74	sta $7401	        sta REQUEST+1
+.5229	a9 02		lda #$02	        lda #2
+.522b	8d 00 74	sta $7400	        sta REQUEST
+.522e	a9 00		lda #$00	        lda #0
+.5230	8d 62 91	sta $9162	        sta NET_DIRMODE
+.5233	a9 00		lda #$00	        lda #<REQUEST
+.5235	85 02		sta $02		        sta r0L
+.5237	a9 74		lda #$74	        lda #>REQUEST
+.5239	85 03		sta $03		        sta r0H
+.523b	a9 02		lda #$02	        lda #2
+.523d	4c 03 91	jmp $9103	        jmp NET_CMD
+.5240					command_stream:
+.5240	a9 00		lda #$00	        lda #0
+.5242	85 08		sta $08		        sta r3L
+.5244	85 09		sta $09		        sta r3H
+.5246					stream:
+.5246	a9 02		lda #$02	        lda #2
+.5248	8d 00 74	sta $7400	        sta REQUEST
+.524b	a9 00		lda #$00	        lda #<REQUEST
+.524d	85 02		sta $02		        sta r0L
+.524f	a9 74		lda #$74	        lda #>REQUEST
+.5251	85 03		sta $03		        sta r0H
+.5253	4c 64 91	jmp $9164	        jmp NET_STREAM
+.5256					command_error:
+.5256	90 07		bcc $525f	        bcc firmware_error
+.5258	a9 61		lda #$61	        lda #<transport_error
+.525a	a2 5c		ldx #$5c	        ldx #>transport_error
+.525c	4c c2 53	jmp $53c2	        jmp set_status
+.525f					firmware_error:
+.525f	a9 42		lda #$42	        lda #<NET_STAT
+.5261	85 60		sta $60		        sta sptr
+.5263	a9 91		lda #$91	        lda #>NET_STAT
+.5265	85 61		sta $61		        sta sptr+1
+.5267	a9 1f		lda #$1f	        lda #31
+.5269	85 64		sta $64		        sta remain
+.526b	a9 00		lda #$00	        lda #0
+.526d	85 65		sta $65		        sta remain+1
+.526f	a2 1f		ldx #$1f	        ldx #31
+.5271	20 57 55	jsr $5557	        jsr text_chunk
+.5274	a2 1f		ldx #$1f	        ldx #31
+.5276					error_copy:
+.5276	bd 71 5d	lda $5d71,x	        lda line,x
+.5279	9d 4f 5d	sta $5d4f,x	        sta status,x
+.527c	ca		dex		        dex
+.527d	10 f7		bpl $5276	        bpl error_copy
+.527f	4c d9 53	jmp $53d9	        jmp dirty_status
+.5282					refresh:
+.5282	a9 1f		lda #$1f	        lda #DIR_ALL
+.5284	8d 11 5d	sta $5d11	        sta dirty
+.5287	20 50 51	jsr $5150	        jsr reset_view
+.528a	a9 00		lda #$00	        lda #0
+.528c	8d 03 5d	sta $5d03	        sta count
+.528f	8d 04 5d	sta $5d04	        sta more
+.5292	8d 05 5d	sta $5d05	        sta scanerror
+.5295	8d fa 5c	sta $5cfa	        sta seen
+.5298	8d fb 5c	sta $5cfb	        sta seen+1
+.529b	a9 12		lda #$12	        lda #$12
+.529d	20 26 52	jsr $5226	        jsr command
+.52a0	b0 b4		bcs $5256	        bcs command_error
+.52a2	c9 00		cmp #$00	        cmp #0
+.52a4	d0 b9		bne $525f	        bne firmware_error
+.52a6	ad 67 91	lda $9167	        lda NET_TRUNC
+.52a9	f0 03		beq $52ae	        beq path_fits
+.52ab	4c be 53	jmp $53be	        jmp invalid_reply
+.52ae					path_fits:
+.52ae	ad 3f 91	lda $913f	        lda NET_LEN
+.52b1	8d fc 5c	sta $5cfc	        sta pathlen
+.52b4	85 64		sta $64		        sta remain
+.52b6	ad 40 91	lda $9140	        lda NET_LEN+1
+.52b9	8d fd 5c	sta $5cfd	        sta pathlen+1
+.52bc	85 65		sta $65		        sta remain+1
+.52be	a9 00		lda #$00	        lda #<NET_DATA
+.52c0	85 60		sta $60		        sta sptr
+.52c2	a9 88		lda #$88	        lda #>NET_DATA
+.52c4	85 61		sta $61		        sta sptr+1
+.52c6	a9 00		lda #$00	        lda #<PATHBUF
+.52c8	85 62		sta $62		        sta dptr
+.52ca	a9 70		lda #$70	        lda #>PATHBUF
+.52cc	85 63		sta $63		        sta dptr+1
+.52ce	20 f1 54	jsr $54f1	        jsr copy_bytes
+.52d1	a9 00		lda #$00	        lda #0
+.52d3	a8		tay		        tay
+.52d4	91 62		sta ($62),y	        sta (dptr),y
+.52d6	a9 13		lda #$13	        lda #$13
+.52d8	20 26 52	jsr $5226	        jsr command
+.52db	90 03		bcc $52e0	        bcc directory_status
+.52dd	4c 56 52	jmp $5256	        jmp command_error
+.52e0					directory_status:
+.52e0	c9 01		cmp #$01	        cmp #1
+.52e2	d0 03		bne $52e7	        bne directory_nonempty
+.52e4	4c b0 53	jmp $53b0	        jmp empty
+.52e7					directory_nonempty:
+.52e7	c9 00		cmp #$00	        cmp #0
+.52e9	f0 03		beq $52ee	        beq directory_start
+.52eb	4c 5f 52	jmp $525f	        jmp firmware_error
+.52ee					directory_start:
+.52ee	a9 14		lda #$14	        lda #$14
+.52f0	8d 01 74	sta $7401	        sta REQUEST+1
+.52f3	a9 02		lda #$02	        lda #2
+.52f5	85 04		sta $04		        sta r1L
+.52f7	a9 00		lda #$00	        lda #0
+.52f9	85 05		sta $05		        sta r1H
+.52fb	a9 37		lda #$37	        lda #<receive
+.52fd	85 08		sta $08		        sta r3L
+.52ff	a9 54		lda #$54	        lda #>receive
+.5301	85 09		sta $09		        sta r3H
+.5303	20 46 52	jsr $5246	        jsr stream
+.5306	90 2b		bcc $5333	        bcc scan_finished
+.5308	c9 fd		cmp #$fd	        cmp #$fd
+.530a	d0 0a		bne $5316	        bne scan_failed
+.530c	ad 05 5d	lda $5d05	        lda scanerror
+.530f	d0 05		bne $5316	        bne scan_failed
+.5311	ad 04 5d	lda $5d04	        lda more
+.5314	d0 21		bne $5337	        bne listed
+.5316					scan_failed:
+.5316	a9 00		lda #$00	        lda #0
+.5318	8d 03 5d	sta $5d03	        sta count
+.531b	8d 04 5d	sta $5d04	        sta more
+.531e	ad 05 5d	lda $5d05	        lda scanerror
+.5321	c9 02		cmp #$02	        cmp #2
+.5323	d0 03		bne $5328	        bne scan_not_cancelled
+.5325	4c b7 53	jmp $53b7	        jmp cancelled
+.5328					scan_not_cancelled:
+.5328	c9 01		cmp #$01	        cmp #1
+.532a	d0 03		bne $532f	        bne scan_transport
+.532c	4c be 53	jmp $53be	        jmp invalid_reply
+.532f					scan_transport:
+.532f	38		sec		        sec
+.5330	4c 56 52	jmp $5256	        jmp command_error
+.5333					scan_finished:
+.5333	c9 00		cmp #$00	        cmp #0
+.5335	d0 6e		bne $53a5	        bne scan_firmware
+.5337					listed:
+.5337	ad 03 5d	lda $5d03	        lda count
+.533a	f0 74		beq $53b0	        beq empty
+.533c	ad 02 5d	lda $5d02	        lda selected
+.533f	cd 03 5d	cmp $5d03	        cmp count
+.5342	90 05		bcc $5349	        bcc listing_status
+.5344	a9 00		lda #$00	        lda #0
+.5346	8d 02 5d	sta $5d02	        sta selected
+.5349					listing_status:
+.5349	a2 05		ldx #$05	        ldx #5
+.534b					item_prefix:
+.534b	bd 04 5c	lda $5c04,x	        lda items_text,x
+.534e	9d 4f 5d	sta $5d4f,x	        sta status,x
+.5351	ca		dex		        dex
+.5352	10 f7		bpl $534b	        bpl item_prefix
+.5354	a9 06		lda #$06	        lda #6
+.5356	8d 0f 5d	sta $5d0f	        sta statuspos
+.5359	18		clc		        clc
+.535a	ad f8 5c	lda $5cf8	        lda base
+.535d	69 01		adc #$01	        adc #1
+.535f	85 66		sta $66		        sta number
+.5361	ad f9 5c	lda $5cf9	        lda base+1
+.5364	69 00		adc #$00	        adc #0
+.5366	85 67		sta $67		        sta number+1
+.5368	20 e2 53	jsr $53e2	        jsr decimal_word
+.536b	ae 0f 5d	ldx $5d0f	        ldx statuspos
+.536e	a9 2d		lda #$2d	        lda #$2d
+.5370	9d 4f 5d	sta $5d4f,x	        sta status,x
+.5373	ee 0f 5d	inc $5d0f	        inc statuspos
+.5376	18		clc		        clc
+.5377	ad f8 5c	lda $5cf8	        lda base
+.537a	6d 03 5d	adc $5d03	        adc count
+.537d	85 66		sta $66		        sta number
+.537f	ad f9 5c	lda $5cf9	        lda base+1
+.5382	69 00		adc #$00	        adc #0
+.5384	85 67		sta $67		        sta number+1
+.5386	20 e2 53	jsr $53e2	        jsr decimal_word
+.5389	ae 0f 5d	ldx $5d0f	        ldx statuspos
+.538c	a9 20		lda #$20	        lda #$20
+.538e	9d 4f 5d	sta $5d4f,x	        sta status,x
+.5391	e8		inx		        inx
+.5392	a9 2e		lda #$2e	        lda #$2e
+.5394	ac 04 5d	ldy $5d04	        ldy more
+.5397	f0 02		beq $539b	        beq item_suffix
+.5399	a9 2b		lda #$2b	        lda #$2b
+.539b					item_suffix:
+.539b	9d 4f 5d	sta $5d4f,x	        sta status,x
+.539e	e8		inx		        inx
+.539f	a9 00		lda #$00	        lda #0
+.53a1	9d 4f 5d	sta $5d4f,x	        sta status,x
+.53a4	60		rts		        rts
+.53a5					scan_firmware:
+.53a5	48		pha		        pha
+.53a6	a9 00		lda #$00	        lda #0
+.53a8	8d 03 5d	sta $5d03	        sta count
+.53ab	68		pla		        pla
+.53ac	18		clc		        clc
+.53ad	4c 56 52	jmp $5256	        jmp command_error
+.53b0					empty:
+.53b0	a9 40		lda #$40	        lda #<empty_text
+.53b2	a2 5c		ldx #$5c	        ldx #>empty_text
+.53b4	4c c2 53	jmp $53c2	        jmp set_status
+.53b7					cancelled:
+.53b7	a9 a1		lda #$a1	        lda #<cancel_text
+.53b9	a2 5c		ldx #$5c	        ldx #>cancel_text
+.53bb	4c c2 53	jmp $53c2	        jmp set_status
+.53be					invalid_reply:
+.53be	a9 7f		lda #$7f	        lda #<invalid_text
+.53c0	a2 5c		ldx #$5c	        ldx #>invalid_text
+.53c2					set_status:
+.53c2	85 60		sta $60		        sta sptr
+.53c4	86 61		stx $61		        stx sptr+1
+.53c6	a0 00		ldy #$00	        ldy #0
+.53c8					status_copy:
+.53c8	b1 60		lda ($60),y	        lda (sptr),y
+.53ca	99 4f 5d	sta $5d4f,y	        sta status,y
+.53cd	f0 0a		beq $53d9	        beq status_done
+.53cf	c8		iny		        iny
+.53d0	c0 21		cpy #$21	        cpy #33
+.53d2	d0 f4		bne $53c8	        bne status_copy
+.53d4	a9 00		lda #$00	        lda #0
+.53d6	99 4f 5d	sta $5d4f,y	        sta status,y
+.53d9					status_done:
+.53d9					dirty_status:
+.53d9	ad 11 5d	lda $5d11	        lda dirty
+.53dc	09 08		ora #$08	        ora #DIR_STATUS
+.53de	8d 11 5d	sta $5d11	        sta dirty
+.53e1	60		rts		        rts
+.53e2					decimal_word:
+.53e2	a9 00		lda #$00	        lda #0
+.53e4	8d 10 5d	sta $5d10	        sta started
+.53e7	a0 00		ldy #$00	        ldy #0
+.53e9					decimal_digit:
+.53e9	a2 00		ldx #$00	        ldx #0
+.53eb					decimal_sub:
+.53eb	a5 67		lda $67		        lda number+1
+.53ed	d9 2e 54	cmp $542e,y	        cmp divisors+1,y
+.53f0	90 1b		bcc $540d	        bcc decimal_emit
+.53f2	d0 07		bne $53fb	        bne decimal_take
+.53f4	a5 66		lda $66		        lda number
+.53f6	d9 2d 54	cmp $542d,y	        cmp divisors,y
+.53f9	90 12		bcc $540d	        bcc decimal_emit
+.53fb					decimal_take:
+.53fb	38		sec		        sec
+.53fc	a5 66		lda $66		        lda number
+.53fe	f9 2d 54	sbc $542d,y	        sbc divisors,y
+.5401	85 66		sta $66		        sta number
+.5403	a5 67		lda $67		        lda number+1
+.5405	f9 2e 54	sbc $542e,y	        sbc divisors+1,y
+.5408	85 67		sta $67		        sta number+1
+.540a	e8		inx		        inx
+.540b	d0 de		bne $53eb	        bne decimal_sub
+.540d					decimal_emit:
+.540d	8a		txa		        txa
+.540e	0d 10 5d	ora $5d10	        ora started
+.5411	d0 04		bne $5417	        bne decimal_write
+.5413	c0 08		cpy #$08	        cpy #8
+.5415	d0 0f		bne $5426	        bne decimal_next
+.5417					decimal_write:
+.5417	8a		txa		        txa
+.5418	09 30		ora #$30	        ora #$30
+.541a	ae 0f 5d	ldx $5d0f	        ldx statuspos
+.541d	9d 4f 5d	sta $5d4f,x	        sta status,x
+.5420	ee 0f 5d	inc $5d0f	        inc statuspos
+.5423	ee 10 5d	inc $5d10	        inc started
+.5426					decimal_next:
+.5426	c8		iny		        iny
+.5427	c8		iny		        iny
+.5428	c0 0a		cpy #$0a	        cpy #10
+.542a	d0 bd		bne $53e9	        bne decimal_digit
+.542c	60		rts		        rts
+>542d	10 27 e8 03 64 00 0a 00		divisors: .word 10000,1000,100,10,1
+>5435	01 00
+.5437					receive:
+.5437	20 2c 08	jsr $082c	        jsr KEYIN
+.543a	c9 1b		cmp #$1b	        cmp #$1b
+.543c	d0 04		bne $5442	        bne receive_data
+.543e	a9 02		lda #$02	        lda #2
+.5440	d0 61		bne $54a3	        bne receive_bad
+.5442					receive_data:
+.5442	ad 3f 91	lda $913f	        lda NET_LEN
+.5445	0d 40 91	ora $9140	        ora NET_LEN+1
+.5448	f0 55		beq $549f	        beq receive_ok           ; status-only packet
+.544a	ad 68 91	lda $9168	        lda NET_PACKET_TRUNC
+.544d	d0 52		bne $54a1	        bne receive_invalid
+.544f	ad 40 91	lda $9140	        lda NET_LEN+1
+.5452	d0 07		bne $545b	        bne receive_name
+.5454	ad 3f 91	lda $913f	        lda NET_LEN
+.5457	c9 02		cmp #$02	        cmp #2
+.5459	90 46		bcc $54a1	        bcc receive_invalid
+.545b					receive_name:
+.545b	a9 01		lda #$01	        lda #<NET_DATA+1
+.545d	85 60		sta $60		        sta sptr
+.545f	a9 88		lda #$88	        lda #>NET_DATA+1
+.5461	85 61		sta $61		        sta sptr+1
+.5463	38		sec		        sec
+.5464	ad 3f 91	lda $913f	        lda NET_LEN
+.5467	e9 01		sbc #$01	        sbc #1
+.5469	85 64		sta $64		        sta remain
+.546b	ad 40 91	lda $9140	        lda NET_LEN+1
+.546e	e9 00		sbc #$00	        sbc #0
+.5470	85 65		sta $65		        sta remain+1
+.5472	a0 00		ldy #$00	        ldy #0
+.5474					validate_name:
+.5474	b1 60		lda ($60),y	        lda (sptr),y
+.5476	f0 29		beq $54a1	        beq receive_invalid
+.5478	c9 2f		cmp #$2f	        cmp #$2f
+.547a	f0 25		beq $54a1	        beq receive_invalid
+.547c	20 0d 55	jsr $550d	        jsr advance_source
+.547f	a5 64		lda $64		        lda remain
+.5481	05 65		ora $65		        ora remain+1
+.5483	d0 ef		bne $5474	        bne validate_name
+.5485	ad fb 5c	lda $5cfb	        lda seen+1
+.5488	cd f9 5c	cmp $5cf9	        cmp base+1
+.548b	90 0a		bcc $5497	        bcc receive_skip
+.548d	d0 19		bne $54a8	        bne receive_save
+.548f	ad fa 5c	lda $5cfa	        lda seen
+.5492	cd f8 5c	cmp $5cf8	        cmp base
+.5495	b0 11		bcs $54a8	        bcs receive_save
+.5497					receive_skip:
+.5497	ee fa 5c	inc $5cfa	        inc seen
+.549a	d0 03		bne $549f	        bne receive_ok
+.549c	ee fb 5c	inc $5cfb	        inc seen+1
+.549f					receive_ok:
+.549f	18		clc		        clc
+.54a0	60		rts		        rts
+.54a1					receive_invalid:
+.54a1	a9 01		lda #$01	        lda #1
+.54a3					receive_bad:
+.54a3	8d 05 5d	sta $5d05	        sta scanerror
+.54a6	38		sec		        sec
+.54a7	60		rts		        rts
+.54a8					receive_save:
+.54a8	ae 03 5d	ldx $5d03	        ldx count
+.54ab	e0 08		cpx #$08	        cpx #ROWS
+.54ad	90 07		bcc $54b6	        bcc receive_slot
+.54af	a9 01		lda #$01	        lda #1
+.54b1	8d 04 5d	sta $5d04	        sta more
+.54b4	38		sec		        sec
+.54b5	60		rts		        rts
+.54b6					receive_slot:
+.54b6	ad 00 88	lda $8800	        lda NET_DATA
+.54b9	9d 34 5d	sta $5d34,x	        sta attrs,x
+.54bc	38		sec		        sec
+.54bd	ad 3f 91	lda $913f	        lda NET_LEN
+.54c0	e9 01		sbc #$01	        sbc #1
+.54c2	9d 3c 5d	sta $5d3c,x	        sta lengthsL,x
+.54c5	85 64		sta $64		        sta remain
+.54c7	ad 40 91	lda $9140	        lda NET_LEN+1
+.54ca	e9 00		sbc #$00	        sbc #0
+.54cc	9d 44 5d	sta $5d44,x	        sta lengthsH,x
+.54cf	85 65		sta $65		        sta remain+1
+.54d1	8a		txa		        txa
+.54d2	0a		asl a		        asl
+.54d3	18		clc		        clc
+.54d4	69 60		adc #$60	        adc #>CACHE
+.54d6	85 63		sta $63		        sta dptr+1
+.54d8	a9 00		lda #$00	        lda #0
+.54da	85 62		sta $62		        sta dptr
+.54dc	a9 01		lda #$01	        lda #<NET_DATA+1
+.54de	85 60		sta $60		        sta sptr
+.54e0	a9 88		lda #$88	        lda #>NET_DATA+1
+.54e2	85 61		sta $61		        sta sptr+1
+.54e4	20 f1 54	jsr $54f1	        jsr copy_bytes
+.54e7	a9 00		lda #$00	        lda #0
+.54e9	a8		tay		        tay
+.54ea	91 62		sta ($62),y	        sta (dptr),y
+.54ec	ee 03 5d	inc $5d03	        inc count
+.54ef	18		clc		        clc
+.54f0	60		rts		        rts
+.54f1					copy_bytes:
+.54f1	a5 64		lda $64		        lda remain
+.54f3	05 65		ora $65		        ora remain+1
+.54f5	f0 15		beq $550c	        beq copy_done
+.54f7	a0 00		ldy #$00	        ldy #0
+.54f9					copy_loop:
+.54f9	b1 60		lda ($60),y	        lda (sptr),y
+.54fb	91 62		sta ($62),y	        sta (dptr),y
+.54fd	e6 62		inc $62		        inc dptr
+.54ff	d0 02		bne $5503	        bne copy_advance
+.5501	e6 63		inc $63		        inc dptr+1
+.5503					copy_advance:
+.5503	20 0d 55	jsr $550d	        jsr advance_source
+.5506	a5 64		lda $64		        lda remain
+.5508	05 65		ora $65		        ora remain+1
+.550a	d0 ed		bne $54f9	        bne copy_loop
+.550c					copy_done:
+.550c	60		rts		        rts
+.550d					advance_source:
+.550d	e6 60		inc $60		        inc sptr
+.550f	d0 02		bne $5513	        bne source_count
+.5511	e6 61		inc $61		        inc sptr+1
+.5513					source_count:
+.5513	a5 64		lda $64		        lda remain
+.5515	d0 02		bne $5519	        bne source_low
+.5517	c6 65		dec $65		        dec remain+1
+.5519					source_low:
+.5519	c6 64		dec $64		        dec remain
+.551b	60		rts		        rts
+.551c					selected_source:
+.551c	ae 02 5d	ldx $5d02	        ldx selected
+.551f					row_source:
+.551f	bd 3c 5d	lda $5d3c,x	        lda lengthsL,x
+.5522	85 64		sta $64		        sta remain
+.5524	bd 44 5d	lda $5d44,x	        lda lengthsH,x
+.5527	85 65		sta $65		        sta remain+1
+.5529	8a		txa		        txa
+.552a	0a		asl a		        asl
+.552b	18		clc		        clc
+.552c	69 60		adc #$60	        adc #>CACHE
+.552e	85 61		sta $61		        sta sptr+1
+.5530	a9 00		lda #$00	        lda #0
+.5532	85 60		sta $60		        sta sptr
+.5534	60		rts		        rts
+.5535					detail_source:
+.5535	ad 09 5d	lda $5d09	        lda viewpath
+.5538	d0 0a		bne $5544	        bne path_source
+.553a	ad 03 5d	lda $5d03	        lda count
+.553d	d0 dd		bne $551c	        bne selected_source
+.553f	85 64		sta $64		        sta remain
+.5541	85 65		sta $65		        sta remain+1
+.5543	60		rts		        rts
+.5544					path_source:
+.5544	a9 00		lda #$00	        lda #<PATHBUF
+.5546	85 60		sta $60		        sta sptr
+.5548	a9 70		lda #$70	        lda #>PATHBUF
+.554a	85 61		sta $61		        sta sptr+1
+.554c	ad fc 5c	lda $5cfc	        lda pathlen
+.554f	85 64		sta $64		        sta remain
+.5551	ad fd 5c	lda $5cfd	        lda pathlen+1
+.5554	85 65		sta $65		        sta remain+1
+.5556	60		rts		        rts
+.5557					text_chunk:
+.5557	8e 0b 5d	stx $5d0b	        stx width
+.555a	a2 00		ldx #$00	        ldx #0
+.555c	a0 00		ldy #$00	        ldy #0
+.555e					chunk_loop:
+.555e	a5 64		lda $64		        lda remain
+.5560	05 65		ora $65		        ora remain+1
+.5562	f0 13		beq $5577	        beq chunk_done
+.5564	b1 60		lda ($60),y	        lda (sptr),y
+.5566	f0 0f		beq $5577	        beq chunk_done
+.5568	20 7d 55	jsr $557d	        jsr ascii_text
+.556b	9d 71 5d	sta $5d71,x	        sta line,x
+.556e	20 0d 55	jsr $550d	        jsr advance_source
+.5571	e8		inx		        inx
+.5572	ec 0b 5d	cpx $5d0b	        cpx width
+.5575	d0 e7		bne $555e	        bne chunk_loop
+.5577					chunk_done:
+.5577	a9 00		lda #$00	        lda #0
+.5579	9d 71 5d	sta $5d71,x	        sta line,x
+.557c	60		rts		        rts
+.557d					ascii_text:
+.557d	c9 20		cmp #$20	        cmp #$20
+.557f	90 16		bcc $5597	        bcc ascii_dot
+.5581	c9 7b		cmp #$7b	        cmp #$7b                ; braces, bar and tilde have no VIC font glyph
+.5583	b0 12		bcs $5597	        bcs ascii_dot
+.5585	c9 61		cmp #$61	        cmp #$61
+.5587	90 03		bcc $558c	        bcc ascii_upper
+.5589	29 df		and #$df	        and #$df
+.558b	60		rts		        rts
+.558c					ascii_upper:
+.558c	c9 41		cmp #$41	        cmp #$41
+.558e	90 06		bcc $5596	        bcc ascii_done
+.5590	c9 5b		cmp #$5b	        cmp #$5b
+.5592	b0 02		bcs $5596	        bcs ascii_done
+.5594	09 80		ora #$80	        ora #$80
+.5596					ascii_done:
+.5596	60		rts		        rts
+.5597					ascii_dot:
+.5597	a9 2e		lda #$2e	        lda #$2e
+.5599	60		rts		        rts
+.559a					frame:
+.559a	a9 08		lda #$08	        lda #8
+.559c					frame_clear:
+.559c	a2 24		ldx #$24	        ldx #36
+.559e	a0 02		ldy #$02	        ldy #2
+.55a0	20 72 5a	jsr $5a72	        jsr clear_strip
+.55a3	ad 31 5d	lda $5d31	        lda clear_y
+.55a6	c9 c0		cmp #$c0	        cmp #192
+.55a8	d0 f2		bne $559c	        bne frame_clear
+.55aa	a9 00		lda #$00	        lda #$00
+.55ac	85 03		sta $03		        sta X1+1
+.55ae	a9 10		lda #$10	        lda #16
+.55b0	85 02		sta $02		        sta X1
+.55b2	a9 01		lda #$01	        lda #$01
+.55b4	85 07		sta $07		        sta X2+1
+.55b6	a9 30		lda #$30	        lda #16 + 288-256
+.55b8	85 06		sta $06		        sta X2
+.55ba	a9 08		lda #$08	        lda #8
+.55bc	85 04		sta $04		        sta Y1
+.55be	a9 08		lda #$08	        lda #8
+.55c0	85 08		sta $08		        sta Y2
+.55c2	a9 00		lda #$00	        lda #$00
+.55c4	85 05		sta $05		        sta Y1+1
+.55c6	85 09		sta $09		        sta Y2+1
+.55c8	20 15 c0	jsr $c015	        jsr GFX_LINE
+.55cb	a9 00		lda #$00	        lda #$00
+.55cd	85 03		sta $03		        sta X1+1
+.55cf	a9 10		lda #$10	        lda #16
+.55d1	85 02		sta $02		        sta X1
+.55d3	a9 01		lda #$01	        lda #$01
+.55d5	85 07		sta $07		        sta X2+1
+.55d7	a9 30		lda #$30	        lda #16 + 288-256
+.55d9	85 06		sta $06		        sta X2
+.55db	a9 bc		lda #$bc	        lda #8 + 180
+.55dd	85 04		sta $04		        sta Y1
+.55df	a9 bc		lda #$bc	        lda #8 + 180
+.55e1	85 08		sta $08		        sta Y2
+.55e3	a9 00		lda #$00	        lda #$00
+.55e5	85 05		sta $05		        sta Y1+1
+.55e7	85 09		sta $09		        sta Y2+1
+.55e9	20 15 c0	jsr $c015	        jsr GFX_LINE
+.55ec	a9 00		lda #$00	        lda #$00
+.55ee	85 03		sta $03		        sta X1+1
+.55f0	a9 10		lda #$10	        lda #16
+.55f2	85 02		sta $02		        sta X1
+.55f4	a9 00		lda #$00	        lda #$00
+.55f6	85 07		sta $07		        sta X2+1
+.55f8	a9 10		lda #$10	        lda #16
+.55fa	85 06		sta $06		        sta X2
+.55fc	a9 08		lda #$08	        lda #8
+.55fe	85 04		sta $04		        sta Y1
+.5600	a9 bc		lda #$bc	        lda #8 + 180
+.5602	85 08		sta $08		        sta Y2
+.5604	a9 00		lda #$00	        lda #$00
+.5606	85 05		sta $05		        sta Y1+1
+.5608	85 09		sta $09		        sta Y2+1
+.560a	20 15 c0	jsr $c015	        jsr GFX_LINE
+.560d	a9 01		lda #$01	        lda #$01
+.560f	85 03		sta $03		        sta X1+1
+.5611	a9 30		lda #$30	        lda #16 + 288-256
+.5613	85 02		sta $02		        sta X1
+.5615	a9 01		lda #$01	        lda #$01
+.5617	85 07		sta $07		        sta X2+1
+.5619	a9 30		lda #$30	        lda #16 + 288-256
+.561b	85 06		sta $06		        sta X2
+.561d	a9 08		lda #$08	        lda #8
+.561f	85 04		sta $04		        sta Y1
+.5621	a9 bc		lda #$bc	        lda #8 + 180
+.5623	85 08		sta $08		        sta Y2
+.5625	a9 00		lda #$00	        lda #$00
+.5627	85 05		sta $05		        sta Y1+1
+.5629	85 09		sta $09		        sta Y2+1
+.562b	20 15 c0	jsr $c015	        jsr GFX_LINE
+.562e	a9 00		lda #$00	        lda #$00
+.5630	85 03		sta $03		        sta X1+1
+.5632	a9 15		lda #$15	        lda #16+5
+.5634	85 02		sta $02		        sta X1
+.5636	a9 01		lda #$01	        lda #$01
+.5638	85 07		sta $07		        sta X2+1
+.563a	a9 35		lda #$35	        lda #16+288+5-256
+.563c	85 06		sta $06		        sta X2
+.563e	a9 bd		lda #$bd	        lda #8+180+1
+.5640	85 04		sta $04		        sta Y1
+.5642	a9 bd		lda #$bd	        lda #8+180+1
+.5644	85 08		sta $08		        sta Y2
+.5646	a9 00		lda #$00	        lda #$00
+.5648	85 05		sta $05		        sta Y1+1
+.564a	85 09		sta $09		        sta Y2+1
+.564c	20 15 c0	jsr $c015	        jsr GFX_LINE
+.564f	a9 00		lda #$00	        lda #$00
+.5651	85 03		sta $03		        sta X1+1
+.5653	a9 15		lda #$15	        lda #16+5
+.5655	85 02		sta $02		        sta X1
+.5657	a9 01		lda #$01	        lda #$01
+.5659	85 07		sta $07		        sta X2+1
+.565b	a9 35		lda #$35	        lda #16+288+5-256
+.565d	85 06		sta $06		        sta X2
+.565f	a9 be		lda #$be	        lda #8+180+2
+.5661	85 04		sta $04		        sta Y1
+.5663	a9 be		lda #$be	        lda #8+180+2
+.5665	85 08		sta $08		        sta Y2
+.5667	a9 00		lda #$00	        lda #$00
+.5669	85 05		sta $05		        sta Y1+1
+.566b	85 09		sta $09		        sta Y2+1
+.566d	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5670	a9 00		lda #$00	        lda #$00
+.5672	85 03		sta $03		        sta X1+1
+.5674	a9 15		lda #$15	        lda #16+5
+.5676	85 02		sta $02		        sta X1
+.5678	a9 01		lda #$01	        lda #$01
+.567a	85 07		sta $07		        sta X2+1
+.567c	a9 35		lda #$35	        lda #16+288+5-256
+.567e	85 06		sta $06		        sta X2
+.5680	a9 bf		lda #$bf	        lda #8+180+3
+.5682	85 04		sta $04		        sta Y1
+.5684	a9 bf		lda #$bf	        lda #8+180+3
+.5686	85 08		sta $08		        sta Y2
+.5688	a9 00		lda #$00	        lda #$00
+.568a	85 05		sta $05		        sta Y1+1
+.568c	85 09		sta $09		        sta Y2+1
+.568e	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5691	a9 00		lda #$00	        lda #$00
+.5693	85 03		sta $03		        sta X1+1
+.5695	a9 15		lda #$15	        lda #16+5
+.5697	85 02		sta $02		        sta X1
+.5699	a9 01		lda #$01	        lda #$01
+.569b	85 07		sta $07		        sta X2+1
+.569d	a9 35		lda #$35	        lda #16+288+5-256
+.569f	85 06		sta $06		        sta X2
+.56a1	a9 c0		lda #$c0	        lda #8+180+4
+.56a3	85 04		sta $04		        sta Y1
+.56a5	a9 c0		lda #$c0	        lda #8+180+4
+.56a7	85 08		sta $08		        sta Y2
+.56a9	a9 00		lda #$00	        lda #$00
+.56ab	85 05		sta $05		        sta Y1+1
+.56ad	85 09		sta $09		        sta Y2+1
+.56af	20 15 c0	jsr $c015	        jsr GFX_LINE
+.56b2	a9 00		lda #$00	        lda #$00
+.56b4	85 03		sta $03		        sta X1+1
+.56b6	a9 15		lda #$15	        lda #16+5
+.56b8	85 02		sta $02		        sta X1
+.56ba	a9 01		lda #$01	        lda #$01
+.56bc	85 07		sta $07		        sta X2+1
+.56be	a9 35		lda #$35	        lda #16+288+5-256
+.56c0	85 06		sta $06		        sta X2
+.56c2	a9 c1		lda #$c1	        lda #8+180+5
+.56c4	85 04		sta $04		        sta Y1
+.56c6	a9 c1		lda #$c1	        lda #8+180+5
+.56c8	85 08		sta $08		        sta Y2
+.56ca	a9 00		lda #$00	        lda #$00
+.56cc	85 05		sta $05		        sta Y1+1
+.56ce	85 09		sta $09		        sta Y2+1
+.56d0	20 15 c0	jsr $c015	        jsr GFX_LINE
+.56d3	a9 01		lda #$01	        lda #$01
+.56d5	85 03		sta $03		        sta X1+1
+.56d7	a9 31		lda #$31	        lda #16+288+1-256
+.56d9	85 02		sta $02		        sta X1
+.56db	a9 01		lda #$01	        lda #$01
+.56dd	85 07		sta $07		        sta X2+1
+.56df	a9 31		lda #$31	        lda #16+288+1-256
+.56e1	85 06		sta $06		        sta X2
+.56e3	a9 0d		lda #$0d	        lda #8+5
+.56e5	85 04		sta $04		        sta Y1
+.56e7	a9 c1		lda #$c1	        lda #8+180+5
+.56e9	85 08		sta $08		        sta Y2
+.56eb	a9 00		lda #$00	        lda #$00
+.56ed	85 05		sta $05		        sta Y1+1
+.56ef	85 09		sta $09		        sta Y2+1
+.56f1	20 15 c0	jsr $c015	        jsr GFX_LINE
+.56f4	a9 01		lda #$01	        lda #$01
+.56f6	85 03		sta $03		        sta X1+1
+.56f8	a9 32		lda #$32	        lda #16+288+2-256
+.56fa	85 02		sta $02		        sta X1
+.56fc	a9 01		lda #$01	        lda #$01
+.56fe	85 07		sta $07		        sta X2+1
+.5700	a9 32		lda #$32	        lda #16+288+2-256
+.5702	85 06		sta $06		        sta X2
+.5704	a9 0d		lda #$0d	        lda #8+5
+.5706	85 04		sta $04		        sta Y1
+.5708	a9 c1		lda #$c1	        lda #8+180+5
+.570a	85 08		sta $08		        sta Y2
+.570c	a9 00		lda #$00	        lda #$00
+.570e	85 05		sta $05		        sta Y1+1
+.5710	85 09		sta $09		        sta Y2+1
+.5712	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5715	a9 01		lda #$01	        lda #$01
+.5717	85 03		sta $03		        sta X1+1
+.5719	a9 33		lda #$33	        lda #16+288+3-256
+.571b	85 02		sta $02		        sta X1
+.571d	a9 01		lda #$01	        lda #$01
+.571f	85 07		sta $07		        sta X2+1
+.5721	a9 33		lda #$33	        lda #16+288+3-256
+.5723	85 06		sta $06		        sta X2
+.5725	a9 0d		lda #$0d	        lda #8+5
+.5727	85 04		sta $04		        sta Y1
+.5729	a9 c1		lda #$c1	        lda #8+180+5
+.572b	85 08		sta $08		        sta Y2
+.572d	a9 00		lda #$00	        lda #$00
+.572f	85 05		sta $05		        sta Y1+1
+.5731	85 09		sta $09		        sta Y2+1
+.5733	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5736	a9 01		lda #$01	        lda #$01
+.5738	85 03		sta $03		        sta X1+1
+.573a	a9 34		lda #$34	        lda #16+288+4-256
+.573c	85 02		sta $02		        sta X1
+.573e	a9 01		lda #$01	        lda #$01
+.5740	85 07		sta $07		        sta X2+1
+.5742	a9 34		lda #$34	        lda #16+288+4-256
+.5744	85 06		sta $06		        sta X2
+.5746	a9 0d		lda #$0d	        lda #8+5
+.5748	85 04		sta $04		        sta Y1
+.574a	a9 c1		lda #$c1	        lda #8+180+5
+.574c	85 08		sta $08		        sta Y2
+.574e	a9 00		lda #$00	        lda #$00
+.5750	85 05		sta $05		        sta Y1+1
+.5752	85 09		sta $09		        sta Y2+1
+.5754	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5757	a9 01		lda #$01	        lda #$01
+.5759	85 03		sta $03		        sta X1+1
+.575b	a9 35		lda #$35	        lda #16+288+5-256
+.575d	85 02		sta $02		        sta X1
+.575f	a9 01		lda #$01	        lda #$01
+.5761	85 07		sta $07		        sta X2+1
+.5763	a9 35		lda #$35	        lda #16+288+5-256
+.5765	85 06		sta $06		        sta X2
+.5767	a9 0d		lda #$0d	        lda #8+5
+.5769	85 04		sta $04		        sta Y1
+.576b	a9 c1		lda #$c1	        lda #8+180+5
+.576d	85 08		sta $08		        sta Y2
+.576f	a9 00		lda #$00	        lda #$00
+.5771	85 05		sta $05		        sta Y1+1
+.5773	85 09		sta $09		        sta Y2+1
+.5775	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5778	a9 01		lda #$01	    LDA #$01
+.577a	20 0c c0	jsr $c00c	    JSR GFX_SETCOLOR
+.577d	a9 00		lda #$00	        lda #0
+.577f	85 05		sta $05		        sta Y1+1
+.5781	a9 18		lda #$18	    lda #24
+.5783	85 02		sta $02		    sta X1
+.5785	a9 00		lda #$00	    lda #$00
+.5787	85 03		sta $03		    sta X1+1
+.5789	c8		iny		    iny
+.578a	a9 0e		lda #$0e	    lda #14
+.578c	85 04		sta $04		    sta Y1
+.578e	a9 a5		lda #$a5	    lda #<title
+.5790	85 14		sta $14		    sta r9L
+.5792	a9 5b		lda #$5b	    lda #>title
+.5794	85 15		sta $15		    sta r9H
+.5796	20 1e c0	jsr $c01e	    jsr GPUTS
+.5799	a9 02		lda #$02	        lda #2
+.579b					clear_vdc:
+.579b	48		pha		        pha
+.579c	20 38 08	jsr $0838	        jsr VDCLR
+.579f	68		pla		        pla
+.57a0	18		clc		        clc
+.57a1	69 01		adc #$01	        adc #1
+.57a3	c9 18		cmp #$18	        cmp #24
+.57a5	d0 f4		bne $579b	        bne clear_vdc
+.57a7	a2 18		ldx #$18	        ldx #24
+.57a9	a9 00		lda #$00	        lda #0
+.57ab					frame_lengths:
+.57ab	9d 18 5d	sta $5d18,x	        sta vlength,x
+.57ae	ca		dex		        dex
+.57af	10 fa		bpl $57ab	        bpl frame_lengths
+.57b1	a9 ff		lda #$ff	        lda #$ff
+.57b3	8d 13 5d	sta $5d13	        sta labelview
+.57b6	a9 a5		lda #$a5	        lda #<title
+.57b8	85 14		sta $14		        sta r9L
+.57ba	a9 5b		lda #$5b	        lda #>title
+.57bc	85 15		sta $15		        sta r9H
+.57be	a9 02		lda #$02	        lda #2
+.57c0	a2 00		ldx #$00	        ldx #0
+.57c2	20 35 08	jsr $0835	        jsr VDTEXT
+.57c5	a9 b4		lda #$b4	        lda #<help
+.57c7	85 14		sta $14		        sta r9L
+.57c9	a9 5b		lda #$5b	        lda #>help
+.57cb	85 15		sta $15		        sta r9H
+.57cd	a9 17		lda #$17	        lda #23
+.57cf	a2 00		ldx #$00	        ldx #0
+.57d1	20 35 08	jsr $0835	        jsr VDTEXT
+.57d4	a9 00		lda #$00	        lda #0
+.57d6	8d 0c 5d	sta $5d0c	        sta row
+.57d9					toolbar:
+.57d9	ae 0c 5d	ldx $5d0c	        ldx row
+.57dc	bd e0 5c	lda $5ce0,x	        lda buttonL,x
+.57df	85 14		sta $14		        sta r9L
+.57e1	bd e8 5c	lda $5ce8,x	        lda buttonH,x
+.57e4	85 15		sta $15		        sta r9H
+.57e6	8a		txa		        txa
+.57e7	0a		asl a		        asl
+.57e8	0a		asl a		        asl
+.57e9	8d 0e 5d	sta $5d0e	        sta draw_x
+.57ec	a9 00		lda #$00	        lda #0
+.57ee	85 03		sta $03		        sta X1+1
+.57f0	ad 0e 5d	lda $5d0e	        lda draw_x
+.57f3	0a		asl a		        asl
+.57f4	0a		asl a		        asl
+.57f5	0a		asl a		        asl
+.57f6	26 03		rol $03		        rol X1+1
+.57f8	18		clc		        clc
+.57f9	6d 0e 5d	adc $5d0e	        adc draw_x
+.57fc	85 02		sta $02		        sta X1
+.57fe	a5 03		lda $03		        lda X1+1
+.5800	69 00		adc #$00	        adc #0
+.5802	85 03		sta $03		        sta X1+1
+.5804	18		clc		        clc
+.5805	a5 02		lda $02		        lda X1
+.5807	69 12		adc #$12	        adc #18
+.5809	85 02		sta $02		        sta X1
+.580b	90 02		bcc $580f	        bcc toolbar_y
+.580d	e6 03		inc $03		        inc X1+1
+.580f					toolbar_y:
+.580f	a9 b0		lda #$b0	        lda #176
+.5811	85 04		sta $04		        sta Y1
+.5813	a9 00		lda #$00	        lda #0
+.5815	85 05		sta $05		        sta Y1+1
+.5817	20 1e c0	jsr $c01e	        jsr GPUTS
+.581a	ee 0c 5d	inc $5d0c	        inc row
+.581d	ad 0c 5d	lda $5d0c	        lda row
+.5820	c9 08		cmp #$08	        cmp #8
+.5822	d0 b5		bne $57d9	        bne toolbar
+.5824	60		rts		        rts
+.5825					paint:
+.5825	ad 11 5d	lda $5d11	        lda dirty
+.5828	29 10		and #$10	        and #DIR_PATH
+.582a	f0 1e		beq $584a	        beq paint_list_test
+.582c	20 44 55	jsr $5544	        jsr path_source
+.582f	a2 4c		ldx #$4c	        ldx #76
+.5831	20 57 55	jsr $5557	        jsr text_chunk
+.5834	a9 03		lda #$03	        lda #3
+.5836	a2 00		ldx #$00	        ldx #0
+.5838	20 21 5a	jsr $5a21	        jsr vdc_line
+.583b	a9 00		lda #$00	        lda #0
+.583d	8d 93 5d	sta $5d93	        sta line+34
+.5840	a9 1a		lda #$1a	        lda #26
+.5842	20 7c 5a	jsr $5a7c	        jsr clear_field
+.5845	a9 1a		lda #$1a	        lda #26
+.5847	20 0f 5a	jsr $5a0f	        jsr vic_line
+.584a					paint_list_test:
+.584a	ad 11 5d	lda $5d11	        lda dirty
+.584d	29 01		and #$01	        and #DIR_LIST
+.584f	f0 06		beq $5857	        beq paint_select_test
+.5851	20 ab 58	jsr $58ab	        jsr paint_rows
+.5854	4c 70 58	jmp $5870	        jmp paint_detail_test
+.5857					paint_select_test:
+.5857	ad 11 5d	lda $5d11	        lda dirty
+.585a	29 02		and #$02	        and #DIR_SELECT
+.585c	f0 12		beq $5870	        beq paint_detail_test
+.585e	ad 12 5d	lda $5d12	        lda oldselected
+.5861	8d 0c 5d	sta $5d0c	        sta row
+.5864	20 1d 59	jsr $591d	        jsr paint_prefix
+.5867	ad 02 5d	lda $5d02	        lda selected
+.586a	8d 0c 5d	sta $5d0c	        sta row
+.586d	20 1d 59	jsr $591d	        jsr paint_prefix
+.5870					paint_detail_test:
+.5870	ad 11 5d	lda $5d11	        lda dirty
+.5873	29 04		and #$04	        and #DIR_DETAIL
+.5875	f0 03		beq $587a	        beq paint_status_test
+.5877	20 88 59	jsr $5988	        jsr paint_details
+.587a					paint_status_test:
+.587a	ad 11 5d	lda $5d11	        lda dirty
+.587d	29 08		and #$08	        and #DIR_STATUS
+.587f	f0 1e		beq $589f	        beq paint_done
+.5881	a2 00		ldx #$00	        ldx #0
+.5883					status_line:
+.5883	bd 4f 5d	lda $5d4f,x	        lda status,x
+.5886	9d 71 5d	sta $5d71,x	        sta line,x
+.5889	f0 03		beq $588e	        beq status_ready
+.588b	e8		inx		        inx
+.588c	d0 f5		bne $5883	        bne status_line
+.588e					status_ready:
+.588e	a9 a4		lda #$a4	        lda #164
+.5890	20 7c 5a	jsr $5a7c	        jsr clear_field
+.5893	a9 a4		lda #$a4	        lda #164
+.5895	20 0f 5a	jsr $5a0f	        jsr vic_line
+.5898	a9 16		lda #$16	        lda #22
+.589a	a2 00		ldx #$00	        ldx #0
+.589c	20 21 5a	jsr $5a21	        jsr vdc_line
+.589f					paint_done:
+.589f	ad 02 5d	lda $5d02	        lda selected
+.58a2	8d 12 5d	sta $5d12	        sta oldselected
+.58a5	a9 00		lda #$00	        lda #0
+.58a7	8d 11 5d	sta $5d11	        sta dirty
+.58aa	60		rts		        rts
+.58ab					paint_rows:
+.58ab	a9 00		lda #$00	        lda #0
+.58ad	8d 0c 5d	sta $5d0c	        sta row
+.58b0					paint_row:
+.58b0	ae 0c 5d	ldx $5d0c	        ldx row
+.58b3	bd 80 59	lda $5980,x	        lda row_y,x
+.58b6	8d 0d 5d	sta $5d0d	        sta draw_y
+.58b9	20 7c 5a	jsr $5a7c	        jsr clear_field
+.58bc	ae 0c 5d	ldx $5d0c	        ldx row
+.58bf	ec 03 5d	cpx $5d03	        cpx count
+.58c2	90 07		bcc $58cb	        bcc paint_name
+.58c4	a9 00		lda #$00	        lda #0
+.58c6	8d 71 5d	sta $5d71	        sta line
+.58c9	f0 13		beq $58de	        beq row_vdc
+.58cb					paint_name:
+.58cb	20 1f 55	jsr $551f	        jsr row_source
+.58ce	a2 4a		ldx #$4a	        ldx #74
+.58d0	20 57 55	jsr $5557	        jsr text_chunk
+.58d3	a5 64		lda $64		        lda remain
+.58d5	05 65		ora $65		        ora remain+1
+.58d7	f0 05		beq $58de	        beq row_vdc
+.58d9	a9 3e		lda #$3e	        lda #$3e
+.58db	8d ba 5d	sta $5dba	        sta line+73
+.58de					row_vdc:
+.58de	ad 0c 5d	lda $5d0c	        lda row
+.58e1	18		clc		        clc
+.58e2	69 04		adc #$04	        adc #4
+.58e4	a2 03		ldx #$03	        ldx #3
+.58e6	20 21 5a	jsr $5a21	        jsr vdc_line
+.58e9	ae 0c 5d	ldx $5d0c	        ldx row
+.58ec	ec 03 5d	cpx $5d03	        cpx count
+.58ef	b0 1e		bcs $590f	        bcs row_prefix
+.58f1	bd 44 5d	lda $5d44,x	        lda lengthsH,x
+.58f4	d0 07		bne $58fd	        bne row_vic_long
+.58f6	bd 3c 5d	lda $5d3c,x	        lda lengthsL,x
+.58f9	c9 20		cmp #$20	        cmp #32
+.58fb	90 05		bcc $5902	        bcc row_vic_fits
+.58fd					row_vic_long:
+.58fd	a9 3e		lda #$3e	        lda #$3e
+.58ff	8d 8f 5d	sta $5d8f	        sta line+30
+.5902					row_vic_fits:
+.5902	a9 00		lda #$00	        lda #0
+.5904	8d 90 5d	sta $5d90	        sta line+31
+.5907	ad 0d 5d	lda $5d0d	        lda draw_y
+.590a	a2 28		ldx #$28	        ldx #40
+.590c	20 11 5a	jsr $5a11	        jsr vic_at
+.590f					row_prefix:
+.590f	20 1d 59	jsr $591d	        jsr paint_prefix
+.5912	ee 0c 5d	inc $5d0c	        inc row
+.5915	ad 0c 5d	lda $5d0c	        lda row
+.5918	c9 08		cmp #$08	        cmp #ROWS
+.591a	d0 94		bne $58b0	        bne paint_row
+.591c	60		rts		        rts
+.591d					paint_prefix:
+.591d	ae 0c 5d	ldx $5d0c	        ldx row
+.5920	bd 80 59	lda $5980,x	        lda row_y,x
+.5923	8d 0d 5d	sta $5d0d	        sta draw_y
+.5926	a2 02		ldx #$02	        ldx #2
+.5928	a0 03		ldy #$03	        ldy #3
+.592a	20 80 5a	jsr $5a80	        jsr clear_text
+.592d	a9 20		lda #$20	        lda #$20
+.592f	8d 4c 5d	sta $5d4c	        sta prefix
+.5932	8d 4d 5d	sta $5d4d	        sta prefix+1
+.5935	ae 0c 5d	ldx $5d0c	        ldx row
+.5938	ec 03 5d	cpx $5d03	        cpx count
+.593b	b0 16		bcs $5953	        bcs prefix_draw
+.593d	ec 02 5d	cpx $5d02	        cpx selected
+.5940	d0 05		bne $5947	        bne prefix_kind
+.5942	a9 3e		lda #$3e	        lda #$3e
+.5944	8d 4c 5d	sta $5d4c	        sta prefix
+.5947					prefix_kind:
+.5947	bd 34 5d	lda $5d34,x	        lda attrs,x
+.594a	29 10		and #$10	        and #$10
+.594c	f0 05		beq $5953	        beq prefix_draw
+.594e	a9 2f		lda #$2f	        lda #$2f
+.5950	8d 4d 5d	sta $5d4d	        sta prefix+1
+.5953					prefix_draw:
+.5953	a9 4c		lda #$4c	        lda #<prefix
+.5955	85 14		sta $14		        sta r9L
+.5957	a9 5d		lda #$5d	        lda #>prefix
+.5959	85 15		sta $15		        sta r9H
+.595b	a9 18		lda #$18	        lda #24
+.595d	85 02		sta $02		        sta X1
+.595f	a9 00		lda #$00	        lda #0
+.5961	85 03		sta $03		        sta X1+1
+.5963	85 05		sta $05		        sta Y1+1
+.5965	ad 0d 5d	lda $5d0d	        lda draw_y
+.5968	85 04		sta $04		        sta Y1
+.596a	20 1e c0	jsr $c01e	        jsr GPUTS
+.596d	a9 4c		lda #$4c	        lda #<prefix
+.596f	85 14		sta $14		        sta r9L
+.5971	a9 5d		lda #$5d	        lda #>prefix
+.5973	85 15		sta $15		        sta r9H
+.5975	ad 0c 5d	lda $5d0c	        lda row
+.5978	18		clc		        clc
+.5979	69 04		adc #$04	        adc #4
+.597b	a2 00		ldx #$00	        ldx #0
+.597d	4c 35 08	jmp $0835	        jmp VDTEXT
+>5980	28 34 40 4c 58 64 70 7c		row_y: .byte 40,52,64,76,88,100,112,124
+.5988					paint_details:
+.5988	ad 09 5d	lda $5d09	        lda viewpath
+.598b	cd 13 5d	cmp $5d13	        cmp labelview
+.598e	f0 1b		beq $59ab	        beq detail_body
+.5990	8d 13 5d	sta $5d13	        sta labelview
+.5993	a9 0a		lda #$0a	        lda #<name_label
+.5995	a2 5c		ldx #$5c	        ldx #>name_label
+.5997	ac 09 5d	ldy $5d09	        ldy viewpath
+.599a	f0 04		beq $59a0	        beq detail_label
+.599c	a9 25		lda #$25	        lda #<path_label
+.599e	a2 5c		ldx #$5c	        ldx #>path_label
+.59a0					detail_label:
+.59a0	85 14		sta $14		        sta r9L
+.59a2	86 15		stx $15		        stx r9H
+.59a4	a9 0d		lda #$0d	        lda #13
+.59a6	a2 00		ldx #$00	        ldx #0
+.59a8	20 35 08	jsr $0835	        jsr VDTEXT
+.59ab					detail_body:
+.59ab	20 35 55	jsr $5535	        jsr detail_source
+.59ae	18		clc		        clc
+.59af	a5 60		lda $60		        lda sptr
+.59b1	6d fe 5c	adc $5cfe	        adc nameoff
+.59b4	85 60		sta $60		        sta sptr
+.59b6	a5 61		lda $61		        lda sptr+1
+.59b8	6d ff 5c	adc $5cff	        adc nameoff+1
+.59bb	85 61		sta $61		        sta sptr+1
+.59bd	38		sec		        sec
+.59be	a5 64		lda $64		        lda remain
+.59c0	ed fe 5c	sbc $5cfe	        sbc nameoff
+.59c3	85 64		sta $64		        sta remain
+.59c5	a5 65		lda $65		        lda remain+1
+.59c7	ed ff 5c	sbc $5cff	        sbc nameoff+1
+.59ca	85 65		sta $65		        sta remain+1
+.59cc	a9 00		lda #$00	        lda #0
+.59ce	8d 0c 5d	sta $5d0c	        sta row
+.59d1					details_loop:
+.59d1	a2 22		ldx #$22	        ldx #34
+.59d3	20 57 55	jsr $5557	        jsr text_chunk
+.59d6	ad 0c 5d	lda $5d0c	        lda row
+.59d9	c9 03		cmp #$03	        cmp #3
+.59db	b0 10		bcs $59ed	        bcs details_vdc
+.59dd	aa		tax		        tax
+.59de	bd 03 5a	lda $5a03,x	        lda detail_y,x
+.59e1	8d 0d 5d	sta $5d0d	        sta draw_y
+.59e4	20 7c 5a	jsr $5a7c	        jsr clear_field
+.59e7	ad 0d 5d	lda $5d0d	        lda draw_y
+.59ea	20 0f 5a	jsr $5a0f	        jsr vic_line
+.59ed					details_vdc:
+.59ed	ad 0c 5d	lda $5d0c	        lda row
+.59f0	18		clc		        clc
+.59f1	69 0e		adc #$0e	        adc #14
+.59f3	a2 00		ldx #$00	        ldx #0
+.59f5	20 21 5a	jsr $5a21	        jsr vdc_line
+.59f8	ee 0c 5d	inc $5d0c	        inc row
+.59fb	ad 0c 5d	lda $5d0c	        lda row
+.59fe	c9 07		cmp #$07	        cmp #7
+.5a00	d0 cf		bne $59d1	        bne details_loop
+.5a02	60		rts		        rts
+>5a03	86 90 9a			detail_y: .byte 134,144,154
+.5a06					line_pointer:
+.5a06	a9 71		lda #$71	        lda #<line
+.5a08	85 14		sta $14		        sta r9L
+.5a0a	a9 5d		lda #$5d	        lda #>line
+.5a0c	85 15		sta $15		        sta r9H
+.5a0e	60		rts		        rts
+.5a0f					vic_line:
+.5a0f	a2 18		ldx #$18	        ldx #24
+.5a11					vic_at:
+.5a11	85 04		sta $04		        sta Y1
+.5a13	86 02		stx $02		        stx X1
+.5a15	a9 00		lda #$00	        lda #0
+.5a17	85 03		sta $03		        sta X1+1
+.5a19	85 05		sta $05		        sta Y1+1
+.5a1b	20 06 5a	jsr $5a06	        jsr line_pointer
+.5a1e	4c 1e c0	jmp $c01e	        jmp GPUTS
+.5a21					vdc_line:
+.5a21	8d 14 5d	sta $5d14	        sta vrow
+.5a24	8e 15 5d	stx $5d15	        stx vcol
+.5a27	a0 00		ldy #$00	        ldy #0
+.5a29					vlength_scan:
+.5a29	b9 71 5d	lda $5d71,y	        lda line,y
+.5a2c	f0 03		beq $5a31	        beq vlength_found
+.5a2e	c8		iny		        iny
+.5a2f	d0 f8		bne $5a29	        bne vlength_scan
+.5a31					vlength_found:
+.5a31	8c 16 5d	sty $5d16	        sty newlength
+.5a34	ae 14 5d	ldx $5d14	        ldx vrow
+.5a37	bd 18 5d	lda $5d18,x	        lda vlength,x
+.5a3a	8d 17 5d	sta $5d17	        sta padlength
+.5a3d	98		tya		        tya
+.5a3e	9d 18 5d	sta $5d18,x	        sta vlength,x
+.5a41	cd 17 5d	cmp $5d17	        cmp padlength
+.5a44	b0 12		bcs $5a58	        bcs vline_ready
+.5a46	a9 20		lda #$20	        lda #$20
+.5a48					vline_pad:
+.5a48	cc 17 5d	cpy $5d17	        cpy padlength
+.5a4b	f0 06		beq $5a53	        beq vline_end
+.5a4d	99 71 5d	sta $5d71,y	        sta line,y
+.5a50	c8		iny		        iny
+.5a51	d0 f5		bne $5a48	        bne vline_pad
+.5a53					vline_end:
+.5a53	a9 00		lda #$00	        lda #0
+.5a55	99 71 5d	sta $5d71,y	        sta line,y
+.5a58					vline_ready:
+.5a58	ad 71 5d	lda $5d71	        lda line
+.5a5b	f0 0c		beq $5a69	        beq vline_return
+.5a5d	20 06 5a	jsr $5a06	        jsr line_pointer
+.5a60	ad 14 5d	lda $5d14	        lda vrow
+.5a63	ae 15 5d	ldx $5d15	        ldx vcol
+.5a66	20 35 08	jsr $0835	        jsr VDTEXT
+.5a69					vline_return:
+.5a69	ae 16 5d	ldx $5d16	        ldx newlength
+.5a6c	a9 00		lda #$00	        lda #0
+.5a6e	9d 71 5d	sta $5d71,x	        sta line,x
+.5a71	60		rts		        rts
+.5a72					clear_strip:
+.5a72	8d 31 5d	sta $5d31	        sta clear_y
+.5a75	a9 08		lda #$08	        lda #8
+.5a77	8d 33 5d	sta $5d33	        sta clear_h
+.5a7a	d0 0f		bne $5a8b	        bne clear_begin
+.5a7c					clear_field:
+.5a7c	a2 22		ldx #$22	        ldx #34
+.5a7e	a0 03		ldy #$03	        ldy #3
+.5a80					clear_text:
+.5a80	38		sec		        sec
+.5a81	e9 01		sbc #$01	        sbc #1
+.5a83	8d 31 5d	sta $5d31	        sta clear_y
+.5a86	a9 0a		lda #$0a	        lda #10
+.5a88	8d 33 5d	sta $5d33	        sta clear_h
+.5a8b					clear_begin:
+.5a8b	8e 32 5d	stx $5d32	        stx clear_cols
+.5a8e	98		tya		        tya
+.5a8f	0a		asl a		        asl
+.5a90	0a		asl a		        asl
+.5a91	0a		asl a		        asl
+.5a92	85 06		sta $06		        sta r2L
+.5a94	ad 31 5d	lda $5d31	        lda clear_y
+.5a97	4a		lsr a		        lsr
+.5a98	4a		lsr a		        lsr
+.5a99	4a		lsr a		        lsr
+.5a9a	85 03		sta $03		        sta r0H
+.5a9c	a9 00		lda #$00	        lda #0
+.5a9e	85 02		sta $02		        sta r0L
+.5aa0	a5 03		lda $03		        lda r0H
+.5aa2	4a		lsr a		        lsr
+.5aa3	66 02		ror $02		        ror r0L
+.5aa5	4a		lsr a		        lsr
+.5aa6	66 02		ror $02		        ror r0L
+.5aa8	18		clc		        clc
+.5aa9	65 03		adc $03		        adc r0H
+.5aab	69 a0		adc #$a0	        adc #$a0
+.5aad	85 03		sta $03		        sta r0H
+.5aaf	ad 31 5d	lda $5d31	        lda clear_y
+.5ab2	29 07		and #$07	        and #7
+.5ab4	18		clc		        clc
+.5ab5	65 06		adc $06		        adc r2L
+.5ab7	65 02		adc $02		        adc r0L
+.5ab9	85 02		sta $02		        sta r0L
+.5abb	90 02		bcc $5abf	        bcc clear_row
+.5abd	e6 03		inc $03		        inc r0H
+.5abf					clear_row:
+.5abf	a5 02		lda $02		        lda r0L
+.5ac1	85 04		sta $04		        sta r1L
+.5ac3	a5 03		lda $03		        lda r0H
+.5ac5	85 05		sta $05		        sta r1H
+.5ac7	ae 32 5d	ldx $5d32	        ldx clear_cols
+.5aca	a0 00		ldy #$00	        ldy #0
+.5acc					clear_column:
 .5acc	a9 00		lda #$00	        lda #0
-.5ace	85 03		sta $03		        sta X1+1
-.5ad0	ad 16 5e	lda $5e16	        lda draw_y
-.5ad3	85 04		sta $04		        sta Y1
-.5ad5	20 1e c0	jsr $c01e	        jsr GPUTS
-.5ad8	a9 32		lda #$32	        lda #<prefix
-.5ada	85 14		sta $14		        sta r9L
-.5adc	a9 5e		lda #$5e	        lda #>prefix
-.5ade	85 15		sta $15		        sta r9H
-.5ae0	ad 15 5e	lda $5e15	        lda row
-.5ae3	18		clc		        clc
-.5ae4	69 04		adc #$04	        adc #4
-.5ae6	a2 00		ldx #$00	        ldx #0
-.5ae8	20 35 08	jsr $0835	        jsr VDTEXT
-.5aeb	ee 15 5e	inc $5e15	        inc row
-.5aee	4c 2b 5a	jmp $5a2b	        jmp paint_rows
-.5af1					paint_details:
-.5af1	a9 14		lda #$14	        lda #<name_label
-.5af3	a2 5d		ldx #$5d	        ldx #>name_label
-.5af5	ac 12 5e	ldy $5e12	        ldy viewpath
-.5af8	f0 04		beq $5afe	        beq detail_label
-.5afa	a9 2f		lda #$2f	        lda #<path_label
-.5afc	a2 5d		ldx #$5d	        ldx #>path_label
-.5afe					detail_label:
-.5afe	85 14		sta $14		        sta r9L
-.5b00	86 15		stx $15		        stx r9H
-.5b02	a9 0d		lda #$0d	        lda #13
-.5b04	a2 00		ldx #$00	        ldx #0
-.5b06	20 35 08	jsr $0835	        jsr VDTEXT
-.5b09	20 0b 55	jsr $550b	        jsr detail_source
-.5b0c	18		clc		        clc
-.5b0d	a5 60		lda $60		        lda sptr
-.5b0f	6d 07 5e	adc $5e07	        adc nameoff
-.5b12	85 60		sta $60		        sta sptr
-.5b14	a5 61		lda $61		        lda sptr+1
-.5b16	6d 08 5e	adc $5e08	        adc nameoff+1
-.5b19	85 61		sta $61		        sta sptr+1
+.5ace	91 04		sta ($04),y	        sta (r1),y
+.5ad0	18		clc		        clc
+.5ad1	a5 04		lda $04		        lda r1L
+.5ad3	69 08		adc #$08	        adc #8
+.5ad5	85 04		sta $04		        sta r1L
+.5ad7	90 02		bcc $5adb	        bcc clear_next_col
+.5ad9	e6 05		inc $05		        inc r1H
+.5adb					clear_next_col:
+.5adb	ca		dex		        dex
+.5adc	d0 ee		bne $5acc	        bne clear_column
+.5ade	e6 02		inc $02		        inc r0L
+.5ae0	d0 02		bne $5ae4	        bne clear_next_y
+.5ae2	e6 03		inc $03		        inc r0H
+.5ae4					clear_next_y:
+.5ae4	ee 31 5d	inc $5d31	        inc clear_y
+.5ae7	ad 31 5d	lda $5d31	        lda clear_y
+.5aea	29 07		and #$07	        and #7
+.5aec	d0 0d		bne $5afb	        bne clear_next_row
+.5aee	18		clc		        clc
+.5aef	a5 02		lda $02		        lda r0L
+.5af1	69 38		adc #$38	        adc #<$138
+.5af3	85 02		sta $02		        sta r0L
+.5af5	a5 03		lda $03		        lda r0H
+.5af7	69 01		adc #$01	        adc #>$138
+.5af9	85 03		sta $03		        sta r0H
+.5afb					clear_next_row:
+.5afb	ce 33 5d	dec $5d33	        dec clear_h
+.5afe	d0 bf		bne $5abf	        bne clear_row
+.5b00	60		rts		        rts
+.5b01					mouse_action:
+.5b01	08		php		        php
+.5b02	78		sei		        sei
+.5b03	ad 10 d0	lda $d010	        lda $d010
+.5b06	29 01		and #$01	        and #1
+.5b08	85 69		sta $69		        sta mx+1
+.5b0a	38		sec		        sec
+.5b0b	ad 00 d0	lda $d000	        lda $d000
+.5b0e	e9 18		sbc #$18	        sbc #24
+.5b10	85 68		sta $68		        sta mx
+.5b12	a5 69		lda $69		        lda mx+1
+.5b14	e9 00		sbc #$00	        sbc #0
+.5b16	85 69		sta $69		        sta mx+1
+.5b18	ad 01 d0	lda $d001	        lda $d001
 .5b1b	38		sec		        sec
-.5b1c	a5 64		lda $64		        lda remain
-.5b1e	ed 07 5e	sbc $5e07	        sbc nameoff
-.5b21	85 64		sta $64		        sta remain
-.5b23	a5 65		lda $65		        lda remain+1
-.5b25	ed 08 5e	sbc $5e08	        sbc nameoff+1
-.5b28	85 65		sta $65		        sta remain+1
-.5b2a	a9 00		lda #$00	        lda #0
-.5b2c	8d 15 5e	sta $5e15	        sta row
-.5b2f					details_loop:
-.5b2f	a2 22		ldx #$22	        ldx #34
-.5b31	20 2d 55	jsr $552d	        jsr text_chunk
-.5b34	ad 15 5e	lda $5e15	        lda row
-.5b37	c9 03		cmp #$03	        cmp #3
-.5b39	b0 0f		bcs $5b4a	        bcs details_vdc
-.5b3b	0a		asl a		        asl
-.5b3c	8d 16 5e	sta $5e16	        sta draw_y
-.5b3f	0a		asl a		        asl
-.5b40	0a		asl a		        asl
-.5b41	18		clc		        clc
-.5b42	6d 16 5e	adc $5e16	        adc draw_y
-.5b45	69 86		adc #$86	        adc #134
-.5b47	20 f3 5b	jsr $5bf3	        jsr vic_line
-.5b4a					details_vdc:
-.5b4a	ad 15 5e	lda $5e15	        lda row
-.5b4d	18		clc		        clc
-.5b4e	69 0e		adc #$0e	        adc #14
-.5b50	a2 00		ldx #$00	        ldx #0
-.5b52	20 03 5c	jsr $5c03	        jsr vdc_line
-.5b55	ee 15 5e	inc $5e15	        inc row
-.5b58	ad 15 5e	lda $5e15	        lda row
-.5b5b	c9 07		cmp #$07	        cmp #7
-.5b5d	d0 d0		bne $5b2f	        bne details_loop
-.5b5f	a9 35		lda #$35	        lda #<status
-.5b61	85 14		sta $14		        sta r9L
-.5b63	a9 5e		lda #$5e	        lda #>status
-.5b65	85 15		sta $15		        sta r9H
-.5b67	a9 18		lda #$18	    lda #24
-.5b69	85 02		sta $02		    sta X1
-.5b6b	a9 00		lda #$00	    lda #$00
-.5b6d	85 03		sta $03		    sta X1+1
-.5b6f	c8		iny		    iny
-.5b70	a9 a4		lda #$a4	    lda #164
-.5b72	85 04		sta $04		    sta Y1
-.5b74	a9 35		lda #$35	    lda #<status
-.5b76	85 14		sta $14		    sta r9L
-.5b78	a9 5e		lda #$5e	    lda #>status
-.5b7a	85 15		sta $15		    sta r9H
-.5b7c	20 1e c0	jsr $c01e	    jsr GPUTS
-.5b7f	a9 35		lda #$35	        lda #<status
-.5b81	85 14		sta $14		        sta r9L
-.5b83	a9 5e		lda #$5e	        lda #>status
-.5b85	85 15		sta $15		        sta r9H
-.5b87	a9 16		lda #$16	        lda #22
-.5b89	a2 00		ldx #$00	        ldx #0
-.5b8b	20 35 08	jsr $0835	        jsr VDTEXT
-.5b8e	a9 be		lda #$be	        lda #<help
-.5b90	85 14		sta $14		        sta r9L
-.5b92	a9 5c		lda #$5c	        lda #>help
-.5b94	85 15		sta $15		        sta r9H
-.5b96	a9 17		lda #$17	        lda #23
-.5b98	a2 00		ldx #$00	        ldx #0
-.5b9a	20 35 08	jsr $0835	        jsr VDTEXT
-.5b9d	a9 00		lda #$00	        lda #0
-.5b9f	8d 15 5e	sta $5e15	        sta row
-.5ba2					toolbar:
-.5ba2	ae 15 5e	ldx $5e15	        ldx row
-.5ba5	bd e9 5d	lda $5de9,x	        lda buttonL,x
-.5ba8	85 14		sta $14		        sta r9L
-.5baa	bd f1 5d	lda $5df1,x	        lda buttonH,x
-.5bad	85 15		sta $15		        sta r9H
-.5baf	8a		txa		        txa
-.5bb0	0a		asl a		        asl
-.5bb1	0a		asl a		        asl
-.5bb2	8d 17 5e	sta $5e17	        sta draw_x
-.5bb5	a9 00		lda #$00	        lda #0
-.5bb7	85 03		sta $03		        sta X1+1
-.5bb9	ad 17 5e	lda $5e17	        lda draw_x
-.5bbc	0a		asl a		        asl
-.5bbd	0a		asl a		        asl
-.5bbe	0a		asl a		        asl
-.5bbf	26 03		rol $03		        rol X1+1
-.5bc1	18		clc		        clc
-.5bc2	6d 17 5e	adc $5e17	        adc draw_x
-.5bc5	85 02		sta $02		        sta X1
-.5bc7	a5 03		lda $03		        lda X1+1
-.5bc9	69 00		adc #$00	        adc #0
-.5bcb	85 03		sta $03		        sta X1+1
-.5bcd	18		clc		        clc
-.5bce	a5 02		lda $02		        lda X1
-.5bd0	69 12		adc #$12	        adc #18
-.5bd2	85 02		sta $02		        sta X1
-.5bd4	90 02		bcc $5bd8	        bcc toolbar_y
-.5bd6	e6 03		inc $03		        inc X1+1
-.5bd8					toolbar_y:
-.5bd8	a9 b0		lda #$b0	        lda #176
-.5bda	85 04		sta $04		        sta Y1
-.5bdc	20 1e c0	jsr $c01e	        jsr GPUTS
-.5bdf	ee 15 5e	inc $5e15	        inc row
-.5be2	ad 15 5e	lda $5e15	        lda row
-.5be5	c9 08		cmp #$08	        cmp #8
-.5be7	d0 b9		bne $5ba2	        bne toolbar
-.5be9	60		rts		        rts
-.5bea					line_pointer:
-.5bea	a9 57		lda #$57	        lda #<line
-.5bec	85 14		sta $14		        sta r9L
-.5bee	a9 5e		lda #$5e	        lda #>line
-.5bf0	85 15		sta $15		        sta r9H
-.5bf2	60		rts		        rts
-.5bf3					vic_line:
-.5bf3	85 04		sta $04		        sta Y1
-.5bf5	a9 18		lda #$18	        lda #24
-.5bf7	85 02		sta $02		        sta X1
-.5bf9	a9 00		lda #$00	        lda #0
-.5bfb	85 03		sta $03		        sta X1+1
-.5bfd	20 ea 5b	jsr $5bea	        jsr line_pointer
-.5c00	4c 1e c0	jmp $c01e	        jmp GPUTS
-.5c03					vdc_line:
-.5c03	48		pha		        pha
-.5c04	20 ea 5b	jsr $5bea	        jsr line_pointer
-.5c07	68		pla		        pla
-.5c08	4c 35 08	jmp $0835	        jmp VDTEXT
-.5c0b					mouse_action:
-.5c0b	08		php		        php
-.5c0c	78		sei		        sei
-.5c0d	ad 10 d0	lda $d010	        lda $d010
-.5c10	29 01		and #$01	        and #1
-.5c12	85 69		sta $69		        sta mx+1
-.5c14	38		sec		        sec
-.5c15	ad 00 d0	lda $d000	        lda $d000
-.5c18	e9 18		sbc #$18	        sbc #24
-.5c1a	85 68		sta $68		        sta mx
-.5c1c	a5 69		lda $69		        lda mx+1
-.5c1e	e9 00		sbc #$00	        sbc #0
-.5c20	85 69		sta $69		        sta mx+1
-.5c22	ad 01 d0	lda $d001	        lda $d001
-.5c25	38		sec		        sec
-.5c26	e9 32		sbc #$32	        sbc #50
-.5c28	85 6a		sta $6a		        sta my
-.5c2a	28		plp		        plp
-.5c2b	a5 69		lda $69		        lda mx+1
-.5c2d	f0 0c		beq $5c3b	        beq mouse_left
-.5c2f	c9 01		cmp #$01	        cmp #1
-.5c31	d0 79		bne $5cac	        bne mouse_none
-.5c33	a5 68		lda $68		        lda mx
-.5c35	c9 30		cmp #$30	        cmp #48
-.5c37	b0 73		bcs $5cac	        bcs mouse_none
-.5c39	90 06		bcc $5c41	        bcc mouse_y
-.5c3b					mouse_left:
-.5c3b	a5 68		lda $68		        lda mx
-.5c3d	c9 10		cmp #$10	        cmp #16
-.5c3f	90 6b		bcc $5cac	        bcc mouse_none
-.5c41					mouse_y:
-.5c41	a5 6a		lda $6a		        lda my
-.5c43	c9 1a		cmp #$1a	        cmp #26
-.5c45	90 65		bcc $5cac	        bcc mouse_none
-.5c47	c9 23		cmp #$23	        cmp #35
-.5c49	90 3d		bcc $5c88	        bcc mouse_path
-.5c4b	c9 28		cmp #$28	        cmp #40
-.5c4d	90 5d		bcc $5cac	        bcc mouse_none
-.5c4f	c9 88		cmp #$88	        cmp #136
-.5c51	90 38		bcc $5c8b	        bcc mouse_row
-.5c53	c9 ae		cmp #$ae	        cmp #174
-.5c55	90 55		bcc $5cac	        bcc mouse_none
-.5c57	c9 ba		cmp #$ba	        cmp #186
-.5c59	b0 51		bcs $5cac	        bcs mouse_none
-.5c5b	38		sec		        sec
-.5c5c	a5 68		lda $68		        lda mx
-.5c5e	e9 10		sbc #$10	        sbc #16
-.5c60	85 68		sta $68		        sta mx
-.5c62	a5 69		lda $69		        lda mx+1
-.5c64	e9 00		sbc #$00	        sbc #0
-.5c66	85 69		sta $69		        sta mx+1
-.5c68	a2 00		ldx #$00	        ldx #0
-.5c6a					mouse_button:
-.5c6a	a5 69		lda $69		        lda mx+1
-.5c6c	d0 06		bne $5c74	        bne mouse_sub
-.5c6e	a5 68		lda $68		        lda mx
-.5c70	c9 24		cmp #$24	        cmp #36
-.5c72	90 10		bcc $5c84	        bcc mouse_key
-.5c74					mouse_sub:
-.5c74	38		sec		        sec
-.5c75	a5 68		lda $68		        lda mx
-.5c77	e9 24		sbc #$24	        sbc #36
-.5c79	85 68		sta $68		        sta mx
-.5c7b	a5 69		lda $69		        lda mx+1
-.5c7d	e9 00		sbc #$00	        sbc #0
-.5c7f	85 69		sta $69		        sta mx+1
-.5c81	e8		inx		        inx
-.5c82	d0 e6		bne $5c6a	        bne mouse_button
-.5c84					mouse_key:
-.5c84	bd f9 5d	lda $5df9,x	        lda buttonkeys,x
-.5c87	60		rts		        rts
-.5c88					mouse_path:
-.5c88	a9 50		lda #$50	        lda #$50
-.5c8a	60		rts		        rts
-.5c8b					mouse_row:
-.5c8b	38		sec		        sec
-.5c8c	e9 28		sbc #$28	        sbc #40
-.5c8e	a2 00		ldx #$00	        ldx #0
-.5c90					mouse_row_div:
-.5c90	c9 0c		cmp #$0c	        cmp #12
-.5c92	90 05		bcc $5c99	        bcc mouse_select
-.5c94	e9 0c		sbc #$0c	        sbc #12
-.5c96	e8		inx		        inx
-.5c97	d0 f7		bne $5c90	        bne mouse_row_div
-.5c99					mouse_select:
-.5c99	ec 0c 5e	cpx $5e0c	        cpx count
-.5c9c	b0 0e		bcs $5cac	        bcs mouse_none
-.5c9e	a9 00		lda #$00	        lda #0
-.5ca0	8d 10 5e	sta $5e10	        sta ready
-.5ca3	8e 0b 5e	stx $5e0b	        stx selected
-.5ca6	20 4a 51	jsr $514a	        jsr reset_view
-.5ca9	20 74 55	jsr $5574	        jsr paint
-.5cac					mouse_none:
-.5cac	a9 00		lda #$00	        lda #0
-.5cae	60		rts		        rts
->5caf	d5 4c 54 49 4d 41 54 45		title: .text "Ultimate files",0
->5cb7	20 46 49 4c 45 53 00
->5cbe	55 50 2f 44 4e 20 53 45		help: .text "up/dn select  enter open  U parent  / root  N/B page  R retry  P path  ESC exit",0
->5cc6	4c 45 43 54 20 20 45 4e 54 45 52 20 4f 50 45 4e
->5cd6	20 20 d5 20 50 41 52 45 4e 54 20 20 2f 20 52 4f
->5ce6	4f 54 20 20 ce 2f c2 20 50 41 47 45 20 20 d2 20
->5cf6	52 45 54 52 59 20 20 d0 20 50 41 54 48 20 20 c5
->5d06	d3 c3 20 45 58 49 54 00
->5d0e	49 54 45 4d 53 20		items_text: .text "items "
->5d14	53 45 4c 45 43 54 45 44		name_label: .text "selected name (< > scroll)",0
->5d1c	20 4e 41 4d 45 20 28 3c 20 3e 20 53 43 52 4f 4c
->5d2c	4c 29 00
->5d2f	43 55 52 52 45 4e 54 20		path_label: .text "current path (< > scroll)",0
->5d37	50 41 54 48 20 28 3c 20 3e 20 53 43 52 4f 4c 4c
->5d47	29 00
->5d49	45 4d 50 54 59 20 44 49		empty_text: .text "empty directory; U=parent / root",0
->5d51	52 45 43 54 4f 52 59 3b 20 d5 3d 50 41 52 45 4e
->5d61	54 20 2f 20 52 4f 4f 54 00
->5d6a	d5 4c 54 49 4d 41 54 45		transport_error: .text "Ultimate unavailable; R=retry",0
->5d72	20 55 4e 41 56 41 49 4c 41 42 4c 45 3b 20 d2 3d
->5d82	52 45 54 52 59 00
->5d88	49 4e 56 41 4c 49 44 20		invalid_text: .text "invalid or clipped reply; R=retry",0
->5d90	4f 52 20 43 4c 49 50 50 45 44 20 52 45 50 4c 59
->5da0	3b 20 d2 3d 52 45 54 52 59 00
->5daa	43 41 4e 43 45 4c 4c 45		cancel_text: .text "cancelled; R=retry ESC=desktop",0
->5db2	44 3b 20 d2 3d 52 45 54 52 59 20 c5 d3 c3 3d 44
->5dc2	45 53 4b 54 4f 50 00
->5dc9	3c 00				btn_left: .text "<",0
->5dcb	3e 00				btn_right: .text ">",0
->5dcd	4f 50 45 4e 00			btn_open: .text "open",0
->5dd2	55 50 00			btn_up: .text "up",0
->5dd5	52 4f 4f 54 00			btn_root: .text "root",0
->5dda	50 52 45 56 00			btn_prev: .text "prev",0
->5ddf	4e 45 58 54 00			btn_next: .text "next",0
->5de4	45 58 49 54 00			btn_exit: .text "exit",0
->5de9	c9 cb cd d2 d5 da df e4		buttonL: .byte <btn_left,<btn_right,<btn_open,<btn_up,<btn_root,<btn_prev,<btn_next,<btn_exit
->5df1	5d 5d 5d 5d 5d 5d 5d 5d		buttonH: .byte >btn_left,>btn_right,>btn_open,>btn_up,>btn_root,>btn_prev,>btn_next,>btn_exit
->5df9	9d 1d 0d 55 2f 42 4e 1b		buttonkeys: .byte $9d,$1d,$0d,$55,$2f,$42,$4e,$1b
->5e01	00 00				base: .word 0
->5e03	00 00				seen: .word 0
->5e05	00 00				pathlen: .word 0
->5e07	00 00				nameoff: .word 0
->5e09	00 00				commandlen: .word 0
->5e0b	00				selected: .byte 0
->5e0c	00				count: .byte 0
->5e0d	00				more: .byte 0
->5e0e	00				scanerror: .byte 0
->5e0f	00				sysdev: .byte 0
->5e10	00				ready: .byte 0
->5e11	00				held: .byte 0
->5e12	00				viewpath: .byte 0
->5e13	00				key: .byte 0
->5e14	00				width: .byte 0
->5e15	00				row: .byte 0
->5e16	00				draw_y: .byte 0
->5e17	00				draw_x: .byte 0
->5e18	00				statuspos: .byte 0
->5e19	00				started: .byte 0
->5e1a	00 00 00 00 00 00 00 00		attrs: .fill ROWS,0
->5e22	00 00 00 00 00 00 00 00		lengthsL: .fill ROWS,0
->5e2a	00 00 00 00 00 00 00 00		lengthsH: .fill ROWS,0
->5e32	00 00 00			prefix: .byte 0,0,0
->5e35	00 00 00 00 00 00 00 00		status: .fill 34,0
->5e3d	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->5e4d	00 00 00 00 00 00 00 00 00 00
->5e57	00 00 00 00 00 00 00 00		line: .fill 77,0
->5e5f	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+.5b1c	e9 32		sbc #$32	        sbc #50
+.5b1e	85 6a		sta $6a		        sta my
+.5b20	28		plp		        plp
+.5b21	a5 69		lda $69		        lda mx+1
+.5b23	f0 0c		beq $5b31	        beq mouse_left
+.5b25	c9 01		cmp #$01	        cmp #1
+.5b27	d0 79		bne $5ba2	        bne mouse_none
+.5b29	a5 68		lda $68		        lda mx
+.5b2b	c9 30		cmp #$30	        cmp #48
+.5b2d	b0 73		bcs $5ba2	        bcs mouse_none
+.5b2f	90 06		bcc $5b37	        bcc mouse_y
+.5b31					mouse_left:
+.5b31	a5 68		lda $68		        lda mx
+.5b33	c9 10		cmp #$10	        cmp #16
+.5b35	90 6b		bcc $5ba2	        bcc mouse_none
+.5b37					mouse_y:
+.5b37	a5 6a		lda $6a		        lda my
+.5b39	c9 1a		cmp #$1a	        cmp #26
+.5b3b	90 65		bcc $5ba2	        bcc mouse_none
+.5b3d	c9 23		cmp #$23	        cmp #35
+.5b3f	90 3d		bcc $5b7e	        bcc mouse_path
+.5b41	c9 28		cmp #$28	        cmp #40
+.5b43	90 5d		bcc $5ba2	        bcc mouse_none
+.5b45	c9 88		cmp #$88	        cmp #136
+.5b47	90 38		bcc $5b81	        bcc mouse_row
+.5b49	c9 ae		cmp #$ae	        cmp #174
+.5b4b	90 55		bcc $5ba2	        bcc mouse_none
+.5b4d	c9 ba		cmp #$ba	        cmp #186
+.5b4f	b0 51		bcs $5ba2	        bcs mouse_none
+.5b51	38		sec		        sec
+.5b52	a5 68		lda $68		        lda mx
+.5b54	e9 10		sbc #$10	        sbc #16
+.5b56	85 68		sta $68		        sta mx
+.5b58	a5 69		lda $69		        lda mx+1
+.5b5a	e9 00		sbc #$00	        sbc #0
+.5b5c	85 69		sta $69		        sta mx+1
+.5b5e	a2 00		ldx #$00	        ldx #0
+.5b60					mouse_button:
+.5b60	a5 69		lda $69		        lda mx+1
+.5b62	d0 06		bne $5b6a	        bne mouse_sub
+.5b64	a5 68		lda $68		        lda mx
+.5b66	c9 24		cmp #$24	        cmp #36
+.5b68	90 10		bcc $5b7a	        bcc mouse_key
+.5b6a					mouse_sub:
+.5b6a	38		sec		        sec
+.5b6b	a5 68		lda $68		        lda mx
+.5b6d	e9 24		sbc #$24	        sbc #36
+.5b6f	85 68		sta $68		        sta mx
+.5b71	a5 69		lda $69		        lda mx+1
+.5b73	e9 00		sbc #$00	        sbc #0
+.5b75	85 69		sta $69		        sta mx+1
+.5b77	e8		inx		        inx
+.5b78	d0 e6		bne $5b60	        bne mouse_button
+.5b7a					mouse_key:
+.5b7a	bd f0 5c	lda $5cf0,x	        lda buttonkeys,x
+.5b7d	60		rts		        rts
+.5b7e					mouse_path:
+.5b7e	a9 50		lda #$50	        lda #$50
+.5b80	60		rts		        rts
+.5b81					mouse_row:
+.5b81	38		sec		        sec
+.5b82	e9 28		sbc #$28	        sbc #40
+.5b84	a2 00		ldx #$00	        ldx #0
+.5b86					mouse_row_div:
+.5b86	c9 0c		cmp #$0c	        cmp #12
+.5b88	90 05		bcc $5b8f	        bcc mouse_select
+.5b8a	e9 0c		sbc #$0c	        sbc #12
+.5b8c	e8		inx		        inx
+.5b8d	d0 f7		bne $5b86	        bne mouse_row_div
+.5b8f					mouse_select:
+.5b8f	ec 03 5d	cpx $5d03	        cpx count
+.5b92	b0 0e		bcs $5ba2	        bcs mouse_none
+.5b94	a9 00		lda #$00	        lda #0
+.5b96	8d 07 5d	sta $5d07	        sta ready
+.5b99	8e 02 5d	stx $5d02	        stx selected
+.5b9c	20 50 51	jsr $5150	        jsr reset_view
+.5b9f	20 25 58	jsr $5825	        jsr paint
+.5ba2					mouse_none:
+.5ba2	a9 00		lda #$00	        lda #0
+.5ba4	60		rts		        rts
+>5ba5	d5 4c 54 49 4d 41 54 45		title: .text "Ultimate files",0
+>5bad	20 46 49 4c 45 53 00
+>5bb4	55 50 2f 44 4e 20 53 45		help: .text "up/dn select  enter open  U parent  / root  N/B page  R retry  P path  ESC exit",0
+>5bbc	4c 45 43 54 20 20 45 4e 54 45 52 20 4f 50 45 4e
+>5bcc	20 20 d5 20 50 41 52 45 4e 54 20 20 2f 20 52 4f
+>5bdc	4f 54 20 20 ce 2f c2 20 50 41 47 45 20 20 d2 20
+>5bec	52 45 54 52 59 20 20 d0 20 50 41 54 48 20 20 c5
+>5bfc	d3 c3 20 45 58 49 54 00
+>5c04	49 54 45 4d 53 20		items_text: .text "items "
+>5c0a	53 45 4c 45 43 54 45 44		name_label: .text "selected name (< > scroll)",0
+>5c12	20 4e 41 4d 45 20 28 3c 20 3e 20 53 43 52 4f 4c
+>5c22	4c 29 00
+>5c25	43 55 52 52 45 4e 54 20		path_label: .text "current path (< > scroll) ",0
+>5c2d	50 41 54 48 20 28 3c 20 3e 20 53 43 52 4f 4c 4c
+>5c3d	29 20 00
+>5c40	45 4d 50 54 59 20 44 49		empty_text: .text "empty directory; U=parent / root",0
+>5c48	52 45 43 54 4f 52 59 3b 20 d5 3d 50 41 52 45 4e
+>5c58	54 20 2f 20 52 4f 4f 54 00
+>5c61	d5 4c 54 49 4d 41 54 45		transport_error: .text "Ultimate unavailable; R=retry",0
+>5c69	20 55 4e 41 56 41 49 4c 41 42 4c 45 3b 20 d2 3d
+>5c79	52 45 54 52 59 00
+>5c7f	49 4e 56 41 4c 49 44 20		invalid_text: .text "invalid or clipped reply; R=retry",0
+>5c87	4f 52 20 43 4c 49 50 50 45 44 20 52 45 50 4c 59
+>5c97	3b 20 d2 3d 52 45 54 52 59 00
+>5ca1	43 41 4e 43 45 4c 4c 45		cancel_text: .text "cancelled; R=retry ESC=desktop",0
+>5ca9	44 3b 20 d2 3d 52 45 54 52 59 20 c5 d3 c3 3d 44
+>5cb9	45 53 4b 54 4f 50 00
+>5cc0	3c 00				btn_left: .text "<",0
+>5cc2	3e 00				btn_right: .text ">",0
+>5cc4	4f 50 45 4e 00			btn_open: .text "open",0
+>5cc9	55 50 00			btn_up: .text "up",0
+>5ccc	52 4f 4f 54 00			btn_root: .text "root",0
+>5cd1	50 52 45 56 00			btn_prev: .text "prev",0
+>5cd6	4e 45 58 54 00			btn_next: .text "next",0
+>5cdb	45 58 49 54 00			btn_exit: .text "exit",0
+>5ce0	c0 c2 c4 c9 cc d1 d6 db		buttonL: .byte <btn_left,<btn_right,<btn_open,<btn_up,<btn_root,<btn_prev,<btn_next,<btn_exit
+>5ce8	5c 5c 5c 5c 5c 5c 5c 5c		buttonH: .byte >btn_left,>btn_right,>btn_open,>btn_up,>btn_root,>btn_prev,>btn_next,>btn_exit
+>5cf0	9d 1d 0d 55 2f 42 4e 1b		buttonkeys: .byte $9d,$1d,$0d,$55,$2f,$42,$4e,$1b
+>5cf8	00 00				base: .word 0
+>5cfa	00 00				seen: .word 0
+>5cfc	00 00				pathlen: .word 0
+>5cfe	00 00				nameoff: .word 0
+>5d00	00 00				commandlen: .word 0
+>5d02	00				selected: .byte 0
+>5d03	00				count: .byte 0
+>5d04	00				more: .byte 0
+>5d05	00				scanerror: .byte 0
+>5d06	00				sysdev: .byte 0
+>5d07	00				ready: .byte 0
+>5d08	00				held: .byte 0
+>5d09	00				viewpath: .byte 0
+>5d0a	00				key: .byte 0
+>5d0b	00				width: .byte 0
+>5d0c	00				row: .byte 0
+>5d0d	00				draw_y: .byte 0
+>5d0e	00				draw_x: .byte 0
+>5d0f	00				statuspos: .byte 0
+>5d10	00				started: .byte 0
+>5d11	00				dirty: .byte 0
+>5d12	00				oldselected: .byte 0
+>5d13	ff				labelview: .byte $ff
+>5d14	00				vrow: .byte 0
+>5d15	00				vcol: .byte 0
+>5d16	00				newlength: .byte 0
+>5d17	00				padlength: .byte 0
+>5d18	00 00 00 00 00 00 00 00		vlength: .fill 25,0
+>5d20	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>5d30	00
+>5d31	00				clear_y: .byte 0
+>5d32	00				clear_cols: .byte 0
+>5d33	00				clear_h: .byte 0
+>5d34	00 00 00 00 00 00 00 00		attrs: .fill ROWS,0
+>5d3c	00 00 00 00 00 00 00 00		lengthsL: .fill ROWS,0
+>5d44	00 00 00 00 00 00 00 00		lengthsH: .fill ROWS,0
+>5d4c	00 00 00			prefix: .byte 0,0,0
+>5d4f	00 00 00 00 00 00 00 00		status: .fill 34,0
+>5d57	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>5d67	00 00 00 00 00 00 00 00 00 00
+>5d71	00 00 00 00 00 00 00 00		line: .fill 77,0
+>5d79	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 3 times (48 bytes)...
->5e9f	00 00 00 00 00
-.5ea4					browser_end:
+>5db9	00 00 00 00 00
+.5dbe					browser_end:
 
 ;******  End of listing

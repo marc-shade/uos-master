@@ -32,6 +32,9 @@ reports clipping. A physical C128 test streamed 1,096 directory entries.
 The desktop launcher now includes **uos-ultimate**, an eight-row USB/filesystem
 browser with keyboard and mouse navigation, long-name scrolling, and directory
 paging beyond entry 255. See the [browser guide](docs/ULTIMATE-BROWSER.md).
+Navigation now redraws changed fields, with complete VIC/VDC frame comparisons
+and physical timing recorded in the
+[redraw validation](docs/validation/2026-09-08-browser-redraw/README.md).
 The drive panel and mount/eject workflows remain in progress; the installed
 firmware's incomplete drive inventory still needs handling.
 

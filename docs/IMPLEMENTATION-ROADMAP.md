@@ -103,7 +103,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
 | UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification | Capability registry and UI; resolve malformed drive inventory; interrupted operations and per-firmware protocol coverage |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser with eight-entry pages, long-name selection, keyboard/mouse controls and retry; physical browsing past ordinal 255 in a 1,096-entry directory | Responsive redraws, file operations/viewers, sorted/indexed listings, longer paths, shared file picker, Unicode display |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser with eight-entry pages, selective redraw, long-name selection, keyboard/mouse controls and retry; physical browsing past ordinal 255 in a 1,096-entry directory | Faster long-directory scans, file operations/viewers, sorted/indexed listings, longer paths, shared file picker, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Absent from desktop | Mount supported D64/D71/D81/G64/G71 images from desktop; verify cartridge and IEC view; recover system disk and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
@@ -202,10 +202,15 @@ missing launcher controls, full-coordinate hit testing, cross-page filename
 pointers, row alignment and VDC register readiness. Host observations now leave
 quiet intervals around IEC loads after a partial-load stall.
 
-Next implementation: reduce full-browser redraws and measure responsiveness;
-build the drive panel and complete Ultimate file workflows, with capability
-records and system-volume preservation. Observed page changes took 12.9–16.0 s
-including host polling; this is correctness evidence, not a performance gate.
+The browser now retains its frame and redraws changed fields. Twenty-one
+actual-graphics comparisons match a fresh VIC/VDC render, including shorter
+names, errors, empty pages and unsupported-symbol fallback. The
+[redraw validation](validation/2026-09-08-browser-redraw/README.md) records
+instruction counts, physical timings and exact build hashes. Repeated scans
+and long-name rendering still need further performance work.
+
+Next implementation: build the drive panel and complete Ultimate file
+workflows, with capability records and system-volume preservation.
 The installed control target also reports four drives while sending only two
 records. Treat that inventory as incomplete. Mount/eject operations must validate
 the actual destination: the firmware may fall back to a different drive for an

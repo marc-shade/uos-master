@@ -106,6 +106,7 @@ class Browser:
                       0xc00c, 0xc015, 0xc01e):
             return False
         if pc == 0xc01e:
+            assert self.bus.ram[5] == 0, 'GPUTS received a nonzero Y high byte'
             self.vic.append((self.bus.ram[2] | self.bus.ram[3] << 8,
                              self.bus.ram[4], petscii(self.cstring(
                                  self.bus.ram[0x14] | self.bus.ram[0x15] << 8))))
@@ -249,6 +250,17 @@ def check_failures():
     assert b.names() == [b'one']
 
 
+def check_display_fallback():
+    name = b'raw-{|}~\x01\x80\xff'
+    b = Browser({b'/': [b'\x10'+name], b'/'+name: []})
+    b.run()
+    assert b.names() == [name]
+    assert 'raw-.......' in b.vdc[4]
+    b.run(13)
+    assert b.bus.paths[2] == b'/'+name
+    assert b'\x02\x11'+name in b.bus.commands
+
+
 def check_bounds():
     names = [bytes([0x61+i])*511 for i in range(8)]
     b = Browser({b'/': [b'\0'+name for name in names]})
@@ -320,7 +332,8 @@ def main():
     args = parser.parse_args()
     report = {'build': {n: hashlib.sha256((ROOT/'target'/n).read_bytes()).hexdigest()
                         for n in ('uos.prg', 'uos-net.prg', 'uos-ultimate.prg')}, 'checks': []}
-    for fn in (check_navigation, check_long_names, check_failures, check_bounds, check_capture_probe):
+    for fn in (check_navigation, check_long_names, check_failures, check_display_fallback,
+               check_bounds, check_capture_probe):
         fn()
         report['checks'].append(fn.__name__)
         print(f'PASS: {fn.__name__}', flush=True)

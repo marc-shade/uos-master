@@ -7,6 +7,12 @@
 .include "kernal.inc"
 
 ROWS = 8
+DIR_LIST = 1
+DIR_SELECT = 2
+DIR_DETAIL = 4
+DIR_STATUS = 8
+DIR_PATH = 16
+DIR_ALL = 31
 CACHE = $6000                   ; eight 512-byte filename slots, through $6fff
 PATHBUF = $7000                 ; 512 bytes, below the saved settings at $7350
 REQUEST = $7400                 ; transient command, at most 513 bytes here
@@ -34,6 +40,7 @@ my = $6a
         sta pathlen+1
         sta ready
         jsr refresh
+        jsr frame
         jsr paint
 
 input_loop:
@@ -58,6 +65,7 @@ key_event:
         sta key
         lda #$00
         sta ready
+        sta dirty
         lda key
         cmp #$c1
         bcc key_ascii
@@ -161,6 +169,9 @@ reset_view:
         sta nameoff
         sta nameoff+1
         sta viewpath
+        lda dirty
+        ora #DIR_SELECT|DIR_DETAIL
+        sta dirty
         rts
 toggle_path:
         lda viewpath
@@ -169,7 +180,7 @@ toggle_path:
         lda #$00
         sta nameoff
         sta nameoff+1
-        rts
+        jmp dirty_detail
 left:
         lda nameoff
         ora nameoff+1
@@ -178,9 +189,9 @@ left:
         lda nameoff
         sbc #32
         sta nameoff
-        bcs action_done
+        bcs dirty_detail
         dec nameoff+1
-        rts
+        jmp dirty_detail
 right:
         jsr detail_source
         clc
@@ -201,6 +212,10 @@ right_go:
         sta nameoff
         lda number+1
         sta nameoff+1
+dirty_detail:
+        lda dirty
+        ora #DIR_DETAIL
+        sta dirty
         rts
 
 root:
@@ -220,7 +235,9 @@ chdir_short:
         jmp chdir
 open_entry:
         lda count
-        beq action_done
+        bne open_selected
+        rts
+open_selected:
         jsr selected_source
         lda #<REQUEST+2
         sta dptr
@@ -298,9 +315,11 @@ error_copy:
         sta status,x
         dex
         bpl error_copy
-        rts
+        jmp dirty_status
 
 refresh:
+        lda #DIR_ALL
+        sta dirty
         jsr reset_view
         lda #0
         sta count
@@ -467,6 +486,10 @@ status_copy:
         lda #0
         sta status,y
 status_done:
+dirty_status:
+        lda dirty
+        ora #DIR_STATUS
+        sta dirty
         rts
 
 decimal_word:
@@ -704,12 +727,10 @@ chunk_done:
 ascii_text:
         cmp #$20
         bcc ascii_dot
-        cmp #$7f
+        cmp #$7b                ; braces, bar and tilde have no VIC font glyph
         bcs ascii_dot
         cmp #$61
         bcc ascii_upper
-        cmp #$7b
-        bcs ascii_done
         and #$df
         rts
 ascii_upper:
@@ -724,10 +745,21 @@ ascii_dot:
         lda #$2e
         rts
 
-paint:
-        #ClrRect 16,8,288,180
+
+; Static frame is painted once. Mutable fields own their erase bounds.
+frame:
+        lda #8
+frame_clear:
+        ldx #36
+        ldy #2
+        jsr clear_strip
+        lda clear_y
+        cmp #192
+        bne frame_clear
         #DrawRect 16,8,288,180,1
         #PenWrite
+        lda #0
+        sta Y1+1
         #Text 24,14,title
         lda #2
 clear_vdc:
@@ -738,186 +770,19 @@ clear_vdc:
         adc #1
         cmp #24
         bne clear_vdc
+        ldx #24
+        lda #0
+frame_lengths:
+        sta vlength,x
+        dex
+        bpl frame_lengths
+        lda #$ff
+        sta labelview
         lda #<title
         sta r9L
         lda #>title
         sta r9H
         lda #2
-        ldx #0
-        jsr VDTEXT
-        jsr path_source
-        ldx #76
-        jsr text_chunk
-        lda #3
-        ldx #0
-        jsr vdc_line
-        lda #0
-        sta line+34
-        lda #26
-        jsr vic_line
-        lda #0
-        sta row
-paint_rows:
-        ldx row
-        cpx count
-        bcc paint_row
-        jmp paint_details
-paint_row:
-        jsr row_source
-        ldx #74
-        jsr text_chunk
-        lda remain
-        ora remain+1
-        beq row_vdc_fits
-        lda #$3e
-        sta line+73
-row_vdc_fits:
-        ; marker and kind prefix at columns 0/1; raw name starts at col 3.
-        lda #<line
-        sta r9L
-        lda #>line
-        sta r9H
-        lda row
-        clc
-        adc #4
-        ldx #3
-        jsr VDTEXT
-        ldx row
-        lda lengthsH,x
-        bne row_vic_long
-        lda lengthsL,x
-        cmp #32
-        bcc row_vic_fits
-row_vic_long:
-        lda #$3e
-        sta line+30
-row_vic_fits:
-        lda #0
-        sta line+31
-        lda row
-        asl
-        sta draw_y
-        asl
-        clc
-        adc draw_y
-        asl
-        clc
-        adc #40
-        sta draw_y
-        lda #38
-        sta X1
-        lda #0
-        sta X1+1
-        lda draw_y
-        sta Y1
-        jsr line_pointer
-        jsr GPUTS
-        lda #$20
-        sta prefix
-        lda row
-        cmp selected
-        bne prefix_kind
-        lda #$3e
-        sta prefix
-prefix_kind:
-        ldx row
-        lda attrs,x
-        and #$10
-        beq prefix_file
-        lda #$2f
-        bne prefix_save
-prefix_file:
-        lda #$20
-prefix_save:
-        sta prefix+1
-        lda #<prefix
-        sta r9L
-        lda #>prefix
-        sta r9H
-        lda #22
-        sta X1
-        lda #0
-        sta X1+1
-        lda draw_y
-        sta Y1
-        jsr GPUTS
-        lda #<prefix
-        sta r9L
-        lda #>prefix
-        sta r9H
-        lda row
-        clc
-        adc #4
-        ldx #0
-        jsr VDTEXT
-        inc row
-        jmp paint_rows
-paint_details:
-        lda #<name_label
-        ldx #>name_label
-        ldy viewpath
-        beq detail_label
-        lda #<path_label
-        ldx #>path_label
-detail_label:
-        sta r9L
-        stx r9H
-        lda #13
-        ldx #0
-        jsr VDTEXT
-        jsr detail_source
-        clc
-        lda sptr
-        adc nameoff
-        sta sptr
-        lda sptr+1
-        adc nameoff+1
-        sta sptr+1
-        sec
-        lda remain
-        sbc nameoff
-        sta remain
-        lda remain+1
-        sbc nameoff+1
-        sta remain+1
-        lda #0
-        sta row
-details_loop:
-        ; Use 34-byte chunks on both displays so left/right has the same
-        ; meaning. Three VIC lines and seven VDC lines reveal long names.
-        ldx #34
-        jsr text_chunk
-        lda row
-        cmp #3
-        bcs details_vdc
-        asl
-        sta draw_y
-        asl
-        asl
-        clc
-        adc draw_y
-        adc #134
-        jsr vic_line
-details_vdc:
-        lda row
-        clc
-        adc #14
-        ldx #0
-        jsr vdc_line
-        inc row
-        lda row
-        cmp #7
-        bne details_loop
-        lda #<status
-        sta r9L
-        lda #>status
-        sta r9H
-        #Text 24,164,status
-        lda #<status
-        sta r9L
-        lda #>status
-        sta r9H
-        lda #22
         ldx #0
         jsr VDTEXT
         lda #<help
@@ -935,7 +800,7 @@ toolbar:
         sta r9L
         lda buttonH,x
         sta r9H
-        ; x = 18 + row*36, calculated as a word for the last two buttons.
+        ; x = 18 + row*36, including the high bit for the right buttons.
         txa
         asl
         asl
@@ -962,12 +827,239 @@ toolbar:
 toolbar_y:
         lda #176
         sta Y1
+        lda #0
+        sta Y1+1
         jsr GPUTS
         inc row
         lda row
         cmp #8
         bne toolbar
         rts
+
+paint:
+        lda dirty
+        and #DIR_PATH
+        beq paint_list_test
+        jsr path_source
+        ldx #76
+        jsr text_chunk
+        lda #3
+        ldx #0
+        jsr vdc_line
+        lda #0
+        sta line+34
+        lda #26
+        jsr clear_field
+        lda #26
+        jsr vic_line
+paint_list_test:
+        lda dirty
+        and #DIR_LIST
+        beq paint_select_test
+        jsr paint_rows
+        jmp paint_detail_test
+paint_select_test:
+        lda dirty
+        and #DIR_SELECT
+        beq paint_detail_test
+        lda oldselected
+        sta row
+        jsr paint_prefix
+        lda selected
+        sta row
+        jsr paint_prefix
+paint_detail_test:
+        lda dirty
+        and #DIR_DETAIL
+        beq paint_status_test
+        jsr paint_details
+paint_status_test:
+        lda dirty
+        and #DIR_STATUS
+        beq paint_done
+        ldx #0
+status_line:
+        lda status,x
+        sta line,x
+        beq status_ready
+        inx
+        bne status_line
+status_ready:
+        lda #164
+        jsr clear_field
+        lda #164
+        jsr vic_line
+        lda #22
+        ldx #0
+        jsr vdc_line
+paint_done:
+        lda selected
+        sta oldselected
+        lda #0
+        sta dirty
+        rts
+
+paint_rows:
+        lda #0
+        sta row
+paint_row:
+        ldx row
+        lda row_y,x
+        sta draw_y
+        jsr clear_field
+        ldx row
+        cpx count
+        bcc paint_name
+        lda #0
+        sta line
+        beq row_vdc
+paint_name:
+        jsr row_source
+        ldx #74
+        jsr text_chunk
+        lda remain
+        ora remain+1
+        beq row_vdc
+        lda #$3e
+        sta line+73
+row_vdc:
+        lda row
+        clc
+        adc #4
+        ldx #3
+        jsr vdc_line
+        ldx row
+        cpx count
+        bcs row_prefix
+        lda lengthsH,x
+        bne row_vic_long
+        lda lengthsL,x
+        cmp #32
+        bcc row_vic_fits
+row_vic_long:
+        lda #$3e
+        sta line+30
+row_vic_fits:
+        lda #0
+        sta line+31
+        lda draw_y
+        ldx #40
+        jsr vic_at
+row_prefix:
+        jsr paint_prefix
+        inc row
+        lda row
+        cmp #ROWS
+        bne paint_row
+        rts
+
+paint_prefix:
+        ldx row
+        lda row_y,x
+        sta draw_y
+        ldx #2
+        ldy #3
+        jsr clear_text
+        lda #$20
+        sta prefix
+        sta prefix+1
+        ldx row
+        cpx count
+        bcs prefix_draw
+        cpx selected
+        bne prefix_kind
+        lda #$3e
+        sta prefix
+prefix_kind:
+        lda attrs,x
+        and #$10
+        beq prefix_draw
+        lda #$2f
+        sta prefix+1
+prefix_draw:
+        lda #<prefix
+        sta r9L
+        lda #>prefix
+        sta r9H
+        lda #24
+        sta X1
+        lda #0
+        sta X1+1
+        sta Y1+1
+        lda draw_y
+        sta Y1
+        jsr GPUTS
+        lda #<prefix
+        sta r9L
+        lda #>prefix
+        sta r9H
+        lda row
+        clc
+        adc #4
+        ldx #0
+        jmp VDTEXT
+row_y: .byte 40,52,64,76,88,100,112,124
+
+paint_details:
+        lda viewpath
+        cmp labelview
+        beq detail_body
+        sta labelview
+        lda #<name_label
+        ldx #>name_label
+        ldy viewpath
+        beq detail_label
+        lda #<path_label
+        ldx #>path_label
+detail_label:
+        sta r9L
+        stx r9H
+        lda #13
+        ldx #0
+        jsr VDTEXT
+detail_body:
+        jsr detail_source
+        clc
+        lda sptr
+        adc nameoff
+        sta sptr
+        lda sptr+1
+        adc nameoff+1
+        sta sptr+1
+        sec
+        lda remain
+        sbc nameoff
+        sta remain
+        lda remain+1
+        sbc nameoff+1
+        sta remain+1
+        lda #0
+        sta row
+details_loop:
+        ldx #34
+        jsr text_chunk
+        lda row
+        cmp #3
+        bcs details_vdc
+        tax
+        lda detail_y,x
+        sta draw_y
+        jsr clear_field
+        lda draw_y
+        jsr vic_line
+details_vdc:
+        lda row
+        clc
+        adc #14
+        ldx #0
+        jsr vdc_line
+        inc row
+        lda row
+        cmp #7
+        bne details_loop
+        rts
+detail_y: .byte 134,144,154
+
 line_pointer:
         lda #<line
         sta r9L
@@ -975,18 +1067,147 @@ line_pointer:
         sta r9H
         rts
 vic_line:
+        ldx #24
+vic_at:
         sta Y1
-        lda #24
-        sta X1
+        stx X1
         lda #0
         sta X1+1
+        sta Y1+1
         jsr line_pointer
         jmp GPUTS
+
+; Replace one VDC field. Pad only its former extent, then restore the raw
+; line terminator for VIC rendering. Prefixes at columns 0/1 are separate.
 vdc_line:
-        pha
+        sta vrow
+        stx vcol
+        ldy #0
+vlength_scan:
+        lda line,y
+        beq vlength_found
+        iny
+        bne vlength_scan
+vlength_found:
+        sty newlength
+        ldx vrow
+        lda vlength,x
+        sta padlength
+        tya
+        sta vlength,x
+        cmp padlength
+        bcs vline_ready
+        lda #$20
+vline_pad:
+        cpy padlength
+        beq vline_end
+        sta line,y
+        iny
+        bne vline_pad
+vline_end:
+        lda #0
+        sta line,y
+vline_ready:
+        lda line
+        beq vline_return
         jsr line_pointer
-        pla
-        jmp VDTEXT
+        lda vrow
+        ldx vcol
+        jsr VDTEXT
+vline_return:
+        ldx newlength
+        lda #0
+        sta line,x
+        rts
+
+; Erase byte-aligned VIC columns. A = pixel Y, X = column count,
+; Y = starting byte column. Frame strips are eight scanlines; text includes
+; the font's dollar-sign ascender and g/j/p/q/y descenders (Y-1 through Y+8).
+; Uses only public scratch: detail_source's raw pointers and remaining
+; length must survive this call.
+clear_strip:
+        sta clear_y
+        lda #8
+        sta clear_h
+        bne clear_begin
+clear_field:
+        ldx #34
+        ldy #3
+clear_text:
+        sec
+        sbc #1
+        sta clear_y
+        lda #10
+        sta clear_h
+clear_begin:
+        stx clear_cols
+        tya
+        asl
+        asl
+        asl
+        sta r2L
+        lda clear_y
+        lsr
+        lsr
+        lsr
+        sta r0H
+        lda #0
+        sta r0L
+        lda r0H
+        lsr
+        ror r0L
+        lsr
+        ror r0L
+        clc
+        adc r0H
+        adc #$a0
+        sta r0H
+        lda clear_y
+        and #7
+        clc
+        adc r2L
+        adc r0L
+        sta r0L
+        bcc clear_row
+        inc r0H
+clear_row:
+        lda r0L
+        sta r1L
+        lda r0H
+        sta r1H
+        ldx clear_cols
+        ldy #0
+clear_column:
+        lda #0
+        sta (r1),y
+        clc
+        lda r1L
+        adc #8
+        sta r1L
+        bcc clear_next_col
+        inc r1H
+clear_next_col:
+        dex
+        bne clear_column
+        inc r0L
+        bne clear_next_y
+        inc r0H
+clear_next_y:
+        inc clear_y
+        lda clear_y
+        and #7
+        bne clear_next_row
+        clc
+        lda r0L
+        adc #<$138
+        sta r0L
+        lda r0H
+        adc #>$138
+        sta r0H
+clear_next_row:
+        dec clear_h
+        bne clear_row
+        rts
 
 ; Release-edge mouse actions. Convert the full nine-bit VIC coordinate;
 ; subtraction must propagate its borrow across the X high bit.
@@ -1090,7 +1311,7 @@ title: .text "Ultimate files",0
 help: .text "up/dn select  enter open  U parent  / root  N/B page  R retry  P path  ESC exit",0
 items_text: .text "items "
 name_label: .text "selected name (< > scroll)",0
-path_label: .text "current path (< > scroll)",0
+path_label: .text "current path (< > scroll) ",0
 empty_text: .text "empty directory; U=parent / root",0
 transport_error: .text "Ultimate unavailable; R=retry",0
 invalid_text: .text "invalid or clipped reply; R=retry",0
@@ -1126,6 +1347,17 @@ draw_y: .byte 0
 draw_x: .byte 0
 statuspos: .byte 0
 started: .byte 0
+dirty: .byte 0
+oldselected: .byte 0
+labelview: .byte $ff
+vrow: .byte 0
+vcol: .byte 0
+newlength: .byte 0
+padlength: .byte 0
+vlength: .fill 25,0
+clear_y: .byte 0
+clear_cols: .byte 0
+clear_h: .byte 0
 attrs: .fill ROWS,0
 lengthsL: .fill ROWS,0
 lengthsH: .fill ROWS,0

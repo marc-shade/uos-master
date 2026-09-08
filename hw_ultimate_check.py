@@ -80,34 +80,61 @@ class Browser:
 
 def ascii_to_petscii(data):
     return bytes(c & 0xdf if 0x61 <= c <= 0x7a else c | 0x80 if 0x41 <= c <= 0x5a
-                 else c if 0x20 <= c <= 0x7e else 0x2e for c in data)
+                 else c if 0x20 <= c <= 0x60 else 0x2e for c in data)
 
 
 def check_page(browser, expected, work, label):
     got = browser.names()
     assert got == [record[0][1:] for record in expected], (label, got, expected)
-    vdc = read_vdc(browser.mon, work)
+    first_meta, repeat_meta = {}, {}
+    vdc = read_vdc(browser.mon, work, first_meta)
     (work / f'{label}.vdc.bin').write_bytes(vdc)
-    for i, (packet, clipped) in enumerate(expected):
-        assert not clipped
-        name = packet[1:]
-        shown = ascii_to_petscii(name[:74])
-        if len(name) > 74:
-            shown = shown[:73] + b'>'
-        wanted = bytes(map(screen_code, shown))
-        assert vdc[(4+i)*80+3:(4+i)*80+3+len(wanted)] == wanted, (label, i, name)
+    repeat = read_vdc(browser.mon, work, repeat_meta)
+    (work / f'{label}.repeat.vdc.bin').write_bytes(repeat)
+    (work / f'{label}.capture.json').write_text(
+        json.dumps({'first':first_meta,'repeat':repeat_meta}, indent=2)+'\n')
+    # Both independently acquired app areas must agree. Do not retry until a
+    # favorable capture appears; clock rows 0/24 may advance between dumps.
+    assert vdc[160:1920] == repeat[160:1920], (label, 'VDC captures disagree')
+    selected = browser.value('selected')
+    for i in range(8):
+        wanted = bytearray(b' ' * 80)
+        if i < len(expected):
+            packet, clipped = expected[i]
+            assert not clipped
+            name = packet[1:]
+            shown = ascii_to_petscii(name[:74])
+            if len(name) > 74:
+                shown = shown[:73] + b'>'
+            wanted[0] = screen_code(ord('>') if i == selected else 32)
+            wanted[1] = screen_code(ord('/') if packet[0] & 0x10 else 32)
+            wanted[3:3+len(shown)] = bytes(map(screen_code, shown))
+        assert vdc[(4+i)*80:(5+i)*80] == wanted, (label, i, 'filename row or blank tail differs')
+    # The helper navigates with name details at offset zero. Check all seven
+    # complete rows so a shorter selection cannot hide stale trailing text.
+    assert browser.value('nameoff', 2) == 0
+    detail = ascii_to_petscii(got[selected]) if got else b''
+    for i in range(7):
+        wanted = bytes(map(screen_code, detail[i*34:(i+1)*34])).ljust(80, b' ')
+        assert vdc[(14+i)*80:(15+i)*80] == wanted, (label, i, 'detail row or blank tail differs')
     return [name.decode('utf-8', 'replace') for name in got]
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-boot', action='store_true')
+    parser.add_argument('--capture-only', action='store_true',
+                        help='check eight consecutive VDC captures of the idle desktop')
     parser.add_argument('--directory', default='/Usb0/c64/#-a/')
     args = parser.parse_args()
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-browser-'))
     print(f'Browser hardware evidence: {work}', flush=True)
     report = {'build': build_hashes(), 'checks': [], 'passed': False,
-              'dma_observation_quiet_seconds': {'boot':60,'launcher_directory':30,'app_load':30}}
+              'reused_running_desktop': args.no_boot,
+              'dma_observation_quiet_seconds': {'boot':0 if args.no_boot else 60,
+                                                'launcher_directory':30,'app_load':30,
+                                                'vdc_capture':2},
+              'vdc_captures_per_sample': 2}
     ult = ObservingUltimate()
     mon = HardwareMonitor(ult)
     if not args.no_boot:
@@ -120,6 +147,33 @@ def main():
     wait_for(lambda: mon.read_mem(0x033c, 0x033d) == desk_tick().to_bytes(2, 'little'),
              'desktop boot', 300)
     assert ci.wait_desktop_live(mon, 120)
+    if args.capture_only:
+        report['capture_only'] = True
+        report['captures'] = []
+        expected = bytes(map(screen_code, ascii_to_petscii(b'desktop'))).ljust(1760, b' ')
+        try:
+            footer = None
+            for i in range(8):
+                metadata = {}
+                data = read_vdc(mon, work, metadata)
+                (work/f'desktop-{i}.vdc.bin').write_bytes(data)
+                report['captures'].append(metadata)
+                assert data[160:1920] == expected, f'Desktop capture {i} differs'
+                if footer is not None:
+                    assert data[1920:] == footer, f'Desktop footer capture {i} differs'
+                footer = data[1920:]
+                print(f'PASS: capture {i}, address resyncs={metadata["address_resyncs"]}', flush=True)
+            assert ci.wait_desktop_live(mon, 120)
+            assert report['build'] == build_hashes()
+            report['checks'].append('eight exact desktop app areas and stable footer; IRQ chain and desktop remain live')
+            report['passed'] = True
+        except BaseException as error:
+            report['failure'] = f'{type(error).__name__}: {error}'
+            raise
+        finally:
+            report['read_retries'] = ult.read_retries
+            (work/'report.json').write_text(json.dumps(report, indent=2)+'\n')
+        return
     probe = Probe(ult, work)
     original = {t: probe.ok(bytes([t, 0x12]))['records'][0][0] for t in (1, 2)}
     report['dos_paths_before_hex'] = {t:path.hex() for t,path in original.items()}
@@ -128,6 +182,11 @@ def main():
     prefix = (ROOT/'target/uos-ultimate.prg').read_bytes()[2:18]
     active = False
     try:
+        probe.ok(b'\x02\x11/')
+        probe.ok(b'\x02\x13')
+        root = probe.ok(b'\x02\x14')
+        assert 0 < root['count'] < 8, 'Root must exercise clearing unused browser rows'
+        expected_root = root['records']
         probe.ok(b'\x02\x11'+args.directory.encode())
         probe.ok(b'\x02\x13')
         first = probe.ok(b'\x02\x14')
@@ -144,8 +203,44 @@ def main():
         wait_for(browser.ready, 'initial browser page', 180)
         report['checks'].append('Applications registers six rows; compiled hit-test launches Ultimate at screen x=240')
         report['first_page'] = check_page(browser, expected_first, work, 'first')
-        render(grab(ult, verbose=False), str(work/'first.png'))
+        first_bitmap = grab(ult, verbose=False)
+        (work/'first.vic.bin').write_bytes(first_bitmap)
+        render(first_bitmap, str(work/'first.png'))
         print('PASS: complete first-page names and exact physical VDC rows', flush=True)
+        # Exercise an independent clock repaint while this app is active.
+        # Invalidate only its cached minute; the actual TOD time is unchanged.
+        mon.write_mem(lst_symbol('uos-desktop', 'minute'), b'\xff')
+        report['clock_redraw_forced'] = True
+        selections = []
+        report['selection_seconds'] = selections
+        for key, selected in ((0x11, 1), (0x11, 2), (0x91, 1), (0x91, 0)):
+            start = time.monotonic()
+            browser.press(key)
+            elapsed = round(time.monotonic()-start, 3)
+            assert browser.value('selected') == selected and browser.value('base', 2) == 0
+            label = f'select-{len(selections)+1}-{selected}'
+            check_page(browser, expected_first, work, label)
+            selections.append({'key': key, 'selected': selected, 'seconds': elapsed})
+        returned_bitmap = grab(ult, verbose=False)
+        (work/'selection-return.vic.bin').write_bytes(returned_bitmap)
+        render(returned_bitmap, str(work/'selection-return.png'))
+        # Desktop TICK uses ClrRect 280,191,39,8. Its bitmap-band rounding
+        # clears x=280..319, y=184..199, including the lower-right shadow.
+        # Compare every other byte and retain all differences before asserting.
+        differences = []
+        for i, (before, after) in enumerate(zip(first_bitmap, returned_bitmap)):
+            if before != after:
+                x, y = (i % 320)//8*8, i//320*8 + i%8
+                differences.append({'offset':i, 'x':x, 'y':y, 'before':before, 'after':after,
+                                    'clock_redraw':x >= 280 and y >= 184})
+        outside = [d for d in differences if not d['clock_redraw']]
+        (work/'vic-differences.json').write_text(json.dumps(differences, indent=2)+'\n')
+        report['vic_roundtrip'] = {'changed_bytes':len(differences),
+                                  'differences_outside_clock':len(outside),
+                                  'excluded_clock_rectangle':{'x':280,'y':184,'width':40,'height':16}}
+        assert not outside, f'Selection round trip left VIC pixels outside the clock: {outside[:8]}'
+        report['checks'].append('Down/Down/Up/Up with clock repaint: exact VDC names, selection and details; VIC unchanged outside clock rectangle')
+        print(f'PASS: selective navigation and clean erasure; observed seconds {selections}', flush=True)
         timings = []
         report['page_navigation_seconds'] = timings
         for i in range(32):
@@ -163,6 +258,8 @@ def main():
         report['checks'].append('exact physical VDC filename rows on first and ordinal-256 pages')
         browser.press(ord('/'))
         assert browser.read(0x7000, browser.value('pathlen', 2)) == b'/'
+        report['root_page'] = check_page(browser, expected_root, work, 'root')
+        report['checks'].append('Root clears unused list and detail rows, checked against a separate packet oracle')
         names = browser.names()
         index = names.index(b'Usb0')
         for _ in range(index):

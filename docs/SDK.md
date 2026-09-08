@@ -410,8 +410,10 @@ python3 -m pip install -r tests/requirements-uci.txt # use a virtual environment
 python3 tests/ci_core.py                      # assembled core: all 256 GETCAP IDs, registers/stack/RAM
 python3 tests/ci_desktop.py                   # assembled launcher: 0-6 apps, control callbacks and complete X-coordinate hit testing
 python3 tests/ci_vdc_protocol.py              # assembled VDC driver: register readiness, exact text/attributes, absent probe
+python3 tests/ci_vdc_capture.py               # IRQ capture: exact bytes, address drift/retry, timeout, guards and IRQ restoration
 python3 tests/ci_uci.py                       # assembled UCI driver: 14 protocol/CPU checks, no VICE needed
 python3 tests/ci_ultimate.py                  # assembled browser: paging, long names, mouse, failures, capture bounds
+python3 tests/profile_browser.py --out /tmp/browser-render --check-fresh # actual graphics: cycles and fresh-frame comparison
 python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
 python3 hw_ultimate_check.py                 # real C128: browser navigation, complete names, VDC readback, path restoration
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
