@@ -17,11 +17,14 @@ SUITES = {
     "copy": ["ci_copy.py"],
     "edit": ["ci_edit.py"],
     "calc": ["ci_calc.py"],
+    "native": ["ci_native.py"],
 }
 
 
 def build_hashes():
     files = sorted((ROOT / "target").glob("*.prg")) + [ROOT / "target/ultos.d64"]
+    files += sorted((ROOT / "target/native").glob("*.prg"))
+    files += sorted((ROOT / "target/native").glob("*.d64"))
     return {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in files}
 

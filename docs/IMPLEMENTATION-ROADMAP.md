@@ -52,8 +52,8 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Requirement | Current evidence | Remaining implementation | Acceptance evidence |
 |---|---|---|---|
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
-| Native C128 platform, FR-M3 | Everything boots in C64 mode | Native boot/kernel, 128 KiB bank management, KERNAL/MMU gateways, 2 MHz safe regions, ROM/IRQ/DMA ownership | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
-| Memory and FR-M1 | Fixed REU banks for bitmap/app/rectangle snapshots | Non-destructive size detection, ownership allocator, bounds checks, app heaps, RAM disks, persistence, no-REU fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
+| Native C128 platform, FR-M3 | Separate native boot/kernel and dual-screen memory workspace at 1 MHz; banked KERNAL gateways | Desktop/app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
+| Memory and FR-M1 | Native 442-page allocator with owner/generation checks and bounded transfers; legacy fixed REU snapshot banks | REU/expansion size detection and allocation, larger app heaps, RAM disks, persistence, no-REU desktop fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | One loaded app, resident desktop, fixed tick vector; failed LOAD returns to desktop; shared cartridge-file cleanup on launch/desktop entry | Manifest/ABI and load-address validation, cooperative scheduling, suspend/resume, app switcher, cleanup across every handle/control backend | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Menu, modal windows, disk-scanned launcher | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; per-app drawing | Widget/event toolkit; IEC and other backend file pickers; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
@@ -122,7 +122,7 @@ or “has a driver slot” is insufficient to mark a device supported.
 
 | Family | Required coverage | Current evidence / next gate |
 |---|---|---|
-| Base C128 | 8502, MMU, VIC-IIe, 8563/8568, SID, CIAs, keyboard, IEC, user port, cassette, Z80/CP/M handoff | C64-mode reference machine; native mode and handoffs open |
+| Base C128 | 8502, MMU, VIC-IIe, 8563/8568, SID, CIAs, keyboard, IEC, user port, cassette, Z80/CP/M handoff | Legacy desktop plus separate native memory workspace; native desktop, speed transitions and handoffs open |
 | Memory/acceleration | 1700/1764/1750 REUs; Ultimate/RAD REU emulation; GeoRAM/NeoRAM; RAMLink/RAMDrive; SuperCPU/SuperRAM and compatible accelerators; VDC RAM upgrades | Fixed REU DMA exists; all allocators and model-specific verification open |
 | Storage | 1541/1570/1571/1581; CMD HD/FD/RL partitions; SD2IEC; Pi1541; IDE64; Ultimate drives/SoftIEC; Kung Fu Flash; network IEC devices | Partial KERNAL workflows; no blanket device certification |
 | Input | 1351 and supported adapters, joystick, keyboard pointer; supported paddles/light pen/tablet; serial/Amiga mouse adapters with appropriate drivers | 1351 path exists; electrical/protocol-specific drivers and tests needed |
@@ -267,12 +267,21 @@ in the evidence, including a host observation during an IEC load. Load/input
 soak testing, rendering performance, cursor editing, larger documents and an
 IEC selector remain open.
 
-Next implementation: migrate remaining raw-DOS clients to shared ownership and
-directory recovery, extend editing and shared filesystem services, and add the
-remaining drive controls with media identity/recovery. Extend capability
-services and selectors for other backends.
-System-disk replacement/recovery, native kernel and application parity work remain
-required after these initial desktop/storage increments.
+The first [native C128 kernel and memory ABI](NATIVE-KERNEL.md) now boots its
+own D64 through BASIC 7 and manages 442 pages (113,152 bytes) across both RAM
+banks. It provides generation/owner-checked handles, explicit reservations,
+bounded read/write/fill and preflighted owner cleanup. Its two-screen memory
+workspace is a first native client. The existing graphical desktop and Ultimate
+applications still run under the legacy core and require migration. See the
+[native checkpoint](validation/2026-09-09-native-kernel/README.md) for CPU,
+emulator and physical results and the remaining qualification gates.
+
+Next implementation: native app manifests/load lifecycle and shared filesystem
+ownership, then migrate display/input and the existing desktop/Ultimate apps.
+Extend editing to banked documents, integrate other selector backends and
+complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and
+other expansion allocators, system-disk recovery and application parity remain
+required. R3 is partial; the native memory workspace does not complete that stage.
 
 Before calling the complete OS finished, audit every FR in the original PRD,
 every row above, all named app/hardware/firmware combinations, documentation,

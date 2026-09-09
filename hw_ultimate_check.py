@@ -348,6 +348,8 @@ def main():
                         help='create/copy/read back private binary files, desktop viewer and copy dialog')
     parser.add_argument('--editor', action='store_true',
                         help='shared Open/Save As, private text files and independent byte verification')
+    parser.add_argument('--native', action='store_true',
+                        help='cold-boot native C128 memory workspace; verify both banks/displays; restore desktop')
     parser.add_argument('--editor-exit-diagnose', action='store_true',
                         help='sample an idle editor without changing its code or document')
     parser.add_argument('--editor-inspect', action='store_true',
@@ -363,6 +365,10 @@ def main():
     parser.add_argument('--files-write-diagnostic', action='store_true',
                         help='compare private raw UCI writes below and at the 512-byte boundary')
     args = parser.parse_args()
+    if args.native:
+        from hw_native_check import run
+        run(ObservingUltimate())
+        return
     if (args.editor_exit_diagnose or args.editor_inspect or args.editor_abort_load or args.editor_cleanup) and not args.no_boot:
         parser.error('editor diagnosis/cleanup requires --no-boot')
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-browser-'))

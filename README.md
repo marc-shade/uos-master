@@ -18,6 +18,12 @@ tracks the remaining kernel, GEOS/Wheels application parity, Ultimate desktop
 integration, and expansion-hardware work. uOS is still under development;
 the basic editor and calculator are only the beginning of the application suite.
 
+A separate [native C128 kernel and memory workspace](docs/NATIVE-KERNEL.md)
+now boots in native mode, manages both RAM banks with owner-checked handles,
+and displays its memory controls on both screens. Build it with
+`python3 build-native.py`; the resulting disk is `target/native/uos128.d64`.
+The graphical desktop and application suite still need migration to this kernel.
+
 ## Storage and loader update (2026-09-08)
 
 The file manager now scrolls beyond its 64-entry cache, shows file metadata,
