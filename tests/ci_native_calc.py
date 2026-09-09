@@ -15,11 +15,18 @@ from hwlib import lst_symbol
 
 
 class Calculator:
-    def __init__(self):
+    instruction_limit=2000000
+
+    def __init__(self,image_name='calc',files=None,loader_name=b'CHECK',device=8,fmt=0):
         self.m=Machine();self.ram=self.m.ram
-        self.image=(ROOT/'target/native/calc.prg').read_bytes()
-        self.io=StreamIEC(self.m,{(8,b'CHECK',b'P'):self.image})
-        self.ram[0x3d21:0x3d23]=bytes([8,5]);self.ram[0x3d40:0x3d45]=b'CHECK'
+        self.image_name=image_name
+        self.image=(ROOT/'target/native'/f'{image_name}.prg').read_bytes()
+        self.io=StreamIEC(self.m,{**(files or {}),(8,loader_name,b'P'):self.image})
+        self.io.formats[device]=fmt
+        self.ram[0x3d21:0x3d23]=bytes([8,len(loader_name)])
+        self.ram[0x3d40:0x3d40+len(loader_name)]=loader_name
+        self.ram[0x3d29:0x3d2b]=bytes([device,fmt])
+        self.ram[0x3d2c]=fmt
         self.cpu=MPU(memory=self.m.bus,pc=RUN);self.cpu.sp=0xe0;self.cpu.p=0x20
         self.cpu.stPushWord(0xaff)
         self.screens=[bytearray(b' '*1000),bytearray(b' '*2000)]
@@ -29,7 +36,7 @@ class Calculator:
         assert self.ram[0x3d20]==32 and self.ram[0x3d23]==2
         assert not self.io.handles
 
-    def symbol(self,name):return lst_symbol('native/calc',name)
+    def symbol(self,name):return lst_symbol('native/'+self.image_name,name)
     def value(self,name):return self.ram[self.symbol(name)]
     def display(self):return bytes(self.ram[self.symbol('dispbuf'):self.symbol('dispbuf')+8]).split(b'\0')[0].decode()
 
@@ -41,13 +48,13 @@ class Calculator:
         else:
             assert 32<=value<128,value
             assert self.row[bank]<25,'unexpected calculator screen scroll'
-            self.screens[bank][self.row[bank]*cols+self.col[bank]]=value-64 if 64<=value<96 else value
+            self.screens[bank][self.row[bank]*cols+self.col[bank]]=value-64 if 64<=value<96 else value-32 if value>=96 else value
             self.col[bank]+=1
             if self.col[bank]==cols:self.col[bank]=0;self.row[bank]+=1
 
     def loop(self,exited=False):
         cpu=self.cpu
-        for steps in range(2000000):
+        for steps in range(self.instruction_limit):
             if self.observation_target is not None and not self.observation_done:
                 consumed=int.from_bytes(self.ram[0x3d13:0x3d15],'little')
                 if consumed==self.observation_target and self.ram[0x3d12]==1:
@@ -157,6 +164,11 @@ def main():
         calc.check_screens(save_status='HISTORY SAVED AND VERIFIED');calc.key(27,exited=True)
         report.update(passed=True,saved_history_verified=True,saved_maximum_bytes=192,existing_name_preserved=True,
                       save_cancel_and_fault=True)
+        for fmt in (1,2):
+            calc=Calculator(fmt=fmt);calc.type('12+30=SSHARED');calc.key(13)
+            assert calc.ram[0x3d96]==fmt and bytes(calc.io.files[8,b'SHARED',b'S'])==b'42\r'
+            calc.check_screens(save_status='HISTORY SAVED AND VERIFIED');calc.key(27,exited=True)
+        report['source_disk_formats']=[0,1,2]
         print('PASS: native calculator arithmetic/errors, 32-result banked history, paging, both screens and exit cleanup',flush=True)
     except BaseException as error:report['error']=str(error);raise
     finally:

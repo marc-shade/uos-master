@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o /home/marc/geos128/uos/target/native/calc.prg -L /home/marc/geos128/uos/target/native/calc.lst /home/marc/geos128/uos/src/native/calc.asm
-; Wed Sep  9 13:24:50 2026
+; Wed Sep  9 15:15:32 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -11,7 +11,7 @@
 ;******  Processing file: /home/marc/geos128/uos/src/native/api.inc
 
 =1					N_ABI_MAJOR = 1
-=1					N_ABI_MINOR = 1
+=2					N_ABI_MINOR = 2
 =$1c20					N_ALLOC         = $1c20
 =$1c23					N_FREE          = $1c23
 =$1c26					N_READ          = $1c26
@@ -28,6 +28,9 @@
 =$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
 =$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
 =$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch from APPNAME/DEVICE
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
 =$3d00					N_OWNER         = $3d00
 =$3d01					N_PAGES         = $3d01
 =$3d02					N_BANK          = $3d02
@@ -53,6 +56,11 @@
 =$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
 =$3d26					N_IOSTATUS      = $3d26          ; last serial status byte
 =$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source disk geometry, 0 D64 / 1 D71 / 2 D81
 =$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
 =$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
 =$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
@@ -71,6 +79,9 @@
 =$3d91					N_FBUSY         = $3d91
 =$3d92					N_FPOSITION     = $3d92          ; returned byte position, little-endian 32-bit
 =$3d96					N_FFORMAT       = $3d96          ; CBM disk geometry: 0 D64, 1 D71, 2 D81
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
 =$3da0					N_FNAME         = $3da0          ; 16 bytes
 =$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
 =$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
@@ -104,8 +115,8 @@
 
 .6000					app_image:
 >6000	4e 41 50 50			        .text "napp"
->6004	01 01 01 00			        .byte 1,1,1,0          ; native file services require ABI 1.1
->6008	08 0a				        .word calc_end-app_image
+>6004	01 01 02 00			        .byte 1,1,2,0          ; source disk geometry comes from ABI 1.2
+>6008	0b 0a				        .word calc_end-app_image
 >600a	10 00				        .byte 16,0             ; 4 KiB code/data, zero-filled before loading
 >600c	20 00				        .word calc_entry-app_image
 >600e	00 00				        .word 0                ; build-native.py seals CRC16 over the image
@@ -136,8 +147,8 @@
 .604a	8d 70 66	sta $6670	        sta history_head
 .604d	8d 71 66	sta $6671	        sta history_view
 .6050	8d 72 66	sta $6672	        sta history_pending
-.6053	8d 31 69	sta $6931	        sta save_mode
-.6056	8d 32 69	sta $6932	        sta save_status
+.6053	8d 34 69	sta $6934	        sta save_mode
+.6056	8d 35 69	sta $6935	        sta save_status
 .6059	4c 1b 61	jmp $611b	        jmp c_clear
 .605c					cloop:
 .605c	a9 01		lda #$01	        lda #1
@@ -146,7 +157,7 @@
 .6064	f0 f6		beq $605c	        beq cloop
 .6066	a2 00		ldx #$00	        ldx #0
 .6068	8e 12 3d	stx $3d12	        stx N_READY
-.606b	ae 31 69	ldx $6931	        ldx save_mode
+.606b	ae 34 69	ldx $6934	        ldx save_mode
 .606e	f0 03		beq $6073	        beq *+5
 .6070	4c b0 66	jmp $66b0	        jmp save_key
 .6073	c9 1b		cmp #$1b	        cmp #$1b
@@ -651,7 +662,7 @@
 .64c9	a2 65		ldx #$65	        ldx #>text_help
 .64cb	20 b0 65	jsr $65b0	        jsr puts
 .64ce	20 51 65	jsr $6551	        jsr history_show
-.64d1	20 48 68	jsr $6848	        jsr save_show
+.64d1	20 4b 68	jsr $684b	        jsr save_show
 .64d4	ee 69 66	inc $6669	        inc screen
 .64d7	ad 69 66	lda $6669	        lda screen
 .64da	c9 02		cmp #$02	        cmp #2
@@ -818,15 +829,15 @@
 .668d	ad 6f 66	lda $666f	        lda history_count
 .6690	d0 08		bne $669a	        bne save_prompt
 .6692	a9 04		lda #$04	        lda #4
-.6694	8d 32 69	sta $6932	        sta save_status
+.6694	8d 35 69	sta $6935	        sta save_status
 .6697	4c aa 66	jmp $66aa	        jmp save_redraw
 .669a					save_prompt:
 .669a	a9 00		lda #$00	        lda #0
-.669c	8d 33 69	sta $6933	        sta save_length
-.669f	8d 37 69	sta $6937	        sta save_name
-.66a2	8d 32 69	sta $6932	        sta save_status
+.669c	8d 36 69	sta $6936	        sta save_length
+.669f	8d 3a 69	sta $693a	        sta save_name
+.66a2	8d 35 69	sta $6935	        sta save_status
 .66a5	a9 01		lda #$01	        lda #1
-.66a7	8d 31 69	sta $6931	        sta save_mode
+.66a7	8d 34 69	sta $6934	        sta save_mode
 .66aa					save_redraw:
 .66aa	20 4c 64	jsr $644c	        jsr c_show
 .66ad	4c 5c 60	jmp $605c	        jmp cloop
@@ -860,216 +871,217 @@
 .66e5	f0 33		beq $671a	        beq save_key_done
 .66e7	c9 24		cmp #$24	        cmp #$24
 .66e9	f0 2f		beq $671a	        beq save_key_done
-.66eb	ae 33 69	ldx $6933	        ldx save_length
+.66eb	ae 36 69	ldx $6936	        ldx save_length
 .66ee	e0 10		cpx #$10	        cpx #16
 .66f0	f0 28		beq $671a	        beq save_key_done
-.66f2	9d 37 69	sta $6937,x	        sta save_name,x
+.66f2	9d 3a 69	sta $693a,x	        sta save_name,x
 .66f5	e8		inx		        inx
-.66f6	8e 33 69	stx $6933	        stx save_length
+.66f6	8e 36 69	stx $6936	        stx save_length
 .66f9	a9 00		lda #$00	        lda #0
-.66fb	9d 37 69	sta $6937,x	        sta save_name,x
+.66fb	9d 3a 69	sta $693a,x	        sta save_name,x
 .66fe	4c aa 66	jmp $66aa	        jmp save_redraw
 .6701					save_delete:
-.6701	ae 33 69	ldx $6933	        ldx save_length
+.6701	ae 36 69	ldx $6936	        ldx save_length
 .6704	f0 14		beq $671a	        beq save_key_done
 .6706	ca		dex		        dex
-.6707	8e 33 69	stx $6933	        stx save_length
+.6707	8e 36 69	stx $6936	        stx save_length
 .670a	a9 00		lda #$00	        lda #0
-.670c	9d 37 69	sta $6937,x	        sta save_name,x
+.670c	9d 3a 69	sta $693a,x	        sta save_name,x
 .670f	4c aa 66	jmp $66aa	        jmp save_redraw
 .6712					save_cancel:
 .6712	a9 00		lda #$00	        lda #0
-.6714	8d 31 69	sta $6931	        sta save_mode
+.6714	8d 34 69	sta $6934	        sta save_mode
 .6717	4c aa 66	jmp $66aa	        jmp save_redraw
 .671a					save_key_done:
 .671a	4c 5c 60	jmp $605c	        jmp cloop
 .671d					save_enter:
-.671d	ad 33 69	lda $6933	        lda save_length
+.671d	ad 36 69	lda $6936	        lda save_length
 .6720	f0 f8		beq $671a	        beq save_key_done
 .6722	a9 00		lda #$00	        lda #0
-.6724	8d 31 69	sta $6931	        sta save_mode
-.6727	8d 34 69	sta $6934	        sta save_size
-.672a	8d 35 69	sta $6935	        sta save_row
+.6724	8d 34 69	sta $6934	        sta save_mode
+.6727	8d 37 69	sta $6937	        sta save_size
+.672a	8d 38 69	sta $6938	        sta save_row
 .672d					save_collect:
 .672d	20 df 64	jsr $64df	        jsr history_select
 .6730	38		sec		        sec
 .6731	ad 70 66	lda $6670	        lda history_head
 .6734	ed 6f 66	sbc $666f	        sbc history_count
 .6737	18		clc		        clc
-.6738	6d 35 69	adc $6935	        adc save_row
+.6738	6d 38 69	adc $6938	        adc save_row
 .673b	29 1f		and #$1f	        and #31
 .673d	20 fb 64	jsr $64fb	        jsr history_offset
 .6740	20 26 1c	jsr $1c26	        jsr N_READ
 .6743	90 03		bcc $6748	        bcc *+5
 .6745	4c 4e 65	jmp $654e	        jmp history_failure
 .6748	a2 00		ldx #$00	        ldx #0
-.674a	ac 34 69	ldy $6934	        ldy save_size
+.674a	ac 37 69	ldy $6937	        ldy save_size
 .674d					save_collect_text:
 .674d	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
 .6750	c9 20		cmp #$20	        cmp #$20
 .6752	f0 09		beq $675d	        beq save_collect_line
-.6754	99 48 69	sta $6948,y	        sta save_data,y
+.6754	99 4b 69	sta $694b,y	        sta save_data,y
 .6757	c8		iny		        iny
 .6758	e8		inx		        inx
 .6759	e0 05		cpx #$05	        cpx #5
 .675b	d0 f0		bne $674d	        bne save_collect_text
 .675d					save_collect_line:
 .675d	a9 0d		lda #$0d	        lda #13
-.675f	99 48 69	sta $6948,y	        sta save_data,y
+.675f	99 4b 69	sta $694b,y	        sta save_data,y
 .6762	c8		iny		        iny
-.6763	8c 34 69	sty $6934	        sty save_size
-.6766	ee 35 69	inc $6935	        inc save_row
-.6769	ad 35 69	lda $6935	        lda save_row
+.6763	8c 37 69	sty $6937	        sty save_size
+.6766	ee 38 69	inc $6938	        inc save_row
+.6769	ad 38 69	lda $6938	        lda save_row
 .676c	cd 6f 66	cmp $666f	        cmp history_count
 .676f	d0 bc		bne $672d	        bne save_collect
 .6771	ad 68 66	lda $6668	        lda owner
 .6774	8d 80 3d	sta $3d80	        sta N_FOWNER
 .6777	ad 21 3d	lda $3d21	        lda N_DEVICE
 .677a	8d 85 3d	sta $3d85	        sta N_FDEVICE
-.677d	ad 33 69	lda $6933	        lda save_length
+.677d	ad 36 69	lda $6936	        lda save_length
 .6780	8d 86 3d	sta $3d86	        sta N_FNAMELEN
 .6783	a2 0f		ldx #$0f	        ldx #15
 .6785					save_filename:
-.6785	bd 37 69	lda $6937,x	        lda save_name,x
+.6785	bd 3a 69	lda $693a,x	        lda save_name,x
 .6788	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
 .678b	ca		dex		        dex
 .678c	10 f7		bpl $6785	        bpl save_filename
 .678e	a9 00		lda #$00	        lda #0
 .6790	8d 88 3d	sta $3d88	        sta N_FTYPE
-.6793	8d 96 3d	sta $3d96	        sta N_FFORMAT           ; the current native system disk is D64
-.6796	8d 81 3d	sta $3d81	        sta N_FHANDLE
-.6799	8d 36 69	sta $6936	        sta save_open
-.679c	a9 01		lda #$01	        lda #1
-.679e	8d 87 3d	sta $3d87	        sta N_FMODE
-.67a1	20 41 1c	jsr $1c41	        jsr N_FOPEN
-.67a4	90 12		bcc $67b8	        bcc save_created
-.67a6	ad 8f 3d	lda $3d8f	        lda N_FDOS
-.67a9	c9 3f		cmp #$3f	        cmp #63
-.67ab	f0 03		beq $67b0	        beq *+5
-.67ad	4c 33 68	jmp $6833	        jmp save_failed
-.67b0	a9 03		lda #$03	        lda #3
-.67b2	8d 32 69	sta $6932	        sta save_status
-.67b5	4c aa 66	jmp $66aa	        jmp save_redraw
-.67b8					save_created:
-.67b8	ee 36 69	inc $6936	        inc save_open
-.67bb	a2 00		ldx #$00	        ldx #0
-.67bd					save_copy:
-.67bd	bd 48 69	lda $6948,x	        lda save_data,x
-.67c0	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
-.67c3	e8		inx		        inx
-.67c4	ec 34 69	cpx $6934	        cpx save_size
-.67c7	d0 f4		bne $67bd	        bne save_copy
-.67c9	ad 34 69	lda $6934	        lda save_size
-.67cc	8d 89 3d	sta $3d89	        sta N_FCOUNT
-.67cf	a9 00		lda #$00	        lda #0
-.67d1	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
-.67d4	20 47 1c	jsr $1c47	        jsr N_FWRITE
-.67d7	b0 5a		bcs $6833	        bcs save_failed
-.67d9	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
-.67dc	b0 55		bcs $6833	        bcs save_failed
-.67de	ce 36 69	dec $6936	        dec save_open
-.67e1	a9 00		lda #$00	        lda #0
-.67e3	8d 87 3d	sta $3d87	        sta N_FMODE
-.67e6	20 41 1c	jsr $1c41	        jsr N_FOPEN
-.67e9	b0 48		bcs $6833	        bcs save_failed
-.67eb	ee 36 69	inc $6936	        inc save_open
-.67ee	a9 00		lda #$00	        lda #0
-.67f0	8d 89 3d	sta $3d89	        sta N_FCOUNT
-.67f3	a9 02		lda #$02	        lda #2
-.67f5	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
-.67f8	20 44 1c	jsr $1c44	        jsr N_FREAD
-.67fb	b0 36		bcs $6833	        bcs save_failed
-.67fd	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
-.6800	d0 31		bne $6833	        bne save_failed
-.6802	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
-.6805	cd 34 69	cmp $6934	        cmp save_size
-.6808	d0 29		bne $6833	        bne save_failed
-.680a	ad 8d 3d	lda $3d8d	        lda N_FEOF
-.680d	c9 01		cmp #$01	        cmp #1
-.680f	d0 22		bne $6833	        bne save_failed
-.6811	a2 00		ldx #$00	        ldx #0
-.6813					save_compare:
-.6813	bd 48 69	lda $6948,x	        lda save_data,x
-.6816	dd 00 3a	cmp $3a00,x	        cmp N_BUFFER,x
-.6819	d0 18		bne $6833	        bne save_failed
-.681b	e8		inx		        inx
-.681c	ec 34 69	cpx $6934	        cpx save_size
-.681f	d0 f2		bne $6813	        bne save_compare
-.6821	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
-.6824	b0 0d		bcs $6833	        bcs save_failed
-.6826	a9 00		lda #$00	        lda #0
-.6828	8d 36 69	sta $6936	        sta save_open
-.682b	a9 01		lda #$01	        lda #1
-.682d	8d 32 69	sta $6932	        sta save_status
-.6830	4c aa 66	jmp $66aa	        jmp save_redraw
-.6833					save_failed:
-.6833	ad 36 69	lda $6936	        lda save_open
-.6836	f0 08		beq $6840	        beq save_failed_closed
-.6838	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE             ; never retry file data or remove a partial file
-.683b	a9 00		lda #$00	        lda #0
-.683d	8d 36 69	sta $6936	        sta save_open
-.6840					save_failed_closed:
-.6840	a9 02		lda #$02	        lda #2
-.6842	8d 32 69	sta $6932	        sta save_status
-.6845	4c aa 66	jmp $66aa	        jmp save_redraw
-.6848					save_show:
-.6848	ad 31 69	lda $6931	        lda save_mode
-.684b	f0 15		beq $6862	        beq save_show_status
-.684d	a9 75		lda #$75	        lda #<save_prompt_text
-.684f	a2 68		ldx #$68	        ldx #>save_prompt_text
-.6851	20 b0 65	jsr $65b0	        jsr puts
-.6854	a9 37		lda #$37	        lda #<save_name
-.6856	a2 69		ldx #$69	        ldx #>save_name
-.6858	20 b0 65	jsr $65b0	        jsr puts
-.685b	a9 9c		lda #$9c	        lda #<save_controls
-.685d	a2 68		ldx #$68	        ldx #>save_controls
-.685f	4c b0 65	jmp $65b0	        jmp puts
-.6862					save_show_status:
-.6862	ae 32 69	ldx $6932	        ldx save_status
-.6865	f0 0d		beq $6874	        beq save_show_done
-.6867	ca		dex		        dex
-.6868	bd 29 69	lda $6929,x	        lda save_messages_lo,x
-.686b	48		pha		        pha
-.686c	bd 2d 69	lda $692d,x	        lda save_messages_hi,x
-.686f	aa		tax		        tax
-.6870	68		pla		        pla
-.6871	4c b0 65	jmp $65b0	        jmp puts
-.6874					save_show_done:
-.6874	60		rts		        rts
->6875	0d 53 41 56 45 20 41 53		save_prompt_text: .text 13,"save as (seq file on iec disk)",13,"name: ",0
->687d	20 28 53 45 51 20 46 49 4c 45 20 4f 4e 20 49 45
->688d	43 20 44 49 53 4b 29 0d 4e 41 4d 45 3a 20 00
->689c	0d 45 4e 54 45 52 20 53		save_controls: .text 13,"enter save   esc cancel",0
->68a4	41 56 45 20 20 20 45 53 43 20 43 41 4e 43 45 4c
->68b4	00
->68b5	0d 48 49 53 54 4f 52 59		save_ok: .text 13,"history saved and verified",0
->68bd	20 53 41 56 45 44 20 41 4e 44 20 56 45 52 49 46
->68cd	49 45 44 00
->68d1	0d 44 49 53 4b 20 45 52		save_error_text: .text 13,"disk error; file may be partial",0
->68d9	52 4f 52 3b 20 46 49 4c 45 20 4d 41 59 20 42 45
->68e9	20 50 41 52 54 49 41 4c 00
->68f2	0d 46 49 4c 45 20 45 58		save_exists: .text 13,"file exists - choose another name",0
->68fa	49 53 54 53 20 2d 20 43 48 4f 4f 53 45 20 41 4e
->690a	4f 54 48 45 52 20 4e 41 4d 45 00
->6915	0d 4e 4f 20 52 45 53 55		save_empty: .text 13,"no results to save",0
->691d	4c 54 53 20 54 4f 20 53 41 56 45 00
->6929	b5 d1 f2 15			save_messages_lo: .byte <save_ok,<save_error_text,<save_exists,<save_empty
->692d	68 68 68 69			save_messages_hi: .byte >save_ok,>save_error_text,>save_exists,>save_empty
->6931	00				save_mode: .byte 0
->6932	00				save_status: .byte 0
->6933	00				save_length: .byte 0
->6934	00				save_size: .byte 0
->6935	00				save_row: .byte 0
->6936	00				save_open: .byte 0
->6937	00 00 00 00 00 00 00 00		save_name: .fill 17,0
->693f	00 00 00 00 00 00 00 00 00
->6948	00 00 00 00 00 00 00 00		save_data: .fill 192,0
->6950	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+.6793	8d 81 3d	sta $3d81	        sta N_FHANDLE
+.6796	8d 39 69	sta $6939	        sta save_open
+.6799	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.679c	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.679f	a9 01		lda #$01	        lda #1
+.67a1	8d 87 3d	sta $3d87	        sta N_FMODE
+.67a4	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.67a7	90 12		bcc $67bb	        bcc save_created
+.67a9	ad 8f 3d	lda $3d8f	        lda N_FDOS
+.67ac	c9 3f		cmp #$3f	        cmp #63
+.67ae	f0 03		beq $67b3	        beq *+5
+.67b0	4c 36 68	jmp $6836	        jmp save_failed
+.67b3	a9 03		lda #$03	        lda #3
+.67b5	8d 35 69	sta $6935	        sta save_status
+.67b8	4c aa 66	jmp $66aa	        jmp save_redraw
+.67bb					save_created:
+.67bb	ee 39 69	inc $6939	        inc save_open
+.67be	a2 00		ldx #$00	        ldx #0
+.67c0					save_copy:
+.67c0	bd 4b 69	lda $694b,x	        lda save_data,x
+.67c3	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.67c6	e8		inx		        inx
+.67c7	ec 37 69	cpx $6937	        cpx save_size
+.67ca	d0 f4		bne $67c0	        bne save_copy
+.67cc	ad 37 69	lda $6937	        lda save_size
+.67cf	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.67d2	a9 00		lda #$00	        lda #0
+.67d4	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.67d7	20 47 1c	jsr $1c47	        jsr N_FWRITE
+.67da	b0 5a		bcs $6836	        bcs save_failed
+.67dc	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.67df	b0 55		bcs $6836	        bcs save_failed
+.67e1	ce 39 69	dec $6939	        dec save_open
+.67e4	a9 00		lda #$00	        lda #0
+.67e6	8d 87 3d	sta $3d87	        sta N_FMODE
+.67e9	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.67ec	b0 48		bcs $6836	        bcs save_failed
+.67ee	ee 39 69	inc $6939	        inc save_open
+.67f1	a9 00		lda #$00	        lda #0
+.67f3	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.67f6	a9 02		lda #$02	        lda #2
+.67f8	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.67fb	20 44 1c	jsr $1c44	        jsr N_FREAD
+.67fe	b0 36		bcs $6836	        bcs save_failed
+.6800	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
+.6803	d0 31		bne $6836	        bne save_failed
+.6805	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.6808	cd 37 69	cmp $6937	        cmp save_size
+.680b	d0 29		bne $6836	        bne save_failed
+.680d	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.6810	c9 01		cmp #$01	        cmp #1
+.6812	d0 22		bne $6836	        bne save_failed
+.6814	a2 00		ldx #$00	        ldx #0
+.6816					save_compare:
+.6816	bd 4b 69	lda $694b,x	        lda save_data,x
+.6819	dd 00 3a	cmp $3a00,x	        cmp N_BUFFER,x
+.681c	d0 18		bne $6836	        bne save_failed
+.681e	e8		inx		        inx
+.681f	ec 37 69	cpx $6937	        cpx save_size
+.6822	d0 f2		bne $6816	        bne save_compare
+.6824	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.6827	b0 0d		bcs $6836	        bcs save_failed
+.6829	a9 00		lda #$00	        lda #0
+.682b	8d 39 69	sta $6939	        sta save_open
+.682e	a9 01		lda #$01	        lda #1
+.6830	8d 35 69	sta $6935	        sta save_status
+.6833	4c aa 66	jmp $66aa	        jmp save_redraw
+.6836					save_failed:
+.6836	ad 39 69	lda $6939	        lda save_open
+.6839	f0 08		beq $6843	        beq save_failed_closed
+.683b	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE             ; never retry file data or remove a partial file
+.683e	a9 00		lda #$00	        lda #0
+.6840	8d 39 69	sta $6939	        sta save_open
+.6843					save_failed_closed:
+.6843	a9 02		lda #$02	        lda #2
+.6845	8d 35 69	sta $6935	        sta save_status
+.6848	4c aa 66	jmp $66aa	        jmp save_redraw
+.684b					save_show:
+.684b	ad 34 69	lda $6934	        lda save_mode
+.684e	f0 15		beq $6865	        beq save_show_status
+.6850	a9 78		lda #$78	        lda #<save_prompt_text
+.6852	a2 68		ldx #$68	        ldx #>save_prompt_text
+.6854	20 b0 65	jsr $65b0	        jsr puts
+.6857	a9 3a		lda #$3a	        lda #<save_name
+.6859	a2 69		ldx #$69	        ldx #>save_name
+.685b	20 b0 65	jsr $65b0	        jsr puts
+.685e	a9 9f		lda #$9f	        lda #<save_controls
+.6860	a2 68		ldx #$68	        ldx #>save_controls
+.6862	4c b0 65	jmp $65b0	        jmp puts
+.6865					save_show_status:
+.6865	ae 35 69	ldx $6935	        ldx save_status
+.6868	f0 0d		beq $6877	        beq save_show_done
+.686a	ca		dex		        dex
+.686b	bd 2c 69	lda $692c,x	        lda save_messages_lo,x
+.686e	48		pha		        pha
+.686f	bd 30 69	lda $6930,x	        lda save_messages_hi,x
+.6872	aa		tax		        tax
+.6873	68		pla		        pla
+.6874	4c b0 65	jmp $65b0	        jmp puts
+.6877					save_show_done:
+.6877	60		rts		        rts
+>6878	0d 53 41 56 45 20 41 53		save_prompt_text: .text 13,"save as (seq file on iec disk)",13,"name: ",0
+>6880	20 28 53 45 51 20 46 49 4c 45 20 4f 4e 20 49 45
+>6890	43 20 44 49 53 4b 29 0d 4e 41 4d 45 3a 20 00
+>689f	0d 45 4e 54 45 52 20 53		save_controls: .text 13,"enter save   esc cancel",0
+>68a7	41 56 45 20 20 20 45 53 43 20 43 41 4e 43 45 4c
+>68b7	00
+>68b8	0d 48 49 53 54 4f 52 59		save_ok: .text 13,"history saved and verified",0
+>68c0	20 53 41 56 45 44 20 41 4e 44 20 56 45 52 49 46
+>68d0	49 45 44 00
+>68d4	0d 44 49 53 4b 20 45 52		save_error_text: .text 13,"disk error; file may be partial",0
+>68dc	52 4f 52 3b 20 46 49 4c 45 20 4d 41 59 20 42 45
+>68ec	20 50 41 52 54 49 41 4c 00
+>68f5	0d 46 49 4c 45 20 45 58		save_exists: .text 13,"file exists - choose another name",0
+>68fd	49 53 54 53 20 2d 20 43 48 4f 4f 53 45 20 41 4e
+>690d	4f 54 48 45 52 20 4e 41 4d 45 00
+>6918	0d 4e 4f 20 52 45 53 55		save_empty: .text 13,"no results to save",0
+>6920	4c 54 53 20 54 4f 20 53 41 56 45 00
+>692c	b8 d4 f5 18			save_messages_lo: .byte <save_ok,<save_error_text,<save_exists,<save_empty
+>6930	68 68 68 69			save_messages_hi: .byte >save_ok,>save_error_text,>save_exists,>save_empty
+>6934	00				save_mode: .byte 0
+>6935	00				save_status: .byte 0
+>6936	00				save_length: .byte 0
+>6937	00				save_size: .byte 0
+>6938	00				save_row: .byte 0
+>6939	00				save_open: .byte 0
+>693a	00 00 00 00 00 00 00 00		save_name: .fill 17,0
+>6942	00 00 00 00 00 00 00 00 00
+>694b	00 00 00 00 00 00 00 00		save_data: .fill 192,0
+>6953	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 10 times (160 bytes)...
->6a00	00 00 00 00 00 00 00 00
+>6a03	00 00 00 00 00 00 00 00
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
 
-.6a08					calc_end:
+.6a0b					calc_end:
 
 ;******  End of listing

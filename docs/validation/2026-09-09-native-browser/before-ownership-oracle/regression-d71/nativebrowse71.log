@@ -1,0 +1,37 @@
+Native browser emulator evidence: /var/tmp/arc-scratch/uos-native-browser-iec-xlzgahve
+Traceback (most recent call last):
+  File "/home/marc/geos128/uos/tests/ci_native_browser_iec.py", line 75, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/home/marc/geos128/uos/tests/ci_native_browser_iec.py", line 49, in main
+    browser_workflow(client,records,fixtures,fmt,report,save)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/geos128/uos/native_browser_check.py", line 165, in browser_workflow
+    client.select(names.index(b'BADAPP'));client.put(0x3d2e,b'\xa5')
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/geos128/uos/native_browser_check.py", line 124, in select
+    self.key(key);self.selected+=step
+    ~~~~~~~~^^^^^
+  File "/home/marc/geos128/uos/native_browser_check.py", line 115, in key
+    wait(lambda:int.from_bytes(self.read(0x3d13,2),'little')==(before+1)&65535 and self.read(0x3d12)==b'\1',
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         f'native browser key {value:02x}',180)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/geos128/uos/native_capture.py", line 15, in wait
+    if predicate():return
+       ~~~~~~~~~^^
+  File "/home/marc/geos128/uos/native_browser_check.py", line 115, in <lambda>
+    wait(lambda:int.from_bytes(self.read(0x3d13,2),'little')==(before+1)&65535 and self.read(0x3d12)==b'\1',
+                               ~~~~~~~~~^^^^^^^^^^
+  File "/home/marc/geos128/uos/native_browser_check.py", line 106, in read
+    data=bytes(self.mon.read_mem(address,address+count-1));self.mon.resume();return data
+               ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/.claude/skills/commodore-basic/bin/cbm", line 184, in read_mem
+    err, resp = self._recv(self._send(CMD_MEM_GET, body))
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/.claude/skills/commodore-basic/bin/cbm", line 160, in _recv
+    "<BBIBBI", self._recv_exact(12)
+               ~~~~~~~~~~~~~~~~^^^^
+  File "/home/marc/.claude/skills/commodore-basic/bin/cbm", line 145, in _recv_exact
+    raise EOFError("VICE monitor closed the connection")
+EOFError: VICE monitor closed the connection

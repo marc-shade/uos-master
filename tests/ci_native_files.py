@@ -315,7 +315,7 @@ def main():
             ('owner-255',lambda f:f.ram.__setitem__(OWNER,255)),
             ('device-low',lambda f:f.ram.__setitem__(DEVICE,7)),
             ('device-high',lambda f:f.ram.__setitem__(DEVICE,31)),
-            ('mode',lambda f:f.ram.__setitem__(MODE,2)),
+            ('mode',lambda f:f.ram.__setitem__(MODE,3)),
             ('type',lambda f:f.ram.__setitem__(TYPE,3)),
             ('format',lambda f:f.ram.__setitem__(FORMAT,3)),
             ('name-empty',lambda f:f.ram.__setitem__(NAMELEN,0)),
@@ -386,15 +386,19 @@ def main():
         for address,value in [(OWNER,32),(DEVICE,8),(NAMELEN,4),(MODE,0),(TYPE,0)]+[(NAME+i,v) for i,v in enumerate(b'NOTE')]:
             code+=bytes([0xa9,value,0x8d,address&255,address>>8])
         code+=bytes([0x20,OPEN&255,OPEN>>8,0xa9,42,0x4c,0x3e,0x1c])
-        app=bytearray(fixture(code));app[8]=1;app=seal(app)
-        for label,failed in [('app-auto-close',False),('app-retains-close-error',True)]:
+        for label,failed,action,address in [
+                ('app-auto-close',False,0,0x1c3e),('app-retains-close-error',True,0,0x1c3e),
+                ('replace-closes-before-handoff',False,1,0x1c53),('replace-retains-close-error',True,1,0x1c53),
+                ('workspace-closes-before-return',False,2,0x1c56),('workspace-retains-close-error',True,2,0x1c56)]:
+            payload=bytearray(code);payload[-2:]=address.to_bytes(2,'little')
+            app=bytearray(fixture(payload));app[8]=2;app=seal(app)
             f=Files({(8,b'CHECK',b'P'):app,(8,b'NOTE',b'S'):b'owned',
                      (9,b'OTHER',b'S'):b'foreign'})
             other=f.open(b'OTHER',device=9,owner=33)
             f.ram[0x3d21:0x3d23]=bytes([8,5]);f.ram[0x3d40:0x3d45]=b'CHECK'
             if failed:f.io.fail_close=123
             f.call(0x1c38,expected=0x11 if failed else 0,heap_unchanged=False)
-            assert f.ram[0x3d24]==42
+            assert f.ram[0x3d24]==(42 if action==0 else 0) and f.ram[0x3d28]==action
             assert f.ram[0x3d20]==(32 if failed else 0) and f.ram[0x3d23]==(4 if failed else 0)
             assert f.ram[RECORDS]==33 and f.ram[RECORDS+16]==(32 if failed else 0)
             assert f.m.stats()==((175,251,31) if failed else (191,251,32))

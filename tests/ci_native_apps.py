@@ -113,6 +113,7 @@ class IEC:
 def run_case(image=None,expected=0,flags=0,prepare=None,retained=False,ui_exit=None,**faults):
     m=Machine();iec=IEC(m,image,**faults);ram=m.ram
     ram[0x3d21:0x3d23]=bytes([8,5]);ram[0x3d40:0x3d45]=b'CHECK'
+    ram[symbol('ui_system_device')]=8
     # An unrelated owner and open file must survive every success/failure.
     m.alloc(2,1,owner=16,page=0x80)
     protected=bytes(m.bus.ram[1][0x8000:0x8200])
@@ -171,11 +172,19 @@ def main():
         code=b'\x48\x48\xa9\x39\x4c\x3e\x1c'
         m,iec,cases['exit']=run_case(fixture(code),flags=8)
         assert m.ram[0x3d24]==57
+        for label,address,action in [('replace-request',0x1c53,1),('workspace-request',0x1c56,2)]:
+            image=bytearray(fixture(b'\x48\x48\xa9\x63\x4c'+address.to_bytes(2,'little')))
+            image[8]=2
+            m,iec,cases[label]=run_case(seal(image),flags=8)
+            assert m.ram[0x3d24]==0 and m.ram[0x3d28]==action
+        m,iec,cases['stale-request-cleared']=run_case(prepare=lambda m,i:m.ram.__setitem__(0x3d28,2))
+        assert m.ram[0x3d28]==0
+        _,_,cases['invalid-source-format']=run_case(expected=1,prepare=lambda m,i:m.ram.__setitem__(0x3d2c,3))
         # An app can allocate more owned memory; return releases it too.
         code=bytes.fromhex('a9028d013da9018d023dad203d8d003d20201ca92b60')
         m,iec,cases['owned-allocation']=run_case(fixture(code))
         assert m.stats()==(191,249,31) and m.ram[0x3d24]==43
-        mutations=[('origin',0,1),('magic',2,0),('format',6,2),('abi',7,2),('minor',8,2),
+        mutations=[('origin',0,1),('magic',2,0),('format',6,2),('abi',7,2),('minor',8,3),
                    ('flags',9,1),('pages-zero',12,0),('pages-too-large',12,97),
                    ('reserved',13,1),('entry-header',14,31),('entry-past-end',14,40),
                    ('entry-high',15,1),('title-control',18,13),('size-small',10,32),('size-high',11,17)]

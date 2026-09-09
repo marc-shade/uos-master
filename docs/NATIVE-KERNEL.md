@@ -4,7 +4,8 @@ The separate `target/native/uos128.d64` boots through the C128 KERNAL into
 BASIC 7 and enters the native kernel. It never enters C64 mode. This first
 native image provides a memory workspace, application-facing allocator and a
 [disk-loaded native calculator](NATIVE-APPS.md) with verified history export
-through [owned IEC files](NATIVE-FILES.md). The graphical desktop,
+through [owned IEC files](NATIVE-FILES.md), plus a
+[file/app browser and byte viewer](NATIVE-BROWSER.md). The graphical desktop,
 Ultimate services and remaining application suite still require migration.
 The existing `target/ultos.d64` remains the graphical desktop build.
 
@@ -16,7 +17,7 @@ x128 -default -8 target/native/uos128.d64 -drive8true -drive8type 1541
 ```
 
 The build requires Python 3, 64tass and VICE's c1541. It creates the native
-kernel PRG, boot-sector PRG, D64 and image hash manifest in `target/native/`.
+kernel, boot-sector and two app PRGs, D64 and image hash manifest in `target/native/`.
 Track 1/sector 0 is reserved in the BAM before adding file `U`; ordinary file
 allocation therefore cannot consume the boot block. The boot sector feeds
 `RUN"U"` to native BASIC, which enters the kernel through its SYS stub.
@@ -37,6 +38,9 @@ codes are listed below. To return to the graphical desktop, mount
 Press **C** to launch the native calculator and **Esc** there to return while
 retaining the workspace's allocations. Its app lifecycle and additional ABI
 entries are documented in the [native app guide](NATIVE-APPS.md).
+Press **B** for Files and Apps. It discovers native applications on the selected
+IEC disk and returns to the browser after each application exits. **Esc** in
+the file list returns to the workspace with its allocations preserved.
 
 ## Memory and execution contract
 
@@ -64,6 +68,8 @@ The two pools provide **442 pages / 113,152 bytes (110.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
+Current kernel code/data ends at `$3775` exclusive, leaving 139 bytes before
+the page tables. Further resident services need a code-space plan.
 
 Transfers call the native KERNAL `INDFET`/`INDSTA` gateways at `$ff74/$ff77`.
 Their common-RAM routines switch to full RAM `$3f/$7f` for one byte, then
@@ -125,6 +131,8 @@ ERROR reflects the latest completed API operation. A reentrant attempt returns
 7 in A/carry without replacing the active ERROR or lock. The workspace keeps
 its command RESULT separately because its subsequent statistics call also
 updates ERROR. Apps must not modify the allocation tables or MMU registers.
+FREE0, FREE1 and SLOTS are snapshots from `N_STATS`; allocation and release
+do not automatically refresh them.
 Owner checks provide API discipline, not hardware memory isolation against
 arbitrary machine code.
 

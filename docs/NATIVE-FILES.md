@@ -1,4 +1,4 @@
-# Native owned IEC files — ABI 1.1
+# Native owned IEC files and directories — ABI 1.2
 
 Native applications can open, read, exclusively create, write and close SEQ,
 PRG and USR files through the kernel. Two streams can be open at once, on the
@@ -7,14 +7,16 @@ generation, so a released handle cannot select a later file. Application exit
 closes its native files before releasing its executable and banked memory.
 
 The calculator is the first product client: **S** exports up to 32 history
-results, oldest first, to a named SEQ file on the native system D64. Each line
+results, oldest first, to a named SEQ file on the application's source disk. Each line
 ends with CR. It closes, reopens and compares every byte before reporting
 `HISTORY SAVED AND VERIFIED`. An existing name is rejected without replacement.
 An I/O error can leave a partial new file; the calculator reports that outcome.
 **Esc** cancels the filename prompt. This export does not automatically reload
 history into a later calculator session.
 
-This is a foreground IEC backend. Native file pickers, directory enumeration,
+The [native browser](NATIVE-BROWSER.md) uses directory pages to list files,
+discover applications and inspect byte streams. This is a foreground IEC backend.
+Native file pickers,
 seek/append/replacement, REL and GEOS/VLIR formats, cartridge filesystem
 integration, removable-media identity and the driver registry remain open.
 The existing graphical desktop still uses the separate legacy APIs.
@@ -22,7 +24,8 @@ The existing graphical desktop still uses the separate legacy APIs.
 ## Calls and mailbox
 
 Include [`api.inc`](../src/native/api.inc) and declare required ABI minor **1**
-in the application manifest. Kernels with minor 1 also accept minor-0 apps.
+for streams or **2** for directory pages in the application manifest.
+The current kernel accepts required minors 0, 1 and 2.
 Use the active `N_CURRENT` owner for file and memory allocations. File arguments
 use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 
@@ -33,6 +36,7 @@ use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 | N_FWRITE | `$1c47` | Submit N_FCOUNT bytes from N_BUFFER |
 | N_FCLOSE | `$1c4a` | Close the selected owned handle |
 | N_FRELEASE | `$1c4d` | Preflight and close every handle belonging to N_FOWNER |
+| N_DIRPAGE | `$1c50` | Read one normalized root-directory page |
 
 | Field | Address | Meaning |
 |---|---|---|
@@ -40,7 +44,7 @@ use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 | N_FHANDLE | `$3d81..84` | Slot+1 followed by a little-endian 24-bit generation |
 | N_FDEVICE | `$3d85` | IEC device 8..30 |
 | N_FNAMELEN | `$3d86` | 1..16 |
-| N_FMODE | `$3d87` | 0 read; 1 exclusive create |
+| N_FMODE | `$3d87` | 0 read; 1 exclusive create; 2 directory page, selected by N_DIRPAGE |
 | N_FTYPE | `$3d88` | 0 SEQ; 1 PRG; 2 USR |
 | N_FCOUNT | `$3d89..8a` | Requested count 1..512, little-endian |
 | N_FACTUAL | `$3d8b..8c` | Returned/accepted prefix count |
@@ -51,6 +55,9 @@ use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 | N_FBUSY | `$3d91` | Private call lock; applications must not write it |
 | N_FPOSITION | `$3d92..95` | Returned byte position, little-endian 32-bit |
 | N_FFORMAT | `$3d96` | 0 standard D64; 1 D71; 2 root D81; caller must select the actual format |
+| N_DPAGE | `$3d97` | Requested zero-based directory page ordinal |
+| N_DNEXT | `$3d98` | Next directory ordinal or `$ff` at end |
+| N_DCOUNT | `$3d99` | 0 or 8 directory records returned |
 | N_FNAME | `$3da0..af` | Exact name, no terminating NUL required |
 
 The shared `N_BUFFER` is `$3a00..$3bff`. OPEN uses it as metadata scratch;
@@ -75,6 +82,40 @@ invalid handle, `05` wrong owner, `06` invalid count/position overflow, `07`
 reentry, `08` platform, `09` corrupt descriptor/disk metadata, `11` IEC/DOS
 failure and `15` channel conflict. DOS 62 means absent file, and 63 means an
 exclusive create found an existing file.
+
+## Directory pages
+
+Set N_FOWNER, N_FDEVICE, N_FFORMAT and N_DPAGE, then call N_DIRPAGE. Start
+with page 0 and continue using N_DNEXT until it is `$ff`. A successful page
+contains eight 32-byte records in N_BUFFER, including deleted slots:
+
+| Record offset | Meaning |
+|---|---|
+| 0 | Type: 0 deleted, 1 SEQ, 2 PRG, 3 USR, 4 REL; other values backend-specific |
+| 1 | Flags: `$80` closed, `$40` locked |
+| 2..17 | Exact 16-byte PETSCII name padded with `$a0` |
+| 18..19 | Allocated blocks, little-endian 16-bit |
+| 20..31 | Reserved; do not interpret |
+
+Copy a needed page before another file or heap transfer reuses N_BUFFER.
+Deleted entries should be skipped. Names and type flags describe the disk;
+they do not guarantee that the stream API can open that entry. An empty disk
+normally returns eight deleted records. Requesting a page beyond the actual
+directory but within the geometry's capacity returns count 0 and next `$ff`.
+
+Each call rewalks from the root, bounded to 18 D64/D71 pages or 37 D81 pages.
+Page ordinals and links are checked before publication. This bounds cyclic
+directories but is not a complete early cycle detector. Sequentially reading
+all 37 D81 pages can require 703 directory-sector reads; persistent cursors
+and faster enumeration remain work.
+
+The call selects mode 2, ignores filename/type arguments and
+requires a free owned-file slot. Successful cleanup clears N_FHANDLE and
+leaves no new stream open. Existing same-device owned streams retain their
+shared command channel. Other-device streams remain intact. On uncertain
+cleanup, the temporary mode-2 handle remains owned; N_FCLOSE/N_FRELEASE uses
+the same retained-error rules as streams. Check carry before using page data
+or claiming that resources were released.
 
 ## Length, EOF and error handling
 
@@ -126,7 +167,7 @@ KERNAL files remain the application's responsibility.
 
 Data LFNs are 122/123 with secondary addresses 8/9. Command LFNs 124/125 are
 shared per device and remain open until that device's last native stream
-closes. LFN 126/secondary 10 is used temporarily during read OPEN. The service
+closes. LFN 126/secondary 10 is used temporarily during read OPEN and DIRPAGE. The service
 checks the complete KERNAL table before issuing I/O, preserves unrelated files
 on other devices and rejects foreign files on the selected device. Closing
 command channel 15 can close that device's other files, so it must be last.
@@ -149,6 +190,7 @@ The 1541 chain layout and DOS behavior are also described in
 
 ```sh
 python3 tests/ci_native_files.py --report /tmp/native-files.json
+python3 tests/ci_native_directory.py --report /tmp/native-directory.json
 python3 tests/ci_native_calc.py --report /tmp/native-calculator.json
 python3 -u tests/run_ci.py nativefiles nativefiles71 nativefiles81 native
 python3 -u hw_ultimate_check.py --native-files
@@ -166,3 +208,5 @@ its empty-file padding is recorded separately.
 
 See the [dated evidence and qualification limits](validation/2026-09-09-native-files/README.md)
 for actual outcomes; a listed test command alone is not a passing result.
+Directory and browser results are recorded in the
+[ABI 1.2 checkpoint](validation/2026-09-09-native-browser/README.md).

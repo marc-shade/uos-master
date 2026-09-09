@@ -21,6 +21,9 @@ SUITES = {
     "nativefiles": ["ci_native_files_iec.py"],
     "nativefiles71": ["ci_native_files_iec.py", "--format", "d71"],
     "nativefiles81": ["ci_native_files_iec.py", "--format", "d81"],
+    "nativebrowse": ["ci_native_browser_iec.py"],
+    "nativebrowse71": ["ci_native_browser_iec.py", "--format", "d71"],
+    "nativebrowse81": ["ci_native_browser_iec.py", "--format", "d81"],
 }
 
 

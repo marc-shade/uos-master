@@ -6,6 +6,8 @@ build output; addresses are the fixed ABI the core and drivers export.
 
 The separate [native C128 ABI](NATIVE-KERNEL.md) provides native boot and banked
 memory services, checked [native apps](NATIVE-APPS.md) and [owned IEC files](NATIVE-FILES.md).
+ABI 1.2 adds directory pages and application handoff, used by the
+[native file/app browser](NATIVE-BROWSER.md).
 Its `$1c20` jump table and memory map are separate from this
 legacy desktop ABI. Desktop/app migration remains in progress.
 

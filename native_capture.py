@@ -22,7 +22,7 @@ def expected_screen(columns,bank,free=(191,251),slots=32,handle=b'\0'*4,result=0
            f'FREE 256-BYTE PAGES (HEX) 0/1: {free[0]:02X}/{free[1]:02X}',
            f'FREE HANDLES (HEX): {slots:02X}',f'SELECTED HANDLE: {int.from_bytes(handle,"little"):08X}',
            f'LAST RESULT: {result:02X}','','1/2 SELECT BANK  A ALLOCATE 8K',
-           'W FILL  V VERIFY  F RELEASE','C CALCULATOR','00 OK  04 INVALID HANDLE  0A MISMATCH','',
+           'W FILL  V VERIFY  F RELEASE','C CALCULATOR  B FILES AND APPS','00 OK  04 INVALID HANDLE  0A MISMATCH','',
            'NATIVE DESKTOP MIGRATION IN PROGRESS']
     lines+=['']*(25-len(lines))
     assert all(len(line)<=columns for line in lines)

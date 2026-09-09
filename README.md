@@ -28,6 +28,10 @@ loaded through a checked app manifest with automatic resource cleanup. It retain
 32 calculation results in bank 1, exports them to a new SEQ file with **S** and
 returns with Esc. [Native IEC file services](docs/NATIVE-FILES.md) provide owned
 streams and byte-verified history export.
+Press **B** for [Files and Apps](docs/NATIVE-BROWSER.md): browse an IEC root
+directory, discover native apps by their image header, launch them, and inspect
+file bytes on both displays. Device selection covers 8–30 with an explicit
+D64/D71/D81 format. Returning from a launched app reopens the browser.
 
 ## Storage and loader update (2026-09-08)
 

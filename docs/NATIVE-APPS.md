@@ -1,17 +1,18 @@
 # Native applications and checked loading
 
-The native workspace now loads a separate calculator from its IEC disk.
-Press **C** to launch it. The application runs in native C128 mode, uses the
-kernel's owned RAM services and returns to the existing workspace allocations.
+The native workspace loads separate applications from its IEC disk.
+Press **C** for the calculator or **B** for the [file/app browser](NATIVE-BROWSER.md).
+Applications run in native C128 mode, use the kernel's owned RAM services and
+return with the workspace's existing allocations intact.
 The graphical desktop and remaining Ultimate/productivity apps still need
 migration. This lifecycle supports one foreground application; scheduling and
-app switching remain open.
+preserving suspended applications remain open.
 
 ## Calculator
 
 The native calculator accepts unsigned integers 0..65535 and the four basic
 operations. **Enter** or **=** evaluates, **Del** removes the last entry digit,
-**C** clears the current calculation and **Esc** returns to the workspace.
+**C** clears the current calculation and **Esc** returns to its launcher.
 Operations execute in entry order: `5+6*7=` gives `77`. Multiplication/addition
 overflow and subtraction below zero show `OVF`; division by zero shows `DIV/0`.
 Clear the calculation to continue after an arithmetic error. Esc and history
@@ -22,17 +23,19 @@ bank 1. Eight are visible at once, newest first; **N/B** moves to older/newer
 results. Clear keeps the history. Returning from the application releases both
 its code allocation and history; reopening starts a new session. Both complete
 40- and 80-column screens present the same controls and values. **S** prompts
-for a new SEQ filename on the system D64 and exports history oldest first,
-then closes, reopens and verifies every byte. Existing names are rejected;
+for a new SEQ filename on the application's source device and disk format.
+It exports history oldest first, closes, reopens and verifies every byte.
+Existing names are rejected;
 Esc cancels the prompt. See the [native file guide](NATIVE-FILES.md).
 History import, larger/signed/fractional/scientific arithmetic and graphical
 controls remain application work.
 
 ## Build a native app
 
-`python3 build-native.py` assembles and seals `target/native/calc.prg`, then
-adds it as `CALC` to the native disk alongside the kernel file `U` and the
-reserved native boot sector. The app PRG is 2,568 bytes plus its two-byte load
+`python3 build-native.py` assembles and seals `target/native/calc.prg` and
+`target/native/browse.prg`, then adds them as `CALC` and `BROWSE` to the native
+disk alongside kernel file `U` and the reserved native boot sector.
+The calculator PRG is 2,571 bytes plus its two-byte load
 address; it requests 16 pages (4 KiB) for code/data and separately allocates
 two bank-1 pages for its history.
 
@@ -49,8 +52,9 @@ python3 native_image.py myapp.prg
 The last command validates without writing. The sealer rejects inconsistent
 sizes, unsupported ABI/flags, invalid entry points and non-printable title
 bytes. Add the sealed PRG to a disk using its normal PRG file type. The current
-workspace's shortcut selects `CALC`; other native callers can use `N_LAUNCH`
-with an explicit device and filename. A general app browser remains required.
+workspace's C shortcut selects `CALC`; its B browser discovers app images
+without requiring a fixed filename. Other native callers can use `N_LAUNCH`
+with an explicit device, format and filename.
 
 The PRG starts with little-endian load address `$6000`, followed by this
 32-byte manifest. Offsets are relative to `$6000`, excluding the load address.
@@ -60,7 +64,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0 or 1; file-service clients require 1 |
+| 6 | 1 | Required ABI minor: 0..2; streams require 1, directory/handoff/source-format fields require 2 |
 | 7 | 1 | Flags: 0 |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -77,8 +81,10 @@ The checksum detects damaged images; it is not an application signature.
 
 ## Launch, execution and return
 
-`N_LAUNCH` at `$1c38` takes `N_DEVICE` (8..30), `N_NAMELEN` (1..16) and
-`N_APPNAME`. Names must be printable and cannot contain wildcards or DOS path/
+`N_LAUNCH` at `$1c38` takes `N_DEVICE` (8..30), `N_NAMELEN` (1..16),
+`N_APPNAME` and `N_APPFORMAT` (0 D64, 1 D71, 2 root D81). The format is source
+context for the application; the loader itself uses a KERNAL PRG stream.
+Names must be printable and cannot contain wildcards or DOS path/
 command separators. The read-only loader requests `,P,R`, uses native SETBNK
 for its filename and streams bytes through CHRIN. It never passes an unchecked
 PRG address to KERNAL LOAD.
@@ -122,6 +128,24 @@ it when the loader itself succeeded. Loader/cleanup failures return carry set
 and their error in A and `N_APPERROR`. Decimal and interrupt flags are preserved;
 masked-interrupt callers are rejected before I/O. A/X/Y are otherwise scratch.
 
+ABI 1.2 adds two one-way exits, using the same stack restoration and cleanup:
+
+* **JMP N_REPLACE** (`$1c53`) requests a new app using N_APPNAME, N_NAMELEN,
+  N_DEVICE and N_APPFORMAT. It sets N_ACTION=1 and N_EXITCODE=0.
+* **JMP N_WORKSPACE** (`$1c56`) requests the memory workspace. It sets
+  N_ACTION=2 and N_EXITCODE=0.
+
+Both require a running app. `N_LAUNCH` returns to its caller after cleanup;
+it does not automatically execute N_ACTION. A dispatcher must check carry
+before acting on the request. A fresh launch clears N_ACTION, and normal
+RTS/N_EXIT leaves it zero. Never follow a handoff after failed cleanup.
+The workspace's browser dispatcher loads requested apps only after releasing
+the browser's code/cache. A target's normal return reloads BROWSE from the
+boot device, preserving the selected data device/format. A target load failure
+with completed cleanup reopens BROWSE with the error. Browser-load failures
+or retained resources return an error to the workspace. The C shortcut always
+selects CALC on the boot D64, independently of the browser's data device.
+
 `N_KEYIN` at `$1c3b` calls native GETIN, returns A=0 when there is no key, and
 accounts for consumed keys in `N_KEYS`/`N_LASTKEY`. Applications set `N_READY=1`
 only when idle and accepting input, and clear it while processing. These are
@@ -138,6 +162,10 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d25` | N_DOSCODE: first nonzero DOS error when available |
 | `$3d26` | N_IOSTATUS: last observed serial status; may reflect subsequent cleanup |
 | `$3d27` | N_APPERROR: stable loader/cleanup result |
+| `$3d28` | N_ACTION: 0 normal return, 1 replace request, 2 workspace request |
+| `$3d29..$3d2a` | N_BROWSERDEV, N_BROWSERFMT: browser preferences |
+| `$3d2b` | N_BROWSERERROR: pending dispatcher error shown by BROWSE |
+| `$3d2c` | N_APPFORMAT: application's source geometry |
 | `$3d40..$3d4f` | N_APPNAME |
 | `$3d60..$3d7f` | N_APPHEADER: last manifest read; valid for a running app |
 
@@ -167,7 +195,10 @@ desktop. See the [earlier app checkpoint](validation/2026-09-09-native-apps/READ
 and the [file-service/export checkpoint](validation/2026-09-09-native-files/README.md)
 for their respective tested images and outcomes.
 
-Dynamic app discovery, multiple executable banks, cooperative scheduling,
+See the [browser checkpoint](validation/2026-09-09-native-browser/README.md)
+for directory discovery, renamed-app dispatch and source-format export results.
+
+Multiple executable banks, cooperative scheduling,
 cartridge/backend integration, display/input widgets, history import and
 banked document editing remain work. These services are the next foundation
 for migrating the existing desktop and Ultimate applications.
