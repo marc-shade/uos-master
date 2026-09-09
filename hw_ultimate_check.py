@@ -350,6 +350,10 @@ def main():
                         help='shared Open/Save As, private text files and independent byte verification')
     parser.add_argument('--native', action='store_true',
                         help='cold-boot native C128 memory workspace; verify both banks/displays; restore desktop')
+    parser.add_argument('--native-files', action='store_true',
+                        help='native IEC streams and calculator export on private D64s; independent readback; restore desktop')
+    parser.add_argument('--native-files-readback',type=Path,
+                        help='resume independent readback of the exact private disks in a completed native test report')
     parser.add_argument('--editor-exit-diagnose', action='store_true',
                         help='sample an idle editor without changing its code or document')
     parser.add_argument('--editor-inspect', action='store_true',
@@ -365,6 +369,14 @@ def main():
     parser.add_argument('--files-write-diagnostic', action='store_true',
                         help='compare private raw UCI writes below and at the 512-byte boundary')
     args = parser.parse_args()
+    if args.native_files_readback:
+        from hw_native_files_check import resume_readback
+        resume_readback(ObservingUltimate(),args.native_files_readback)
+        return
+    if args.native_files:
+        from hw_native_files_check import run
+        run(ObservingUltimate())
+        return
     if args.native:
         from hw_native_check import run
         run(ObservingUltimate())

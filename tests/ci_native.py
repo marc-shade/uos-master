@@ -15,7 +15,7 @@ import ci_fm as ci
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-from native_capture import NativeCapture, expected_screen
+from native_capture import NativeCapture, expected_screen, calculator_screen
 from hwlib import lst_symbol
 READY, KEYS, RESULT = 0x3d12, 0x3d13, 0x3d16
 
@@ -115,6 +115,25 @@ def main():
         assert sum(read(0x3c00,256)[i]==32 for i in range(0,256,8))==2
         (work/'calculator-vic.bin').write_bytes(read(0x400,1000))
         (work/'calculator-vdc.bin').write_bytes(read(0,2000,bank=banks['vdc']))
+        assert read(0x400,1000)==calculator_screen(40,'42',['42'])
+        assert read(0,2000,bank=banks['vdc'])==calculator_screen(80,'42',['42'])
+        for value in b'SHISTORY':key(value)
+        assert read(0x400,1000)==calculator_screen(40,'42',['42'],save_prompt='HISTORY')
+        key(13)
+        assert read(lst_symbol('native/calc','save_status'))==b'\1',read(0x3d80,32).hex()
+        for cols,bank,label in ((40,0,'vic'),(80,banks['vdc'],'vdc')):
+            screen=read(0x400 if cols==40 else 0,cols*25,bank=bank)
+            (work/f'calculator-saved-{label}.bin').write_bytes(screen)
+            assert screen==calculator_screen(cols,'42',['42'],save_status='HISTORY SAVED AND VERIFIED')
+        for value in b'SHISTORY':key(value)
+        key(13)
+        assert read(lst_symbol('native/calc','save_status'))==b'\3'
+        assert read(0x98)==b'\0' and read(0x3dc0)==b'\0' and read(0x3dd0)==b'\0'
+        snapshot=work/'saved-history.d64';shutil.copy2(disk,snapshot)
+        exported=work/'history.seq'
+        subprocess.run(['c1541','-attach',str(snapshot),'-read','history,s,r',str(exported)],check=True,capture_output=True)
+        assert exported.read_bytes()==b'42\r'
+        report['native_history_saved_verified_and_exclusive']=True
         key(27)
         assert read(0x3d20)==b'\0' and read(0x3d23,2)==b'\0\0'
         assert read(0x3d0e,3)==bytes([191,251,32])

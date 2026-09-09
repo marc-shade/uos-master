@@ -29,10 +29,13 @@ def expected_screen(columns,bank,free=(191,251),slots=32,handle=b'\0'*4,result=0
     return bytes(ord(c)-64 if 'A'<=c<='Z' else ord(c) for line in lines for c in line.ljust(columns))
 
 
-def calculator_screen(columns,result,history,view=0):
+def calculator_screen(columns,result,history,view=0,save_prompt=None,save_status=None):
     lines=['UOS 128 CALCULATOR','',f'RESULT: {result}','','0-9 + - * / =  DEL  C CLEAR',
-           'ESC RETURN   N/B OLDER/NEWER RESULTS','','HISTORY (NEWEST FIRST, 32 RETAINED):']
+           'ESC RETURN   S SAVE   N/B HISTORY','','HISTORY (NEWEST FIRST, 32 RETAINED):']
     lines+=history[view:view+8] if history else ['NO RESULTS YET']
+    if save_prompt is not None:
+        lines+=['','SAVE AS (SEQ FILE ON IEC DISK)','NAME: '+save_prompt,'ENTER SAVE   ESC CANCEL']
+    elif save_status is not None:lines+=['',save_status]
     lines+=['']*(25-len(lines))
     return bytes(ord(c)-64 if 'A'<=c<='Z' else ord(c) for line in lines for c in line.ljust(columns))
 
@@ -40,7 +43,7 @@ def calculator_screen(columns,result,history,view=0):
 class NativeCapture:
     def __init__(self,mon,work,quiet=2):
         self.mon,self.work,self.quiet=mon,work,quiet
-        assert lst_symbol('native/uos128','native_code_end')<=0x3000
+        assert lst_symbol('native/uos128','native_code_end')<=0x3800
         output=work/'native-read.prg'
         subprocess.run(['64tass','-a',str(ROOT/'probes/native-read.asm'),'-o',str(output)],check=True,capture_output=True)
         self.prg=output.read_bytes()
@@ -55,7 +58,7 @@ class NativeCapture:
         assert self.read(0x1c13,6)==b'UOS128'
         assert self.read(0x3d11,2)==b'\0\1' and self.read(0xd0)==b'\0','native workspace must be idle'
         oldirq=self.read(0x314,2);assert oldirq!=b'\0\x3e'
-        output=self.read(0x3000,2000);scratch=self.read(0x3e00,512)
+        output=self.read(0x1400,2000);scratch=self.read(0x3e00,512)
         metadata=self.read(0x3800,0x600)
         record=dict(label=label,mode=mode,bank=bank,address=address,count=count,
                     probe_sha256=hashlib.sha256(self.prg).hexdigest(),restored=False)
@@ -72,13 +75,13 @@ class NativeCapture:
                           mode_register=status[9],common_register=status[10],foreground_mmu=status[11])
             assert status[0]==1,record
             assert not status[9]&0x40 and status[10]&15==4 and status[11]==0x0e,record
-            result=self.read(0x3000,count)
+            result=self.read(0x1400,count)
             (self.work/(label+'.bin')).write_bytes(result)
             return result
         finally:
             wait(lambda:self.read(0x314,2)==oldirq,'native IRQ vector restored',20)
             time.sleep(.1)
-            self.mon.write_mem(0x3000,output);self.mon.write_mem(0x3e00,scratch);self.mon.resume()
-            assert self.read(0x3000,2000)==output and self.read(0x3e00,512)==scratch
+            self.mon.write_mem(0x1400,output);self.mon.write_mem(0x3e00,scratch);self.mon.resume()
+            assert self.read(0x1400,2000)==output and self.read(0x3e00,512)==scratch
             assert self.read(0x3800,0x600)==metadata,'native heap changed during observation'
             record['restored']=True

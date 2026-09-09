@@ -5,7 +5,8 @@ Ultimate II+. Everything here is taken from the sources in `src/` and the
 build output; addresses are the fixed ABI the core and drivers export.
 
 The separate [native C128 ABI](NATIVE-KERNEL.md) provides native boot and banked
-memory services. Its `$1c20` jump table and memory map are separate from this
+memory services, checked [native apps](NATIVE-APPS.md) and [owned IEC files](NATIVE-FILES.md).
+Its `$1c20` jump table and memory map are separate from this
 legacy desktop ABI. Desktop/app migration remains in progress.
 
 ## Memory map (from `build.sh` output and `src/routines.inc`)

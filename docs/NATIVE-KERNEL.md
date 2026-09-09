@@ -3,7 +3,8 @@
 The separate `target/native/uos128.d64` boots through the C128 KERNAL into
 BASIC 7 and enters the native kernel. It never enters C64 mode. This first
 native image provides a memory workspace, application-facing allocator and a
-[disk-loaded native calculator](NATIVE-APPS.md). The graphical desktop,
+[disk-loaded native calculator](NATIVE-APPS.md) with verified history export
+through [owned IEC files](NATIVE-FILES.md). The graphical desktop,
 Ultimate services and remaining application suite still require migration.
 The existing `target/ultos.d64` remains the graphical desktop build.
 

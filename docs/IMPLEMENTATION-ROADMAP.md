@@ -54,19 +54,19 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Native boot/kernel, dual-screen memory workspace and disk-loaded calculator at 1 MHz; banked KERNAL gateways | Desktop/remaining app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
 | Memory and FR-M1 | Native 442-page allocator with owner/generation checks and bounded transfers; legacy fixed REU snapshot banks | REU/expansion size detection and allocation, larger app heaps, RAM disks, persistence, no-REU desktop fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
-| Process/app lifecycle | Native single foreground app: checked manifest/ABI/size/CRC, fixed owned slot, return/exit memory cleanup and loader-channel ownership; legacy failed LOAD recovery and shared cartridge-file cleanup | Dynamic discovery, cooperative scheduling, suspend/resume, app switcher, cleanup across every native handle/control backend | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
+| Process/app lifecycle | Native single foreground app: checked manifest/ABI/size/CRC, owned memory and IEC streams, file cleanup before executable release; legacy failed LOAD recovery and shared cartridge-file cleanup | Dynamic discovery, cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Menu, modal windows, disk-scanned launcher | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; per-app drawing | Widget/event toolkit; IEC and other backend file pickers; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
 | FR-D1/D2 display | VIC graphics + VDC text mirror; persisted display selection | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | 1351 movement, clamping | Two buttons, drag/drop, jitter filter, acceleration, hot plug; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
-| FR-F1/FR-S2 storage/file manager | Linked IEC directory parser/cache, PRG/SEQ/USR copying; shared cartridge backend with verified writes and byte viewer | Shared IEC adapter and its file dialogs; append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
+| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owner/generation IEC streams with checked file extents and exclusive creation | Native directory API, registry and file dialogs; backend integration; append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
 | FR-F2 devices | Manual 8–11 selection; restores system-app device on exit | Inventory, configurable IEC addresses, type/capability handshake, hot presence, explicit copy destination | Real and emulated drives; absent device returns to UI; last-used device never changes system-app source accidentally |
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
 | FR-S4 shell | Commands, CAT, memory monitor, UCI navigation, HTTP socket GET | Shared FS integration, history/completion, scripts/pipes/redirection, jobs, useful errors, document/app launch | Scripted end-to-end workflow with removable media and network failures |
-| FR-S5 editor/calculator | 768-byte legacy editor with Open/verified Save As and dirty protection; native integer calculator with 32-result banked history and overflow/error reporting | Larger banked documents, selection/clipboard/undo/find; calculator precision/scientific modes and history persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
+| FR-S5 editor/calculator | 768-byte legacy editor with Open/verified Save As and dirty protection; native integer calculator with 32-result banked history, error reporting and verified SEQ export | Larger banked documents, selection/clipboard/undo/find; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
 | FR-S6 SDK | Legacy application guide plus native ABI, manifest/image validator/sealer and calculator example | Broader versioned APIs, docs generated from exports, clean-checkout third-party workflow and portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
 | FR-S7 appearance | Basic background colors | Backdrops, font/theme/pointer selection, screen saver, desktop arrangements and persistence | Change/restart/restore; memory budgets and low-RAM fallback |
 
@@ -283,12 +283,21 @@ Loader IEC channels are checked for conflicts and closed before app entry.
 The native calculator uses this path, keeps 32 results in bank 1, reports
 overflow/divide-by-zero and returns without discarding workspace allocations.
 See the [app checkpoint](validation/2026-09-09-native-apps/README.md) for exact
-fault/model, emulator and physical evidence. App-owned filesystem cleanup is
-still pending the shared native file service.
+fault/model, emulator and physical evidence for that earlier checkpoint.
 
-Next implementation: shared native filesystem ownership and dynamic app
-discovery, then native banked document editing and display/input services for
-the existing desktop/Ultimate apps. Integrate other selector backends and
+The [native IEC file service](NATIVE-FILES.md) now provides two owned streams,
+exclusive creation, bounded binary reads/writes, 32-bit positions and file
+cleanup before application memory release. Read-only directory/sector-chain
+checks establish exact file sizes, including empty and one-byte files. The
+calculator exports its oldest-first history to a new named SEQ file and
+reopens it for byte comparison. The [file-service checkpoint](validation/2026-09-09-native-files/README.md)
+records exact images, passing coverage, retained failures and qualification
+limits. This backend does not yet migrate the legacy cartridge services.
+
+Next implementation: expose native directory enumeration and dynamic app
+discovery, extend drive qualification, then add native banked document editing
+and display/input services for the existing desktop/Ultimate apps. Integrate
+other selector backends and
 complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and
 other expansion allocators, system-disk recovery and application parity remain
 required. R3 is partial; the native workspace and calculator do not complete it.

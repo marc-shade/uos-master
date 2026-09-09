@@ -15,21 +15,24 @@ operations. **Enter** or **=** evaluates, **Del** removes the last entry digit,
 Operations execute in entry order: `5+6*7=` gives `77`. Multiplication/addition
 overflow and subtraction below zero show `OVF`; division by zero shows `DIV/0`.
 Clear the calculation to continue after an arithmetic error. Esc and history
-navigation remain available while an error is displayed.
+navigation and saving remain available while an error is displayed.
 
 The last 32 evaluated results are retained in a 512-byte allocation in RAM
 bank 1. Eight are visible at once, newest first; **N/B** moves to older/newer
 results. Clear keeps the history. Returning from the application releases both
 its code allocation and history; reopening starts a new session. Both complete
-40- and 80-column screens present the same controls and values. History export,
-larger/signed/fractional/scientific arithmetic and graphical controls remain
-application work.
+40- and 80-column screens present the same controls and values. **S** prompts
+for a new SEQ filename on the system D64 and exports history oldest first,
+then closes, reopens and verifies every byte. Existing names are rejected;
+Esc cancels the prompt. See the [native file guide](NATIVE-FILES.md).
+History import, larger/signed/fractional/scientific arithmetic and graphical
+controls remain application work.
 
 ## Build a native app
 
 `python3 build-native.py` assembles and seals `target/native/calc.prg`, then
 adds it as `CALC` to the native disk alongside the kernel file `U` and the
-reserved native boot sector. The app PRG is 1,648 bytes plus its two-byte load
+reserved native boot sector. The app PRG is 2,568 bytes plus its two-byte load
 address; it requests 16 pages (4 KiB) for code/data and separately allocates
 two bank-1 pages for its history.
 
@@ -57,7 +60,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0 |
+| 6 | 1 | Required ABI minor: 0 or 1; file-service clients require 1 |
 | 7 | 1 | Flags: 0 |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -90,25 +93,27 @@ the requested range cause allocation failure and remain intact.
 The loader requires the normal native MMU/common/zero-page/stack configuration,
 enabled interrupts and the keyboard/screen as default input/output. It reserves
 logical files 120/121, data secondary address 7 and command channel 15 on the
-requested device. Existing logical-file or same-device channel conflicts are
-rejected. Unrelated open files are retained. Only loader-owned channels are
-closed, and filename/device/bank/message parameters are restored before app
-entry. DOS status is checked after opening and when closing the data file.
+requested device. Existing logical-file conflicts or any existing file on that
+device are rejected. Unrelated files on other devices are retained. Loader
+channels are closed, and filename/device/bank/message parameters are restored
+before app entry. DOS status is checked after opening and when closing the data
+file.
 
 The app enters with MMU `$0e`, decimal mode clear and owner ID in `N_CURRENT`.
 Use that owner for every heap call. ID 32 is reserved for the current app in
 this initial implementation; owner 16 belongs to the workspace. The code
 allocation is itself owned by the app. APIs and execution are foreground-only,
-and nested launches are rejected. Direct KERNAL file use by an application
-still requires that app to close its own files: the shared native filesystem
-handle service is not yet implemented.
+and nested launches are rejected. The [native file service](NATIVE-FILES.md)
+provides owned IEC handles. Direct raw KERNAL file use still requires the app
+to close its own files.
 
 Return with a balanced **RTS**, A holding the application's result, or use
 **JMP N_EXIT** (`$1c3e`) to return from any app call depth. N_EXIT restores the
-saved caller stack. The kernel then releases every allocation owned by the
-app, including code and any banked data. Owner cleanup preflights all records;
-if corruption prevents cleanup, the owner and slot remain retained and further
-launches are rejected. This is resource discipline, not memory isolation from
+saved caller stack. The kernel first closes every native file owned by the
+app, then releases its code and banked data. Each service preflights its owned
+records before cleanup. If corruption or a file error prevents cleanup, the
+owner and slot remain retained and further launches are rejected. This is
+resource discipline, not memory isolation from
 arbitrary machine code. Apps must respect the native ABI and private regions.
 
 `N_LAUNCH` returns carry clear/A=0 after successful loading and lifecycle
@@ -158,9 +163,11 @@ The emulator loads the real app through the native disk/KERNAL path. Hardware
 testing retains live workspace allocations while running the calculator,
 reads its bank-1 history independently, rejects a damaged app, checks a valid
 app's return error and reloads the good calculator before restoring the legacy
-desktop. See the [checkpoint evidence](validation/2026-09-09-native-apps/README.md).
+desktop. See the [earlier app checkpoint](validation/2026-09-09-native-apps/README.md)
+and the [file-service/export checkpoint](validation/2026-09-09-native-files/README.md)
+for their respective tested images and outcomes.
 
 Dynamic app discovery, multiple executable banks, cooperative scheduling,
-shared filesystem handles, display/input widgets, persistent histories and
+cartridge/backend integration, display/input widgets, history import and
 banked document editing remain work. These services are the next foundation
 for migrating the existing desktop and Ultimate applications.

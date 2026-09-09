@@ -18,6 +18,9 @@ SUITES = {
     "edit": ["ci_edit.py"],
     "calc": ["ci_calc.py"],
     "native": ["ci_native.py"],
+    "nativefiles": ["ci_native_files_iec.py"],
+    "nativefiles71": ["ci_native_files_iec.py", "--format", "d71"],
+    "nativefiles81": ["ci_native_files_iec.py", "--format", "d81"],
 }
 
 

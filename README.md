@@ -24,8 +24,10 @@ and displays its memory controls on both screens. Build it with
 `python3 build-native.py`; the resulting disk is `target/native/uos128.d64`.
 The graphical desktop and application suite still need migration to this kernel.
 Press **C** in the native workspace for the [native calculator](docs/NATIVE-APPS.md),
-loaded through a checked app manifest with automatic memory cleanup. It retains
-32 calculation results in bank 1 and returns with Esc.
+loaded through a checked app manifest with automatic resource cleanup. It retains
+32 calculation results in bank 1, exports them to a new SEQ file with **S** and
+returns with Esc. [Native IEC file services](docs/NATIVE-FILES.md) provide owned
+streams and byte-verified history export.
 
 ## Storage and loader update (2026-09-08)
 

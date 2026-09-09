@@ -8,7 +8,8 @@ import sys
 
 from py65.devices.mpu6502 import MPU
 from ci_native_heap import Machine,ROOT
-from ci_native_apps import IEC,RUN
+from ci_native_apps import RUN
+from ci_native_files import StreamIEC
 sys.path.insert(0,str(ROOT))
 from hwlib import lst_symbol
 
@@ -17,7 +18,7 @@ class Calculator:
     def __init__(self):
         self.m=Machine();self.ram=self.m.ram
         self.image=(ROOT/'target/native/calc.prg').read_bytes()
-        self.io=IEC(self.m,self.image)
+        self.io=StreamIEC(self.m,{(8,b'CHECK',b'P'):self.image})
         self.ram[0x3d21:0x3d23]=bytes([8,5]);self.ram[0x3d40:0x3d45]=b'CHECK'
         self.cpu=MPU(memory=self.m.bus,pc=RUN);self.cpu.sp=0xe0;self.cpu.p=0x20
         self.cpu.stPushWord(0xaff)
@@ -90,12 +91,15 @@ class Calculator:
         return [bytes(self.m.bus.ram[1][start+((head-1-i)&31)*16:start+((head-1-i)&31)*16+16]).decode().rstrip()
                 for i in range(count)]
 
-    def check_screens(self):
+    def check_screens(self,save_prompt=None,save_status=None):
         history=self.history();view=self.value('history_view')
         lines=['UOS 128 CALCULATOR','',f'RESULT: {self.display()}','',
-               '0-9 + - * / =  DEL  C CLEAR','ESC RETURN   N/B OLDER/NEWER RESULTS','',
+               '0-9 + - * / =  DEL  C CLEAR','ESC RETURN   S SAVE   N/B HISTORY','',
                'HISTORY (NEWEST FIRST, 32 RETAINED):']
         lines+=history[view:view+8] if history else ['NO RESULTS YET']
+        if save_prompt is not None:
+            lines+=['','SAVE AS (SEQ FILE ON IEC DISK)','NAME: '+save_prompt,'ENTER SAVE   ESC CANCEL']
+        elif save_status is not None:lines+=['',save_status]
         lines+=['']*(25-len(lines))
         for bank,cols in ((0,40),(1,80)):
             want=bytes(ord(c)-64 if 'A'<=c<='Z' else ord(c) for line in lines for c in line.ljust(cols))
@@ -127,8 +131,32 @@ def main():
         for view in (16,8,0,0):
             calc.type('B');assert calc.value('history_view')==view;calc.check_screens()
         calc.key(27,exited=True)
-        report.update(passed=True,history_results=40,retained=32,history_events=calc.events,
+        report.update(history_results=40,retained=32,history_events=calc.events,
                       history_instructions=calc.instructions,complete_screens=True,exit_releases_all=True)
+        calc=Calculator();calc.type('S');calc.check_screens(save_status='NO RESULTS TO SAVE')
+        calc.type('12+30=C65535+1=')
+        calc.type('SHISTORYX');calc.key(20);calc.check_screens(save_prompt='HISTORY')
+        calc.key(27);assert not calc.io.handles and (8,b'HISTORY',b'S') not in calc.io.files
+        calc.type('SHISTORY');calc.key(13)
+        assert bytes(calc.io.files[8,b'HISTORY',b'S'])==b'42\rOVF\r'
+        assert not calc.io.handles and calc.value('save_status')==1
+        calc.check_screens(save_status='HISTORY SAVED AND VERIFIED')
+        calc.type('SHISTORY');calc.key(13)
+        calc.check_screens(save_status='FILE EXISTS - CHOOSE ANOTHER NAME')
+        assert bytes(calc.io.files[8,b'HISTORY',b'S'])==b'42\rOVF\r'
+        calc.type('SCANCEL');calc.key(27);calc.check_screens()
+        calc.io.fail_flush=True;calc.type('SPARTIAL');calc.key(13)
+        calc.check_screens(save_status='DISK ERROR; FILE MAY BE PARTIAL')
+        assert not calc.io.handles and len(calc.io.files[8,b'PARTIAL',b'S'])<7
+        calc.io.fail_flush=False;calc.key(27,exited=True)
+        # The ring's maximum export has 32 five-digit results and delimiters.
+        calc=Calculator()
+        for _ in range(40):calc.type('C65535=')
+        calc.type('SMAXIMUM');calc.key(13)
+        assert bytes(calc.io.files[8,b'MAXIMUM',b'S'])==b'65535\r'*32
+        calc.check_screens(save_status='HISTORY SAVED AND VERIFIED');calc.key(27,exited=True)
+        report.update(passed=True,saved_history_verified=True,saved_maximum_bytes=192,existing_name_preserved=True,
+                      save_cancel_and_fault=True)
         print('PASS: native calculator arithmetic/errors, 32-result banked history, paging, both screens and exit cleanup',flush=True)
     except BaseException as error:report['error']=str(error);raise
     finally:
