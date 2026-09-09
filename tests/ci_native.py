@@ -16,6 +16,7 @@ import ci_fm as ci
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from native_capture import NativeCapture, expected_screen
+from hwlib import lst_symbol
 READY, KEYS, RESULT = 0x3d12, 0x3d13, 0x3d16
 
 
@@ -105,6 +106,21 @@ def main():
         observed=capture.capture('probe-vdc',mode=1)
         assert observed==vdc,'native IRQ VDC capture differs from monitor memory'
         key(ord('1'));key(ord('2'))  # foreground still consumes keys after captures
+        key(ord('C'))
+        assert read(0x3d20)==bytes([32]) and read(0x3d23)==b'\2',read(0x3d20,8).hex()
+        display=lst_symbol('native/calc','dispbuf')
+        for value in b'12+30=':key(value)
+        assert read(display,8).split(b'\0')[0]==b'42'
+        assert read(0x3800,256).count(0)==175 and read(0x3900,256).count(0)==249
+        assert sum(read(0x3c00,256)[i]==32 for i in range(0,256,8))==2
+        (work/'calculator-vic.bin').write_bytes(read(0x400,1000))
+        (work/'calculator-vdc.bin').write_bytes(read(0,2000,bank=banks['vdc']))
+        key(27)
+        assert read(0x3d20)==b'\0' and read(0x3d23,2)==b'\0\0'
+        assert read(0x3d0e,3)==bytes([191,251,32])
+        assert read(0x98)==b'\0','native loader leaked a logical file'
+        report['native_calculator_loaded_and_released']=True
+        print('PASS: native checked app loading, calculator 12+30=42 and complete owner/channel cleanup',flush=True)
         assert hashlib.sha256(stock.read_bytes()).hexdigest()==report['disk_sha256']
         report.update(passed=True,native_mode=True,banks=2,bytes_per_bank=8192,
                       all_allocations_released=True,stock_disk_unchanged=True)

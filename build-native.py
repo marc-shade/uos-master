@@ -8,6 +8,7 @@ from pathlib import Path
 import hashlib
 import json
 import subprocess
+from native_image import seal
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT/'target/native'
@@ -15,9 +16,10 @@ OUT = ROOT/'target/native'
 
 def build():
     OUT.mkdir(parents=True,exist_ok=True)
-    for source,name in [('uos128','uos128'),('boot','boot')]:
+    for source,name in [('uos128','uos128'),('boot','boot'),('calc','calc')]:
         subprocess.run(['64tass','-a',str(ROOT/'src/native'/f'{source}.asm'),
                         '-o',str(OUT/f'{name}.prg'),'-L',str(OUT/f'{name}.lst')],check=True)
+    (OUT/'calc.prg').write_bytes(seal((OUT/'calc.prg').read_bytes()))
     disk = OUT/'uos128.d64'
     subprocess.run(['c1541','-format','uos128,01','d64',str(disk)],check=True,capture_output=True)
     data = bytearray(disk.read_bytes())
@@ -33,9 +35,11 @@ def build():
     disk.write_bytes(data)
     subprocess.run(['c1541','-attach',str(disk),'-write',str(OUT/'uos128.prg'),'u'],
                    check=True,capture_output=True)
+    subprocess.run(['c1541','-attach',str(disk),'-write',str(OUT/'calc.prg'),'calc'],
+                   check=True,capture_output=True)
     assert disk.read_bytes()[:256] == boot[2:]
     report = {p.name:dict(bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest())
-              for p in (OUT/'uos128.prg',OUT/'boot.prg',disk)}
+              for p in (OUT/'uos128.prg',OUT/'boot.prg',OUT/'calc.prg',disk)}
     (OUT/'images.json').write_text(json.dumps(report,indent=2)+'\n')
     print(f'Native C128 boot disk: {disk}')
 

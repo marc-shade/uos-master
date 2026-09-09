@@ -22,6 +22,9 @@ basic_end:
         jmp heap_stats
         jmp heap_release
         jmp heap_reserve
+        jmp app_launch
+        jmp native_keyin
+        jmp app_exit
 native_start:
         cld
         lda $d505
@@ -38,6 +41,13 @@ native_mode:
         sta N_KEYS+1
         sta ui_bank
         sta ui_status
+        sta N_CURRENT
+        sta N_APPSTATE
+        sta N_EXITCODE
+        sta N_APPERROR
+        lda $ba
+        sta N_DEVICE
+        lda #0
         ldx #7
 native_handles:
         sta ui_handles,x
@@ -53,12 +63,8 @@ native_draw:
 native_loop:
         lda #1
         sta N_READY
-        jsr $ffe4               ; native KERNAL GETIN ($034a/$d0 buffer)
+        jsr native_keyin        ; native KERNAL GETIN ($034a/$d0 buffer)
         beq native_loop
-        sta N_LASTKEY
-        inc N_KEYS
-        bne native_key_counted
-        inc N_KEYS+1
 native_key_counted:
         ldx #0
         stx N_READY
@@ -73,9 +79,28 @@ native_key_counted:
         cmp #$46
         beq native_free
         cmp #$57
-        beq native_write
+        bne *+5
+        jmp native_write
         cmp #$56
-        beq native_verify
+        bne *+5
+        jmp native_verify
+        cmp #$43
+        beq native_calculator
+        jmp native_draw
+native_calculator:
+        ldx #3
+native_calc_name:
+        lda ui_calc_name,x
+        sta N_APPNAME,x
+        dex
+        bpl native_calc_name
+        lda #4
+        sta N_NAMELEN
+        jsr app_launch
+        bcs native_calc_result
+        lda N_EXITCODE
+native_calc_result:
+        sta ui_status
         jmp native_draw
 native_bank_zero:
         lda #0
@@ -96,7 +121,8 @@ native_allocate:
         lda ui_bank
         sta N_BANK
         jsr heap_alloc
-        bcs native_fail
+        bcc *+5
+        jmp native_fail
         jsr ui_keep_handle
         lda #0
         sta ui_status
@@ -104,7 +130,8 @@ native_allocate:
 native_free:
         jsr ui_get_handle
         jsr heap_free
-        bcs native_fail
+        bcc *+5
+        jmp native_fail
         lda #0
         sta N_HANDLE
         sta N_HANDLE+1
@@ -326,13 +353,29 @@ ui_decimal:
         jmp $ffd2
 
 .include "heap.inc"
+.include "apps.inc"
+native_keyin:
+        jsr $ffe4
+        beq native_no_key
+        sta N_LASTKEY
+        ldx #0
+        stx N_READY             ; invalidate old readiness before publishing the key
+        inc N_KEYS
+        bne native_key_done
+        inc N_KEYS+1
+native_key_done:
+        lda N_LASTKEY
+native_no_key:
+        rts
+ui_calc_name: .text "calc"
 ui_title: .text "uos 128 - native memory workspace",13,13,"selected bank: ",0
 ui_free_title: .text 13,"free 256-byte pages (hex) 0/1: ",0
 ui_slots_title: .text 13,"free handles (hex): ",0
 ui_handle_title: .text 13,"selected handle: ",0
 ui_result_title: .text 13,"last result: ",0
 ui_help: .text 13,13,"1/2 select bank  a allocate 8k",13
-         .text "w fill  v verify  f release",13,13
+         .text "w fill  v verify  f release",13
+         .text "c calculator",13
          .text "00 ok  04 invalid handle  0a mismatch",13,13
          .text "native desktop migration in progress",0
 ui_handles: .fill 8,0
@@ -351,5 +394,5 @@ native_code_end:
 * = NHANDLES
         .fill 256,0
 * = N_OWNER
-        .fill 32,0
+        .fill $80,0
         .cerror * > $4000, "native system must remain below allocatable RAM"

@@ -7,12 +7,15 @@ a full minute for native and legacy boot IEC traffic before observations.
 import hashlib
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import time
 
 from hw_storage_check import HardwareMonitor, ci
-from hwlib import desk_tick
-from native_capture import NativeCapture, expected_screen, wait, ROOT
+from hwlib import desk_tick, lst_symbol
+from native_capture import NativeCapture, expected_screen, calculator_screen, wait, ROOT
+from native_image import seal
 
 
 def hashes():
@@ -60,16 +63,18 @@ def run(ult):
         wait(lambda:read(0x1c13,6)==b'UOS128' and read(0x3d12)==b'\1','native cold boot',120)
         assert read(0x3d0e,3)==bytes([191,251,32]),read(0x3d00,32).hex()
 
-        def key(value,expected=0):
+        def key(value,expected=0,quiet=2):
             wait(lambda:read(0x3d12)==b'\1' and read(0xd0)==b'\0','native input ready',30)
             previous=int.from_bytes(read(0x3d13,2),'little')
             mon.write_mem(0x3d12,b'\0')
             mon.write_mem(0x34a,bytes([value]));mon.write_mem(0xd0,b'\1')
-            time.sleep(2)
+            time.sleep(quiet)
             wait(lambda:int.from_bytes(read(0x3d13,2),'little')==(previous+1)&65535 and read(0x3d12)==b'\1',
                  f'native key {value:02x}',60)
-            assert read(0x3d16)==bytes([expected]),read(0x3d00,32).hex()
-            report.setdefault('key_events',[]).append(dict(key=value,result=expected,event=previous+1))
+            active=read(0x3d20)[0]
+            actual=read(0x3d27 if active else 0x3d16)[0]
+            assert actual==expected,(active,actual,expected,read(0x3d20,8).hex())
+            report.setdefault('key_events',[]).append(dict(key=value,result=actual,event=previous+1,owner=active))
             save()
 
         def screens(label,bank,free=(191,251),slots=32,handle=b'\0'*4,result=0):
@@ -103,6 +108,71 @@ def run(ult):
             (work/f'bank-{bank}-all.bin').write_bytes(actual)
         report['checks'].append('16,384 bytes independently compared; bank 0 DMA and bank 1 native ROM observer agree with host patterns')
         screens('allocated',1,(159,219),30,allocations[1][2])
+        display=lst_symbol('native/calc','dispbuf')
+        history_handle=lst_symbol('native/calc','history_handle')
+
+        def calculator_capture(label,result,history):
+            direct=read(display,8);(work/(label+'-display-direct.bin')).write_bytes(direct)
+            observed=capture.capture(label+'-display-cpu',bank=0,address=display,count=8)
+            assert direct==observed,(label,'display reads disagree',direct.hex(),observed.hex())
+            assert observed.split(b'\0')[0]==result.encode(),(label,result,observed.hex())
+            vic=read(0x400,1000);(work/(label+'-vic.bin')).write_bytes(vic)
+            vdc=capture.capture(label+'-vdc',mode=1)
+            repeat=capture.capture(label+'-vdc-repeat',mode=1)
+            assert vdc==repeat and vic==calculator_screen(40,result,history) and vdc==calculator_screen(80,result,history)
+            save()
+
+        print('Loading the native calculator; leaving 30 seconds for IEC before observations',flush=True)
+        key(ord('C'),quiet=30)
+        assert read(0x3d20)==bytes([32]) and read(0x3d23)==b'\2'
+        assert read(0x3800,256).count(0)==143 and read(0x3900,256).count(0)==217
+        for code in b'12+30=':key(code)
+        calculator_capture('calculator-result','42',['42'])
+        for code in b'C65535+1=':key(code)
+        calculator_capture('calculator-overflow','OVF',['OVF','42'])
+        for code in b'C1/0=':key(code)
+        calculator_capture('calculator-errors','DIV/0',['DIV/0','OVF','42'])
+        slot=read(history_handle)[0]-1
+        record=read(0x3c00+slot*8,8)
+        assert record[:2]==bytes([32,1]) and record[3]==2
+        history=capture.capture('calculator-history',bank=1,address=record[2]*256,count=48)
+        assert history==b''.join(word.ljust(16,b' ') for word in (b'42',b'OVF',b'DIV/0'))
+        key(27)                 # exit remains available while DIV/0 is latched
+        assert read(0x3d20)==b'\0' and read(0x3d23,2)==b'\0\0'
+        assert read(0x3d0e,3)==bytes([159,219,30]) and read(0x98)==b'\0'
+        report['checks'].append('native calculator loads while both workspace blocks remain owned; arithmetic/errors and complete screens match; independent bank-1 history matches; exit releases only app resources')
+
+        # A private disk changes one payload byte without resealing the CRC.
+        # The kernel itself and the mounted good distribution stay unchanged.
+        damaged=bytearray((ROOT/'target/native/calc.prg').read_bytes());damaged[-1]^=1
+        bad_prg=work/'damaged-calc.prg';bad_prg.write_bytes(damaged)
+        bad_disk=work/'damaged-app.d64';shutil.copy2(ROOT/'target/native/uos128.d64',bad_disk)
+        subprocess.run(['c1541','-attach',str(bad_disk),'-delete','calc','-write',str(bad_prg),'calc'],check=True,capture_output=True)
+        ult.mount(bad_disk.read_bytes(),'a','d64','readonly')
+        print('Checking a damaged native app; leaving 30 seconds for IEC',flush=True)
+        key(ord('C'),expected=0x14,quiet=30)
+        assert read(0x3d27)==bytes([0x14]) and read(0x3d20)==b'\0' and read(0x98)==b'\0'
+        screens('rejected-app',1,(159,219),30,allocations[1][2],result=0x14)
+        returned=bytearray((ROOT/'target/native/calc.prg').read_bytes())
+        entry=int.from_bytes(returned[14:16],'little')
+        returned[2+entry:5+entry]=bytes([0xa9,2,0x60])
+        exit_prg=work/'return-error.prg';exit_prg.write_bytes(seal(returned))
+        exit_disk=work/'return-error.d64';shutil.copy2(ROOT/'target/native/uos128.d64',exit_disk)
+        subprocess.run(['c1541','-attach',str(exit_disk),'-delete','calc','-write',str(exit_prg),'calc'],check=True,capture_output=True)
+        ult.mount(exit_disk.read_bytes(),'a','d64','readonly')
+        print('Checking native app return-code reporting; leaving 30 seconds for IEC',flush=True)
+        key(ord('C'),expected=2,quiet=30)
+        assert read(0x3d27)==b'\0' and read(0x3d24)==b'\2' and read(0x3d20)==b'\0'
+        screens('app-return-error',1,(159,219),30,allocations[1][2],result=2)
+        report['checks'].append('a valid app returning an error is closed and released; the workspace displays its exit result separately from load errors')
+        ult.mount((ROOT/'target/native/uos128.d64').read_bytes(),'a','d64','readonly')
+        print('Reloading the valid native app after rejection; leaving 30 seconds for IEC',flush=True)
+        key(ord('C'),quiet=30)
+        assert read(0x3d20)==bytes([32]) and read(0x3d23)==b'\2'
+        assert read(display,8).split(b'\0')[0]==b'0'
+        key(27)
+        assert read(0x3d0e,3)==bytes([159,219,30]) and read(0x98)==b'\0'
+        report['checks'].append('one-byte damaged app is rejected with CRC error before entry; caller allocations and IEC channels survive; valid calculator can launch and return afterward')
         for bank,keycode in ((0,ord('1')),(1,ord('2'))):
             key(keycode);key(ord('V'));key(ord('F'))
         assert read(0x3d0e,3)==bytes([191,251,32])
@@ -117,6 +187,8 @@ def run(ult):
         try:
             (work/'failure-mailbox.bin').write_bytes(read(0x3d00,32))
             (work/'failure-vic.bin').write_bytes(read(0x400,1000))
+            (work/'failure-app-slot.bin').write_bytes(read(0x6000,4096))
+            (work/'failure-app-state.bin').write_bytes(read(0x3d20,96))
         except Exception as diagnostic_error:report['diagnostic_error']=str(diagnostic_error)
         raise
     finally:

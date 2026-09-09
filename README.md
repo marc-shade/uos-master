@@ -23,6 +23,9 @@ now boots in native mode, manages both RAM banks with owner-checked handles,
 and displays its memory controls on both screens. Build it with
 `python3 build-native.py`; the resulting disk is `target/native/uos128.d64`.
 The graphical desktop and application suite still need migration to this kernel.
+Press **C** in the native workspace for the [native calculator](docs/NATIVE-APPS.md),
+loaded through a checked app manifest with automatic memory cleanup. It retains
+32 calculation results in bank 1 and returns with Esc.
 
 ## Storage and loader update (2026-09-08)
 

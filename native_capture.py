@@ -22,10 +22,18 @@ def expected_screen(columns,bank,free=(191,251),slots=32,handle=b'\0'*4,result=0
            f'FREE 256-BYTE PAGES (HEX) 0/1: {free[0]:02X}/{free[1]:02X}',
            f'FREE HANDLES (HEX): {slots:02X}',f'SELECTED HANDLE: {int.from_bytes(handle,"little"):08X}',
            f'LAST RESULT: {result:02X}','','1/2 SELECT BANK  A ALLOCATE 8K',
-           'W FILL  V VERIFY  F RELEASE','','00 OK  04 INVALID HANDLE  0A MISMATCH','',
+           'W FILL  V VERIFY  F RELEASE','C CALCULATOR','00 OK  04 INVALID HANDLE  0A MISMATCH','',
            'NATIVE DESKTOP MIGRATION IN PROGRESS']
     lines+=['']*(25-len(lines))
     assert all(len(line)<=columns for line in lines)
+    return bytes(ord(c)-64 if 'A'<=c<='Z' else ord(c) for line in lines for c in line.ljust(columns))
+
+
+def calculator_screen(columns,result,history,view=0):
+    lines=['UOS 128 CALCULATOR','',f'RESULT: {result}','','0-9 + - * / =  DEL  C CLEAR',
+           'ESC RETURN   N/B OLDER/NEWER RESULTS','','HISTORY (NEWEST FIRST, 32 RETAINED):']
+    lines+=history[view:view+8] if history else ['NO RESULTS YET']
+    lines+=['']*(25-len(lines))
     return bytes(ord(c)-64 if 'A'<=c<='Z' else ord(c) for line in lines for c in line.ljust(columns))
 
 

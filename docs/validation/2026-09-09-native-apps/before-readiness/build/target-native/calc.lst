@@ -1,0 +1,779 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o /home/marc/geos128/uos/target/native/calc.prg -L /home/marc/geos128/uos/target/native/calc.lst /home/marc/geos128/uos/src/native/calc.asm
+; Wed Sep  9 10:47:18 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /home/marc/geos128/uos/src/native/calc.asm
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/api.inc
+
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; run a checked native PRG from IEC, then clean up
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device, 8..30
+=$3d22					N_NAMELEN       = $3d22          ; launch filename length, 1..16
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; last serial status byte
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$40					N_FIRST0        = $40            ; bank 0 $4000..$feff: 191 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
+
+.6000					app_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 00 00			        .byte 1,1,0,0
+>6008	70 06				        .word calc_end-app_image
+>600a	10 00				        .byte 16,0             ; 4 KiB code/data, zero-filled before loading
+>600c	20 00				        .word calc_entry-app_image
+>600e	00 00				        .word 0                ; build-native.py seals CRC16 over the image
+>6010	43 41 4c 43 55 4c 41 54		        .text "calculator",0
+>6018	4f 52 00
+>601b	00 00 00 00 00			        .fill N_APPBASE+32-*,0
+.6020					calc_entry:
+.6020	d8		cld		        cld
+.6021	ad 20 3d	lda $3d20	        lda N_CURRENT
+.6024	8d 4b 66	sta $664b	        sta owner
+.6027	8d 00 3d	sta $3d00	        sta N_OWNER
+.602a	a9 02		lda #$02	        lda #2
+.602c	8d 01 3d	sta $3d01	        sta N_PAGES
+.602f	a9 01		lda #$01	        lda #1
+.6031	8d 02 3d	sta $3d02	        sta N_BANK
+.6034	20 20 1c	jsr $1c20	        jsr N_ALLOC
+.6037	90 01		bcc $603a	        bcc calc_history_allocated
+.6039	60		rts		        rts                    ; launch reports app return code, cleans its slot
+.603a					calc_history_allocated:
+.603a	a2 03		ldx #$03	        ldx #3
+.603c					calc_keep_handle:
+.603c	bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.603f	9d 4e 66	sta $664e,x	        sta history_handle,x
+.6042	ca		dex		        dex
+.6043	10 f7		bpl $603c	        bpl calc_keep_handle
+.6045	a9 00		lda #$00	        lda #0
+.6047	8d 52 66	sta $6652	        sta history_count
+.604a	8d 53 66	sta $6653	        sta history_head
+.604d	8d 54 66	sta $6654	        sta history_view
+.6050	8d 55 66	sta $6655	        sta history_pending
+.6053	4c ff 60	jmp $60ff	        jmp c_clear
+.6056					cloop:
+.6056	a9 01		lda #$01	        lda #1
+.6058	8d 12 3d	sta $3d12	        sta N_READY
+.605b	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.605e	f0 f6		beq $6056	        beq cloop
+.6060	a2 00		ldx #$00	        ldx #0
+.6062	8e 12 3d	stx $3d12	        stx N_READY
+.6065	c9 1b		cmp #$1b	        cmp #$1b
+.6067	f0 66		beq $60cf	        beq calc_exit
+.6069	c9 43		cmp #$43	        cmp #$43
+.606b	f0 43		beq $60b0	        beq calc_clear
+.606d	c9 63		cmp #$63	        cmp #$63
+.606f	f0 3f		beq $60b0	        beq calc_clear
+.6071	c9 4e		cmp #$4e	        cmp #$4e
+.6073	f0 5f		beq $60d4	        beq calc_older
+.6075	c9 6e		cmp #$6e	        cmp #$6e
+.6077	f0 5b		beq $60d4	        beq calc_older
+.6079	c9 42		cmp #$42	        cmp #$42
+.607b	f0 6e		beq $60eb	        beq calc_newer
+.607d	c9 62		cmp #$62	        cmp #$62
+.607f	f0 6a		beq $60eb	        beq calc_newer
+.6081	ae 5f 66	ldx $665f	        ldx c_err
+.6084	d0 d0		bne $6056	        bne cloop              ; ESC and history remain available during errors
+.6086	c9 14		cmp #$14	        cmp #$14
+.6088	d0 03		bne $608d	        bne *+5
+.608a	4c bd 61	jmp $61bd	        jmp c_del
+.608d	c9 0d		cmp #$0d	        cmp #13
+.608f	f0 22		beq $60b3	        beq calc_equal
+.6091	c9 3d		cmp #$3d	        cmp #$3d
+.6093	f0 1e		beq $60b3	        beq calc_equal
+.6095	c9 2b		cmp #$2b	        cmp #$2b
+.6097	f0 22		beq $60bb	        beq calc_plus
+.6099	c9 2d		cmp #$2d	        cmp #$2d
+.609b	f0 23		beq $60c0	        beq calc_minus
+.609d	c9 2a		cmp #$2a	        cmp #$2a
+.609f	f0 24		beq $60c5	        beq calc_times
+.60a1	c9 2f		cmp #$2f	        cmp #$2f
+.60a3	f0 25		beq $60ca	        beq calc_divide
+.60a5	c9 30		cmp #$30	        cmp #$30
+.60a7	90 ad		bcc $6056	        bcc cloop
+.60a9	c9 3a		cmp #$3a	        cmp #$3a
+.60ab	b0 a9		bcs $6056	        bcs cloop
+.60ad	4c 21 61	jmp $6121	        jmp c_dig
+.60b0					calc_clear:
+.60b0	4c ff 60	jmp $60ff	        jmp c_clear
+.60b3					calc_equal:
+.60b3	a9 01		lda #$01	        lda #1
+.60b5	8d 55 66	sta $6655	        sta history_pending
+.60b8	4c 24 62	jmp $6224	        jmp c_eq
+.60bb					calc_plus:
+.60bb	a9 01		lda #$01	        lda #1
+.60bd	4c ce 61	jmp $61ce	        jmp c_op
+.60c0					calc_minus:
+.60c0	a9 02		lda #$02	        lda #2
+.60c2	4c ce 61	jmp $61ce	        jmp c_op
+.60c5					calc_times:
+.60c5	a9 03		lda #$03	        lda #3
+.60c7	4c ce 61	jmp $61ce	        jmp c_op
+.60ca					calc_divide:
+.60ca	a9 04		lda #$04	        lda #4
+.60cc	4c ce 61	jmp $61ce	        jmp c_op
+.60cf					calc_exit:
+.60cf	a9 00		lda #$00	        lda #0
+.60d1	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; one-way exit drops app frames, releases all owners
+.60d4					calc_older:
+.60d4	18		clc		        clc
+.60d5	ad 54 66	lda $6654	        lda history_view
+.60d8	69 08		adc #$08	        adc #8
+.60da	cd 52 66	cmp $6652	        cmp history_count
+.60dd	90 03		bcc $60e2	        bcc *+5
+.60df	4c 56 60	jmp $6056	        jmp cloop
+.60e2	8d 54 66	sta $6654	        sta history_view
+.60e5	20 30 64	jsr $6430	        jsr c_show
+.60e8	4c 56 60	jmp $6056	        jmp cloop
+.60eb					calc_newer:
+.60eb	ad 54 66	lda $6654	        lda history_view
+.60ee	d0 03		bne $60f3	        bne *+5
+.60f0	4c 56 60	jmp $6056	        jmp cloop
+.60f3	38		sec		        sec
+.60f4	e9 08		sbc #$08	        sbc #8
+.60f6	8d 54 66	sta $6654	        sta history_view
+.60f9	20 30 64	jsr $6430	        jsr c_show
+.60fc	4c 56 60	jmp $6056	        jmp cloop
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc-engine.inc
+
+.60ff					c_clear:
+.60ff	a9 00		lda #$00	        lda #$00
+.6101	8d 58 66	sta $6658	        sta c_acc
+.6104	8d 59 66	sta $6659	        sta c_acc+1
+.6107	8d 5a 66	sta $665a	        sta c_ent
+.610a	8d 5b 66	sta $665b	        sta c_ent+1
+.610d	8d 5c 66	sta $665c	        sta c_elen
+.6110	8d 5d 66	sta $665d	        sta c_pen
+.6113	8d 5f 66	sta $665f	        sta c_err
+.6116	a9 01		lda #$01	        lda #$01
+.6118	8d 5e 66	sta $665e	        sta c_fresh
+.611b	20 30 64	jsr $6430	        jsr c_show
+.611e	4c 56 60	jmp $6056	        jmp cloop
+.6121					c_dig:
+.6121	8d 62 66	sta $6662	        sta c_tmp2                      ; save the digit char before A is used
+.6124	ad 5e 66	lda $665e	        lda c_fresh
+.6127	f0 0e		beq $6137	        beq _dg_cont
+.6129	a9 00		lda #$00	        lda #$00
+.612b	8d 5a 66	sta $665a	        sta c_ent
+.612e	8d 5b 66	sta $665b	        sta c_ent+1
+.6131	8d 5c 66	sta $665c	        sta c_elen
+.6134	8d 5e 66	sta $665e	        sta c_fresh
+.6137					_dg_cont:
+.6137	ad 5c 66	lda $665c	        lda c_elen
+.613a	c9 08		cmp #$08	        cmp #$08
+.613c	b0 22		bcs $6160	        bcs _dg_rej                     ; entry cap: ignore the key
+.613e	ad 62 66	lda $6662	        lda c_tmp2
+.6141	38		sec		        sec
+.6142	e9 30		sbc #$30	        sbc #$30
+.6144	8d 62 66	sta $6662	        sta c_tmp2                      ; digit 0-9
+.6147	ad 5b 66	lda $665b	        lda c_ent+1
+.614a	c9 19		cmp #$19	        cmp #$19                        ; high byte of 6553 ($1999)
+.614c	90 15		bcc $6163	        bcc _dg_ok
+.614e	d0 10		bne $6160	        bne _dg_rej
+.6150	ad 5a 66	lda $665a	        lda c_ent
+.6153	c9 99		cmp #$99	        cmp #$99
+.6155	90 0c		bcc $6163	        bcc _dg_ok
+.6157	d0 07		bne $6160	        bne _dg_rej
+.6159	ad 62 66	lda $6662	        lda c_tmp2
+.615c	c9 06		cmp #$06	        cmp #$06
+.615e	90 03		bcc $6163	        bcc _dg_ok
+.6160					_dg_rej:
+.6160	4c 56 60	jmp $6056	        jmp cloop
+.6163					_dg_ok:
+.6163	ad 5a 66	lda $665a	        lda c_ent
+.6166	8d 60 66	sta $6660	        sta c_tmp
+.6169	ad 5b 66	lda $665b	        lda c_ent+1
+.616c	8d 61 66	sta $6661	        sta c_tmp+1
+.616f	0e 60 66	asl $6660	        asl c_tmp
+.6172	2e 61 66	rol $6661	        rol c_tmp+1                     ; *2
+.6175	0e 60 66	asl $6660	        asl c_tmp
+.6178	2e 61 66	rol $6661	        rol c_tmp+1                     ; *4
+.617b	0e 60 66	asl $6660	        asl c_tmp
+.617e	2e 61 66	rol $6661	        rol c_tmp+1                     ; *8
+.6181	ad 5a 66	lda $665a	        lda c_ent
+.6184	0a		asl a		        asl a
+.6185	8d 65 66	sta $6665	        sta c_rem
+.6188	ad 5b 66	lda $665b	        lda c_ent+1
+.618b	2a		rol a		        rol a
+.618c	8d 66 66	sta $6666	        sta c_rem+1                     ; ent*2
+.618f	ad 60 66	lda $6660	        lda c_tmp
+.6192	18		clc		        clc
+.6193	6d 65 66	adc $6665	        adc c_rem
+.6196	8d 60 66	sta $6660	        sta c_tmp
+.6199	ad 61 66	lda $6661	        lda c_tmp+1
+.619c	6d 66 66	adc $6666	        adc c_rem+1
+.619f	8d 61 66	sta $6661	        sta c_tmp+1
+.61a2	ad 60 66	lda $6660	        lda c_tmp
+.61a5	18		clc		        clc
+.61a6	6d 62 66	adc $6662	        adc c_tmp2
+.61a9	8d 5a 66	sta $665a	        sta c_ent
+.61ac	ad 61 66	lda $6661	        lda c_tmp+1
+.61af	69 00		adc #$00	        adc #$00
+.61b1	8d 5b 66	sta $665b	        sta c_ent+1
+.61b4	ee 5c 66	inc $665c	        inc c_elen
+.61b7	20 30 64	jsr $6430	        jsr c_show
+.61ba	4c 56 60	jmp $6056	        jmp cloop
+.61bd					c_del:
+.61bd	ad 5c 66	lda $665c	        lda c_elen
+.61c0	f0 09		beq $61cb	        beq _cd_x
+.61c2	20 4c 63	jsr $634c	        jsr c_div10
+.61c5	ce 5c 66	dec $665c	        dec c_elen
+.61c8	20 30 64	jsr $6430	        jsr c_show
+.61cb	4c 56 60	jmp $6056	_cd_x:  jmp cloop
+.61ce					c_op:
+.61ce	8d 67 66	sta $6667	        sta c_opkey
+.61d1	ad 5c 66	lda $665c	        lda c_elen
+.61d4	f0 19		beq $61ef	        beq _cop_ent                    ; no entry: keep acc, just pend
+.61d6	ad 5d 66	lda $665d	        lda c_pen
+.61d9	f0 08		beq $61e3	        beq _cop_take
+.61db	20 66 62	jsr $6266	        jsr c_fold
+.61de	b0 2b		bcs $620b	        bcs _cop_err
+.61e0	4c ef 61	jmp $61ef	        jmp _cop_ent
+.61e3					_cop_take:
+.61e3	ad 5a 66	lda $665a	        lda c_ent
+.61e6	8d 58 66	sta $6658	        sta c_acc
+.61e9	ad 5b 66	lda $665b	        lda c_ent+1
+.61ec	8d 59 66	sta $6659	        sta c_acc+1
+.61ef					_cop_ent:
+.61ef	ad 67 66	lda $6667	        lda c_opkey
+.61f2	8d 5d 66	sta $665d	        sta c_pen
+.61f5	a9 00		lda #$00	        lda #$00
+.61f7	8d 5a 66	sta $665a	        sta c_ent
+.61fa	8d 5b 66	sta $665b	        sta c_ent+1
+.61fd	8d 5c 66	sta $665c	        sta c_elen
+.6200	a9 01		lda #$01	        lda #$01
+.6202	8d 5e 66	sta $665e	        sta c_fresh
+.6205	20 30 64	jsr $6430	        jsr c_show
+.6208	4c 56 60	jmp $6056	        jmp cloop
+.620b					_cop_err:
+.620b	a9 00		lda #$00	        lda #$00
+.620d	8d 5d 66	sta $665d	        sta c_pen
+.6210	8d 5c 66	sta $665c	        sta c_elen
+.6213	8d 5a 66	sta $665a	        sta c_ent
+.6216	8d 5b 66	sta $665b	        sta c_ent+1
+.6219	a9 01		lda #$01	        lda #$01
+.621b	8d 5e 66	sta $665e	        sta c_fresh
+.621e	20 30 64	jsr $6430	        jsr c_show
+.6221	4c 56 60	jmp $6056	        jmp cloop
+.6224					c_eq:
+.6224	ad 5d 66	lda $665d	        lda c_pen
+.6227	f0 37		beq $6260	        beq _ce_show                    ; nothing pending: just show
+.6229	20 66 62	jsr $6266	        jsr c_fold
+.622c	b0 19		bcs $6247	        bcs _ce_err
+.622e	a9 00		lda #$00	        lda #$00
+.6230	8d 5d 66	sta $665d	        sta c_pen
+.6233	8d 5c 66	sta $665c	        sta c_elen
+.6236	8d 5a 66	sta $665a	        sta c_ent
+.6239	8d 5b 66	sta $665b	        sta c_ent+1
+.623c	a9 01		lda #$01	        lda #$01
+.623e	8d 5e 66	sta $665e	        sta c_fresh
+.6241	20 30 64	jsr $6430	        jsr c_show
+.6244	4c 56 60	jmp $6056	        jmp cloop
+.6247					_ce_err:
+.6247	a9 00		lda #$00	        lda #$00
+.6249	8d 5d 66	sta $665d	        sta c_pen
+.624c	8d 5c 66	sta $665c	        sta c_elen
+.624f	8d 5a 66	sta $665a	        sta c_ent
+.6252	8d 5b 66	sta $665b	        sta c_ent+1
+.6255	a9 01		lda #$01	        lda #$01
+.6257	8d 5e 66	sta $665e	        sta c_fresh
+.625a	20 30 64	jsr $6430	        jsr c_show
+.625d	4c 56 60	jmp $6056	        jmp cloop
+.6260					_ce_show:
+.6260	20 30 64	jsr $6430	        jsr c_show
+.6263	4c 56 60	jmp $6056	        jmp cloop
+.6266					c_fold:
+.6266	ad 5d 66	lda $665d	        lda c_pen
+.6269	c9 01		cmp #$01	        cmp #$01
+.626b	f0 0e		beq $627b	        beq _f_add
+.626d	c9 02		cmp #$02	        cmp #$02
+.626f	f0 22		beq $6293	        beq _f_sub
+.6271	c9 03		cmp #$03	        cmp #$03
+.6273	f0 3c		beq $62b1	        beq _f_mul
+.6275	c9 04		cmp #$04	        cmp #$04
+.6277	f0 58		beq $62d1	        beq _f_div
+.6279	18		clc		        clc
+.627a	60		rts		        rts
+.627b					_f_add:
+.627b	ad 58 66	lda $6658	        lda c_acc
+.627e	18		clc		        clc
+.627f	6d 5a 66	adc $665a	        adc c_ent
+.6282	8d 58 66	sta $6658	        sta c_acc
+.6285	ad 59 66	lda $6659	        lda c_acc+1
+.6288	6d 5b 66	adc $665b	        adc c_ent+1
+.628b	8d 59 66	sta $6659	        sta c_acc+1
+.628e	90 1f		bcc $62af	        bcc _native_arithmetic_ok
+.6290	4c a8 62	jmp $62a8	        jmp _native_arithmetic_overflow
+.6293					_f_sub:
+.6293	ad 58 66	lda $6658	        lda c_acc
+.6296	38		sec		        sec
+.6297	ed 5a 66	sbc $665a	        sbc c_ent
+.629a	8d 58 66	sta $6658	        sta c_acc
+.629d	ad 59 66	lda $6659	        lda c_acc+1
+.62a0	ed 5b 66	sbc $665b	        sbc c_ent+1
+.62a3	8d 59 66	sta $6659	        sta c_acc+1
+.62a6	b0 07		bcs $62af	        bcs _native_arithmetic_ok
+.62a8					_native_arithmetic_overflow:
+.62a8	a9 02		lda #$02	        lda #2
+.62aa	8d 5f 66	sta $665f	        sta c_err
+.62ad	38		sec		        sec
+.62ae	60		rts		        rts
+.62af					_native_arithmetic_ok:
+.62af	18		clc		        clc
+.62b0	60		rts		        rts
+.62b1					_f_mul:
+.62b1	20 72 63	jsr $6372	        jsr umul32                      ; 32-bit product: low c_tmp, high c_rem
+.62b4	ad 60 66	lda $6660	        lda c_tmp
+.62b7	8d 58 66	sta $6658	        sta c_acc
+.62ba	ad 61 66	lda $6661	        lda c_tmp+1
+.62bd	8d 59 66	sta $6659	        sta c_acc+1
+.62c0	ad 65 66	lda $6665	        lda c_rem
+.62c3	0d 66 66	ora $6666	        ora c_rem+1
+.62c6	f0 07		beq $62cf	        beq _fm_ok
+.62c8	a9 02		lda #$02	        lda #$02                        ; OVF
+.62ca	8d 5f 66	sta $665f	        sta c_err
+.62cd	38		sec		        sec
+.62ce	60		rts		        rts
+.62cf	18		clc		_fm_ok: clc
+.62d0	60		rts		        rts
+.62d1					_f_div:
+.62d1	ad 5a 66	lda $665a	        lda c_ent
+.62d4	0d 5b 66	ora $665b	        ora c_ent+1
+.62d7	d0 07		bne $62e0	        bne _fd_go
+.62d9	a9 01		lda #$01	        lda #$01                        ; DIV/0
+.62db	8d 5f 66	sta $665f	        sta c_err
+.62de	38		sec		        sec
+.62df	60		rts		        rts
+.62e0	ad 58 66	lda $6658	_fd_go: lda c_acc
+.62e3	8d 60 66	sta $6660	        sta c_tmp
+.62e6	ad 59 66	lda $6659	        lda c_acc+1
+.62e9	8d 61 66	sta $6661	        sta c_tmp+1
+.62ec	20 fd 62	jsr $62fd	        jsr udiv                        ; c_tmp / c_ent -> c_divs, c_rem
+.62ef	ad 63 66	lda $6663	        lda c_divs
+.62f2	8d 58 66	sta $6658	        sta c_acc
+.62f5	ad 64 66	lda $6664	        lda c_divs+1
+.62f8	8d 59 66	sta $6659	        sta c_acc+1
+.62fb	18		clc		        clc
+.62fc	60		rts		        rts
+.62fd					udiv:
+.62fd	a9 00		lda #$00	        lda #$00
+.62ff	8d 63 66	sta $6663	        sta c_divs
+.6302	8d 64 66	sta $6664	        sta c_divs+1
+.6305	8d 65 66	sta $6665	        sta c_rem
+.6308	8d 66 66	sta $6666	        sta c_rem+1
+.630b	a2 10		ldx #$10	        ldx #$10
+.630d	0e 63 66	asl $6663	_ud_l:  asl c_divs
+.6310	2e 64 66	rol $6664	        rol c_divs+1
+.6313	0e 60 66	asl $6660	        asl c_tmp
+.6316	2e 61 66	rol $6661	        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.6319	2e 65 66	rol $6665	        rol c_rem
+.631c	2e 66 66	rol $6666	        rol c_rem+1
+.631f	b0 10		bcs $6331	        bcs _ud_do                      ; 17th bit set: rem > any 16-bit divisor
+.6321	ad 65 66	lda $6665	        lda c_rem
+.6324	38		sec		        sec
+.6325	ed 5a 66	sbc $665a	        sbc c_ent
+.6328	a8		tay		        tay
+.6329	ad 66 66	lda $6666	        lda c_rem+1
+.632c	ed 5b 66	sbc $665b	        sbc c_ent+1
+.632f	90 17		bcc $6348	        bcc _ud_n
+.6331	ad 65 66	lda $6665	_ud_do: lda c_rem
+.6334	38		sec		        sec
+.6335	ed 5a 66	sbc $665a	        sbc c_ent
+.6338	a8		tay		        tay
+.6339	ad 66 66	lda $6666	        lda c_rem+1
+.633c	ed 5b 66	sbc $665b	        sbc c_ent+1
+.633f	8d 66 66	sta $6666	        sta c_rem+1
+.6342	8c 65 66	sty $6665	        sty c_rem
+.6345	ee 63 66	inc $6663	        inc c_divs
+.6348	ca		dex		_ud_n:  dex
+.6349	d0 c2		bne $630d	        bne _ud_l
+.634b	60		rts		        rts
+.634c					c_div10:
+.634c	ad 5a 66	lda $665a	        lda c_ent
+.634f	8d 60 66	sta $6660	        sta c_tmp
+.6352	ad 5b 66	lda $665b	        lda c_ent+1
+.6355	8d 61 66	sta $6661	        sta c_tmp+1
+.6358	a9 0a		lda #$0a	        lda #$0a
+.635a	8d 5a 66	sta $665a	        sta c_ent
+.635d	a9 00		lda #$00	        lda #$00
+.635f	8d 5b 66	sta $665b	        sta c_ent+1
+.6362	20 fd 62	jsr $62fd	        jsr udiv
+.6365	ad 63 66	lda $6663	        lda c_divs
+.6368	8d 5a 66	sta $665a	        sta c_ent
+.636b	ad 64 66	lda $6664	        lda c_divs+1
+.636e	8d 5b 66	sta $665b	        sta c_ent+1
+.6371	60		rts		        rts
+.6372					umul32:
+.6372	a9 00		lda #$00	        lda #$00
+.6374	8d 60 66	sta $6660	        sta c_tmp
+.6377	8d 61 66	sta $6661	        sta c_tmp+1
+.637a	8d 65 66	sta $6665	        sta c_rem
+.637d	8d 66 66	sta $6666	        sta c_rem+1
+.6380	a2 10		ldx #$10	        ldx #$10
+.6382	0e 60 66	asl $6660	_um_l:  asl c_tmp                       ; product <<= 1 (32-bit)
+.6385	2e 61 66	rol $6661	        rol c_tmp+1
+.6388	2e 65 66	rol $6665	        rol c_rem
+.638b	2e 66 66	rol $6666	        rol c_rem+1
+.638e	ad 5b 66	lda $665b	        lda c_ent+1                     ; test the multiplier's current bit15
+.6391	10 23		bpl $63b6	        bpl _um_s
+.6393	ad 60 66	lda $6660	        lda c_tmp                       ; product += acc
+.6396	18		clc		        clc
+.6397	6d 58 66	adc $6658	        adc c_acc
+.639a	8d 60 66	sta $6660	        sta c_tmp
+.639d	ad 61 66	lda $6661	        lda c_tmp+1
+.63a0	6d 59 66	adc $6659	        adc c_acc+1
+.63a3	8d 61 66	sta $6661	        sta c_tmp+1
+.63a6	ad 65 66	lda $6665	        lda c_rem
+.63a9	69 00		adc #$00	        adc #$00
+.63ab	8d 65 66	sta $6665	        sta c_rem
+.63ae	ad 66 66	lda $6666	        lda c_rem+1
+.63b1	69 00		adc #$00	        adc #$00
+.63b3	8d 66 66	sta $6666	        sta c_rem+1
+.63b6	0e 5a 66	asl $665a	_um_s:  asl c_ent                       ; multiplier <<= 1
+.63b9	2e 5b 66	rol $665b	        rol c_ent+1
+.63bc	ca		dex		        dex
+.63bd	d0 c3		bne $6382	        bne _um_l
+.63bf	60		rts		        rts
+.63c0					fmt_dec:
+.63c0	ad 60 66	lda $6660	        lda c_tmp
+.63c3	0d 61 66	ora $6661	        ora c_tmp+1
+.63c6	d0 0b		bne $63d3	        bne _fd_nz
+.63c8	a9 30		lda #$30	        lda #$30
+.63ca	8d 68 66	sta $6668	        sta dispbuf
+.63cd	a9 00		lda #$00	        lda #$00
+.63cf	8d 69 66	sta $6669	        sta dispbuf+1
+.63d2	60		rts		        rts
+.63d3	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
+.63d5	8d 62 66	sta $6662	        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
+.63d8	20 ff 63	jsr $63ff	_fd_l:  jsr d10tmp
+.63db	ad 65 66	lda $6665	        lda c_rem
+.63de	18		clc		        clc
+.63df	69 30		adc #$30	        adc #$30
+.63e1	48		pha		        pha                             ; digits pushed least-significant first
+.63e2	ee 62 66	inc $6662	        inc c_tmp2
+.63e5	ad 60 66	lda $6660	        lda c_tmp
+.63e8	0d 61 66	ora $6661	        ora c_tmp+1
+.63eb	d0 eb		bne $63d8	        bne _fd_l
+.63ed	a0 00		ldy #$00	        ldy #$00
+.63ef	68		pla		_fd_c:  pla
+.63f0	99 68 66	sta $6668,y	        sta dispbuf,y
+.63f3	c8		iny		        iny
+.63f4	ce 62 66	dec $6662	        dec c_tmp2
+.63f7	d0 f6		bne $63ef	        bne _fd_c
+.63f9	a9 00		lda #$00	        lda #$00
+.63fb	99 68 66	sta $6668,y	        sta dispbuf,y
+.63fe	60		rts		        rts
+.63ff					d10tmp:
+.63ff	a9 00		lda #$00	        lda #$00
+.6401	8d 65 66	sta $6665	        sta c_rem
+.6404	8d 66 66	sta $6666	        sta c_rem+1
+.6407	a2 10		ldx #$10	        ldx #$10
+.6409	0e 60 66	asl $6660	_d1l:   asl c_tmp
+.640c	2e 61 66	rol $6661	        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.640f	2e 65 66	rol $6665	        rol c_rem
+.6412	2e 66 66	rol $6666	        rol c_rem+1
+.6415	ad 65 66	lda $6665	        lda c_rem
+.6418	38		sec		        sec
+.6419	e9 0a		sbc #$0a	        sbc #$0a
+.641b	a8		tay		        tay
+.641c	ad 66 66	lda $6666	        lda c_rem+1
+.641f	e9 00		sbc #$00	        sbc #$00
+.6421	90 09		bcc $642c	        bcc _d1n
+.6423	8d 66 66	sta $6666	        sta c_rem+1
+.6426	8c 65 66	sty $6665	        sty c_rem
+.6429	ee 60 66	inc $6660	        inc c_tmp
+.642c	ca		dex		_d1n:   dex
+.642d	d0 da		bne $6409	        bne _d1l
+.642f	60		rts		        rts
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
+
+.6430					c_show:
+.6430	ad 5c 66	lda $665c	        lda c_elen
+.6433	d0 14		bne $6449	        bne calc_show_entry
+.6435	ad 5e 66	lda $665e	        lda c_fresh
+.6438	f0 0f		beq $6449	        beq calc_show_entry
+.643a	ad 58 66	lda $6658	        lda c_acc
+.643d	8d 60 66	sta $6660	        sta c_tmp
+.6440	ad 59 66	lda $6659	        lda c_acc+1
+.6443	8d 61 66	sta $6661	        sta c_tmp+1
+.6446	4c 55 64	jmp $6455	        jmp calc_format
+.6449					calc_show_entry:
+.6449	ad 5a 66	lda $665a	        lda c_ent
+.644c	8d 60 66	sta $6660	        sta c_tmp
+.644f	ad 5b 66	lda $665b	        lda c_ent+1
+.6452	8d 61 66	sta $6661	        sta c_tmp+1
+.6455					calc_format:
+.6455	ad 5f 66	lda $665f	        lda c_err
+.6458	f0 20		beq $647a	        beq calc_number
+.645a	a2 00		ldx #$00	        ldx #0
+.645c	c9 01		cmp #$01	        cmp #1
+.645e	d0 0d		bne $646d	        bne calc_overflow
+.6460					calc_divzero_text:
+.6460	bd 41 66	lda $6641,x	        lda text_divzero,x
+.6463	9d 68 66	sta $6668,x	        sta dispbuf,x
+.6466	e8		inx		        inx
+.6467	c9 00		cmp #$00	        cmp #0
+.6469	d0 f5		bne $6460	        bne calc_divzero_text
+.646b	f0 10		beq $647d	        beq calc_formatted
+.646d					calc_overflow:
+.646d	bd 47 66	lda $6647,x	        lda text_overflow,x
+.6470	9d 68 66	sta $6668,x	        sta dispbuf,x
+.6473	e8		inx		        inx
+.6474	c9 00		cmp #$00	        cmp #0
+.6476	d0 f5		bne $646d	        bne calc_overflow
+.6478	f0 03		beq $647d	        beq calc_formatted
+.647a					calc_number:
+.647a	20 c0 63	jsr $63c0	        jsr fmt_dec
+.647d					calc_formatted:
+.647d	ad 55 66	lda $6655	        lda history_pending
+.6480	f0 03		beq $6485	        beq calc_redraw
+.6482	20 ea 64	jsr $64ea	        jsr history_append
+.6485					calc_redraw:
+.6485	a9 00		lda #$00	        lda #0
+.6487	8d 4c 66	sta $664c	        sta screen
+.648a					calc_screen:
+.648a	a5 d7		lda $d7		        lda $d7
+.648c	2a		rol a		        rol
+.648d	a9 00		lda #$00	        lda #0
+.648f	2a		rol a		        rol
+.6490	cd 4c 66	cmp $664c	        cmp screen
+.6493	f0 03		beq $6498	        beq calc_screen_ready
+.6495	20 5f ff	jsr $ff5f	        jsr $ff5f
+.6498					calc_screen_ready:
+.6498	a9 93		lda #$93	        lda #$93
+.649a	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.649d	a9 ab		lda #$ab	        lda #<text_title
+.649f	a2 65		ldx #$65	        ldx #>text_title
+.64a1	20 91 65	jsr $6591	        jsr puts
+.64a4	a9 68		lda #$68	        lda #<dispbuf
+.64a6	a2 66		ldx #$66	        ldx #>dispbuf
+.64a8	20 91 65	jsr $6591	        jsr puts
+.64ab	a9 c8		lda #$c8	        lda #<text_help
+.64ad	a2 65		ldx #$65	        ldx #>text_help
+.64af	20 91 65	jsr $6591	        jsr puts
+.64b2	20 32 65	jsr $6532	        jsr history_show
+.64b5	ee 4c 66	inc $664c	        inc screen
+.64b8	ad 4c 66	lda $664c	        lda screen
+.64bb	c9 02		cmp #$02	        cmp #2
+.64bd	d0 cb		bne $648a	        bne calc_screen
+.64bf	60		rts		        rts
+.64c0					history_select:
+.64c0	ad 4b 66	lda $664b	        lda owner
+.64c3	8d 00 3d	sta $3d00	        sta N_OWNER
+.64c6	a2 03		ldx #$03	        ldx #3
+.64c8					history_select_loop:
+.64c8	bd 4e 66	lda $664e,x	        lda history_handle,x
+.64cb	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.64ce	ca		dex		        dex
+.64cf	10 f7		bpl $64c8	        bpl history_select_loop
+.64d1	a9 10		lda #$10	        lda #16
+.64d3	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.64d6	a9 00		lda #$00	        lda #0
+.64d8	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.64db	60		rts		        rts
+.64dc					history_offset:
+.64dc	0a		asl a		        asl
+.64dd	0a		asl a		        asl
+.64de	0a		asl a		        asl
+.64df	0a		asl a		        asl
+.64e0	8d 08 3d	sta $3d08	        sta N_OFFSET
+.64e3	a9 00		lda #$00	        lda #0
+.64e5	2a		rol a		        rol
+.64e6	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.64e9	60		rts		        rts
+.64ea					history_append:
+.64ea	a9 00		lda #$00	        lda #0
+.64ec	8d 55 66	sta $6655	        sta history_pending
+.64ef	8d 54 66	sta $6654	        sta history_view
+.64f2	20 c0 64	jsr $64c0	        jsr history_select
+.64f5	a2 0f		ldx #$0f	        ldx #15
+.64f7	a9 20		lda #$20	        lda #$20
+.64f9					history_blank:
+.64f9	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.64fc	ca		dex		        dex
+.64fd	10 fa		bpl $64f9	        bpl history_blank
+.64ff	a2 00		ldx #$00	        ldx #0
+.6501					history_text:
+.6501	bd 68 66	lda $6668,x	        lda dispbuf,x
+.6504	f0 08		beq $650e	        beq history_text_done
+.6506	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.6509	e8		inx		        inx
+.650a	e0 08		cpx #$08	        cpx #8
+.650c	d0 f3		bne $6501	        bne history_text
+.650e					history_text_done:
+.650e	ad 53 66	lda $6653	        lda history_head
+.6511	20 dc 64	jsr $64dc	        jsr history_offset
+.6514	20 29 1c	jsr $1c29	        jsr N_WRITE
+.6517	b0 16		bcs $652f	        bcs history_failure
+.6519	ee 53 66	inc $6653	        inc history_head
+.651c	ad 53 66	lda $6653	        lda history_head
+.651f	29 1f		and #$1f	        and #31
+.6521	8d 53 66	sta $6653	        sta history_head
+.6524	ad 52 66	lda $6652	        lda history_count
+.6527	c9 20		cmp #$20	        cmp #32
+.6529	f0 03		beq $652e	        beq history_appended
+.652b	ee 52 66	inc $6652	        inc history_count
+.652e					history_appended:
+.652e	60		rts		        rts
+.652f					history_failure:
+.652f	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; loader preserves error as the app exit code
+.6532					history_show:
+.6532	20 c0 64	jsr $64c0	        jsr history_select
+.6535	a9 00		lda #$00	        lda #0
+.6537	8d 56 66	sta $6656	        sta history_row
+.653a	ad 52 66	lda $6652	        lda history_count
+.653d	d0 07		bne $6546	        bne history_row_loop
+.653f	a9 32		lda #$32	        lda #<text_empty
+.6541	a2 66		ldx #$66	        ldx #>text_empty
+.6543	4c 91 65	jmp $6591	        jmp puts
+.6546					history_row_loop:
+.6546	18		clc		        clc
+.6547	ad 54 66	lda $6654	        lda history_view
+.654a	6d 56 66	adc $6656	        adc history_row
+.654d	cd 52 66	cmp $6652	        cmp history_count
+.6550	b0 3e		bcs $6590	        bcs history_shown
+.6552	8d 57 66	sta $6657	        sta history_ordinal
+.6555	38		sec		        sec
+.6556	ad 53 66	lda $6653	        lda history_head
+.6559	e9 01		sbc #$01	        sbc #1
+.655b	38		sec		        sec
+.655c	ed 57 66	sbc $6657	        sbc history_ordinal
+.655f	29 1f		and #$1f	        and #31
+.6561	20 dc 64	jsr $64dc	        jsr history_offset
+.6564	20 26 1c	jsr $1c26	        jsr N_READ
+.6567	b0 c6		bcs $652f	        bcs history_failure
+.6569	a9 00		lda #$00	        lda #0
+.656b	8d 4d 66	sta $664d	        sta text_index
+.656e					history_print:
+.656e	ae 4d 66	ldx $664d	        ldx text_index
+.6571	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.6574	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6577	ee 4d 66	inc $664d	        inc text_index
+.657a	ad 4d 66	lda $664d	        lda text_index
+.657d	c9 10		cmp #$10	        cmp #16
+.657f	d0 ed		bne $656e	        bne history_print
+.6581	a9 0d		lda #$0d	        lda #13
+.6583	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6586	ee 56 66	inc $6656	        inc history_row
+.6589	ad 56 66	lda $6656	        lda history_row
+.658c	c9 08		cmp #$08	        cmp #8
+.658e	d0 b6		bne $6546	        bne history_row_loop
+.6590					history_shown:
+.6590	60		rts		        rts
+.6591					puts:
+.6591	8d 98 65	sta $6598	        sta text_read+1
+.6594	8e 99 65	stx $6599	        stx text_read+2
+.6597					text_read:
+.6597	ad ff ff	lda $ffff	        lda $ffff
+.659a	f0 0e		beq $65aa	        beq text_done
+.659c	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.659f	ee 98 65	inc $6598	        inc text_read+1
+.65a2	d0 f3		bne $6597	        bne text_read
+.65a4	ee 99 65	inc $6599	        inc text_read+2
+.65a7	4c 97 65	jmp $6597	        jmp text_read
+.65aa					text_done:
+.65aa	60		rts		        rts
+>65ab	55 4f 53 20 31 32 38 20		text_title: .text "uos 128 calculator",13,13,"result: ",0
+>65b3	43 41 4c 43 55 4c 41 54 4f 52 0d 0d 52 45 53 55
+>65c3	4c 54 3a 20 00
+>65c8	0d 0d 30 2d 39 20 2b 20		text_help: .text 13,13,"0-9 + - * / =  del  c clear",13
+>65d0	2d 20 2a 20 2f 20 3d 20 20 44 45 4c 20 20 43 20
+>65e0	43 4c 45 41 52 0d
+>65e6	45 53 43 20 52 45 54 55		           .text "esc return   n/b older/newer results",13,13
+>65ee	52 4e 20 20 20 4e 2f 42 20 4f 4c 44 45 52 2f 4e
+>65fe	45 57 45 52 20 52 45 53 55 4c 54 53 0d 0d
+>660c	48 49 53 54 4f 52 59 20		           .text "history (newest first, 32 retained):",13,0
+>6614	28 4e 45 57 45 53 54 20 46 49 52 53 54 2c 20 33
+>6624	32 20 52 45 54 41 49 4e 45 44 29 3a 0d 00
+>6632	4e 4f 20 52 45 53 55 4c		text_empty: .text "no results yet",0
+>663a	54 53 20 59 45 54 00
+>6641	44 49 56 2f 30 00		text_divzero: .text "div/0",0
+>6647	4f 56 46 00			text_overflow: .text "ovf",0
+>664b	00				owner: .byte 0
+>664c	00				screen: .byte 0
+>664d	00				text_index: .byte 0
+>664e	00 00 00 00			history_handle: .fill 4,0
+>6652	00				history_count: .byte 0
+>6653	00				history_head: .byte 0
+>6654	00				history_view: .byte 0
+>6655	00				history_pending: .byte 0
+>6656	00				history_row: .byte 0
+>6657	00				history_ordinal: .byte 0
+>6658	00 00				c_acc: .word 0
+>665a	00 00				c_ent: .word 0
+>665c	00				c_elen: .byte 0
+>665d	00				c_pen: .byte 0
+>665e	00				c_fresh: .byte 0
+>665f	00				c_err: .byte 0
+>6660	00 00				c_tmp: .word 0
+>6662	00				c_tmp2: .byte 0
+>6663	00 00				c_divs: .word 0
+>6665	00 00				c_rem: .word 0
+>6667	00				c_opkey: .byte 0
+>6668	00 00 00 00 00 00 00 00		dispbuf: .fill 8,0
+.6670					calc_end:
+
+;******  End of listing

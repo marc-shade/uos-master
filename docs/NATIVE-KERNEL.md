@@ -2,9 +2,10 @@
 
 The separate `target/native/uos128.d64` boots through the C128 KERNAL into
 BASIC 7 and enters the native kernel. It never enters C64 mode. This first
-native image is a memory workspace with an application-facing allocator;
-the graphical desktop, Ultimate services and application suite still require
-migration. The existing `target/ultos.d64` remains the working desktop build.
+native image provides a memory workspace, application-facing allocator and a
+[disk-loaded native calculator](NATIVE-APPS.md). The graphical desktop,
+Ultimate services and remaining application suite still require migration.
+The existing `target/ultos.d64` remains the graphical desktop build.
 
 ## Build and use
 
@@ -32,6 +33,9 @@ are hexadecimal. A result of `00` means success, `04` means no valid selected
 handle and `0A` means the workspace found different data. The remaining error
 codes are listed below. To return to the graphical desktop, mount
 `target/ultos.d64` and use its existing C64-mode boot path.
+Press **C** to launch the native calculator and **Esc** there to return while
+retaining the workspace's allocations. Its app lifecycle and additional ABI
+entries are documented in the [native app guide](NATIVE-APPS.md).
 
 ## Memory and execution contract
 

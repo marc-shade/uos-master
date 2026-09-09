@@ -11,6 +11,9 @@ N_FILL          = $1c2c
 N_STATS         = $1c2f
 N_RELEASE       = $1c32
 N_RESERVE       = $1c35
+N_LAUNCH        = $1c38          ; run a checked native PRG from IEC, then clean up
+N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
 
 ; Allocation: OWNER=1..254, PAGES=1..255, BANK=0/1/$ff (automatic).
 ; Automatic allocation uses bank 1 first, preserving bank-0 code space.
@@ -38,6 +41,16 @@ N_READY         = $3d12
 N_KEYS          = $3d13          ; word: consumed keyboard events
 N_LASTKEY       = $3d15
 N_RESULT        = $3d16          ; workspace's last command result
+N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+N_DEVICE        = $3d21          ; launch IEC device, 8..30
+N_NAMELEN       = $3d22          ; launch filename length, 1..16
+N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+N_IOSTATUS      = $3d26          ; last serial status byte
+N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
 N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
 
 N_OK            = 0
@@ -50,6 +63,16 @@ N_RANGE         = 6
 N_REENTRANT     = 7
 N_PLATFORM      = 8
 N_CORRUPT       = 9
+N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+N_SHORTIMAGE    = $12            ; EOF before declared length
+N_LONGIMAGE     = $13            ; declared length reached without EOF
+N_CHECKSUM      = $14            ; image CRC16 does not match
+N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+
+N_APPBASE       = $6000          ; bank 0 application executable slot
+N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
 
 ; Private allocation tables. Apps must not write these or MMU registers.
 NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
