@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 mkdir -p target
 rm -f target/*.bin target/*.prg target/ultos.d64
 
-modules=(uos uos-gfx uos-vdc uos-drv1351 uos-sprites uos-reu uos-net uos-files uos-desktop uos-settings uos-fmgr uos-shell uos-edit uos-calc uos-ultimate uos-copy)
+modules=(uos uos-gfx uos-vdc uos-drv1351 uos-sprites uos-reu uos-net uos-files uos-desktop uos-settings uos-fmgr uos-shell uos-edit uos-calc uos-ultimate uos-copy uos-picker)
 for m in "${modules[@]}"; do
     echo "== 64tass $m =="
     64tass -a "src/${m}.asm" -o "target/${m}.prg" -L "target/${m}.lst"

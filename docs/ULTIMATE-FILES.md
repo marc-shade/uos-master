@@ -5,8 +5,9 @@ action uses it to inspect files on both displays. It also provides bounded
 binary reads, exclusive creation, verified writes, 32-bit seeks, position/size
 queries and handle cleanup for other applications. The browser's **C / Copy**
 action opens a dialog that uses this service to create and verify a new copy.
-Shared save/file-picker dialogs, an IEC backend, overwrite, rename and deletion
-remain required.
+The editor now uses [shared Open and Save As](FILE-DIALOGS.md), with a modal
+folder selector and final reopened verification. An IEC backend, overwrite,
+rename and deletion remain required.
 
 The resident allocation is `$4100–$4fff`; the file API starts at `$4100`, and
 the viewer starts at `$4800`. GETCAP ID 6 returns `$4100`, including without
@@ -27,7 +28,7 @@ fails before updating the result record.
 | Address | Call | Arguments / result |
 |---|---|---|
 | `$4100` | `UFS_OPEN` | r0 points to a NUL-terminated raw filename; A=1 reads an existing file, A=7 exclusively creates a new file with read/write access |
-| `$4103` | `UFS_CLOSE` | Close only a service-owned handle; an unowned context is a no-op |
+| `$4103` | `UFS_CLOSE` | Close only a service-owned handle and restore its pending selector directory, if any |
 | `$4106` | `UFS_READ` | r0 destination, r1 requested length 1–512; COUNT actual bytes, EOF when the known size is reached |
 | `$4109` | `UFS_WRITE` | r0 source, r1 length 1–512; only files created by this service; verify all bytes by seeking back and reading them |
 | `$410c` | `UFS_SEEK` | r0/r1 hold a 32-bit little-endian offset, from zero through the known file size |
@@ -45,7 +46,9 @@ reopen or delete. A physical 255-byte creation reproduced that problem before
 this guard was added. Read-only names retain the full transport bound and
 report firmware lookup failures without truncation. The browser's full-name
 caches remain unchanged. Long paths with shorter components are supported.
-The service never changes either DOS context's working directory.
+Ordinary file calls leave working directories unchanged. Closing a file
+returned by the [shared selector](FILE-DIALOGS.md#working-directory-cleanup)
+also restores the directory borrowed for that selection.
 
 Binary buffers must lie wholly in `$5000–$734f` or `$7359–$7fff`. The settings
 record, sprites and resident modules cannot be destinations. Returned bytes
@@ -151,9 +154,10 @@ service's 127-byte component limit. Source names retain the browser's full
 511-byte bound. DOS 2 opens the source relative to the unchanged browser CWD;
 DOS 1 opens the absolute destination without changing the shell CWD.
 This is a single-file copy, with a typed destination path. Folder selection,
-batch/recursive copy, resume, safe partial-file removal and application Save As
-remain open. Concurrent source/media changes and power-loss durability are not
-guaranteed: final comparison observes both files through the cartridge API.
+batch/recursive copy, resume and safe partial-file removal remain open. The
+editor's Save As uses the separate shared selector. Concurrent source/media
+changes and power-loss durability are not guaranteed: final comparison observes
+both files through the cartridge API.
 
 The `uos-copy` module is loaded on demand at `$5000` and hidden from the Apps
 list. Its code must end below `$6900`; its buffers are destination

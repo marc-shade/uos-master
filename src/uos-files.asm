@@ -1,10 +1,12 @@
 ; Resident Ultimate binary file service. GPL v3, see uos.asm.
 ; This deliberately exposes read and exclusive creation, not overwrite,
 ; delete or rename: the firmware's FAT file locks are disabled. It never
-; closes a foreign file, changes CWD, or silently replays an uncertain write.
+; closes a foreign file or silently replays an uncertain write. A successful
+; selector lease is restored when its service-owned file closes.
 .include "equates.inc"
 .include "routines.inc"
 .include "ultimate-files.inc"
+.include "file-dialog.inc"
 
 * = UFS_OPEN
         jmp open_file
@@ -146,6 +148,15 @@ open_mode:
         lda #UFS_BUSY
         jmp finish
 open_name:
+        lda pick_pending
+        cmp #2
+        bne open_directory_ok
+        lda target
+        cmp pick_context
+        bne open_directory_ok
+        lda #UFS_UNCERTAIN
+        jmp finish
+open_directory_ok:
         lda target
         sta UFS_COMMAND
         lda #2
@@ -299,7 +310,7 @@ close_begin:
         ldx index
         lda modes,x
         bne close_issue
-        jmp ok                 ; never close an unowned firmware handle
+        jmp pick_close_finish  ; never close an unowned firmware handle
 close_issue:
         lda #3
         jsr short_two
@@ -314,7 +325,7 @@ close_done:
         ldx index
         lda #0
         sta modes,x
-        jmp ok
+        jmp pick_close_finish
 
 tell_file:
         jsr begin
@@ -930,4 +941,6 @@ files_end:
 
 * = UFS_VIEW
 .include "ultimate-view.inc"
-        .cerror * > $5000, "resident file viewer overlaps apps"
+        .cerror * > UFP_PICK, "resident file viewer overlaps selector gateway"
+.include "file-dialog-gateway.inc"
+        .cerror * > $5000, "resident file service overlaps apps"

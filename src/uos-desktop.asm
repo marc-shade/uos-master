@@ -25,6 +25,7 @@
 .include "vic-ii.inc"
 .include "io.inc"
 .include "ultimate-files.inc"
+.include "file-dialog.inc"
 
 
 * = DESK_START
@@ -37,6 +38,7 @@
         ldx #$ff
         txs
         jsr UFS_CLOSEALL
+        jsr UFP_RECOVER
 
         ; Clear the screen before redrawing. Every app exit (fmgr ESC, shell
         ; EXIT, settings back, core esc_to_desk) lands here, and the
@@ -447,12 +449,13 @@ uospref:        .text "uos-"
 
 ; components that must never appear in the launcher (loading them over
 ; the running system would crash it)
-SYSCOMPS_N      := 11
+SYSCOMPS_N      := 12
 syscomps:
         .text "uos", $00
         .text "uos-net", $00
         .text "uos-files", $00
         .text "uos-copy", $00
+        .text "uos-picker", $00
         .text "uos-gfx", $00
         .text "uos-vdc", $00
         .text "uos-drv1351", $00

@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-08. This is the current completion checklist. The older
+Updated 2026-09-09. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -56,17 +56,17 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Memory and FR-M1 | Fixed REU banks for bitmap/app/rectangle snapshots | Non-destructive size detection, ownership allocator, bounds checks, app heaps, RAM disks, persistence, no-REU fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | One loaded app, resident desktop, fixed tick vector; failed LOAD returns to desktop; shared cartridge-file cleanup on launch/desktop entry | Manifest/ABI and load-address validation, cooperative scheduling, suspend/resume, app switcher, cleanup across every handle/control backend | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Menu, modal windows, disk-scanned launcher | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
-| Shared desktop services | Per-app drawing and ad hoc prompts | Widget/event toolkit; file pickers; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
+| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; per-app drawing | Widget/event toolkit; IEC and other backend file pickers; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
 | FR-D1/D2 display | VIC graphics + VDC text mirror; persisted display selection | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | 1351 movement, clamping | Two buttons, drag/drop, jitter filter, acceleration, hot plug; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
-| FR-F1/FR-S2 storage/file manager | Linked IEC directory parser/cache, PRG/SEQ/USR copying; shared cartridge backend with verified writes and byte viewer | Shared IEC adapter and file dialogs; append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
+| FR-F1/FR-S2 storage/file manager | Linked IEC directory parser/cache, PRG/SEQ/USR copying; shared cartridge backend with verified writes and byte viewer | Shared IEC adapter and its file dialogs; append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
 | FR-F2 devices | Manual 8–11 selection; restores system-app device on exit | Inventory, configurable IEC addresses, type/capability handshake, hot presence, explicit copy destination | Real and emulated drives; absent device returns to UI; last-used device never changes system-app source accidentally |
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
 | FR-S4 shell | Commands, CAT, memory monitor, UCI navigation, HTTP socket GET | Shared FS integration, history/completion, scripts/pipes/redirection, jobs, useful errors, document/app launch | Scripted end-to-end workflow with removable media and network failures |
-| FR-S5 editor/calculator | Small text editor; integer calculator | Larger banked documents, selection/clipboard/undo/find; calculator precision and scientific modes; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
+| FR-S5 editor/calculator | 768-byte append editor with shared Open, verified exclusive Save As and dirty protection; integer calculator | Larger banked documents, selection/clipboard/undo/find; calculator precision and scientific modes; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
 | FR-S6 SDK | Fixed ABI and application guide | Versioned APIs, examples, app manifests, ABI/memory validation, docs generated from exports, portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
 | FR-S7 appearance | Basic background colors | Backdrops, font/theme/pointer selection, screen saver, desktop arrangements and persistence | Change/restart/restore; memory budgets and low-RAM fallback |
 
@@ -103,7 +103,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
 | UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, interrupted operations and per-firmware protocol coverage |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared two-context API with verified writes, 32-bit seeks and handle cleanup | Save/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, shared file picker, Unicode display |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As | Safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
@@ -254,9 +254,23 @@ copy with an exact 1,024-byte retained prefix. Independent raw reads verified
 all three outcomes; that run's private fixtures were removed and the desktop,
 settings and both DOS contexts were restored.
 
-Next implementation: extend desktop save/file-picker workflows on the shared file API,
-add the remaining drive controls and media identity/recovery, then extend shared
-filesystem/capability services and file pickers.
+The shared cartridge selector and editor Save As are implemented; see
+[the ABI and current limits](FILE-DIALOGS.md) and
+[checkpoint validation](validation/2026-09-09-file-dialogs/README.md).
+On the reference C128, Open retained a 735-byte note across modal loads, Save As
+created and reopened/verified 738 bytes, and existing-name rejection, cancellation
+and dirty-discard protection passed. Independent raw reads matched both files;
+the run's exact fixtures were removed, both DOS directories and settings were
+restored, and the desktop was live. CPU fault/display suites and x64/x128
+integration also passed. Earlier failed attempts and their recoveries remain
+in the evidence, including a host observation during an IEC load. Load/input
+soak testing, rendering performance, cursor editing, larger documents and an
+IEC selector remain open.
+
+Next implementation: migrate remaining raw-DOS clients to shared ownership and
+directory recovery, extend editing and shared filesystem services, and add the
+remaining drive controls with media identity/recovery. Extend capability
+services and selectors for other backends.
 System-disk replacement/recovery, native kernel and application parity work remain
 required after these initial desktop/storage increments.
 

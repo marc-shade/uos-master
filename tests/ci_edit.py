@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
-"""CI for the text editor (uos-edit), x64 headless.
+"""x64 editor integration: legacy import, typing, offline Save As and exit.
 
-Drives the editor through real paths, within this VICE setup's limit that
-SEQ file *data* writes do not persist to the .d64 image (the same gate as
-the settings kernal SAVE; the write mechanism itself is proven clean by
-probes/seqwrite.asm -> CHKOUT ST=$00). So the load path is checked against
-a file pre-placed with c1541, the edit path against the live buffer, and
-the save is checked for a clean run (the editor survives and keeps editing);
-the saved bytes landing on disk is the hardware gate.
-
-  0 boot
-  1 launch uos-edit -> ed_load reads the pre-placed NOTES.T into the buffer
-  2 type more text -> it appends to the buffer
-  3 F1 save runs cleanly -> the editor is still live and keeps editing
-  4 ESC -> back to a live desktop
+Cartridge writes are verified by ci_editor_files.py and the physical --editor
+workflow. This suite verifies that an absent cartridge fails without changing
+or discarding the document; it makes no claim that a failed save persisted.
 """
 import os
 import struct
@@ -27,6 +17,7 @@ exec(src[:src.index("def main():")])
 import shutil
 
 NOTES = b"UOS EDIT TEST\rLINE TWO\r"
+TEXT = b"uos edit test\nline two\n"
 
 
 def launch(mon, name):
@@ -70,6 +61,9 @@ def main():
     LOADERR = core_symbol("LOADERR")
     EDLEN = lst_symbol("uos-edit", "edlen")
     EDBUF = lst_symbol("uos-edit", "edbuf")
+    READY = lst_symbol("uos-edit", "ready")
+    RESULT = lst_symbol("uos-edit", "ed_result")
+    DIRTY = lst_symbol("uos-edit", "dirty")
 
     xv = cbm.Xvfb()
     env = dict(os.environ, DISPLAY=xv.display, __EGL_VENDOR_LIBRARY_FILENAMES=cbm.MESA_EGL)
@@ -98,7 +92,7 @@ def main():
         dl = time.time() + 40
         while time.time() < dl:
             ln, b = buf(mon, EDLEN, EDBUF, len(NOTES))
-            if ln == len(NOTES) and b == NOTES:
+            if ln == len(NOTES) and b == TEXT:
                 ok = True
                 break
             time.sleep(2)
@@ -108,7 +102,7 @@ def main():
 
         # 2: type more -> appends
         inject_keys(mon, b"HI")
-        want = NOTES + b"HI"
+        want = TEXT + b"hi"
         ok = False
         dl = time.time() + 30
         while time.time() < dl:
@@ -121,14 +115,15 @@ def main():
         print(f"PASS 2: typed text appended to the loaded buffer (edlen={ln})", flush=True)
         passed += 1
 
-        # 3: F1 save runs cleanly -> editor survives and keeps editing.
-        # (The bytes landing on disk is the hardware gate: this VICE setup
-        # cannot persist SEQ data writes; probes/seqwrite proves the KERNAL
-        # write sequence runs with ST=$00.)
+        # F1 loads the selector, which reports an unavailable cartridge.
+        mon.write_mem(READY, b"\0"); mon.resume()
         inject_keys(mon, b"\x85")
-        time.sleep(5)
+        assert wait_bytes(mon, READY, b"\1", 120), "offline save did not return"
+        result = mon.read_mem(RESULT, RESULT)[0]; mon.resume()
+        assert result != 0, "absent cartridge was reported as saved"
+        assert wait_bytes(mon, DIRTY, b"\1"), "failed save cleared unsaved state"
         inject_keys(mon, b"Z")
-        want2 = want + b"Z"
+        want2 = want + b"z"
         ok = False
         dl = time.time() + 30
         while time.time() < dl:
@@ -138,11 +133,12 @@ def main():
                 break
             time.sleep(2)
         assert ok, f"FAIL: editor did not survive F1 save (edlen={ln}, buf={b!r})"
-        print("PASS 3: F1 save ran cleanly; editor still editing (data-landing = hw gate)", flush=True)
+        print("PASS 3: unavailable Save As preserved unsaved text; editing remains live", flush=True)
         passed += 1
 
-        # 4: ESC -> desktop
-        inject_keys(mon, b"\x1b")
+        # 4: explicitly discard the synthetic unsaved note and return
+        inject_keys(mon, b"\x1bY")
+        assert wait_bytes(mon, READY, b"\xff", timeout=120), "editor did not complete its one-way exit"
         assert wait_bytes(mon, DESK_START, desk_ref[:16], timeout=120), "no desktop after ESC"
         assert wait_desktop_live(mon), "desktop tick not live after editor ESC"
         print("PASS 4: ESC returned to a live desktop", flush=True)

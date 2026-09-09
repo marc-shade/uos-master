@@ -1,0 +1,1803 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o target/uos-picker.prg -L target/uos-picker.lst src/uos-picker.asm
+; Wed Sep  9 09:46:01 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: src/uos-picker.asm
+
+
+;******  Processing file: src/equates.inc
+
+=$02					r0              =       $02
+=$02					r0L             =       $02
+=$03					r0H             =       $03
+=$04					r1              =       $04
+=$04					r1L             =       $04
+=$05					r1H             =       $05
+=$06					r2              =       $06
+=$06					r2L             =       $06
+=$07					r2H             =       $07
+=$08					r3              =       $08
+=$08					r3L             =       $08
+=$09					r3H             =       $09
+=$0a					r4              =       $0a
+=$0a					r4L             =       $0a
+=$0b					r4H             =       $0b
+=$0c					r5              =       $0c
+=$0c					r5L             =       $0c
+=$0d					r5H             =       $0d
+=$0e					r6              =       $0e
+=$0e					r6L             =       $0e
+=$0f					r6H             =       $0f
+=$10					r7              =       $10
+=$10					r7L             =       $10
+=$11					r7H             =       $11
+=$12					r8              =       $12
+=$12					r8L             =       $12
+=$13					r8H             =       $13
+=$14					r9              =       $14
+=$14					r9L             =       $14
+=$15					r9H             =       $15
+=$16					r10             =       $16
+=$16					r10L            =       $16
+=$17					r10H            =       $17
+=$18					r11             =       $18
+=$18					r11L            =       $18
+=$19					r11H            =       $19
+=$1a					r12             =       $1a
+=$1a					r12L            =       $1a
+=$1b					r12H            =       $1b
+=$1c					r13             =       $1c
+=$1c					r13L            =       $1c
+=$1d					r13H            =       $1d
+=$1e					r14             =       $1e
+=$1e					r14L            =       $1e
+=$1f					r14H            =       $1f
+=$20					r15             =       $20
+=$20					r15L            =       $20
+=$21					r15H            =       $21
+=$22					r16             =       $22
+=$02					X1              =       $02
+=$04					Y1              =       $04
+=$06					X2              =       $06
+=$08					Y2              =       $08
+=$fb					a0              =       $fb
+=$fb					a0L             =       $fb
+=$fc					a0H             =       $fc
+=$fd					a1              =       $fd
+=$fd					a1L             =       $fd
+=$fe					a1H             =       $fe
+=$70					a2              =       $70
+=$70					a2L             =       $70
+=$71					a2H             =       $71
+=$72					a3              =       $72
+=$72					a3L             =       $72
+=$73					a3H             =       $73
+=$74					a4              =       $74
+=$74					a4L             =       $74
+=$75					a4H             =       $75
+=$76					a5              =       $76
+=$76					a5L             =       $76
+=$77					a5H             =       $77
+=$78					a6              =       $78
+=$78					a6L             =       $78
+=$79					a6H             =       $79
+=$7a					a7              =       $7a
+=$7a					a7L             =       $7a
+=$7b					a7H             =       $7b
+=$7c					a8              =       $7c
+=$7c					a8L             =       $7c
+=$7d					a8H             =       $7d
+=$7e					a9              =       $7e
+=$7e					a9L             =       $7e
+=$7f					a9H             =       $7f
+
+;******  Return to file: src/uos-picker.asm
+
+
+;******  Processing file: src/routines.inc
+
+=$0316					brkVectorlo     = $0316
+=$0317					brkVectorhi     = $0317
+=$0811					MAINLOOP        = $0811
+=$0814					FIND_CTL        = $0814
+=$0817					FS_APP          = $0817
+=$081a					FS_SCREEN       = $081a
+=$081d					FS_RECT         = $081d
+=$0820					CLR_RECT        = $0820
+=$0823					LOAD_IMM        = $0823
+=$0826					APP_LOADER      = $0826
+=$0829					FILLFILE        = $0829
+=$082c					KEYIN           = $082c
+=$082f					GETCAP          = $082f
+=$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+=$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+=$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+=$083b					OS_TICK         = $083b  ; service the current once-per-second callback; clobbers callback registers
+=$083e					READ_BUTTON     = $083e  ; A=0 while either mouse fire button is down; nonzero when released
+=$7350					SETREC          = $7350
+=$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+=$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
+=$cc00					VDC_GETREG      = $cc00
+=$cc03					VDC_SETREG      = $cc03
+=$cc06					VDC_SEEK        = $cc06
+=$cc09					VDC_PUTS        = $cc09
+=$cc0c					VDC_PUTCHR      = $cc0c
+=$cc0f					VDC_CLS         = $cc0f
+=$cc12					VDC_FONTUP      = $cc12
+=$cc15					VDC_INIT        = $cc15
+=$cc18					VDC_PRESENT     = $cc18
+=$cc1b					VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+=$cc1e					VDC_CLR         = $cc1e  ; A=row -> blank the row
+=$cc21					VDC_BANNER      = $cc21  ; header rows 0-1
+=$cc24					VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
+=$23					vdcbpL          = $23
+=$24					vdcbpH          = $24
+=$25					vdcdpL          = $25
+=$26					vdcdpH          = $26
+=$1000					DESK_START      = $1000
+=$2fff					DESK_END        = $2fff
+=$5000					APP_START       = $5000
+=$8fff					APP_END         = $8fff
+=$9000					APP_CTL_TBL     = $9000
+=$9000					APP_CTL_CTR     = $9000
+=$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
+=$9b00					APP_ID_TBL      = $9b00
+=$9c00					REU_SIZE        = $9c00
+=$9c03					REU_STASH       = $9c03
+=$9c06					REU_FETCH       = $9c06
+=$9c09					REU_PARAMS      = $9c09
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=37218					NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
+=37219					NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+=37220					NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+=37223					NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+=37224					NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+=37225					NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
+=$a000					BITMAP_START    = $a000
+=$c000					GFX_INIT        = $c000
+=$c00f					GFX_SETPIXEL    = $c00f
+=$c021					GFX_DRAWBYTEPATTERN = $c021
+=$c006					GFX_ON          = $c006
+=$c009					GFX_OFF         = $c009
+=$c00c					GFX_SETCOLOR    = $c00c
+=$c015					GFX_LINE        = $c015
+=$c018					GFX_CIRCLE      = $c018
+=$c01b					GPUTC           = $c01b
+=$c01e					GPUTS           = $c01e
+
+;******  Return to file: src/uos-picker.asm
+
+
+;******  Processing file: src/ultimate-files.inc
+
+=$4100					UFS_OPEN        = $4100  ; r0 -> NUL name (1..893 bytes), A=1 read / 7 create new read-write
+=$4103					UFS_CLOSE       = $4103  ; closes only a service-owned (including uncertain) handle
+=$4106					UFS_READ        = $4106  ; r0 -> app buffer, r1=1..512; COUNT actual, EOF at known size
+=$4109					UFS_WRITE       = $4109  ; r0 -> app bytes, r1=1..512; read-back verification before success
+=$410c					UFS_SEEK        = $410c  ; r0/r1 = 32-bit LE offset, within known file size
+=$410f					UFS_TELL        = $410f  ; copy owned handle's tracked SIZE/POS to public result
+=$4112					UFS_CLOSEALL    = $4112  ; release owned contexts; first failure returned, failed owner retained
+=$4115					UFS_VERSION     = $4115  ; byte = 1
+=$4116					UFS_RESULT      = $4116
+=$4117					UFS_COUNT       = $4117  ; word; caller must discard buffer/count when C=1
+=$4119					UFS_SIZE        = $4119  ; 32-bit LE; size at open or after verified writes
+=$411d					UFS_POS         = $411d  ; 32-bit LE; tracked position, valid only after success
+=$4121					UFS_EOF         = $4121  ; byte; successful READ reached known end (also set by TELL/SEEK)
+=$4122					UFS_MODE        = $4122  ; two bytes: 0=unowned, 1=read, 7=create read-write, $ff=close required
+=$4124					UFS_STATUS      = $4124  ; 32-byte NUL-terminated copy of last firmware status for this call
+=$8080					UFS_COMMAND     = $8080  ; 896 private bytes, through $83ff; sprites use only $8000..$807f
+=$4800					UFS_VIEW        = $4800  ; r0 -> filename, X=context; modal hex/ASCII viewer, Esc returns
+=$e0					UFS_BADARG      = $e0
+=$e1					UFS_NOTOPEN     = $e1
+=$e2					UFS_BUSY        = $e2    ; context owned, foreign file open, or nested call
+=$e3					UFS_READONLY    = $e3
+=$e4					UFS_PROTOCOL    = $e4
+=$e5					UFS_SHORT      = $e5    ; fewer bytes than known size/request says must be available
+=$e6					UFS_VERIFY     = $e6    ; write read-back differs
+=$e7					UFS_RANGE      = $e7    ; seek past known end / position overflow
+=$e8					UFS_UNCERTAIN  = $e8    ; retry CLOSE; never continue from an uncertain stream position
+
+;******  Return to file: src/uos-picker.asm
+
+
+;******  Processing file: src/file-dialog.inc
+
+=$4c80					UFP_PICK        = $4c80
+=$4c83					UFP_RECOVER     = $4c83  ; restore pending CWD only once its owned file is closed
+=$4c86					UFP_VERSION     = $4c86
+=$4c87					UFP_RESULT      = $4c87
+=$4c88					UFP_PENDING     = $4c88  ; 0 none, 1 borrowed, 2 restore failed (OPEN blocked)
+=$4c89					UFP_CONTEXT     = $4c89
+=$4c8a					UFP_CWDLEN      = $4c8a  ; private saved CHANGE_DIR command length
+=$4c8c					UFP_PATHLEN     = $4c8c  ; returned absolute path length (word)
+=$4c8e					UFP_ACTIVE      = $4c8e  ; private: library running
+=$4c8f					UFP_MODE        = $4c8f  ; private requested OPEN mode
+=$4c90					UFP_DEFAULT     = $4c90  ; private caller default pointer
+=$4e00					UFP_CWD         = $4e00  ; private recovery command; survives app replacement
+=$6200					UFP_LIBRARY     = $6200
+=$7200					UFP_LEAF        = $7200  ; filename editor, max 127 bytes + NUL
+=$7400					UFP_DIRECTORY   = $7400 ; returned CWD, max 510 bytes + NUL
+=$7600					UFP_NAME        = $7600 ; returned complete selected name, max 511 + NUL
+=$7800					UFP_PATH        = $7800 ; returned absolute path, max 1021 + NUL
+=$e9					UFP_CANCELLED   = $e9
+=$ea					UFP_LOAD        = $ea
+
+;******  Return to file: src/uos-picker.asm
+
+=$50					p = $50
+=$52					q = $52
+=$54					n = $54
+=$56					t = $56
+.6200	4c 04 62	jmp $6204	        jmp entry
+>6203	01				        .byte 1
+.6204					entry:
+.6204	a9 00		lda #$00	        lda #0
+.6206	8d 34 6e	sta $6e34	        sta error
+.6209	8d 31 6e	sta $6e31	        sta editing
+.620c	8d 33 6e	sta $6e33	        sta held
+.620f	8d 79 6e	sta $6e79	        sta leaflen
+.6212	8d 7a 6e	sta $6e7a	        sta cursor
+.6215	8d 00 72	sta $7200	        sta UFP_LEAF
+.6218	8d 23 6e	sta $6e23	        sta base
+.621b	8d 24 6e	sta $6e24	        sta base+1
+.621e	8d 30 6e	sta $6e30	        sta selected
+.6221	8d 2d 6e	sta $6e2d	        sta backwards
+.6224	8d 77 6e	sta $6e77	        sta detailoff
+.6227	8d 78 6e	sta $6e78	        sta detailoff+1
+.622a	8d 76 6e	sta $6e76	        sta viewpath
+.622d	8d 32 6e	sta $6e32	        sta ready
+.6230	ad 8f 4c	lda $4c8f	        lda UFP_MODE
+.6233	c9 07		cmp #$07	        cmp #7
+.6235	d0 3b		bne $6272	        bne preflight
+.6237	ad 90 4c	lda $4c90	        lda UFP_DEFAULT
+.623a	85 50		sta $50		        sta p
+.623c	ad 91 4c	lda $4c91	        lda UFP_DEFAULT+1
+.623f	85 51		sta $51		        sta p+1
+.6241	05 50		ora $50		        ora p
+.6243	f0 2d		beq $6272	        beq preflight
+.6245	a0 00		ldy #$00	        ldy #0
+.6247					default_byte:
+.6247	a5 51		lda $51		        lda p+1
+.6249	c9 50		cmp #$50	        cmp #$50
+.624b	90 1c		bcc $6269	        bcc bad_argument
+.624d	c9 62		cmp #$62	        cmp #$62
+.624f	b0 18		bcs $6269	        bcs bad_argument
+.6251	b1 50		lda ($50),y	        lda (p),y
+.6253	99 00 72	sta $7200,y	        sta UFP_LEAF,y
+.6256	f0 14		beq $626c	        beq default_done
+.6258	c8		iny		        iny
+.6259	c0 80		cpy #$80	        cpy #128
+.625b	f0 0c		beq $6269	        beq bad_argument
+.625d	98		tya		        tya
+.625e	18		clc		        clc
+.625f	65 50		adc $50		        adc p
+.6261	a5 51		lda $51		        lda p+1
+.6263	69 00		adc #$00	        adc #0
+.6265	c9 62		cmp #$62	        cmp #$62
+.6267	90 de		bcc $6247	        bcc default_byte
+.6269					bad_argument:
+.6269	a9 e0		lda #$e0	        lda #UFS_BADARG
+.626b	60		rts		        rts
+.626c					default_done:
+.626c	8c 79 6e	sty $6e79	        sty leaflen
+.626f	8c 7a 6e	sty $6e7a	        sty cursor
+.6272					preflight:
+.6272	a9 07		lda #$07	        lda #7
+.6274	20 87 66	jsr $6687	        jsr command
+.6277	b0 0a		bcs $6283	        bcs entry_return
+.6279	c9 55		cmp #$55	        cmp #85
+.627b	f0 07		beq $6284	        beq get_original
+.627d	c9 00		cmp #$00	        cmp #0
+.627f	d0 02		bne $6283	        bne entry_return
+.6281	a9 e2		lda #$e2	        lda #UFS_BUSY
+.6283					entry_return:
+.6283	60		rts		        rts
+.6284					get_original:
+.6284	20 b0 66	jsr $66b0	        jsr get_path
+.6287	b0 fa		bcs $6283	        bcs entry_return
+.6289	ad 89 4c	lda $4c89	        lda UFP_CONTEXT
+.628c	8d 00 4e	sta $4e00	        sta UFP_CWD
+.628f	a9 11		lda #$11	        lda #$11
+.6291	8d 01 4e	sta $4e01	        sta UFP_CWD+1
+.6294	ad 1e 6e	lda $6e1e	        lda pathlen
+.6297	18		clc		        clc
+.6298	69 02		adc #$02	        adc #2
+.629a	8d 8a 4c	sta $4c8a	        sta UFP_CWDLEN
+.629d	ad 1f 6e	lda $6e1f	        lda pathlen+1
+.62a0	69 00		adc #$00	        adc #0
+.62a2	8d 8b 4c	sta $4c8b	        sta UFP_CWDLEN+1
+.62a5	a9 00		lda #$00	        lda #<UFP_DIRECTORY
+.62a7	85 50		sta $50		        sta p
+.62a9	a9 74		lda #$74	        lda #>UFP_DIRECTORY
+.62ab	85 51		sta $51		        sta p+1
+.62ad	a9 02		lda #$02	        lda #<UFP_CWD+2
+.62af	85 52		sta $52		        sta q
+.62b1	a9 4e		lda #$4e	        lda #>UFP_CWD+2
+.62b3	85 53		sta $53		        sta q+1
+.62b5	20 47 69	jsr $6947	        jsr path_count
+.62b8	20 5e 69	jsr $695e	        jsr copy_bytes
+.62bb	a9 01		lda #$01	        lda #1
+.62bd	8d 88 4c	sta $4c88	        sta UFP_PENDING
+.62c0	20 99 6c	jsr $6c99	        jsr mt_clear
+.62c3	20 1e 67	jsr $671e	        jsr refresh
+.62c6					redraw:
+.62c6	20 89 69	jsr $6989	        jsr paint
+.62c9					input_loop:
+.62c9	a9 01		lda #$01	        lda #1
+.62cb	8d 32 6e	sta $6e32	        sta ready
+.62ce	20 3b 08	jsr $083b	        jsr OS_TICK
+.62d1	20 2c 08	jsr $082c	        jsr KEYIN
+.62d4	d0 1b		bne $62f1	        bne key_event
+.62d6	20 3e 08	jsr $083e	        jsr READ_BUTTON
+.62d9	d0 07		bne $62e2	        bne released
+.62db	a9 01		lda #$01	        lda #1
+.62dd	8d 33 6e	sta $6e33	        sta held
+.62e0	d0 e7		bne $62c9	        bne input_loop
+.62e2					released:
+.62e2	ad 33 6e	lda $6e33	        lda held
+.62e5	f0 e2		beq $62c9	        beq input_loop
+.62e7	a9 00		lda #$00	        lda #0
+.62e9	8d 33 6e	sta $6e33	        sta held
+.62ec	20 3b 6b	jsr $6b3b	        jsr mouse
+.62ef	f0 d8		beq $62c9	        beq input_loop
+.62f1					key_event:
+.62f1	a2 00		ldx #$00	        ldx #0
+.62f3	8e 32 6e	stx $6e32	        stx ready
+.62f6	ae 31 6e	ldx $6e31	        ldx editing
+.62f9	f0 03		beq $62fe	        beq browse_key
+.62fb	4c c1 64	jmp $64c1	        jmp edit_key
+.62fe					browse_key:
+.62fe	c9 1b		cmp #$1b	        cmp #$1b
+.6300	d0 05		bne $6307	        bne browse_action
+.6302	a9 e9		lda #$e9	        lda #UFP_CANCELLED
+.6304	4c 31 66	jmp $6631	        jmp cancel
+.6307					browse_action:
+.6307	c9 0d		cmp #$0d	        cmp #$0d
+.6309	f0 7b		beq $6386	        beq select_entry
+.630b	c9 85		cmp #$85	        cmp #$85
+.630d	f0 67		beq $6376	        beq use_folder
+.630f	c9 11		cmp #$11	        cmp #$11
+.6311	d0 03		bne $6316	        bne *+5
+.6313	4c a5 63	jmp $63a5	        jmp down
+.6316	c9 91		cmp #$91	        cmp #$91
+.6318	d0 03		bne $631d	        bne *+5
+.631a	4c b6 63	jmp $63b6	        jmp up
+.631d	c9 1d		cmp #$1d	        cmp #$1d
+.631f	d0 03		bne $6324	        bne *+5
+.6321	4c 13 64	jmp $6413	        jmp right
+.6324	c9 9d		cmp #$9d	        cmp #$9d
+.6326	d0 03		bne $632b	        bne *+5
+.6328	4c f7 63	jmp $63f7	        jmp left
+.632b	29 7f		and #$7f	        and #$7f
+.632d	c9 61		cmp #$61	        cmp #$61
+.632f	90 06		bcc $6337	        bcc browse_normalized
+.6331	c9 7b		cmp #$7b	        cmp #$7b
+.6333	b0 02		bcs $6337	        bcs browse_normalized
+.6335	29 df		and #$df	        and #$df
+.6337					browse_normalized:
+.6337	c9 4e		cmp #$4e	        cmp #$4e
+.6339	d0 03		bne $633e	        bne *+5
+.633b	4c c1 63	jmp $63c1	        jmp next
+.633e	c9 42		cmp #$42	        cmp #$42
+.6340	d0 03		bne $6345	        bne *+5
+.6342	4c e1 63	jmp $63e1	        jmp previous
+.6345	c9 55		cmp #$55	        cmp #$55
+.6347	d0 03		bne $634c	        bne not_parent
+.6349	4c 83 64	jmp $6483	        jmp parent
+.634c					not_parent:
+.634c	c9 2f		cmp #$2f	        cmp #$2f
+.634e	d0 03		bne $6353	        bne not_root
+.6350	4c 7a 64	jmp $647a	        jmp root
+.6353					not_root:
+.6353	c9 4f		cmp #$4f	        cmp #$4f                ; O enters a selected image filesystem, too
+.6355	d0 03		bne $635a	        bne not_folder
+.6357	4c 52 64	jmp $6452	        jmp folder
+.635a					not_folder:
+.635a	c9 50		cmp #$50	        cmp #$50
+.635c	d0 0b		bne $6369	        bne not_path
+.635e	ad 76 6e	lda $6e76	        lda viewpath
+.6361	49 01		eor #$01	        eor #1
+.6363	8d 76 6e	sta $6e76	        sta viewpath
+.6366	4c 47 64	jmp $6447	        jmp reset_detail
+.6369					not_path:
+.6369	c9 52		cmp #$52	        cmp #$52
+.636b	f0 03		beq $6370	        beq *+5
+.636d	4c c9 62	jmp $62c9	        jmp input_loop
+.6370	20 1e 67	jsr $671e	        jsr refresh
+.6373	4c c6 62	jmp $62c6	        jmp redraw
+.6376					use_folder:
+.6376	ad 8f 4c	lda $4c8f	        lda UFP_MODE
+.6379	c9 07		cmp #$07	        cmp #7
+.637b	f0 03		beq $6380	        beq *+5
+.637d	4c c9 62	jmp $62c9	        jmp input_loop
+.6380	ee 31 6e	inc $6e31	        inc editing
+.6383	4c c6 62	jmp $62c6	        jmp redraw
+.6386					select_entry:
+.6386	ad 2e 6e	lda $6e2e	        lda count
+.6389	d0 03		bne $638e	        bne *+5
+.638b	4c c9 62	jmp $62c9	        jmp input_loop
+.638e	ae 30 6e	ldx $6e30	        ldx selected
+.6391	bd 7d 6e	lda $6e7d,x	        lda attrs,x
+.6394	29 18		and #$18	        and #$18
+.6396	f0 03		beq $639b	        beq *+5
+.6398	4c 52 64	jmp $6452	        jmp folder
+.639b	ad 8f 4c	lda $4c8f	        lda UFP_MODE
+.639e	c9 07		cmp #$07	        cmp #7
+.63a0	f0 d4		beq $6376	        beq use_folder
+.63a2	4c bc 65	jmp $65bc	        jmp open_selected
+.63a5					down:
+.63a5	ad 30 6e	lda $6e30	        lda selected
+.63a8	18		clc		        clc
+.63a9	69 01		adc #$01	        adc #1
+.63ab	cd 2e 6e	cmp $6e2e	        cmp count
+.63ae	b0 11		bcs $63c1	        bcs next
+.63b0	8d 30 6e	sta $6e30	        sta selected
+.63b3	4c 47 64	jmp $6447	        jmp reset_detail
+.63b6					up:
+.63b6	ad 30 6e	lda $6e30	        lda selected
+.63b9	f0 26		beq $63e1	        beq previous
+.63bb	ce 30 6e	dec $6e30	        dec selected
+.63be	4c 47 64	jmp $6447	        jmp reset_detail
+.63c1					next:
+.63c1	ad 2f 6e	lda $6e2f	        lda more
+.63c4	d0 03		bne $63c9	        bne *+5
+.63c6	4c c9 62	jmp $62c9	        jmp input_loop
+.63c9	18		clc		        clc
+.63ca	ad 23 6e	lda $6e23	        lda base
+.63cd	6d 2e 6e	adc $6e2e	        adc count
+.63d0	8d 23 6e	sta $6e23	        sta base
+.63d3	ad 24 6e	lda $6e24	        lda base+1
+.63d6	69 00		adc #$00	        adc #0
+.63d8	8d 24 6e	sta $6e24	        sta base+1
+.63db	20 1e 67	jsr $671e	        jsr refresh
+.63de	4c c6 62	jmp $62c6	        jmp redraw
+.63e1					previous:
+.63e1	ad 23 6e	lda $6e23	        lda base
+.63e4	0d 24 6e	ora $6e24	        ora base+1
+.63e7	d0 03		bne $63ec	        bne *+5
+.63e9	4c c9 62	jmp $62c9	        jmp input_loop
+.63ec	a9 01		lda #$01	        lda #1
+.63ee	8d 2d 6e	sta $6e2d	        sta backwards
+.63f1	20 1e 67	jsr $671e	        jsr refresh
+.63f4	4c c6 62	jmp $62c6	        jmp redraw
+.63f7					left:
+.63f7	ad 77 6e	lda $6e77	        lda detailoff
+.63fa	0d 78 6e	ora $6e78	        ora detailoff+1
+.63fd	d0 03		bne $6402	        bne *+5
+.63ff	4c c9 62	jmp $62c9	        jmp input_loop
+.6402	ad 77 6e	lda $6e77	        lda detailoff
+.6405	38		sec		        sec
+.6406	e9 20		sbc #$20	        sbc #32
+.6408	8d 77 6e	sta $6e77	        sta detailoff
+.640b	b0 34		bcs $6441	        bcs detail_redraw
+.640d	ce 78 6e	dec $6e78	        dec detailoff+1
+.6410	4c 41 64	jmp $6441	        jmp detail_redraw
+.6413					right:
+.6413	20 3a 69	jsr $693a	        jsr detail_source
+.6416	ad 77 6e	lda $6e77	        lda detailoff
+.6419	18		clc		        clc
+.641a	69 20		adc #$20	        adc #32
+.641c	85 56		sta $56		        sta t
+.641e	ad 78 6e	lda $6e78	        lda detailoff+1
+.6421	69 00		adc #$00	        adc #0
+.6423	85 57		sta $57		        sta t+1
+.6425	c5 55		cmp $55		        cmp n+1
+.6427	90 0e		bcc $6437	        bcc right_go
+.6429	f0 03		beq $642e	        beq *+5
+.642b	4c c9 62	jmp $62c9	        jmp input_loop
+.642e	a5 56		lda $56		        lda t
+.6430	c5 54		cmp $54		        cmp n
+.6432	90 03		bcc $6437	        bcc *+5
+.6434	4c c9 62	jmp $62c9	        jmp input_loop
+.6437					right_go:
+.6437	a5 56		lda $56		        lda t
+.6439	8d 77 6e	sta $6e77	        sta detailoff
+.643c	a5 57		lda $57		        lda t+1
+.643e	8d 78 6e	sta $6e78	        sta detailoff+1
+.6441					detail_redraw:
+.6441	20 7e 6a	jsr $6a7e	        jsr paint_detail
+.6444	4c c9 62	jmp $62c9	        jmp input_loop
+.6447					reset_detail:
+.6447	a9 00		lda #$00	        lda #0
+.6449	8d 77 6e	sta $6e77	        sta detailoff
+.644c	8d 78 6e	sta $6e78	        sta detailoff+1
+.644f	4c c6 62	jmp $62c6	        jmp redraw
+.6452					folder:
+.6452	ad 2e 6e	lda $6e2e	        lda count
+.6455	d0 03		bne $645a	        bne folder_go
+.6457	4c c9 62	jmp $62c9	        jmp input_loop
+.645a					folder_go:
+.645a	20 22 69	jsr $6922	        jsr selected_source
+.645d	38		sec		        sec
+.645e	a5 50		lda $50		        lda p
+.6460	e9 02		sbc #$02	        sbc #2
+.6462	85 02		sta $02		        sta r0L
+.6464	a5 51		lda $51		        lda p+1
+.6466	e9 00		sbc #$00	        sbc #0
+.6468	85 03		sta $03		        sta r0H
+.646a	18		clc		        clc
+.646b	a5 54		lda $54		        lda n
+.646d	69 02		adc #$02	        adc #2
+.646f	85 04		sta $04		        sta r1L
+.6471	a5 55		lda $55		        lda n+1
+.6473	69 00		adc #$00	        adc #0
+.6475	85 05		sta $05		        sta r1H
+.6477	4c a1 64	jmp $64a1	        jmp change_dir
+.647a					root:
+.647a	a9 2f		lda #$2f	        lda #$2f
+.647c	8d 1c 6e	sta $6e1c	        sta request+2
+.647f	a9 03		lda #$03	        lda #3
+.6481	d0 0a		bne $648d	        bne short_dir
+.6483					parent:
+.6483	a9 2e		lda #$2e	        lda #$2e
+.6485	8d 1c 6e	sta $6e1c	        sta request+2
+.6488	8d 1d 6e	sta $6e1d	        sta request+3
+.648b	a9 04		lda #$04	        lda #4
+.648d					short_dir:
+.648d	85 04		sta $04		        sta r1L
+.648f	a9 00		lda #$00	        lda #0
+.6491	85 05		sta $05		        sta r1H
+.6493	ad 89 4c	lda $4c89	        lda UFP_CONTEXT
+.6496	8d 1a 6e	sta $6e1a	        sta request
+.6499	a9 11		lda #$11	        lda #$11
+.649b	8d 1b 6e	sta $6e1b	        sta request+1
+.649e	20 a7 66	jsr $66a7	        jsr request_pointer
+.64a1					change_dir:
+.64a1	20 9b 66	jsr $669b	        jsr stream
+.64a4	b0 12		bcs $64b8	        bcs action_error
+.64a6	c9 00		cmp #$00	        cmp #0
+.64a8	d0 0e		bne $64b8	        bne action_error
+.64aa	a9 00		lda #$00	        lda #0
+.64ac	8d 23 6e	sta $6e23	        sta base
+.64af	8d 24 6e	sta $6e24	        sta base+1
+.64b2	20 1e 67	jsr $671e	        jsr refresh
+.64b5	4c c6 62	jmp $62c6	        jmp redraw
+.64b8					action_error:
+.64b8	8d 34 6e	sta $6e34	        sta error
+.64bb	20 a9 67	jsr $67a9	        jsr capture_error
+.64be	4c c6 62	jmp $62c6	        jmp redraw
+.64c1					edit_key:
+.64c1	c9 1b		cmp #$1b	        cmp #$1b
+.64c3	d0 0b		bne $64d0	        bne edit_controls
+.64c5	a9 00		lda #$00	        lda #0
+.64c7	8d 31 6e	sta $6e31	        sta editing
+.64ca	8d 34 6e	sta $6e34	        sta error
+.64cd	4c c6 62	jmp $62c6	        jmp redraw
+.64d0					edit_controls:
+.64d0	c9 0d		cmp #$0d	        cmp #13
+.64d2	d0 03		bne $64d7	        bne edit_not_enter
+.64d4	4c 5c 65	jmp $655c	        jmp create_file
+.64d7					edit_not_enter:
+.64d7	c9 13		cmp #$13	        cmp #$13
+.64d9	f0 45		beq $6520	        beq edit_home
+.64db	c9 15		cmp #$15	        cmp #$15
+.64dd	f0 39		beq $6518	        beq edit_clear
+.64df	c9 9d		cmp #$9d	        cmp #$9d
+.64e1	f0 44		beq $6527	        beq edit_left
+.64e3	c9 1d		cmp #$1d	        cmp #$1d
+.64e5	f0 4b		beq $6532	        beq edit_right
+.64e7	c9 14		cmp #$14	        cmp #$14
+.64e9	f0 55		beq $6540	        beq edit_delete
+.64eb	20 ea 6c	jsr $6cea	        jsr mt_key_ascii
+.64ee	c9 20		cmp #$20	        cmp #$20
+.64f0	90 64		bcc $6556	        bcc edit_redraw
+.64f2	c9 7f		cmp #$7f	        cmp #$7f
+.64f4	b0 60		bcs $6556	        bcs edit_redraw
+.64f6	ae 79 6e	ldx $6e79	        ldx leaflen
+.64f9	e0 7f		cpx #$7f	        cpx #127
+.64fb	b0 59		bcs $6556	        bcs edit_redraw
+.64fd	48		pha		        pha
+.64fe					edit_shift:
+.64fe	bd 00 72	lda $7200,x	        lda UFP_LEAF,x
+.6501	9d 01 72	sta $7201,x	        sta UFP_LEAF+1,x
+.6504	ec 7a 6e	cpx $6e7a	        cpx cursor
+.6507	f0 03		beq $650c	        beq edit_insert
+.6509	ca		dex		        dex
+.650a	10 f2		bpl $64fe	        bpl edit_shift
+.650c					edit_insert:
+.650c	68		pla		        pla
+.650d	9d 00 72	sta $7200,x	        sta UFP_LEAF,x
+.6510	ee 7a 6e	inc $6e7a	        inc cursor
+.6513	ee 79 6e	inc $6e79	        inc leaflen
+.6516	d0 3e		bne $6556	        bne edit_redraw
+.6518					edit_clear:
+.6518	a9 00		lda #$00	        lda #0
+.651a	8d 79 6e	sta $6e79	        sta leaflen
+.651d	8d 00 72	sta $7200	        sta UFP_LEAF
+.6520					edit_home:
+.6520	a9 00		lda #$00	        lda #0
+.6522	8d 7a 6e	sta $6e7a	        sta cursor
+.6525	f0 2f		beq $6556	        beq edit_redraw
+.6527					edit_left:
+.6527	ad 7a 6e	lda $6e7a	        lda cursor
+.652a	f0 2a		beq $6556	        beq edit_redraw
+.652c	ce 7a 6e	dec $6e7a	        dec cursor
+.652f	4c 56 65	jmp $6556	        jmp edit_redraw
+.6532					edit_right:
+.6532	ad 7a 6e	lda $6e7a	        lda cursor
+.6535	cd 79 6e	cmp $6e79	        cmp leaflen
+.6538	f0 1c		beq $6556	        beq edit_redraw
+.653a	ee 7a 6e	inc $6e7a	        inc cursor
+.653d	4c 56 65	jmp $6556	        jmp edit_redraw
+.6540					edit_delete:
+.6540	ae 7a 6e	ldx $6e7a	        ldx cursor
+.6543	f0 11		beq $6556	        beq edit_redraw
+.6545	ce 7a 6e	dec $6e7a	        dec cursor
+.6548					edit_delete_loop:
+.6548	bd 00 72	lda $7200,x	        lda UFP_LEAF,x
+.654b	9d ff 71	sta $71ff,x	        sta UFP_LEAF-1,x
+.654e	e8		inx		        inx
+.654f	c9 00		cmp #$00	        cmp #0
+.6551	d0 f5		bne $6548	        bne edit_delete_loop
+.6553	ce 79 6e	dec $6e79	        dec leaflen
+.6556					edit_redraw:
+.6556	20 c3 6a	jsr $6ac3	        jsr paint_leaf
+.6559	4c c9 62	jmp $62c9	        jmp input_loop
+.655c					create_file:
+.655c	ad 79 6e	lda $6e79	        lda leaflen
+.655f	f0 56		beq $65b7	        beq invalid_leaf
+.6561	a2 00		ldx #$00	        ldx #0
+.6563					validate_leaf:
+.6563	bd 00 72	lda $7200,x	        lda UFP_LEAF,x
+.6566	c9 20		cmp #$20	        cmp #$20
+.6568	90 4d		bcc $65b7	        bcc invalid_leaf
+.656a	c9 7f		cmp #$7f	        cmp #$7f
+.656c	b0 49		bcs $65b7	        bcs invalid_leaf
+.656e	c9 2f		cmp #$2f	        cmp #$2f
+.6570	f0 45		beq $65b7	        beq invalid_leaf
+.6572	c9 5c		cmp #$5c	        cmp #$5c
+.6574	f0 41		beq $65b7	        beq invalid_leaf
+.6576	c9 2a		cmp #$2a	        cmp #$2a
+.6578	f0 3d		beq $65b7	        beq invalid_leaf
+.657a	c9 3f		cmp #$3f	        cmp #$3f
+.657c	f0 39		beq $65b7	        beq invalid_leaf
+.657e	c9 3a		cmp #$3a	        cmp #$3a
+.6580	f0 35		beq $65b7	        beq invalid_leaf
+.6582	c9 22		cmp #$22	        cmp #$22
+.6584	f0 31		beq $65b7	        beq invalid_leaf
+.6586	c9 3c		cmp #$3c	        cmp #$3c
+.6588	f0 2d		beq $65b7	        beq invalid_leaf
+.658a	c9 3e		cmp #$3e	        cmp #$3e
+.658c	f0 29		beq $65b7	        beq invalid_leaf
+.658e	c9 7c		cmp #$7c	        cmp #$7c
+.6590	f0 25		beq $65b7	        beq invalid_leaf
+.6592	e8		inx		        inx
+.6593	ec 79 6e	cpx $6e79	        cpx leaflen
+.6596	d0 cb		bne $6563	        bne validate_leaf
+.6598	bd ff 71	lda $71ff,x	        lda UFP_LEAF-1,x
+.659b	c9 20		cmp #$20	        cmp #$20
+.659d	f0 18		beq $65b7	        beq invalid_leaf
+.659f	c9 2e		cmp #$2e	        cmp #$2e
+.65a1	f0 14		beq $65b7	        beq invalid_leaf
+.65a3	a9 00		lda #$00	        lda #<UFP_LEAF
+.65a5	85 50		sta $50		        sta p
+.65a7	a9 72		lda #$72	        lda #>UFP_LEAF
+.65a9	85 51		sta $51		        sta p+1
+.65ab	ad 79 6e	lda $6e79	        lda leaflen
+.65ae	85 54		sta $54		        sta n
+.65b0	a9 00		lda #$00	        lda #0
+.65b2	85 55		sta $55		        sta n+1
+.65b4	4c bf 65	jmp $65bf	        jmp retain_selection
+.65b7					invalid_leaf:
+.65b7	a9 e0		lda #$e0	        lda #UFS_BADARG
+.65b9	4c b8 64	jmp $64b8	        jmp action_error
+.65bc					open_selected:
+.65bc	20 22 69	jsr $6922	        jsr selected_source
+.65bf					retain_selection:
+.65bf	a5 54		lda $54		        lda n
+.65c1	8d 21 6e	sta $6e21	        sta chosenlen
+.65c4	a5 55		lda $55		        lda n+1
+.65c6	8d 22 6e	sta $6e22	        sta chosenlen+1
+.65c9	a9 00		lda #$00	        lda #<UFP_NAME
+.65cb	85 52		sta $52		        sta q
+.65cd	a9 76		lda #$76	        lda #>UFP_NAME
+.65cf	85 53		sta $53		        sta q+1
+.65d1	20 5e 69	jsr $695e	        jsr copy_bytes
+.65d4	a9 00		lda #$00	        lda #0
+.65d6	a8		tay		        tay
+.65d7	91 52		sta ($52),y	        sta (q),y
+.65d9	20 46 66	jsr $6646	        jsr compose_path
+.65dc	a9 00		lda #$00	        lda #<UFP_NAME
+.65de	85 02		sta $02		        sta r0L
+.65e0	a9 76		lda #$76	        lda #>UFP_NAME
+.65e2	85 03		sta $03		        sta r0H
+.65e4	ad 8f 4c	lda $4c8f	        lda UFP_MODE
+.65e7	c9 07		cmp #$07	        cmp #7
+.65e9	d0 08		bne $65f3	        bne selected_open
+.65eb	a9 00		lda #$00	        lda #<UFP_PATH
+.65ed	85 02		sta $02		        sta r0L
+.65ef	a9 78		lda #$78	        lda #>UFP_PATH
+.65f1	85 03		sta $03		        sta r0H
+.65f3					selected_open:
+.65f3	ae 89 4c	ldx $4c89	        ldx UFP_CONTEXT
+.65f6	ad 8f 4c	lda $4c8f	        lda UFP_MODE
+.65f9	20 00 41	jsr $4100	        jsr UFS_OPEN
+.65fc	b0 03		bcs $6601	        bcs open_failed
+.65fe	a9 00		lda #$00	        lda #0
+.6600	60		rts		        rts
+.6601					open_failed:
+.6601	8d 35 6e	sta $6e35	        sta saved_error
+.6604	20 a9 67	jsr $67a9	        jsr capture_error
+.6607	a2 1f		ldx #$1f	        ldx #31
+.6609					save_open_status:
+.6609	bd 36 6e	lda $6e36,x	        lda error_status,x
+.660c	9d 56 6e	sta $6e56,x	        sta saved_status,x
+.660f	ca		dex		        dex
+.6610	10 f7		bpl $6609	        bpl save_open_status
+.6612	ae 89 4c	ldx $4c89	        ldx UFP_CONTEXT
+.6615	20 03 41	jsr $4103	        jsr UFS_CLOSE
+.6618	b0 2b		bcs $6645	        bcs cancel_close_failed
+.661a	20 1e 67	jsr $671e	        jsr refresh
+.661d	a2 1f		ldx #$1f	        ldx #31
+.661f					restore_open_status:
+.661f	bd 56 6e	lda $6e56,x	        lda saved_status,x
+.6622	9d 36 6e	sta $6e36,x	        sta error_status,x
+.6625	ca		dex		        dex
+.6626	10 f7		bpl $661f	        bpl restore_open_status
+.6628	ad 35 6e	lda $6e35	        lda saved_error
+.662b	8d 34 6e	sta $6e34	        sta error
+.662e	4c c6 62	jmp $62c6	        jmp redraw
+.6631					cancel:
+.6631	8d 35 6e	sta $6e35	        sta saved_error
+.6634	ae 89 4c	ldx $4c89	        ldx UFP_CONTEXT
+.6637	20 03 41	jsr $4103	        jsr UFS_CLOSE
+.663a	b0 09		bcs $6645	        bcs cancel_close_failed
+.663c	20 83 4c	jsr $4c83	        jsr UFP_RECOVER
+.663f	b0 04		bcs $6645	        bcs cancel_close_failed
+.6641	ad 35 6e	lda $6e35	        lda saved_error
+.6644	60		rts		        rts
+.6645					cancel_close_failed:
+.6645	60		rts		        rts                    ; resident ownership/path remain recoverable
+.6646					compose_path:
+.6646	a9 00		lda #$00	        lda #<UFP_DIRECTORY
+.6648	85 50		sta $50		        sta p
+.664a	a9 74		lda #$74	        lda #>UFP_DIRECTORY
+.664c	85 51		sta $51		        sta p+1
+.664e	a9 00		lda #$00	        lda #<UFP_PATH
+.6650	85 52		sta $52		        sta q
+.6652	a9 78		lda #$78	        lda #>UFP_PATH
+.6654	85 53		sta $53		        sta q+1
+.6656	20 47 69	jsr $6947	        jsr path_count
+.6659	20 5e 69	jsr $695e	        jsr copy_bytes
+.665c	a0 00		ldy #$00	        ldy #0
+.665e	a9 00		lda #$00	        lda #<UFP_NAME
+.6660	85 50		sta $50		        sta p
+.6662	a9 76		lda #$76	        lda #>UFP_NAME
+.6664	85 51		sta $51		        sta p+1
+.6666	ad 21 6e	lda $6e21	        lda chosenlen
+.6669	85 54		sta $54		        sta n
+.666b	ad 22 6e	lda $6e22	        lda chosenlen+1
+.666e	85 55		sta $55		        sta n+1
+.6670	20 5e 69	jsr $695e	        jsr copy_bytes
+.6673	a9 00		lda #$00	        lda #0
+.6675	91 52		sta ($52),y	        sta (q),y
+.6677	38		sec		        sec
+.6678	a5 52		lda $52		        lda q
+.667a	e9 00		sbc #$00	        sbc #<UFP_PATH
+.667c	8d 8c 4c	sta $4c8c	        sta UFP_PATHLEN
+.667f	a5 53		lda $53		        lda q+1
+.6681	e9 78		sbc #$78	        sbc #>UFP_PATH
+.6683	8d 8d 4c	sta $4c8d	        sta UFP_PATHLEN+1
+.6686	60		rts		        rts
+.6687					command:
+.6687	8d 1b 6e	sta $6e1b	        sta request+1
+.668a	ad 89 4c	lda $4c89	        lda UFP_CONTEXT
+.668d	8d 1a 6e	sta $6e1a	        sta request
+.6690	a9 02		lda #$02	        lda #2
+.6692	85 04		sta $04		        sta r1L
+.6694	a9 00		lda #$00	        lda #0
+.6696	85 05		sta $05		        sta r1H
+.6698	20 a7 66	jsr $66a7	        jsr request_pointer
+.669b					stream:
+.669b	a9 00		lda #$00	        lda #0
+.669d	85 08		sta $08		        sta r3L
+.669f	85 09		sta $09		        sta r3H
+.66a1	8d 62 91	sta $9162	        sta NET_DIRMODE
+.66a4	4c 64 91	jmp $9164	        jmp NET_STREAM
+.66a7					request_pointer:
+.66a7	a9 1a		lda #$1a	        lda #<request
+.66a9	85 02		sta $02		        sta r0L
+.66ab	a9 6e		lda #$6e	        lda #>request
+.66ad	85 03		sta $03		        sta r0H
+.66af	60		rts		        rts
+.66b0					get_path:
+.66b0	a9 12		lda #$12	        lda #$12
+.66b2	20 87 66	jsr $6687	        jsr command
+.66b5	b0 62		bcs $6719	        bcs path_return
+.66b7	c9 00		cmp #$00	        cmp #0
+.66b9	d0 61		bne $671c	        bne path_fail
+.66bb	ad 67 91	lda $9167	        lda NET_TRUNC
+.66be	d0 5a		bne $671a	        bne path_invalid
+.66c0	ad 40 91	lda $9140	        lda NET_LEN+1
+.66c3	c9 02		cmp #$02	        cmp #2
+.66c5	b0 53		bcs $671a	        bcs path_invalid
+.66c7	c9 01		cmp #$01	        cmp #1
+.66c9	d0 07		bne $66d2	        bne path_short
+.66cb	ad 3f 91	lda $913f	        lda NET_LEN
+.66ce	c9 ff		cmp #$ff	        cmp #255
+.66d0	b0 48		bcs $671a	        bcs path_invalid
+.66d2					path_short:
+.66d2	ad 3f 91	lda $913f	        lda NET_LEN
+.66d5	8d 1e 6e	sta $6e1e	        sta pathlen
+.66d8	85 54		sta $54		        sta n
+.66da	ad 40 91	lda $9140	        lda NET_LEN+1
+.66dd	8d 1f 6e	sta $6e1f	        sta pathlen+1
+.66e0	85 55		sta $55		        sta n+1
+.66e2	05 54		ora $54		        ora n
+.66e4	f0 34		beq $671a	        beq path_invalid
+.66e6	ad 00 88	lda $8800	        lda NET_DATA
+.66e9	c9 2f		cmp #$2f	        cmp #$2f
+.66eb	d0 2d		bne $671a	        bne path_invalid
+.66ed	a9 00		lda #$00	        lda #<NET_DATA
+.66ef	85 50		sta $50		        sta p
+.66f1	a9 88		lda #$88	        lda #>NET_DATA
+.66f3	85 51		sta $51		        sta p+1
+.66f5	a9 00		lda #$00	        lda #<UFP_DIRECTORY
+.66f7	85 52		sta $52		        sta q
+.66f9	a9 74		lda #$74	        lda #>UFP_DIRECTORY
+.66fb	85 53		sta $53		        sta q+1
+.66fd	a0 00		ldy #$00	        ldy #0
+.66ff					path_byte:
+.66ff	b1 50		lda ($50),y	        lda (p),y
+.6701	f0 17		beq $671a	        beq path_invalid
+.6703	8d 20 6e	sta $6e20	        sta last_path
+.6706	91 52		sta ($52),y	        sta (q),y
+.6708	20 70 69	jsr $6970	        jsr advance
+.670b	d0 f2		bne $66ff	        bne path_byte
+.670d	ad 20 6e	lda $6e20	        lda last_path
+.6710	c9 2f		cmp #$2f	        cmp #$2f
+.6712	d0 06		bne $671a	        bne path_invalid
+.6714	a9 00		lda #$00	        lda #0
+.6716	91 52		sta ($52),y	        sta (q),y
+.6718	18		clc		        clc
+.6719					path_return:
+.6719	60		rts		        rts
+.671a					path_invalid:
+.671a	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.671c					path_fail:
+.671c	38		sec		        sec
+.671d	60		rts		        rts
+.671e					refresh:
+.671e	a9 00		lda #$00	        lda #0
+.6720	8d 34 6e	sta $6e34	        sta error
+.6723	8d 2e 6e	sta $6e2e	        sta count
+.6726	8d 2f 6e	sta $6e2f	        sta more
+.6729	8d 25 6e	sta $6e25	        sta seen
+.672c	8d 26 6e	sta $6e26	        sta seen+1
+.672f	8d 27 6e	sta $6e27	        sta page_start
+.6732	8d 28 6e	sta $6e28	        sta page_start+1
+.6735	8d 30 6e	sta $6e30	        sta selected
+.6738	8d 77 6e	sta $6e77	        sta detailoff
+.673b	8d 78 6e	sta $6e78	        sta detailoff+1
+.673e	20 c3 67	jsr $67c3	        jsr cache_reset
+.6741	20 b0 66	jsr $66b0	        jsr get_path
+.6744	b0 3e		bcs $6784	        bcs refresh_error
+.6746	a9 13		lda #$13	        lda #$13
+.6748	20 87 66	jsr $6687	        jsr command
+.674b	b0 37		bcs $6784	        bcs refresh_error
+.674d	c9 01		cmp #$01	        cmp #1
+.674f	f0 41		beq $6792	        beq scan_done
+.6751	c9 00		cmp #$00	        cmp #0
+.6753	d0 2f		bne $6784	        bne refresh_error
+.6755	a9 14		lda #$14	        lda #$14
+.6757	8d 1b 6e	sta $6e1b	        sta request+1
+.675a	20 a7 66	jsr $66a7	        jsr request_pointer
+.675d	a9 02		lda #$02	        lda #2
+.675f	85 04		sta $04		        sta r1L
+.6761	a9 00		lda #$00	        lda #0
+.6763	85 05		sta $05		        sta r1H
+.6765	a9 d1		lda #$d1	        lda #<receive
+.6767	85 08		sta $08		        sta r3L
+.6769	a9 67		lda #$67	        lda #>receive
+.676b	85 09		sta $09		        sta r3H
+.676d	20 64 91	jsr $9164	        jsr NET_STREAM
+.6770	90 0e		bcc $6780	        bcc scan_status
+.6772	c9 fd		cmp #$fd	        cmp #$fd
+.6774	d0 0e		bne $6784	        bne refresh_error
+.6776	ad 34 6e	lda $6e34	        lda error
+.6779	d0 09		bne $6784	        bne refresh_error
+.677b	ad 2f 6e	lda $6e2f	        lda more
+.677e	d0 12		bne $6792	        bne scan_done
+.6780					scan_status:
+.6780	c9 00		cmp #$00	        cmp #0
+.6782	f0 0e		beq $6792	        beq scan_done
+.6784					refresh_error:
+.6784	8d 34 6e	sta $6e34	        sta error
+.6787	20 a9 67	jsr $67a9	        jsr capture_error
+.678a	a9 00		lda #$00	        lda #0
+.678c	8d 2e 6e	sta $6e2e	        sta count
+.678f	8d 2f 6e	sta $6e2f	        sta more
+.6792					scan_done:
+.6792	ad 2d 6e	lda $6e2d	        lda backwards
+.6795	f0 11		beq $67a8	        beq scan_return
+.6797	ad 27 6e	lda $6e27	        lda page_start
+.679a	8d 23 6e	sta $6e23	        sta base
+.679d	ad 28 6e	lda $6e28	        lda page_start+1
+.67a0	8d 24 6e	sta $6e24	        sta base+1
+.67a3	a9 00		lda #$00	        lda #0
+.67a5	8d 2d 6e	sta $6e2d	        sta backwards
+.67a8					scan_return:
+.67a8	60		rts		        rts
+.67a9					capture_error:
+.67a9	c9 e0		cmp #$e0	        cmp #$e0
+.67ab	90 0a		bcc $67b7	        bcc capture_status
+.67ad	c9 fc		cmp #$fc	        cmp #$fc
+.67af	b0 06		bcs $67b7	        bcs capture_status
+.67b1	a9 00		lda #$00	        lda #0
+.67b3	8d 36 6e	sta $6e36	        sta error_status
+.67b6	60		rts		        rts
+.67b7					capture_status:
+.67b7	a2 1f		ldx #$1f	        ldx #31
+.67b9					capture_status_byte:
+.67b9	bd 42 91	lda $9142,x	        lda NET_STAT,x
+.67bc	9d 36 6e	sta $6e36,x	        sta error_status,x
+.67bf	ca		dex		        dex
+.67c0	10 f7		bpl $67b9	        bpl capture_status_byte
+.67c2	60		rts		        rts
+.67c3					cache_reset:
+.67c3	a9 00		lda #$00	        lda #0
+.67c5	8d 2e 6e	sta $6e2e	        sta count
+.67c8	8d 29 6e	sta $6e29	        sta free
+.67cb	a9 76		lda #$76	        lda #$76
+.67cd	8d 2a 6e	sta $6e2a	        sta free+1
+.67d0	60		rts		        rts
+.67d1					receive:
+.67d1	20 2c 08	jsr $082c	        jsr KEYIN
+.67d4	c9 1b		cmp #$1b	        cmp #$1b
+.67d6	d0 07		bne $67df	        bne receive_data
+.67d8	a9 e9		lda #$e9	        lda #UFP_CANCELLED
+.67da	f0 03		beq $67df	        beq *+5
+.67dc	4c a3 68	jmp $68a3	        jmp receive_error
+.67df					receive_data:
+.67df	ad 3f 91	lda $913f	        lda NET_LEN
+.67e2	0d 40 91	ora $9140	        ora NET_LEN+1
+.67e5	d0 03		bne $67ea	        bne *+5
+.67e7	4c a8 68	jmp $68a8	        jmp receive_ok
+.67ea	ad 68 91	lda $9168	        lda NET_PACKET_TRUNC
+.67ed	f0 03		beq $67f2	        beq *+5
+.67ef	4c a1 68	jmp $68a1	        jmp receive_invalid
+.67f2	ad 40 91	lda $9140	        lda NET_LEN+1
+.67f5	d0 0a		bne $6801	        bne receive_name
+.67f7	ad 3f 91	lda $913f	        lda NET_LEN
+.67fa	c9 02		cmp #$02	        cmp #2
+.67fc	b0 03		bcs $6801	        bcs *+5
+.67fe	4c a1 68	jmp $68a1	        jmp receive_invalid
+.6801					receive_name:
+.6801	a9 01		lda #$01	        lda #<NET_DATA+1
+.6803	85 50		sta $50		        sta p
+.6805	a9 88		lda #$88	        lda #>NET_DATA+1
+.6807	85 51		sta $51		        sta p+1
+.6809	38		sec		        sec
+.680a	ad 3f 91	lda $913f	        lda NET_LEN
+.680d	e9 01		sbc #$01	        sbc #1
+.680f	85 54		sta $54		        sta n
+.6811	ad 40 91	lda $9140	        lda NET_LEN+1
+.6814	e9 00		sbc #$00	        sbc #0
+.6816	85 55		sta $55		        sta n+1
+.6818	a0 00		ldy #$00	        ldy #0
+.681a					validate_name:
+.681a	b1 50		lda ($50),y	        lda (p),y
+.681c	d0 03		bne $6821	        bne *+5
+.681e	4c a1 68	jmp $68a1	        jmp receive_invalid
+.6821	c9 2f		cmp #$2f	        cmp #$2f
+.6823	f0 7c		beq $68a1	        beq receive_invalid
+.6825	c9 5c		cmp #$5c	        cmp #$5c
+.6827	f0 78		beq $68a1	        beq receive_invalid
+.6829	e6 50		inc $50		        inc p
+.682b	d0 02		bne $682f	        bne validate_next
+.682d	e6 51		inc $51		        inc p+1
+.682f					validate_next:
+.682f	20 7c 69	jsr $697c	        jsr decrement
+.6832	d0 e6		bne $681a	        bne validate_name
+.6834	ad 26 6e	lda $6e26	        lda seen+1
+.6837	cd 24 6e	cmp $6e24	        cmp base+1
+.683a	d0 06		bne $6842	        bne receive_compare
+.683c	ad 25 6e	lda $6e25	        lda seen
+.683f	cd 23 6e	cmp $6e23	        cmp base
+.6842					receive_compare:
+.6842	ae 2d 6e	ldx $6e2d	        ldx backwards
+.6845	d0 04		bne $684b	        bne receive_previous
+.6847	90 61		bcc $68aa	        bcc receive_skip
+.6849	b0 02		bcs $684d	        bcs receive_room
+.684b					receive_previous:
+.684b	b0 4d		bcs $689a	        bcs receive_full
+.684d					receive_room:
+.684d	18		clc		        clc
+.684e	ad 29 6e	lda $6e29	        lda free
+.6851	6d 3f 91	adc $913f	        adc NET_LEN
+.6854	8d 2b 6e	sta $6e2b	        sta end
+.6857	ad 2a 6e	lda $6e2a	        lda free+1
+.685a	6d 40 91	adc $9140	        adc NET_LEN+1
+.685d	8d 2c 6e	sta $6e2c	        sta end+1
+.6860	18		clc		        clc
+.6861	ad 2b 6e	lda $6e2b	        lda end
+.6864	69 02		adc #$02	        adc #2
+.6866	8d 2b 6e	sta $6e2b	        sta end
+.6869	90 03		bcc $686e	        bcc room_compare
+.686b	ee 2c 6e	inc $6e2c	        inc end+1
+.686e					room_compare:
+.686e	ad 2c 6e	lda $6e2c	        lda end+1
+.6871	c9 80		cmp #$80	        cmp #$80
+.6873	90 07		bcc $687c	        bcc room_count
+.6875	d0 0c		bne $6883	        bne receive_full_page
+.6877	ad 2b 6e	lda $6e2b	        lda end
+.687a	d0 07		bne $6883	        bne receive_full_page
+.687c					room_count:
+.687c	ad 2e 6e	lda $6e2e	        lda count
+.687f	c9 08		cmp #$08	        cmp #8
+.6881	90 35		bcc $68b8	        bcc receive_save
+.6883					receive_full_page:
+.6883	ad 2d 6e	lda $6e2d	        lda backwards
+.6886	f0 12		beq $689a	        beq receive_full
+.6888	20 c3 67	jsr $67c3	        jsr cache_reset
+.688b	ad 25 6e	lda $6e25	        lda seen
+.688e	8d 27 6e	sta $6e27	        sta page_start
+.6891	ad 26 6e	lda $6e26	        lda seen+1
+.6894	8d 28 6e	sta $6e28	        sta page_start+1
+.6897	4c 4d 68	jmp $684d	        jmp receive_room
+.689a					receive_full:
+.689a	a9 01		lda #$01	        lda #1
+.689c	8d 2f 6e	sta $6e2f	        sta more
+.689f	38		sec		        sec
+.68a0	60		rts		        rts
+.68a1					receive_invalid:
+.68a1	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.68a3					receive_error:
+.68a3	8d 34 6e	sta $6e34	        sta error
+.68a6	38		sec		        sec
+.68a7	60		rts		        rts
+.68a8					receive_ok:
+.68a8	18		clc		        clc
+.68a9	60		rts		        rts
+.68aa					receive_skip:
+.68aa	ee 25 6e	inc $6e25	        inc seen
+.68ad	d0 f9		bne $68a8	        bne receive_ok
+.68af	ee 26 6e	inc $6e26	        inc seen+1
+.68b2	d0 f4		bne $68a8	        bne receive_ok
+.68b4	a9 e7		lda #$e7	        lda #UFS_RANGE
+.68b6	d0 eb		bne $68a3	        bne receive_error
+.68b8					receive_save:
+.68b8	ae 2e 6e	ldx $6e2e	        ldx count
+.68bb	ad 00 88	lda $8800	        lda NET_DATA
+.68be	9d 7d 6e	sta $6e7d,x	        sta attrs,x
+.68c1	ad 29 6e	lda $6e29	        lda free
+.68c4	85 52		sta $52		        sta q
+.68c6	18		clc		        clc
+.68c7	69 02		adc #$02	        adc #2
+.68c9	9d 85 6e	sta $6e85,x	        sta ptrsL,x
+.68cc	ad 2a 6e	lda $6e2a	        lda free+1
+.68cf	85 53		sta $53		        sta q+1
+.68d1	69 00		adc #$00	        adc #0
+.68d3	9d 8d 6e	sta $6e8d,x	        sta ptrsH,x
+.68d6	ad 2b 6e	lda $6e2b	        lda end
+.68d9	8d 29 6e	sta $6e29	        sta free
+.68dc	ad 2c 6e	lda $6e2c	        lda end+1
+.68df	8d 2a 6e	sta $6e2a	        sta free+1
+.68e2	38		sec		        sec
+.68e3	ad 3f 91	lda $913f	        lda NET_LEN
+.68e6	e9 01		sbc #$01	        sbc #1
+.68e8	9d 95 6e	sta $6e95,x	        sta lensL,x
+.68eb	85 54		sta $54		        sta n
+.68ed	ad 40 91	lda $9140	        lda NET_LEN+1
+.68f0	e9 00		sbc #$00	        sbc #0
+.68f2	9d 9d 6e	sta $6e9d,x	        sta lensH,x
+.68f5	85 55		sta $55		        sta n+1
+.68f7	a0 00		ldy #$00	        ldy #0
+.68f9	ad 89 4c	lda $4c89	        lda UFP_CONTEXT
+.68fc	91 52		sta ($52),y	        sta (q),y
+.68fe	c8		iny		        iny
+.68ff	a9 11		lda #$11	        lda #$11
+.6901	91 52		sta ($52),y	        sta (q),y
+.6903	bd 85 6e	lda $6e85,x	        lda ptrsL,x
+.6906	85 52		sta $52		        sta q
+.6908	bd 8d 6e	lda $6e8d,x	        lda ptrsH,x
+.690b	85 53		sta $53		        sta q+1
+.690d	a9 01		lda #$01	        lda #<NET_DATA+1
+.690f	85 50		sta $50		        sta p
+.6911	a9 88		lda #$88	        lda #>NET_DATA+1
+.6913	85 51		sta $51		        sta p+1
+.6915	20 5e 69	jsr $695e	        jsr copy_bytes
+.6918	a9 00		lda #$00	        lda #0
+.691a	91 52		sta ($52),y	        sta (q),y
+.691c	ee 2e 6e	inc $6e2e	        inc count
+.691f	4c aa 68	jmp $68aa	        jmp receive_skip
+.6922					selected_source:
+.6922	ae 30 6e	ldx $6e30	        ldx selected
+.6925					row_source:
+.6925	bd 85 6e	lda $6e85,x	        lda ptrsL,x
+.6928	85 50		sta $50		        sta p
+.692a	bd 8d 6e	lda $6e8d,x	        lda ptrsH,x
+.692d	85 51		sta $51		        sta p+1
+.692f	bd 95 6e	lda $6e95,x	        lda lensL,x
+.6932	85 54		sta $54		        sta n
+.6934	bd 9d 6e	lda $6e9d,x	        lda lensH,x
+.6937	85 55		sta $55		        sta n+1
+.6939	60		rts		        rts
+.693a					detail_source:
+.693a	ad 76 6e	lda $6e76	        lda viewpath
+.693d	f0 13		beq $6952	        beq detail_name
+.693f	a9 00		lda #$00	        lda #<UFP_DIRECTORY
+.6941	85 50		sta $50		        sta p
+.6943	a9 74		lda #$74	        lda #>UFP_DIRECTORY
+.6945	85 51		sta $51		        sta p+1
+.6947					path_count:
+.6947	ad 1e 6e	lda $6e1e	        lda pathlen
+.694a	85 54		sta $54		        sta n
+.694c	ad 1f 6e	lda $6e1f	        lda pathlen+1
+.694f	85 55		sta $55		        sta n+1
+.6951	60		rts		        rts
+.6952					detail_name:
+.6952	ad 2e 6e	lda $6e2e	        lda count
+.6955	d0 cb		bne $6922	        bne selected_source
+.6957	a9 00		lda #$00	        lda #0
+.6959	85 54		sta $54		        sta n
+.695b	85 55		sta $55		        sta n+1
+.695d	60		rts		        rts
+.695e					copy_bytes:
+.695e	a0 00		ldy #$00	        ldy #0
+.6960	a5 54		lda $54		        lda n
+.6962	05 55		ora $55		        ora n+1
+.6964	f0 09		beq $696f	        beq copy_done
+.6966					copy_byte:
+.6966	b1 50		lda ($50),y	        lda (p),y
+.6968	91 52		sta ($52),y	        sta (q),y
+.696a	20 70 69	jsr $6970	        jsr advance
+.696d	d0 f7		bne $6966	        bne copy_byte
+.696f					copy_done:
+.696f	60		rts		        rts
+.6970					advance:
+.6970	e6 50		inc $50		        inc p
+.6972	d0 02		bne $6976	        bne advance_dest
+.6974	e6 51		inc $51		        inc p+1
+.6976					advance_dest:
+.6976	e6 52		inc $52		        inc q
+.6978	d0 02		bne $697c	        bne decrement
+.697a	e6 53		inc $53		        inc q+1
+.697c					decrement:
+.697c	a5 54		lda $54		        lda n
+.697e	d0 02		bne $6982	        bne decrement_low
+.6980	c6 55		dec $55		        dec n+1
+.6982					decrement_low:
+.6982	c6 54		dec $54		        dec n
+.6984	a5 54		lda $54		        lda n
+.6986	05 55		ora $55		        ora n+1
+.6988	60		rts		        rts
+.6989					paint:
+.6989	a9 5f		lda #$5f	        lda #<title_open
+.698b	a2 6d		ldx #$6d	        ldx #>title_open
+.698d	ac 8f 4c	ldy $4c8f	        ldy UFP_MODE
+.6990	c0 07		cpy #$07	        cpy #7
+.6992	d0 04		bne $6998	        bne paint_title
+.6994	a9 69		lda #$69	        lda #<title_save
+.6996	a2 6d		ldx #$6d	        ldx #>title_save
+.6998					paint_title:
+.6998	85 14		sta $14		        sta r9L
+.699a	86 15		stx $15		        stx r9H
+.699c	a9 00		lda #$00	        lda #0
+.699e	20 c8 6b	jsr $6bc8	        jsr mt_text
+.69a1	a9 00		lda #$00	        lda #0
+.69a3	8d 7c 6e	sta $6e7c	        sta row
+.69a6					paint_row:
+.69a6	a9 00		lda #$00	        lda #0
+.69a8	8d 3a 6d	sta $6d3a	        sta mt_line
+.69ab	ae 7c 6e	ldx $6e7c	        ldx row
+.69ae	ec 2e 6e	cpx $6e2e	        cpx count
+.69b1	b0 27		bcs $69da	        bcs paint_row_draw
+.69b3	20 25 69	jsr $6925	        jsr row_source
+.69b6	a9 20		lda #$20	        lda #$20
+.69b8	ec 30 6e	cpx $6e30	        cpx selected
+.69bb	d0 02		bne $69bf	        bne paint_row_mark
+.69bd	a9 3e		lda #$3e	        lda #$3e
+.69bf					paint_row_mark:
+.69bf	8d 3a 6d	sta $6d3a	        sta mt_line
+.69c2	a9 20		lda #$20	        lda #$20
+.69c4	bc 7d 6e	ldy $6e7d,x	        ldy attrs,x
+.69c7	98		tya		        tya
+.69c8	29 18		and #$18	        and #$18
+.69ca	f0 04		beq $69d0	        beq paint_file
+.69cc	a9 2f		lda #$2f	        lda #$2f
+.69ce	d0 02		bne $69d2	        bne paint_type
+.69d0					paint_file:
+.69d0	a9 20		lda #$20	        lda #$20
+.69d2					paint_type:
+.69d2	8d 3b 6d	sta $6d3b	        sta mt_line+1
+.69d5	a2 02		ldx #$02	        ldx #2
+.69d7	20 17 6b	jsr $6b17	        jsr slice
+.69da					paint_row_draw:
+.69da	ad 7c 6e	lda $6e7c	        lda row
+.69dd	18		clc		        clc
+.69de	69 02		adc #$02	        adc #2
+.69e0	20 dd 6b	jsr $6bdd	        jsr mt_draw
+.69e3	ee 7c 6e	inc $6e7c	        inc row
+.69e6	ad 7c 6e	lda $6e7c	        lda row
+.69e9	c9 08		cmp #$08	        cmp #8
+.69eb	d0 b9		bne $69a6	        bne paint_row
+.69ed	20 7e 6a	jsr $6a7e	        jsr paint_detail
+.69f0	a9 cb		lda #$cb	        lda #<hint
+.69f2	85 14		sta $14		        sta r9L
+.69f4	a9 6d		lda #$6d	        lda #>hint
+.69f6	85 15		sta $15		        sta r9H
+.69f8	a9 0f		lda #$0f	        lda #15
+.69fa	20 c8 6b	jsr $6bc8	        jsr mt_text
+.69fd	a9 ec		lda #$ec	        lda #<buttons
+.69ff	85 14		sta $14		        sta r9L
+.6a01	a9 6d		lda #$6d	        lda #>buttons
+.6a03	85 15		sta $15		        sta r9H
+.6a05	a9 10		lda #$10	        lda #16
+.6a07	20 c8 6b	jsr $6bc8	        jsr mt_text
+.6a0a	a9 85		lda #$85	        lda #<ok_text
+.6a0c	85 14		sta $14		        sta r9L
+.6a0e	a9 6d		lda #$6d	        lda #>ok_text
+.6a10	85 15		sta $15		        sta r9H
+.6a12	a9 01		lda #$01	        lda #1
+.6a14	20 c8 6b	jsr $6bc8	        jsr mt_text
+.6a17	ad 34 6e	lda $6e34	        lda error
+.6a1a	f0 46		beq $6a62	        beq paint_more
+.6a1c	a9 9d		lda #$9d	        lda #<error_text
+.6a1e	85 14		sta $14		        sta r9L
+.6a20	a9 6d		lda #$6d	        lda #>error_text
+.6a22	85 15		sta $15		        sta r9H
+.6a24	a9 01		lda #$01	        lda #1
+.6a26	20 c8 6b	jsr $6bc8	        jsr mt_text
+.6a29	ad 34 6e	lda $6e34	        lda error
+.6a2c	4a		lsr a		        lsr
+.6a2d	4a		lsr a		        lsr
+.6a2e	4a		lsr a		        lsr
+.6a2f	4a		lsr a		        lsr
+.6a30	aa		tax		        tax
+.6a31	bd 0a 6e	lda $6e0a,x	        lda digits,x
+.6a34	8d 40 6d	sta $6d40	        sta mt_line+6
+.6a37	ad 34 6e	lda $6e34	        lda error
+.6a3a	29 0f		and #$0f	        and #15
+.6a3c	aa		tax		        tax
+.6a3d	bd 0a 6e	lda $6e0a,x	        lda digits,x
+.6a40	8d 41 6d	sta $6d41	        sta mt_line+7
+.6a43	a0 0a		ldy #$0a	        ldy #10
+.6a45	a2 00		ldx #$00	        ldx #0
+.6a47					paint_error_status:
+.6a47	bd 36 6e	lda $6e36,x	        lda error_status,x
+.6a4a	f0 0c		beq $6a58	        beq paint_error_end
+.6a4c	20 cd 6c	jsr $6ccd	        jsr mt_ascii
+.6a4f	99 3a 6d	sta $6d3a,y	        sta mt_line,y
+.6a52	c8		iny		        iny
+.6a53	e8		inx		        inx
+.6a54	c0 24		cpy #$24	        cpy #36
+.6a56	d0 ef		bne $6a47	        bne paint_error_status
+.6a58					paint_error_end:
+.6a58	a9 00		lda #$00	        lda #0
+.6a5a	99 3a 6d	sta $6d3a,y	        sta mt_line,y
+.6a5d	a9 01		lda #$01	        lda #1
+.6a5f	20 dd 6b	jsr $6bdd	        jsr mt_draw
+.6a62					paint_more:
+.6a62	ad 31 6e	lda $6e31	        lda editing
+.6a65	d0 5c		bne $6ac3	        bne paint_leaf
+.6a67	a9 00		lda #$00	        lda #0
+.6a69	8d 3a 6d	sta $6d3a	        sta mt_line
+.6a6c	a9 0d		lda #$0d	        lda #13
+.6a6e	20 dd 6b	jsr $6bdd	        jsr mt_draw
+.6a71	a9 a8		lda #$a8	        lda #<browse_text
+.6a73	85 14		sta $14		        sta r9L
+.6a75	a9 6d		lda #$6d	        lda #>browse_text
+.6a77	85 15		sta $15		        sta r9H
+.6a79	a9 0e		lda #$0e	        lda #14
+.6a7b	4c c8 6b	jmp $6bc8	        jmp mt_text
+.6a7e					paint_detail:
+.6a7e	20 3a 69	jsr $693a	        jsr detail_source
+.6a81	a5 54		lda $54		        lda n
+.6a83	05 55		ora $55		        ora n+1
+.6a85	f0 1e		beq $6aa5	        beq detail_empty
+.6a87	18		clc		        clc
+.6a88	a5 50		lda $50		        lda p
+.6a8a	6d 77 6e	adc $6e77	        adc detailoff
+.6a8d	85 50		sta $50		        sta p
+.6a8f	a5 51		lda $51		        lda p+1
+.6a91	6d 78 6e	adc $6e78	        adc detailoff+1
+.6a94	85 51		sta $51		        sta p+1
+.6a96	38		sec		        sec
+.6a97	a5 54		lda $54		        lda n
+.6a99	ed 77 6e	sbc $6e77	        sbc detailoff
+.6a9c	85 54		sta $54		        sta n
+.6a9e	a5 55		lda $55		        lda n+1
+.6aa0	ed 78 6e	sbc $6e78	        sbc detailoff+1
+.6aa3	85 55		sta $55		        sta n+1
+.6aa5					detail_empty:
+.6aa5	a9 00		lda #$00	        lda #0
+.6aa7	8d 7c 6e	sta $6e7c	        sta row
+.6aaa					detail_row:
+.6aaa	a2 00		ldx #$00	        ldx #0
+.6aac	20 17 6b	jsr $6b17	        jsr slice
+.6aaf	ad 7c 6e	lda $6e7c	        lda row
+.6ab2	18		clc		        clc
+.6ab3	69 0a		adc #$0a	        adc #10
+.6ab5	20 dd 6b	jsr $6bdd	        jsr mt_draw
+.6ab8	ee 7c 6e	inc $6e7c	        inc row
+.6abb	ad 7c 6e	lda $6e7c	        lda row
+.6abe	c9 03		cmp #$03	        cmp #3
+.6ac0	d0 e8		bne $6aaa	        bne detail_row
+.6ac2	60		rts		        rts
+.6ac3					paint_leaf:
+.6ac3	ad 7a 6e	lda $6e7a	        lda cursor
+.6ac6	a2 00		ldx #$00	        ldx #0
+.6ac8					leaf_scroll:
+.6ac8	c9 20		cmp #$20	        cmp #32
+.6aca	90 05		bcc $6ad1	        bcc leaf_scrolled
+.6acc	e9 20		sbc #$20	        sbc #32
+.6ace	e8		inx		        inx
+.6acf	d0 f7		bne $6ac8	        bne leaf_scroll
+.6ad1					leaf_scrolled:
+.6ad1	8d 7b 6e	sta $6e7b	        sta caret
+.6ad4	8a		txa		        txa
+.6ad5	0a		asl a		        asl
+.6ad6	0a		asl a		        asl
+.6ad7	0a		asl a		        asl
+.6ad8	0a		asl a		        asl
+.6ad9	0a		asl a		        asl
+.6ada	18		clc		        clc
+.6adb	69 00		adc #$00	        adc #<UFP_LEAF
+.6add	85 50		sta $50		        sta p
+.6adf	a9 72		lda #$72	        lda #>UFP_LEAF
+.6ae1	69 00		adc #$00	        adc #0
+.6ae3	85 51		sta $51		        sta p+1
+.6ae5	ad 79 6e	lda $6e79	        lda leaflen
+.6ae8	38		sec		        sec
+.6ae9	e5 50		sbc $50		        sbc p
+.6aeb	85 54		sta $54		        sta n
+.6aed	a9 00		lda #$00	        lda #0
+.6aef	85 55		sta $55		        sta n+1
+.6af1	a2 00		ldx #$00	        ldx #0
+.6af3	20 17 6b	jsr $6b17	        jsr slice
+.6af6	a9 0d		lda #$0d	        lda #13
+.6af8	20 dd 6b	jsr $6bdd	        jsr mt_draw
+.6afb	a9 20		lda #$20	        lda #$20
+.6afd	a2 23		ldx #$23	        ldx #35
+.6aff					caret_clear:
+.6aff	9d 3a 6d	sta $6d3a,x	        sta mt_line,x
+.6b02	ca		dex		        dex
+.6b03	10 fa		bpl $6aff	        bpl caret_clear
+.6b05	a9 00		lda #$00	        lda #0
+.6b07	8d 5e 6d	sta $6d5e	        sta mt_line+36
+.6b0a	ae 7b 6e	ldx $6e7b	        ldx caret
+.6b0d	a9 5e		lda #$5e	        lda #$5e
+.6b0f	9d 3a 6d	sta $6d3a,x	        sta mt_line,x
+.6b12	a9 0e		lda #$0e	        lda #14
+.6b14	4c dd 6b	jmp $6bdd	        jmp mt_draw
+.6b17					slice:
+.6b17	a0 00		ldy #$00	        ldy #0
+.6b19					slice_byte:
+.6b19	a5 54		lda $54		        lda n
+.6b1b	05 55		ora $55		        ora n+1
+.6b1d	f0 16		beq $6b35	        beq slice_done
+.6b1f	b1 50		lda ($50),y	        lda (p),y
+.6b21	20 cd 6c	jsr $6ccd	        jsr mt_ascii
+.6b24	9d 3a 6d	sta $6d3a,x	        sta mt_line,x
+.6b27	e6 50		inc $50		        inc p
+.6b29	d0 02		bne $6b2d	        bne slice_next
+.6b2b	e6 51		inc $51		        inc p+1
+.6b2d					slice_next:
+.6b2d	20 7c 69	jsr $697c	        jsr decrement
+.6b30	e8		inx		        inx
+.6b31	e0 24		cpx #$24	        cpx #36
+.6b33	d0 e4		bne $6b19	        bne slice_byte
+.6b35					slice_done:
+.6b35	a9 00		lda #$00	        lda #0
+.6b37	9d 3a 6d	sta $6d3a,x	        sta mt_line,x
+.6b3a	60		rts		        rts
+.6b3b					mouse:
+.6b3b	ad 10 d0	lda $d010	        lda $d010
+.6b3e	29 01		and #$01	        and #1
+.6b40	85 57		sta $57		        sta t+1
+.6b42	ad 00 d0	lda $d000	        lda $d000
+.6b45	38		sec		        sec
+.6b46	e9 18		sbc #$18	        sbc #24
+.6b48	85 56		sta $56		        sta t
+.6b4a	a5 57		lda $57		        lda t+1
+.6b4c	e9 00		sbc #$00	        sbc #0
+.6b4e	85 57		sta $57		        sta t+1
+.6b50	f0 0c		beq $6b5e	        beq mouse_low
+.6b52	c9 01		cmp #$01	        cmp #1
+.6b54	d0 2c		bne $6b82	        bne mouse_none
+.6b56	a5 56		lda $56		        lda t
+.6b58	c9 30		cmp #$30	        cmp #48
+.6b5a	b0 26		bcs $6b82	        bcs mouse_none
+.6b5c	90 06		bcc $6b64	        bcc mouse_y
+.6b5e					mouse_low:
+.6b5e	a5 56		lda $56		        lda t
+.6b60	c9 10		cmp #$10	        cmp #16
+.6b62	90 1e		bcc $6b82	        bcc mouse_none
+.6b64					mouse_y:
+.6b64	ad 01 d0	lda $d001	        lda $d001
+.6b67	38		sec		        sec
+.6b68	e9 32		sbc #$32	        sbc #50
+.6b6a	c9 b0		cmp #$b0	        cmp #176
+.6b6c	b0 2d		bcs $6b9b	        bcs mouse_buttons
+.6b6e	c9 24		cmp #$24	        cmp #36
+.6b70	90 10		bcc $6b82	        bcc mouse_none
+.6b72	38		sec		        sec
+.6b73	e9 24		sbc #$24	        sbc #36
+.6b75	a2 00		ldx #$00	        ldx #0
+.6b77					mouse_row:
+.6b77	c9 0a		cmp #$0a	        cmp #10
+.6b79	90 0a		bcc $6b85	        bcc mouse_select
+.6b7b	e9 0a		sbc #$0a	        sbc #10
+.6b7d	e8		inx		        inx
+.6b7e	e0 08		cpx #$08	        cpx #8
+.6b80	90 f5		bcc $6b77	        bcc mouse_row
+.6b82					mouse_none:
+.6b82	a9 00		lda #$00	        lda #0
+.6b84	60		rts		        rts
+.6b85					mouse_select:
+.6b85	ec 2e 6e	cpx $6e2e	        cpx count
+.6b88	b0 f8		bcs $6b82	        bcs mouse_none
+.6b8a	8e 30 6e	stx $6e30	        stx selected
+.6b8d	a9 00		lda #$00	        lda #0
+.6b8f	8d 77 6e	sta $6e77	        sta detailoff
+.6b92	8d 78 6e	sta $6e78	        sta detailoff+1
+.6b95	20 89 69	jsr $6989	        jsr paint
+.6b98	a9 00		lda #$00	        lda #0
+.6b9a	60		rts		        rts
+.6b9b					mouse_buttons:
+.6b9b	c9 ba		cmp #$ba	        cmp #186
+.6b9d	b0 e3		bcs $6b82	        bcs mouse_none
+.6b9f	a5 57		lda $57		        lda t+1
+.6ba1	d0 13		bne $6bb6	        bne mouse_cancel
+.6ba3	a5 56		lda $56		        lda t
+.6ba5	c9 48		cmp #$48	        cmp #72
+.6ba7	90 16		bcc $6bbf	        bcc mouse_open
+.6ba9	ae 31 6e	ldx $6e31	        ldx editing
+.6bac	d0 0b		bne $6bb9	        bne mouse_edit_buttons
+.6bae	c9 80		cmp #$80	        cmp #128
+.6bb0	90 10		bcc $6bc2	        bcc mouse_use
+.6bb2	c9 c0		cmp #$c0	        cmp #192
+.6bb4	90 0f		bcc $6bc5	        bcc mouse_next
+.6bb6					mouse_cancel:
+.6bb6	a9 1b		lda #$1b	        lda #$1b
+.6bb8	60		rts		        rts
+.6bb9					mouse_edit_buttons:
+.6bb9	c9 c0		cmp #$c0	        cmp #192
+.6bbb	b0 f9		bcs $6bb6	        bcs mouse_cancel
+.6bbd	90 c3		bcc $6b82	        bcc mouse_none
+.6bbf					mouse_open:
+.6bbf	a9 0d		lda #$0d	        lda #13
+.6bc1	60		rts		        rts
+.6bc2					mouse_use:
+.6bc2	a9 85		lda #$85	        lda #$85
+.6bc4	60		rts		        rts
+.6bc5					mouse_next:
+.6bc5	a9 4e		lda #$4e	        lda #$4e
+.6bc7	60		rts		        rts
+
+;******  Processing file: src/modal-text.inc
+
+.6bc8					mt_text:
+.6bc8	48		pha		        pha
+.6bc9	a0 00		ldy #$00	        ldy #0
+.6bcb					mt_text_copy:
+.6bcb	b1 14		lda ($14),y	        lda (r9),y
+.6bcd	99 3a 6d	sta $6d3a,y	        sta mt_line,y
+.6bd0	f0 0a		beq $6bdc	        beq mt_text_end
+.6bd2	c8		iny		        iny
+.6bd3	c0 24		cpy #$24	        cpy #36
+.6bd5	d0 f4		bne $6bcb	        bne mt_text_copy
+.6bd7	a9 00		lda #$00	        lda #0
+.6bd9	99 3a 6d	sta $6d3a,y	        sta mt_line,y
+.6bdc					mt_text_end:
+.6bdc	68		pla		        pla
+.6bdd					mt_draw:
+.6bdd	8d 32 6d	sta $6d32	        sta mt_row
+.6be0	0a		asl a		        asl
+.6be1	8d 33 6d	sta $6d33	        sta mt_y
+.6be4	0a		asl a		        asl
+.6be5	0a		asl a		        asl
+.6be6	6d 33 6d	adc $6d33	        adc mt_y
+.6be9	69 10		adc #$10	        adc #16
+.6beb	8d 33 6d	sta $6d33	        sta mt_y
+.6bee	38		sec		        sec
+.6bef	e9 01		sbc #$01	        sbc #1
+.6bf1	8d 34 6d	sta $6d34	        sta mt_scan
+.6bf4	a9 0a		lda #$0a	        lda #10
+.6bf6	8d 35 6d	sta $6d35	        sta mt_left
+.6bf9	20 59 6c	jsr $6c59	        jsr mt_clear_scan
+.6bfc	a9 00		lda #$00	        lda #0
+.6bfe	8d 36 6d	sta $6d36	        sta mt_cell
+.6c01					mt_cell_next:
+.6c01	ae 36 6d	ldx $6d36	        ldx mt_cell
+.6c04	bd 3a 6d	lda $6d3a,x	        lda mt_line,x
+.6c07	f0 34		beq $6c3d	        beq mt_vdc
+.6c09	c9 20		cmp #$20	        cmp #$20
+.6c0b	f0 2a		beq $6c37	        beq mt_cell_skip
+.6c0d	8d 38 6d	sta $6d38	        sta mt_glyph
+.6c10	a9 00		lda #$00	        lda #0
+.6c12	85 03		sta $03		        sta X1+1
+.6c14	85 05		sta $05		        sta Y1+1
+.6c16	ad 36 6d	lda $6d36	        lda mt_cell
+.6c19	0a		asl a		        asl
+.6c1a	0a		asl a		        asl
+.6c1b	0a		asl a		        asl
+.6c1c	26 03		rol $03		        rol X1+1
+.6c1e	18		clc		        clc
+.6c1f	69 10		adc #$10	        adc #16
+.6c21	85 02		sta $02		        sta X1
+.6c23	90 02		bcc $6c27	        bcc mt_cell_y
+.6c25	e6 03		inc $03		        inc X1+1
+.6c27					mt_cell_y:
+.6c27	ad 33 6d	lda $6d33	        lda mt_y
+.6c2a	85 04		sta $04		        sta Y1
+.6c2c	a9 38		lda #$38	        lda #<mt_glyph
+.6c2e	85 14		sta $14		        sta r9L
+.6c30	a9 6d		lda #$6d	        lda #>mt_glyph
+.6c32	85 15		sta $15		        sta r9H
+.6c34	20 1e c0	jsr $c01e	        jsr GPUTS
+.6c37					mt_cell_skip:
+.6c37	ee 36 6d	inc $6d36	        inc mt_cell
+.6c3a	4c 01 6c	jmp $6c01	        jmp mt_cell_next
+.6c3d					mt_vdc:
+.6c3d	ad 32 6d	lda $6d32	        lda mt_row
+.6c40	18		clc		        clc
+.6c41	69 02		adc #$02	        adc #2
+.6c43	20 38 08	jsr $0838	        jsr VDCLR
+.6c46	a9 3a		lda #$3a	        lda #<mt_line
+.6c48	85 14		sta $14		        sta r9L
+.6c4a	a9 6d		lda #$6d	        lda #>mt_line
+.6c4c	85 15		sta $15		        sta r9H
+.6c4e	ad 32 6d	lda $6d32	        lda mt_row
+.6c51	18		clc		        clc
+.6c52	69 02		adc #$02	        adc #2
+.6c54	a2 00		ldx #$00	        ldx #0
+.6c56	4c 35 08	jmp $0835	        jmp VDTEXT
+.6c59					mt_clear_scan:
+.6c59	ad 34 6d	lda $6d34	        lda mt_scan
+.6c5c	29 07		and #$07	        and #7
+.6c5e	18		clc		        clc
+.6c5f	69 10		adc #$10	        adc #16
+.6c61	85 02		sta $02		        sta r0L
+.6c63	ae 34 6d	ldx $6d34	        ldx mt_scan
+.6c66	8a		txa		        txa
+.6c67	4a		lsr a		        lsr
+.6c68	4a		lsr a		        lsr
+.6c69	4a		lsr a		        lsr
+.6c6a	aa		tax		        tax
+.6c6b	bd 00 6d	lda $6d00,x	        lda mt_bandsL,x
+.6c6e	18		clc		        clc
+.6c6f	65 02		adc $02		        adc r0L
+.6c71	85 02		sta $02		        sta r0L
+.6c73	bd 19 6d	lda $6d19,x	        lda mt_bandsH,x
+.6c76	69 00		adc #$00	        adc #0
+.6c78	85 03		sta $03		        sta r0H
+.6c7a	a2 25		ldx #$25	        ldx #37
+.6c7c	a0 00		ldy #$00	        ldy #0
+.6c7e					mt_clear_cell:
+.6c7e	a9 00		lda #$00	        lda #0
+.6c80	91 02		sta ($02),y	        sta (r0),y
+.6c82	18		clc		        clc
+.6c83	a5 02		lda $02		        lda r0L
+.6c85	69 08		adc #$08	        adc #8
+.6c87	85 02		sta $02		        sta r0L
+.6c89	90 02		bcc $6c8d	        bcc mt_clear_next
+.6c8b	e6 03		inc $03		        inc r0H
+.6c8d					mt_clear_next:
+.6c8d	ca		dex		        dex
+.6c8e	d0 ee		bne $6c7e	        bne mt_clear_cell
+.6c90	ee 34 6d	inc $6d34	        inc mt_scan
+.6c93	ce 35 6d	dec $6d35	        dec mt_left
+.6c96	d0 c1		bne $6c59	        bne mt_clear_scan
+.6c98	60		rts		        rts
+.6c99					mt_clear:
+.6c99	a9 07		lda #$07	        lda #7
+.6c9b	8d 34 6d	sta $6d34	        sta mt_scan
+.6c9e	a9 08		lda #$08	        lda #8
+.6ca0	8d 35 6d	sta $6d35	        sta mt_left
+.6ca3	20 59 6c	jsr $6c59	        jsr mt_clear_scan
+.6ca6	a9 00		lda #$00	        lda #0
+.6ca8	8d 3a 6d	sta $6d3a	        sta mt_line
+.6cab	8d 37 6d	sta $6d37	        sta mt_whole
+.6cae					mt_clear_loop:
+.6cae	ad 37 6d	lda $6d37	        lda mt_whole
+.6cb1	20 dd 6b	jsr $6bdd	        jsr mt_draw
+.6cb4	ee 37 6d	inc $6d37	        inc mt_whole
+.6cb7	ad 37 6d	lda $6d37	        lda mt_whole
+.6cba	c9 11		cmp #$11	        cmp #17
+.6cbc	d0 f0		bne $6cae	        bne mt_clear_loop
+.6cbe	a9 13		lda #$13	        lda #19
+.6cc0					mt_clear_vdc_tail:
+.6cc0	48		pha		        pha
+.6cc1	20 38 08	jsr $0838	        jsr VDCLR
+.6cc4	68		pla		        pla
+.6cc5	18		clc		        clc
+.6cc6	69 01		adc #$01	        adc #1
+.6cc8	c9 18		cmp #$18	        cmp #24
+.6cca	d0 f4		bne $6cc0	        bne mt_clear_vdc_tail
+.6ccc	60		rts		        rts
+.6ccd					mt_ascii:
+.6ccd	c9 20		cmp #$20	        cmp #$20
+.6ccf	90 16		bcc $6ce7	        bcc mt_dot
+.6cd1	c9 7b		cmp #$7b	        cmp #$7b
+.6cd3	b0 12		bcs $6ce7	        bcs mt_dot
+.6cd5	c9 61		cmp #$61	        cmp #$61
+.6cd7	90 03		bcc $6cdc	        bcc mt_upper
+.6cd9	29 df		and #$df	        and #$df
+.6cdb	60		rts		        rts
+.6cdc					mt_upper:
+.6cdc	c9 41		cmp #$41	        cmp #$41
+.6cde	90 06		bcc $6ce6	        bcc mt_ascii_done
+.6ce0	c9 5b		cmp #$5b	        cmp #$5b
+.6ce2	b0 02		bcs $6ce6	        bcs mt_ascii_done
+.6ce4	09 80		ora #$80	        ora #$80
+.6ce6					mt_ascii_done:
+.6ce6	60		rts		        rts
+.6ce7					mt_dot:
+.6ce7	a9 2e		lda #$2e	        lda #$2e
+.6ce9	60		rts		        rts
+.6cea					mt_key_ascii:
+.6cea	c9 41		cmp #$41	        cmp #$41
+.6cec	90 11		bcc $6cff	        bcc mt_key_done
+.6cee	c9 5b		cmp #$5b	        cmp #$5b
+.6cf0	b0 03		bcs $6cf5	        bcs mt_key_upper
+.6cf2	09 20		ora #$20	        ora #$20
+.6cf4	60		rts		        rts
+.6cf5					mt_key_upper:
+.6cf5	c9 c1		cmp #$c1	        cmp #$c1
+.6cf7	90 06		bcc $6cff	        bcc mt_key_done
+.6cf9	c9 db		cmp #$db	        cmp #$db
+.6cfb	b0 02		bcs $6cff	        bcs mt_key_done
+.6cfd	29 7f		and #$7f	        and #$7f
+.6cff					mt_key_done:
+.6cff	60		rts		        rts
+.6d00					mt_bandsL:
+>6d00	00				        .byte <($a000+i*320)
+>6d01	40				        .byte <($a000+i*320)
+>6d02	80				        .byte <($a000+i*320)
+>6d03	c0				        .byte <($a000+i*320)
+>6d04	00				        .byte <($a000+i*320)
+>6d05	40				        .byte <($a000+i*320)
+>6d06	80				        .byte <($a000+i*320)
+>6d07	c0				        .byte <($a000+i*320)
+>6d08	00				        .byte <($a000+i*320)
+>6d09	40				        .byte <($a000+i*320)
+>6d0a	80				        .byte <($a000+i*320)
+>6d0b	c0				        .byte <($a000+i*320)
+>6d0c	00				        .byte <($a000+i*320)
+>6d0d	40				        .byte <($a000+i*320)
+>6d0e	80				        .byte <($a000+i*320)
+>6d0f	c0				        .byte <($a000+i*320)
+>6d10	00				        .byte <($a000+i*320)
+>6d11	40				        .byte <($a000+i*320)
+>6d12	80				        .byte <($a000+i*320)
+>6d13	c0				        .byte <($a000+i*320)
+>6d14	00				        .byte <($a000+i*320)
+>6d15	40				        .byte <($a000+i*320)
+>6d16	80				        .byte <($a000+i*320)
+>6d17	c0				        .byte <($a000+i*320)
+>6d18	00				        .byte <($a000+i*320)
+.6d19					mt_bandsH:
+>6d19	a0				        .byte >($a000+i*320)
+>6d1a	a1				        .byte >($a000+i*320)
+>6d1b	a2				        .byte >($a000+i*320)
+>6d1c	a3				        .byte >($a000+i*320)
+>6d1d	a5				        .byte >($a000+i*320)
+>6d1e	a6				        .byte >($a000+i*320)
+>6d1f	a7				        .byte >($a000+i*320)
+>6d20	a8				        .byte >($a000+i*320)
+>6d21	aa				        .byte >($a000+i*320)
+>6d22	ab				        .byte >($a000+i*320)
+>6d23	ac				        .byte >($a000+i*320)
+>6d24	ad				        .byte >($a000+i*320)
+>6d25	af				        .byte >($a000+i*320)
+>6d26	b0				        .byte >($a000+i*320)
+>6d27	b1				        .byte >($a000+i*320)
+>6d28	b2				        .byte >($a000+i*320)
+>6d29	b4				        .byte >($a000+i*320)
+>6d2a	b5				        .byte >($a000+i*320)
+>6d2b	b6				        .byte >($a000+i*320)
+>6d2c	b7				        .byte >($a000+i*320)
+>6d2d	b9				        .byte >($a000+i*320)
+>6d2e	ba				        .byte >($a000+i*320)
+>6d2f	bb				        .byte >($a000+i*320)
+>6d30	bc				        .byte >($a000+i*320)
+>6d31	be				        .byte >($a000+i*320)
+>6d32	00				mt_row: .byte 0
+>6d33	00				mt_y: .byte 0
+>6d34	00				mt_scan: .byte 0
+>6d35	00				mt_left: .byte 0
+>6d36	00				mt_cell: .byte 0
+>6d37	00				mt_whole: .byte 0
+>6d38	00 00				mt_glyph: .byte 0,0
+>6d3a	00 00 00 00 00 00 00 00		mt_line: .fill 37,0
+>6d42	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6d52	00 00 00 00 00 00 00 00 00 00 00 00 00
+
+;******  Return to file: src/uos-picker.asm
+
+>6d5f	cf 50 45 4e 20 46 49 4c		title_open: .text "Open file",0
+>6d67	45 00
+>6d69	d3 41 56 45 20 c1 53 20		title_save: .text "Save As - create a new file",0
+>6d71	2d 20 43 52 45 41 54 45 20 41 20 4e 45 57 20 46
+>6d81	49 4c 45 00
+>6d85	d3 45 4c 45 43 54 20 41		ok_text: .text "Select a file or folder",0
+>6d8d	20 46 49 4c 45 20 4f 52 20 46 4f 4c 44 45 52 00
+>6d9d	c5 52 52 4f 52 20 30 30		error_text: .text "Error 00: ",0
+>6da5	3a 20 00
+>6da8	c1 52 52 4f 57 53 20 53		browse_text: .text "Arrows select  Enter open  F1 name",0
+>6db0	45 4c 45 43 54 20 20 c5 4e 54 45 52 20 4f 50 45
+>6dc0	4e 20 20 c6 31 20 4e 41 4d 45 00
+>6dcb	d5 20 55 50 20 2f 20 52		hint: .text "U up / root N next B back P path",0
+>6dd3	4f 4f 54 20 ce 20 4e 45 58 54 20 c2 20 42 41 43
+>6de3	4b 20 d0 20 50 41 54 48 00
+>6dec	cf 50 45 4e 20 20 20 ce		buttons: .text "Open   Name    Next    Cancel",0
+>6df4	41 4d 45 20 20 20 20 ce 45 58 54 20 20 20 20 c3
+>6e04	41 4e 43 45 4c 00
+>6e0a	30 31 32 33 34 35 36 37		digits: .text "0123456789ABCDEF"
+>6e12	38 39 c1 c2 c3 c4 c5 c6
+>6e1a	00 00 00 00			request: .fill 4,0
+>6e1e	00 00				pathlen: .word 0
+>6e20	00				last_path: .byte 0
+>6e21	00 00				chosenlen: .word 0
+>6e23	00 00				base: .word 0
+>6e25	00 00				seen: .word 0
+>6e27	00 00				page_start: .word 0
+>6e29	00 00				free: .word 0
+>6e2b	00 00				end: .word 0
+>6e2d	00				backwards: .byte 0
+>6e2e	00				count: .byte 0
+>6e2f	00				more: .byte 0
+>6e30	00				selected: .byte 0
+>6e31	00				editing: .byte 0
+>6e32	00				ready: .byte 0
+>6e33	00				held: .byte 0
+>6e34	00				error: .byte 0
+>6e35	00				saved_error: .byte 0
+>6e36	00 00 00 00 00 00 00 00		error_status: .fill 32,0
+>6e3e	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6e4e	00 00 00 00 00 00 00 00
+>6e56	00 00 00 00 00 00 00 00		saved_status: .fill 32,0
+>6e5e	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6e6e	00 00 00 00 00 00 00 00
+>6e76	00				viewpath: .byte 0
+>6e77	00 00				detailoff: .word 0
+>6e79	00				leaflen: .byte 0
+>6e7a	00				cursor: .byte 0
+>6e7b	00				caret: .byte 0
+>6e7c	00				row: .byte 0
+>6e7d	00 00 00 00 00 00 00 00		attrs: .fill 8,0
+>6e85	00 00 00 00 00 00 00 00		ptrsL: .fill 8,0
+>6e8d	00 00 00 00 00 00 00 00		ptrsH: .fill 8,0
+>6e95	00 00 00 00 00 00 00 00		lensL: .fill 8,0
+>6e9d	00 00 00 00 00 00 00 00		lensH: .fill 8,0
+.6ea5					picker_end:
+
+;******  End of listing

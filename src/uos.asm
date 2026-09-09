@@ -25,6 +25,7 @@
 .include "vic-ii.inc"
 .include "io.inc"
 .include "ultimate-files.inc"
+.include "file-dialog.inc"
 
 
 * = $0801    ;start of BASIC area
@@ -478,6 +479,7 @@ _ffdone:
 ; ==========================================================
 LAUNCH_APP_RT:
         jsr UFS_CLOSEALL        ; resident ownership survives a failed close
+        jsr UFP_RECOVER
         ; clear the desktop bitmap before the app draws: apps paint outline
         ; windows straight onto the bitmap, and the desktop icons showed
         ; through them. Same colour rule and sprite-pointer restore as
@@ -993,6 +995,7 @@ CAP_REU         = $03
 CAP_KEYIN       = $04
 CAP_FILLFILE    = $05
 CAP_FILES       = $06
+CAP_PICKER      = $07
 
 CAPTBL:
         .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
@@ -1007,6 +1010,8 @@ CAPTBL:
         .word $0829
         .byte CAP_FILES
         .word UFS_OPEN
+        .byte CAP_PICKER
+        .word UFP_PICK
 CAPTBLEND:
         .cerror (CAPTBLEND-CAPTBL) % 3 != 0, "capability entry must have id and word address"
         .cerror CAPTBLEND-CAPTBL == 0 || CAPTBLEND-CAPTBL > 255, "capability table size invalid"

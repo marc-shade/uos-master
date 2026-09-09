@@ -346,6 +346,16 @@ def main():
                         help='mount/copy/eject a private D64; requires initially empty drive B')
     parser.add_argument('--files', action='store_true',
                         help='create/copy/read back private binary files, desktop viewer and copy dialog')
+    parser.add_argument('--editor', action='store_true',
+                        help='shared Open/Save As, private text files and independent byte verification')
+    parser.add_argument('--editor-exit-diagnose', action='store_true',
+                        help='sample an idle editor without changing its code or document')
+    parser.add_argument('--editor-inspect', action='store_true',
+                        help='record editor/selector RAM without requiring a responsive foreground')
+    parser.add_argument('--editor-abort-load', type=Path,
+                        help='recover the exact saved editor fixture after a read-only LOAD stall')
+    parser.add_argument('--editor-cleanup', type=Path,
+                        help='verify and remove the exact private editor fixture in a saved report')
     parser.add_argument('--cleanup-empty-files-fixture', type=Path,
                         help='remove an empty private file-test directory recorded in the supplied report')
     parser.add_argument('--inspect-files-fixture', type=Path,
@@ -353,6 +363,8 @@ def main():
     parser.add_argument('--files-write-diagnostic', action='store_true',
                         help='compare private raw UCI writes below and at the 512-byte boundary')
     args = parser.parse_args()
+    if (args.editor_exit_diagnose or args.editor_inspect or args.editor_abort_load or args.editor_cleanup) and not args.no_boot:
+        parser.error('editor diagnosis/cleanup requires --no-boot')
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-browser-'))
     print(f'Browser hardware evidence: {work}', flush=True)
     report = {'build': build_hashes(), 'checks': [], 'passed': False,
@@ -363,6 +375,18 @@ def main():
               'vdc_captures_per_sample': 2}
     ult = ObservingUltimate()
     mon = HardwareMonitor(ult)
+    if args.editor_inspect:
+        from hw_editor_check import inspect_editor
+        inspect_editor(mon,work)
+        return
+    if args.editor_exit_diagnose:
+        from hw_editor_check import diagnose_exit
+        diagnose_exit(ult,mon,work)
+        return
+    if args.editor_abort_load:
+        from hw_editor_check import abort_editor_load
+        abort_editor_load(ult,mon,work,args.editor_abort_load)
+        return
     if not args.no_boot:
         ult.mount((ROOT/'target/ultos.d64').read_bytes(), 'a', 'd64', 'readwrite')
         ult.run_prg((ROOT/'target/uos.prg').read_bytes())
@@ -373,6 +397,10 @@ def main():
     wait_for(lambda: mon.read_mem(0x033c, 0x033d) == desk_tick().to_bytes(2, 'little'),
              'desktop boot', 300)
     assert ci.wait_desktop_live(mon, 120)
+    if args.editor_cleanup:
+        from hw_editor_check import cleanup_editor_fixture
+        cleanup_editor_fixture(ult,mon,work,args.editor_cleanup)
+        return
     if args.files_write_diagnostic:
         from hw_files_check import write_diagnostic
         write_diagnostic(ult, mon, work)
@@ -388,6 +416,10 @@ def main():
     if args.files:
         from hw_files_check import file_workflow
         file_workflow(ult, mon, work, report)
+        return
+    if args.editor:
+        from hw_editor_check import editor_workflow
+        editor_workflow(ult, mon, work, report)
         return
     if args.drives:
         drive_workflow(ult, mon, work, report)

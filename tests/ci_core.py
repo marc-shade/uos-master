@@ -13,7 +13,7 @@ from py65.devices.mpu6502 import MPU
 
 ROOT = Path(__file__).resolve().parents[1]
 GETCAP = 0x082f
-EXPECTED = {1: 0xc000, 2: 0xcc00, 3: 0x9c00, 4: 0x082c, 5: 0x0829, 6: 0x4100}
+EXPECTED = {1: 0xc000, 2: 0xcc00, 3: 0x9c00, 4: 0x082c, 5: 0x0829, 6: 0x4100, 7: 0x4c80}
 
 
 class Memory:

@@ -9,8 +9,8 @@ build output; addresses are the fixed ABI the core and drivers export.
 | Range | Owner | Notes |
 |---|---|---|
 | `$0801-$0fff` | core `uos` | **must end below `$1000`** (the desktop loads there); check `Data: … $0801-$0fxx` after any core edit |
-| `$1000-$405e` | desktop `uos-desktop` | resident; assembly must end before `$4100`. `DESK_START = $1000` is the one-way re-entry point |
-| `$4100-$4fff` | shared Ultimate files / viewer | `uos-files`; file API at `$4100`, modal viewer at `$4800`; GETCAP ID 6 |
+| `$1000-$406c` | desktop `uos-desktop` | resident; assembly must end before `$4100`. `DESK_START = $1000` is the one-way re-entry point |
+| `$4100-$4fff` | shared Ultimate files / viewer / selector gateway | `uos-files`; file API at `$4100`, modal viewer at `$4800`, selector gateway at `$4c80`; GETCAP IDs 6/7 |
 | `$5000-$7fff` | app code/data, subject to reservations below | `APP_START = $5000`; one app at a time. The legacy `APP_END=$8fff` snapshot extent is not a grant of all that RAM to apps |
 | `$7350-$7358` | settings record | `SETREC`; the settings app image is padded up to it, see below |
 | `$7f00` | tick trampoline (CI only) | free for apps at run time |
@@ -50,10 +50,13 @@ cyan background), `VDSETUP` brings up the 8563 when the mode allows it,
 the desktop starts. The launcher hides these system components by name
 (`syscomps` in `uos-desktop.asm`) and lists every other `uos-*` file on the
 disk as an application, up to its current six-row limit.
-The internal `uos-copy` overlay is also hidden. The browser loads it through
-the core, and it returns by reloading the browser; the
+The internal `uos-copy` overlay and `uos-picker` modal library are also hidden.
+The browser loads the copy overlay through the core; it returns by reloading
+the browser. The
 [copy handoff and memory contract](ULTIMATE-FILES.md#desktop-copy) are private
 to those two modules. Both reset the stack at their one-way entry points.
+The selector instead returns to its retained caller through the resident
+[modal gateway](FILE-DIALOGS.md#application-abi-version-1), preserving the stack.
 
 ## Core jump table (`$0811`…, `src/routines.inc`)
 
@@ -67,7 +70,7 @@ to those two modules. Both reset the stack at their one-way entry points.
 | `$0826` | `APP_LOADER` | KERNAL LOAD of the file buffer; carry clear on success, set on failure. `LOADERR` resets for each attempt and latches the KERNAL error |
 | `$0829` | `FILLFILE` | `r0` → `$00`-terminated name → file buffer (dynamic loading); at most 16 name bytes plus a terminator |
 | `$082c` | `KEYIN` | `A` = key event (0 = none): kernal GETIN **plus** the C128 keys the C64-mode kernal cannot see (`KEYIN_EXT` in drv1351 scans the VIC-IIe extended matrix: ESC → `$1b`, dedicated cursor keys → `$91/$11/$9d/$1d`, one event per press) and RUN/STOP → `$1b` for C64 keyboards |
-| `$082f` | `GETCAP` | X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile, 6 files) → A/X = entry lo/hi; unknown ID → 0/0. Preserves Y, zero page, non-stack RAM and D/I flags; other flags clobbered |
+| `$082f` | `GETCAP` | X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile, 6 files, 7 selector) → A/X = entry lo/hi; unknown ID → 0/0. Preserves Y, zero page, non-stack RAM and D/I flags; other flags clobbered |
 | `$0832` | `LAUNCH_APP` | Core-resident LOAD then `jmp APP_START` on success, `jmp DESK_START` on failure; the safe entry for an app replacing itself |
 | `$0835` | `VDTEXT` | 80-col: `A` = row 0-24, `X` = col 0-79, `r9` → PETSCII text; no-op without a VDC |
 | `$0838` | `VDCLR` | 80-col: `A` = row → 80 spaces; no-op without a VDC |
@@ -75,7 +78,7 @@ to those two modules. Both reset the stack at their one-way entry points.
 | `$083e` | `READ_BUTTON` | A = 0 if either mouse fire button is down, nonzero when released; preserves X/Y and the interrupt/decimal flags |
 
 `GETCAP` is a static lookup for resident software, not a hardware probe or
-version negotiation. IDs 1–6 return `$c000`, `$cc00`, `$9c00`, `$082c`, `$0829`, `$4100`
+version negotiation. IDs 1–7 return `$c000`, `$cc00`, `$9c00`, `$082c`, `$0829`, `$4100`, `$4c80`
 respectively, including on a machine without the corresponding peripheral.
 Check the driver's documented presence result before optional hardware access.
 The earlier dispatch defect is fixed; `tests/ci_core.py` covers every 8-bit ID,
@@ -101,8 +104,11 @@ The [shared file API](ULTIMATE-FILES.md) owns handles in DOS contexts 1 and 2,
 streams up to 512 binary bytes per call, and verifies writes to exclusively
 created files. The desktop viewer uses it directly. `LAUNCH_APP` and desktop
 entry call `UFS_CLOSEALL`; failed closes retain ownership for another attempt.
-Apps must still close and handle errors explicitly. The service does not
-implement an IEC backend, scheduler, file picker or general save/replace yet.
+Apps must still close and handle errors explicitly. The [shared selector](FILE-DIALOGS.md)
+loads at `$6200`, retaining caller code and document below that address. It returns
+an open handle; CLOSE also restores its borrowed directory. The editor uses it
+for Open and verified Save As. An IEC backend, scheduler and general replace
+remain required.
 
 Core control hit testing uses inclusive left/top and exclusive right/bottom
 edges, compares the complete nine-bit X coordinate, and scans all 25 slots
@@ -362,26 +368,24 @@ Full-screen/window snapshots still use the REU.
 
 ## The text editor (`uos-edit`)
 
-A note editor launched from the Applications menu: type text, RETURN for a
-new line, DEL to backspace, F1 to save, ESC to exit; it loads `NOTES.T` on
-entry. Both displays are drawn (40-column proportional + 80-column mirror).
-Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
+The Applications menu launches a 768-byte ASCII note editor. Type to append,
+RETURN inserts LF, and DEL removes the last byte. F3 opens the shared cartridge
+selector, F1 saves to a new cartridge filename, F5 starts a new document, and
+ESC exits. Unsaved text requires confirmation before Open, New or exit. Both
+displays follow the end of the document; VIC text uses fixed eight-pixel cells.
 
-* **Closing the command channel (secondary 15) closes every open file on
-  the drive.** So the "does NOTES.T exist?" check can't open 15 alongside
-  the file. `ed_exists` instead pattern-lists `"$0:NOTES.T"` on its own
-  logical file and counts quote characters (a matching file adds a second
-  quoted entry). Use a *different logical file* from the one you reopen
-  next, or the real drive returns stale/garbled data.
-* **A missing SEQ file reads `$00` forever with `ST=$00` on the real 1541
-  (Ultimate),** and its command channel reads back empty — neither ST nor
-  the status channel flags the miss the way VICE does. Bound every file
-  read with a hard page/byte counter, not a 16-bit compare, and gate the
-  read on the directory check above.
-* **SEQ file *data* writes do not persist to the .d64 image under this
-  box's VICE** (the same gate as the settings kernal SAVE); the write
-  sequence itself is proven clean (`probes/seqwrite.asm` -> CHKOUT ST=$00)
-  and lands on real hardware.
+The document occupies `$5f00–$61ff`, below the modal library. Open validates the
+complete staged text and closes its file and directory lease before replacing
+the document. Save As verifies writes, closes/reopens the file, compares every
+byte and closes again before clearing the dirty flag. Existing names are
+rejected. Failed new saves retain the created file and unsaved document.
+
+Startup still imports `NOTES.T` read-only from the system IEC disk, converting
+PETSCII/CR to ASCII/LF. It bounds the directory existence check and file read,
+uses separate logical files, and rejects serial errors, oversized notes and
+invalid text. It never scratches or rewrites the legacy note. See the
+[selector guide](FILE-DIALOGS.md) for its ABI, key handling, error semantics and
+remaining editing/IEC requirements.
 
 ## 64tass conventions that bite
 
@@ -422,7 +426,7 @@ Save/load use a SEQ file over the KERNAL. Two 1541 traps learned here:
 ./build.sh                                   # 64tass, byte-identical rebuild -> target/ultos.d64
 UOS_CI_SKIP_SAVE=1 python3 tests/ci_fm.py    # x64: boot, fmgr actions, settings, shell incl. CAT/PEEK/POKE/CD/PWD/LS/IP/TIME/GET (18 checks)
 python3 tests/ci_vdc.py                      # x128 -go64: companion display, clock, keys, controls, launcher, offline browser (15 checks)
-python3 tests/ci_edit.py                     # x64: the text editor (uos-edit) load/edit/save-runs/exit (5 checks)
+python3 tests/ci_edit.py                     # x64: legacy import/edit, unavailable Save As preserves text, discard/exit (5 checks)
 python3 tests/ci_calc.py                     # x64: the calculator (uos-calc) arithmetic, chains, OVF/DIV/0, backspace, exit (12 checks)
 python3 tests/ci_copy.py                     # x64: >16 KiB PRG copies both ways, type/byte checks, existing destination rejection
 python3 tests/ci_storage.py                  # x64: directory/cache scrolling, bitmap restoration, empty/missing devices
@@ -437,12 +441,17 @@ python3 tests/ci_vdc_capture.py               # IRQ capture: exact bytes, addres
 python3 tests/ci_uci.py                       # assembled UCI driver: 15 protocol/CPU checks, no VICE needed
 python3 tests/ci_ultimate.py                  # browser/drive panel: paging, inventory, protection, mount/eject, bounds
 python3 tests/ci_file_copy.py                 # core-loaded copy dialog, binary verification, faults, cancellation and full frames
+python3 tests/ci_picker.py                    # shared selector, pages, complete paths, ownership and directory recovery
+python3 tests/ci_editor_files.py              # editor verified Save As/Open, legacy import, dirty state and faults
+python3 tests/ci_file_dialog_display.py       # actual VIC/VDC frames, caret, modal erasure and return
+python3 tests/ci_irq_state.py                 # foreground sampler: register/stack/flag preservation
 python3 tests/ci_capture_host.py              # borrowed VDC-capture RAM restored on success and observation/probe failure
 python3 tests/profile_browser.py --out /tmp/browser-render --check-fresh # actual graphics: cycles and fresh-frame comparison
 python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
 python3 hw_ultimate_check.py                 # real C128: browser navigation, complete names, VDC readback, path restoration
 python3 hw_ultimate_check.py --drives        # real C128: private D64 mount, IEC copy, byte verification and eject on empty B
 python3 hw_ultimate_check.py --files         # real C128: shared files, viewer and copy dialog, independent byte/prefix readback
+python3 hw_ultimate_check.py --editor        # real C128: shared selector, verified Save As, cancel and independent file reads
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)

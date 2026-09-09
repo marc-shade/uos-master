@@ -48,7 +48,10 @@ exclusive creation, verified writes and 32-bit seeks. **C / Copy** opens an
 editable destination path with progress and cancellation. A copy is reported
 verified only after closing, reopening and comparing both files completely.
 Existing destinations are rejected; cancelled or failed new files are retained.
-Save/file-picker dialogs and the broader application suite remain in progress.
+[Shared Open and Save As](docs/FILE-DIALOGS.md) now keep the editor in memory
+while browsing folders. Saves are closed, reopened and compared before success.
+An IEC selector backend, larger documents and the broader application suite
+remain in progress.
 The [file-service validation](docs/validation/2026-09-08-ultimate-files/README.md)
 records exact physical create/copy/readback, viewer restoration and firmware limits.
 The [desktop-copy validation](docs/validation/2026-09-08-desktop-copy/README.md)
