@@ -1,0 +1,3275 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-native-editor-package/clean/target/native/editor.prg -L /var/tmp/arc-scratch/uos-native-editor-package/clean/target/native/editor.lst /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/editor.asm
+; Wed Sep  9 18:07:19 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/editor.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=2					N_ABI_MINOR = 2
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; run a checked native PRG from IEC, then clean up
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; IEC stream: read or exclusive create
+=$1c44					N_FREAD         = $1c44          ; up to 512 bytes to N_BUFFER; exact returned count
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch from APPNAME/DEVICE
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device, 8..30
+=$3d22					N_NAMELEN       = $3d22          ; launch filename length, 1..16
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; last serial status byte
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source disk geometry, 0 D64 / 1 D71 / 2 D81
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; first nonzero DOS code in this operation
+=$3d90					N_FSTATUS       = $3d90          ; serial status; first non-EOI error retained
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; returned byte position, little-endian 32-bit
+=$3d96					N_FFORMAT       = $3d96          ; CBM disk geometry: 0 D64, 1 D71, 2 D81
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$3e00					N_RELOCBASE     = $3e00          ; boot-only staging, reusable after relocation
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$40					N_FIRST0        = $40            ; bank 0 $4000..$feff: 191 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/editor.asm
+
+.6000					editor_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 02 00			        .byte 1,1,2,0
+>6008	d5 27				        .word editor_end-editor_image
+>600a	28 00				        .byte (editor_end-editor_image+255)/256,0
+>600c	f2 0e				        .word editor_entry-editor_image
+>600e	00 00				        .word 0
+>6010	54 45 58 54 20 45 44 49		        .text "text editor",0
+>6018	54 4f 52 00
+>601c	00 00 00 00			        .fill N_APPBASE+32-*,0
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/document.inc
+
+=0					D_LEN = 0
+=3					D_GAP = 3
+=6					D_END = 6
+=9					D_CAP = 9
+=12					D_DIRTY = 12
+=13					D_CHUNKS = 13
+=14					D_FAULT = 14
+=16					D_HANDLES = 16
+=24					D_MAXCHUNKS = 24
+.6020					doc_init:
+.6020	ad 20 3d	lda $3d20	        lda N_CURRENT
+.6023	8d cc 69	sta $69cc	        sta d_owner
+.6026	a9 00		lda #$00	        lda #0
+.6028	aa		tax		        tax
+.6029					doc_init_loop:
+.6029	9d f2 69	sta $69f2,x	        sta d_states,x
+.602c	e8		inx		        inx
+.602d	d0 fa		bne $6029	        bne doc_init_loop
+.602f	8d cb 69	sta $69cb	        sta d_slot
+.6032					doc_ok:
+.6032	a9 00		lda #$00	        lda #0
+.6034	18		clc		        clc
+.6035	60		rts		        rts
+.6036					doc_badarg:
+.6036	a9 01		lda #$01	        lda #N_BADARG
+.6038	38		sec		        sec
+.6039	60		rts		        rts
+.603a					doc_range:
+.603a	a9 06		lda #$06	        lda #N_RANGE
+.603c	38		sec		        sec
+.603d	60		rts		        rts
+.603e					doc_corrupt:
+.603e	a9 09		lda #$09	        lda #N_CORRUPT
+.6040	38		sec		        sec
+.6041	60		rts		        rts
+.6042					doc_fault:
+.6042	ae cb 69	ldx $69cb	        ldx d_slot
+.6045	9d 00 6a	sta $6a00,x	        sta d_states+D_FAULT,x
+.6048	38		sec		        sec
+.6049	60		rts		        rts
+.604a					doc_context:
+.604a	ad cb 69	lda $69cb	        lda d_slot
+.604d	29 7f		and #$7f	        and #$7f
+.604f	d0 e5		bne $6036	        bne doc_badarg
+.6051	ae cb 69	ldx $69cb	        ldx d_slot
+.6054	bd 00 6a	lda $6a00,x	        lda d_states+D_FAULT,x
+.6057	d0 e5		bne $603e	        bne doc_corrupt
+.6059	4c 32 60	jmp $6032	        jmp doc_ok
+.605c					doc_prepare:
+.605c	20 4a 60	jsr $604a	        jsr doc_context
+.605f	b0 4b		bcs $60ac	        bcs doc_return
+.6061	a9 00		lda #$00	        lda #0
+.6063	8d d2 69	sta $69d2	        sta d_count+2
+.6066	ad d1 69	lda $69d1	        lda d_count+1
+.6069	c9 02		cmp #$02	        cmp #2
+.606b	90 07		bcc $6074	        bcc doc_count_small
+.606d	d0 c7		bne $6036	        bne doc_badarg
+.606f	ad d0 69	lda $69d0	        lda d_count
+.6072	d0 c2		bne $6036	        bne doc_badarg
+.6074					doc_count_small:
+.6074	ad d0 69	lda $69d0	        lda d_count
+.6077	0d d1 69	ora $69d1	        ora d_count+1
+.607a	f0 ba		beq $6036	        beq doc_badarg
+.607c	ae cb 69	ldx $69cb	        ldx d_slot
+.607f	bd f2 69	lda $69f2,x	        lda d_states+D_LEN,x
+.6082	8d e7 69	sta $69e7	        sta d_limit
+.6085	bd f3 69	lda $69f3,x	        lda d_states+D_LEN+1,x
+.6088	8d e8 69	sta $69e8	        sta d_limit+1
+.608b	bd f4 69	lda $69f4,x	        lda d_states+D_LEN+2,x
+.608e	8d e9 69	sta $69e9	        sta d_limit+2
+.6091	ad e9 69	lda $69e9	        lda d_limit+2
+.6094	cd cf 69	cmp $69cf	        cmp d_pos+2
+.6097	d0 0e		bne $60a7	        bne +
+.6099	ad e8 69	lda $69e8	        lda d_limit+1
+.609c	cd ce 69	cmp $69ce	        cmp d_pos+1
+.609f	d0 06		bne $60a7	        bne +
+.60a1	ad e7 69	lda $69e7	        lda d_limit
+.60a4	cd cd 69	cmp $69cd	        cmp d_pos
+.60a7					+
+.60a7	90 91		bcc $603a	        bcc doc_range
+.60a9	4c 32 60	jmp $6032	        jmp doc_ok
+.60ac					doc_return:
+.60ac	60		rts		        rts
+.60ad					doc_dispose:
+.60ad	ad cb 69	lda $69cb	        lda d_slot
+.60b0	29 7f		and #$7f	        and #$7f
+.60b2	d0 82		bne $6036	        bne doc_badarg
+.60b4	ae cb 69	ldx $69cb	        ldx d_slot
+.60b7	bd ff 69	lda $69ff,x	        lda d_states+D_CHUNKS,x
+.60ba	c9 19		cmp #$19	        cmp #D_MAXCHUNKS+1
+.60bc	b0 80		bcs $603e	        bcs doc_corrupt
+.60be	8d f1 69	sta $69f1	        sta d_index
+.60c1					doc_dispose_loop:
+.60c1	ad f1 69	lda $69f1	        lda d_index
+.60c4	f0 2a		beq $60f0	        beq doc_disposed
+.60c6	ce f1 69	dec $69f1	        dec d_index
+.60c9	20 01 61	jsr $6101	        jsr doc_handle_index
+.60cc	bd 02 6a	lda $6a02,x	        lda d_states+D_HANDLES,x
+.60cf	f0 f0		beq $60c1	        beq doc_dispose_loop
+.60d1	20 0c 61	jsr $610c	        jsr doc_get_handle
+.60d4	20 23 1c	jsr $1c23	        jsr N_FREE
+.60d7	90 03		bcc $60dc	        bcs doc_fault
+.60d9	4c 42 60	jmp $6042
+.60dc	20 01 61	jsr $6101	        jsr doc_handle_index
+.60df	a9 00		lda #$00	        lda #0
+.60e1	9d 02 6a	sta $6a02,x	        sta d_states+D_HANDLES,x
+.60e4	9d 03 6a	sta $6a03,x	        sta d_states+D_HANDLES+1,x
+.60e7	9d 04 6a	sta $6a04,x	        sta d_states+D_HANDLES+2,x
+.60ea	9d 05 6a	sta $6a05,x	        sta d_states+D_HANDLES+3,x
+.60ed	4c c1 60	jmp $60c1	        jmp doc_dispose_loop
+.60f0					doc_disposed:
+.60f0	ae cb 69	ldx $69cb	        ldx d_slot
+.60f3	a0 80		ldy #$80	        ldy #128
+.60f5	a9 00		lda #$00	        lda #0
+.60f7					doc_clear_context:
+.60f7	9d f2 69	sta $69f2,x	        sta d_states,x
+.60fa	e8		inx		        inx
+.60fb	88		dey		        dey
+.60fc	d0 f9		bne $60f7	        bne doc_clear_context
+.60fe	4c 32 60	jmp $6032	        jmp doc_ok
+.6101					doc_handle_index:
+.6101	ad f1 69	lda $69f1	        lda d_index
+.6104	0a		asl a		        asl
+.6105	0a		asl a		        asl
+.6106	18		clc		        clc
+.6107	6d cb 69	adc $69cb	        adc d_slot
+.610a	aa		tax		        tax
+.610b	60		rts		        rts
+.610c					doc_get_handle:
+.610c	ad cc 69	lda $69cc	        lda d_owner
+.610f	8d 00 3d	sta $3d00	        sta N_OWNER
+.6112	bd 02 6a	lda $6a02,x	        lda d_states+D_HANDLES,x
+.6115	8d 04 3d	sta $3d04	        sta N_HANDLE
+.6118	bd 03 6a	lda $6a03,x	        lda d_states+D_HANDLES+1,x
+.611b	8d 05 3d	sta $3d05	        sta N_HANDLE+1
+.611e	bd 04 6a	lda $6a04,x	        lda d_states+D_HANDLES+2,x
+.6121	8d 06 3d	sta $3d06	        sta N_HANDLE+2
+.6124	bd 05 6a	lda $6a05,x	        lda d_states+D_HANDLES+3,x
+.6127	8d 07 3d	sta $3d07	        sta N_HANDLE+3
+.612a	60		rts		        rts
+.612b					doc_select:
+.612b	ad d7 69	lda $69d7	        lda d_at+2
+.612e	0a		asl a		        asl
+.612f	0a		asl a		        asl
+.6130	0a		asl a		        asl
+.6131	0a		asl a		        asl
+.6132	8d f1 69	sta $69f1	        sta d_index
+.6135	ad d6 69	lda $69d6	        lda d_at+1
+.6138	4a		lsr a		        lsr
+.6139	4a		lsr a		        lsr
+.613a	4a		lsr a		        lsr
+.613b	4a		lsr a		        lsr
+.613c	0d f1 69	ora $69f1	        ora d_index
+.613f	8d f1 69	sta $69f1	        sta d_index
+.6142	ae cb 69	ldx $69cb	        ldx d_slot
+.6145	dd ff 69	cmp $69ff,x	        cmp d_states+D_CHUNKS,x
+.6148	90 03		bcc $614d	        bcs doc_corrupt
+.614a	4c 3e 60	jmp $603e
+.614d	20 01 61	jsr $6101	        jsr doc_handle_index
+.6150	20 0c 61	jsr $610c	        jsr doc_get_handle
+.6153	ad d5 69	lda $69d5	        lda d_at
+.6156	8d 08 3d	sta $3d08	        sta N_OFFSET
+.6159	ad d6 69	lda $69d6	        lda d_at+1
+.615c	29 0f		and #$0f	        and #15
+.615e	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.6161	ad e4 69	lda $69e4	        lda d_n
+.6164	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.6167	ad e5 69	lda $69e5	        lda d_n+1
+.616a	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.616d	4c 32 60	jmp $6032	        jmp doc_ok
+.6170					doc_size:
+.6170	a9 00		lda #$00	        lda #0
+.6172	8d e4 69	sta $69e4	        sta d_n
+.6175	8d e6 69	sta $69e6	        sta d_n+2
+.6178	a9 02		lda #$02	        lda #2
+.617a	8d e5 69	sta $69e5	        sta d_n+1
+.617d	ad e3 69	lda $69e3	        lda d_left+2
+.6180	d0 13		bne $6195	        bne doc_size_done
+.6182	ad e2 69	lda $69e2	        lda d_left+1
+.6185	c9 02		cmp #$02	        cmp #2
+.6187	b0 0c		bcs $6195	        bcs doc_size_done
+.6189	ad e1 69	lda $69e1	        lda d_left
+.618c	8d e4 69	sta $69e4	        sta d_n
+.618f	ad e2 69	lda $69e2	        lda d_left+1
+.6192	8d e5 69	sta $69e5	        sta d_n+1
+.6195					doc_size_done:
+.6195	60		rts		        rts
+.6196					doc_forward_limit:
+.6196	ad d6 69	lda $69d6	        lda d_at+1
+.6199	29 0f		and #$0f	        and #15
+.619b	8d ee 69	sta $69ee	        sta d_bound+1
+.619e	38		sec		        sec
+.619f	a9 00		lda #$00	        lda #0
+.61a1	ed d5 69	sbc $69d5	        sbc d_at
+.61a4	8d ed 69	sta $69ed	        sta d_bound
+.61a7	a9 10		lda #$10	        lda #16
+.61a9	ed ee 69	sbc $69ee	        sbc d_bound+1
+.61ac	8d ee 69	sta $69ee	        sta d_bound+1
+.61af	4c ca 61	jmp $61ca	        jmp doc_bound_limit
+.61b2					doc_backward_limit:
+.61b2	ad d5 69	lda $69d5	        lda d_at
+.61b5	8d ed 69	sta $69ed	        sta d_bound
+.61b8	ad d6 69	lda $69d6	        lda d_at+1
+.61bb	29 0f		and #$0f	        and #15
+.61bd	8d ee 69	sta $69ee	        sta d_bound+1
+.61c0	0d ed 69	ora $69ed	        ora d_bound
+.61c3	d0 05		bne $61ca	        bne doc_bound_limit
+.61c5	a9 10		lda #$10	        lda #16
+.61c7	8d ee 69	sta $69ee	        sta d_bound+1
+.61ca					doc_bound_limit:
+.61ca	ad ee 69	lda $69ee	        lda d_bound+1
+.61cd	cd e5 69	cmp $69e5	        cmp d_n+1
+.61d0	90 0a		bcc $61dc	        bcc doc_use_bound
+.61d2	d0 14		bne $61e8	        bne doc_bound_done
+.61d4	ad ed 69	lda $69ed	        lda d_bound
+.61d7	cd e4 69	cmp $69e4	        cmp d_n
+.61da	b0 0c		bcs $61e8	        bcs doc_bound_done
+.61dc					doc_use_bound:
+.61dc	ad ed 69	lda $69ed	        lda d_bound
+.61df	8d e4 69	sta $69e4	        sta d_n
+.61e2	ad ee 69	lda $69ee	        lda d_bound+1
+.61e5	8d e5 69	sta $69e5	        sta d_n+1
+.61e8					doc_bound_done:
+.61e8	60		rts		        rts
+.61e9					doc_move_forward:
+.61e9	ad e1 69	lda $69e1	        lda d_left
+.61ec	0d e2 69	ora $69e2	        ora d_left+1
+.61ef	0d e3 69	ora $69e3	        ora d_left+2
+.61f2	d0 03		bne $61f7	        beq doc_move_done
+.61f4	4c 1d 63	jmp $631d
+.61f7	20 70 61	jsr $6170	        jsr doc_size
+.61fa	ad db 69	lda $69db	        lda d_src
+.61fd	8d d5 69	sta $69d5	        sta d_at
+.6200	ad dc 69	lda $69dc	        lda d_src+1
+.6203	8d d6 69	sta $69d6	        sta d_at+1
+.6206	ad dd 69	lda $69dd	        lda d_src+2
+.6209	8d d7 69	sta $69d7	        sta d_at+2
+.620c	20 96 61	jsr $6196	        jsr doc_forward_limit
+.620f	ad de 69	lda $69de	        lda d_dst
+.6212	8d d5 69	sta $69d5	        sta d_at
+.6215	ad df 69	lda $69df	        lda d_dst+1
+.6218	8d d6 69	sta $69d6	        sta d_at+1
+.621b	ad e0 69	lda $69e0	        lda d_dst+2
+.621e	8d d7 69	sta $69d7	        sta d_at+2
+.6221	20 96 61	jsr $6196	        jsr doc_forward_limit
+.6224	20 20 63	jsr $6320	        jsr doc_move_piece
+.6227	90 03		bcc $622c	        bcs doc_return
+.6229	4c ac 60	jmp $60ac
+.622c	18		clc		        clc
+.622d	ad db 69	lda $69db	        lda d_src
+.6230	6d e4 69	adc $69e4	        adc d_n
+.6233	8d db 69	sta $69db	        sta d_src
+.6236	ad dc 69	lda $69dc	        lda d_src+1
+.6239	6d e5 69	adc $69e5	        adc d_n+1
+.623c	8d dc 69	sta $69dc	        sta d_src+1
+.623f	ad dd 69	lda $69dd	        lda d_src+2
+.6242	6d e6 69	adc $69e6	        adc d_n+2
+.6245	8d dd 69	sta $69dd	        sta d_src+2
+.6248	18		clc		        clc
+.6249	ad de 69	lda $69de	        lda d_dst
+.624c	6d e4 69	adc $69e4	        adc d_n
+.624f	8d de 69	sta $69de	        sta d_dst
+.6252	ad df 69	lda $69df	        lda d_dst+1
+.6255	6d e5 69	adc $69e5	        adc d_n+1
+.6258	8d df 69	sta $69df	        sta d_dst+1
+.625b	ad e0 69	lda $69e0	        lda d_dst+2
+.625e	6d e6 69	adc $69e6	        adc d_n+2
+.6261	8d e0 69	sta $69e0	        sta d_dst+2
+.6264	38		sec		        sec
+.6265	ad e1 69	lda $69e1	        lda d_left
+.6268	ed e4 69	sbc $69e4	        sbc d_n
+.626b	8d e1 69	sta $69e1	        sta d_left
+.626e	ad e2 69	lda $69e2	        lda d_left+1
+.6271	ed e5 69	sbc $69e5	        sbc d_n+1
+.6274	8d e2 69	sta $69e2	        sta d_left+1
+.6277	ad e3 69	lda $69e3	        lda d_left+2
+.627a	ed e6 69	sbc $69e6	        sbc d_n+2
+.627d	8d e3 69	sta $69e3	        sta d_left+2
+.6280	4c e9 61	jmp $61e9	        jmp doc_move_forward
+.6283					doc_move_backward:
+.6283	ad e1 69	lda $69e1	        lda d_left
+.6286	0d e2 69	ora $69e2	        ora d_left+1
+.6289	0d e3 69	ora $69e3	        ora d_left+2
+.628c	d0 03		bne $6291	        beq doc_move_done
+.628e	4c 1d 63	jmp $631d
+.6291	20 70 61	jsr $6170	        jsr doc_size
+.6294	ad db 69	lda $69db	        lda d_src
+.6297	8d d5 69	sta $69d5	        sta d_at
+.629a	ad dc 69	lda $69dc	        lda d_src+1
+.629d	8d d6 69	sta $69d6	        sta d_at+1
+.62a0	ad dd 69	lda $69dd	        lda d_src+2
+.62a3	8d d7 69	sta $69d7	        sta d_at+2
+.62a6	20 b2 61	jsr $61b2	        jsr doc_backward_limit
+.62a9	ad de 69	lda $69de	        lda d_dst
+.62ac	8d d5 69	sta $69d5	        sta d_at
+.62af	ad df 69	lda $69df	        lda d_dst+1
+.62b2	8d d6 69	sta $69d6	        sta d_at+1
+.62b5	ad e0 69	lda $69e0	        lda d_dst+2
+.62b8	8d d7 69	sta $69d7	        sta d_at+2
+.62bb	20 b2 61	jsr $61b2	        jsr doc_backward_limit
+.62be	38		sec		        sec
+.62bf	ad db 69	lda $69db	        lda d_src
+.62c2	ed e4 69	sbc $69e4	        sbc d_n
+.62c5	8d db 69	sta $69db	        sta d_src
+.62c8	ad dc 69	lda $69dc	        lda d_src+1
+.62cb	ed e5 69	sbc $69e5	        sbc d_n+1
+.62ce	8d dc 69	sta $69dc	        sta d_src+1
+.62d1	ad dd 69	lda $69dd	        lda d_src+2
+.62d4	ed e6 69	sbc $69e6	        sbc d_n+2
+.62d7	8d dd 69	sta $69dd	        sta d_src+2
+.62da	38		sec		        sec
+.62db	ad de 69	lda $69de	        lda d_dst
+.62de	ed e4 69	sbc $69e4	        sbc d_n
+.62e1	8d de 69	sta $69de	        sta d_dst
+.62e4	ad df 69	lda $69df	        lda d_dst+1
+.62e7	ed e5 69	sbc $69e5	        sbc d_n+1
+.62ea	8d df 69	sta $69df	        sta d_dst+1
+.62ed	ad e0 69	lda $69e0	        lda d_dst+2
+.62f0	ed e6 69	sbc $69e6	        sbc d_n+2
+.62f3	8d e0 69	sta $69e0	        sta d_dst+2
+.62f6	20 20 63	jsr $6320	        jsr doc_move_piece
+.62f9	90 03		bcc $62fe	        bcs doc_return
+.62fb	4c ac 60	jmp $60ac
+.62fe	38		sec		        sec
+.62ff	ad e1 69	lda $69e1	        lda d_left
+.6302	ed e4 69	sbc $69e4	        sbc d_n
+.6305	8d e1 69	sta $69e1	        sta d_left
+.6308	ad e2 69	lda $69e2	        lda d_left+1
+.630b	ed e5 69	sbc $69e5	        sbc d_n+1
+.630e	8d e2 69	sta $69e2	        sta d_left+1
+.6311	ad e3 69	lda $69e3	        lda d_left+2
+.6314	ed e6 69	sbc $69e6	        sbc d_n+2
+.6317	8d e3 69	sta $69e3	        sta d_left+2
+.631a	4c 83 62	jmp $6283	        jmp doc_move_backward
+.631d					doc_move_done:
+.631d	4c 32 60	jmp $6032	        jmp doc_ok
+.6320					doc_move_piece:
+.6320	ad db 69	lda $69db	        lda d_src
+.6323	8d d5 69	sta $69d5	        sta d_at
+.6326	ad dc 69	lda $69dc	        lda d_src+1
+.6329	8d d6 69	sta $69d6	        sta d_at+1
+.632c	ad dd 69	lda $69dd	        lda d_src+2
+.632f	8d d7 69	sta $69d7	        sta d_at+2
+.6332	20 2b 61	jsr $612b	        jsr doc_select
+.6335	90 03		bcc $633a	        bcs doc_fault
+.6337	4c 42 60	jmp $6042
+.633a	20 26 1c	jsr $1c26	        jsr N_READ
+.633d	b0 f8		bcs $6337	        bcs doc_fault
+.633f	ad de 69	lda $69de	        lda d_dst
+.6342	8d d5 69	sta $69d5	        sta d_at
+.6345	ad df 69	lda $69df	        lda d_dst+1
+.6348	8d d6 69	sta $69d6	        sta d_at+1
+.634b	ad e0 69	lda $69e0	        lda d_dst+2
+.634e	8d d7 69	sta $69d7	        sta d_at+2
+.6351	20 2b 61	jsr $612b	        jsr doc_select
+.6354	b0 e1		bcs $6337	        bcs doc_fault
+.6356	20 29 1c	jsr $1c29	        jsr N_WRITE
+.6359	b0 dc		bcs $6337	        bcs doc_fault
+.635b	60		rts		        rts
+.635c					doc_seek_gap:
+.635c	ae cb 69	ldx $69cb	        ldx d_slot
+.635f	bd f5 69	lda $69f5,x	        lda d_states+D_GAP,x
+.6362	8d de 69	sta $69de	        sta d_dst
+.6365	bd f6 69	lda $69f6,x	        lda d_states+D_GAP+1,x
+.6368	8d df 69	sta $69df	        sta d_dst+1
+.636b	bd f7 69	lda $69f7,x	        lda d_states+D_GAP+2,x
+.636e	8d e0 69	sta $69e0	        sta d_dst+2
+.6371	ad cf 69	lda $69cf	        lda d_pos+2
+.6374	cd e0 69	cmp $69e0	        cmp d_dst+2
+.6377	d0 0e		bne $6387	        bne +
+.6379	ad ce 69	lda $69ce	        lda d_pos+1
+.637c	cd df 69	cmp $69df	        cmp d_dst+1
+.637f	d0 06		bne $6387	        bne +
+.6381	ad cd 69	lda $69cd	        lda d_pos
+.6384	cd de 69	cmp $69de	        cmp d_dst
+.6387					+
+.6387	f0 94		beq $631d	        beq doc_move_done
+.6389	90 78		bcc $6403	        bcc doc_seek_left
+.638b	ae cb 69	ldx $69cb	        ldx d_slot
+.638e	bd f8 69	lda $69f8,x	        lda d_states+D_END,x
+.6391	8d db 69	sta $69db	        sta d_src
+.6394	bd f9 69	lda $69f9,x	        lda d_states+D_END+1,x
+.6397	8d dc 69	sta $69dc	        sta d_src+1
+.639a	bd fa 69	lda $69fa,x	        lda d_states+D_END+2,x
+.639d	8d dd 69	sta $69dd	        sta d_src+2
+.63a0	ad cd 69	lda $69cd	        lda d_pos
+.63a3	8d e1 69	sta $69e1	        sta d_left
+.63a6	ad ce 69	lda $69ce	        lda d_pos+1
+.63a9	8d e2 69	sta $69e2	        sta d_left+1
+.63ac	ad cf 69	lda $69cf	        lda d_pos+2
+.63af	8d e3 69	sta $69e3	        sta d_left+2
+.63b2	38		sec		        sec
+.63b3	ad e1 69	lda $69e1	        lda d_left
+.63b6	ed de 69	sbc $69de	        sbc d_dst
+.63b9	8d e1 69	sta $69e1	        sta d_left
+.63bc	ad e2 69	lda $69e2	        lda d_left+1
+.63bf	ed df 69	sbc $69df	        sbc d_dst+1
+.63c2	8d e2 69	sta $69e2	        sta d_left+1
+.63c5	ad e3 69	lda $69e3	        lda d_left+2
+.63c8	ed e0 69	sbc $69e0	        sbc d_dst+2
+.63cb	8d e3 69	sta $69e3	        sta d_left+2
+.63ce	20 e9 61	jsr $61e9	        jsr doc_move_forward
+.63d1	90 03		bcc $63d6	        bcs doc_return
+.63d3	4c ac 60	jmp $60ac
+.63d6	ae cb 69	ldx $69cb	        ldx d_slot
+.63d9	ad de 69	lda $69de	        lda d_dst
+.63dc	9d f5 69	sta $69f5,x	        sta d_states+D_GAP,x
+.63df	ad df 69	lda $69df	        lda d_dst+1
+.63e2	9d f6 69	sta $69f6,x	        sta d_states+D_GAP+1,x
+.63e5	ad e0 69	lda $69e0	        lda d_dst+2
+.63e8	9d f7 69	sta $69f7,x	        sta d_states+D_GAP+2,x
+.63eb	ae cb 69	ldx $69cb	        ldx d_slot
+.63ee	ad db 69	lda $69db	        lda d_src
+.63f1	9d f8 69	sta $69f8,x	        sta d_states+D_END,x
+.63f4	ad dc 69	lda $69dc	        lda d_src+1
+.63f7	9d f9 69	sta $69f9,x	        sta d_states+D_END+1,x
+.63fa	ad dd 69	lda $69dd	        lda d_src+2
+.63fd	9d fa 69	sta $69fa,x	        sta d_states+D_END+2,x
+.6400	4c 32 60	jmp $6032	        jmp doc_ok
+.6403					doc_seek_left:
+.6403	ad de 69	lda $69de	        lda d_dst
+.6406	8d db 69	sta $69db	        sta d_src
+.6409	ad df 69	lda $69df	        lda d_dst+1
+.640c	8d dc 69	sta $69dc	        sta d_src+1
+.640f	ad e0 69	lda $69e0	        lda d_dst+2
+.6412	8d dd 69	sta $69dd	        sta d_src+2
+.6415	ae cb 69	ldx $69cb	        ldx d_slot
+.6418	bd f8 69	lda $69f8,x	        lda d_states+D_END,x
+.641b	8d de 69	sta $69de	        sta d_dst
+.641e	bd f9 69	lda $69f9,x	        lda d_states+D_END+1,x
+.6421	8d df 69	sta $69df	        sta d_dst+1
+.6424	bd fa 69	lda $69fa,x	        lda d_states+D_END+2,x
+.6427	8d e0 69	sta $69e0	        sta d_dst+2
+.642a	ad db 69	lda $69db	        lda d_src
+.642d	8d e1 69	sta $69e1	        sta d_left
+.6430	ad dc 69	lda $69dc	        lda d_src+1
+.6433	8d e2 69	sta $69e2	        sta d_left+1
+.6436	ad dd 69	lda $69dd	        lda d_src+2
+.6439	8d e3 69	sta $69e3	        sta d_left+2
+.643c	38		sec		        sec
+.643d	ad e1 69	lda $69e1	        lda d_left
+.6440	ed cd 69	sbc $69cd	        sbc d_pos
+.6443	8d e1 69	sta $69e1	        sta d_left
+.6446	ad e2 69	lda $69e2	        lda d_left+1
+.6449	ed ce 69	sbc $69ce	        sbc d_pos+1
+.644c	8d e2 69	sta $69e2	        sta d_left+1
+.644f	ad e3 69	lda $69e3	        lda d_left+2
+.6452	ed cf 69	sbc $69cf	        sbc d_pos+2
+.6455	8d e3 69	sta $69e3	        sta d_left+2
+.6458	20 83 62	jsr $6283	        jsr doc_move_backward
+.645b	90 03		bcc $6460	        bcs doc_return
+.645d	4c ac 60	jmp $60ac
+.6460	ae cb 69	ldx $69cb	        ldx d_slot
+.6463	ad db 69	lda $69db	        lda d_src
+.6466	9d f5 69	sta $69f5,x	        sta d_states+D_GAP,x
+.6469	ad dc 69	lda $69dc	        lda d_src+1
+.646c	9d f6 69	sta $69f6,x	        sta d_states+D_GAP+1,x
+.646f	ad dd 69	lda $69dd	        lda d_src+2
+.6472	9d f7 69	sta $69f7,x	        sta d_states+D_GAP+2,x
+.6475	ae cb 69	ldx $69cb	        ldx d_slot
+.6478	ad de 69	lda $69de	        lda d_dst
+.647b	9d f8 69	sta $69f8,x	        sta d_states+D_END,x
+.647e	ad df 69	lda $69df	        lda d_dst+1
+.6481	9d f9 69	sta $69f9,x	        sta d_states+D_END+1,x
+.6484	ad e0 69	lda $69e0	        lda d_dst+2
+.6487	9d fa 69	sta $69fa,x	        sta d_states+D_END+2,x
+.648a	4c 32 60	jmp $6032	        jmp doc_ok
+.648d					doc_grow:
+.648d	ae cb 69	ldx $69cb	        ldx d_slot
+.6490	bd ff 69	lda $69ff,x	        lda d_states+D_CHUNKS,x
+.6493	c9 18		cmp #$18	        cmp #D_MAXCHUNKS
+.6495	90 04		bcc $649b	        bcc doc_allocate
+.6497	a9 02		lda #$02	        lda #N_NOMEM
+.6499	38		sec		        sec
+.649a	60		rts		        rts
+.649b					doc_allocate:
+.649b	ad cc 69	lda $69cc	        lda d_owner
+.649e	8d 00 3d	sta $3d00	        sta N_OWNER
+.64a1	a9 10		lda #$10	        lda #16
+.64a3	8d 01 3d	sta $3d01	        sta N_PAGES
+.64a6	a9 ff		lda #$ff	        lda #$ff
+.64a8	8d 02 3d	sta $3d02	        sta N_BANK
+.64ab	20 20 1c	jsr $1c20	        jsr N_ALLOC
+.64ae	b0 ad		bcs $645d	        bcs doc_return
+.64b0	ae cb 69	ldx $69cb	        ldx d_slot
+.64b3	bd ff 69	lda $69ff,x	        lda d_states+D_CHUNKS,x
+.64b6	8d f1 69	sta $69f1	        sta d_index
+.64b9	fe ff 69	inc $69ff,x	        inc d_states+D_CHUNKS,x
+.64bc	20 01 61	jsr $6101	        jsr doc_handle_index
+.64bf	ad 04 3d	lda $3d04	        lda N_HANDLE
+.64c2	9d 02 6a	sta $6a02,x	        sta d_states+D_HANDLES,x
+.64c5	ad 05 3d	lda $3d05	        lda N_HANDLE+1
+.64c8	9d 03 6a	sta $6a03,x	        sta d_states+D_HANDLES+1,x
+.64cb	ad 06 3d	lda $3d06	        lda N_HANDLE+2
+.64ce	9d 04 6a	sta $6a04,x	        sta d_states+D_HANDLES+2,x
+.64d1	ad 07 3d	lda $3d07	        lda N_HANDLE+3
+.64d4	9d 05 6a	sta $6a05,x	        sta d_states+D_HANDLES+3,x
+.64d7	ae cb 69	ldx $69cb	        ldx d_slot
+.64da	bd fb 69	lda $69fb,x	        lda d_states+D_CAP,x
+.64dd	8d db 69	sta $69db	        sta d_src
+.64e0	bd fc 69	lda $69fc,x	        lda d_states+D_CAP+1,x
+.64e3	8d dc 69	sta $69dc	        sta d_src+1
+.64e6	bd fd 69	lda $69fd,x	        lda d_states+D_CAP+2,x
+.64e9	8d dd 69	sta $69dd	        sta d_src+2
+.64ec	ad db 69	lda $69db	        lda d_src
+.64ef	8d de 69	sta $69de	        sta d_dst
+.64f2	ad dc 69	lda $69dc	        lda d_src+1
+.64f5	8d df 69	sta $69df	        sta d_dst+1
+.64f8	ad dd 69	lda $69dd	        lda d_src+2
+.64fb	8d e0 69	sta $69e0	        sta d_dst+2
+.64fe	18		clc		        clc
+.64ff	ad df 69	lda $69df	        lda d_dst+1
+.6502	69 10		adc #$10	        adc #16
+.6504	8d df 69	sta $69df	        sta d_dst+1
+.6507	90 03		bcc $650c	        bcc +
+.6509	ee e0 69	inc $69e0	        inc d_dst+2
+.650c					+
+.650c	ae cb 69	ldx $69cb	        ldx d_slot
+.650f	ad de 69	lda $69de	        lda d_dst
+.6512	9d fb 69	sta $69fb,x	        sta d_states+D_CAP,x
+.6515	ad df 69	lda $69df	        lda d_dst+1
+.6518	9d fc 69	sta $69fc,x	        sta d_states+D_CAP+1,x
+.651b	ad e0 69	lda $69e0	        lda d_dst+2
+.651e	9d fd 69	sta $69fd,x	        sta d_states+D_CAP+2,x
+.6521	ad db 69	lda $69db	        lda d_src
+.6524	8d e1 69	sta $69e1	        sta d_left
+.6527	ad dc 69	lda $69dc	        lda d_src+1
+.652a	8d e2 69	sta $69e2	        sta d_left+1
+.652d	ad dd 69	lda $69dd	        lda d_src+2
+.6530	8d e3 69	sta $69e3	        sta d_left+2
+.6533	ae cb 69	ldx $69cb	        ldx d_slot
+.6536	bd f8 69	lda $69f8,x	        lda d_states+D_END,x
+.6539	8d d5 69	sta $69d5	        sta d_at
+.653c	bd f9 69	lda $69f9,x	        lda d_states+D_END+1,x
+.653f	8d d6 69	sta $69d6	        sta d_at+1
+.6542	bd fa 69	lda $69fa,x	        lda d_states+D_END+2,x
+.6545	8d d7 69	sta $69d7	        sta d_at+2
+.6548	38		sec		        sec
+.6549	ad e1 69	lda $69e1	        lda d_left
+.654c	ed d5 69	sbc $69d5	        sbc d_at
+.654f	8d e1 69	sta $69e1	        sta d_left
+.6552	ad e2 69	lda $69e2	        lda d_left+1
+.6555	ed d6 69	sbc $69d6	        sbc d_at+1
+.6558	8d e2 69	sta $69e2	        sta d_left+1
+.655b	ad e3 69	lda $69e3	        lda d_left+2
+.655e	ed d7 69	sbc $69d7	        sbc d_at+2
+.6561	8d e3 69	sta $69e3	        sta d_left+2
+.6564	20 83 62	jsr $6283	        jsr doc_move_backward
+.6567	90 03		bcc $656c	        bcs doc_return
+.6569	4c ac 60	jmp $60ac
+.656c	ae cb 69	ldx $69cb	        ldx d_slot
+.656f	ad de 69	lda $69de	        lda d_dst
+.6572	9d f8 69	sta $69f8,x	        sta d_states+D_END,x
+.6575	ad df 69	lda $69df	        lda d_dst+1
+.6578	9d f9 69	sta $69f9,x	        sta d_states+D_END+1,x
+.657b	ad e0 69	lda $69e0	        lda d_dst+2
+.657e	9d fa 69	sta $69fa,x	        sta d_states+D_END+2,x
+.6581	4c 32 60	jmp $6032	        jmp doc_ok
+.6584					doc_insert:
+.6584	20 5c 60	jsr $605c	        jsr doc_prepare
+.6587	b0 e0		bcs $6569	        bcs doc_return
+.6589	ae cb 69	ldx $69cb	        ldx d_slot
+.658c	bd f8 69	lda $69f8,x	        lda d_states+D_END,x
+.658f	8d e7 69	sta $69e7	        sta d_limit
+.6592	bd f9 69	lda $69f9,x	        lda d_states+D_END+1,x
+.6595	8d e8 69	sta $69e8	        sta d_limit+1
+.6598	bd fa 69	lda $69fa,x	        lda d_states+D_END+2,x
+.659b	8d e9 69	sta $69e9	        sta d_limit+2
+.659e	ae cb 69	ldx $69cb	        ldx d_slot
+.65a1	bd f5 69	lda $69f5,x	        lda d_states+D_GAP,x
+.65a4	8d d5 69	sta $69d5	        sta d_at
+.65a7	bd f6 69	lda $69f6,x	        lda d_states+D_GAP+1,x
+.65aa	8d d6 69	sta $69d6	        sta d_at+1
+.65ad	bd f7 69	lda $69f7,x	        lda d_states+D_GAP+2,x
+.65b0	8d d7 69	sta $69d7	        sta d_at+2
+.65b3	38		sec		        sec
+.65b4	ad e7 69	lda $69e7	        lda d_limit
+.65b7	ed d5 69	sbc $69d5	        sbc d_at
+.65ba	8d e7 69	sta $69e7	        sta d_limit
+.65bd	ad e8 69	lda $69e8	        lda d_limit+1
+.65c0	ed d6 69	sbc $69d6	        sbc d_at+1
+.65c3	8d e8 69	sta $69e8	        sta d_limit+1
+.65c6	ad e9 69	lda $69e9	        lda d_limit+2
+.65c9	ed d7 69	sbc $69d7	        sbc d_at+2
+.65cc	8d e9 69	sta $69e9	        sta d_limit+2
+.65cf	ad e9 69	lda $69e9	        lda d_limit+2
+.65d2	cd d2 69	cmp $69d2	        cmp d_count+2
+.65d5	d0 0e		bne $65e5	        bne +
+.65d7	ad e8 69	lda $69e8	        lda d_limit+1
+.65da	cd d1 69	cmp $69d1	        cmp d_count+1
+.65dd	d0 06		bne $65e5	        bne +
+.65df	ad e7 69	lda $69e7	        lda d_limit
+.65e2	cd d0 69	cmp $69d0	        cmp d_count
+.65e5					+
+.65e5	b0 08		bcs $65ef	        bcs doc_insert_room
+.65e7	20 8d 64	jsr $648d	        jsr doc_grow
+.65ea	90 03		bcc $65ef	        bcs doc_return
+.65ec	4c ac 60	jmp $60ac
+.65ef					doc_insert_room:
+.65ef	20 5c 63	jsr $635c	        jsr doc_seek_gap
+.65f2	b0 f8		bcs $65ec	        bcs doc_return
+.65f4	ae cb 69	ldx $69cb	        ldx d_slot
+.65f7	bd f5 69	lda $69f5,x	        lda d_states+D_GAP,x
+.65fa	8d d5 69	sta $69d5	        sta d_at
+.65fd	bd f6 69	lda $69f6,x	        lda d_states+D_GAP+1,x
+.6600	8d d6 69	sta $69d6	        sta d_at+1
+.6603	bd f7 69	lda $69f7,x	        lda d_states+D_GAP+2,x
+.6606	8d d7 69	sta $69d7	        sta d_at+2
+.6609	ad d0 69	lda $69d0	        lda d_count
+.660c	8d e1 69	sta $69e1	        sta d_left
+.660f	ad d1 69	lda $69d1	        lda d_count+1
+.6612	8d e2 69	sta $69e2	        sta d_left+1
+.6615	ad d2 69	lda $69d2	        lda d_count+2
+.6618	8d e3 69	sta $69e3	        sta d_left+2
+.661b	a9 00		lda #$00	        lda #0
+.661d	8d d3 69	sta $69d3	        sta d_actual
+.6620	8d d4 69	sta $69d4	        sta d_actual+1
+.6623					doc_insert_loop:
+.6623	20 70 61	jsr $6170	        jsr doc_size
+.6626	20 96 61	jsr $6196	        jsr doc_forward_limit
+.6629	20 61 69	jsr $6961	        jsr doc_input_to_buffer
+.662c	20 2b 61	jsr $612b	        jsr doc_select
+.662f	90 03		bcc $6634	        bcs doc_fault
+.6631	4c 42 60	jmp $6042
+.6634	20 29 1c	jsr $1c29	        jsr N_WRITE
+.6637	b0 f8		bcs $6631	        bcs doc_fault
+.6639	18		clc		        clc
+.663a	ad d5 69	lda $69d5	        lda d_at
+.663d	6d e4 69	adc $69e4	        adc d_n
+.6640	8d d5 69	sta $69d5	        sta d_at
+.6643	ad d6 69	lda $69d6	        lda d_at+1
+.6646	6d e5 69	adc $69e5	        adc d_n+1
+.6649	8d d6 69	sta $69d6	        sta d_at+1
+.664c	ad d7 69	lda $69d7	        lda d_at+2
+.664f	6d e6 69	adc $69e6	        adc d_n+2
+.6652	8d d7 69	sta $69d7	        sta d_at+2
+.6655	38		sec		        sec
+.6656	ad e1 69	lda $69e1	        lda d_left
+.6659	ed e4 69	sbc $69e4	        sbc d_n
+.665c	8d e1 69	sta $69e1	        sta d_left
+.665f	ad e2 69	lda $69e2	        lda d_left+1
+.6662	ed e5 69	sbc $69e5	        sbc d_n+1
+.6665	8d e2 69	sta $69e2	        sta d_left+1
+.6668	ad e3 69	lda $69e3	        lda d_left+2
+.666b	ed e6 69	sbc $69e6	        sbc d_n+2
+.666e	8d e3 69	sta $69e3	        sta d_left+2
+.6671	20 4d 69	jsr $694d	        jsr doc_actual_add
+.6674	ad e1 69	lda $69e1	        lda d_left
+.6677	0d e2 69	ora $69e2	        ora d_left+1
+.667a	d0 a7		bne $6623	        bne doc_insert_loop
+.667c	ae cb 69	ldx $69cb	        ldx d_slot
+.667f	ad d5 69	lda $69d5	        lda d_at
+.6682	9d f5 69	sta $69f5,x	        sta d_states+D_GAP,x
+.6685	ad d6 69	lda $69d6	        lda d_at+1
+.6688	9d f6 69	sta $69f6,x	        sta d_states+D_GAP+1,x
+.668b	ad d7 69	lda $69d7	        lda d_at+2
+.668e	9d f7 69	sta $69f7,x	        sta d_states+D_GAP+2,x
+.6691	ae cb 69	ldx $69cb	        ldx d_slot
+.6694	bd f2 69	lda $69f2,x	        lda d_states+D_LEN,x
+.6697	8d e7 69	sta $69e7	        sta d_limit
+.669a	bd f3 69	lda $69f3,x	        lda d_states+D_LEN+1,x
+.669d	8d e8 69	sta $69e8	        sta d_limit+1
+.66a0	bd f4 69	lda $69f4,x	        lda d_states+D_LEN+2,x
+.66a3	8d e9 69	sta $69e9	        sta d_limit+2
+.66a6	18		clc		        clc
+.66a7	ad e7 69	lda $69e7	        lda d_limit
+.66aa	6d d0 69	adc $69d0	        adc d_count
+.66ad	8d e7 69	sta $69e7	        sta d_limit
+.66b0	ad e8 69	lda $69e8	        lda d_limit+1
+.66b3	6d d1 69	adc $69d1	        adc d_count+1
+.66b6	8d e8 69	sta $69e8	        sta d_limit+1
+.66b9	ad e9 69	lda $69e9	        lda d_limit+2
+.66bc	6d d2 69	adc $69d2	        adc d_count+2
+.66bf	8d e9 69	sta $69e9	        sta d_limit+2
+.66c2	ae cb 69	ldx $69cb	        ldx d_slot
+.66c5	ad e7 69	lda $69e7	        lda d_limit
+.66c8	9d f2 69	sta $69f2,x	        sta d_states+D_LEN,x
+.66cb	ad e8 69	lda $69e8	        lda d_limit+1
+.66ce	9d f3 69	sta $69f3,x	        sta d_states+D_LEN+1,x
+.66d1	ad e9 69	lda $69e9	        lda d_limit+2
+.66d4	9d f4 69	sta $69f4,x	        sta d_states+D_LEN+2,x
+.66d7					doc_dirty:
+.66d7	ae cb 69	ldx $69cb	        ldx d_slot
+.66da	a9 01		lda #$01	        lda #1
+.66dc	9d fe 69	sta $69fe,x	        sta d_states+D_DIRTY,x
+.66df	4c 32 60	jmp $6032	        jmp doc_ok
+.66e2					doc_delete:
+.66e2	20 5c 60	jsr $605c	        jsr doc_prepare
+.66e5	90 03		bcc $66ea	        bcs doc_return
+.66e7	4c ac 60	jmp $60ac
+.66ea	38		sec		        sec
+.66eb	ad e7 69	lda $69e7	        lda d_limit
+.66ee	ed cd 69	sbc $69cd	        sbc d_pos
+.66f1	8d e7 69	sta $69e7	        sta d_limit
+.66f4	ad e8 69	lda $69e8	        lda d_limit+1
+.66f7	ed ce 69	sbc $69ce	        sbc d_pos+1
+.66fa	8d e8 69	sta $69e8	        sta d_limit+1
+.66fd	ad e9 69	lda $69e9	        lda d_limit+2
+.6700	ed cf 69	sbc $69cf	        sbc d_pos+2
+.6703	8d e9 69	sta $69e9	        sta d_limit+2
+.6706	ad e9 69	lda $69e9	        lda d_limit+2
+.6709	cd d2 69	cmp $69d2	        cmp d_count+2
+.670c	d0 0e		bne $671c	        bne +
+.670e	ad e8 69	lda $69e8	        lda d_limit+1
+.6711	cd d1 69	cmp $69d1	        cmp d_count+1
+.6714	d0 06		bne $671c	        bne +
+.6716	ad e7 69	lda $69e7	        lda d_limit
+.6719	cd d0 69	cmp $69d0	        cmp d_count
+.671c					+
+.671c	b0 03		bcs $6721	        bcc doc_range
+.671e	4c 3a 60	jmp $603a
+.6721	20 5c 63	jsr $635c	        jsr doc_seek_gap
+.6724	b0 c1		bcs $66e7	        bcs doc_return
+.6726	ae cb 69	ldx $69cb	        ldx d_slot
+.6729	bd f8 69	lda $69f8,x	        lda d_states+D_END,x
+.672c	8d e7 69	sta $69e7	        sta d_limit
+.672f	bd f9 69	lda $69f9,x	        lda d_states+D_END+1,x
+.6732	8d e8 69	sta $69e8	        sta d_limit+1
+.6735	bd fa 69	lda $69fa,x	        lda d_states+D_END+2,x
+.6738	8d e9 69	sta $69e9	        sta d_limit+2
+.673b	18		clc		        clc
+.673c	ad e7 69	lda $69e7	        lda d_limit
+.673f	6d d0 69	adc $69d0	        adc d_count
+.6742	8d e7 69	sta $69e7	        sta d_limit
+.6745	ad e8 69	lda $69e8	        lda d_limit+1
+.6748	6d d1 69	adc $69d1	        adc d_count+1
+.674b	8d e8 69	sta $69e8	        sta d_limit+1
+.674e	ad e9 69	lda $69e9	        lda d_limit+2
+.6751	6d d2 69	adc $69d2	        adc d_count+2
+.6754	8d e9 69	sta $69e9	        sta d_limit+2
+.6757	ae cb 69	ldx $69cb	        ldx d_slot
+.675a	ad e7 69	lda $69e7	        lda d_limit
+.675d	9d f8 69	sta $69f8,x	        sta d_states+D_END,x
+.6760	ad e8 69	lda $69e8	        lda d_limit+1
+.6763	9d f9 69	sta $69f9,x	        sta d_states+D_END+1,x
+.6766	ad e9 69	lda $69e9	        lda d_limit+2
+.6769	9d fa 69	sta $69fa,x	        sta d_states+D_END+2,x
+.676c	ae cb 69	ldx $69cb	        ldx d_slot
+.676f	bd f2 69	lda $69f2,x	        lda d_states+D_LEN,x
+.6772	8d e7 69	sta $69e7	        sta d_limit
+.6775	bd f3 69	lda $69f3,x	        lda d_states+D_LEN+1,x
+.6778	8d e8 69	sta $69e8	        sta d_limit+1
+.677b	bd f4 69	lda $69f4,x	        lda d_states+D_LEN+2,x
+.677e	8d e9 69	sta $69e9	        sta d_limit+2
+.6781	38		sec		        sec
+.6782	ad e7 69	lda $69e7	        lda d_limit
+.6785	ed d0 69	sbc $69d0	        sbc d_count
+.6788	8d e7 69	sta $69e7	        sta d_limit
+.678b	ad e8 69	lda $69e8	        lda d_limit+1
+.678e	ed d1 69	sbc $69d1	        sbc d_count+1
+.6791	8d e8 69	sta $69e8	        sta d_limit+1
+.6794	ad e9 69	lda $69e9	        lda d_limit+2
+.6797	ed d2 69	sbc $69d2	        sbc d_count+2
+.679a	8d e9 69	sta $69e9	        sta d_limit+2
+.679d	ae cb 69	ldx $69cb	        ldx d_slot
+.67a0	ad e7 69	lda $69e7	        lda d_limit
+.67a3	9d f2 69	sta $69f2,x	        sta d_states+D_LEN,x
+.67a6	ad e8 69	lda $69e8	        lda d_limit+1
+.67a9	9d f3 69	sta $69f3,x	        sta d_states+D_LEN+1,x
+.67ac	ad e9 69	lda $69e9	        lda d_limit+2
+.67af	9d f4 69	sta $69f4,x	        sta d_states+D_LEN+2,x
+.67b2	4c d7 66	jmp $66d7	        jmp doc_dirty
+.67b5					doc_read:
+.67b5	20 5c 60	jsr $605c	        jsr doc_prepare
+.67b8	90 03		bcc $67bd	        bcs doc_return
+.67ba	4c ac 60	jmp $60ac
+.67bd	ad e7 69	lda $69e7	        lda d_limit
+.67c0	8d e1 69	sta $69e1	        sta d_left
+.67c3	ad e8 69	lda $69e8	        lda d_limit+1
+.67c6	8d e2 69	sta $69e2	        sta d_left+1
+.67c9	ad e9 69	lda $69e9	        lda d_limit+2
+.67cc	8d e3 69	sta $69e3	        sta d_left+2
+.67cf	38		sec		        sec
+.67d0	ad e1 69	lda $69e1	        lda d_left
+.67d3	ed cd 69	sbc $69cd	        sbc d_pos
+.67d6	8d e1 69	sta $69e1	        sta d_left
+.67d9	ad e2 69	lda $69e2	        lda d_left+1
+.67dc	ed ce 69	sbc $69ce	        sbc d_pos+1
+.67df	8d e2 69	sta $69e2	        sta d_left+1
+.67e2	ad e3 69	lda $69e3	        lda d_left+2
+.67e5	ed cf 69	sbc $69cf	        sbc d_pos+2
+.67e8	8d e3 69	sta $69e3	        sta d_left+2
+.67eb	ad e3 69	lda $69e3	        lda d_left+2
+.67ee	cd d2 69	cmp $69d2	        cmp d_count+2
+.67f1	d0 0e		bne $6801	        bne +
+.67f3	ad e2 69	lda $69e2	        lda d_left+1
+.67f6	cd d1 69	cmp $69d1	        cmp d_count+1
+.67f9	d0 06		bne $6801	        bne +
+.67fb	ad e1 69	lda $69e1	        lda d_left
+.67fe	cd d0 69	cmp $69d0	        cmp d_count
+.6801					+
+.6801	90 12		bcc $6815	        bcc doc_read_short
+.6803	ad d0 69	lda $69d0	        lda d_count
+.6806	8d e1 69	sta $69e1	        sta d_left
+.6809	ad d1 69	lda $69d1	        lda d_count+1
+.680c	8d e2 69	sta $69e2	        sta d_left+1
+.680f	ad d2 69	lda $69d2	        lda d_count+2
+.6812	8d e3 69	sta $69e3	        sta d_left+2
+.6815					doc_read_short:
+.6815	ad cd 69	lda $69cd	        lda d_pos
+.6818	8d d8 69	sta $69d8	        sta d_cur
+.681b	ad ce 69	lda $69ce	        lda d_pos+1
+.681e	8d d9 69	sta $69d9	        sta d_cur+1
+.6821	ad cf 69	lda $69cf	        lda d_pos+2
+.6824	8d da 69	sta $69da	        sta d_cur+2
+.6827	a9 00		lda #$00	        lda #0
+.6829	8d d3 69	sta $69d3	        sta d_actual
+.682c	8d d4 69	sta $69d4	        sta d_actual+1
+.682f					doc_read_loop:
+.682f	ad e1 69	lda $69e1	        lda d_left
+.6832	0d e2 69	ora $69e2	        ora d_left+1
+.6835	d0 03		bne $683a	        beq doc_move_done
+.6837	4c 1d 63	jmp $631d
+.683a	20 70 61	jsr $6170	        jsr doc_size
+.683d	ad d8 69	lda $69d8	        lda d_cur
+.6840	8d d5 69	sta $69d5	        sta d_at
+.6843	ad d9 69	lda $69d9	        lda d_cur+1
+.6846	8d d6 69	sta $69d6	        sta d_at+1
+.6849	ad da 69	lda $69da	        lda d_cur+2
+.684c	8d d7 69	sta $69d7	        sta d_at+2
+.684f	ae cb 69	ldx $69cb	        ldx d_slot
+.6852	bd f5 69	lda $69f5,x	        lda d_states+D_GAP,x
+.6855	8d e7 69	sta $69e7	        sta d_limit
+.6858	bd f6 69	lda $69f6,x	        lda d_states+D_GAP+1,x
+.685b	8d e8 69	sta $69e8	        sta d_limit+1
+.685e	bd f7 69	lda $69f7,x	        lda d_states+D_GAP+2,x
+.6861	8d e9 69	sta $69e9	        sta d_limit+2
+.6864	ad da 69	lda $69da	        lda d_cur+2
+.6867	cd e9 69	cmp $69e9	        cmp d_limit+2
+.686a	d0 0e		bne $687a	        bne +
+.686c	ad d9 69	lda $69d9	        lda d_cur+1
+.686f	cd e8 69	cmp $69e8	        cmp d_limit+1
+.6872	d0 06		bne $687a	        bne +
+.6874	ad d8 69	lda $69d8	        lda d_cur
+.6877	cd e7 69	cmp $69e7	        cmp d_limit
+.687a					+
+.687a	b0 33		bcs $68af	        bcs doc_read_after_gap
+.687c	38		sec		        sec
+.687d	ad e7 69	lda $69e7	        lda d_limit
+.6880	ed d8 69	sbc $69d8	        sbc d_cur
+.6883	8d e7 69	sta $69e7	        sta d_limit
+.6886	ad e8 69	lda $69e8	        lda d_limit+1
+.6889	ed d9 69	sbc $69d9	        sbc d_cur+1
+.688c	8d e8 69	sta $69e8	        sta d_limit+1
+.688f	ad e9 69	lda $69e9	        lda d_limit+2
+.6892	ed da 69	sbc $69da	        sbc d_cur+2
+.6895	8d e9 69	sta $69e9	        sta d_limit+2
+.6898	ad e9 69	lda $69e9	        lda d_limit+2
+.689b	d0 5f		bne $68fc	        bne doc_read_mapped
+.689d	ad e7 69	lda $69e7	        lda d_limit
+.68a0	8d ed 69	sta $69ed	        sta d_bound
+.68a3	ad e8 69	lda $69e8	        lda d_limit+1
+.68a6	8d ee 69	sta $69ee	        sta d_bound+1
+.68a9	20 ca 61	jsr $61ca	        jsr doc_bound_limit
+.68ac	4c fc 68	jmp $68fc	        jmp doc_read_mapped
+.68af					doc_read_after_gap:
+.68af	ae cb 69	ldx $69cb	        ldx d_slot
+.68b2	bd f8 69	lda $69f8,x	        lda d_states+D_END,x
+.68b5	8d ea 69	sta $69ea	        sta d_bound3
+.68b8	bd f9 69	lda $69f9,x	        lda d_states+D_END+1,x
+.68bb	8d eb 69	sta $69eb	        sta d_bound3+1
+.68be	bd fa 69	lda $69fa,x	        lda d_states+D_END+2,x
+.68c1	8d ec 69	sta $69ec	        sta d_bound3+2
+.68c4	38		sec		        sec
+.68c5	ad ea 69	lda $69ea	        lda d_bound3
+.68c8	ed e7 69	sbc $69e7	        sbc d_limit
+.68cb	8d ea 69	sta $69ea	        sta d_bound3
+.68ce	ad eb 69	lda $69eb	        lda d_bound3+1
+.68d1	ed e8 69	sbc $69e8	        sbc d_limit+1
+.68d4	8d eb 69	sta $69eb	        sta d_bound3+1
+.68d7	ad ec 69	lda $69ec	        lda d_bound3+2
+.68da	ed e9 69	sbc $69e9	        sbc d_limit+2
+.68dd	8d ec 69	sta $69ec	        sta d_bound3+2
+.68e0	18		clc		        clc
+.68e1	ad d5 69	lda $69d5	        lda d_at
+.68e4	6d ea 69	adc $69ea	        adc d_bound3
+.68e7	8d d5 69	sta $69d5	        sta d_at
+.68ea	ad d6 69	lda $69d6	        lda d_at+1
+.68ed	6d eb 69	adc $69eb	        adc d_bound3+1
+.68f0	8d d6 69	sta $69d6	        sta d_at+1
+.68f3	ad d7 69	lda $69d7	        lda d_at+2
+.68f6	6d ec 69	adc $69ec	        adc d_bound3+2
+.68f9	8d d7 69	sta $69d7	        sta d_at+2
+.68fc					doc_read_mapped:
+.68fc	20 96 61	jsr $6196	        jsr doc_forward_limit
+.68ff	20 2b 61	jsr $612b	        jsr doc_select
+.6902	90 03		bcc $6907	        bcs doc_fault
+.6904	4c 42 60	jmp $6042
+.6907	20 26 1c	jsr $1c26	        jsr N_READ
+.690a	b0 f8		bcs $6904	        bcs doc_fault
+.690c	20 7f 69	jsr $697f	        jsr doc_buffer_to_output
+.690f	18		clc		        clc
+.6910	ad d8 69	lda $69d8	        lda d_cur
+.6913	6d e4 69	adc $69e4	        adc d_n
+.6916	8d d8 69	sta $69d8	        sta d_cur
+.6919	ad d9 69	lda $69d9	        lda d_cur+1
+.691c	6d e5 69	adc $69e5	        adc d_n+1
+.691f	8d d9 69	sta $69d9	        sta d_cur+1
+.6922	ad da 69	lda $69da	        lda d_cur+2
+.6925	6d e6 69	adc $69e6	        adc d_n+2
+.6928	8d da 69	sta $69da	        sta d_cur+2
+.692b	38		sec		        sec
+.692c	ad e1 69	lda $69e1	        lda d_left
+.692f	ed e4 69	sbc $69e4	        sbc d_n
+.6932	8d e1 69	sta $69e1	        sta d_left
+.6935	ad e2 69	lda $69e2	        lda d_left+1
+.6938	ed e5 69	sbc $69e5	        sbc d_n+1
+.693b	8d e2 69	sta $69e2	        sta d_left+1
+.693e	ad e3 69	lda $69e3	        lda d_left+2
+.6941	ed e6 69	sbc $69e6	        sbc d_n+2
+.6944	8d e3 69	sta $69e3	        sta d_left+2
+.6947	20 4d 69	jsr $694d	        jsr doc_actual_add
+.694a	4c 2f 68	jmp $682f	        jmp doc_read_loop
+.694d					doc_actual_add:
+.694d	18		clc		        clc
+.694e	ad d3 69	lda $69d3	        lda d_actual
+.6951	6d e4 69	adc $69e4	        adc d_n
+.6954	8d d3 69	sta $69d3	        sta d_actual
+.6957	ad d4 69	lda $69d4	        lda d_actual+1
+.695a	6d e5 69	adc $69e5	        adc d_n+1
+.695d	8d d4 69	sta $69d4	        sta d_actual+1
+.6960	60		rts		        rts
+.6961					doc_input_to_buffer:
+.6961	18		clc		        clc
+.6962	a9 f2		lda #$f2	        lda #<d_input
+.6964	6d d3 69	adc $69d3	        adc d_actual
+.6967	8d a9 69	sta $69a9	        sta doc_local_read+1
+.696a	a9 6a		lda #$6a	        lda #>d_input
+.696c	6d d4 69	adc $69d4	        adc d_actual+1
+.696f	8d aa 69	sta $69aa	        sta doc_local_read+2
+.6972	a9 00		lda #$00	        lda #<N_BUFFER
+.6974	8d ac 69	sta $69ac	        sta doc_local_write+1
+.6977	a9 3a		lda #$3a	        lda #>N_BUFFER
+.6979	8d ad 69	sta $69ad	        sta doc_local_write+2
+.697c	4c 9a 69	jmp $699a	        jmp doc_local_copy
+.697f					doc_buffer_to_output:
+.697f	a9 00		lda #$00	        lda #<N_BUFFER
+.6981	8d a9 69	sta $69a9	        sta doc_local_read+1
+.6984	a9 3a		lda #$3a	        lda #>N_BUFFER
+.6986	8d aa 69	sta $69aa	        sta doc_local_read+2
+.6989	18		clc		        clc
+.698a	a9 f2		lda #$f2	        lda #<d_output
+.698c	6d d3 69	adc $69d3	        adc d_actual
+.698f	8d ac 69	sta $69ac	        sta doc_local_write+1
+.6992	a9 6c		lda #$6c	        lda #>d_output
+.6994	6d d4 69	adc $69d4	        adc d_actual+1
+.6997	8d ad 69	sta $69ad	        sta doc_local_write+2
+.699a					doc_local_copy:
+.699a	ad e4 69	lda $69e4	        lda d_n
+.699d	8d ef 69	sta $69ef	        sta d_bytes
+.69a0	ad e5 69	lda $69e5	        lda d_n+1
+.69a3	8d f0 69	sta $69f0	        sta d_bytes+1
+.69a6	a2 00		ldx #$00	        ldx #0
+.69a8					doc_local_read:
+.69a8	bd ff ff	lda $ffff,x	        lda $ffff,x
+.69ab					doc_local_write:
+.69ab	9d ff ff	sta $ffff,x	        sta $ffff,x
+.69ae	e8		inx		        inx
+.69af	d0 06		bne $69b7	        bne +
+.69b1	ee aa 69	inc $69aa	        inc doc_local_read+2
+.69b4	ee ad 69	inc $69ad	        inc doc_local_write+2
+.69b7	ad ef 69	lda $69ef	+       lda d_bytes
+.69ba	d0 03		bne $69bf	        bne +
+.69bc	ce f0 69	dec $69f0	        dec d_bytes+1
+.69bf	ce ef 69	dec $69ef	+       dec d_bytes
+.69c2	ad ef 69	lda $69ef	        lda d_bytes
+.69c5	0d f0 69	ora $69f0	        ora d_bytes+1
+.69c8	d0 de		bne $69a8	        bne doc_local_read
+.69ca	60		rts		        rts
+>69cb	00				d_slot: .byte 0
+>69cc	00				d_owner: .byte 0
+>69cd	00 00 00			d_pos: .fill 3,0
+>69d0	00 00 00			d_count: .fill 3,0
+>69d3	00 00				d_actual: .word 0
+>69d5	00 00 00			d_at: .fill 3,0
+>69d8	00 00 00			d_cur: .fill 3,0
+>69db	00 00 00			d_src: .fill 3,0
+>69de	00 00 00			d_dst: .fill 3,0
+>69e1	00 00 00			d_left: .fill 3,0
+>69e4	00 00 00			d_n: .fill 3,0
+>69e7	00 00 00			d_limit: .fill 3,0
+>69ea	00 00 00			d_bound3: .fill 3,0
+>69ed	00 00				d_bound: .word 0
+>69ef	00 00				d_bytes: .word 0
+>69f1	00				d_index: .byte 0
+>69f2	00 00 00 00 00 00 00 00		d_states: .fill 256,0
+>69fa	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>6aea	00 00 00 00 00 00 00 00
+>6af2	00 00 00 00 00 00 00 00		d_input: .fill 512,0
+>6afa	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>6cea	00 00 00 00 00 00 00 00
+>6cf2	00 00 00 00 00 00 00 00		d_output: .fill 512,0
+>6cfa	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>6eea	00 00 00 00 00 00 00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/editor.asm
+
+.6ef2					editor_entry:
+.6ef2	d8		cld		        cld
+.6ef3	20 fa 7b	jsr $7bfa	        jsr ed_keys_install
+.6ef6	20 20 60	jsr $6020	        jsr doc_init
+.6ef9	a9 00		lda #$00	        lda #0
+.6efb	8d 6f 80	sta $806f	        sta ed_active
+.6efe	20 3f 70	jsr $703f	        jsr ed_reset_view
+.6f01	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6f04	c9 08		cmp #$08	        cmp #8
+.6f06	90 14		bcc $6f1c	        bcc ed_source_default
+.6f08	c9 1f		cmp #$1f	        cmp #31
+.6f0a	b0 10		bcs $6f1c	        bcs ed_source_default
+.6f0c	8d b6 80	sta $80b6	        sta ed_device
+.6f0f	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6f12	c9 03		cmp #$03	        cmp #3
+.6f14	b0 06		bcs $6f1c	        bcs ed_source_default
+.6f16	8d b7 80	sta $80b7	        sta ed_format
+.6f19	4c 75 77	jmp $7775	        jmp ed_refresh
+.6f1c					ed_source_default:
+.6f1c	ad 21 3d	lda $3d21	        lda N_DEVICE
+.6f1f	8d b6 80	sta $80b6	        sta ed_device
+.6f22	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.6f25	8d b7 80	sta $80b7	        sta ed_format
+.6f28	4c 75 77	jmp $7775	        jmp ed_refresh
+.6f2b					cloop:
+.6f2b	a9 01		lda #$01	        lda #1
+.6f2d	8d 12 3d	sta $3d12	        sta N_READY
+.6f30	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.6f33	f0 f6		beq $6f2b	        beq cloop
+.6f35	a2 00		ldx #$00	        ldx #0
+.6f37	8e 12 3d	stx $3d12	        stx N_READY
+.6f3a	ae b3 80	ldx $80b3	        ldx ed_mode
+.6f3d	f0 03		beq $6f42	        bne ed_prompt_key
+.6f3f	4c 62 70	jmp $7062
+.6f42	c9 1b		cmp #$1b	        cmp #27
+.6f44	d0 03		bne $6f49	        beq ed_request_exit
+.6f46	4c eb 6f	jmp $6feb
+.6f49	c9 85		cmp #$85	        cmp #$85
+.6f4b	f0 7b		beq $6fc8	        beq ed_prompt_open
+.6f4d	c9 86		cmp #$86	        cmp #$86
+.6f4f	f0 7b		beq $6fcc	        beq ed_prompt_save
+.6f51	c9 87		cmp #$87	        cmp #$87
+.6f53	d0 03		bne $6f58	        beq ed_request_new
+.6f55	4c e7 6f	jmp $6fe7
+.6f58	c9 88		cmp #$88	        cmp #$88
+.6f5a	f0 74		beq $6fd0	        beq ed_prompt_goto
+.6f5c	c9 8c		cmp #$8c	        cmp #$8c
+.6f5e	f0 74		beq $6fd4	        beq ed_prompt_device
+.6f60	c9 8b		cmp #$8b	        cmp #$8b
+.6f62	d0 03		bne $6f67	        beq ed_next_format
+.6f64	4c ce 71	jmp $71ce
+.6f67	c9 89		cmp #$89	        cmp #$89
+.6f69	d0 03		bne $6f6e	        beq ed_top
+.6f6b	4c d5 72	jmp $72d5
+.6f6e	c9 8a		cmp #$8a	        cmp #$8a
+.6f70	d0 03		bne $6f75	        beq ed_bottom
+.6f72	4c e3 72	jmp $72e3
+.6f75	c9 13		cmp #$13	        cmp #$13
+.6f77	d0 03		bne $6f7c	        beq ed_home
+.6f79	4c f8 72	jmp $72f8
+.6f7c	c9 05		cmp #$05	        cmp #$05
+.6f7e	d0 03		bne $6f83	        beq ed_end
+.6f80	4c 0d 73	jmp $730d
+.6f83	c9 9d		cmp #$9d	        cmp #$9d
+.6f85	d0 03		bne $6f8a	        beq ed_left
+.6f87	4c 22 73	jmp $7322
+.6f8a	c9 1d		cmp #$1d	        cmp #$1d
+.6f8c	d0 03		bne $6f91	        beq ed_right
+.6f8e	4c 51 73	jmp $7351
+.6f91	c9 91		cmp #$91	        cmp #$91
+.6f93	d0 03		bne $6f98	        beq ed_up
+.6f95	4c ae 73	jmp $73ae
+.6f98	c9 11		cmp #$11	        cmp #$11
+.6f9a	d0 03		bne $6f9f	        beq ed_down
+.6f9c	4c e3 73	jmp $73e3
+.6f9f	c9 14		cmp #$14	        cmp #$14
+.6fa1	d0 03		bne $6fa6	        beq ed_backspace
+.6fa3	4c 42 72	jmp $7242
+.6fa6	c9 0d		cmp #$0d	        cmp #13
+.6fa8	d0 03		bne $6fad	        beq ed_enter
+.6faa	4c e6 71	jmp $71e6
+.6fad	c9 20		cmp #$20	        cmp #32
+.6faf	b0 03		bcs $6fb4	        bcc cloop
+.6fb1	4c 2b 6f	jmp $6f2b
+.6fb4	c9 7f		cmp #$7f	        cmp #127
+.6fb6	b0 f9		bcs $6fb1	        bcs cloop
+.6fb8	8d f2 6a	sta $6af2	        sta d_input
+.6fbb	a9 01		lda #$01	        lda #1
+.6fbd	8d d0 69	sta $69d0	        sta d_count
+.6fc0	a9 00		lda #$00	        lda #0
+.6fc2	8d d1 69	sta $69d1	        sta d_count+1
+.6fc5	4c 09 72	jmp $7209	        jmp ed_insert
+.6fc8					ed_prompt_open:
+.6fc8	a9 01		lda #$01	        lda #1
+.6fca	d0 0a		bne $6fd6	        bne ed_prompt_begin
+.6fcc					ed_prompt_save:
+.6fcc	a9 02		lda #$02	        lda #2
+.6fce	d0 06		bne $6fd6	        bne ed_prompt_begin
+.6fd0					ed_prompt_goto:
+.6fd0	a9 03		lda #$03	        lda #3
+.6fd2	d0 02		bne $6fd6	        bne ed_prompt_begin
+.6fd4					ed_prompt_device:
+.6fd4	a9 04		lda #$04	        lda #4
+.6fd6					ed_prompt_begin:
+.6fd6	8d b3 80	sta $80b3	        sta ed_mode
+.6fd9	a9 00		lda #$00	        lda #0
+.6fdb	8d db 80	sta $80db	        sta ed_field_len
+.6fde	8d ca 80	sta $80ca	        sta ed_field
+.6fe1	8d b5 80	sta $80b5	        sta ed_status
+.6fe4	4c 75 77	jmp $7775	        jmp ed_refresh
+.6fe7					ed_request_new:
+.6fe7	a9 05		lda #$05	        lda #5
+.6fe9	d0 02		bne $6fed	        bne ed_check_dirty
+.6feb					ed_request_exit:
+.6feb	a9 06		lda #$06	        lda #6
+.6fed					ed_check_dirty:
+.6fed	8d b4 80	sta $80b4	        sta ed_action
+.6ff0	ae 6f 80	ldx $806f	        ldx ed_active
+.6ff3	bd fe 69	lda $69fe,x	        lda d_states+D_DIRTY,x
+.6ff6	1d 00 6a	ora $6a00,x	        ora d_states+D_FAULT,x
+.6ff9	f0 0d		beq $7008	        beq ed_confirmed
+.6ffb	a9 05		lda #$05	        lda #5
+.6ffd	8d b3 80	sta $80b3	        sta ed_mode
+.7000	a9 00		lda #$00	        lda #0
+.7002	8d b5 80	sta $80b5	        sta ed_status
+.7005	4c 75 77	jmp $7775	        jmp ed_refresh
+.7008					ed_confirmed:
+.7008	a9 00		lda #$00	        lda #0
+.700a	8d b3 80	sta $80b3	        sta ed_mode
+.700d	ad b4 80	lda $80b4	        lda ed_action
+.7010	c9 01		cmp #$01	        cmp #1
+.7012	d0 03		bne $7017	        beq ed_open_file
+.7014	4c 35 81	jmp $8135
+.7017	c9 05		cmp #$05	        cmp #5
+.7019	f0 08		beq $7023	        beq ed_new_document
+.701b	20 1f 7c	jsr $7c1f	        jsr ed_keys_restore
+.701e	a9 00		lda #$00	        lda #0
+.7020	4c 3e 1c	jmp $1c3e	        jmp N_EXIT
+.7023					ed_new_document:
+.7023	20 dc 80	jsr $80dc	        jsr ed_close_owned
+.7026	90 03		bcc $702b	        bcs ed_file_close_error
+.7028	4c 28 81	jmp $8128
+.702b	ad 6f 80	lda $806f	        lda ed_active
+.702e	8d cb 69	sta $69cb	        sta d_slot
+.7031	20 ad 60	jsr $60ad	        jsr doc_dispose
+.7034	90 03		bcc $7039	        bcs ed_doc_error
+.7036	4c b6 72	jmp $72b6
+.7039	20 3f 70	jsr $703f	        jsr ed_reset_view
+.703c	4c 75 77	jmp $7775	        jmp ed_refresh
+.703f					ed_reset_view:
+.703f	a9 00		lda #$00	        lda #0
+.7041	a2 02		ldx #$02	        ldx #2
+.7043					ed_reset_positions:
+.7043	9d 70 80	sta $8070,x	        sta ed_cursor,x
+.7046	9d 76 80	sta $8076,x	        sta ed_view,x
+.7049	9d 79 80	sta $8079,x	        sta ed_horizontal,x
+.704c	ca		dex		        dex
+.704d	10 f4		bpl $7043	        bpl ed_reset_positions
+.704f	8d b9 80	sta $80b9	        sta ed_name
+.7052	8d b8 80	sta $80b8	        sta ed_newline
+.7055	8d b3 80	sta $80b3	        sta ed_mode
+.7058	8d b5 80	sta $80b5	        sta ed_status
+.705b	8d 88 80	sta $8088	        sta ed_goal_valid
+.705e	8d a7 80	sta $80a7	        sta ed_cache_valid
+.7061	60		rts		        rts
+.7062					ed_prompt_key:
+.7062	c9 1b		cmp #$1b	        cmp #27
+.7064	d0 03		bne $7069	        beq ed_prompt_cancel
+.7066	4c ff 70	jmp $70ff
+.7069	ae b3 80	ldx $80b3	        ldx ed_mode
+.706c	e0 05		cpx #$05	        cpx #5
+.706e	d0 0d		bne $707d	        bne ed_field_key
+.7070	29 df		and #$df	        and #$df
+.7072	c9 59		cmp #$59	        cmp #$59
+.7074	f0 92		beq $7008	        beq ed_confirmed
+.7076	c9 4e		cmp #$4e	        cmp #$4e
+.7078	f0 ec		beq $7066	        beq ed_prompt_cancel
+.707a	4c 2b 6f	jmp $6f2b	        jmp cloop
+.707d					ed_field_key:
+.707d	c9 0d		cmp #$0d	        cmp #13
+.707f	d0 03		bne $7084	        beq ed_field_enter
+.7081	4c 0a 71	jmp $710a
+.7084	c9 14		cmp #$14	        cmp #$14
+.7086	f0 63		beq $70eb	        beq ed_field_delete
+.7088	ae b3 80	ldx $80b3	        ldx ed_mode
+.708b	e0 03		cpx #$03	        cpx #3
+.708d	90 31		bcc $70c0	        bcc ed_filename_key
+.708f	c9 30		cmp #$30	        cmp #$30
+.7091	b0 03		bcs $7096	        bcc cloop
+.7093	4c 2b 6f	jmp $6f2b
+.7096	c9 3a		cmp #$3a	        cmp #$3a
+.7098	90 11		bcc $70ab	        bcc ed_numeric_key
+.709a	ae b3 80	ldx $80b3	        ldx ed_mode
+.709d	e0 04		cpx #$04	        cpx #4
+.709f	f0 f2		beq $7093	        beq cloop
+.70a1	29 df		and #$df	        and #$df
+.70a3	c9 41		cmp #$41	        cmp #$41
+.70a5	90 ec		bcc $7093	        bcc cloop
+.70a7	c9 47		cmp #$47	        cmp #$47
+.70a9	b0 e8		bcs $7093	        bcs cloop
+.70ab					ed_numeric_key:
+.70ab	ae db 80	ldx $80db	        ldx ed_field_len
+.70ae	ac b3 80	ldy $80b3	        ldy ed_mode
+.70b1	c0 04		cpy #$04	        cpy #4
+.70b3	d0 04		bne $70b9	        bne +
+.70b5	e0 02		cpx #$02	        cpx #2
+.70b7	b0 da		bcs $7093	        bcs cloop
+.70b9	e0 06		cpx #$06	+       cpx #6
+.70bb	b0 d6		bcs $7093	        bcs cloop
+.70bd	4c d9 70	jmp $70d9	        jmp ed_field_append
+.70c0					ed_filename_key:
+.70c0	c9 20		cmp #$20	        cmp #32
+.70c2	90 cf		bcc $7093	        bcc cloop
+.70c4	c9 7f		cmp #$7f	        cmp #127
+.70c6	b0 cb		bcs $7093	        bcs cloop
+.70c8	a2 08		ldx #$08	        ldx #ed_forbidden_end-ed_forbidden-1
+.70ca					ed_name_check:
+.70ca	dd 56 7f	cmp $7f56,x	        cmp ed_forbidden,x
+.70cd	f0 c4		beq $7093	        beq cloop
+.70cf	ca		dex		        dex
+.70d0	10 f8		bpl $70ca	        bpl ed_name_check
+.70d2	ae db 80	ldx $80db	        ldx ed_field_len
+.70d5	e0 10		cpx #$10	        cpx #16
+.70d7	f0 ba		beq $7093	        beq cloop
+.70d9					ed_field_append:
+.70d9	9d ca 80	sta $80ca,x	        sta ed_field,x
+.70dc	e8		inx		        inx
+.70dd	8e db 80	stx $80db	        stx ed_field_len
+.70e0	a9 00		lda #$00	        lda #0
+.70e2	9d ca 80	sta $80ca,x	        sta ed_field,x
+.70e5	8d b5 80	sta $80b5	        sta ed_status
+.70e8	4c 75 77	jmp $7775	        jmp ed_refresh
+.70eb					ed_field_delete:
+.70eb	ae db 80	ldx $80db	        ldx ed_field_len
+.70ee	f0 a3		beq $7093	        beq cloop
+.70f0	ca		dex		        dex
+.70f1	8e db 80	stx $80db	        stx ed_field_len
+.70f4	a9 00		lda #$00	        lda #0
+.70f6	9d ca 80	sta $80ca,x	        sta ed_field,x
+.70f9	8d b5 80	sta $80b5	        sta ed_status
+.70fc	4c 75 77	jmp $7775	        jmp ed_refresh
+.70ff					ed_prompt_cancel:
+.70ff	a9 00		lda #$00	        lda #0
+.7101	8d b3 80	sta $80b3	        sta ed_mode
+.7104	8d b5 80	sta $80b5	        sta ed_status
+.7107	4c 75 77	jmp $7775	        jmp ed_refresh
+.710a					ed_field_enter:
+.710a	ad db 80	lda $80db	        lda ed_field_len
+.710d	f0 84		beq $7093	        beq cloop
+.710f	ad b3 80	lda $80b3	        lda ed_mode
+.7112	c9 01		cmp #$01	        cmp #1
+.7114	d0 03		bne $7119	        beq ed_open_confirm
+.7116	4c c9 71	jmp $71c9
+.7119	c9 02		cmp #$02	        cmp #2
+.711b	d0 03		bne $7120	        beq ed_save_file
+.711d	4c 4b 82	jmp $824b
+.7120	c9 04		cmp #$04	        cmp #4
+.7122	f0 67		beq $718b	        beq ed_device_enter
+.7124	a9 00		lda #$00	        lda #0
+.7126	8d 9e 80	sta $809e	        sta ed_number
+.7129	8d 9f 80	sta $809f	        sta ed_number+1
+.712c	8d a0 80	sta $80a0	        sta ed_number+2
+.712f	aa		tax		        tax
+.7130					ed_hex_parse:
+.7130	a0 04		ldy #$04	        ldy #4
+.7132					ed_hex_shift:
+.7132	0e 9e 80	asl $809e	        asl ed_number
+.7135	2e 9f 80	rol $809f	        rol ed_number+1
+.7138	2e a0 80	rol $80a0	        rol ed_number+2
+.713b	88		dey		        dey
+.713c	d0 f4		bne $7132	        bne ed_hex_shift
+.713e	bd ca 80	lda $80ca,x	        lda ed_field,x
+.7141	38		sec		        sec
+.7142	e9 30		sbc #$30	        sbc #$30
+.7144	c9 0a		cmp #$0a	        cmp #10
+.7146	90 02		bcc $714a	        bcc +
+.7148	e9 07		sbc #$07	        sbc #7
+.714a	0d 9e 80	ora $809e	+       ora ed_number
+.714d	8d 9e 80	sta $809e	        sta ed_number
+.7150	e8		inx		        inx
+.7151	ec db 80	cpx $80db	        cpx ed_field_len
+.7154	d0 da		bne $7130	        bne ed_hex_parse
+.7156	ad 75 80	lda $8075	        lda ed_length+2
+.7159	cd a0 80	cmp $80a0	        cmp ed_number+2
+.715c	d0 0e		bne $716c	        bne +
+.715e	ad 74 80	lda $8074	        lda ed_length+1
+.7161	cd 9f 80	cmp $809f	        cmp ed_number+1
+.7164	d0 06		bne $716c	        bne +
+.7166	ad 73 80	lda $8073	        lda ed_length
+.7169	cd 9e 80	cmp $809e	        cmp ed_number
+.716c					+
+.716c	90 53		bcc $71c1	        bcc ed_bad_position
+.716e	ad 9e 80	lda $809e	        lda ed_number
+.7171	8d 70 80	sta $8070	        sta ed_cursor
+.7174	ad 9f 80	lda $809f	        lda ed_number+1
+.7177	8d 71 80	sta $8071	        sta ed_cursor+1
+.717a	ad a0 80	lda $80a0	        lda ed_number+2
+.717d	8d 72 80	sta $8072	        sta ed_cursor+2
+.7180	20 2c 75	jsr $752c	        jsr ed_normalize_cursor
+.7183	a9 00		lda #$00	        lda #0
+.7185	8d b3 80	sta $80b3	        sta ed_mode
+.7188	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.718b					ed_device_enter:
+.718b	ad ca 80	lda $80ca	        lda ed_field
+.718e	38		sec		        sec
+.718f	e9 30		sbc #$30	        sbc #$30
+.7191	ae db 80	ldx $80db	        ldx ed_field_len
+.7194	e0 01		cpx #$01	        cpx #1
+.7196	f0 10		beq $71a8	        beq ed_device_check
+.7198	0a		asl a		        asl
+.7199	8d 9e 80	sta $809e	        sta ed_number
+.719c	0a		asl a		        asl
+.719d	0a		asl a		        asl
+.719e	18		clc		        clc
+.719f	6d 9e 80	adc $809e	        adc ed_number
+.71a2	6d cb 80	adc $80cb	        adc ed_field+1
+.71a5	38		sec		        sec
+.71a6	e9 30		sbc #$30	        sbc #$30
+.71a8					ed_device_check:
+.71a8	c9 08		cmp #$08	        cmp #8
+.71aa	90 15		bcc $71c1	        bcc ed_bad_position
+.71ac	c9 1f		cmp #$1f	        cmp #31
+.71ae	b0 11		bcs $71c1	        bcs ed_bad_position
+.71b0	8d b6 80	sta $80b6	        sta ed_device
+.71b3	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.71b6	a9 00		lda #$00	        lda #0
+.71b8	8d b3 80	sta $80b3	        sta ed_mode
+.71bb	8d b5 80	sta $80b5	        sta ed_status
+.71be	4c 75 77	jmp $7775	        jmp ed_refresh
+.71c1					ed_bad_position:
+.71c1	a9 04		lda #$04	        lda #4
+.71c3	8d b5 80	sta $80b5	        sta ed_status
+.71c6	4c 75 77	jmp $7775	        jmp ed_refresh
+.71c9					ed_open_confirm:
+.71c9	a9 01		lda #$01	        lda #1
+.71cb	4c ed 6f	jmp $6fed	        jmp ed_check_dirty
+.71ce					ed_next_format:
+.71ce	ee b7 80	inc $80b7	        inc ed_format
+.71d1	ad b7 80	lda $80b7	        lda ed_format
+.71d4	c9 03		cmp #$03	        cmp #3
+.71d6	90 05		bcc $71dd	        bcc +
+.71d8	a9 00		lda #$00	        lda #0
+.71da	8d b7 80	sta $80b7	        sta ed_format
+.71dd	ad b7 80	lda $80b7	+       lda ed_format
+.71e0	8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
+.71e3	4c 75 77	jmp $7775	        jmp ed_refresh
+.71e6					ed_enter:
+.71e6	a9 0d		lda #$0d	        lda #13
+.71e8	ae b8 80	ldx $80b8	        ldx ed_newline
+.71eb	e0 01		cpx #$01	        cpx #1
+.71ed	d0 02		bne $71f1	        bne +
+.71ef	a9 0a		lda #$0a	        lda #10
+.71f1	8d f2 6a	sta $6af2	+       sta d_input
+.71f4	a9 01		lda #$01	        lda #1
+.71f6	e0 02		cpx #$02	        cpx #2
+.71f8	d0 07		bne $7201	        bne +
+.71fa	a9 0a		lda #$0a	        lda #10
+.71fc	8d f3 6a	sta $6af3	        sta d_input+1
+.71ff	a9 02		lda #$02	        lda #2
+.7201	8d d0 69	sta $69d0	+       sta d_count
+.7204	a9 00		lda #$00	        lda #0
+.7206	8d d1 69	sta $69d1	        sta d_count+1
+.7209					ed_insert:
+.7209	ad 70 80	lda $8070	        lda ed_cursor
+.720c	8d cd 69	sta $69cd	        sta d_pos
+.720f	ad 71 80	lda $8071	        lda ed_cursor+1
+.7212	8d ce 69	sta $69ce	        sta d_pos+1
+.7215	ad 72 80	lda $8072	        lda ed_cursor+2
+.7218	8d cf 69	sta $69cf	        sta d_pos+2
+.721b	20 84 65	jsr $6584	        jsr doc_insert
+.721e	90 03		bcc $7223	        bcs ed_doc_error
+.7220	4c b6 72	jmp $72b6
+.7223	18		clc		        clc
+.7224	ad 70 80	lda $8070	        lda ed_cursor
+.7227	6d d0 69	adc $69d0	        adc d_count
+.722a	8d 70 80	sta $8070	        sta ed_cursor
+.722d	ad 71 80	lda $8071	        lda ed_cursor+1
+.7230	6d d1 69	adc $69d1	        adc d_count+1
+.7233	8d 71 80	sta $8071	        sta ed_cursor+1
+.7236	ad 72 80	lda $8072	        lda ed_cursor+2
+.7239	6d d2 69	adc $69d2	        adc d_count+2
+.723c	8d 72 80	sta $8072	        sta ed_cursor+2
+.723f	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.7242					ed_backspace:
+.7242	ad 70 80	lda $8070	        lda ed_cursor
+.7245	8d 8c 80	sta $808c	        sta ed_scan
+.7248	ad 71 80	lda $8071	        lda ed_cursor+1
+.724b	8d 8d 80	sta $808d	        sta ed_scan+1
+.724e	ad 72 80	lda $8072	        lda ed_cursor+2
+.7251	8d 8e 80	sta $808e	        sta ed_scan+2
+.7254	20 92 75	jsr $7592	        jsr ed_previous_end
+.7257	90 03		bcc $725c	        bcs cloop
+.7259	4c 2b 6f	jmp $6f2b
+.725c	ad 8c 80	lda $808c	        lda ed_scan
+.725f	8d cd 69	sta $69cd	        sta d_pos
+.7262	ad 8d 80	lda $808d	        lda ed_scan+1
+.7265	8d ce 69	sta $69ce	        sta d_pos+1
+.7268	ad 8e 80	lda $808e	        lda ed_scan+2
+.726b	8d cf 69	sta $69cf	        sta d_pos+2
+.726e	ad 70 80	lda $8070	        lda ed_cursor
+.7271	8d d0 69	sta $69d0	        sta d_count
+.7274	ad 71 80	lda $8071	        lda ed_cursor+1
+.7277	8d d1 69	sta $69d1	        sta d_count+1
+.727a	ad 72 80	lda $8072	        lda ed_cursor+2
+.727d	8d d2 69	sta $69d2	        sta d_count+2
+.7280	38		sec		        sec
+.7281	ad d0 69	lda $69d0	        lda d_count
+.7284	ed 8c 80	sbc $808c	        sbc ed_scan
+.7287	8d d0 69	sta $69d0	        sta d_count
+.728a	ad d1 69	lda $69d1	        lda d_count+1
+.728d	ed 8d 80	sbc $808d	        sbc ed_scan+1
+.7290	8d d1 69	sta $69d1	        sta d_count+1
+.7293	ad d2 69	lda $69d2	        lda d_count+2
+.7296	ed 8e 80	sbc $808e	        sbc ed_scan+2
+.7299	8d d2 69	sta $69d2	        sta d_count+2
+.729c	20 e2 66	jsr $66e2	        jsr doc_delete
+.729f	b0 15		bcs $72b6	        bcs ed_doc_error
+.72a1	ad 8c 80	lda $808c	        lda ed_scan
+.72a4	8d 70 80	sta $8070	        sta ed_cursor
+.72a7	ad 8d 80	lda $808d	        lda ed_scan+1
+.72aa	8d 71 80	sta $8071	        sta ed_cursor+1
+.72ad	ad 8e 80	lda $808e	        lda ed_scan+2
+.72b0	8d 72 80	sta $8072	        sta ed_cursor+2
+.72b3	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.72b6					ed_doc_error:
+.72b6	c9 02		cmp #$02	        cmp #N_NOMEM
+.72b8	f0 08		beq $72c2	        beq ed_no_memory
+.72ba	c9 03		cmp #$03	        cmp #N_NOSLOT
+.72bc	f0 04		beq $72c2	        beq ed_no_memory
+.72be	a9 05		lda #$05	        lda #5
+.72c0	d0 02		bne $72c4	        bne ed_show_error
+.72c2					ed_no_memory:
+.72c2	a9 03		lda #$03	        lda #3
+.72c4					ed_show_error:
+.72c4	8d b5 80	sta $80b5	        sta ed_status
+.72c7	4c 75 77	jmp $7775	        jmp ed_refresh
+.72ca					ed_cursor_changed:
+.72ca	a9 00		lda #$00	        lda #0
+.72cc	8d b5 80	sta $80b5	        sta ed_status
+.72cf	8d 88 80	sta $8088	        sta ed_goal_valid
+.72d2	4c 75 77	jmp $7775	        jmp ed_refresh
+.72d5					ed_top:
+.72d5	a9 00		lda #$00	        lda #0
+.72d7	8d 70 80	sta $8070	        sta ed_cursor
+.72da	8d 71 80	sta $8071	        sta ed_cursor+1
+.72dd	8d 72 80	sta $8072	        sta ed_cursor+2
+.72e0	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.72e3					ed_bottom:
+.72e3	ad 73 80	lda $8073	        lda ed_length
+.72e6	8d 70 80	sta $8070	        sta ed_cursor
+.72e9	ad 74 80	lda $8074	        lda ed_length+1
+.72ec	8d 71 80	sta $8071	        sta ed_cursor+1
+.72ef	ad 75 80	lda $8075	        lda ed_length+2
+.72f2	8d 72 80	sta $8072	        sta ed_cursor+2
+.72f5	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.72f8					ed_home:
+.72f8	ad 7c 80	lda $807c	        lda ed_line_start
+.72fb	8d 70 80	sta $8070	        sta ed_cursor
+.72fe	ad 7d 80	lda $807d	        lda ed_line_start+1
+.7301	8d 71 80	sta $8071	        sta ed_cursor+1
+.7304	ad 7e 80	lda $807e	        lda ed_line_start+2
+.7307	8d 72 80	sta $8072	        sta ed_cursor+2
+.730a	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.730d					ed_end:
+.730d	ad 7f 80	lda $807f	        lda ed_line_end
+.7310	8d 70 80	sta $8070	        sta ed_cursor
+.7313	ad 80 80	lda $8080	        lda ed_line_end+1
+.7316	8d 71 80	sta $8071	        sta ed_cursor+1
+.7319	ad 81 80	lda $8081	        lda ed_line_end+2
+.731c	8d 72 80	sta $8072	        sta ed_cursor+2
+.731f	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.7322					ed_left:
+.7322	ad 70 80	lda $8070	        lda ed_cursor
+.7325	8d 8c 80	sta $808c	        sta ed_scan
+.7328	ad 71 80	lda $8071	        lda ed_cursor+1
+.732b	8d 8d 80	sta $808d	        sta ed_scan+1
+.732e	ad 72 80	lda $8072	        lda ed_cursor+2
+.7331	8d 8e 80	sta $808e	        sta ed_scan+2
+.7334	20 92 75	jsr $7592	        jsr ed_previous_end
+.7337	90 03		bcc $733c	        bcs cloop
+.7339	4c 2b 6f	jmp $6f2b
+.733c	ad 8c 80	lda $808c	        lda ed_scan
+.733f	8d 70 80	sta $8070	        sta ed_cursor
+.7342	ad 8d 80	lda $808d	        lda ed_scan+1
+.7345	8d 71 80	sta $8071	        sta ed_cursor+1
+.7348	ad 8e 80	lda $808e	        lda ed_scan+2
+.734b	8d 72 80	sta $8072	        sta ed_cursor+2
+.734e	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.7351					ed_right:
+.7351	ad 72 80	lda $8072	        lda ed_cursor+2
+.7354	cd 75 80	cmp $8075	        cmp ed_length+2
+.7357	d0 0e		bne $7367	        bne +
+.7359	ad 71 80	lda $8071	        lda ed_cursor+1
+.735c	cd 74 80	cmp $8074	        cmp ed_length+1
+.735f	d0 06		bne $7367	        bne +
+.7361	ad 70 80	lda $8070	        lda ed_cursor
+.7364	cd 73 80	cmp $8073	        cmp ed_length
+.7367					+
+.7367	b0 d0		bcs $7339	        bcs cloop
+.7369	ad 70 80	lda $8070	        lda ed_cursor
+.736c	8d 8f 80	sta $808f	        sta ed_fetch
+.736f	ad 71 80	lda $8071	        lda ed_cursor+1
+.7372	8d 90 80	sta $8090	        sta ed_fetch+1
+.7375	ad 72 80	lda $8072	        lda ed_cursor+2
+.7378	8d 91 80	sta $8091	        sta ed_fetch+2
+.737b	20 db 76	jsr $76db	        jsr ed_next_token
+.737e	ad 8f 80	lda $808f	        lda ed_fetch
+.7381	8d 70 80	sta $8070	        sta ed_cursor
+.7384	ad 90 80	lda $8090	        lda ed_fetch+1
+.7387	8d 71 80	sta $8071	        sta ed_cursor+1
+.738a	ad 91 80	lda $8091	        lda ed_fetch+2
+.738d	8d 72 80	sta $8072	        sta ed_cursor+2
+.7390	4c ca 72	jmp $72ca	        jmp ed_cursor_changed
+.7393					ed_keep_column:
+.7393	ad 88 80	lda $8088	        lda ed_goal_valid
+.7396	d0 15		bne $73ad	        bne +
+.7398	ad 82 80	lda $8082	        lda ed_column
+.739b	8d 85 80	sta $8085	        sta ed_goal
+.739e	ad 83 80	lda $8083	        lda ed_column+1
+.73a1	8d 86 80	sta $8086	        sta ed_goal+1
+.73a4	ad 84 80	lda $8084	        lda ed_column+2
+.73a7	8d 87 80	sta $8087	        sta ed_goal+2
+.73aa	ee 88 80	inc $8088	        inc ed_goal_valid
+.73ad	60		rts		+       rts
+.73ae					ed_up:
+.73ae	20 93 73	jsr $7393	        jsr ed_keep_column
+.73b1	ad 7c 80	lda $807c	        lda ed_line_start
+.73b4	8d 8c 80	sta $808c	        sta ed_scan
+.73b7	ad 7d 80	lda $807d	        lda ed_line_start+1
+.73ba	8d 8d 80	sta $808d	        sta ed_scan+1
+.73bd	ad 7e 80	lda $807e	        lda ed_line_start+2
+.73c0	8d 8e 80	sta $808e	        sta ed_scan+2
+.73c3	20 92 75	jsr $7592	        jsr ed_previous_end
+.73c6	90 03		bcc $73cb	        bcs cloop
+.73c8	4c 2b 6f	jmp $6f2b
+.73cb	ad 8c 80	lda $808c	        lda ed_scan
+.73ce	8d 98 80	sta $8098	        sta ed_target_end
+.73d1	ad 8d 80	lda $808d	        lda ed_scan+1
+.73d4	8d 99 80	sta $8099	        sta ed_target_end+1
+.73d7	ad 8e 80	lda $808e	        lda ed_scan+2
+.73da	8d 9a 80	sta $809a	        sta ed_target_end+2
+.73dd	20 16 76	jsr $7616	        jsr ed_backward_start
+.73e0	4c 4c 74	jmp $744c	        jmp ed_vertical_target
+.73e3					ed_down:
+.73e3	20 93 73	jsr $7393	        jsr ed_keep_column
+.73e6	ad 7f 80	lda $807f	        lda ed_line_end
+.73e9	8d 8c 80	sta $808c	        sta ed_scan
+.73ec	ad 80 80	lda $8080	        lda ed_line_end+1
+.73ef	8d 8d 80	sta $808d	        sta ed_scan+1
+.73f2	ad 81 80	lda $8081	        lda ed_line_end+2
+.73f5	8d 8e 80	sta $808e	        sta ed_scan+2
+.73f8	ad 8e 80	lda $808e	        lda ed_scan+2
+.73fb	cd 75 80	cmp $8075	        cmp ed_length+2
+.73fe	d0 0e		bne $740e	        bne +
+.7400	ad 8d 80	lda $808d	        lda ed_scan+1
+.7403	cd 74 80	cmp $8074	        cmp ed_length+1
+.7406	d0 06		bne $740e	        bne +
+.7408	ad 8c 80	lda $808c	        lda ed_scan
+.740b	cd 73 80	cmp $8073	        cmp ed_length
+.740e					+
+.740e	b0 b8		bcs $73c8	        bcs cloop
+.7410	20 b3 76	jsr $76b3	        jsr ed_after_line
+.7413	ad 8c 80	lda $808c	        lda ed_scan
+.7416	8d 95 80	sta $8095	        sta ed_target_start
+.7419	ad 8d 80	lda $808d	        lda ed_scan+1
+.741c	8d 96 80	sta $8096	        sta ed_target_start+1
+.741f	ad 8e 80	lda $808e	        lda ed_scan+2
+.7422	8d 97 80	sta $8097	        sta ed_target_start+2
+.7425	20 74 76	jsr $7674	        jsr ed_forward_end
+.7428	ad 8c 80	lda $808c	        lda ed_scan
+.742b	8d 98 80	sta $8098	        sta ed_target_end
+.742e	ad 8d 80	lda $808d	        lda ed_scan+1
+.7431	8d 99 80	sta $8099	        sta ed_target_end+1
+.7434	ad 8e 80	lda $808e	        lda ed_scan+2
+.7437	8d 9a 80	sta $809a	        sta ed_target_end+2
+.743a	ad 95 80	lda $8095	        lda ed_target_start
+.743d	8d 8c 80	sta $808c	        sta ed_scan
+.7440	ad 96 80	lda $8096	        lda ed_target_start+1
+.7443	8d 8d 80	sta $808d	        sta ed_scan+1
+.7446	ad 97 80	lda $8097	        lda ed_target_start+2
+.7449	8d 8e 80	sta $808e	        sta ed_scan+2
+.744c					ed_vertical_target:
+.744c	18		clc		        clc
+.744d	ad 8c 80	lda $808c	        lda ed_scan
+.7450	6d 85 80	adc $8085	        adc ed_goal
+.7453	8d 8c 80	sta $808c	        sta ed_scan
+.7456	ad 8d 80	lda $808d	        lda ed_scan+1
+.7459	6d 86 80	adc $8086	        adc ed_goal+1
+.745c	8d 8d 80	sta $808d	        sta ed_scan+1
+.745f	ad 8e 80	lda $808e	        lda ed_scan+2
+.7462	6d 87 80	adc $8087	        adc ed_goal+2
+.7465	8d 8e 80	sta $808e	        sta ed_scan+2
+.7468	ad 9a 80	lda $809a	        lda ed_target_end+2
+.746b	cd 8e 80	cmp $808e	        cmp ed_scan+2
+.746e	d0 0e		bne $747e	        bne +
+.7470	ad 99 80	lda $8099	        lda ed_target_end+1
+.7473	cd 8d 80	cmp $808d	        cmp ed_scan+1
+.7476	d0 06		bne $747e	        bne +
+.7478	ad 98 80	lda $8098	        lda ed_target_end
+.747b	cd 8c 80	cmp $808c	        cmp ed_scan
+.747e					+
+.747e	b0 12		bcs $7492	        bcs +
+.7480	ad 98 80	lda $8098	        lda ed_target_end
+.7483	8d 8c 80	sta $808c	        sta ed_scan
+.7486	ad 99 80	lda $8099	        lda ed_target_end+1
+.7489	8d 8d 80	sta $808d	        sta ed_scan+1
+.748c	ad 9a 80	lda $809a	        lda ed_target_end+2
+.748f	8d 8e 80	sta $808e	        sta ed_scan+2
+.7492					+
+.7492	ad 8c 80	lda $808c	        lda ed_scan
+.7495	8d 70 80	sta $8070	        sta ed_cursor
+.7498	ad 8d 80	lda $808d	        lda ed_scan+1
+.749b	8d 71 80	sta $8071	        sta ed_cursor+1
+.749e	ad 8e 80	lda $808e	        lda ed_scan+2
+.74a1	8d 72 80	sta $8072	        sta ed_cursor+2
+.74a4	a9 00		lda #$00	        lda #0
+.74a6	8d b5 80	sta $80b5	        sta ed_status
+.74a9	4c 75 77	jmp $7775	        jmp ed_refresh
+.74ac					ed_byte_at:
+.74ac	ad 8b 80	lda $808b	        lda ed_probe+2
+.74af	cd 75 80	cmp $8075	        cmp ed_length+2
+.74b2	d0 0e		bne $74c2	        bne +
+.74b4	ad 8a 80	lda $808a	        lda ed_probe+1
+.74b7	cd 74 80	cmp $8074	        cmp ed_length+1
+.74ba	d0 06		bne $74c2	        bne +
+.74bc	ad 89 80	lda $8089	        lda ed_probe
+.74bf	cd 73 80	cmp $8073	        cmp ed_length
+.74c2					+
+.74c2	b0 64		bcs $7528	        bcs ed_byte_absent
+.74c4	ad a7 80	lda $80a7	        lda ed_cache_valid
+.74c7	f0 12		beq $74db	        beq ed_cache_load
+.74c9	ad 8b 80	lda $808b	        lda ed_probe+2
+.74cc	cd a6 80	cmp $80a6	        cmp ed_cache_base+2
+.74cf	d0 0a		bne $74db	        bne ed_cache_load
+.74d1	ad 8a 80	lda $808a	        lda ed_probe+1
+.74d4	29 fe		and #$fe	        and #$fe
+.74d6	cd a5 80	cmp $80a5	        cmp ed_cache_base+1
+.74d9	f0 30		beq $750b	        beq ed_cache_ready
+.74db					ed_cache_load:
+.74db	a9 00		lda #$00	        lda #0
+.74dd	8d cd 69	sta $69cd	        sta d_pos
+.74e0	8d a4 80	sta $80a4	        sta ed_cache_base
+.74e3	ad 8a 80	lda $808a	        lda ed_probe+1
+.74e6	29 fe		and #$fe	        and #$fe
+.74e8	8d ce 69	sta $69ce	        sta d_pos+1
+.74eb	8d a5 80	sta $80a5	        sta ed_cache_base+1
+.74ee	ad 8b 80	lda $808b	        lda ed_probe+2
+.74f1	8d cf 69	sta $69cf	        sta d_pos+2
+.74f4	8d a6 80	sta $80a6	        sta ed_cache_base+2
+.74f7	a9 00		lda #$00	        lda #0
+.74f9	8d d0 69	sta $69d0	        sta d_count
+.74fc	a9 02		lda #$02	        lda #2
+.74fe	8d d1 69	sta $69d1	        sta d_count+1
+.7501	20 b5 67	jsr $67b5	        jsr doc_read
+.7504	b0 1d		bcs $7523	        bcs ed_cache_error
+.7506	a9 01		lda #$01	        lda #1
+.7508	8d a7 80	sta $80a7	        sta ed_cache_valid
+.750b					ed_cache_ready:
+.750b	18		clc		        clc
+.750c	a9 f2		lda #$f2	        lda #<d_output
+.750e	6d 89 80	adc $8089	        adc ed_probe
+.7511	8d 1f 75	sta $751f	        sta ed_cache_read+1
+.7514	ad 8a 80	lda $808a	        lda ed_probe+1
+.7517	29 01		and #$01	        and #1
+.7519	69 6c		adc #$6c	        adc #>d_output
+.751b	8d 20 75	sta $7520	        sta ed_cache_read+2
+.751e					ed_cache_read:
+.751e	ad ff ff	lda $ffff	        lda $ffff
+.7521	18		clc		        clc
+.7522	60		rts		        rts
+.7523					ed_cache_error:
+.7523	a9 05		lda #$05	        lda #5
+.7525	8d b5 80	sta $80b5	        sta ed_status
+.7528					ed_byte_absent:
+.7528	a9 00		lda #$00	        lda #0
+.752a	38		sec		        sec
+.752b	60		rts		        rts
+.752c					ed_normalize_cursor:
+.752c	ad 70 80	lda $8070	        lda ed_cursor
+.752f	8d 89 80	sta $8089	        sta ed_probe
+.7532	ad 71 80	lda $8071	        lda ed_cursor+1
+.7535	8d 8a 80	sta $808a	        sta ed_probe+1
+.7538	ad 72 80	lda $8072	        lda ed_cursor+2
+.753b	8d 8b 80	sta $808b	        sta ed_probe+2
+.753e	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.7541	b0 4e		bcs $7591	        bcs +
+.7543	c9 0a		cmp #$0a	        cmp #10
+.7545	d0 4a		bne $7591	        bne +
+.7547	ad 70 80	lda $8070	        lda ed_cursor
+.754a	0d 71 80	ora $8071	        ora ed_cursor+1
+.754d	0d 72 80	ora $8072	        ora ed_cursor+2
+.7550	f0 3f		beq $7591	        beq +
+.7552	38		sec		        sec
+.7553	ad 89 80	lda $8089	        lda ed_probe
+.7556	ed 5f 7f	sbc $7f5f	        sbc ed_one
+.7559	8d 89 80	sta $8089	        sta ed_probe
+.755c	ad 8a 80	lda $808a	        lda ed_probe+1
+.755f	ed 60 7f	sbc $7f60	        sbc ed_one+1
+.7562	8d 8a 80	sta $808a	        sta ed_probe+1
+.7565	ad 8b 80	lda $808b	        lda ed_probe+2
+.7568	ed 61 7f	sbc $7f61	        sbc ed_one+2
+.756b	8d 8b 80	sta $808b	        sta ed_probe+2
+.756e	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.7571	c9 0d		cmp #$0d	        cmp #13
+.7573	d0 1c		bne $7591	        bne +
+.7575	18		clc		        clc
+.7576	ad 70 80	lda $8070	        lda ed_cursor
+.7579	6d 5f 7f	adc $7f5f	        adc ed_one
+.757c	8d 70 80	sta $8070	        sta ed_cursor
+.757f	ad 71 80	lda $8071	        lda ed_cursor+1
+.7582	6d 60 7f	adc $7f60	        adc ed_one+1
+.7585	8d 71 80	sta $8071	        sta ed_cursor+1
+.7588	ad 72 80	lda $8072	        lda ed_cursor+2
+.758b	6d 61 7f	adc $7f61	        adc ed_one+2
+.758e	8d 72 80	sta $8072	        sta ed_cursor+2
+.7591	60		rts		+       rts
+.7592					ed_previous_end:
+.7592	ad 8c 80	lda $808c	        lda ed_scan
+.7595	0d 8d 80	ora $808d	        ora ed_scan+1
+.7598	0d 8e 80	ora $808e	        ora ed_scan+2
+.759b	f0 77		beq $7614	        beq ed_previous_none
+.759d	38		sec		        sec
+.759e	ad 8c 80	lda $808c	        lda ed_scan
+.75a1	ed 5f 7f	sbc $7f5f	        sbc ed_one
+.75a4	8d 8c 80	sta $808c	        sta ed_scan
+.75a7	ad 8d 80	lda $808d	        lda ed_scan+1
+.75aa	ed 60 7f	sbc $7f60	        sbc ed_one+1
+.75ad	8d 8d 80	sta $808d	        sta ed_scan+1
+.75b0	ad 8e 80	lda $808e	        lda ed_scan+2
+.75b3	ed 61 7f	sbc $7f61	        sbc ed_one+2
+.75b6	8d 8e 80	sta $808e	        sta ed_scan+2
+.75b9	ad 8c 80	lda $808c	        lda ed_scan
+.75bc	8d 89 80	sta $8089	        sta ed_probe
+.75bf	ad 8d 80	lda $808d	        lda ed_scan+1
+.75c2	8d 8a 80	sta $808a	        sta ed_probe+1
+.75c5	ad 8e 80	lda $808e	        lda ed_scan+2
+.75c8	8d 8b 80	sta $808b	        sta ed_probe+2
+.75cb	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.75ce	c9 0a		cmp #$0a	        cmp #10
+.75d0	d0 40		bne $7612	        bne ed_previous_done
+.75d2	ad 8c 80	lda $808c	        lda ed_scan
+.75d5	0d 8d 80	ora $808d	        ora ed_scan+1
+.75d8	0d 8e 80	ora $808e	        ora ed_scan+2
+.75db	f0 35		beq $7612	        beq ed_previous_done
+.75dd	38		sec		        sec
+.75de	ad 89 80	lda $8089	        lda ed_probe
+.75e1	ed 5f 7f	sbc $7f5f	        sbc ed_one
+.75e4	8d 89 80	sta $8089	        sta ed_probe
+.75e7	ad 8a 80	lda $808a	        lda ed_probe+1
+.75ea	ed 60 7f	sbc $7f60	        sbc ed_one+1
+.75ed	8d 8a 80	sta $808a	        sta ed_probe+1
+.75f0	ad 8b 80	lda $808b	        lda ed_probe+2
+.75f3	ed 61 7f	sbc $7f61	        sbc ed_one+2
+.75f6	8d 8b 80	sta $808b	        sta ed_probe+2
+.75f9	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.75fc	c9 0d		cmp #$0d	        cmp #13
+.75fe	d0 12		bne $7612	        bne ed_previous_done
+.7600	ad 89 80	lda $8089	        lda ed_probe
+.7603	8d 8c 80	sta $808c	        sta ed_scan
+.7606	ad 8a 80	lda $808a	        lda ed_probe+1
+.7609	8d 8d 80	sta $808d	        sta ed_scan+1
+.760c	ad 8b 80	lda $808b	        lda ed_probe+2
+.760f	8d 8e 80	sta $808e	        sta ed_scan+2
+.7612					ed_previous_done:
+.7612	18		clc		        clc
+.7613	60		rts		        rts
+.7614					ed_previous_none:
+.7614	38		sec		        sec
+.7615	60		rts		        rts
+.7616					ed_backward_start:
+.7616	ad 8c 80	lda $808c	        lda ed_scan
+.7619	0d 8d 80	ora $808d	        ora ed_scan+1
+.761c	0d 8e 80	ora $808e	        ora ed_scan+2
+.761f	d0 03		bne $7624	        beq ed_scan_done
+.7621	4c b2 76	jmp $76b2
+.7624	ad 8c 80	lda $808c	        lda ed_scan
+.7627	8d 89 80	sta $8089	        sta ed_probe
+.762a	ad 8d 80	lda $808d	        lda ed_scan+1
+.762d	8d 8a 80	sta $808a	        sta ed_probe+1
+.7630	ad 8e 80	lda $808e	        lda ed_scan+2
+.7633	8d 8b 80	sta $808b	        sta ed_probe+2
+.7636	38		sec		        sec
+.7637	ad 89 80	lda $8089	        lda ed_probe
+.763a	ed 5f 7f	sbc $7f5f	        sbc ed_one
+.763d	8d 89 80	sta $8089	        sta ed_probe
+.7640	ad 8a 80	lda $808a	        lda ed_probe+1
+.7643	ed 60 7f	sbc $7f60	        sbc ed_one+1
+.7646	8d 8a 80	sta $808a	        sta ed_probe+1
+.7649	ad 8b 80	lda $808b	        lda ed_probe+2
+.764c	ed 61 7f	sbc $7f61	        sbc ed_one+2
+.764f	8d 8b 80	sta $808b	        sta ed_probe+2
+.7652	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.7655	b0 5b		bcs $76b2	        bcs ed_scan_done
+.7657	c9 0d		cmp #$0d	        cmp #13
+.7659	f0 57		beq $76b2	        beq ed_scan_done
+.765b	c9 0a		cmp #$0a	        cmp #10
+.765d	f0 53		beq $76b2	        beq ed_scan_done
+.765f	ad 89 80	lda $8089	        lda ed_probe
+.7662	8d 8c 80	sta $808c	        sta ed_scan
+.7665	ad 8a 80	lda $808a	        lda ed_probe+1
+.7668	8d 8d 80	sta $808d	        sta ed_scan+1
+.766b	ad 8b 80	lda $808b	        lda ed_probe+2
+.766e	8d 8e 80	sta $808e	        sta ed_scan+2
+.7671	4c 16 76	jmp $7616	        jmp ed_backward_start
+.7674					ed_forward_end:
+.7674	ad 8c 80	lda $808c	        lda ed_scan
+.7677	8d 89 80	sta $8089	        sta ed_probe
+.767a	ad 8d 80	lda $808d	        lda ed_scan+1
+.767d	8d 8a 80	sta $808a	        sta ed_probe+1
+.7680	ad 8e 80	lda $808e	        lda ed_scan+2
+.7683	8d 8b 80	sta $808b	        sta ed_probe+2
+.7686	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.7689	b0 27		bcs $76b2	        bcs ed_scan_done
+.768b	c9 0d		cmp #$0d	        cmp #13
+.768d	f0 23		beq $76b2	        beq ed_scan_done
+.768f	c9 0a		cmp #$0a	        cmp #10
+.7691	f0 1f		beq $76b2	        beq ed_scan_done
+.7693	18		clc		        clc
+.7694	ad 8c 80	lda $808c	        lda ed_scan
+.7697	6d 5f 7f	adc $7f5f	        adc ed_one
+.769a	8d 8c 80	sta $808c	        sta ed_scan
+.769d	ad 8d 80	lda $808d	        lda ed_scan+1
+.76a0	6d 60 7f	adc $7f60	        adc ed_one+1
+.76a3	8d 8d 80	sta $808d	        sta ed_scan+1
+.76a6	ad 8e 80	lda $808e	        lda ed_scan+2
+.76a9	6d 61 7f	adc $7f61	        adc ed_one+2
+.76ac	8d 8e 80	sta $808e	        sta ed_scan+2
+.76af	4c 74 76	jmp $7674	        jmp ed_forward_end
+.76b2					ed_scan_done:
+.76b2	60		rts		        rts
+.76b3					ed_after_line:
+.76b3	ad 8c 80	lda $808c	        lda ed_scan
+.76b6	8d 8f 80	sta $808f	        sta ed_fetch
+.76b9	ad 8d 80	lda $808d	        lda ed_scan+1
+.76bc	8d 90 80	sta $8090	        sta ed_fetch+1
+.76bf	ad 8e 80	lda $808e	        lda ed_scan+2
+.76c2	8d 91 80	sta $8091	        sta ed_fetch+2
+.76c5	20 db 76	jsr $76db	        jsr ed_next_token
+.76c8	ad 8f 80	lda $808f	        lda ed_fetch
+.76cb	8d 8c 80	sta $808c	        sta ed_scan
+.76ce	ad 90 80	lda $8090	        lda ed_fetch+1
+.76d1	8d 8d 80	sta $808d	        sta ed_scan+1
+.76d4	ad 91 80	lda $8091	        lda ed_fetch+2
+.76d7	8d 8e 80	sta $808e	        sta ed_scan+2
+.76da	60		rts		        rts
+.76db					ed_next_token:
+.76db	ad 8f 80	lda $808f	        lda ed_fetch
+.76de	8d 92 80	sta $8092	        sta ed_token_start
+.76e1	ad 90 80	lda $8090	        lda ed_fetch+1
+.76e4	8d 93 80	sta $8093	        sta ed_token_start+1
+.76e7	ad 91 80	lda $8091	        lda ed_fetch+2
+.76ea	8d 94 80	sta $8094	        sta ed_token_start+2
+.76ed	ad 8f 80	lda $808f	        lda ed_fetch
+.76f0	8d 89 80	sta $8089	        sta ed_probe
+.76f3	ad 90 80	lda $8090	        lda ed_fetch+1
+.76f6	8d 8a 80	sta $808a	        sta ed_probe+1
+.76f9	ad 91 80	lda $8091	        lda ed_fetch+2
+.76fc	8d 8b 80	sta $808b	        sta ed_probe+2
+.76ff	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.7702	b0 66		bcs $776a	        bcs ed_token_eof
+.7704	8d a8 80	sta $80a8	        sta ed_byte
+.7707	18		clc		        clc
+.7708	ad 8f 80	lda $808f	        lda ed_fetch
+.770b	6d 5f 7f	adc $7f5f	        adc ed_one
+.770e	8d 8f 80	sta $808f	        sta ed_fetch
+.7711	ad 90 80	lda $8090	        lda ed_fetch+1
+.7714	6d 60 7f	adc $7f60	        adc ed_one+1
+.7717	8d 90 80	sta $8090	        sta ed_fetch+1
+.771a	ad 91 80	lda $8091	        lda ed_fetch+2
+.771d	6d 61 7f	adc $7f61	        adc ed_one+2
+.7720	8d 91 80	sta $8091	        sta ed_fetch+2
+.7723	ad a8 80	lda $80a8	        lda ed_byte
+.7726	c9 0d		cmp #$0d	        cmp #13
+.7728	d0 37		bne $7761	        bne ed_token_done
+.772a	ad 8f 80	lda $808f	        lda ed_fetch
+.772d	8d 89 80	sta $8089	        sta ed_probe
+.7730	ad 90 80	lda $8090	        lda ed_fetch+1
+.7733	8d 8a 80	sta $808a	        sta ed_probe+1
+.7736	ad 91 80	lda $8091	        lda ed_fetch+2
+.7739	8d 8b 80	sta $808b	        sta ed_probe+2
+.773c	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.773f	b0 20		bcs $7761	        bcs ed_token_done
+.7741	c9 0a		cmp #$0a	        cmp #10
+.7743	d0 1c		bne $7761	        bne ed_token_done
+.7745	18		clc		        clc
+.7746	ad 8f 80	lda $808f	        lda ed_fetch
+.7749	6d 5f 7f	adc $7f5f	        adc ed_one
+.774c	8d 8f 80	sta $808f	        sta ed_fetch
+.774f	ad 90 80	lda $8090	        lda ed_fetch+1
+.7752	6d 60 7f	adc $7f60	        adc ed_one+1
+.7755	8d 90 80	sta $8090	        sta ed_fetch+1
+.7758	ad 91 80	lda $8091	        lda ed_fetch+2
+.775b	6d 61 7f	adc $7f61	        adc ed_one+2
+.775e	8d 91 80	sta $8091	        sta ed_fetch+2
+.7761					ed_token_done:
+.7761	a9 00		lda #$00	        lda #0
+.7763	8d a9 80	sta $80a9	        sta ed_eof
+.7766	ad a8 80	lda $80a8	        lda ed_byte
+.7769	60		rts		        rts
+.776a					ed_token_eof:
+.776a	a9 01		lda #$01	        lda #1
+.776c	8d a9 80	sta $80a9	        sta ed_eof
+.776f	a9 00		lda #$00	        lda #0
+.7771	8d a8 80	sta $80a8	        sta ed_byte
+.7774	60		rts		        rts
+.7775					ed_refresh:
+.7775	ad 6f 80	lda $806f	        lda ed_active
+.7778	8d cb 69	sta $69cb	        sta d_slot
+.777b	a9 00		lda #$00	        lda #0
+.777d	8d a7 80	sta $80a7	        sta ed_cache_valid
+.7780	ae cb 69	ldx $69cb	        ldx d_slot
+.7783	bd f2 69	lda $69f2,x	        lda d_states+D_LEN,x
+.7786	8d 73 80	sta $8073	        sta ed_length
+.7789	bd f3 69	lda $69f3,x	        lda d_states+D_LEN+1,x
+.778c	8d 74 80	sta $8074	        sta ed_length+1
+.778f	bd f4 69	lda $69f4,x	        lda d_states+D_LEN+2,x
+.7792	8d 75 80	sta $8075	        sta ed_length+2
+.7795	ae 6f 80	ldx $806f	        ldx ed_active
+.7798	bd 00 6a	lda $6a00,x	        lda d_states+D_FAULT,x
+.779b	d0 03		bne $77a0	        bne ed_refresh_draw
+.779d	20 a6 77	jsr $77a6	        jsr ed_locate
+.77a0					ed_refresh_draw:
+.77a0	20 59 79	jsr $7959	        jsr ed_show
+.77a3	4c 2b 6f	jmp $6f2b	        jmp cloop
+.77a6					ed_locate:
+.77a6	ad 70 80	lda $8070	        lda ed_cursor
+.77a9	8d 8c 80	sta $808c	        sta ed_scan
+.77ac	ad 71 80	lda $8071	        lda ed_cursor+1
+.77af	8d 8d 80	sta $808d	        sta ed_scan+1
+.77b2	ad 72 80	lda $8072	        lda ed_cursor+2
+.77b5	8d 8e 80	sta $808e	        sta ed_scan+2
+.77b8	20 16 76	jsr $7616	        jsr ed_backward_start
+.77bb	ad 8c 80	lda $808c	        lda ed_scan
+.77be	8d 7c 80	sta $807c	        sta ed_line_start
+.77c1	ad 8d 80	lda $808d	        lda ed_scan+1
+.77c4	8d 7d 80	sta $807d	        sta ed_line_start+1
+.77c7	ad 8e 80	lda $808e	        lda ed_scan+2
+.77ca	8d 7e 80	sta $807e	        sta ed_line_start+2
+.77cd	ad 70 80	lda $8070	        lda ed_cursor
+.77d0	8d 82 80	sta $8082	        sta ed_column
+.77d3	ad 71 80	lda $8071	        lda ed_cursor+1
+.77d6	8d 83 80	sta $8083	        sta ed_column+1
+.77d9	ad 72 80	lda $8072	        lda ed_cursor+2
+.77dc	8d 84 80	sta $8084	        sta ed_column+2
+.77df	38		sec		        sec
+.77e0	ad 82 80	lda $8082	        lda ed_column
+.77e3	ed 8c 80	sbc $808c	        sbc ed_scan
+.77e6	8d 82 80	sta $8082	        sta ed_column
+.77e9	ad 83 80	lda $8083	        lda ed_column+1
+.77ec	ed 8d 80	sbc $808d	        sbc ed_scan+1
+.77ef	8d 83 80	sta $8083	        sta ed_column+1
+.77f2	ad 84 80	lda $8084	        lda ed_column+2
+.77f5	ed 8e 80	sbc $808e	        sbc ed_scan+2
+.77f8	8d 84 80	sta $8084	        sta ed_column+2
+.77fb	ad 70 80	lda $8070	        lda ed_cursor
+.77fe	8d 8c 80	sta $808c	        sta ed_scan
+.7801	ad 71 80	lda $8071	        lda ed_cursor+1
+.7804	8d 8d 80	sta $808d	        sta ed_scan+1
+.7807	ad 72 80	lda $8072	        lda ed_cursor+2
+.780a	8d 8e 80	sta $808e	        sta ed_scan+2
+.780d	20 74 76	jsr $7674	        jsr ed_forward_end
+.7810	ad 8c 80	lda $808c	        lda ed_scan
+.7813	8d 7f 80	sta $807f	        sta ed_line_end
+.7816	ad 8d 80	lda $808d	        lda ed_scan+1
+.7819	8d 80 80	sta $8080	        sta ed_line_end+1
+.781c	ad 8e 80	lda $808e	        lda ed_scan+2
+.781f	8d 81 80	sta $8081	        sta ed_line_end+2
+.7822	ad 84 80	lda $8084	        lda ed_column+2
+.7825	cd 7b 80	cmp $807b	        cmp ed_horizontal+2
+.7828	d0 0e		bne $7838	        bne +
+.782a	ad 83 80	lda $8083	        lda ed_column+1
+.782d	cd 7a 80	cmp $807a	        cmp ed_horizontal+1
+.7830	d0 06		bne $7838	        bne +
+.7832	ad 82 80	lda $8082	        lda ed_column
+.7835	cd 79 80	cmp $8079	        cmp ed_horizontal
+.7838					+
+.7838	90 6e		bcc $78a8	        bcc ed_scroll_left
+.783a	ad 82 80	lda $8082	        lda ed_column
+.783d	8d 9e 80	sta $809e	        sta ed_number
+.7840	ad 83 80	lda $8083	        lda ed_column+1
+.7843	8d 9f 80	sta $809f	        sta ed_number+1
+.7846	ad 84 80	lda $8084	        lda ed_column+2
+.7849	8d a0 80	sta $80a0	        sta ed_number+2
+.784c	38		sec		        sec
+.784d	ad 9e 80	lda $809e	        lda ed_number
+.7850	ed 79 80	sbc $8079	        sbc ed_horizontal
+.7853	8d 9e 80	sta $809e	        sta ed_number
+.7856	ad 9f 80	lda $809f	        lda ed_number+1
+.7859	ed 7a 80	sbc $807a	        sbc ed_horizontal+1
+.785c	8d 9f 80	sta $809f	        sta ed_number+1
+.785f	ad a0 80	lda $80a0	        lda ed_number+2
+.7862	ed 7b 80	sbc $807b	        sbc ed_horizontal+2
+.7865	8d a0 80	sta $80a0	        sta ed_number+2
+.7868	ad 9f 80	lda $809f	        lda ed_number+1
+.786b	0d a0 80	ora $80a0	        ora ed_number+2
+.786e	d0 07		bne $7877	        bne ed_scroll_right
+.7870	ad 9e 80	lda $809e	        lda ed_number
+.7873	c9 26		cmp #$26	        cmp #38
+.7875	90 43		bcc $78ba	        bcc ed_fit_vertical
+.7877					ed_scroll_right:
+.7877	ad 82 80	lda $8082	        lda ed_column
+.787a	8d 79 80	sta $8079	        sta ed_horizontal
+.787d	ad 83 80	lda $8083	        lda ed_column+1
+.7880	8d 7a 80	sta $807a	        sta ed_horizontal+1
+.7883	ad 84 80	lda $8084	        lda ed_column+2
+.7886	8d 7b 80	sta $807b	        sta ed_horizontal+2
+.7889	38		sec		        sec
+.788a	ad 79 80	lda $8079	        lda ed_horizontal
+.788d	ed 6c 80	sbc $806c	        sbc ed_width_minus_one
+.7890	8d 79 80	sta $8079	        sta ed_horizontal
+.7893	ad 7a 80	lda $807a	        lda ed_horizontal+1
+.7896	ed 6d 80	sbc $806d	        sbc ed_width_minus_one+1
+.7899	8d 7a 80	sta $807a	        sta ed_horizontal+1
+.789c	ad 7b 80	lda $807b	        lda ed_horizontal+2
+.789f	ed 6e 80	sbc $806e	        sbc ed_width_minus_one+2
+.78a2	8d 7b 80	sta $807b	        sta ed_horizontal+2
+.78a5	4c ba 78	jmp $78ba	        jmp ed_fit_vertical
+.78a8					ed_scroll_left:
+.78a8	ad 82 80	lda $8082	        lda ed_column
+.78ab	8d 79 80	sta $8079	        sta ed_horizontal
+.78ae	ad 83 80	lda $8083	        lda ed_column+1
+.78b1	8d 7a 80	sta $807a	        sta ed_horizontal+1
+.78b4	ad 84 80	lda $8084	        lda ed_column+2
+.78b7	8d 7b 80	sta $807b	        sta ed_horizontal+2
+.78ba					ed_fit_vertical:
+.78ba	ad 7e 80	lda $807e	        lda ed_line_start+2
+.78bd	cd 78 80	cmp $8078	        cmp ed_view+2
+.78c0	d0 0e		bne $78d0	        bne +
+.78c2	ad 7d 80	lda $807d	        lda ed_line_start+1
+.78c5	cd 77 80	cmp $8077	        cmp ed_view+1
+.78c8	d0 06		bne $78d0	        bne +
+.78ca	ad 7c 80	lda $807c	        lda ed_line_start
+.78cd	cd 76 80	cmp $8076	        cmp ed_view
+.78d0					+
+.78d0	90 74		bcc $7946	        bcc ed_view_at_cursor
+.78d2	ad 76 80	lda $8076	        lda ed_view
+.78d5	8d 8c 80	sta $808c	        sta ed_scan
+.78d8	ad 77 80	lda $8077	        lda ed_view+1
+.78db	8d 8d 80	sta $808d	        sta ed_scan+1
+.78de	ad 78 80	lda $8078	        lda ed_view+2
+.78e1	8d 8e 80	sta $808e	        sta ed_scan+2
+.78e4	a9 10		lda #$10	        lda #16
+.78e6	8d ad 80	sta $80ad	        sta ed_scan_rows
+.78e9					ed_view_check:
+.78e9	ad 8e 80	lda $808e	        lda ed_scan+2
+.78ec	cd 7e 80	cmp $807e	        cmp ed_line_start+2
+.78ef	d0 0e		bne $78ff	        bne +
+.78f1	ad 8d 80	lda $808d	        lda ed_scan+1
+.78f4	cd 7d 80	cmp $807d	        cmp ed_line_start+1
+.78f7	d0 06		bne $78ff	        bne +
+.78f9	ad 8c 80	lda $808c	        lda ed_scan
+.78fc	cd 7c 80	cmp $807c	        cmp ed_line_start
+.78ff					+
+.78ff	f0 57		beq $7958	        beq ed_located
+.7901	ce ad 80	dec $80ad	        dec ed_scan_rows
+.7904	f0 09		beq $790f	        beq ed_view_bottom
+.7906	20 74 76	jsr $7674	        jsr ed_forward_end
+.7909	20 b3 76	jsr $76b3	        jsr ed_after_line
+.790c	4c e9 78	jmp $78e9	        jmp ed_view_check
+.790f					ed_view_bottom:
+.790f	ad 7c 80	lda $807c	        lda ed_line_start
+.7912	8d 8c 80	sta $808c	        sta ed_scan
+.7915	ad 7d 80	lda $807d	        lda ed_line_start+1
+.7918	8d 8d 80	sta $808d	        sta ed_scan+1
+.791b	ad 7e 80	lda $807e	        lda ed_line_start+2
+.791e	8d 8e 80	sta $808e	        sta ed_scan+2
+.7921	a9 0f		lda #$0f	        lda #15
+.7923	8d ad 80	sta $80ad	        sta ed_scan_rows
+.7926					ed_view_back:
+.7926	20 92 75	jsr $7592	        jsr ed_previous_end
+.7929	b0 08		bcs $7933	        bcs ed_view_save
+.792b	20 16 76	jsr $7616	        jsr ed_backward_start
+.792e	ce ad 80	dec $80ad	        dec ed_scan_rows
+.7931	d0 f3		bne $7926	        bne ed_view_back
+.7933					ed_view_save:
+.7933	ad 8c 80	lda $808c	        lda ed_scan
+.7936	8d 76 80	sta $8076	        sta ed_view
+.7939	ad 8d 80	lda $808d	        lda ed_scan+1
+.793c	8d 77 80	sta $8077	        sta ed_view+1
+.793f	ad 8e 80	lda $808e	        lda ed_scan+2
+.7942	8d 78 80	sta $8078	        sta ed_view+2
+.7945	60		rts		        rts
+.7946					ed_view_at_cursor:
+.7946	ad 7c 80	lda $807c	        lda ed_line_start
+.7949	8d 76 80	sta $8076	        sta ed_view
+.794c	ad 7d 80	lda $807d	        lda ed_line_start+1
+.794f	8d 77 80	sta $8077	        sta ed_view+1
+.7952	ad 7e 80	lda $807e	        lda ed_line_start+2
+.7955	8d 78 80	sta $8078	        sta ed_view+2
+.7958					ed_located:
+.7958	60		rts		        rts
+.7959					ed_show:
+.7959	a9 00		lda #$00	        lda #0
+.795b	8d ae 80	sta $80ae	        sta ed_screen
+.795e					ed_show_screen:
+.795e	a5 d7		lda $d7		        lda $d7
+.7960	2a		rol a		        rol
+.7961	a9 00		lda #$00	        lda #0
+.7963	2a		rol a		        rol
+.7964	cd ae 80	cmp $80ae	        cmp ed_screen
+.7967	f0 03		beq $796c	        beq +
+.7969	20 5f ff	jsr $ff5f	        jsr $ff5f
+.796c	a9 93		lda #$93	+       lda #$93
+.796e	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7971	a9 a0		lda #$a0	        lda #<ed_title
+.7973	a2 7c		ldx #$7c	        ldx #>ed_title
+.7975	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.7978	ad b9 80	lda $80b9	        lda ed_name
+.797b	d0 06		bne $7983	        bne ed_named
+.797d	a9 bb		lda #$bb	        lda #<ed_untitled
+.797f	a2 7c		ldx #$7c	        ldx #>ed_untitled
+.7981	d0 04		bne $7987	        bne ed_name_print
+.7983					ed_named:
+.7983	a9 b9		lda #$b9	        lda #<ed_name
+.7985	a2 80		ldx #$80	        ldx #>ed_name
+.7987					ed_name_print:
+.7987	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.798a	ae 6f 80	ldx $806f	        ldx ed_active
+.798d	bd fe 69	lda $69fe,x	        lda d_states+D_DIRTY,x
+.7990	f0 05		beq $7997	        beq +
+.7992	a9 2a		lda #$2a	        lda #$2a
+.7994	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7997	a9 c4		lda #$c4	+       lda #<ed_bytes_text
+.7999	a2 7c		ldx #$7c	        ldx #>ed_bytes_text
+.799b	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.799e	ad 73 80	lda $8073	        lda ed_length
+.79a1	8d a1 80	sta $80a1	        sta ed_print_number
+.79a4	ad 74 80	lda $8074	        lda ed_length+1
+.79a7	8d a2 80	sta $80a2	        sta ed_print_number+1
+.79aa	ad 75 80	lda $8075	        lda ed_length+2
+.79ad	8d a3 80	sta $80a3	        sta ed_print_number+2
+.79b0	20 34 7c	jsr $7c34	        jsr ed_hex24
+.79b3	a9 cd		lda #$cd	        lda #<ed_at_text
+.79b5	a2 7c		ldx #$7c	        ldx #>ed_at_text
+.79b7	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.79ba	ad 70 80	lda $8070	        lda ed_cursor
+.79bd	8d a1 80	sta $80a1	        sta ed_print_number
+.79c0	ad 71 80	lda $8071	        lda ed_cursor+1
+.79c3	8d a2 80	sta $80a2	        sta ed_print_number+1
+.79c6	ad 72 80	lda $8072	        lda ed_cursor+2
+.79c9	8d a3 80	sta $80a3	        sta ed_print_number+2
+.79cc	20 34 7c	jsr $7c34	        jsr ed_hex24
+.79cf	a9 d3		lda #$d3	        lda #<ed_iec_text
+.79d1	a2 7c		ldx #$7c	        ldx #>ed_iec_text
+.79d3	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.79d6	ad b6 80	lda $80b6	        lda ed_device
+.79d9	a2 30		ldx #$30	        ldx #$30
+.79db					ed_tens:
+.79db	c9 0a		cmp #$0a	        cmp #10
+.79dd	90 05		bcc $79e4	        bcc +
+.79df	e9 0a		sbc #$0a	        sbc #10
+.79e1	e8		inx		        inx
+.79e2	d0 f7		bne $79db	        bne ed_tens
+.79e4	48		pha		+       pha
+.79e5	8a		txa		        txa
+.79e6	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.79e9	68		pla		        pla
+.79ea	09 30		ora #$30	        ora #$30
+.79ec	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.79ef	a9 20		lda #$20	        lda #32
+.79f1	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.79f4	ae b7 80	ldx $80b7	        ldx ed_format
+.79f7	bd ac 7d	lda $7dac,x	        lda ed_format_lo,x
+.79fa	48		pha		        pha
+.79fb	bd af 7d	lda $7daf,x	        lda ed_format_hi,x
+.79fe	aa		tax		        tax
+.79ff	68		pla		        pla
+.7a00	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.7a03	a9 d9		lda #$d9	        lda #<ed_help
+.7a05	a2 7c		ldx #$7c	        ldx #>ed_help
+.7a07	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.7a0a	20 5e 7c	jsr $7c5e	        jsr ed_status_show
+.7a0d	a9 0d		lda #$0d	        lda #13
+.7a0f	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7a12	a9 26		lda #$26	        lda #38
+.7a14	ae ae 80	ldx $80ae	        ldx ed_screen
+.7a17	f0 02		beq $7a1b	        beq +
+.7a19	a9 4e		lda #$4e	        lda #78
+.7a1b	8d af 80	sta $80af	+       sta ed_width
+.7a1e	a9 00		lda #$00	        lda #0
+.7a20	8d b0 80	sta $80b0	        sta ed_row
+.7a23	8d ab 80	sta $80ab	        sta ed_caret_drawn
+.7a26	ad 76 80	lda $8076	        lda ed_view
+.7a29	8d 8f 80	sta $808f	        sta ed_fetch
+.7a2c	ad 77 80	lda $8077	        lda ed_view+1
+.7a2f	8d 90 80	sta $8090	        sta ed_fetch+1
+.7a32	ad 78 80	lda $8078	        lda ed_view+2
+.7a35	8d 91 80	sta $8091	        sta ed_fetch+2
+.7a38					ed_text_row:
+.7a38	a9 00		lda #$00	        lda #0
+.7a3a	8d b2 80	sta $80b2	        sta ed_row_ended
+.7a3d	8d b1 80	sta $80b1	        sta ed_col
+.7a40	ad 79 80	lda $8079	        lda ed_horizontal
+.7a43	8d 9b 80	sta $809b	        sta ed_skip
+.7a46	ad 7a 80	lda $807a	        lda ed_horizontal+1
+.7a49	8d 9c 80	sta $809c	        sta ed_skip+1
+.7a4c	ad 7b 80	lda $807b	        lda ed_horizontal+2
+.7a4f	8d 9d 80	sta $809d	        sta ed_skip+2
+.7a52					ed_skip_columns:
+.7a52	ad 9b 80	lda $809b	        lda ed_skip
+.7a55	0d 9c 80	ora $809c	        ora ed_skip+1
+.7a58	0d 9d 80	ora $809d	        ora ed_skip+2
+.7a5b	f0 35		beq $7a92	        beq ed_row_prefix
+.7a5d	20 db 76	jsr $76db	        jsr ed_next_token
+.7a60	ad a9 80	lda $80a9	        lda ed_eof
+.7a63	d0 2a		bne $7a8f	        bne ed_skip_ended
+.7a65	ad a8 80	lda $80a8	        lda ed_byte
+.7a68	c9 0d		cmp #$0d	        cmp #13
+.7a6a	f0 23		beq $7a8f	        beq ed_skip_ended
+.7a6c	c9 0a		cmp #$0a	        cmp #10
+.7a6e	f0 1f		beq $7a8f	        beq ed_skip_ended
+.7a70	38		sec		        sec
+.7a71	ad 9b 80	lda $809b	        lda ed_skip
+.7a74	ed 5f 7f	sbc $7f5f	        sbc ed_one
+.7a77	8d 9b 80	sta $809b	        sta ed_skip
+.7a7a	ad 9c 80	lda $809c	        lda ed_skip+1
+.7a7d	ed 60 7f	sbc $7f60	        sbc ed_one+1
+.7a80	8d 9c 80	sta $809c	        sta ed_skip+1
+.7a83	ad 9d 80	lda $809d	        lda ed_skip+2
+.7a86	ed 61 7f	sbc $7f61	        sbc ed_one+2
+.7a89	8d 9d 80	sta $809d	        sta ed_skip+2
+.7a8c	4c 52 7a	jmp $7a52	        jmp ed_skip_columns
+.7a8f					ed_skip_ended:
+.7a8f	ee b2 80	inc $80b2	        inc ed_row_ended
+.7a92					ed_row_prefix:
+.7a92	ad 79 80	lda $8079	        lda ed_horizontal
+.7a95	0d 7a 80	ora $807a	        ora ed_horizontal+1
+.7a98	0d 7b 80	ora $807b	        ora ed_horizontal+2
+.7a9b	f0 04		beq $7aa1	        beq +
+.7a9d	a9 3c		lda #$3c	        lda #$3c
+.7a9f	d0 02		bne $7aa3	        bne ed_prefix_print
+.7aa1	a9 20		lda #$20	+       lda #32
+.7aa3					ed_prefix_print:
+.7aa3	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7aa6					ed_text_column:
+.7aa6	ad b2 80	lda $80b2	        lda ed_row_ended
+.7aa9	d0 2a		bne $7ad5	        bne ed_padding
+.7aab	20 db 76	jsr $76db	        jsr ed_next_token
+.7aae	ad a9 80	lda $80a9	        lda ed_eof
+.7ab1	d0 17		bne $7aca	        bne ed_line_ended
+.7ab3	ad a8 80	lda $80a8	        lda ed_byte
+.7ab6	c9 0d		cmp #$0d	        cmp #13
+.7ab8	f0 10		beq $7aca	        beq ed_line_ended
+.7aba	c9 0a		cmp #$0a	        cmp #10
+.7abc	f0 0c		beq $7aca	        beq ed_line_ended
+.7abe	c9 20		cmp #$20	        cmp #32
+.7ac0	90 04		bcc $7ac6	        bcc ed_unprintable
+.7ac2	c9 7f		cmp #$7f	        cmp #127
+.7ac4	90 09		bcc $7acf	        bcc ed_text_glyph
+.7ac6					ed_unprintable:
+.7ac6	a9 2e		lda #$2e	        lda #$2e
+.7ac8	d0 05		bne $7acf	        bne ed_text_glyph
+.7aca					ed_line_ended:
+.7aca	ee b2 80	inc $80b2	        inc ed_row_ended
+.7acd	a9 20		lda #$20	        lda #32
+.7acf					ed_text_glyph:
+.7acf	20 66 7b	jsr $7b66	        jsr ed_cursor_glyph
+.7ad2	4c da 7a	jmp $7ada	        jmp ed_column_done
+.7ad5					ed_padding:
+.7ad5	a9 20		lda #$20	        lda #32
+.7ad7	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7ada					ed_column_done:
+.7ada	ee b1 80	inc $80b1	        inc ed_col
+.7add	ad b1 80	lda $80b1	        lda ed_col
+.7ae0	cd af 80	cmp $80af	        cmp ed_width
+.7ae3	d0 c1		bne $7aa6	        bne ed_text_column
+.7ae5	ad b2 80	lda $80b2	        lda ed_row_ended
+.7ae8	d0 5c		bne $7b46	        bne ed_margin_blank
+.7aea	ad 8f 80	lda $808f	        lda ed_fetch
+.7aed	8d 89 80	sta $8089	        sta ed_probe
+.7af0	ad 90 80	lda $8090	        lda ed_fetch+1
+.7af3	8d 8a 80	sta $808a	        sta ed_probe+1
+.7af6	ad 91 80	lda $8091	        lda ed_fetch+2
+.7af9	8d 8b 80	sta $808b	        sta ed_probe+2
+.7afc	20 ac 74	jsr $74ac	        jsr ed_byte_at
+.7aff	b0 3a		bcs $7b3b	        bcs ed_margin_token
+.7b01	c9 0d		cmp #$0d	        cmp #13
+.7b03	f0 36		beq $7b3b	        beq ed_margin_token
+.7b05	c9 0a		cmp #$0a	        cmp #10
+.7b07	f0 32		beq $7b3b	        beq ed_margin_token
+.7b09	ad 8f 80	lda $808f	        lda ed_fetch
+.7b0c	8d 8c 80	sta $808c	        sta ed_scan
+.7b0f	ad 90 80	lda $8090	        lda ed_fetch+1
+.7b12	8d 8d 80	sta $808d	        sta ed_scan+1
+.7b15	ad 91 80	lda $8091	        lda ed_fetch+2
+.7b18	8d 8e 80	sta $808e	        sta ed_scan+2
+.7b1b	20 74 76	jsr $7674	        jsr ed_forward_end
+.7b1e	20 b3 76	jsr $76b3	        jsr ed_after_line
+.7b21	ad 8c 80	lda $808c	        lda ed_scan
+.7b24	8d 8f 80	sta $808f	        sta ed_fetch
+.7b27	ad 8d 80	lda $808d	        lda ed_scan+1
+.7b2a	8d 90 80	sta $8090	        sta ed_fetch+1
+.7b2d	ad 8e 80	lda $808e	        lda ed_scan+2
+.7b30	8d 91 80	sta $8091	        sta ed_fetch+2
+.7b33	a9 3e		lda #$3e	        lda #$3e
+.7b35	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7b38	4c 4b 7b	jmp $7b4b	        jmp ed_row_done
+.7b3b					ed_margin_token:
+.7b3b	20 db 76	jsr $76db	        jsr ed_next_token
+.7b3e	a9 20		lda #$20	        lda #32
+.7b40	20 66 7b	jsr $7b66	        jsr ed_cursor_glyph
+.7b43	4c 4b 7b	jmp $7b4b	        jmp ed_row_done
+.7b46					ed_margin_blank:
+.7b46	a9 20		lda #$20	        lda #32
+.7b48	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7b4b					ed_row_done:
+.7b4b	ee b0 80	inc $80b0	        inc ed_row
+.7b4e	ad b0 80	lda $80b0	        lda ed_row
+.7b51	c9 10		cmp #$10	        cmp #16
+.7b53	f0 03		beq $7b58	        bne ed_text_row
+.7b55	4c 38 7a	jmp $7a38
+.7b58	ee ae 80	inc $80ae	        inc ed_screen
+.7b5b	ad ae 80	lda $80ae	        lda ed_screen
+.7b5e	c9 02		cmp #$02	        cmp #2
+.7b60	f0 03		beq $7b65	        bne ed_show_screen
+.7b62	4c 5e 79	jmp $795e
+.7b65	60		rts		        rts
+.7b66					ed_cursor_glyph:
+.7b66	8d aa 80	sta $80aa	        sta ed_glyph
+.7b69	ad ab 80	lda $80ab	        lda ed_caret_drawn
+.7b6c	d0 63		bne $7bd1	        bne ed_plain_glyph
+.7b6e	ad 72 80	lda $8072	        lda ed_cursor+2
+.7b71	cd 94 80	cmp $8094	        cmp ed_token_start+2
+.7b74	d0 0e		bne $7b84	        bne +
+.7b76	ad 71 80	lda $8071	        lda ed_cursor+1
+.7b79	cd 93 80	cmp $8093	        cmp ed_token_start+1
+.7b7c	d0 06		bne $7b84	        bne +
+.7b7e	ad 70 80	lda $8070	        lda ed_cursor
+.7b81	cd 92 80	cmp $8092	        cmp ed_token_start
+.7b84					+
+.7b84	90 4b		bcc $7bd1	        bcc ed_plain_glyph
+.7b86	ad a9 80	lda $80a9	        lda ed_eof
+.7b89	d0 1b		bne $7ba6	        bne ed_caret_eof
+.7b8b	ad 72 80	lda $8072	        lda ed_cursor+2
+.7b8e	cd 91 80	cmp $8091	        cmp ed_fetch+2
+.7b91	d0 0e		bne $7ba1	        bne +
+.7b93	ad 71 80	lda $8071	        lda ed_cursor+1
+.7b96	cd 90 80	cmp $8090	        cmp ed_fetch+1
+.7b99	d0 06		bne $7ba1	        bne +
+.7b9b	ad 70 80	lda $8070	        lda ed_cursor
+.7b9e	cd 8f 80	cmp $808f	        cmp ed_fetch
+.7ba1					+
+.7ba1	b0 2e		bcs $7bd1	        bcs ed_plain_glyph
+.7ba3	4c be 7b	jmp $7bbe	        jmp ed_caret_here
+.7ba6					ed_caret_eof:
+.7ba6	ad 72 80	lda $8072	        lda ed_cursor+2
+.7ba9	cd 75 80	cmp $8075	        cmp ed_length+2
+.7bac	d0 0e		bne $7bbc	        bne +
+.7bae	ad 71 80	lda $8071	        lda ed_cursor+1
+.7bb1	cd 74 80	cmp $8074	        cmp ed_length+1
+.7bb4	d0 06		bne $7bbc	        bne +
+.7bb6	ad 70 80	lda $8070	        lda ed_cursor
+.7bb9	cd 73 80	cmp $8073	        cmp ed_length
+.7bbc					+
+.7bbc	d0 13		bne $7bd1	        bne ed_plain_glyph
+.7bbe					ed_caret_here:
+.7bbe	ee ab 80	inc $80ab	        inc ed_caret_drawn
+.7bc1	a9 12		lda #$12	        lda #$12
+.7bc3	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7bc6	ad aa 80	lda $80aa	        lda ed_glyph
+.7bc9	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7bcc	a9 92		lda #$92	        lda #$92
+.7bce	4c f1 7b	jmp $7bf1	        jmp ed_chrout
+.7bd1					ed_plain_glyph:
+.7bd1	ad aa 80	lda $80aa	        lda ed_glyph
+.7bd4	4c f1 7b	jmp $7bf1	        jmp ed_chrout
+.7bd7					ed_puts:
+.7bd7	8d de 7b	sta $7bde	        sta ed_text_read+1
+.7bda	8e df 7b	stx $7bdf	        stx ed_text_read+2
+.7bdd					ed_text_read:
+.7bdd	ad ff ff	lda $ffff	        lda $ffff
+.7be0	f0 0e		beq $7bf0	        beq +
+.7be2	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.7be5	ee de 7b	inc $7bde	        inc ed_text_read+1
+.7be8	d0 f3		bne $7bdd	        bne ed_text_read
+.7bea	ee df 7b	inc $7bdf	        inc ed_text_read+2
+.7bed	4c dd 7b	jmp $7bdd	        jmp ed_text_read
+.7bf0	60		rts		+       rts
+.7bf1					ed_chrout:
+.7bf1	48		pha		        pha
+.7bf2	a9 00		lda #$00	        lda #0
+.7bf4	85 f4		sta $f4		        sta $f4
+.7bf6	68		pla		        pla
+.7bf7	4c d2 ff	jmp $ffd2	        jmp $ffd2
+.7bfa					ed_keys_install:
+.7bfa	08		php		        php
+.7bfb	78		sei		        sei
+.7bfc	a2 00		ldx #$00	        ldx #0
+.7bfe					ed_keys_save_loop:
+.7bfe	bd 00 10	lda $1000,x	        lda $1000,x
+.7c01	9d 6c 7f	sta $7f6c,x	        sta ed_saved_keys,x
+.7c04	e8		inx		        inx
+.7c05	d0 f7		bne $7bfe	        bne ed_keys_save_loop
+.7c07	a2 09		ldx #$09	        ldx #9
+.7c09					ed_keys_set_loop:
+.7c09	a9 01		lda #$01	        lda #1
+.7c0b	9d 00 10	sta $1000,x	        sta $1000,x
+.7c0e	bd 62 7f	lda $7f62,x	        lda ed_key_codes,x
+.7c11	9d 0a 10	sta $100a,x	        sta $100a,x
+.7c14	ca		dex		        dex
+.7c15	10 f2		bpl $7c09	        bpl ed_keys_set_loop
+.7c17	a9 00		lda #$00	        lda #0
+.7c19	85 d1		sta $d1		        sta $d1
+.7c1b	85 d2		sta $d2		        sta $d2
+.7c1d	28		plp		        plp
+.7c1e	60		rts		        rts
+.7c1f					ed_keys_restore:
+.7c1f	08		php		        php
+.7c20	78		sei		        sei
+.7c21	a2 00		ldx #$00	        ldx #0
+.7c23					ed_keys_restore_loop:
+.7c23	bd 6c 7f	lda $7f6c,x	        lda ed_saved_keys,x
+.7c26	9d 00 10	sta $1000,x	        sta $1000,x
+.7c29	e8		inx		        inx
+.7c2a	d0 f7		bne $7c23	        bne ed_keys_restore_loop
+.7c2c	a9 00		lda #$00	        lda #0
+.7c2e	85 d1		sta $d1		        sta $d1
+.7c30	85 d2		sta $d2		        sta $d2
+.7c32	28		plp		        plp
+.7c33	60		rts		        rts
+.7c34					ed_hex24:
+.7c34	a9 02		lda #$02	        lda #2
+.7c36	8d ac 80	sta $80ac	        sta ed_hex_index
+.7c39					ed_hex_byte:
+.7c39	ae ac 80	ldx $80ac	        ldx ed_hex_index
+.7c3c	bd a1 80	lda $80a1,x	        lda ed_print_number,x
+.7c3f	48		pha		        pha
+.7c40	4a		lsr a		        lsr
+.7c41	4a		lsr a		        lsr
+.7c42	4a		lsr a		        lsr
+.7c43	4a		lsr a		        lsr
+.7c44	20 53 7c	jsr $7c53	        jsr ed_hex_digit
+.7c47	68		pla		        pla
+.7c48	29 0f		and #$0f	        and #15
+.7c4a	20 53 7c	jsr $7c53	        jsr ed_hex_digit
+.7c4d	ce ac 80	dec $80ac	        dec ed_hex_index
+.7c50	10 e7		bpl $7c39	        bpl ed_hex_byte
+.7c52	60		rts		        rts
+.7c53					ed_hex_digit:
+.7c53	c9 0a		cmp #$0a	        cmp #10
+.7c55	90 02		bcc $7c59	        bcc +
+.7c57	69 06		adc #$06	        adc #6
+.7c59	69 30		adc #$30	+       adc #$30
+.7c5b	4c f1 7b	jmp $7bf1	        jmp ed_chrout
+.7c5e					ed_status_show:
+.7c5e	ad b5 80	lda $80b5	        lda ed_status
+.7c61	c9 04		cmp #$04	        cmp #4
+.7c63	f0 2c		beq $7c91	        beq ed_normal_status
+.7c65	ad b3 80	lda $80b3	        lda ed_mode
+.7c68	f0 27		beq $7c91	        beq ed_normal_status
+.7c6a	c9 05		cmp #$05	        cmp #5
+.7c6c	d0 07		bne $7c75	        bne ed_field_show
+.7c6e	a9 43		lda #$43	        lda #<ed_discard_text
+.7c70	a2 7d		ldx #$7d	        ldx #>ed_discard_text
+.7c72	4c d7 7b	jmp $7bd7	        jmp ed_puts
+.7c75					ed_field_show:
+.7c75	aa		tax		        tax
+.7c76	ca		dex		        dex
+.7c77	bd 98 7d	lda $7d98,x	        lda ed_prompt_lo,x
+.7c7a	48		pha		        pha
+.7c7b	bd 9c 7d	lda $7d9c,x	        lda ed_prompt_hi,x
+.7c7e	aa		tax		        tax
+.7c7f	68		pla		        pla
+.7c80	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.7c83	a9 ca		lda #$ca	        lda #<ed_field
+.7c85	a2 80		ldx #$80	        ldx #>ed_field
+.7c87	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.7c8a	a9 8c		lda #$8c	        lda #<ed_field_help
+.7c8c	a2 7d		ldx #$7d	        ldx #>ed_field_help
+.7c8e	4c d7 7b	jmp $7bd7	        jmp ed_puts
+.7c91					ed_normal_status:
+.7c91	ae b5 80	ldx $80b5	        ldx ed_status
+.7c94	bd 3e 7f	lda $7f3e,x	        lda ed_status_lo,x
+.7c97	48		pha		        pha
+.7c98	bd 4a 7f	lda $7f4a,x	        lda ed_status_hi,x
+.7c9b	aa		tax		        tax
+.7c9c	68		pla		        pla
+.7c9d	4c d7 7b	jmp $7bd7	        jmp ed_puts
+>7ca0	55 4f 53 20 31 32 38 20		ed_title: .text "uos 128 text editor",13,"name: ",0
+>7ca8	54 45 58 54 20 45 44 49 54 4f 52 0d 4e 41 4d 45
+>7cb8	3a 20 00
+>7cbb	55 4e 54 49 54 4c 45 44		ed_untitled: .text "untitled",0
+>7cc3	00
+>7cc4	0d 42 59 54 45 53 3a 20		ed_bytes_text: .text 13,"bytes: ",0
+>7ccc	00
+>7ccd	20 41 54 3a 20 00		ed_at_text: .text " at: ",0
+>7cd3	20 49 45 43 3a 00		ed_iec_text: .text " iec:",0
+>7cd9	0d 46 31 20 4f 50 45 4e		ed_help: .text 13,"f1 open f3 save as f5 new f7 go to",13
+>7ce1	20 46 33 20 53 41 56 45 20 41 53 20 46 35 20 4e
+>7cf1	45 57 20 46 37 20 47 4f 20 54 4f 0d
+>7cfd	46 32 20 54 4f 50 20 46		         .text "f2 top f4 end f6 format f8 device",13
+>7d05	34 20 45 4e 44 20 46 36 20 46 4f 52 4d 41 54 20
+>7d15	46 38 20 44 45 56 49 43 45 0d
+>7d1f	41 52 52 4f 57 53 20 4d		         .text "arrows move  del erase  esc return",13,0
+>7d27	4f 56 45 20 20 44 45 4c 20 45 52 41 53 45 20 20
+>7d37	45 53 43 20 52 45 54 55 52 4e 0d 00
+>7d43	44 49 53 43 41 52 44 20		ed_discard_text: .text "discard document changes? y/n",0
+>7d4b	44 4f 43 55 4d 45 4e 54 20 43 48 41 4e 47 45 53
+>7d5b	3f 20 59 2f 4e 00
+>7d61	4f 50 45 4e 3a 20 00		ed_open_text: .text "open: ",0
+>7d68	53 41 56 45 20 41 53 3a		ed_save_text: .text "save as: ",0
+>7d70	20 00
+>7d72	42 59 54 45 20 28 48 45		ed_goto_text: .text "byte (hex): ",0
+>7d7a	58 29 3a 20 00
+>7d7f	49 45 43 20 44 45 56 49		ed_device_text: .text "iec device: ",0
+>7d87	43 45 3a 20 00
+>7d8c	20 20 45 4e 54 45 52 2f		ed_field_help: .text "  enter/esc",0
+>7d94	45 53 43 00
+>7d98	61 68 72 7f			ed_prompt_lo: .byte <ed_open_text,<ed_save_text,<ed_goto_text,<ed_device_text
+>7d9c	7d 7d 7d 7d			ed_prompt_hi: .byte >ed_open_text,>ed_save_text,>ed_goto_text,>ed_device_text
+>7da0	44 36 34 00			ed_d64: .text "d64",0
+>7da4	44 37 31 00			ed_d71: .text "d71",0
+>7da8	44 38 31 00			ed_d81: .text "d81",0
+>7dac	a0 a4 a8			ed_format_lo: .byte <ed_d64,<ed_d71,<ed_d81
+>7daf	7d 7d 7d			ed_format_hi: .byte >ed_d64,>ed_d71,>ed_d81
+>7db2	48 4f 4d 45 3a 20 4c 49		ed_ready_text: .text "home: line start  ctrl-e: line end",0
+>7dba	4e 45 20 53 54 41 52 54 20 20 43 54 52 4c 2d 45
+>7dca	3a 20 4c 49 4e 45 20 45 4e 44 00
+>7dd5	53 41 56 45 44 20 41 4e		ed_saved_text: .text "saved and reopened: all bytes verified",0
+>7ddd	44 20 52 45 4f 50 45 4e 45 44 3a 20 41 4c 4c 20
+>7ded	42 59 54 45 53 20 56 45 52 49 46 49 45 44 00
+>7dfc	44 49 53 4b 20 45 52 52		ed_io_error: .text "disk error; document kept",0
+>7e04	4f 52 3b 20 44 4f 43 55 4d 45 4e 54 20 4b 45 50
+>7e14	54 00
+>7e16	4e 4f 54 20 45 4e 4f 55		ed_memory_text: .text "not enough memory; document kept",0
+>7e1e	47 48 20 4d 45 4d 4f 52 59 3b 20 44 4f 43 55 4d
+>7e2e	45 4e 54 20 4b 45 50 54 00
+>7e37	50 4f 53 49 54 49 4f 4e		ed_range_text: .text "position or device is out of range",0
+>7e3f	20 4f 52 20 44 45 56 49 43 45 20 49 53 20 4f 55
+>7e4f	54 20 4f 46 20 52 41 4e 47 45 00
+>7e5a	44 4f 43 55 4d 45 4e 54		ed_fault_text: .text "document memory error; cannot save",0
+>7e62	20 4d 45 4d 4f 52 59 20 45 52 52 4f 52 3b 20 43
+>7e72	41 4e 4e 4f 54 20 53 41 56 45 00
+>7e7d	46 49 4c 45 20 45 58 49		ed_exists_text: .text "file exists; choose another name",0
+>7e85	53 54 53 3b 20 43 48 4f 4f 53 45 20 41 4e 4f 54
+>7e95	48 45 52 20 4e 41 4d 45 00
+>7e9e	53 41 56 45 20 46 41 49		ed_partial_text: .text "save failed; file may be partial",0
+>7ea6	4c 45 44 3b 20 46 49 4c 45 20 4d 41 59 20 42 45
+>7eb6	20 50 41 52 54 49 41 4c 00
+>7ebf	43 41 4e 43 45 4c 4c 45		ed_cancelled_text: .text "cancelled; document kept",0
+>7ec7	44 3b 20 44 4f 43 55 4d 45 4e 54 20 4b 45 50 54
+>7ed7	00
+>7ed8	44 49 53 4b 20 43 4c 4f		ed_close_text: .text "disk close failed; document kept",0
+>7ee0	53 45 20 46 41 49 4c 45 44 3b 20 44 4f 43 55 4d
+>7ef0	45 4e 54 20 4b 45 50 54 00
+>7ef9	43 41 4e 43 45 4c 4c 45		ed_cancelled_save: .text "cancelled; partial file may remain",0
+>7f01	44 3b 20 50 41 52 54 49 41 4c 20 46 49 4c 45 20
+>7f11	4d 41 59 20 52 45 4d 41 49 4e 00
+>7f1c	4f 50 45 4e 45 44 3b 20		ed_old_cleanup: .text "opened; old buffer cleanup failed",0
+>7f24	4f 4c 44 20 42 55 46 46 45 52 20 43 4c 45 41 4e
+>7f34	55 50 20 46 41 49 4c 45 44 00
+>7f3e	b2 d5 fc 16 37			ed_status_lo: .byte <ed_ready_text,<ed_saved_text,<ed_io_error,<ed_memory_text,<ed_range_text
+>7f43	5a 7d 9e bf d8			              .byte <ed_fault_text,<ed_exists_text,<ed_partial_text,<ed_cancelled_text,<ed_close_text
+>7f48	f9 1c				              .byte <ed_cancelled_save,<ed_old_cleanup
+>7f4a	7d 7d 7d 7e 7e			ed_status_hi: .byte >ed_ready_text,>ed_saved_text,>ed_io_error,>ed_memory_text,>ed_range_text
+>7f4f	7e 7e 7e 7e 7e			              .byte >ed_fault_text,>ed_exists_text,>ed_partial_text,>ed_cancelled_text,>ed_close_text
+>7f54	7e 7f				              .byte >ed_cancelled_save,>ed_old_cleanup
+>7f56	2a 3f 2c 3a 2f 5c 40 23		ed_forbidden: .text "*?,:/",$5c,"@#$"
+>7f5e	24
+.7f5f					ed_forbidden_end:
+>7f5f	01 00 00			ed_one: .byte 1,0,0
+>7f62	85 89 86 8a 87 8b 88 8c		ed_key_codes: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84
+>7f6a	83 84
+>7f6c	00 00 00 00 00 00 00 00		ed_saved_keys: .fill 256,0
+>7f74	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>8064	00 00 00 00 00 00 00 00
+>806c	25 00 00			ed_width_minus_one: .byte 37,0,0
+>806f	00				ed_active: .byte 0
+>8070	00 00 00			ed_cursor: .fill 3,0
+>8073	00 00 00			ed_length: .fill 3,0
+>8076	00 00 00			ed_view: .fill 3,0
+>8079	00 00 00			ed_horizontal: .fill 3,0
+>807c	00 00 00			ed_line_start: .fill 3,0
+>807f	00 00 00			ed_line_end: .fill 3,0
+>8082	00 00 00			ed_column: .fill 3,0
+>8085	00 00 00			ed_goal: .fill 3,0
+>8088	00				ed_goal_valid: .byte 0
+>8089	00 00 00			ed_probe: .fill 3,0
+>808c	00 00 00			ed_scan: .fill 3,0
+>808f	00 00 00			ed_fetch: .fill 3,0
+>8092	00 00 00			ed_token_start: .fill 3,0
+>8095	00 00 00			ed_target_start: .fill 3,0
+>8098	00 00 00			ed_target_end: .fill 3,0
+>809b	00 00 00			ed_skip: .fill 3,0
+>809e	00 00 00			ed_number: .fill 3,0
+>80a1	00 00 00			ed_print_number: .fill 3,0
+>80a4	00 00 00			ed_cache_base: .fill 3,0
+>80a7	00				ed_cache_valid: .byte 0
+>80a8	00				ed_byte: .byte 0
+>80a9	00				ed_eof: .byte 0
+>80aa	00				ed_glyph: .byte 0
+>80ab	00				ed_caret_drawn: .byte 0
+>80ac	00				ed_hex_index: .byte 0
+>80ad	00				ed_scan_rows: .byte 0
+>80ae	00				ed_screen: .byte 0
+>80af	00				ed_width: .byte 0
+>80b0	00				ed_row: .byte 0
+>80b1	00				ed_col: .byte 0
+>80b2	00				ed_row_ended: .byte 0
+>80b3	00				ed_mode: .byte 0
+>80b4	00				ed_action: .byte 0
+>80b5	00				ed_status: .byte 0
+>80b6	08				ed_device: .byte 8
+>80b7	00				ed_format: .byte 0
+>80b8	00				ed_newline: .byte 0
+>80b9	00 00 00 00 00 00 00 00		ed_name: .fill 17,0
+>80c1	00 00 00 00 00 00 00 00 00
+>80ca	00 00 00 00 00 00 00 00		ed_field: .fill 17,0
+>80d2	00 00 00 00 00 00 00 00 00
+>80db	00				ed_field_len: .byte 0
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/editor-files.inc
+
+.80dc					ed_close_owned:
+.80dc	ad cc 69	lda $69cc	        lda d_owner
+.80df	8d 80 3d	sta $3d80	        sta N_FOWNER
+.80e2	4c 4d 1c	jmp $1c4d	        jmp N_FRELEASE
+.80e5					ed_file_open:
+.80e5	8d 87 3d	sta $3d87	        sta N_FMODE
+.80e8	ad cc 69	lda $69cc	        lda d_owner
+.80eb	8d 80 3d	sta $3d80	        sta N_FOWNER
+.80ee	ad b6 80	lda $80b6	        lda ed_device
+.80f1	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.80f4	ad b7 80	lda $80b7	        lda ed_format
+.80f7	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.80fa	ad db 80	lda $80db	        lda ed_field_len
+.80fd	8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.8100	a2 0f		ldx #$0f	        ldx #15
+.8102					ed_file_name:
+.8102	bd ca 80	lda $80ca,x	        lda ed_field,x
+.8105	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
+.8108	ca		dex		        dex
+.8109	10 f7		bpl $8102	        bpl ed_file_name
+.810b	a9 00		lda #$00	        lda #0
+.810d	8d 88 3d	sta $3d88	        sta N_FTYPE
+.8110	4c 41 1c	jmp $1c41	        jmp N_FOPEN
+.8113					ed_io_reset:
+.8113	a9 00		lda #$00	        lda #0
+.8115	8d b3 80	sta $80b3	        sta ed_mode
+.8118	8d b5 80	sta $80b5	        sta ed_status
+.811b	8d c5 85	sta $85c5	        sta ed_io_pos
+.811e	8d c6 85	sta $85c6	        sta ed_io_pos+1
+.8121	8d c7 85	sta $85c7	        sta ed_io_pos+2
+.8124	8d ca 85	sta $85ca	        sta ed_io_size+2
+.8127	60		rts		        rts
+.8128					ed_file_close_error:
+.8128	a9 09		lda #$09	        lda #9
+.812a	8d b5 80	sta $80b5	        sta ed_status
+.812d	a9 00		lda #$00	        lda #0
+.812f	8d b3 80	sta $80b3	        sta ed_mode
+.8132	4c 75 77	jmp $7775	        jmp ed_refresh
+.8135					ed_open_file:
+.8135	20 13 81	jsr $8113	        jsr ed_io_reset
+.8138	20 dc 80	jsr $80dc	        jsr ed_close_owned
+.813b	b0 eb		bcs $8128	        bcs ed_file_close_error
+.813d	ad 6f 80	lda $806f	        lda ed_active
+.8140	49 80		eor #$80	        eor #$80
+.8142	8d cd 85	sta $85cd	        sta ed_pending
+.8145	8d cb 69	sta $69cb	        sta d_slot
+.8148	20 ad 60	jsr $60ad	        jsr doc_dispose
+.814b	90 03		bcc $8150	        bcs ed_open_memory_failed
+.814d	4c 17 82	jmp $8217
+.8150	a9 00		lda #$00	        lda #0
+.8152	8d d1 85	sta $85d1	        sta ed_nl_found
+.8155	8d d2 85	sta $85d2	        sta ed_nl_value
+.8158	a9 01		lda #$01	        lda #1
+.815a	8d cc 85	sta $85cc	        sta ed_io_phase
+.815d	20 f9 84	jsr $84f9	        jsr ed_progress
+.8160	a9 00		lda #$00	        lda #0
+.8162	20 e5 80	jsr $80e5	        jsr ed_file_open
+.8165	90 03		bcc $816a	        bcs ed_open_failed
+.8167	4c 13 82	jmp $8213
+.816a					ed_open_read:
+.816a	20 cc 83	jsr $83cc	        jsr ed_read_file_chunk
+.816d	b0 f8		bcs $8167	        bcs ed_open_failed
+.816f	ad c8 85	lda $85c8	        lda ed_io_size
+.8172	0d c9 85	ora $85c9	        ora ed_io_size+1
+.8175	f0 48		beq $81bf	        beq ed_open_empty_chunk
+.8177	a9 00		lda #$00	        lda #<N_BUFFER
+.8179	a2 3a		ldx #$3a	        ldx #>N_BUFFER
+.817b	a0 f2		ldy #$f2	        ldy #<d_input
+.817d	8c ac 69	sty $69ac	        sty doc_local_write+1
+.8180	a0 6a		ldy #$6a	        ldy #>d_input
+.8182	8c ad 69	sty $69ad	        sty doc_local_write+2
+.8185	20 ef 83	jsr $83ef	        jsr ed_file_copy
+.8188	20 76 84	jsr $8476	        jsr ed_detect_newline
+.818b	ae cb 69	ldx $69cb	        ldx d_slot
+.818e	bd f2 69	lda $69f2,x	        lda d_states+D_LEN,x
+.8191	8d cd 69	sta $69cd	        sta d_pos
+.8194	bd f3 69	lda $69f3,x	        lda d_states+D_LEN+1,x
+.8197	8d ce 69	sta $69ce	        sta d_pos+1
+.819a	bd f4 69	lda $69f4,x	        lda d_states+D_LEN+2,x
+.819d	8d cf 69	sta $69cf	        sta d_pos+2
+.81a0	ad c8 85	lda $85c8	        lda ed_io_size
+.81a3	8d d0 69	sta $69d0	        sta d_count
+.81a6	ad c9 85	lda $85c9	        lda ed_io_size+1
+.81a9	8d d1 69	sta $69d1	        sta d_count+1
+.81ac	ad ca 85	lda $85ca	        lda ed_io_size+2
+.81af	8d d2 69	sta $69d2	        sta d_count+2
+.81b2	20 84 65	jsr $6584	        jsr doc_insert
+.81b5	b0 60		bcs $8217	        bcs ed_open_memory_failed
+.81b7	20 0a 84	jsr $840a	        jsr ed_io_advance
+.81ba	20 de 84	jsr $84de	        jsr ed_cancel_check
+.81bd	b0 50		bcs $820f	        bcs ed_open_cancelled
+.81bf					ed_open_empty_chunk:
+.81bf	ad cb 85	lda $85cb	        lda ed_io_eof
+.81c2	d0 0e		bne $81d2	        bne ed_open_close
+.81c4	ad c8 85	lda $85c8	        lda ed_io_size
+.81c7	0d c9 85	ora $85c9	        ora ed_io_size+1
+.81ca	f0 47		beq $8213	        beq ed_open_failed
+.81cc	20 e9 84	jsr $84e9	        jsr ed_progress_maybe
+.81cf	4c 6a 81	jmp $816a	        jmp ed_open_read
+.81d2					ed_open_close:
+.81d2	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.81d5	b0 3c		bcs $8213	        bcs ed_open_failed
+.81d7	ad 6f 80	lda $806f	        lda ed_active
+.81da	8d cb 69	sta $69cb	        sta d_slot
+.81dd	20 ad 60	jsr $60ad	        jsr doc_dispose
+.81e0	a9 00		lda #$00	        lda #0
+.81e2	90 02		bcc $81e6	        bcc +
+.81e4	a9 0b		lda #$0b	        lda #11
+.81e6	8d ce 85	sta $85ce	+       sta ed_finish_status
+.81e9	ad cd 85	lda $85cd	        lda ed_pending
+.81ec	8d 6f 80	sta $806f	        sta ed_active
+.81ef	8d cb 69	sta $69cb	        sta d_slot
+.81f2	20 3f 70	jsr $703f	        jsr ed_reset_view
+.81f5	20 c0 83	jsr $83c0	        jsr ed_keep_name
+.81f8	ad d2 85	lda $85d2	        lda ed_nl_value
+.81fb	8d b8 80	sta $80b8	        sta ed_newline
+.81fe	ae 6f 80	ldx $806f	        ldx ed_active
+.8201	a9 00		lda #$00	        lda #0
+.8203	9d fe 69	sta $69fe,x	        sta d_states+D_DIRTY,x
+.8206	ad ce 85	lda $85ce	        lda ed_finish_status
+.8209	8d b5 80	sta $80b5	        sta ed_status
+.820c	4c 75 77	jmp $7775	        jmp ed_refresh
+.820f					ed_open_cancelled:
+.820f	a9 08		lda #$08	        lda #8
+.8211	d0 12		bne $8225	        bne ed_open_rollback
+.8213					ed_open_failed:
+.8213	a9 02		lda #$02	        lda #2
+.8215	d0 0e		bne $8225	        bne ed_open_rollback
+.8217					ed_open_memory_failed:
+.8217	c9 02		cmp #$02	        cmp #N_NOMEM
+.8219	f0 08		beq $8223	        beq ed_open_no_memory
+.821b	c9 03		cmp #$03	        cmp #N_NOSLOT
+.821d	f0 04		beq $8223	        beq ed_open_no_memory
+.821f	a9 05		lda #$05	        lda #5
+.8221	d0 02		bne $8225	        bne ed_open_rollback
+.8223					ed_open_no_memory:
+.8223	a9 03		lda #$03	        lda #3
+.8225					ed_open_rollback:
+.8225	8d b5 80	sta $80b5	        sta ed_status
+.8228	20 dc 80	jsr $80dc	        jsr ed_close_owned
+.822b	90 05		bcc $8232	        bcc +
+.822d	a9 09		lda #$09	        lda #9
+.822f	8d b5 80	sta $80b5	        sta ed_status
+.8232	ad cd 85	lda $85cd	+       lda ed_pending
+.8235	8d cb 69	sta $69cb	        sta d_slot
+.8238	20 ad 60	jsr $60ad	        jsr doc_dispose
+.823b	90 05		bcc $8242	        bcc +
+.823d	a9 05		lda #$05	        lda #5
+.823f	8d b5 80	sta $80b5	        sta ed_status
+.8242	ad 6f 80	lda $806f	+       lda ed_active
+.8245	8d cb 69	sta $69cb	        sta d_slot
+.8248	4c 75 77	jmp $7775	        jmp ed_refresh
+.824b					ed_save_file:
+.824b	20 13 81	jsr $8113	        jsr ed_io_reset
+.824e	ad 6f 80	lda $806f	        lda ed_active
+.8251	8d cb 69	sta $69cb	        sta d_slot
+.8254	20 4a 60	jsr $604a	        jsr doc_context
+.8257	90 03		bcc $825c	        bcs ed_doc_error
+.8259	4c b6 72	jmp $72b6
+.825c	20 dc 80	jsr $80dc	        jsr ed_close_owned
+.825f	90 03		bcc $8264	        bcs ed_file_close_error
+.8261	4c 28 81	jmp $8128
+.8264	a9 02		lda #$02	        lda #2
+.8266	8d cc 85	sta $85cc	        sta ed_io_phase
+.8269	20 f9 84	jsr $84f9	        jsr ed_progress
+.826c	a9 01		lda #$01	        lda #1
+.826e	20 e5 80	jsr $80e5	        jsr ed_file_open
+.8271	90 11		bcc $8284	        bcc ed_save_write
+.8273	ad 8f 3d	lda $3d8f	        lda N_FDOS
+.8276	c9 3f		cmp #$3f	        cmp #63
+.8278	f0 03		beq $827d	        bne ed_save_failed
+.827a	4c ae 83	jmp $83ae
+.827d	a9 06		lda #$06	        lda #6
+.827f	f0 03		beq $8284	        bne ed_save_cleanup
+.8281	4c b0 83	jmp $83b0
+.8284					ed_save_write:
+.8284	ad c5 85	lda $85c5	        lda ed_io_pos
+.8287	8d cd 69	sta $69cd	        sta d_pos
+.828a	ad c6 85	lda $85c6	        lda ed_io_pos+1
+.828d	8d ce 69	sta $69ce	        sta d_pos+1
+.8290	ad c7 85	lda $85c7	        lda ed_io_pos+2
+.8293	8d cf 69	sta $69cf	        sta d_pos+2
+.8296	a9 00		lda #$00	        lda #0
+.8298	8d d0 69	sta $69d0	        sta d_count
+.829b	a9 02		lda #$02	        lda #2
+.829d	8d d1 69	sta $69d1	        sta d_count+1
+.82a0	20 b5 67	jsr $67b5	        jsr doc_read
+.82a3	b0 d5		bcs $827a	        bcs ed_save_failed
+.82a5	ad d3 69	lda $69d3	        lda d_actual
+.82a8	8d c8 85	sta $85c8	        sta ed_io_size
+.82ab	ad d4 69	lda $69d4	        lda d_actual+1
+.82ae	8d c9 85	sta $85c9	        sta ed_io_size+1
+.82b1	0d c8 85	ora $85c8	        ora ed_io_size
+.82b4	f0 43		beq $82f9	        beq ed_save_written
+.82b6	a9 00		lda #$00	        lda #<N_BUFFER
+.82b8	8d ac 69	sta $69ac	        sta doc_local_write+1
+.82bb	a9 3a		lda #$3a	        lda #>N_BUFFER
+.82bd	8d ad 69	sta $69ad	        sta doc_local_write+2
+.82c0	a9 f2		lda #$f2	        lda #<d_output
+.82c2	a2 6c		ldx #$6c	        ldx #>d_output
+.82c4	20 ef 83	jsr $83ef	        jsr ed_file_copy
+.82c7	ad c8 85	lda $85c8	        lda ed_io_size
+.82ca	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.82cd	ad c9 85	lda $85c9	        lda ed_io_size+1
+.82d0	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.82d3	20 47 1c	jsr $1c47	        jsr N_FWRITE
+.82d6	b0 a2		bcs $827a	        bcs ed_save_failed
+.82d8	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.82db	cd c8 85	cmp $85c8	        cmp ed_io_size
+.82de	d0 9a		bne $827a	        bne ed_save_failed
+.82e0	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
+.82e3	cd c9 85	cmp $85c9	        cmp ed_io_size+1
+.82e6	d0 92		bne $827a	        bne ed_save_failed
+.82e8	20 0a 84	jsr $840a	        jsr ed_io_advance
+.82eb	20 de 84	jsr $84de	        jsr ed_cancel_check
+.82ee	90 03		bcc $82f3	        bcs ed_save_cancelled
+.82f0	4c aa 83	jmp $83aa
+.82f3	20 e9 84	jsr $84e9	        jsr ed_progress_maybe
+.82f6	4c 84 82	jmp $8284	        jmp ed_save_write
+.82f9					ed_save_written:
+.82f9	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.82fc	90 03		bcc $8301	        bcs ed_save_failed
+.82fe	4c ae 83	jmp $83ae
+.8301	20 13 81	jsr $8113	        jsr ed_io_reset
+.8304	a9 03		lda #$03	        lda #3
+.8306	8d cc 85	sta $85cc	        sta ed_io_phase
+.8309	20 f9 84	jsr $84f9	        jsr ed_progress
+.830c	a9 00		lda #$00	        lda #0
+.830e	20 e5 80	jsr $80e5	        jsr ed_file_open
+.8311	b0 eb		bcs $82fe	        bcs ed_save_failed
+.8313					ed_verify_read:
+.8313	20 cc 83	jsr $83cc	        jsr ed_read_file_chunk
+.8316	b0 e6		bcs $82fe	        bcs ed_save_failed
+.8318	a9 d5		lda #$d5	        lda #<ed_verify_data
+.831a	8d ac 69	sta $69ac	        sta doc_local_write+1
+.831d	a9 85		lda #$85	        lda #>ed_verify_data
+.831f	8d ad 69	sta $69ad	        sta doc_local_write+2
+.8322	a9 00		lda #$00	        lda #<N_BUFFER
+.8324	a2 3a		ldx #$3a	        ldx #>N_BUFFER
+.8326	20 ef 83	jsr $83ef	        jsr ed_file_copy
+.8329	ad c5 85	lda $85c5	        lda ed_io_pos
+.832c	8d cd 69	sta $69cd	        sta d_pos
+.832f	ad c6 85	lda $85c6	        lda ed_io_pos+1
+.8332	8d ce 69	sta $69ce	        sta d_pos+1
+.8335	ad c7 85	lda $85c7	        lda ed_io_pos+2
+.8338	8d cf 69	sta $69cf	        sta d_pos+2
+.833b	a9 00		lda #$00	        lda #0
+.833d	8d d0 69	sta $69d0	        sta d_count
+.8340	a9 02		lda #$02	        lda #2
+.8342	8d d1 69	sta $69d1	        sta d_count+1
+.8345	20 b5 67	jsr $67b5	        jsr doc_read
+.8348	b0 64		bcs $83ae	        bcs ed_save_failed
+.834a	ad d3 69	lda $69d3	        lda d_actual
+.834d	cd c8 85	cmp $85c8	        cmp ed_io_size
+.8350	d0 5c		bne $83ae	        bne ed_save_failed
+.8352	ad d4 69	lda $69d4	        lda d_actual+1
+.8355	cd c9 85	cmp $85c9	        cmp ed_io_size+1
+.8358	d0 54		bne $83ae	        bne ed_save_failed
+.835a	20 27 84	jsr $8427	        jsr ed_verify_chunk
+.835d	b0 4f		bcs $83ae	        bcs ed_save_failed
+.835f	20 0a 84	jsr $840a	        jsr ed_io_advance
+.8362	20 de 84	jsr $84de	        jsr ed_cancel_check
+.8365	b0 43		bcs $83aa	        bcs ed_save_cancelled
+.8367	ad cb 85	lda $85cb	        lda ed_io_eof
+.836a	d0 0e		bne $837a	        bne ed_verify_done
+.836c	ad c8 85	lda $85c8	        lda ed_io_size
+.836f	0d c9 85	ora $85c9	        ora ed_io_size+1
+.8372	f0 3a		beq $83ae	        beq ed_save_failed
+.8374	20 e9 84	jsr $84e9	        jsr ed_progress_maybe
+.8377	4c 13 83	jmp $8313	        jmp ed_verify_read
+.837a					ed_verify_done:
+.837a	ad c7 85	lda $85c7	        lda ed_io_pos+2
+.837d	cd 75 80	cmp $8075	        cmp ed_length+2
+.8380	d0 0e		bne $8390	        bne +
+.8382	ad c6 85	lda $85c6	        lda ed_io_pos+1
+.8385	cd 74 80	cmp $8074	        cmp ed_length+1
+.8388	d0 06		bne $8390	        bne +
+.838a	ad c5 85	lda $85c5	        lda ed_io_pos
+.838d	cd 73 80	cmp $8073	        cmp ed_length
+.8390					+
+.8390	d0 1c		bne $83ae	        bne ed_save_failed
+.8392	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.8395	b0 17		bcs $83ae	        bcs ed_save_failed
+.8397	ae 6f 80	ldx $806f	        ldx ed_active
+.839a	a9 00		lda #$00	        lda #0
+.839c	9d fe 69	sta $69fe,x	        sta d_states+D_DIRTY,x
+.839f	20 c0 83	jsr $83c0	        jsr ed_keep_name
+.83a2	a9 01		lda #$01	        lda #1
+.83a4	8d b5 80	sta $80b5	        sta ed_status
+.83a7	4c 75 77	jmp $7775	        jmp ed_refresh
+.83aa					ed_save_cancelled:
+.83aa	a9 0a		lda #$0a	        lda #10
+.83ac	d0 02		bne $83b0	        bne ed_save_cleanup
+.83ae					ed_save_failed:
+.83ae	a9 07		lda #$07	        lda #7
+.83b0					ed_save_cleanup:
+.83b0	8d b5 80	sta $80b5	        sta ed_status
+.83b3	20 dc 80	jsr $80dc	        jsr ed_close_owned
+.83b6	90 05		bcc $83bd	        bcc +
+.83b8	a9 09		lda #$09	        lda #9
+.83ba	8d b5 80	sta $80b5	        sta ed_status
+.83bd	4c 75 77	jmp $7775	+       jmp ed_refresh
+.83c0					ed_keep_name:
+.83c0	a2 10		ldx #$10	        ldx #16
+.83c2					ed_keep_name_loop:
+.83c2	bd ca 80	lda $80ca,x	        lda ed_field,x
+.83c5	9d b9 80	sta $80b9,x	        sta ed_name,x
+.83c8	ca		dex		        dex
+.83c9	10 f7		bpl $83c2	        bpl ed_keep_name_loop
+.83cb	60		rts		        rts
+.83cc					ed_read_file_chunk:
+.83cc	a9 00		lda #$00	        lda #0
+.83ce	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.83d1	a9 02		lda #$02	        lda #2
+.83d3	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.83d6	20 44 1c	jsr $1c44	        jsr N_FREAD
+.83d9	b0 13		bcs $83ee	        bcs +
+.83db	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.83de	8d c8 85	sta $85c8	        sta ed_io_size
+.83e1	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
+.83e4	8d c9 85	sta $85c9	        sta ed_io_size+1
+.83e7	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.83ea	8d cb 85	sta $85cb	        sta ed_io_eof
+.83ed	18		clc		        clc
+.83ee	60		rts		+       rts
+.83ef					ed_file_copy:
+.83ef	8d a9 69	sta $69a9	        sta doc_local_read+1
+.83f2	8e aa 69	stx $69aa	        stx doc_local_read+2
+.83f5	ad c8 85	lda $85c8	        lda ed_io_size
+.83f8	8d e4 69	sta $69e4	        sta d_n
+.83fb	ad c9 85	lda $85c9	        lda ed_io_size+1
+.83fe	8d e5 69	sta $69e5	        sta d_n+1
+.8401	0d e4 69	ora $69e4	        ora d_n
+.8404	f0 03		beq $8409	        beq +
+.8406	4c 9a 69	jmp $699a	        jmp doc_local_copy
+.8409	60		rts		+       rts
+.840a					ed_io_advance:
+.840a	18		clc		        clc
+.840b	ad c5 85	lda $85c5	        lda ed_io_pos
+.840e	6d c8 85	adc $85c8	        adc ed_io_size
+.8411	8d c5 85	sta $85c5	        sta ed_io_pos
+.8414	ad c6 85	lda $85c6	        lda ed_io_pos+1
+.8417	6d c9 85	adc $85c9	        adc ed_io_size+1
+.841a	8d c6 85	sta $85c6	        sta ed_io_pos+1
+.841d	ad c7 85	lda $85c7	        lda ed_io_pos+2
+.8420	6d ca 85	adc $85ca	        adc ed_io_size+2
+.8423	8d c7 85	sta $85c7	        sta ed_io_pos+2
+.8426	60		rts		        rts
+.8427					ed_verify_chunk:
+.8427	a9 d5		lda #$d5	        lda #<ed_verify_data
+.8429	8d 4f 84	sta $844f	        sta ed_verify_file+1
+.842c	a9 85		lda #$85	        lda #>ed_verify_data
+.842e	8d 50 84	sta $8450	        sta ed_verify_file+2
+.8431	a9 f2		lda #$f2	        lda #<d_output
+.8433	8d 52 84	sta $8452	        sta ed_verify_doc+1
+.8436	a9 6c		lda #$6c	        lda #>d_output
+.8438	8d 53 84	sta $8453	        sta ed_verify_doc+2
+.843b	ad c8 85	lda $85c8	        lda ed_io_size
+.843e	8d cf 85	sta $85cf	        sta ed_compare_left
+.8441	ad c9 85	lda $85c9	        lda ed_io_size+1
+.8444	8d d0 85	sta $85d0	        sta ed_compare_left+1
+.8447	0d cf 85	ora $85cf	        ora ed_compare_left
+.844a	f0 26		beq $8472	        beq ed_compare_ok
+.844c	a2 00		ldx #$00	        ldx #0
+.844e					ed_verify_file:
+.844e	bd ff ff	lda $ffff,x	        lda $ffff,x
+.8451					ed_verify_doc:
+.8451	dd ff ff	cmp $ffff,x	        cmp $ffff,x
+.8454	d0 1e		bne $8474	        bne ed_compare_failed
+.8456	e8		inx		        inx
+.8457	d0 06		bne $845f	        bne +
+.8459	ee 50 84	inc $8450	        inc ed_verify_file+2
+.845c	ee 53 84	inc $8453	        inc ed_verify_doc+2
+.845f	ad cf 85	lda $85cf	+       lda ed_compare_left
+.8462	d0 03		bne $8467	        bne +
+.8464	ce d0 85	dec $85d0	        dec ed_compare_left+1
+.8467	ce cf 85	dec $85cf	+       dec ed_compare_left
+.846a	ad cf 85	lda $85cf	        lda ed_compare_left
+.846d	0d d0 85	ora $85d0	        ora ed_compare_left+1
+.8470	d0 dc		bne $844e	        bne ed_verify_file
+.8472					ed_compare_ok:
+.8472	18		clc		        clc
+.8473	60		rts		        rts
+.8474					ed_compare_failed:
+.8474	38		sec		        sec
+.8475	60		rts		        rts
+.8476					ed_detect_newline:
+.8476	ad d1 85	lda $85d1	        lda ed_nl_found
+.8479	c9 02		cmp #$02	        cmp #2
+.847b	f0 46		beq $84c3	        beq ed_nl_done
+.847d	a9 f2		lda #$f2	        lda #<d_input
+.847f	8d 96 84	sta $8496	        sta ed_nl_read+1
+.8482	a9 6a		lda #$6a	        lda #>d_input
+.8484	8d 97 84	sta $8497	        sta ed_nl_read+2
+.8487	ad c8 85	lda $85c8	        lda ed_io_size
+.848a	8d d3 85	sta $85d3	        sta ed_nl_left
+.848d	ad c9 85	lda $85c9	        lda ed_io_size+1
+.8490	8d d4 85	sta $85d4	        sta ed_nl_left+1
+.8493	a2 00		ldx #$00	        ldx #0
+.8495					ed_nl_read:
+.8495	bd ff ff	lda $ffff,x	        lda $ffff,x
+.8498	ac d1 85	ldy $85d1	        ldy ed_nl_found
+.849b	d0 18		bne $84b5	        bne ed_nl_after_cr
+.849d	c9 0d		cmp #$0d	        cmp #13
+.849f	f0 07		beq $84a8	        beq ed_nl_cr
+.84a1	c9 0a		cmp #$0a	        cmp #10
+.84a3	f0 09		beq $84ae	        beq ed_nl_lf
+.84a5	4c c4 84	jmp $84c4	        jmp ed_nl_next
+.84a8					ed_nl_cr:
+.84a8	ee d1 85	inc $85d1	        inc ed_nl_found
+.84ab	4c c4 84	jmp $84c4	        jmp ed_nl_next
+.84ae					ed_nl_lf:
+.84ae	a9 01		lda #$01	        lda #1
+.84b0	8d d2 85	sta $85d2	        sta ed_nl_value
+.84b3	d0 09		bne $84be	        bne ed_nl_fixed
+.84b5					ed_nl_after_cr:
+.84b5	c9 0a		cmp #$0a	        cmp #10
+.84b7	d0 05		bne $84be	        bne ed_nl_fixed
+.84b9	a9 02		lda #$02	        lda #2
+.84bb	8d d2 85	sta $85d2	        sta ed_nl_value
+.84be					ed_nl_fixed:
+.84be	a9 02		lda #$02	        lda #2
+.84c0	8d d1 85	sta $85d1	        sta ed_nl_found
+.84c3					ed_nl_done:
+.84c3	60		rts		        rts
+.84c4					ed_nl_next:
+.84c4	e8		inx		        inx
+.84c5	d0 03		bne $84ca	        bne +
+.84c7	ee 97 84	inc $8497	        inc ed_nl_read+2
+.84ca	ad d3 85	lda $85d3	+       lda ed_nl_left
+.84cd	d0 03		bne $84d2	        bne +
+.84cf	ce d4 85	dec $85d4	        dec ed_nl_left+1
+.84d2	ce d3 85	dec $85d3	+       dec ed_nl_left
+.84d5	ad d3 85	lda $85d3	        lda ed_nl_left
+.84d8	0d d4 85	ora $85d4	        ora ed_nl_left+1
+.84db	d0 b8		bne $8495	        bne ed_nl_read
+.84dd	60		rts		        rts
+.84de					ed_cancel_check:
+.84de	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.84e1	c9 1b		cmp #$1b	        cmp #27
+.84e3	f0 02		beq $84e7	        beq +
+.84e5	18		clc		        clc
+.84e6	60		rts		        rts
+.84e7	38		sec		+       sec
+.84e8	60		rts		        rts
+.84e9					ed_progress_maybe:
+.84e9	ad c5 85	lda $85c5	        lda ed_io_pos
+.84ec	d0 0a		bne $84f8	        bne +
+.84ee	ad c6 85	lda $85c6	        lda ed_io_pos+1
+.84f1	29 1f		and #$1f	        and #31
+.84f3	d0 03		bne $84f8	        bne +
+.84f5	4c f9 84	jmp $84f9	        jmp ed_progress
+.84f8	60		rts		+       rts
+.84f9					ed_progress:
+.84f9	a9 00		lda #$00	        lda #0
+.84fb	8d ae 80	sta $80ae	        sta ed_screen
+.84fe					ed_progress_screen:
+.84fe	a5 d7		lda $d7		        lda $d7
+.8500	2a		rol a		        rol
+.8501	a9 00		lda #$00	        lda #0
+.8503	2a		rol a		        rol
+.8504	cd ae 80	cmp $80ae	        cmp ed_screen
+.8507	f0 03		beq $850c	        beq +
+.8509	20 5f ff	jsr $ff5f	        jsr $ff5f
+.850c	a9 93		lda #$93	+       lda #$93
+.850e	20 f1 7b	jsr $7bf1	        jsr ed_chrout
+.8511	ae cc 85	ldx $85cc	        ldx ed_io_phase
+.8514	ca		dex		        dex
+.8515	bd bf 85	lda $85bf,x	        lda ed_progress_lo,x
+.8518	48		pha		        pha
+.8519	bd c2 85	lda $85c2,x	        lda ed_progress_hi,x
+.851c	aa		tax		        tax
+.851d	68		pla		        pla
+.851e	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.8521	a9 ca		lda #$ca	        lda #<ed_field
+.8523	a2 80		ldx #$80	        ldx #>ed_field
+.8525	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.8528	a9 8c		lda #$8c	        lda #<ed_progress_count
+.852a	a2 85		ldx #$85	        ldx #>ed_progress_count
+.852c	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.852f	ad c5 85	lda $85c5	        lda ed_io_pos
+.8532	8d a1 80	sta $80a1	        sta ed_print_number
+.8535	ad c6 85	lda $85c6	        lda ed_io_pos+1
+.8538	8d a2 80	sta $80a2	        sta ed_print_number+1
+.853b	ad c7 85	lda $85c7	        lda ed_io_pos+2
+.853e	8d a3 80	sta $80a3	        sta ed_print_number+2
+.8541	20 34 7c	jsr $7c34	        jsr ed_hex24
+.8544	a9 96		lda #$96	        lda #<ed_progress_cancel
+.8546	a2 85		ldx #$85	        ldx #>ed_progress_cancel
+.8548	20 d7 7b	jsr $7bd7	        jsr ed_puts
+.854b	ee ae 80	inc $80ae	        inc ed_screen
+.854e	ad ae 80	lda $80ae	        lda ed_screen
+.8551	c9 02		cmp #$02	        cmp #2
+.8553	d0 a9		bne $84fe	        bne ed_progress_screen
+.8555	60		rts		        rts
+>8556	4f 50 45 4e 49 4e 47 3a		ed_opening: .text "opening: ",0
+>855e	20 00
+>8560	53 41 56 49 4e 47 20 4e		ed_saving: .text "saving new file: ",0
+>8568	45 57 20 46 49 4c 45 3a 20 00
+>8572	52 45 4f 50 45 4e 49 4e		ed_verifying: .text "reopening and comparing: ",0
+>857a	47 20 41 4e 44 20 43 4f 4d 50 41 52 49 4e 47 3a
+>858a	20 00
+>858c	0d 0d 42 59 54 45 53 3a		ed_progress_count: .text 13,13,"bytes: ",0
+>8594	20 00
+>8596	0d 0d 45 53 43 20 43 41		ed_progress_cancel: .text 13,13,"esc cancels after the current transfer",0
+>859e	4e 43 45 4c 53 20 41 46 54 45 52 20 54 48 45 20
+>85ae	43 55 52 52 45 4e 54 20 54 52 41 4e 53 46 45 52
+>85be	00
+>85bf	56 60 72			ed_progress_lo: .byte <ed_opening,<ed_saving,<ed_verifying
+>85c2	85 85 85			ed_progress_hi: .byte >ed_opening,>ed_saving,>ed_verifying
+>85c5	00 00 00			ed_io_pos: .fill 3,0
+>85c8	00 00 00			ed_io_size: .fill 3,0
+>85cb	00				ed_io_eof: .byte 0
+>85cc	00				ed_io_phase: .byte 0
+>85cd	80				ed_pending: .byte 128
+>85ce	00				ed_finish_status: .byte 0
+>85cf	00 00				ed_compare_left: .word 0
+>85d1	00				ed_nl_found: .byte 0
+>85d2	00				ed_nl_value: .byte 0
+>85d3	00 00				ed_nl_left: .word 0
+>85d5	00 00 00 00 00 00 00 00		ed_verify_data: .fill 512,0
+>85dd	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>87cd	00 00 00 00 00 00 00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-editor-package/clean/src/native/editor.asm
+
+.87d5					editor_end:
+
+;******  End of listing

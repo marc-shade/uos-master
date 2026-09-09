@@ -6,7 +6,7 @@ milestones and requirements; their dated implementation claims are historical.
 
 The goal remains a complete C128 desktop OS with GEOS/Wheels-class applications,
 modern desktop workflows, and integrated control of the Ultimate II+ and
-Commodore expansion hardware. The existing shell, small editor, and calculator
+Commodore expansion hardware. The existing shell, text editors, and calculator
 do **not** satisfy that goal by themselves. A compatible IEC interface is not
 proof that every attached device works. Emulator coverage is not hardware proof.
 
@@ -66,7 +66,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
 | FR-S4 shell | Commands, CAT, memory monitor, UCI navigation, HTTP socket GET | Shared FS integration, history/completion, scripts/pipes/redirection, jobs, useful errors, document/app launch | Scripted end-to-end workflow with removable media and network failures |
-| FR-S5 editor/calculator | 768-byte legacy editor with Open/verified Save As and dirty protection; native integer calculator with 32-result banked history, error reporting and verified SEQ export | Larger banked documents, selection/clipboard/undo/find; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
+| FR-S5 editor/calculator | Native banked text editor with 24-bit positions, transactional Open and verified exclusive Save As; 768-byte legacy editor; native integer calculator with 32-result banked history and verified SEQ export | Selection/clipboard/undo/find, shared native file dialogs and document/session recovery; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
 | FR-S6 SDK | Legacy application guide plus native ABI, manifest/image validator/sealer and calculator example | Broader versioned APIs, docs generated from exports, clean-checkout third-party workflow and portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
 | FR-S7 appearance | Basic background colors | Backdrops, font/theme/pointer selection, screen saver, desktop arrangements and persistence | Change/restart/restore; memory budgets and low-RAM fallback |
 
@@ -78,7 +78,7 @@ compatibility requirement from providing equivalent uOS applications.
 
 | ID | Deliverable | Existing implementation | Completion gate |
 |---|---|---|---|
-| APP-WRITE | Word processor with fonts/styles, pagination, embedded pictures, search/replace, spelling, printing | Small plain-text editor only | Create, save, reopen, edit, preview and print a multipage illustrated document; exchange supported geoWrite formats |
+| APP-WRITE | Word processor with fonts/styles, pagination, embedded pictures, search/replace, spelling, printing | Banked plain-text editor; no page layout | Create, save, reopen, edit, preview and print a multipage illustrated document; exchange supported geoWrite formats |
 | APP-PAINT | Bitmap editor, drawing tools, color/patterns, selection, zoom, clipboard, undo | Graphics primitives only | Edit and round-trip a picture on both displays; import/export declared GEOS/Commodore image formats |
 | APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | Absent | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
 | APP-DATA | Database/address book with schema, records, sorting/filtering, forms/reports, import/export | Absent | Maintain and report a record set larger than main RAM; geoFile exchange matrix |
@@ -311,12 +311,23 @@ in bounded chunks instead of writing over the low kernel. The
 records exact images and qualification. Main/low growth space is now 1,321/1,082
 bytes; larger services still need explicit memory/lifetime records.
 
-Next implementation: add native banked document
-editing and reusable display/input services for the existing desktop/Ultimate
-apps, and extend drive qualification. Integrate other selector backends and
+The [native banked text editor](NATIVE-EDITOR.md) now uses two owned document
+contexts for transactional Open, preserves imported bytes and newline forms,
+edits through 24-bit positions, and verifies exclusive Save As by reopening and
+comparing every byte. Its 4 KiB allocations span both banks. The document format
+addresses up to 96 KiB, subject to available heap and temporary Open capacity;
+it does not yet use REU or disk backing. Selection, clipboard, undo/find and
+the word processor's layout/printing features remain required.
+The [editor checkpoint](validation/2026-09-09-native-editor/README.md) records
+the CPU, emulator and physical results, independent whole-disk readback and
+the measured standard-IEC performance limit.
+
+Next implementation: reusable native display/input and file-dialog services
+for the editor and existing desktop/Ultimate apps, and broader drive qualification.
+Integrate other selector backends and
 complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and
 other expansion allocators, system-disk recovery and application parity remain
-required. R3 is partial; the resident-growth milestone does not complete it or the OS.
+required. R3 is partial; the editor milestone does not complete it or the OS.
 The [next native platform steps](NATIVE-PLATFORM-NEXT.md) identify the memory
 constraints, observer changes and document/service acceptance gates for that work.
 

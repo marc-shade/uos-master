@@ -358,6 +358,12 @@ def main():
                         help='native directory browser, renamed-app handoff and byte viewer on a private D64; restore desktop')
     parser.add_argument('--native-browser-readback',type=Path,
                         help='resume independent readback of a completed native browser hardware report')
+    parser.add_argument('--native-editor',action='store_true',
+                        help='native banked editor, over-64-KiB edit/save and private D64 readback; restore desktop')
+    parser.add_argument('--native-editor-readback',type=Path,
+                        help='resume independent readback of a completed native editor hardware report')
+    parser.add_argument('--native-editor-restore',type=Path,
+                        help='restore saved settings bytes after a failed editor test has already rebooted the legacy desktop')
     parser.add_argument('--editor-exit-diagnose', action='store_true',
                         help='sample an idle editor without changing its code or document')
     parser.add_argument('--editor-inspect', action='store_true',
@@ -373,6 +379,18 @@ def main():
     parser.add_argument('--files-write-diagnostic', action='store_true',
                         help='compare private raw UCI writes below and at the 512-byte boundary')
     args = parser.parse_args()
+    if args.native_editor_restore:
+        from hw_native_editor_check import restore_record
+        restore_record(ObservingUltimate(),args.native_editor_restore)
+        return
+    if args.native_editor_readback:
+        from hw_native_editor_check import readback
+        readback(ObservingUltimate(),args.native_editor_readback)
+        return
+    if args.native_editor:
+        from hw_native_editor_check import run
+        run(ObservingUltimate())
+        return
     if args.native_browser_readback:
         from hw_native_browser_check import readback
         readback(ObservingUltimate(),args.native_browser_readback)

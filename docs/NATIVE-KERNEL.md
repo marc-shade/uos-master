@@ -1,13 +1,19 @@
 # Native C128 kernel and banked memory
 
 The separate `target/native/uos128.d64` boots through the C128 KERNAL into
-BASIC 7 and enters the native kernel. It never enters C64 mode. This first
-native image provides a memory workspace, application-facing allocator and a
+BASIC 7 and enters the native kernel. It never enters C64 mode. The native
+image provides a memory workspace, application-facing allocator and a
 [disk-loaded native calculator](NATIVE-APPS.md) with verified history export
 through [owned IEC files](NATIVE-FILES.md), plus a
-[file/app browser and byte viewer](NATIVE-BROWSER.md). The graphical desktop,
+[file/app browser and byte viewer](NATIVE-BROWSER.md) and
+[banked text editor](NATIVE-EDITOR.md). The graphical desktop,
 Ultimate services and remaining application suite still require migration.
 The existing `target/ultos.d64` remains the graphical desktop build.
+
+Use the native CPU observer when a hardware test needs bytes from a specific
+RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM
+address; the [editor checkpoint](validation/2026-09-09-native-editor/README.md)
+records a complete ROM snapshot and the corresponding correct CPU observation.
 
 ## Build and use
 
@@ -17,7 +23,7 @@ x128 -default -8 target/native/uos128.d64 -drive8true -drive8type 1541
 ```
 
 The build requires Python 3, 64tass and VICE's c1541. It creates the native
-kernel, boot-sector and two app PRGs, D64 and image hash manifest in `target/native/`.
+kernel, boot-sector and three app PRGs, D64 and image hash manifest in `target/native/`.
 `layout.json` records resident, metadata and boot-staging bounds; `uos128.sym`
 exports the assembled runtime addresses. The kernel PRG remains loaded at `$1c01`.
 Track 1/sector 0 is reserved in the BAM before adding file `U`; ordinary file
@@ -43,6 +49,8 @@ entries are documented in the [native app guide](NATIVE-APPS.md).
 Press **B** for Files and Apps. It discovers native applications on the selected
 IEC disk and returns to the browser after each application exits. **Esc** in
 the file list returns to the workspace with its allocations preserved.
+Select **EDITOR** for the [banked text editor](NATIVE-EDITOR.md), including
+cursor editing beyond a 64 KiB offset and verified Save As to a new SEQ file.
 
 ## Memory and execution contract
 

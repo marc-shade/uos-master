@@ -32,6 +32,10 @@ Press **B** for [Files and Apps](docs/NATIVE-BROWSER.md): browse an IEC root
 directory, discover native apps by their image header, launch them, and inspect
 file bytes on both displays. Device selection covers 8–30 with an explicit
 D64/D71/D81 format. Returning from a launched app reopens the browser.
+Select **EDITOR** there for the [native banked text editor](docs/NATIVE-EDITOR.md):
+cursor editing across both RAM banks, Open with dirty-document protection,
+and Save As with a complete reopen comparison. Documents can cross a 64 KiB
+byte offset; available heap memory limits capacity.
 
 ## Storage and loader update (2026-09-08)
 

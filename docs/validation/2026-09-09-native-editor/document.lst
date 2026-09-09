@@ -1,0 +1,1124 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -B -o docs/validation/2026-09-09-native-editor/document.prg -L docs/validation/2026-09-09-native-editor/document.lst probes/native-document.asm
+; Wed Sep  9 17:13:45 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: probes/native-document.asm
+
+
+;******  Processing file: probes/../src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=2					N_ABI_MINOR = 2
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; run a checked native PRG from IEC, then clean up
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; IEC stream: read or exclusive create
+=$1c44					N_FREAD         = $1c44          ; up to 512 bytes to N_BUFFER; exact returned count
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch from APPNAME/DEVICE
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device, 8..30
+=$3d22					N_NAMELEN       = $3d22          ; launch filename length, 1..16
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; last serial status byte
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source disk geometry, 0 D64 / 1 D71 / 2 D81
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; first nonzero DOS code in this operation
+=$3d90					N_FSTATUS       = $3d90          ; serial status; first non-EOI error retained
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; returned byte position, little-endian 32-bit
+=$3d96					N_FFORMAT       = $3d96          ; CBM disk geometry: 0 D64, 1 D71, 2 D81
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$3e00					N_RELOCBASE     = $3e00          ; boot-only staging, reusable after relocation
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$40					N_FIRST0        = $40            ; bank 0 $4000..$feff: 191 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: probes/native-document.asm
+
+
+;******  Processing file: probes/../src/native/document.inc
+
+=0					D_LEN = 0
+=3					D_GAP = 3
+=6					D_END = 6
+=9					D_CAP = 9
+=12					D_DIRTY = 12
+=13					D_CHUNKS = 13
+=14					D_FAULT = 14
+=16					D_HANDLES = 16
+=24					D_MAXCHUNKS = 24
+.6000					doc_init:
+.6000	ad 20 3d	lda $3d20	        lda N_CURRENT
+.6003	8d ac 69	sta $69ac	        sta d_owner
+.6006	a9 00		lda #$00	        lda #0
+.6008	aa		tax		        tax
+.6009					doc_init_loop:
+.6009	9d d2 69	sta $69d2,x	        sta d_states,x
+.600c	e8		inx		        inx
+.600d	d0 fa		bne $6009	        bne doc_init_loop
+.600f	8d ab 69	sta $69ab	        sta d_slot
+.6012					doc_ok:
+.6012	a9 00		lda #$00	        lda #0
+.6014	18		clc		        clc
+.6015	60		rts		        rts
+.6016					doc_badarg:
+.6016	a9 01		lda #$01	        lda #N_BADARG
+.6018	38		sec		        sec
+.6019	60		rts		        rts
+.601a					doc_range:
+.601a	a9 06		lda #$06	        lda #N_RANGE
+.601c	38		sec		        sec
+.601d	60		rts		        rts
+.601e					doc_corrupt:
+.601e	a9 09		lda #$09	        lda #N_CORRUPT
+.6020	38		sec		        sec
+.6021	60		rts		        rts
+.6022					doc_fault:
+.6022	ae ab 69	ldx $69ab	        ldx d_slot
+.6025	9d e0 69	sta $69e0,x	        sta d_states+D_FAULT,x
+.6028	38		sec		        sec
+.6029	60		rts		        rts
+.602a					doc_context:
+.602a	ad ab 69	lda $69ab	        lda d_slot
+.602d	29 7f		and #$7f	        and #$7f
+.602f	d0 e5		bne $6016	        bne doc_badarg
+.6031	ae ab 69	ldx $69ab	        ldx d_slot
+.6034	bd e0 69	lda $69e0,x	        lda d_states+D_FAULT,x
+.6037	d0 e5		bne $601e	        bne doc_corrupt
+.6039	4c 12 60	jmp $6012	        jmp doc_ok
+.603c					doc_prepare:
+.603c	20 2a 60	jsr $602a	        jsr doc_context
+.603f	b0 4b		bcs $608c	        bcs doc_return
+.6041	a9 00		lda #$00	        lda #0
+.6043	8d b2 69	sta $69b2	        sta d_count+2
+.6046	ad b1 69	lda $69b1	        lda d_count+1
+.6049	c9 02		cmp #$02	        cmp #2
+.604b	90 07		bcc $6054	        bcc doc_count_small
+.604d	d0 c7		bne $6016	        bne doc_badarg
+.604f	ad b0 69	lda $69b0	        lda d_count
+.6052	d0 c2		bne $6016	        bne doc_badarg
+.6054					doc_count_small:
+.6054	ad b0 69	lda $69b0	        lda d_count
+.6057	0d b1 69	ora $69b1	        ora d_count+1
+.605a	f0 ba		beq $6016	        beq doc_badarg
+.605c	ae ab 69	ldx $69ab	        ldx d_slot
+.605f	bd d2 69	lda $69d2,x	        lda d_states+D_LEN,x
+.6062	8d c7 69	sta $69c7	        sta d_limit
+.6065	bd d3 69	lda $69d3,x	        lda d_states+D_LEN+1,x
+.6068	8d c8 69	sta $69c8	        sta d_limit+1
+.606b	bd d4 69	lda $69d4,x	        lda d_states+D_LEN+2,x
+.606e	8d c9 69	sta $69c9	        sta d_limit+2
+.6071	ad c9 69	lda $69c9	        lda d_limit+2
+.6074	cd af 69	cmp $69af	        cmp d_pos+2
+.6077	d0 0e		bne $6087	        bne +
+.6079	ad c8 69	lda $69c8	        lda d_limit+1
+.607c	cd ae 69	cmp $69ae	        cmp d_pos+1
+.607f	d0 06		bne $6087	        bne +
+.6081	ad c7 69	lda $69c7	        lda d_limit
+.6084	cd ad 69	cmp $69ad	        cmp d_pos
+.6087					+
+.6087	90 91		bcc $601a	        bcc doc_range
+.6089	4c 12 60	jmp $6012	        jmp doc_ok
+.608c					doc_return:
+.608c	60		rts		        rts
+.608d					doc_dispose:
+.608d	ad ab 69	lda $69ab	        lda d_slot
+.6090	29 7f		and #$7f	        and #$7f
+.6092	d0 82		bne $6016	        bne doc_badarg
+.6094	ae ab 69	ldx $69ab	        ldx d_slot
+.6097	bd df 69	lda $69df,x	        lda d_states+D_CHUNKS,x
+.609a	c9 19		cmp #$19	        cmp #D_MAXCHUNKS+1
+.609c	b0 80		bcs $601e	        bcs doc_corrupt
+.609e	8d d1 69	sta $69d1	        sta d_index
+.60a1					doc_dispose_loop:
+.60a1	ad d1 69	lda $69d1	        lda d_index
+.60a4	f0 2a		beq $60d0	        beq doc_disposed
+.60a6	ce d1 69	dec $69d1	        dec d_index
+.60a9	20 e1 60	jsr $60e1	        jsr doc_handle_index
+.60ac	bd e2 69	lda $69e2,x	        lda d_states+D_HANDLES,x
+.60af	f0 f0		beq $60a1	        beq doc_dispose_loop
+.60b1	20 ec 60	jsr $60ec	        jsr doc_get_handle
+.60b4	20 23 1c	jsr $1c23	        jsr N_FREE
+.60b7	90 03		bcc $60bc	        bcs doc_fault
+.60b9	4c 22 60	jmp $6022
+.60bc	20 e1 60	jsr $60e1	        jsr doc_handle_index
+.60bf	a9 00		lda #$00	        lda #0
+.60c1	9d e2 69	sta $69e2,x	        sta d_states+D_HANDLES,x
+.60c4	9d e3 69	sta $69e3,x	        sta d_states+D_HANDLES+1,x
+.60c7	9d e4 69	sta $69e4,x	        sta d_states+D_HANDLES+2,x
+.60ca	9d e5 69	sta $69e5,x	        sta d_states+D_HANDLES+3,x
+.60cd	4c a1 60	jmp $60a1	        jmp doc_dispose_loop
+.60d0					doc_disposed:
+.60d0	ae ab 69	ldx $69ab	        ldx d_slot
+.60d3	a0 80		ldy #$80	        ldy #128
+.60d5	a9 00		lda #$00	        lda #0
+.60d7					doc_clear_context:
+.60d7	9d d2 69	sta $69d2,x	        sta d_states,x
+.60da	e8		inx		        inx
+.60db	88		dey		        dey
+.60dc	d0 f9		bne $60d7	        bne doc_clear_context
+.60de	4c 12 60	jmp $6012	        jmp doc_ok
+.60e1					doc_handle_index:
+.60e1	ad d1 69	lda $69d1	        lda d_index
+.60e4	0a		asl a		        asl
+.60e5	0a		asl a		        asl
+.60e6	18		clc		        clc
+.60e7	6d ab 69	adc $69ab	        adc d_slot
+.60ea	aa		tax		        tax
+.60eb	60		rts		        rts
+.60ec					doc_get_handle:
+.60ec	ad ac 69	lda $69ac	        lda d_owner
+.60ef	8d 00 3d	sta $3d00	        sta N_OWNER
+.60f2	bd e2 69	lda $69e2,x	        lda d_states+D_HANDLES,x
+.60f5	8d 04 3d	sta $3d04	        sta N_HANDLE
+.60f8	bd e3 69	lda $69e3,x	        lda d_states+D_HANDLES+1,x
+.60fb	8d 05 3d	sta $3d05	        sta N_HANDLE+1
+.60fe	bd e4 69	lda $69e4,x	        lda d_states+D_HANDLES+2,x
+.6101	8d 06 3d	sta $3d06	        sta N_HANDLE+2
+.6104	bd e5 69	lda $69e5,x	        lda d_states+D_HANDLES+3,x
+.6107	8d 07 3d	sta $3d07	        sta N_HANDLE+3
+.610a	60		rts		        rts
+.610b					doc_select:
+.610b	ad b7 69	lda $69b7	        lda d_at+2
+.610e	0a		asl a		        asl
+.610f	0a		asl a		        asl
+.6110	0a		asl a		        asl
+.6111	0a		asl a		        asl
+.6112	8d d1 69	sta $69d1	        sta d_index
+.6115	ad b6 69	lda $69b6	        lda d_at+1
+.6118	4a		lsr a		        lsr
+.6119	4a		lsr a		        lsr
+.611a	4a		lsr a		        lsr
+.611b	4a		lsr a		        lsr
+.611c	0d d1 69	ora $69d1	        ora d_index
+.611f	8d d1 69	sta $69d1	        sta d_index
+.6122	ae ab 69	ldx $69ab	        ldx d_slot
+.6125	dd df 69	cmp $69df,x	        cmp d_states+D_CHUNKS,x
+.6128	90 03		bcc $612d	        bcs doc_corrupt
+.612a	4c 1e 60	jmp $601e
+.612d	20 e1 60	jsr $60e1	        jsr doc_handle_index
+.6130	20 ec 60	jsr $60ec	        jsr doc_get_handle
+.6133	ad b5 69	lda $69b5	        lda d_at
+.6136	8d 08 3d	sta $3d08	        sta N_OFFSET
+.6139	ad b6 69	lda $69b6	        lda d_at+1
+.613c	29 0f		and #$0f	        and #15
+.613e	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.6141	ad c4 69	lda $69c4	        lda d_n
+.6144	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.6147	ad c5 69	lda $69c5	        lda d_n+1
+.614a	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.614d	4c 12 60	jmp $6012	        jmp doc_ok
+.6150					doc_size:
+.6150	a9 00		lda #$00	        lda #0
+.6152	8d c4 69	sta $69c4	        sta d_n
+.6155	8d c6 69	sta $69c6	        sta d_n+2
+.6158	a9 02		lda #$02	        lda #2
+.615a	8d c5 69	sta $69c5	        sta d_n+1
+.615d	ad c3 69	lda $69c3	        lda d_left+2
+.6160	d0 13		bne $6175	        bne doc_size_done
+.6162	ad c2 69	lda $69c2	        lda d_left+1
+.6165	c9 02		cmp #$02	        cmp #2
+.6167	b0 0c		bcs $6175	        bcs doc_size_done
+.6169	ad c1 69	lda $69c1	        lda d_left
+.616c	8d c4 69	sta $69c4	        sta d_n
+.616f	ad c2 69	lda $69c2	        lda d_left+1
+.6172	8d c5 69	sta $69c5	        sta d_n+1
+.6175					doc_size_done:
+.6175	60		rts		        rts
+.6176					doc_forward_limit:
+.6176	ad b6 69	lda $69b6	        lda d_at+1
+.6179	29 0f		and #$0f	        and #15
+.617b	8d ce 69	sta $69ce	        sta d_bound+1
+.617e	38		sec		        sec
+.617f	a9 00		lda #$00	        lda #0
+.6181	ed b5 69	sbc $69b5	        sbc d_at
+.6184	8d cd 69	sta $69cd	        sta d_bound
+.6187	a9 10		lda #$10	        lda #16
+.6189	ed ce 69	sbc $69ce	        sbc d_bound+1
+.618c	8d ce 69	sta $69ce	        sta d_bound+1
+.618f	4c aa 61	jmp $61aa	        jmp doc_bound_limit
+.6192					doc_backward_limit:
+.6192	ad b5 69	lda $69b5	        lda d_at
+.6195	8d cd 69	sta $69cd	        sta d_bound
+.6198	ad b6 69	lda $69b6	        lda d_at+1
+.619b	29 0f		and #$0f	        and #15
+.619d	8d ce 69	sta $69ce	        sta d_bound+1
+.61a0	0d cd 69	ora $69cd	        ora d_bound
+.61a3	d0 05		bne $61aa	        bne doc_bound_limit
+.61a5	a9 10		lda #$10	        lda #16
+.61a7	8d ce 69	sta $69ce	        sta d_bound+1
+.61aa					doc_bound_limit:
+.61aa	ad ce 69	lda $69ce	        lda d_bound+1
+.61ad	cd c5 69	cmp $69c5	        cmp d_n+1
+.61b0	90 0a		bcc $61bc	        bcc doc_use_bound
+.61b2	d0 14		bne $61c8	        bne doc_bound_done
+.61b4	ad cd 69	lda $69cd	        lda d_bound
+.61b7	cd c4 69	cmp $69c4	        cmp d_n
+.61ba	b0 0c		bcs $61c8	        bcs doc_bound_done
+.61bc					doc_use_bound:
+.61bc	ad cd 69	lda $69cd	        lda d_bound
+.61bf	8d c4 69	sta $69c4	        sta d_n
+.61c2	ad ce 69	lda $69ce	        lda d_bound+1
+.61c5	8d c5 69	sta $69c5	        sta d_n+1
+.61c8					doc_bound_done:
+.61c8	60		rts		        rts
+.61c9					doc_move_forward:
+.61c9	ad c1 69	lda $69c1	        lda d_left
+.61cc	0d c2 69	ora $69c2	        ora d_left+1
+.61cf	0d c3 69	ora $69c3	        ora d_left+2
+.61d2	d0 03		bne $61d7	        beq doc_move_done
+.61d4	4c fd 62	jmp $62fd
+.61d7	20 50 61	jsr $6150	        jsr doc_size
+.61da	ad bb 69	lda $69bb	        lda d_src
+.61dd	8d b5 69	sta $69b5	        sta d_at
+.61e0	ad bc 69	lda $69bc	        lda d_src+1
+.61e3	8d b6 69	sta $69b6	        sta d_at+1
+.61e6	ad bd 69	lda $69bd	        lda d_src+2
+.61e9	8d b7 69	sta $69b7	        sta d_at+2
+.61ec	20 76 61	jsr $6176	        jsr doc_forward_limit
+.61ef	ad be 69	lda $69be	        lda d_dst
+.61f2	8d b5 69	sta $69b5	        sta d_at
+.61f5	ad bf 69	lda $69bf	        lda d_dst+1
+.61f8	8d b6 69	sta $69b6	        sta d_at+1
+.61fb	ad c0 69	lda $69c0	        lda d_dst+2
+.61fe	8d b7 69	sta $69b7	        sta d_at+2
+.6201	20 76 61	jsr $6176	        jsr doc_forward_limit
+.6204	20 00 63	jsr $6300	        jsr doc_move_piece
+.6207	90 03		bcc $620c	        bcs doc_return
+.6209	4c 8c 60	jmp $608c
+.620c	18		clc		        clc
+.620d	ad bb 69	lda $69bb	        lda d_src
+.6210	6d c4 69	adc $69c4	        adc d_n
+.6213	8d bb 69	sta $69bb	        sta d_src
+.6216	ad bc 69	lda $69bc	        lda d_src+1
+.6219	6d c5 69	adc $69c5	        adc d_n+1
+.621c	8d bc 69	sta $69bc	        sta d_src+1
+.621f	ad bd 69	lda $69bd	        lda d_src+2
+.6222	6d c6 69	adc $69c6	        adc d_n+2
+.6225	8d bd 69	sta $69bd	        sta d_src+2
+.6228	18		clc		        clc
+.6229	ad be 69	lda $69be	        lda d_dst
+.622c	6d c4 69	adc $69c4	        adc d_n
+.622f	8d be 69	sta $69be	        sta d_dst
+.6232	ad bf 69	lda $69bf	        lda d_dst+1
+.6235	6d c5 69	adc $69c5	        adc d_n+1
+.6238	8d bf 69	sta $69bf	        sta d_dst+1
+.623b	ad c0 69	lda $69c0	        lda d_dst+2
+.623e	6d c6 69	adc $69c6	        adc d_n+2
+.6241	8d c0 69	sta $69c0	        sta d_dst+2
+.6244	38		sec		        sec
+.6245	ad c1 69	lda $69c1	        lda d_left
+.6248	ed c4 69	sbc $69c4	        sbc d_n
+.624b	8d c1 69	sta $69c1	        sta d_left
+.624e	ad c2 69	lda $69c2	        lda d_left+1
+.6251	ed c5 69	sbc $69c5	        sbc d_n+1
+.6254	8d c2 69	sta $69c2	        sta d_left+1
+.6257	ad c3 69	lda $69c3	        lda d_left+2
+.625a	ed c6 69	sbc $69c6	        sbc d_n+2
+.625d	8d c3 69	sta $69c3	        sta d_left+2
+.6260	4c c9 61	jmp $61c9	        jmp doc_move_forward
+.6263					doc_move_backward:
+.6263	ad c1 69	lda $69c1	        lda d_left
+.6266	0d c2 69	ora $69c2	        ora d_left+1
+.6269	0d c3 69	ora $69c3	        ora d_left+2
+.626c	d0 03		bne $6271	        beq doc_move_done
+.626e	4c fd 62	jmp $62fd
+.6271	20 50 61	jsr $6150	        jsr doc_size
+.6274	ad bb 69	lda $69bb	        lda d_src
+.6277	8d b5 69	sta $69b5	        sta d_at
+.627a	ad bc 69	lda $69bc	        lda d_src+1
+.627d	8d b6 69	sta $69b6	        sta d_at+1
+.6280	ad bd 69	lda $69bd	        lda d_src+2
+.6283	8d b7 69	sta $69b7	        sta d_at+2
+.6286	20 92 61	jsr $6192	        jsr doc_backward_limit
+.6289	ad be 69	lda $69be	        lda d_dst
+.628c	8d b5 69	sta $69b5	        sta d_at
+.628f	ad bf 69	lda $69bf	        lda d_dst+1
+.6292	8d b6 69	sta $69b6	        sta d_at+1
+.6295	ad c0 69	lda $69c0	        lda d_dst+2
+.6298	8d b7 69	sta $69b7	        sta d_at+2
+.629b	20 92 61	jsr $6192	        jsr doc_backward_limit
+.629e	38		sec		        sec
+.629f	ad bb 69	lda $69bb	        lda d_src
+.62a2	ed c4 69	sbc $69c4	        sbc d_n
+.62a5	8d bb 69	sta $69bb	        sta d_src
+.62a8	ad bc 69	lda $69bc	        lda d_src+1
+.62ab	ed c5 69	sbc $69c5	        sbc d_n+1
+.62ae	8d bc 69	sta $69bc	        sta d_src+1
+.62b1	ad bd 69	lda $69bd	        lda d_src+2
+.62b4	ed c6 69	sbc $69c6	        sbc d_n+2
+.62b7	8d bd 69	sta $69bd	        sta d_src+2
+.62ba	38		sec		        sec
+.62bb	ad be 69	lda $69be	        lda d_dst
+.62be	ed c4 69	sbc $69c4	        sbc d_n
+.62c1	8d be 69	sta $69be	        sta d_dst
+.62c4	ad bf 69	lda $69bf	        lda d_dst+1
+.62c7	ed c5 69	sbc $69c5	        sbc d_n+1
+.62ca	8d bf 69	sta $69bf	        sta d_dst+1
+.62cd	ad c0 69	lda $69c0	        lda d_dst+2
+.62d0	ed c6 69	sbc $69c6	        sbc d_n+2
+.62d3	8d c0 69	sta $69c0	        sta d_dst+2
+.62d6	20 00 63	jsr $6300	        jsr doc_move_piece
+.62d9	90 03		bcc $62de	        bcs doc_return
+.62db	4c 8c 60	jmp $608c
+.62de	38		sec		        sec
+.62df	ad c1 69	lda $69c1	        lda d_left
+.62e2	ed c4 69	sbc $69c4	        sbc d_n
+.62e5	8d c1 69	sta $69c1	        sta d_left
+.62e8	ad c2 69	lda $69c2	        lda d_left+1
+.62eb	ed c5 69	sbc $69c5	        sbc d_n+1
+.62ee	8d c2 69	sta $69c2	        sta d_left+1
+.62f1	ad c3 69	lda $69c3	        lda d_left+2
+.62f4	ed c6 69	sbc $69c6	        sbc d_n+2
+.62f7	8d c3 69	sta $69c3	        sta d_left+2
+.62fa	4c 63 62	jmp $6263	        jmp doc_move_backward
+.62fd					doc_move_done:
+.62fd	4c 12 60	jmp $6012	        jmp doc_ok
+.6300					doc_move_piece:
+.6300	ad bb 69	lda $69bb	        lda d_src
+.6303	8d b5 69	sta $69b5	        sta d_at
+.6306	ad bc 69	lda $69bc	        lda d_src+1
+.6309	8d b6 69	sta $69b6	        sta d_at+1
+.630c	ad bd 69	lda $69bd	        lda d_src+2
+.630f	8d b7 69	sta $69b7	        sta d_at+2
+.6312	20 0b 61	jsr $610b	        jsr doc_select
+.6315	90 03		bcc $631a	        bcs doc_fault
+.6317	4c 22 60	jmp $6022
+.631a	20 26 1c	jsr $1c26	        jsr N_READ
+.631d	b0 f8		bcs $6317	        bcs doc_fault
+.631f	ad be 69	lda $69be	        lda d_dst
+.6322	8d b5 69	sta $69b5	        sta d_at
+.6325	ad bf 69	lda $69bf	        lda d_dst+1
+.6328	8d b6 69	sta $69b6	        sta d_at+1
+.632b	ad c0 69	lda $69c0	        lda d_dst+2
+.632e	8d b7 69	sta $69b7	        sta d_at+2
+.6331	20 0b 61	jsr $610b	        jsr doc_select
+.6334	b0 e1		bcs $6317	        bcs doc_fault
+.6336	20 29 1c	jsr $1c29	        jsr N_WRITE
+.6339	b0 dc		bcs $6317	        bcs doc_fault
+.633b	60		rts		        rts
+.633c					doc_seek_gap:
+.633c	ae ab 69	ldx $69ab	        ldx d_slot
+.633f	bd d5 69	lda $69d5,x	        lda d_states+D_GAP,x
+.6342	8d be 69	sta $69be	        sta d_dst
+.6345	bd d6 69	lda $69d6,x	        lda d_states+D_GAP+1,x
+.6348	8d bf 69	sta $69bf	        sta d_dst+1
+.634b	bd d7 69	lda $69d7,x	        lda d_states+D_GAP+2,x
+.634e	8d c0 69	sta $69c0	        sta d_dst+2
+.6351	ad af 69	lda $69af	        lda d_pos+2
+.6354	cd c0 69	cmp $69c0	        cmp d_dst+2
+.6357	d0 0e		bne $6367	        bne +
+.6359	ad ae 69	lda $69ae	        lda d_pos+1
+.635c	cd bf 69	cmp $69bf	        cmp d_dst+1
+.635f	d0 06		bne $6367	        bne +
+.6361	ad ad 69	lda $69ad	        lda d_pos
+.6364	cd be 69	cmp $69be	        cmp d_dst
+.6367					+
+.6367	f0 94		beq $62fd	        beq doc_move_done
+.6369	90 78		bcc $63e3	        bcc doc_seek_left
+.636b	ae ab 69	ldx $69ab	        ldx d_slot
+.636e	bd d8 69	lda $69d8,x	        lda d_states+D_END,x
+.6371	8d bb 69	sta $69bb	        sta d_src
+.6374	bd d9 69	lda $69d9,x	        lda d_states+D_END+1,x
+.6377	8d bc 69	sta $69bc	        sta d_src+1
+.637a	bd da 69	lda $69da,x	        lda d_states+D_END+2,x
+.637d	8d bd 69	sta $69bd	        sta d_src+2
+.6380	ad ad 69	lda $69ad	        lda d_pos
+.6383	8d c1 69	sta $69c1	        sta d_left
+.6386	ad ae 69	lda $69ae	        lda d_pos+1
+.6389	8d c2 69	sta $69c2	        sta d_left+1
+.638c	ad af 69	lda $69af	        lda d_pos+2
+.638f	8d c3 69	sta $69c3	        sta d_left+2
+.6392	38		sec		        sec
+.6393	ad c1 69	lda $69c1	        lda d_left
+.6396	ed be 69	sbc $69be	        sbc d_dst
+.6399	8d c1 69	sta $69c1	        sta d_left
+.639c	ad c2 69	lda $69c2	        lda d_left+1
+.639f	ed bf 69	sbc $69bf	        sbc d_dst+1
+.63a2	8d c2 69	sta $69c2	        sta d_left+1
+.63a5	ad c3 69	lda $69c3	        lda d_left+2
+.63a8	ed c0 69	sbc $69c0	        sbc d_dst+2
+.63ab	8d c3 69	sta $69c3	        sta d_left+2
+.63ae	20 c9 61	jsr $61c9	        jsr doc_move_forward
+.63b1	90 03		bcc $63b6	        bcs doc_return
+.63b3	4c 8c 60	jmp $608c
+.63b6	ae ab 69	ldx $69ab	        ldx d_slot
+.63b9	ad be 69	lda $69be	        lda d_dst
+.63bc	9d d5 69	sta $69d5,x	        sta d_states+D_GAP,x
+.63bf	ad bf 69	lda $69bf	        lda d_dst+1
+.63c2	9d d6 69	sta $69d6,x	        sta d_states+D_GAP+1,x
+.63c5	ad c0 69	lda $69c0	        lda d_dst+2
+.63c8	9d d7 69	sta $69d7,x	        sta d_states+D_GAP+2,x
+.63cb	ae ab 69	ldx $69ab	        ldx d_slot
+.63ce	ad bb 69	lda $69bb	        lda d_src
+.63d1	9d d8 69	sta $69d8,x	        sta d_states+D_END,x
+.63d4	ad bc 69	lda $69bc	        lda d_src+1
+.63d7	9d d9 69	sta $69d9,x	        sta d_states+D_END+1,x
+.63da	ad bd 69	lda $69bd	        lda d_src+2
+.63dd	9d da 69	sta $69da,x	        sta d_states+D_END+2,x
+.63e0	4c 12 60	jmp $6012	        jmp doc_ok
+.63e3					doc_seek_left:
+.63e3	ad be 69	lda $69be	        lda d_dst
+.63e6	8d bb 69	sta $69bb	        sta d_src
+.63e9	ad bf 69	lda $69bf	        lda d_dst+1
+.63ec	8d bc 69	sta $69bc	        sta d_src+1
+.63ef	ad c0 69	lda $69c0	        lda d_dst+2
+.63f2	8d bd 69	sta $69bd	        sta d_src+2
+.63f5	ae ab 69	ldx $69ab	        ldx d_slot
+.63f8	bd d8 69	lda $69d8,x	        lda d_states+D_END,x
+.63fb	8d be 69	sta $69be	        sta d_dst
+.63fe	bd d9 69	lda $69d9,x	        lda d_states+D_END+1,x
+.6401	8d bf 69	sta $69bf	        sta d_dst+1
+.6404	bd da 69	lda $69da,x	        lda d_states+D_END+2,x
+.6407	8d c0 69	sta $69c0	        sta d_dst+2
+.640a	ad bb 69	lda $69bb	        lda d_src
+.640d	8d c1 69	sta $69c1	        sta d_left
+.6410	ad bc 69	lda $69bc	        lda d_src+1
+.6413	8d c2 69	sta $69c2	        sta d_left+1
+.6416	ad bd 69	lda $69bd	        lda d_src+2
+.6419	8d c3 69	sta $69c3	        sta d_left+2
+.641c	38		sec		        sec
+.641d	ad c1 69	lda $69c1	        lda d_left
+.6420	ed ad 69	sbc $69ad	        sbc d_pos
+.6423	8d c1 69	sta $69c1	        sta d_left
+.6426	ad c2 69	lda $69c2	        lda d_left+1
+.6429	ed ae 69	sbc $69ae	        sbc d_pos+1
+.642c	8d c2 69	sta $69c2	        sta d_left+1
+.642f	ad c3 69	lda $69c3	        lda d_left+2
+.6432	ed af 69	sbc $69af	        sbc d_pos+2
+.6435	8d c3 69	sta $69c3	        sta d_left+2
+.6438	20 63 62	jsr $6263	        jsr doc_move_backward
+.643b	90 03		bcc $6440	        bcs doc_return
+.643d	4c 8c 60	jmp $608c
+.6440	ae ab 69	ldx $69ab	        ldx d_slot
+.6443	ad bb 69	lda $69bb	        lda d_src
+.6446	9d d5 69	sta $69d5,x	        sta d_states+D_GAP,x
+.6449	ad bc 69	lda $69bc	        lda d_src+1
+.644c	9d d6 69	sta $69d6,x	        sta d_states+D_GAP+1,x
+.644f	ad bd 69	lda $69bd	        lda d_src+2
+.6452	9d d7 69	sta $69d7,x	        sta d_states+D_GAP+2,x
+.6455	ae ab 69	ldx $69ab	        ldx d_slot
+.6458	ad be 69	lda $69be	        lda d_dst
+.645b	9d d8 69	sta $69d8,x	        sta d_states+D_END,x
+.645e	ad bf 69	lda $69bf	        lda d_dst+1
+.6461	9d d9 69	sta $69d9,x	        sta d_states+D_END+1,x
+.6464	ad c0 69	lda $69c0	        lda d_dst+2
+.6467	9d da 69	sta $69da,x	        sta d_states+D_END+2,x
+.646a	4c 12 60	jmp $6012	        jmp doc_ok
+.646d					doc_grow:
+.646d	ae ab 69	ldx $69ab	        ldx d_slot
+.6470	bd df 69	lda $69df,x	        lda d_states+D_CHUNKS,x
+.6473	c9 18		cmp #$18	        cmp #D_MAXCHUNKS
+.6475	90 04		bcc $647b	        bcc doc_allocate
+.6477	a9 02		lda #$02	        lda #N_NOMEM
+.6479	38		sec		        sec
+.647a	60		rts		        rts
+.647b					doc_allocate:
+.647b	ad ac 69	lda $69ac	        lda d_owner
+.647e	8d 00 3d	sta $3d00	        sta N_OWNER
+.6481	a9 10		lda #$10	        lda #16
+.6483	8d 01 3d	sta $3d01	        sta N_PAGES
+.6486	a9 ff		lda #$ff	        lda #$ff
+.6488	8d 02 3d	sta $3d02	        sta N_BANK
+.648b	20 20 1c	jsr $1c20	        jsr N_ALLOC
+.648e	b0 ad		bcs $643d	        bcs doc_return
+.6490	ae ab 69	ldx $69ab	        ldx d_slot
+.6493	bd df 69	lda $69df,x	        lda d_states+D_CHUNKS,x
+.6496	8d d1 69	sta $69d1	        sta d_index
+.6499	fe df 69	inc $69df,x	        inc d_states+D_CHUNKS,x
+.649c	20 e1 60	jsr $60e1	        jsr doc_handle_index
+.649f	ad 04 3d	lda $3d04	        lda N_HANDLE
+.64a2	9d e2 69	sta $69e2,x	        sta d_states+D_HANDLES,x
+.64a5	ad 05 3d	lda $3d05	        lda N_HANDLE+1
+.64a8	9d e3 69	sta $69e3,x	        sta d_states+D_HANDLES+1,x
+.64ab	ad 06 3d	lda $3d06	        lda N_HANDLE+2
+.64ae	9d e4 69	sta $69e4,x	        sta d_states+D_HANDLES+2,x
+.64b1	ad 07 3d	lda $3d07	        lda N_HANDLE+3
+.64b4	9d e5 69	sta $69e5,x	        sta d_states+D_HANDLES+3,x
+.64b7	ae ab 69	ldx $69ab	        ldx d_slot
+.64ba	bd db 69	lda $69db,x	        lda d_states+D_CAP,x
+.64bd	8d bb 69	sta $69bb	        sta d_src
+.64c0	bd dc 69	lda $69dc,x	        lda d_states+D_CAP+1,x
+.64c3	8d bc 69	sta $69bc	        sta d_src+1
+.64c6	bd dd 69	lda $69dd,x	        lda d_states+D_CAP+2,x
+.64c9	8d bd 69	sta $69bd	        sta d_src+2
+.64cc	ad bb 69	lda $69bb	        lda d_src
+.64cf	8d be 69	sta $69be	        sta d_dst
+.64d2	ad bc 69	lda $69bc	        lda d_src+1
+.64d5	8d bf 69	sta $69bf	        sta d_dst+1
+.64d8	ad bd 69	lda $69bd	        lda d_src+2
+.64db	8d c0 69	sta $69c0	        sta d_dst+2
+.64de	18		clc		        clc
+.64df	ad bf 69	lda $69bf	        lda d_dst+1
+.64e2	69 10		adc #$10	        adc #16
+.64e4	8d bf 69	sta $69bf	        sta d_dst+1
+.64e7	90 03		bcc $64ec	        bcc +
+.64e9	ee c0 69	inc $69c0	        inc d_dst+2
+.64ec					+
+.64ec	ae ab 69	ldx $69ab	        ldx d_slot
+.64ef	ad be 69	lda $69be	        lda d_dst
+.64f2	9d db 69	sta $69db,x	        sta d_states+D_CAP,x
+.64f5	ad bf 69	lda $69bf	        lda d_dst+1
+.64f8	9d dc 69	sta $69dc,x	        sta d_states+D_CAP+1,x
+.64fb	ad c0 69	lda $69c0	        lda d_dst+2
+.64fe	9d dd 69	sta $69dd,x	        sta d_states+D_CAP+2,x
+.6501	ad bb 69	lda $69bb	        lda d_src
+.6504	8d c1 69	sta $69c1	        sta d_left
+.6507	ad bc 69	lda $69bc	        lda d_src+1
+.650a	8d c2 69	sta $69c2	        sta d_left+1
+.650d	ad bd 69	lda $69bd	        lda d_src+2
+.6510	8d c3 69	sta $69c3	        sta d_left+2
+.6513	ae ab 69	ldx $69ab	        ldx d_slot
+.6516	bd d8 69	lda $69d8,x	        lda d_states+D_END,x
+.6519	8d b5 69	sta $69b5	        sta d_at
+.651c	bd d9 69	lda $69d9,x	        lda d_states+D_END+1,x
+.651f	8d b6 69	sta $69b6	        sta d_at+1
+.6522	bd da 69	lda $69da,x	        lda d_states+D_END+2,x
+.6525	8d b7 69	sta $69b7	        sta d_at+2
+.6528	38		sec		        sec
+.6529	ad c1 69	lda $69c1	        lda d_left
+.652c	ed b5 69	sbc $69b5	        sbc d_at
+.652f	8d c1 69	sta $69c1	        sta d_left
+.6532	ad c2 69	lda $69c2	        lda d_left+1
+.6535	ed b6 69	sbc $69b6	        sbc d_at+1
+.6538	8d c2 69	sta $69c2	        sta d_left+1
+.653b	ad c3 69	lda $69c3	        lda d_left+2
+.653e	ed b7 69	sbc $69b7	        sbc d_at+2
+.6541	8d c3 69	sta $69c3	        sta d_left+2
+.6544	20 63 62	jsr $6263	        jsr doc_move_backward
+.6547	90 03		bcc $654c	        bcs doc_return
+.6549	4c 8c 60	jmp $608c
+.654c	ae ab 69	ldx $69ab	        ldx d_slot
+.654f	ad be 69	lda $69be	        lda d_dst
+.6552	9d d8 69	sta $69d8,x	        sta d_states+D_END,x
+.6555	ad bf 69	lda $69bf	        lda d_dst+1
+.6558	9d d9 69	sta $69d9,x	        sta d_states+D_END+1,x
+.655b	ad c0 69	lda $69c0	        lda d_dst+2
+.655e	9d da 69	sta $69da,x	        sta d_states+D_END+2,x
+.6561	4c 12 60	jmp $6012	        jmp doc_ok
+.6564					doc_insert:
+.6564	20 3c 60	jsr $603c	        jsr doc_prepare
+.6567	b0 e0		bcs $6549	        bcs doc_return
+.6569	ae ab 69	ldx $69ab	        ldx d_slot
+.656c	bd d8 69	lda $69d8,x	        lda d_states+D_END,x
+.656f	8d c7 69	sta $69c7	        sta d_limit
+.6572	bd d9 69	lda $69d9,x	        lda d_states+D_END+1,x
+.6575	8d c8 69	sta $69c8	        sta d_limit+1
+.6578	bd da 69	lda $69da,x	        lda d_states+D_END+2,x
+.657b	8d c9 69	sta $69c9	        sta d_limit+2
+.657e	ae ab 69	ldx $69ab	        ldx d_slot
+.6581	bd d5 69	lda $69d5,x	        lda d_states+D_GAP,x
+.6584	8d b5 69	sta $69b5	        sta d_at
+.6587	bd d6 69	lda $69d6,x	        lda d_states+D_GAP+1,x
+.658a	8d b6 69	sta $69b6	        sta d_at+1
+.658d	bd d7 69	lda $69d7,x	        lda d_states+D_GAP+2,x
+.6590	8d b7 69	sta $69b7	        sta d_at+2
+.6593	38		sec		        sec
+.6594	ad c7 69	lda $69c7	        lda d_limit
+.6597	ed b5 69	sbc $69b5	        sbc d_at
+.659a	8d c7 69	sta $69c7	        sta d_limit
+.659d	ad c8 69	lda $69c8	        lda d_limit+1
+.65a0	ed b6 69	sbc $69b6	        sbc d_at+1
+.65a3	8d c8 69	sta $69c8	        sta d_limit+1
+.65a6	ad c9 69	lda $69c9	        lda d_limit+2
+.65a9	ed b7 69	sbc $69b7	        sbc d_at+2
+.65ac	8d c9 69	sta $69c9	        sta d_limit+2
+.65af	ad c9 69	lda $69c9	        lda d_limit+2
+.65b2	cd b2 69	cmp $69b2	        cmp d_count+2
+.65b5	d0 0e		bne $65c5	        bne +
+.65b7	ad c8 69	lda $69c8	        lda d_limit+1
+.65ba	cd b1 69	cmp $69b1	        cmp d_count+1
+.65bd	d0 06		bne $65c5	        bne +
+.65bf	ad c7 69	lda $69c7	        lda d_limit
+.65c2	cd b0 69	cmp $69b0	        cmp d_count
+.65c5					+
+.65c5	b0 08		bcs $65cf	        bcs doc_insert_room
+.65c7	20 6d 64	jsr $646d	        jsr doc_grow
+.65ca	90 03		bcc $65cf	        bcs doc_return
+.65cc	4c 8c 60	jmp $608c
+.65cf					doc_insert_room:
+.65cf	20 3c 63	jsr $633c	        jsr doc_seek_gap
+.65d2	b0 f8		bcs $65cc	        bcs doc_return
+.65d4	ae ab 69	ldx $69ab	        ldx d_slot
+.65d7	bd d5 69	lda $69d5,x	        lda d_states+D_GAP,x
+.65da	8d b5 69	sta $69b5	        sta d_at
+.65dd	bd d6 69	lda $69d6,x	        lda d_states+D_GAP+1,x
+.65e0	8d b6 69	sta $69b6	        sta d_at+1
+.65e3	bd d7 69	lda $69d7,x	        lda d_states+D_GAP+2,x
+.65e6	8d b7 69	sta $69b7	        sta d_at+2
+.65e9	ad b0 69	lda $69b0	        lda d_count
+.65ec	8d c1 69	sta $69c1	        sta d_left
+.65ef	ad b1 69	lda $69b1	        lda d_count+1
+.65f2	8d c2 69	sta $69c2	        sta d_left+1
+.65f5	ad b2 69	lda $69b2	        lda d_count+2
+.65f8	8d c3 69	sta $69c3	        sta d_left+2
+.65fb	a9 00		lda #$00	        lda #0
+.65fd	8d b3 69	sta $69b3	        sta d_actual
+.6600	8d b4 69	sta $69b4	        sta d_actual+1
+.6603					doc_insert_loop:
+.6603	20 50 61	jsr $6150	        jsr doc_size
+.6606	20 76 61	jsr $6176	        jsr doc_forward_limit
+.6609	20 41 69	jsr $6941	        jsr doc_input_to_buffer
+.660c	20 0b 61	jsr $610b	        jsr doc_select
+.660f	90 03		bcc $6614	        bcs doc_fault
+.6611	4c 22 60	jmp $6022
+.6614	20 29 1c	jsr $1c29	        jsr N_WRITE
+.6617	b0 f8		bcs $6611	        bcs doc_fault
+.6619	18		clc		        clc
+.661a	ad b5 69	lda $69b5	        lda d_at
+.661d	6d c4 69	adc $69c4	        adc d_n
+.6620	8d b5 69	sta $69b5	        sta d_at
+.6623	ad b6 69	lda $69b6	        lda d_at+1
+.6626	6d c5 69	adc $69c5	        adc d_n+1
+.6629	8d b6 69	sta $69b6	        sta d_at+1
+.662c	ad b7 69	lda $69b7	        lda d_at+2
+.662f	6d c6 69	adc $69c6	        adc d_n+2
+.6632	8d b7 69	sta $69b7	        sta d_at+2
+.6635	38		sec		        sec
+.6636	ad c1 69	lda $69c1	        lda d_left
+.6639	ed c4 69	sbc $69c4	        sbc d_n
+.663c	8d c1 69	sta $69c1	        sta d_left
+.663f	ad c2 69	lda $69c2	        lda d_left+1
+.6642	ed c5 69	sbc $69c5	        sbc d_n+1
+.6645	8d c2 69	sta $69c2	        sta d_left+1
+.6648	ad c3 69	lda $69c3	        lda d_left+2
+.664b	ed c6 69	sbc $69c6	        sbc d_n+2
+.664e	8d c3 69	sta $69c3	        sta d_left+2
+.6651	20 2d 69	jsr $692d	        jsr doc_actual_add
+.6654	ad c1 69	lda $69c1	        lda d_left
+.6657	0d c2 69	ora $69c2	        ora d_left+1
+.665a	d0 a7		bne $6603	        bne doc_insert_loop
+.665c	ae ab 69	ldx $69ab	        ldx d_slot
+.665f	ad b5 69	lda $69b5	        lda d_at
+.6662	9d d5 69	sta $69d5,x	        sta d_states+D_GAP,x
+.6665	ad b6 69	lda $69b6	        lda d_at+1
+.6668	9d d6 69	sta $69d6,x	        sta d_states+D_GAP+1,x
+.666b	ad b7 69	lda $69b7	        lda d_at+2
+.666e	9d d7 69	sta $69d7,x	        sta d_states+D_GAP+2,x
+.6671	ae ab 69	ldx $69ab	        ldx d_slot
+.6674	bd d2 69	lda $69d2,x	        lda d_states+D_LEN,x
+.6677	8d c7 69	sta $69c7	        sta d_limit
+.667a	bd d3 69	lda $69d3,x	        lda d_states+D_LEN+1,x
+.667d	8d c8 69	sta $69c8	        sta d_limit+1
+.6680	bd d4 69	lda $69d4,x	        lda d_states+D_LEN+2,x
+.6683	8d c9 69	sta $69c9	        sta d_limit+2
+.6686	18		clc		        clc
+.6687	ad c7 69	lda $69c7	        lda d_limit
+.668a	6d b0 69	adc $69b0	        adc d_count
+.668d	8d c7 69	sta $69c7	        sta d_limit
+.6690	ad c8 69	lda $69c8	        lda d_limit+1
+.6693	6d b1 69	adc $69b1	        adc d_count+1
+.6696	8d c8 69	sta $69c8	        sta d_limit+1
+.6699	ad c9 69	lda $69c9	        lda d_limit+2
+.669c	6d b2 69	adc $69b2	        adc d_count+2
+.669f	8d c9 69	sta $69c9	        sta d_limit+2
+.66a2	ae ab 69	ldx $69ab	        ldx d_slot
+.66a5	ad c7 69	lda $69c7	        lda d_limit
+.66a8	9d d2 69	sta $69d2,x	        sta d_states+D_LEN,x
+.66ab	ad c8 69	lda $69c8	        lda d_limit+1
+.66ae	9d d3 69	sta $69d3,x	        sta d_states+D_LEN+1,x
+.66b1	ad c9 69	lda $69c9	        lda d_limit+2
+.66b4	9d d4 69	sta $69d4,x	        sta d_states+D_LEN+2,x
+.66b7					doc_dirty:
+.66b7	ae ab 69	ldx $69ab	        ldx d_slot
+.66ba	a9 01		lda #$01	        lda #1
+.66bc	9d de 69	sta $69de,x	        sta d_states+D_DIRTY,x
+.66bf	4c 12 60	jmp $6012	        jmp doc_ok
+.66c2					doc_delete:
+.66c2	20 3c 60	jsr $603c	        jsr doc_prepare
+.66c5	90 03		bcc $66ca	        bcs doc_return
+.66c7	4c 8c 60	jmp $608c
+.66ca	38		sec		        sec
+.66cb	ad c7 69	lda $69c7	        lda d_limit
+.66ce	ed ad 69	sbc $69ad	        sbc d_pos
+.66d1	8d c7 69	sta $69c7	        sta d_limit
+.66d4	ad c8 69	lda $69c8	        lda d_limit+1
+.66d7	ed ae 69	sbc $69ae	        sbc d_pos+1
+.66da	8d c8 69	sta $69c8	        sta d_limit+1
+.66dd	ad c9 69	lda $69c9	        lda d_limit+2
+.66e0	ed af 69	sbc $69af	        sbc d_pos+2
+.66e3	8d c9 69	sta $69c9	        sta d_limit+2
+.66e6	ad c9 69	lda $69c9	        lda d_limit+2
+.66e9	cd b2 69	cmp $69b2	        cmp d_count+2
+.66ec	d0 0e		bne $66fc	        bne +
+.66ee	ad c8 69	lda $69c8	        lda d_limit+1
+.66f1	cd b1 69	cmp $69b1	        cmp d_count+1
+.66f4	d0 06		bne $66fc	        bne +
+.66f6	ad c7 69	lda $69c7	        lda d_limit
+.66f9	cd b0 69	cmp $69b0	        cmp d_count
+.66fc					+
+.66fc	b0 03		bcs $6701	        bcc doc_range
+.66fe	4c 1a 60	jmp $601a
+.6701	20 3c 63	jsr $633c	        jsr doc_seek_gap
+.6704	b0 c1		bcs $66c7	        bcs doc_return
+.6706	ae ab 69	ldx $69ab	        ldx d_slot
+.6709	bd d8 69	lda $69d8,x	        lda d_states+D_END,x
+.670c	8d c7 69	sta $69c7	        sta d_limit
+.670f	bd d9 69	lda $69d9,x	        lda d_states+D_END+1,x
+.6712	8d c8 69	sta $69c8	        sta d_limit+1
+.6715	bd da 69	lda $69da,x	        lda d_states+D_END+2,x
+.6718	8d c9 69	sta $69c9	        sta d_limit+2
+.671b	18		clc		        clc
+.671c	ad c7 69	lda $69c7	        lda d_limit
+.671f	6d b0 69	adc $69b0	        adc d_count
+.6722	8d c7 69	sta $69c7	        sta d_limit
+.6725	ad c8 69	lda $69c8	        lda d_limit+1
+.6728	6d b1 69	adc $69b1	        adc d_count+1
+.672b	8d c8 69	sta $69c8	        sta d_limit+1
+.672e	ad c9 69	lda $69c9	        lda d_limit+2
+.6731	6d b2 69	adc $69b2	        adc d_count+2
+.6734	8d c9 69	sta $69c9	        sta d_limit+2
+.6737	ae ab 69	ldx $69ab	        ldx d_slot
+.673a	ad c7 69	lda $69c7	        lda d_limit
+.673d	9d d8 69	sta $69d8,x	        sta d_states+D_END,x
+.6740	ad c8 69	lda $69c8	        lda d_limit+1
+.6743	9d d9 69	sta $69d9,x	        sta d_states+D_END+1,x
+.6746	ad c9 69	lda $69c9	        lda d_limit+2
+.6749	9d da 69	sta $69da,x	        sta d_states+D_END+2,x
+.674c	ae ab 69	ldx $69ab	        ldx d_slot
+.674f	bd d2 69	lda $69d2,x	        lda d_states+D_LEN,x
+.6752	8d c7 69	sta $69c7	        sta d_limit
+.6755	bd d3 69	lda $69d3,x	        lda d_states+D_LEN+1,x
+.6758	8d c8 69	sta $69c8	        sta d_limit+1
+.675b	bd d4 69	lda $69d4,x	        lda d_states+D_LEN+2,x
+.675e	8d c9 69	sta $69c9	        sta d_limit+2
+.6761	38		sec		        sec
+.6762	ad c7 69	lda $69c7	        lda d_limit
+.6765	ed b0 69	sbc $69b0	        sbc d_count
+.6768	8d c7 69	sta $69c7	        sta d_limit
+.676b	ad c8 69	lda $69c8	        lda d_limit+1
+.676e	ed b1 69	sbc $69b1	        sbc d_count+1
+.6771	8d c8 69	sta $69c8	        sta d_limit+1
+.6774	ad c9 69	lda $69c9	        lda d_limit+2
+.6777	ed b2 69	sbc $69b2	        sbc d_count+2
+.677a	8d c9 69	sta $69c9	        sta d_limit+2
+.677d	ae ab 69	ldx $69ab	        ldx d_slot
+.6780	ad c7 69	lda $69c7	        lda d_limit
+.6783	9d d2 69	sta $69d2,x	        sta d_states+D_LEN,x
+.6786	ad c8 69	lda $69c8	        lda d_limit+1
+.6789	9d d3 69	sta $69d3,x	        sta d_states+D_LEN+1,x
+.678c	ad c9 69	lda $69c9	        lda d_limit+2
+.678f	9d d4 69	sta $69d4,x	        sta d_states+D_LEN+2,x
+.6792	4c b7 66	jmp $66b7	        jmp doc_dirty
+.6795					doc_read:
+.6795	20 3c 60	jsr $603c	        jsr doc_prepare
+.6798	90 03		bcc $679d	        bcs doc_return
+.679a	4c 8c 60	jmp $608c
+.679d	ad c7 69	lda $69c7	        lda d_limit
+.67a0	8d c1 69	sta $69c1	        sta d_left
+.67a3	ad c8 69	lda $69c8	        lda d_limit+1
+.67a6	8d c2 69	sta $69c2	        sta d_left+1
+.67a9	ad c9 69	lda $69c9	        lda d_limit+2
+.67ac	8d c3 69	sta $69c3	        sta d_left+2
+.67af	38		sec		        sec
+.67b0	ad c1 69	lda $69c1	        lda d_left
+.67b3	ed ad 69	sbc $69ad	        sbc d_pos
+.67b6	8d c1 69	sta $69c1	        sta d_left
+.67b9	ad c2 69	lda $69c2	        lda d_left+1
+.67bc	ed ae 69	sbc $69ae	        sbc d_pos+1
+.67bf	8d c2 69	sta $69c2	        sta d_left+1
+.67c2	ad c3 69	lda $69c3	        lda d_left+2
+.67c5	ed af 69	sbc $69af	        sbc d_pos+2
+.67c8	8d c3 69	sta $69c3	        sta d_left+2
+.67cb	ad c3 69	lda $69c3	        lda d_left+2
+.67ce	cd b2 69	cmp $69b2	        cmp d_count+2
+.67d1	d0 0e		bne $67e1	        bne +
+.67d3	ad c2 69	lda $69c2	        lda d_left+1
+.67d6	cd b1 69	cmp $69b1	        cmp d_count+1
+.67d9	d0 06		bne $67e1	        bne +
+.67db	ad c1 69	lda $69c1	        lda d_left
+.67de	cd b0 69	cmp $69b0	        cmp d_count
+.67e1					+
+.67e1	90 12		bcc $67f5	        bcc doc_read_short
+.67e3	ad b0 69	lda $69b0	        lda d_count
+.67e6	8d c1 69	sta $69c1	        sta d_left
+.67e9	ad b1 69	lda $69b1	        lda d_count+1
+.67ec	8d c2 69	sta $69c2	        sta d_left+1
+.67ef	ad b2 69	lda $69b2	        lda d_count+2
+.67f2	8d c3 69	sta $69c3	        sta d_left+2
+.67f5					doc_read_short:
+.67f5	ad ad 69	lda $69ad	        lda d_pos
+.67f8	8d b8 69	sta $69b8	        sta d_cur
+.67fb	ad ae 69	lda $69ae	        lda d_pos+1
+.67fe	8d b9 69	sta $69b9	        sta d_cur+1
+.6801	ad af 69	lda $69af	        lda d_pos+2
+.6804	8d ba 69	sta $69ba	        sta d_cur+2
+.6807	a9 00		lda #$00	        lda #0
+.6809	8d b3 69	sta $69b3	        sta d_actual
+.680c	8d b4 69	sta $69b4	        sta d_actual+1
+.680f					doc_read_loop:
+.680f	ad c1 69	lda $69c1	        lda d_left
+.6812	0d c2 69	ora $69c2	        ora d_left+1
+.6815	d0 03		bne $681a	        beq doc_move_done
+.6817	4c fd 62	jmp $62fd
+.681a	20 50 61	jsr $6150	        jsr doc_size
+.681d	ad b8 69	lda $69b8	        lda d_cur
+.6820	8d b5 69	sta $69b5	        sta d_at
+.6823	ad b9 69	lda $69b9	        lda d_cur+1
+.6826	8d b6 69	sta $69b6	        sta d_at+1
+.6829	ad ba 69	lda $69ba	        lda d_cur+2
+.682c	8d b7 69	sta $69b7	        sta d_at+2
+.682f	ae ab 69	ldx $69ab	        ldx d_slot
+.6832	bd d5 69	lda $69d5,x	        lda d_states+D_GAP,x
+.6835	8d c7 69	sta $69c7	        sta d_limit
+.6838	bd d6 69	lda $69d6,x	        lda d_states+D_GAP+1,x
+.683b	8d c8 69	sta $69c8	        sta d_limit+1
+.683e	bd d7 69	lda $69d7,x	        lda d_states+D_GAP+2,x
+.6841	8d c9 69	sta $69c9	        sta d_limit+2
+.6844	ad ba 69	lda $69ba	        lda d_cur+2
+.6847	cd c9 69	cmp $69c9	        cmp d_limit+2
+.684a	d0 0e		bne $685a	        bne +
+.684c	ad b9 69	lda $69b9	        lda d_cur+1
+.684f	cd c8 69	cmp $69c8	        cmp d_limit+1
+.6852	d0 06		bne $685a	        bne +
+.6854	ad b8 69	lda $69b8	        lda d_cur
+.6857	cd c7 69	cmp $69c7	        cmp d_limit
+.685a					+
+.685a	b0 33		bcs $688f	        bcs doc_read_after_gap
+.685c	38		sec		        sec
+.685d	ad c7 69	lda $69c7	        lda d_limit
+.6860	ed b8 69	sbc $69b8	        sbc d_cur
+.6863	8d c7 69	sta $69c7	        sta d_limit
+.6866	ad c8 69	lda $69c8	        lda d_limit+1
+.6869	ed b9 69	sbc $69b9	        sbc d_cur+1
+.686c	8d c8 69	sta $69c8	        sta d_limit+1
+.686f	ad c9 69	lda $69c9	        lda d_limit+2
+.6872	ed ba 69	sbc $69ba	        sbc d_cur+2
+.6875	8d c9 69	sta $69c9	        sta d_limit+2
+.6878	ad c9 69	lda $69c9	        lda d_limit+2
+.687b	d0 5f		bne $68dc	        bne doc_read_mapped
+.687d	ad c7 69	lda $69c7	        lda d_limit
+.6880	8d cd 69	sta $69cd	        sta d_bound
+.6883	ad c8 69	lda $69c8	        lda d_limit+1
+.6886	8d ce 69	sta $69ce	        sta d_bound+1
+.6889	20 aa 61	jsr $61aa	        jsr doc_bound_limit
+.688c	4c dc 68	jmp $68dc	        jmp doc_read_mapped
+.688f					doc_read_after_gap:
+.688f	ae ab 69	ldx $69ab	        ldx d_slot
+.6892	bd d8 69	lda $69d8,x	        lda d_states+D_END,x
+.6895	8d ca 69	sta $69ca	        sta d_bound3
+.6898	bd d9 69	lda $69d9,x	        lda d_states+D_END+1,x
+.689b	8d cb 69	sta $69cb	        sta d_bound3+1
+.689e	bd da 69	lda $69da,x	        lda d_states+D_END+2,x
+.68a1	8d cc 69	sta $69cc	        sta d_bound3+2
+.68a4	38		sec		        sec
+.68a5	ad ca 69	lda $69ca	        lda d_bound3
+.68a8	ed c7 69	sbc $69c7	        sbc d_limit
+.68ab	8d ca 69	sta $69ca	        sta d_bound3
+.68ae	ad cb 69	lda $69cb	        lda d_bound3+1
+.68b1	ed c8 69	sbc $69c8	        sbc d_limit+1
+.68b4	8d cb 69	sta $69cb	        sta d_bound3+1
+.68b7	ad cc 69	lda $69cc	        lda d_bound3+2
+.68ba	ed c9 69	sbc $69c9	        sbc d_limit+2
+.68bd	8d cc 69	sta $69cc	        sta d_bound3+2
+.68c0	18		clc		        clc
+.68c1	ad b5 69	lda $69b5	        lda d_at
+.68c4	6d ca 69	adc $69ca	        adc d_bound3
+.68c7	8d b5 69	sta $69b5	        sta d_at
+.68ca	ad b6 69	lda $69b6	        lda d_at+1
+.68cd	6d cb 69	adc $69cb	        adc d_bound3+1
+.68d0	8d b6 69	sta $69b6	        sta d_at+1
+.68d3	ad b7 69	lda $69b7	        lda d_at+2
+.68d6	6d cc 69	adc $69cc	        adc d_bound3+2
+.68d9	8d b7 69	sta $69b7	        sta d_at+2
+.68dc					doc_read_mapped:
+.68dc	20 76 61	jsr $6176	        jsr doc_forward_limit
+.68df	20 0b 61	jsr $610b	        jsr doc_select
+.68e2	90 03		bcc $68e7	        bcs doc_fault
+.68e4	4c 22 60	jmp $6022
+.68e7	20 26 1c	jsr $1c26	        jsr N_READ
+.68ea	b0 f8		bcs $68e4	        bcs doc_fault
+.68ec	20 5f 69	jsr $695f	        jsr doc_buffer_to_output
+.68ef	18		clc		        clc
+.68f0	ad b8 69	lda $69b8	        lda d_cur
+.68f3	6d c4 69	adc $69c4	        adc d_n
+.68f6	8d b8 69	sta $69b8	        sta d_cur
+.68f9	ad b9 69	lda $69b9	        lda d_cur+1
+.68fc	6d c5 69	adc $69c5	        adc d_n+1
+.68ff	8d b9 69	sta $69b9	        sta d_cur+1
+.6902	ad ba 69	lda $69ba	        lda d_cur+2
+.6905	6d c6 69	adc $69c6	        adc d_n+2
+.6908	8d ba 69	sta $69ba	        sta d_cur+2
+.690b	38		sec		        sec
+.690c	ad c1 69	lda $69c1	        lda d_left
+.690f	ed c4 69	sbc $69c4	        sbc d_n
+.6912	8d c1 69	sta $69c1	        sta d_left
+.6915	ad c2 69	lda $69c2	        lda d_left+1
+.6918	ed c5 69	sbc $69c5	        sbc d_n+1
+.691b	8d c2 69	sta $69c2	        sta d_left+1
+.691e	ad c3 69	lda $69c3	        lda d_left+2
+.6921	ed c6 69	sbc $69c6	        sbc d_n+2
+.6924	8d c3 69	sta $69c3	        sta d_left+2
+.6927	20 2d 69	jsr $692d	        jsr doc_actual_add
+.692a	4c 0f 68	jmp $680f	        jmp doc_read_loop
+.692d					doc_actual_add:
+.692d	18		clc		        clc
+.692e	ad b3 69	lda $69b3	        lda d_actual
+.6931	6d c4 69	adc $69c4	        adc d_n
+.6934	8d b3 69	sta $69b3	        sta d_actual
+.6937	ad b4 69	lda $69b4	        lda d_actual+1
+.693a	6d c5 69	adc $69c5	        adc d_n+1
+.693d	8d b4 69	sta $69b4	        sta d_actual+1
+.6940	60		rts		        rts
+.6941					doc_input_to_buffer:
+.6941	18		clc		        clc
+.6942	a9 d2		lda #$d2	        lda #<d_input
+.6944	6d b3 69	adc $69b3	        adc d_actual
+.6947	8d 89 69	sta $6989	        sta doc_local_read+1
+.694a	a9 6a		lda #$6a	        lda #>d_input
+.694c	6d b4 69	adc $69b4	        adc d_actual+1
+.694f	8d 8a 69	sta $698a	        sta doc_local_read+2
+.6952	a9 00		lda #$00	        lda #<N_BUFFER
+.6954	8d 8c 69	sta $698c	        sta doc_local_write+1
+.6957	a9 3a		lda #$3a	        lda #>N_BUFFER
+.6959	8d 8d 69	sta $698d	        sta doc_local_write+2
+.695c	4c 7a 69	jmp $697a	        jmp doc_local_copy
+.695f					doc_buffer_to_output:
+.695f	a9 00		lda #$00	        lda #<N_BUFFER
+.6961	8d 89 69	sta $6989	        sta doc_local_read+1
+.6964	a9 3a		lda #$3a	        lda #>N_BUFFER
+.6966	8d 8a 69	sta $698a	        sta doc_local_read+2
+.6969	18		clc		        clc
+.696a	a9 d2		lda #$d2	        lda #<d_output
+.696c	6d b3 69	adc $69b3	        adc d_actual
+.696f	8d 8c 69	sta $698c	        sta doc_local_write+1
+.6972	a9 6c		lda #$6c	        lda #>d_output
+.6974	6d b4 69	adc $69b4	        adc d_actual+1
+.6977	8d 8d 69	sta $698d	        sta doc_local_write+2
+.697a					doc_local_copy:
+.697a	ad c4 69	lda $69c4	        lda d_n
+.697d	8d cf 69	sta $69cf	        sta d_bytes
+.6980	ad c5 69	lda $69c5	        lda d_n+1
+.6983	8d d0 69	sta $69d0	        sta d_bytes+1
+.6986	a2 00		ldx #$00	        ldx #0
+.6988					doc_local_read:
+.6988	bd ff ff	lda $ffff,x	        lda $ffff,x
+.698b					doc_local_write:
+.698b	9d ff ff	sta $ffff,x	        sta $ffff,x
+.698e	e8		inx		        inx
+.698f	d0 06		bne $6997	        bne +
+.6991	ee 8a 69	inc $698a	        inc doc_local_read+2
+.6994	ee 8d 69	inc $698d	        inc doc_local_write+2
+.6997	ad cf 69	lda $69cf	+       lda d_bytes
+.699a	d0 03		bne $699f	        bne +
+.699c	ce d0 69	dec $69d0	        dec d_bytes+1
+.699f	ce cf 69	dec $69cf	+       dec d_bytes
+.69a2	ad cf 69	lda $69cf	        lda d_bytes
+.69a5	0d d0 69	ora $69d0	        ora d_bytes+1
+.69a8	d0 de		bne $6988	        bne doc_local_read
+.69aa	60		rts		        rts
+>69ab	00				d_slot: .byte 0
+>69ac	00				d_owner: .byte 0
+>69ad	00 00 00			d_pos: .fill 3,0
+>69b0	00 00 00			d_count: .fill 3,0
+>69b3	00 00				d_actual: .word 0
+>69b5	00 00 00			d_at: .fill 3,0
+>69b8	00 00 00			d_cur: .fill 3,0
+>69bb	00 00 00			d_src: .fill 3,0
+>69be	00 00 00			d_dst: .fill 3,0
+>69c1	00 00 00			d_left: .fill 3,0
+>69c4	00 00 00			d_n: .fill 3,0
+>69c7	00 00 00			d_limit: .fill 3,0
+>69ca	00 00 00			d_bound3: .fill 3,0
+>69cd	00 00				d_bound: .word 0
+>69cf	00 00				d_bytes: .word 0
+>69d1	00				d_index: .byte 0
+>69d2	00 00 00 00 00 00 00 00		d_states: .fill 256,0
+>69da	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>6aca	00 00 00 00 00 00 00 00
+>6ad2	00 00 00 00 00 00 00 00		d_input: .fill 512,0
+>6ada	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>6cca	00 00 00 00 00 00 00 00
+>6cd2	00 00 00 00 00 00 00 00		d_output: .fill 512,0
+>6cda	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>6eca	00 00 00 00 00 00 00 00
+
+;******  Return to file: probes/native-document.asm
+
+.6ed2					document_probe_end:
+
+;******  End of listing

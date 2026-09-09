@@ -4,8 +4,8 @@ The browser checkpoint left 139 bytes before the page tables at `$3800`.
 The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
 now moves the allocator to `$1300`, leaving 1,321 main-region bytes and 1,082
 low-region bytes for further resident code/data. It retains the public ABI and
-442-page heap. Native document editing and shared desktop services are the next
-implementation steps; scheduling and a larger module architecture remain required.
+442-page heap. The native banked text editor now uses that heap; shared desktop
+services are next. Scheduling and a larger module architecture remain required.
 
 ## 1. Resident growth and its remaining limits
 
@@ -35,19 +35,25 @@ native workflows and revised observer qualification. No test may save and
 restore memory over active kernel code. The two small resident regions are a
 next-step capacity increase, not the complete scheduler/driver memory architecture.
 
-## 2. Build a banked document model and native editor
+## 2. Extend the banked document model and native editor
 
-Use the existing heap/file ABI for document chunks, with explicit logical
-length separate from allocated capacity. Define byte-preserving CR/LF handling,
-cursor/viewport positions, dirty state and allocation-failure behavior before
-adding selection, clipboard and undo. Start with a bounded plain-text editor;
-the word processor's layout/format/printing requirements remain separate.
+The [native editor](NATIVE-EDITOR.md) uses the existing heap/file ABI for owned
+4 KiB chunks, with 24-bit logical length separate from capacity. It preserves
+CRLF/lone CR/lone LF and other imported bytes, provides cursor/viewport editing,
+retains the original document after a failed Open and verifies Save As by a
+complete reopen comparison. Both contexts and the app share an explicit owner.
 
-Acceptance: open, edit, save, close and reopen documents beyond the legacy
-768-byte limit, then cross a 64 KiB logical offset using multiple allocations.
-Compare complete saved bytes independently. Existing files, cancelled operations
-and dirty documents must have explicit outcomes; do not label KERNAL-accepted
-output as verified storage. Retain document ownership across reusable dialogs.
+Add selection, clipboard, undo/find and session recovery next to the shared
+dialog/input work. REU/disk backing is still required for documents exceeding
+available base RAM. The word processor's layout/format/printing requirements
+remain separate.
+
+The base workflow crosses a 64 KiB logical offset, saves and reopens the edited
+bytes, and preserves unrelated allocations. Keep those checks when extending it.
+Compare saved bytes independently, include allocation and transfer failures,
+and retain document ownership across reusable dialogs. An uncertain CLOSE
+currently quarantines the owner; provide an explicit recovery path before
+claiming media-failure recovery is complete.
 
 ## 3. Share input, dialogs and backend state
 
@@ -61,6 +67,10 @@ Acceptance: browse a data drive, return to an intact document, save through
 the selected backend, and reopen the system browser from its boot device.
 Repeat with missing media, full disks and directory/transfer failures. Measure
 large-directory I/O and redraw cost before claiming performance improvements.
+The editor's physical 66 KB workflow also records roughly 296-second Open and
+523-second verified Save As through standard 1541 IEC. Reduce repeated extent
+I/O, add cancellation within long operations and integrate the native Ultimate
+file backend; keep the complete byte comparisons when measuring improvements.
 
 ## 4. Migrate the desktop and Ultimate services
 
