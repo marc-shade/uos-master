@@ -24,6 +24,7 @@
 .include "kernal.inc"
 .include "vic-ii.inc"
 .include "io.inc"
+.include "ultimate-files.inc"
 
 
 * = $0801    ;start of BASIC area
@@ -127,6 +128,10 @@ loadfiles:
         jsr LOADER
 
         JSR LOADIMM
+            .text "uos-files",$00
+        jsr LOADER
+
+        JSR LOADIMM
 	    .text "uos-desktop",$00
         jsr LOADER
 
@@ -169,8 +174,11 @@ setup:
         sta VIC_BASE + VIC_SPR0_X
         sta VIC_BASE + VIC_SPR0_Y
 
-        ; disable basic rom
-        lda #$35
+        ; Keep KERNAL IRQ vectors visible while banking BASIC out. Interrupts
+        ; are enabled here and during the REU parameter setup; $35 hid both
+        ; ROMs, leaving an IRQ window before REU_STASH selected $37 again.
+setup_banking:
+        lda #$36
         sta $01
 
         ; stash the empty screen
@@ -469,6 +477,7 @@ _ffdone:
 ; let core-resident code do the load and the jump.
 ; ==========================================================
 LAUNCH_APP_RT:
+        jsr UFS_CLOSEALL        ; resident ownership survives a failed close
         ; clear the desktop bitmap before the app draws: apps paint outline
         ; windows straight onto the bitmap, and the desktop icons showed
         ; through them. Same colour rule and sprite-pointer restore as
@@ -972,7 +981,7 @@ vds_no:
 
 ; ==========================================================
 ; Resident driver lookup (FR-A2 registry prerequisite)
-; Capability ids: 1=gfx(VIC), 2=vdc, 3=reu, 4=keyin, 5=fillfile
+; Capability ids: 1=gfx(VIC), 2=vdc, 3=reu, 4=keyin, 5=fillfile, 6=files
 ; GETCAP: X = capability id -> A/X = base lo/hi, or 0/0 = unknown id.
 ; Preserves Y, zero page, non-stack RAM and D/I flags. Other flags clobbered.
 ; This static table locates resident software, not attached hardware. Use
@@ -983,6 +992,7 @@ CAP_VDC         = $02
 CAP_REU         = $03
 CAP_KEYIN       = $04
 CAP_FILLFILE    = $05
+CAP_FILES       = $06
 
 CAPTBL:
         .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
@@ -995,6 +1005,8 @@ CAPTBL:
         .word $082c
         .byte CAP_FILLFILE
         .word $0829
+        .byte CAP_FILES
+        .word UFS_OPEN
 CAPTBLEND:
         .cerror (CAPTBLEND-CAPTBL) % 3 != 0, "capability entry must have id and word address"
         .cerror CAPTBLEND-CAPTBL == 0 || CAPTBLEND-CAPTBL > 255, "capability table size invalid"

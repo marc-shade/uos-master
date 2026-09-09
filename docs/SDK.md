@@ -9,11 +9,13 @@ build output; addresses are the fixed ABI the core and drivers export.
 | Range | Owner | Notes |
 |---|---|---|
 | `$0801-$0fff` | core `uos` | **must end below `$1000`** (the desktop loads there); check `Data: … $0801-$0fxx` after any core edit |
-| `$1000-$4048` | desktop `uos-desktop` | resident (`routines.inc` still says `DESK_END = $2fff`; the build output is the truth); `DESK_START = $1000` is the one-way re-entry point |
+| `$1000-$4055` | desktop `uos-desktop` | resident; assembly must end before `$4100`. `DESK_START = $1000` is the one-way re-entry point |
+| `$4100-$4fff` | shared Ultimate files / viewer | `uos-files`; file API at `$4100`, modal viewer at `$4800`; GETCAP ID 6 |
 | `$5000-$7fff` | app code/data, subject to reservations below | `APP_START = $5000`; one app at a time. The legacy `APP_END=$8fff` snapshot extent is not a grant of all that RAM to apps |
 | `$7350-$7358` | settings record | `SETREC`; the settings app image is padded up to it, see below |
 | `$7f00` | tick trampoline (CI only) | free for apps at run time |
-| `$8000` | sprites | pointer sprite; `$87f8` = sprite pointer (colour-RAM fills clobber it) |
+| `$8000-$807f` | sprites | two pointer shapes; `$87f8` = sprite pointer (colour-RAM fills clobber it) |
+| `$8080-$83ff` | file service command buffer | 896 private bytes; unavailable to apps or additional sprite shapes |
 | `$8400-$87ff` | screen matrix / colour cells | hires colour |
 | `$8800-$89ff` | `NET_DATA` | uos-net's 512-byte reply buffer (socket payload at `+2`) |
 | `$8a00-$8cce` | UCI transport | resident code/private state, part of the `uos-net` PRG; must end before `$9000` |
@@ -41,13 +43,13 @@ Zero page: `r0`-`r15` word registers at `$02-$21` (`r0L=$02`, `r0H=$03`, …
 ## Boot chain
 
 `uos` (core) loads, in order: `uos-gfx`, `uos-vdc`, `uos-drv1351`,
-`uos-sprites`, `uos-reu`, `uos-net`, `uos-desktop`, then `VDPREF` loads the
+`uos-sprites`, `uos-reu`, `uos-net`, `uos-files`, `uos-desktop`, then `VDPREF` loads the
 settings record `UOS-SET` (absent file → defaults: mode 2 = both displays,
 cyan background), `VDSETUP` brings up the 8563 when the mode allows it,
 `NET_SYNC` sets the clock from the network (see *Network and clock*), and
 the desktop starts. The launcher hides these system components by name
 (`syscomps` in `uos-desktop.asm`) and lists every other `uos-*` file on the
-disk as an application.
+disk as an application, up to its current six-row limit.
 
 ## Core jump table (`$0811`…, `src/routines.inc`)
 
@@ -61,7 +63,7 @@ disk as an application.
 | `$0826` | `APP_LOADER` | KERNAL LOAD of the file buffer; carry clear on success, set on failure. `LOADERR` resets for each attempt and latches the KERNAL error |
 | `$0829` | `FILLFILE` | `r0` → `$00`-terminated name → file buffer (dynamic loading); at most 16 name bytes plus a terminator |
 | `$082c` | `KEYIN` | `A` = key event (0 = none): kernal GETIN **plus** the C128 keys the C64-mode kernal cannot see (`KEYIN_EXT` in drv1351 scans the VIC-IIe extended matrix: ESC → `$1b`, dedicated cursor keys → `$91/$11/$9d/$1d`, one event per press) and RUN/STOP → `$1b` for C64 keyboards |
-| `$082f` | `GETCAP` | X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile) → A/X = entry lo/hi; unknown ID → 0/0. Preserves Y, zero page, non-stack RAM and D/I flags; other flags clobbered |
+| `$082f` | `GETCAP` | X = ID (1 gfx, 2 vdc, 3 reu, 4 keyin, 5 fillfile, 6 files) → A/X = entry lo/hi; unknown ID → 0/0. Preserves Y, zero page, non-stack RAM and D/I flags; other flags clobbered |
 | `$0832` | `LAUNCH_APP` | Core-resident LOAD then `jmp APP_START` on success, `jmp DESK_START` on failure; the safe entry for an app replacing itself |
 | `$0835` | `VDTEXT` | 80-col: `A` = row 0-24, `X` = col 0-79, `r9` → PETSCII text; no-op without a VDC |
 | `$0838` | `VDCLR` | 80-col: `A` = row → 80 spaces; no-op without a VDC |
@@ -69,7 +71,7 @@ disk as an application.
 | `$083e` | `READ_BUTTON` | A = 0 if either mouse fire button is down, nonzero when released; preserves X/Y and the interrupt/decimal flags |
 
 `GETCAP` is a static lookup for resident software, not a hardware probe or
-version negotiation. IDs 1–5 return `$c000`, `$cc00`, `$9c00`, `$082c`, `$0829`
+version negotiation. IDs 1–6 return `$c000`, `$cc00`, `$9c00`, `$082c`, `$0829`, `$4100`
 respectively, including on a machine without the corresponding peripheral.
 Check the driver's documented presence result before optional hardware access.
 The earlier dispatch defect is fixed; `tests/ci_core.py` covers every 8-bit ID,
@@ -86,6 +88,17 @@ storage at `$7100`, and commands at `$7c00`; do not assume the old contiguous
 cache at `$6000`. The host VDC capture helper borrows `$7400–$7cf4` only while
 the app is idle and restores that entire region, with a byte comparison, before
 input resumes. Apps executing code in that region cannot use this helper.
+The VIC capture helper separately borrows `$7400–$7bcf` and the cassette
+buffer `$0340–$03fb`, preserving and checking both on return. Both helpers
+require an idle app, with no injected input or file transaction in progress.
+They no longer use space following the resident desktop.
+
+The [shared file API](ULTIMATE-FILES.md) owns handles in DOS contexts 1 and 2,
+streams up to 512 binary bytes per call, and verifies writes to exclusively
+created files. The desktop viewer uses it directly. `LAUNCH_APP` and desktop
+entry call `UFS_CLOSEALL`; failed closes retain ownership for another attempt.
+Apps must still close and handle errors explicitly. The service does not
+implement an IEC backend, scheduler, file picker or general save/replace yet.
 
 Core control hit testing uses inclusive left/top and exclusive right/bottom
 edges, compares the complete nine-bit X coordinate, and scans all 25 slots

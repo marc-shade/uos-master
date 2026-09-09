@@ -512,7 +512,7 @@ def main():
                          and "unavailable" in r[22], "Ultimate browser offline response")
         show(rows, "Ultimate browser without cartridge interface")
         assert mon.peek(0x7350, 9) == settings_before, "Browser overwrote saved preferences"
-        assert "N/B page" in rows[23] and "ESC exit" in rows[23]
+        assert "N/B page" in rows[23] and "V view" in rows[23] and "ESC" in rows[23]
         subprocess.run(["magick", "import", "-display", disp, "-window", "root",
                         os.path.join(OUT, "ci_ultimate_offline.png")], capture_output=True)
         mon.keys(b"\x1b")

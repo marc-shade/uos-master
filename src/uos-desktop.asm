@@ -24,6 +24,7 @@
 .include "kernal.inc"
 .include "vic-ii.inc"
 .include "io.inc"
+.include "ultimate-files.inc"
 
 
 * = DESK_START
@@ -35,6 +36,7 @@
         ; kills the TICK dispatch (proven in tests/dbg_esc.py).
         ldx #$ff
         txs
+        jsr UFS_CLOSEALL
 
         ; Clear the screen before redrawing. Every app exit (fmgr ESC, shell
         ; EXIT, settings back, core esc_to_desk) lands here, and the
@@ -445,10 +447,11 @@ uospref:        .text "uos-"
 
 ; components that must never appear in the launcher (loading them over
 ; the running system would crash it)
-SYSCOMPS_N      := 9
+SYSCOMPS_N      := 10
 syscomps:
         .text "uos", $00
         .text "uos-net", $00
+        .text "uos-files", $00
         .text "uos-gfx", $00
         .text "uos-vdc", $00
         .text "uos-drv1351", $00
@@ -1251,3 +1254,4 @@ minute:
         .byte $00
 
 .include "icons_desktop.inc"
+        .cerror * > UFS_OPEN, "desktop overlaps resident file service"

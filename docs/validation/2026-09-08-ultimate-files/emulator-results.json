@@ -1,0 +1,30 @@
+{
+  "recorded_from_tool_exit_statuses": true,
+  "runs": [
+    {
+      "command": "python3 -u tests/ci_storage.py --machine x64",
+      "exit_code": 0,
+      "artifact_directory": "storage-x64",
+      "note": "isolated successful run; before USB write split"
+    },
+    {
+      "command": "python3 -u tests/ci_storage.py --machine x128",
+      "exit_code": 0,
+      "artifact_directory": "storage-x128",
+      "note": "before creation component guard and USB write split"
+    },
+    {
+      "command": "python3 -u tests/ci_vdc.py",
+      "exit_code": 0,
+      "checks": 15,
+      "artifact_directory": "vdc",
+      "note": "after boot banking fix; before creation component guard and USB write split"
+    },
+    {
+      "command": "python3 -u tests/ci_storage.py --machine x64",
+      "exit_code": 1,
+      "artifact_directory": "storage-x64-boot-timeout",
+      "note": "concurrent emulator run timed out waiting for initial desktop liveness; VICE log has repeated VSync resets; isolated retry passed"
+    }
+  ]
+}

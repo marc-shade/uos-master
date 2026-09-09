@@ -1,27 +1,16 @@
-del ".\target\*.bin"
-del ".\target\*.prg"
-del ".\target\*.d64"
-
-cls
-echo ===================================================
-echo ===================================================
-echo ===================================================
-
-64tass -a ./src/uos.asm -o ./target/uos.prg -L uos.lst
-64tass -a ./src/uos-gfx.asm -o ./target/uos-gfx.prg -L uos-gfx.lst
-64tass -a ./src/uos-drv1351.asm -o ./target/uos-drv1351.prg -L uos-drv1351.lst
-64tass -a ./src/uos-sprites.asm -o ./target/uos-sprites.prg -L uos-sprites.lst
-64tass -a ./src/uos-reu.asm -o ./target/uos-reu.prg -L uos-reu.lst
-64tass -a ./src/uos-desktop.asm -o ./target/uos-desktop.prg -L uos-desktop.lst
-64tass -a ./src/uos-settings.asm -o ./target/uos-settings.prg -L uos-settings.lst
-
-
-
-c1541 -format "ultos,sh" d64 ./target/ultos.d64
-c1541 -attach ./target/ultos.d64 -write ./target/uos.prg uos
-c1541 -attach ./target/ultos.d64 -write ./target/uos-gfx.prg uos-gfx
-c1541 -attach ./target/ultos.d64 -write ./target/uos-drv1351.prg uos-drv1351
-c1541 -attach ./target/ultos.d64 -write ./target/uos-sprites.prg uos-sprites
-c1541 -attach ./target/ultos.d64 -write ./target/uos-reu.prg uos-reu
-c1541 -attach ./target/ultos.d64 -write ./target/uos-desktop.prg uos-desktop
-c1541 -attach ./target/ultos.d64 -write ./target/uos-settings.prg uos-settings
+@echo off
+setlocal
+cd /d "%~dp0"
+if not exist target mkdir target
+set "uos_modules=uos uos-gfx uos-vdc uos-drv1351 uos-sprites uos-reu uos-net uos-files uos-desktop uos-settings uos-fmgr uos-shell uos-edit uos-calc uos-ultimate"
+for %%m in (%uos_modules%) do (
+    64tass -a "src/%%m.asm" -o "target/%%m.prg" -L "target/%%m.lst"
+    if errorlevel 1 exit /b 1
+)
+c1541 -format "ultos,sh" d64 "target/ultos.d64"
+if errorlevel 1 exit /b 1
+for %%m in (%uos_modules%) do (
+    c1541 -attach "target/ultos.d64" -write "target/%%m.prg" "%%m"
+    if errorlevel 1 exit /b 1
+)
+endlocal

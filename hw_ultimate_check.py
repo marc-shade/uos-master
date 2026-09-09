@@ -344,6 +344,14 @@ def main():
     parser.add_argument('--directory', default='/Usb0/c64/#-a/')
     parser.add_argument('--drives', action='store_true',
                         help='mount/copy/eject a private D64; requires initially empty drive B')
+    parser.add_argument('--files', action='store_true',
+                        help='create/copy/read back private binary files and exercise the desktop viewer')
+    parser.add_argument('--cleanup-empty-files-fixture', type=Path,
+                        help='remove an empty private file-test directory recorded in the supplied report')
+    parser.add_argument('--inspect-files-fixture', type=Path,
+                        help='record a private failed file-test directory and read-only name lookups')
+    parser.add_argument('--files-write-diagnostic', action='store_true',
+                        help='compare private raw UCI writes below and at the 512-byte boundary')
     args = parser.parse_args()
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-browser-'))
     print(f'Browser hardware evidence: {work}', flush=True)
@@ -365,6 +373,22 @@ def main():
     wait_for(lambda: mon.read_mem(0x033c, 0x033d) == desk_tick().to_bytes(2, 'little'),
              'desktop boot', 300)
     assert ci.wait_desktop_live(mon, 120)
+    if args.files_write_diagnostic:
+        from hw_files_check import write_diagnostic
+        write_diagnostic(ult, mon, work)
+        return
+    if args.inspect_files_fixture:
+        from hw_files_check import inspect_fixture
+        inspect_fixture(ult, mon, work, args.inspect_files_fixture)
+        return
+    if args.cleanup_empty_files_fixture:
+        from hw_files_check import cleanup_empty_fixture
+        cleanup_empty_fixture(ult, mon, work, args.cleanup_empty_files_fixture)
+        return
+    if args.files:
+        from hw_files_check import file_workflow
+        file_workflow(ult, mon, work, report)
+        return
     if args.drives:
         drive_workflow(ult, mon, work, report)
         return

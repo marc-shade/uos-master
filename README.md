@@ -41,6 +41,14 @@ cartridge's incomplete inventory. The [drive validation](docs/validation/2026-09
 records the CPU, display, emulator and physical workflow checks. Further drive
 settings, file operations and the rest of the OS remain on the roadmap.
 
+Press **V / View** to inspect a cartridge file as paged hex and ASCII on both
+displays; **N / B** page and **Esc** returns to the same browser selection.
+The [shared file service](docs/ULTIMATE-FILES.md) supports binary reads,
+exclusive creation, verified writes and 32-bit seeks. Desktop copy/save dialogs
+and the broader application suite are still in progress.
+The [file-service validation](docs/validation/2026-09-08-ultimate-files/README.md)
+records exact physical create/copy/readback, viewer restoration and firmware limits.
+
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 
 - **Networking** (`uos-net`, 2026-09-06) — a driver for the Ultimate II+ command

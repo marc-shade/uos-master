@@ -114,7 +114,7 @@ def check_getcap(mon, work):
     wait_for(lambda: read(0x5f02, 1) == b"\x01", "GETCAP probe", 30)
     data = read(0x6000, 512)
     (work / "getcap.bin").write_bytes(data)
-    expected = {1: 0xc000, 2: 0xcc00, 3: 0x9c00, 4: 0x082c, 5: 0x0829}
+    expected = {1: 0xc000, 2: 0xcc00, 3: 0x9c00, 4: 0x082c, 5: 0x0829, 6: 0x4100}
     values = [data[i] | data[256 + i] << 8 for i in range(256)]
     for i, value in enumerate(values):
         assert value == expected.get(i, 0), f"GETCAP({i}) returned ${value:04x}"

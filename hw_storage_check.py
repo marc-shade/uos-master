@@ -78,10 +78,19 @@ def read_vdc(mon, work, metadata=None):
 
 
 def screen_code(petscii):
+    """Standard PETSCII conversion used by the resident VDC text driver."""
+    if petscii < 0x20 or 0x80 <= petscii < 0xa0:
+        return 0x20
     if 0x40 <= petscii < 0x60:
+        return petscii - 0x40
+    if 0x60 <= petscii < 0x80:
+        return petscii - 0x20
+    if 0xa0 <= petscii < 0xc0:
         return petscii - 0x40
     if 0xc0 <= petscii < 0xff:
         return petscii - 0x80
+    if petscii == 0xff:
+        return 0x5e
     return petscii
 
 

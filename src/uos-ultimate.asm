@@ -5,6 +5,7 @@
 .include "routines.inc"
 .include "macros.inc"
 .include "kernal.inc"
+.include "ultimate-files.inc"
 
 ROWS = 8
 DIR_LIST = 1
@@ -111,10 +112,40 @@ dispatch:
         jsr paint
         jmp input_loop
 
-keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50,$44
+keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50,$44,$56
 key_count = *-keys
-actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path,<drives
-actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path,>drives
+actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path,<drives,<view_entry
+actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path,>drives,>view_entry
+
+view_entry:
+        lda count
+        beq view_entry_done
+        ldx selected
+        lda attrs,x
+        and #$18
+        beq view_entry_file
+        lda #<view_select_file
+        ldx #>view_select_file
+        jmp set_status
+view_entry_file:
+        jsr selected_source
+        lda sptr
+        sta r0L
+        lda sptr+1
+        sta r0H
+        ldx #2
+        jsr UFS_VIEW
+        php
+        jsr frame
+        lda #DIR_ALL
+        sta dirty
+        plp
+        bcc view_entry_done
+        lda #<view_failed_text
+        ldx #>view_failed_text
+        jmp set_status
+view_entry_done:
+        rts
 
 leave:
         lda #$ff
@@ -782,6 +813,21 @@ frame_clear:
         lda #14
         sta Y1
         jsr GPUTS
+        lda driveview
+        bne frame_switch
+        lda #<view_button
+        sta r9L
+        lda #>view_button
+        sta r9H
+        lda #192
+        sta X1
+        lda #0
+        sta X1+1
+        sta Y1+1
+        lda #14
+        sta Y1
+        jsr GPUTS
+frame_switch:
         ldx driveview
         lda switchesL,x
         sta r9L
@@ -1301,7 +1347,15 @@ mouse_y:
         bne mouse_switch
         lda mx
         cmp #240
+        bcs mouse_switch
+        cmp #192
         bcc mouse_reject
+        cmp #232
+        bcs mouse_reject
+        lda driveview
+        bne mouse_reject
+        lda #$56
+        rts
 mouse_switch:
         lda #$44
         rts
@@ -1390,7 +1444,7 @@ mouse_none:
         rts
 
 title: .text "Ultimate files",0
-help: .text "up/dn select enter open U up / root N/B page R retry P path D drives ESC exit",0
+help: .text "up/dn select enter open V view U up / root N/B page R retry P path D drives ESC",0
         .cerror *-help > 81, "browser help exceeds a VDC row"
 items_text: .text "items "
 name_label: .text "selected name (< > scroll)",0
@@ -1399,6 +1453,9 @@ empty_text: .text "empty directory; U=parent / root",0
 transport_error: .text "Ultimate unavailable; R=retry",0
 invalid_text: .text "invalid or clipped reply; R=retry",0
 cancel_text: .text "cancelled; R=retry ESC=desktop",0
+view_button: .text "view",0
+view_select_file: .text "select a file to view its bytes",0
+view_failed_text: .text "file view failed; check cartridge",0
 btn_left: .text "<",0
 btn_right: .text ">",0
 btn_open: .text "open",0

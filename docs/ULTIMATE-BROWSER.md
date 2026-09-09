@@ -17,6 +17,7 @@ does not mount it in an IEC drive.
 |---|---|---|
 | Select | Up/down; continues across page boundaries | Click a row |
 | Enter directory or image filesystem | Return | Open |
+| Inspect a file as hex and ASCII | V | View in the title |
 | Parent / filesystem root | U / `/` | Up / Root |
 | Previous / next page | B / N | Prev / Next |
 | Scroll the full selected name | Left/right, 32 bytes per step | `<` / `>` |
@@ -29,8 +30,16 @@ does not mount it in an IEC drive.
 The item range appears below the details. `+` means another page exists.
 The VDC mirrors the list, details, range/error and keyboard help. The running
 desktop clock continues to update while the browser waits for input.
-Opening a regular file currently reports the cartridge's directory error;
-viewer/association launch and cartridge file operations remain roadmap work.
+Return enters directory/image filesystems. **V / View** inspects a regular
+file without changing the directory, page, selection or complete cached names.
+The viewer shows 96 bytes per page, with 32-bit hexadecimal offsets, hex bytes
+and an ASCII column. **N / Next**, **B / Prev** and **Esc / Files** work with
+keyboard or VIC mouse. Empty files show an empty page and END. An I/O error
+shows its code; Esc returns to the browser. The byte columns retain binary
+values even when the ASCII column displays a dot for an unsupported character.
+
+The viewer reads through the [shared file service](ULTIMATE-FILES.md). Desktop
+copy/save dialogs, text/image/media viewers and file associations remain open.
 
 ## Drive panel
 
@@ -73,6 +82,9 @@ remain open.
 
 Every cached entry contains its full raw name, up to 511 bytes, plus a zero
 terminator. Display conversion does not modify the name sent to the cartridge.
+That cache bound does not guarantee the firmware can resolve names of that
+length. The reference firmware truncates components at its 128-byte lookup
+buffer; see the [file-service limitations](ULTIMATE-FILES.md).
 The current font displays ASCII letters and most punctuation. Braces, vertical
 bar, tilde, control and non-ASCII bytes appear as dots. Raw names remain intact
 when navigating. Unicode font/decoding support remains open.
@@ -110,9 +122,13 @@ The settings record at `$7350` is preserved. Driver-private scratch at
 `OS_TICK=$083b`, `KEYIN=$082c` and `READ_BUTTON=$083e` in its input loop;
 `ready=1` means input can be accepted, `0` means work is in progress and `$ff`
 marks exit. Desktop entry clears stale controls and redraws the screen.
-The current browser PRG occupies `$5000–$6671`, including its static buffers.
+The current browser PRG occupies `$5000–$6725`, including its static buffers.
 `cache_pages` supplies the eight slot addresses; the cache is not contiguous.
 The CI tick trampoline at `$7f00`, sprite data and screen matrix are preserved.
+While the modal viewer is active, browser `ready` stays zero; the viewer's
+`view_ready` byte indicates its idle input loop. Its code is resident at
+`$4800`, and file bytes temporarily use `$7c00–$7c5f`. The browser redraws its
+frame on return without rereading the directory.
 
 The frame and toolbar are drawn once. Selection changes replace the two row
 markers and the selected-name details; name/path scrolling replaces only the
