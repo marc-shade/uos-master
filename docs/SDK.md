@@ -9,7 +9,7 @@ build output; addresses are the fixed ABI the core and drivers export.
 | Range | Owner | Notes |
 |---|---|---|
 | `$0801-$0fff` | core `uos` | **must end below `$1000`** (the desktop loads there); check `Data: … $0801-$0fxx` after any core edit |
-| `$1000-$4055` | desktop `uos-desktop` | resident; assembly must end before `$4100`. `DESK_START = $1000` is the one-way re-entry point |
+| `$1000-$405e` | desktop `uos-desktop` | resident; assembly must end before `$4100`. `DESK_START = $1000` is the one-way re-entry point |
 | `$4100-$4fff` | shared Ultimate files / viewer | `uos-files`; file API at `$4100`, modal viewer at `$4800`; GETCAP ID 6 |
 | `$5000-$7fff` | app code/data, subject to reservations below | `APP_START = $5000`; one app at a time. The legacy `APP_END=$8fff` snapshot extent is not a grant of all that RAM to apps |
 | `$7350-$7358` | settings record | `SETREC`; the settings app image is padded up to it, see below |
@@ -50,6 +50,10 @@ cyan background), `VDSETUP` brings up the 8563 when the mode allows it,
 the desktop starts. The launcher hides these system components by name
 (`syscomps` in `uos-desktop.asm`) and lists every other `uos-*` file on the
 disk as an application, up to its current six-row limit.
+The internal `uos-copy` overlay is also hidden. The browser loads it through
+the core, and it returns by reloading the browser; the
+[copy handoff and memory contract](ULTIMATE-FILES.md#desktop-copy) are private
+to those two modules. Both reset the stack at their one-way entry points.
 
 ## Core jump table (`$0811`…, `src/routines.inc`)
 
@@ -432,11 +436,13 @@ python3 tests/ci_vdc_protocol.py              # assembled VDC driver: register r
 python3 tests/ci_vdc_capture.py               # IRQ capture: exact bytes, address drift/retry, timeout, guards and IRQ restoration
 python3 tests/ci_uci.py                       # assembled UCI driver: 15 protocol/CPU checks, no VICE needed
 python3 tests/ci_ultimate.py                  # browser/drive panel: paging, inventory, protection, mount/eject, bounds
+python3 tests/ci_file_copy.py                 # core-loaded copy dialog, binary verification, faults, cancellation and full frames
 python3 tests/ci_capture_host.py              # borrowed VDC-capture RAM restored on success and observation/probe failure
 python3 tests/profile_browser.py --out /tmp/browser-render --check-fresh # actual graphics: cycles and fresh-frame comparison
 python3 hw_uci_check.py                      # real C128: identification, inventory, long echo, directory streaming
 python3 hw_ultimate_check.py                 # real C128: browser navigation, complete names, VDC readback, path restoration
 python3 hw_ultimate_check.py --drives        # real C128: private D64 mount, IEC copy, byte verification and eject on empty B
+python3 hw_ultimate_check.py --files         # real C128: shared files, viewer and copy dialog, independent byte/prefix readback
 python3 tests/screens.py                     # x128: capture every screen (vdc-emu-out/screens.png) to eyeball fit
 python3 hw_vdc_check.py                      # real C128: reads the companion display back off the 8563
 python3 hw_calc_check.py                     # real C128: calculator LOADs and draws its display (boot-stub probe)

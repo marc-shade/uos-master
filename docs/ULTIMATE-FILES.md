@@ -1,10 +1,12 @@
-# Shared Ultimate files and byte viewer
+# Shared Ultimate files, viewer and copy dialog
 
 `uos-files` is the first shared cartridge file backend. The browser's **V / View**
 action uses it to inspect files on both displays. It also provides bounded
 binary reads, exclusive creation, verified writes, 32-bit seeks, position/size
-queries and handle cleanup for other applications. It does not yet provide
-desktop copy/save dialogs, a shared IEC backend, overwrite, rename or deletion.
+queries and handle cleanup for other applications. The browser's **C / Copy**
+action opens a dialog that uses this service to create and verify a new copy.
+Shared save/file-picker dialogs, an IEC backend, overwrite, rename and deletion
+remain required.
 
 The resident allocation is `$4100–$4fff`; the file API starts at `$4100`, and
 the viewer starts at `$4800`. GETCAP ID 6 returns `$4100`, including without
@@ -98,7 +100,7 @@ source revision; the exact release on the reference cartridge remains unknown.
 A successful WRITE means its requested contents were read back through the
 same handle. It is not a power-loss durability promise. Save/copy workflows
 must close, reopen, and verify the final file before reporting copy/save completion.
-No operation is replayed automatically. Transport, read, seek or write failures
+No open, read or write is replayed automatically. Transport, read, seek or write failures
 quarantine an owned handle; only CLOSE may recover it. A failed creation can
 leave a partial new file. The API does not delete it automatically.
 
@@ -116,6 +118,56 @@ file-manager delete/rename wrappers do not provide an equivalent open-file
 guard. Safe overwrite, rename and deletion therefore require mounted-media
 identity/protection and recovery work. Exclusive creation rejects existing names.
 
+## Desktop copy
+
+Select a regular file in **Apps → uos-ultimate**, then press **C** or click
+**Copy**. The destination defaults to `copy.bin` in the current directory.
+Edit the full path to choose another directory or name. Left/right move the
+cursor, Home moves to the beginning, Del removes the preceding byte, and
+Ctrl-U clears the field. The field scrolls to keep the cursor visible.
+On the VIC display, path characters and the caret share eight-pixel cells so
+wide and narrow glyphs remain aligned; VDC character cells provide the same alignment.
+Unshifted letters enter lowercase ASCII; shifted letters enter uppercase.
+Press **Enter / Copy** to start; an existing destination is rejected.
+
+The copied and checked byte counters are 32-bit hexadecimal numbers, marked
+with `h`. **Copy verified** appears only after both files have been closed,
+reopened, checked for the original size, compared byte for byte, and closed
+successfully again. The clock/input loop runs between transactions. Esc cancels
+at a transaction boundary during either copying or verification. It closes the
+owned handles and labels the destination unverified. A partial or unverified
+new file is retained; there is no automatic deletion or write retry.
+Counters advance after each block; the screen updates every 4 KiB and at phase
+changes, errors, cancellation and completion to keep graphics from slowing I/O.
+
+After an error, its code and cartridge diagnostic are shown. **E** returns to
+path editing once all service handles are released; use a different new name
+if the previous attempt created a file. **R** retries a failed close, and **Esc**
+returns to the browser. The resident ownership guard remains active after an
+unsuccessful close. The app does not close foreign cartridge handles.
+
+Destination paths must start with `/`, contain at most 893 bytes, and meet the
+service's 127-byte component limit. Source names retain the browser's full
+511-byte bound. DOS 2 opens the source relative to the unchanged browser CWD;
+DOS 1 opens the absolute destination without changing the shell CWD.
+This is a single-file copy, with a typed destination path. Folder selection,
+batch/recursive copy, resume, safe partial-file removal and application Save As
+remain open. Concurrent source/media changes and power-loss durability are not
+guaranteed: final comparison observes both files through the cartridge API.
+
+The `uos-copy` module is loaded on demand at `$5000` and hidden from the Apps
+list. Its code must end below `$6900`; its buffers are destination
+`$6900–$6c7d`, source block `$6d00–$6eff`, and verification block `$6f00–$70ff`.
+The browser hands over its current path at `$7100`, full selected basename at
+`$7c00–$7dff`, and an eight-byte versioned record at `$7e10–$7e17`.
+See [ultimate-copy.inc](../src/ultimate-copy.inc). The app preserves the settings
+record and uses only app-private `$60–$65` scratch alongside public registers.
+Both overlay entries reset the stack because their callers cannot return.
+They balance app registration and use the core loader on the original system
+IEC device. Failed LOAD goes to the desktop. Return reloads and refreshes the
+browser at its saved page and row; filesystem changes can shift directory
+ordinals, as with any browser refresh.
+
 ## Modal viewer
 
 `UFS_VIEW=$4800` takes X=context and r0=filename. It requires an unowned context,
@@ -131,5 +183,11 @@ large binary reads/copies, long names, two handles and failure injection.
 `tests/ci_file_view.py` exercises browser integration, 64 KiB crossings, mouse
 actions and whole VIC/VDC frame restoration. `tests/ci_files_probe.py` checks
 the independent native hardware workflow client. `hw_ultimate_check.py --files`
-runs that client on the C128, independently reads back both private USB files,
-and verifies the desktop viewer and capture restoration.
+runs that client on the C128, independently reads back the private USB files,
+and verifies the desktop viewer and capture restoration. It also drives the
+shipped copy dialog through existing-name rejection, a verified copy, in-progress
+cancellation, and return to the browser, with independent full/prefix readback.
+`tests/ci_file_copy.py` executes the core overlay loader, dialog, service and
+transport. Its faults include post-close corruption, source size changes, final
+close failure and cancellation during verification; it also compares whole
+VIC/VDC frames and checks long paths, mouse actions and repeated overlay entry.

@@ -447,11 +447,12 @@ uospref:        .text "uos-"
 
 ; components that must never appear in the launcher (loading them over
 ; the running system would crash it)
-SYSCOMPS_N      := 10
+SYSCOMPS_N      := 11
 syscomps:
         .text "uos", $00
         .text "uos-net", $00
         .text "uos-files", $00
+        .text "uos-copy", $00
         .text "uos-gfx", $00
         .text "uos-vdc", $00
         .text "uos-drv1351", $00

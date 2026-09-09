@@ -345,7 +345,7 @@ def main():
     parser.add_argument('--drives', action='store_true',
                         help='mount/copy/eject a private D64; requires initially empty drive B')
     parser.add_argument('--files', action='store_true',
-                        help='create/copy/read back private binary files and exercise the desktop viewer')
+                        help='create/copy/read back private binary files, desktop viewer and copy dialog')
     parser.add_argument('--cleanup-empty-files-fixture', type=Path,
                         help='remove an empty private file-test directory recorded in the supplied report')
     parser.add_argument('--inspect-files-fixture', type=Path,

@@ -120,13 +120,31 @@ def test_row_positions():
     assert positions == [(76,82+12*i) for i in range(6)], positions
 
 
+def test_application_filter():
+    apps = {'uos-settings', 'uos-fmgr', 'uos-shell', 'uos-edit', 'uos-calc', 'uos-ultimate'}
+    for image in sorted((ROOT/'target').glob('*.prg')):
+        ram = memory()
+        name = image.stem.upper().encode()
+        address = symbol('uos-desktop', 'ftmpname')
+        ram[address:address+17] = name.ljust(17, b'\0')
+        cpu = MPU(memory=ram, pc=symbol('uos-desktop', 'is_uos_app'))
+        cpu.stPushWord(0x02ff)
+        for _ in range(10000):
+            if cpu.pc == 0x0300:
+                break
+            cpu.step()
+        else:
+            raise AssertionError(f'Application filter hung on {image.name}')
+        assert bool(cpu.p & cpu.CARRY) == (image.stem in apps), image.name
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', type=Path)
     args = parser.parse_args()
     report = {'build': {n:hashlib.sha256((ROOT/'target'/n).read_bytes()).hexdigest()
                         for n in ('uos.prg','uos-desktop.prg')}, 'checks': {}}
-    for fn in (test_launcher,test_hitboxes,test_launch_names,test_row_positions):
+    for fn in (test_launcher,test_hitboxes,test_launch_names,test_row_positions,test_application_filter):
         try:
             fn()
             report['checks'][fn.__name__] = {'passed':True}

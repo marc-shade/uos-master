@@ -44,10 +44,16 @@ settings, file operations and the rest of the OS remain on the roadmap.
 Press **V / View** to inspect a cartridge file as paged hex and ASCII on both
 displays; **N / B** page and **Esc** returns to the same browser selection.
 The [shared file service](docs/ULTIMATE-FILES.md) supports binary reads,
-exclusive creation, verified writes and 32-bit seeks. Desktop copy/save dialogs
-and the broader application suite are still in progress.
+exclusive creation, verified writes and 32-bit seeks. **C / Copy** opens an
+editable destination path with progress and cancellation. A copy is reported
+verified only after closing, reopening and comparing both files completely.
+Existing destinations are rejected; cancelled or failed new files are retained.
+Save/file-picker dialogs and the broader application suite remain in progress.
 The [file-service validation](docs/validation/2026-09-08-ultimate-files/README.md)
 records exact physical create/copy/readback, viewer restoration and firmware limits.
+The [desktop-copy validation](docs/validation/2026-09-08-desktop-copy/README.md)
+records the shipped dialog's C128 copy, cancellation, independent readback and
+recovery checks, including an earlier timeout and the progress repaint fix.
 
 ## What's new in this fork (v0.2, verified on real C128 hardware)
 

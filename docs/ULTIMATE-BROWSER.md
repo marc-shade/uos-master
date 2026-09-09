@@ -18,6 +18,7 @@ does not mount it in an IEC drive.
 | Select | Up/down; continues across page boundaries | Click a row |
 | Enter directory or image filesystem | Return | Open |
 | Inspect a file as hex and ASCII | V | View in the title |
+| Copy a regular file to a new name/path | C | Copy in the title |
 | Parent / filesystem root | U / `/` | Up / Root |
 | Previous / next page | B / N | Prev / Next |
 | Scroll the full selected name | Left/right, 32 bytes per step | `<` / `>` |
@@ -38,8 +39,14 @@ keyboard or VIC mouse. Empty files show an empty page and END. An I/O error
 shows its code; Esc returns to the browser. The byte columns retain binary
 values even when the ASCII column displays a dot for an unsupported character.
 
-The viewer reads through the [shared file service](ULTIMATE-FILES.md). Desktop
-copy/save dialogs, text/image/media viewers and file associations remain open.
+The viewer and **C / Copy** dialog use the [shared file service](ULTIMATE-FILES.md).
+The copy dialog accepts an editable full destination path, shows copied/checked
+byte counts, and closes/reopens both files for full comparison before reporting
+success. Esc cancels; any partial/unverified new file is retained. Esc again
+reloads the browser at its saved page and row in the same directory. This refresh
+can show newly created files and can shift selection if directory order changed.
+See the [copy controls and recovery notes](ULTIMATE-FILES.md#desktop-copy).
+Save/file-picker dialogs, text/image/media viewers and file associations remain open.
 
 ## Drive panel
 
@@ -114,7 +121,8 @@ these transient areas without padding them into its PRG:
 | `$6900–$70ff` | First four 512-byte raw-name slots |
 | `$7100–$72ff` | Current path |
 | `$7400–$7bff` | Last four 512-byte raw-name slots |
-| `$7c00–$7eff` | Command construction (currently at most 514 bytes) |
+| `$7c00–$7eff` | Command construction (currently at most 514 bytes); full copy source during overlay handoff |
+| `$7e10–$7e17` | Versioned copy overlay handoff, above the maximum command extent |
 | `$60–$6a` | App pointers, lengths and mouse coordinates |
 
 The settings record at `$7350` is preserved. Driver-private scratch at
@@ -122,13 +130,16 @@ The settings record at `$7350` is preserved. Driver-private scratch at
 `OS_TICK=$083b`, `KEYIN=$082c` and `READ_BUTTON=$083e` in its input loop;
 `ready=1` means input can be accepted, `0` means work is in progress and `$ff`
 marks exit. Desktop entry clears stale controls and redraws the screen.
-The current browser PRG occupies `$5000–$6725`, including its static buffers.
+The current browser PRG occupies `$5000–$67ff`, including its static buffers.
 `cache_pages` supplies the eight slot addresses; the cache is not contiguous.
 The CI tick trampoline at `$7f00`, sprite data and screen matrix are preserved.
 While the modal viewer is active, browser `ready` stays zero; the viewer's
 `view_ready` byte indicates its idle input loop. Its code is resident at
 `$4800`, and file bytes temporarily use `$7c00–$7c5f`. The browser redraws its
 frame on return without rereading the directory.
+Copy uses a separate disk-loaded module at `$5000`, then reloads the browser.
+The directory is refreshed after that return; both one-way entries discard dead
+caller stack frames. The system IEC load device remains the original one.
 
 The frame and toolbar are drawn once. Selection changes replace the two row
 markers and the selected-name details; name/path scrolling replaces only the

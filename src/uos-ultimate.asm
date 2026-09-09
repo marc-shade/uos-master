@@ -6,6 +6,7 @@
 .include "macros.inc"
 .include "kernal.inc"
 .include "ultimate-files.inc"
+.include "ultimate-copy.inc"
 
 ROWS = 8
 DIR_LIST = 1
@@ -25,6 +26,8 @@ mx = $68
 my = $6a
 
 * = APP_START
+        ldx #$ff                ; app/overlay entry has no live caller frames
+        txs
         #RegisterApp
         lda $ba
         bne have_sysdev
@@ -44,6 +47,29 @@ have_sysdev:
         sta pathlen+1
         sta ready
         sta driveview
+        lda COPY_HANDOFF
+        cmp #$55
+        bne no_copy_return
+        lda COPY_HANDOFF+1
+        cmp #$43
+        bne no_copy_return
+        lda COPY_HANDOFF+2
+        cmp #1
+        bne no_copy_return
+        lda COPY_DIRECTION
+        cmp #2
+        bne consume_copy_return
+        lda COPY_BASE
+        sta base
+        lda COPY_BASE+1
+        sta base+1
+        lda COPY_SELECTED
+        sta selected
+consume_copy_return:
+        lda #0
+        sta COPY_DIRECTION
+no_copy_return:
+        lda #0
         ldx #3
 clear_drive_locks:
         sta drive_locks,x
@@ -112,10 +138,56 @@ dispatch:
         jsr paint
         jmp input_loop
 
-keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50,$44,$56
+keys:   .byte $11,$91,$0d,$1b,$55,$2f,$4e,$42,$52,$9d,$1d,$50,$44,$56,$43
 key_count = *-keys
-actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path,<drives,<view_entry
-actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path,>drives,>view_entry
+actionsL: .byte <down,<up,<open_entry,<leave,<parent,<root,<nextpage,<prevpage,<refresh,<left,<right,<toggle_path,<drives,<view_entry,<copy_entry
+actionsH: .byte >down,>up,>open_entry,>leave,>parent,>root,>nextpage,>prevpage,>refresh,>left,>right,>toggle_path,>drives,>view_entry,>copy_entry
+
+copy_entry:
+        lda count
+        beq copy_entry_done
+        ldx selected
+        lda attrs,x
+        and #$18
+        beq copy_entry_file
+        lda #<view_select_file
+        ldx #>view_select_file
+        jmp set_status
+copy_entry_done:
+        rts
+copy_entry_file:
+        jsr selected_source
+        lda #<COPY_SOURCE
+        sta dptr
+        lda #>COPY_SOURCE
+        sta dptr+1
+        jsr copy_bytes
+        lda #0
+        tay
+        sta (dptr),y
+        lda #$55
+        sta COPY_HANDOFF
+        lda #$43
+        sta COPY_HANDOFF+1
+        lda #1
+        sta COPY_HANDOFF+2
+        sta COPY_DIRECTION
+        lda base
+        sta COPY_BASE
+        lda base+1
+        sta COPY_BASE+1
+        lda selected
+        sta COPY_SELECTED
+        lda sysdev
+        sta COPY_SYSDEV
+        sta $ba
+        #UnregisterApp
+        lda #<copy_module
+        sta r0L
+        lda #>copy_module
+        sta r0H
+        jsr FILLFILE
+        jmp LAUNCH_APP
 
 view_entry:
         lda count
@@ -815,6 +887,18 @@ frame_clear:
         jsr GPUTS
         lda driveview
         bne frame_switch
+        lda #<copy_button
+        sta r9L
+        lda #>copy_button
+        sta r9H
+        lda #144
+        sta X1
+        lda #0
+        sta X1+1
+        sta Y1+1
+        lda #14
+        sta Y1
+        jsr GPUTS
         lda #<view_button
         sta r9L
         lda #>view_button
@@ -1348,6 +1432,15 @@ mouse_y:
         lda mx
         cmp #240
         bcs mouse_switch
+        cmp #144
+        bcc mouse_reject
+        cmp #176
+        bcs mouse_view
+        lda driveview
+        bne mouse_reject
+        lda #$43
+        rts
+mouse_view:
         cmp #192
         bcc mouse_reject
         cmp #232
@@ -1444,7 +1537,7 @@ mouse_none:
         rts
 
 title: .text "Ultimate files",0
-help: .text "up/dn select enter open V view U up / root N/B page R retry P path D drives ESC",0
+help: .text "up/dn select enter open C copy V view U up / root N/B page R retry P path D ESC",0
         .cerror *-help > 81, "browser help exceeds a VDC row"
 items_text: .text "items "
 name_label: .text "selected name (< > scroll)",0
@@ -1454,7 +1547,9 @@ transport_error: .text "Ultimate unavailable; R=retry",0
 invalid_text: .text "invalid or clipped reply; R=retry",0
 cancel_text: .text "cancelled; R=retry ESC=desktop",0
 view_button: .text "view",0
-view_select_file: .text "select a file to view its bytes",0
+copy_button: .text "copy",0
+copy_module: .text "uos-copy",0
+view_select_file: .text "select a file to view or copy",0
 view_failed_text: .text "file view failed; check cartridge",0
 btn_left: .text "<",0
 btn_right: .text ">",0

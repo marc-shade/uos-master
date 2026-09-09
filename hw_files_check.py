@@ -1,4 +1,4 @@
-"""Physical shared-file and desktop-viewer workflow, invoked with --files.
+"""Physical shared-file, viewer and desktop copy workflow, with --files.
 
 Only a newly-created private /Usb0 directory is changed. Firmware raw READ
 packets provide an independent byte oracle after the service has closed files.
@@ -7,6 +7,7 @@ import hashlib
 import json
 import re
 import subprocess
+import sys
 import time
 import uuid
 
@@ -168,6 +169,7 @@ def file_workflow(ult, mon, work, report):
     code = output.read_bytes()[2:]
     browser = None
     active = False
+    copy_active = False
     created = []
     owned = []
     held_controls = None
@@ -229,21 +231,21 @@ def file_workflow(ult, mon, work, report):
         report['checks'].append(f'native mode {mode}: {len(expected)} bytes; handles and tick released')
         save()
 
-    def independent_read(path, label):
+    def independent_read(path, label, expected_data=expected):
         data = bytearray()
         probe.ok(b'\x01\x02\x01'+path)
         try:
-            while len(data) < len(expected):
+            while len(data) < len(expected_data):
                 result = probe.command(b'\x01\x04\x00\x10')
                 assert not result['carry'] and not result['full'] and not result['clipped'], result
                 assert result['code'] == 0 or (result['code'] == 255 and not result['status']), result
                 chunk = b''.join(record for record, clipped in result['records'] if not clipped)
-                assert len(chunk) == min(4096, len(expected)-len(data)), (label, len(data), len(chunk))
+                assert len(chunk) == min(4096, len(expected_data)-len(data)), (label, len(data), len(chunk))
                 data.extend(chunk)
         finally:
             probe.ok(b'\x01\x03')
         (work/f'{label}.bin').write_bytes(data)
-        assert bytes(data) == expected, f'{label}: complete independent byte comparison differs'
+        assert bytes(data) == expected_data, f'{label}: complete independent byte comparison differs'
         report['checks'].append(f'{label}: independent raw UCI read matches all {len(data)} bytes')
         save()
         print(f'PASS: {label}, {len(data)} independently read bytes match', flush=True)
@@ -288,6 +290,84 @@ def file_workflow(ult, mon, work, report):
             assert data[(6+row)*80:(7+row)*80] == wanted, (label, row, data[(6+row)*80:(7+row)*80], wanted)
         assert bytes(mon.read_mem(0x7c00, 0x7c5f)) == expected[page:page+96], 'capture changed viewer bytes'
         report['captures'].append({'label':label, 'first':metadata, 'repeat':repeat_meta})
+        save()
+
+    csyms = {name: lst_symbol('uos-copy', name) for name in
+             ('ready', 'phase', 'result', 'copied', 'checked', 'total', 'length')}
+    copy_prefix = (ROOT/'target/uos-copy.prg').read_bytes()[2:18]
+    browser_prefix = (ROOT/'target/uos-ultimate.prg').read_bytes()[2:18]
+
+    def cv(name, size=1):
+        address = csyms[name]
+        return int.from_bytes(mon.read_mem(address, address+size-1), 'little')
+
+    def copy_ready():
+        return (bytes(mon.read_mem(0x5000, 0x500f)) == copy_prefix and
+                cv('ready') == 1 and mon.read_mem(0xc6, 0xc6) == b'\0')
+
+    def copy_key(key, quiet=0.25, complete=True):
+        wait_for(copy_ready, 'copy dialog ready', 120)
+        mon.write_mem(csyms['ready'], b'\0')
+        started = time.monotonic()
+        ci.inject_keys(mon, bytes([key]))
+        time.sleep(quiet)
+        if complete:
+            # Avoid repeatedly stopping the CPU during long copy/verify work.
+            # Keep the same deadline, with sparse observations after the quiet
+            # period. Keyboard-only editing still uses the normal short poll.
+            if quiet >= 30:
+                deadline = time.monotonic()+180
+                while not copy_ready():
+                    if time.monotonic() >= deadline:
+                        raise AssertionError(f'Timed out: copy dialog key {key:#x}')
+                    time.sleep(1)
+            else:
+                wait_for(copy_ready, f'copy dialog key {key:#x}', 180)
+        return time.monotonic()-started
+
+    def leave_copy():
+        nonlocal copy_active
+        copy_key(27, quiet=30, complete=False)
+        wait_for(lambda: bytes(mon.read_mem(0x5000, 0x500f)) == browser_prefix and browser.ready(),
+                 'browser reloaded after copy dialog', 180)
+        copy_active = False
+
+    def replace_leaf(old, new):
+        assert cv('phase') == 0
+        for _ in old:
+            copy_key(0x14)
+        for key in ascii_to_petscii(new):
+            copy_key(key)
+        path = leaf_directory+b'/'+new
+        assert cv('length', 2) == len(path)
+        assert bytes(mon.read_mem(0x6900, 0x6900+len(path))) == path+b'\0'
+
+    def capture_copy(label, result, copied, checked):
+        assert cv('phase') == 3 and cv('result') == result
+        assert cv('copied', 4) == copied and cv('checked', 4) == checked
+        assert bytes(mon.read_mem(0x4122, 0x4123)) == b'\0\0'
+        metadata, repeat_meta = {}, {}
+        data = read_vdc(mon, work, metadata)
+        repeat = read_vdc(mon, work, repeat_meta)
+        (work/f'{label}.vdc.bin').write_bytes(data)
+        (work/f'{label}.repeat.vdc.bin').write_bytes(repeat)
+        assert data[160:1920] == repeat[160:1920], f'{label}: VDC samples differ'
+        wanted_rows = {
+            13: f'Copied {copied:08x} / {len(expected):08x}h bytes',
+            14: f'Check  {checked:08x} / {len(expected):08x}h bytes',
+            16: ('Copy verified' if result == 0 else 'Cancelled - destination unverified'
+                 if result == 0xe9 else 'Failed - destination unverified'),
+        }
+        for row, text in wanted_rows.items():
+            wanted = bytes(map(screen_code, ascii_to_petscii(text.encode()))).ljust(80, b' ')
+            assert data[row*80:(row+1)*80] == wanted, (label, row, data[row*80:(row+1)*80], wanted)
+        report['captures'].append({'label':label, 'first':metadata, 'repeat':repeat_meta})
+        vic_meta = {}
+        bitmap = grab(ult, verbose=False, metadata=vic_meta)
+        (work/f'{label}.vic.bin').write_bytes(bitmap)
+        render(bitmap, str(work/f'{label}.png'))
+        report.setdefault('copy_dialog', []).append(dict(label=label, result=result, copied=copied,
+                                                        checked=checked, vic_capture=vic_meta))
         save()
 
     try:
@@ -357,11 +437,69 @@ def file_workflow(ult, mon, work, report):
         report['vic_captures'] = [before_meta, first_meta, after_meta]
         report['vic_roundtrip_changed_bytes'] = len(differences)
         report['checks'].append('desktop viewer: exact bytes/VDC rows, N/B/ESC, full names and selection retained; VIC restored')
+
+        # Execute the shipped UI module through its normal core/IEC loader.
+        # The default copy.bin already exists and must remain untouched.
+        wait_for(browser.ready, 'browser ready for copy dialog')
+        mon.write_mem(browser.sym['ready'], b'\0')
+        ci.inject_keys(mon, b'C')
+        copy_active = True
+        print('Loading desktop copy dialog; 30 seconds of quiet IEC I/O', flush=True)
+        time.sleep(30)
+        wait_for(copy_ready, 'loaded desktop copy dialog', 180)
+        assert cv('phase') == 0
+        assert bytes(mon.read_mem(0x7c00, 0x7c00+len(basename))) == basename+b'\0'
+        copy_key(13, quiet=30)
+        capture_copy('copy-existing', 255, 0, 0)
+        copy_key(ord('E'))
+        replace_leaf(b'copy.bin', b'ui-copy.bin')
+        ui_destination = leaf_directory+b'/ui-copy.bin'
+        owned.append(ui_destination)
+        print('Copying and verifying through the desktop; 30 seconds of quiet UCI I/O', flush=True)
+        report['copy_completion_observed_after_seconds'] = copy_key(13, quiet=30)
+        capture_copy('copy-verified', 0, len(expected), len(expected))
+        copy_key(ord('E'))
+        replace_leaf(b'ui-copy.bin', b'ui-cancel.bin')
+        cancel_destination = leaf_directory+b'/ui-cancel.bin'
+        owned.append(cancel_destination)
+        copy_key(13, complete=False)
+        # UCI polling tolerates a stopped CPU. Observe only small state bytes
+        # here, never install a capture wedge while the dialog is doing I/O.
+        deadline = time.monotonic()+90
+        while time.monotonic() < deadline:
+            amount = cv('copied', 4)
+            phase = cv('phase')
+            if amount >= 512 and phase == 1:
+                ci.inject_keys(mon, b'\x1b')
+                break
+            assert phase in (0, 1), 'copy completed before cancellation could be exercised'
+            time.sleep(0.2)
+        else:
+            raise AssertionError('copy progress did not advance for cancellation')
+        wait_for(copy_ready, 'cancelled copy released handles', 120)
+        partial = cv('copied', 4)
+        assert 0 < partial < len(expected), partial
+        capture_copy('copy-cancelled', 0xe9, partial, 0)
+        leave_copy()
+        assert browser.names()[browser.value('selected')] == basename
+        report['checks'].append('desktop copy: existing destination rejected, complete reopened verification, cancellation and browser return')
         browser.press(27)
         active = False
+        hold_controls()
+        independent_read(destination, 'existing-copy-unchanged')
+        independent_read(ui_destination, 'desktop-copy')
+        independent_read(cancel_destination, 'cancelled-prefix', expected[:partial])
     finally:
+        error = sys.exc_info()[1]
+        if error is not None:
+            report['failure'] = f'{type(error).__name__}: {error}'
         try:
             if active and browser is not None:
+                if copy_active:
+                    if cv('phase') in (1, 2):
+                        ci.inject_keys(mon, b'\x1b')
+                        wait_for(copy_ready, 'copy stopped for fixture cleanup', 120)
+                    leave_copy()
                 if not browser.ready():
                     press_view(27, leaving=True)
                 browser.press(27)
@@ -396,4 +534,4 @@ def file_workflow(ult, mon, work, report):
     assert report['build'] == build_hashes()
     report['passed'] = True
     save()
-    print(f'HW-FILES PASS; full file copy and desktop viewer; evidence {work}', flush=True)
+    print(f'HW-FILES PASS; shared files, desktop viewer and copy dialog; evidence {work}', flush=True)

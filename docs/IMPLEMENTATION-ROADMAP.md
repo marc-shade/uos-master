@@ -103,7 +103,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
 | UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, interrupted operations and per-firmware protocol coverage |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser and paged binary viewer; shared two-context binary API with exclusive creation, verified writes, 32-bit seeks and handle cleanup | Desktop copy/save/rename/delete workflows, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, shared file picker, Unicode display |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared two-context API with verified writes, 32-bit seeks and handle cleanup | Save/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, shared file picker, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
@@ -237,7 +237,24 @@ These workarounds and their remaining firmware limits are documented in the
 The native kernel, shared IEC backend, scheduler, full file dialogs and
 productivity applications remain required.
 
-Next implementation: build desktop copy/save workflows on the shared file API,
+The desktop now has an on-demand file-copy dialog using that shared API.
+It accepts a full destination path, retains complete source names, creates only
+a new file, and compares both closed/reopened files before showing success.
+Copy and verification have separate 32-bit byte counters and cancellation.
+Errors retain an unverified destination and preserve failed-handle ownership;
+there is no automatic deletion or write retry. Browser page/row, system IEC
+device and both DOS working directories survive the overlay transition.
+The dialog has a path editor; directory picking, batch copies, resume and safe
+partial-file cleanup remain required. See the
+[desktop-copy validation](validation/2026-09-08-desktop-copy/README.md) for its
+exact evidence and limits.
+On the reference C128, the shipped dialog copied and verified 66,053 bytes,
+rejected an existing destination without changing it, and cancelled a separate
+copy with an exact 1,024-byte retained prefix. Independent raw reads verified
+all three outcomes; that run's private fixtures were removed and the desktop,
+settings and both DOS contexts were restored.
+
+Next implementation: extend desktop save/file-picker workflows on the shared file API,
 add the remaining drive controls and media identity/recovery, then extend shared
 filesystem/capability services and file pickers.
 System-disk replacement/recovery, native kernel and application parity work remain
