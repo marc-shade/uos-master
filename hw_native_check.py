@@ -14,7 +14,7 @@ import time
 
 from hw_storage_check import HardwareMonitor, ci
 from hwlib import desk_tick, lst_symbol
-from native_capture import NativeCapture, expected_screen, calculator_screen, wait, ROOT
+from native_capture import NativeCapture, expected_screen, calculator_screen, wait, ROOT, verify_boot_layout
 from native_image import seal
 
 
@@ -62,6 +62,7 @@ def run(ult):
         switched=True;ult.reset();quiet_boot('Native C128 boot')
         wait(lambda:read(0x1c13,6)==b'UOS128' and read(0x3d12)==b'\1','native cold boot',120)
         assert read(0x3d0e,3)==bytes([191,251,32]),read(0x3d00,32).hex()
+        report['resident_boot']=verify_boot_layout(capture)
 
         def key(value,expected=0,quiet=2):
             wait(lambda:read(0x3d12)==b'\1' and read(0xd0)==b'\0','native input ready',30)

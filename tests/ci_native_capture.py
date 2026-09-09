@@ -10,6 +10,7 @@ import tempfile
 from py65.devices.mpu6502 import MPU
 from ci_native_heap import Bus, ROOT
 from ci_vdc_capture import CaptureBus
+from native_capture import NativeCapture
 
 
 class NativeCaptureBus(Bus):
@@ -38,7 +39,7 @@ def check(prg,mode,bank,start,count,fault=None,present=True):
     bus.vdc.video[:2000]=bytes((i*73+i//251)&255 for i in range(2000))
     bus.vdc.reg[18:20]=b'\x23\x47'
     expected=bytes(bus.vdc.video[:2000] if mode else bus.ram[bank][start:start+count]) if bank<2 else b''
-    before=bytes(ram[0x1300:0x1400]),bytes(ram[0x1bd0:0x3e00]),bytes(ram[0x1400:0x1bd0])
+    before=bytes(ram[0x1300:0x3a00]),bytes(ram[0x3c00:0x3e00]),bytes(ram[0x3a00:0x3c00])
     cpu=MPU(memory=bus,pc=0x2500); cpu.sp=0xc0
     cpu.a,cpu.x,cpu.y,cpu.p=0x5a,0x6d,0x90,0x28
     cpu.irq()
@@ -50,19 +51,78 @@ def check(prg,mode,bank,start,count,fault=None,present=True):
     assert bus.config==0x0e and ram[0x314:0x316]==b'\0\x0b'
     assert ram[0x3ffb:0x3ffe]==bytes([0xb7,4,0x0e])
     assert ram[0xfb:0xff]==b'\x63\x98\x15\xa7' and ram[0x2aa]==0xbb
-    assert bytes(ram[0x1300:0x1400])==before[0] and bytes(ram[0x1bd0:0x3e00])==before[1]
+    assert bytes(ram[0x1300:0x3a00])==before[0] and bytes(ram[0x3c00:0x3e00])==before[1]
     result=ram[0x3ff2]; resyncs=int.from_bytes(ram[0x3ff9:0x3ffb],'little')
-    if mode>1 or bank>1 or not 1<=count<=2000:
-        assert result==4 and bytes(ram[0x1400:0x1bd0])==before[2]
+    if mode>1 or bank>1 or not 1<=count<=512:
+        assert result==4 and bytes(ram[0x3a00:0x3c00])==before[2]
     elif mode and not present:assert result==2
     elif mode and fault=='always':assert result==3 and resyncs==3
     else:
-        assert result==1 and ram[0x1400:0x1400+count]==expected[:count]
-        assert ram[0x1400+count:0x1bd0]==before[2][count:]
-    if mode==1 and present and 1<=count<=2000:
+        assert result==1 and ram[0x3a00:0x3a00+count]==expected[:count]
+        assert ram[0x3a00+count:0x3c00]==before[2][count:]
+    if mode==1 and present and 1<=count<=512:
         assert bus.vdc.reg[18:20]==b'\x23\x47'
     assert not bus.far_writes and ram[0xb10]==1
     return dict(code=result,address_resyncs=resyncs,instructions=steps)
+
+
+class CaptureMonitor:
+    """Run the actual IRQ probe when the host installs its vector."""
+    def __init__(self,fail_chunk=None):
+        self.bus=NativeCaptureBus();self.ram=self.bus.ram[0]
+        self.ram[0x3d11:0x3d13]=b'\0\1';self.ram[0xd0]=0
+        self.bus.vdc.video[:2000]=bytes((i*73+i//251)&255 for i in range(2000))
+        self.chunks=0;self.fail_chunk=fail_chunk
+
+    def read_mem(self,start,end):return bytes(self.ram[start:end+1])
+    def write_mem(self,start,data):self.ram[start:start+len(data)]=data
+    def resume(self):
+        if self.ram[0x314:0x316]!=b'\0\x3e':return
+        self.chunks+=1
+        if self.chunks==self.fail_chunk:self.bus.vdc.fault='always'
+        cpu=MPU(memory=self.bus,pc=0x2500);cpu.sp=0xc0;cpu.p=0x20
+        cpu.irq()
+        for _ in range(200000):
+            if cpu.pc==0x2500:return
+            cpu.step()
+        raise AssertionError('host capture IRQ did not return')
+
+
+def host_cases(folder):
+    cases={}
+    for mode,bank,start in ((0,0,0x1300),(0,0,0xcf80),(0,1,0x3800),(1,0,0)):
+        mon=CaptureMonitor();capture=NativeCapture(mon,folder,quiet=0)
+        expected=bytes(mon.bus.vdc.video[:2000] if mode else mon.bus.ram[bank][start:start+2000])
+        before=bytes(mon.ram[0x1300:0x1c00]),bytes(mon.ram[0x3800:0x4000])
+        label=f'host-{mode}-{bank}-{start:04x}'
+        assert capture.capture(label,mode=mode,bank=bank,address=start)==expected
+        assert before==(bytes(mon.ram[0x1300:0x1c00]),bytes(mon.ram[0x3800:0x4000]))
+        assert mon.chunks==4 and [c['count'] for c in capture.records[0]['chunks']]==[512,512,512,464]
+        assert capture.records[0]['restored'];cases[label]=capture.records[0]
+    mon=CaptureMonitor(fail_chunk=3);capture=NativeCapture(mon,folder,quiet=0)
+    before=bytes(mon.ram[0x1300:0x1c00]),bytes(mon.ram[0x3800:0x4000])
+    try:capture.capture('failed-third-chunk',mode=1)
+    except AssertionError:pass
+    else:raise AssertionError('persistent VDC fault was accepted')
+    assert before==(bytes(mon.ram[0x1300:0x1c00]),bytes(mon.ram[0x3800:0x4000]))
+    assert mon.chunks==3 and capture.records[0]['restored'] and capture.records[0]['code']==3
+    cases['host-fault-restores-all']=capture.records[0]
+    for start,count in ((0x3900,512),(0x3a00,1),(0x3df0,32),(0x3fff,1),(0xffff,2)):
+        mon=CaptureMonitor();capture=NativeCapture(mon,folder,quiet=0)
+        before=bytes(mon.ram)
+        try:capture.capture('bad-source',address=start,count=count)
+        except AssertionError:pass
+        else:raise AssertionError('overlapping/wrapped capture source accepted')
+        assert before==bytes(mon.ram) and mon.chunks==0
+        cases[f'host-guard-{start:04x}']=dict(no_writes=True)
+    mon=CaptureMonitor();mon.ram[0x3d91]=1;capture=NativeCapture(mon,folder,quiet=0)
+    before=bytes(mon.ram)
+    try:capture.capture('active-file-operation',mode=1)
+    except AssertionError:pass
+    else:raise AssertionError('borrowed the active file-service buffer')
+    assert before==bytes(mon.ram) and mon.chunks==0
+    cases['host-active-file-buffer']=dict(no_writes=True)
+    return cases
 
 
 def main():
@@ -74,13 +134,15 @@ def main():
     assert prg[:2]==b'\0\x3e' and len(prg)-2<=0x1f0
     cases={}
     for bank in (0,1):
-        for start,count in ((0x4000,2000),(0xcf80,512),(0xe000,2000),(0xfef0,16)):
+        for start,count in ((0x1300,512),(0x4000,512),(0xcf80,512),(0xe000,512),(0xfef0,16)):
             cases[f'ram-{bank}-{start:04x}']=check(prg,0,bank,start,count)
     for label,fault,present in [('normal',None,True),('first',0,True),('page-boundary',255,True),
-                                ('last',1999,True),('persistent','always',True),('absent',None,False)]:
-        cases['vdc-'+label]=check(prg,1,0,0,2000,fault,present)
-    for mode,bank,count in ((2,0,1),(0,2,1),(0,0,0),(0,0,2001),(0,0,65535)):
+                                ('last',511,True),('persistent','always',True),('absent',None,False)]:
+        cases['vdc-'+label]=check(prg,1,0,0,512,fault,present)
+    for mode,bank,count in ((2,0,1),(0,2,1),(0,0,0),(0,0,513),(0,0,65535)):
         cases[f'bad-{mode}-{bank}-{count}']=check(prg,mode,bank,0x4000,count)
+    with tempfile.TemporaryDirectory(prefix='uos-native-capture-host-') as folder:
+        cases.update(host_cases(Path(folder)))
     report=dict(passed=True,probe_sha256=hashlib.sha256(prg).hexdigest(),cases=cases)
     if args.report:args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(f'PASS: {len(cases)} native IRQ bank/VDC captures, faults, guards and complete frame restoration',flush=True)

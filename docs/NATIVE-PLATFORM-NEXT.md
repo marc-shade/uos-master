@@ -1,40 +1,39 @@
 # Next native platform steps
 
-The browser checkpoint leaves 139 bytes between resident code/data and the
-page tables at `$3800`. The existing ABI, two-bank allocator and checked app
-slot already support additional foreground applications, but cannot accommodate
-a scheduler, driver registry and shared desktop toolkit as resident additions
-without changing how the kernel is laid out. This is an implementation plan;
-none of the proposed memory changes below are enabled by the browser build.
+The browser checkpoint left 139 bytes before the page tables at `$3800`.
+The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
+now moves the allocator to `$1300`, leaving 1,321 main-region bytes and 1,082
+low-region bytes for further resident code/data. It retains the public ABI and
+442-page heap. Native document editing and shared desktop services are the next
+implementation steps; scheduling and a larger module architecture remain required.
 
-## 1. Establish resident growth without moving the public ABI
+## 1. Resident growth and its remaining limits
 
-Keep the `$1c20` entry table, `$3800` ownership tables, `$3a00` transfer buffer,
-`$3d00` mailboxes and `$6000` app entry stable. Audit the complete interval map,
-including KERNAL workspaces, both displays, boot staging and test observers,
-before assigning another resident region.
+The `$1c20` entry table, `$3800` ownership tables, `$3a00` transfer buffer,
+`$3d00` mailboxes and `$6000` app entry remain stable. Future assignments still
+need an interval audit covering KERNAL workspaces, both displays, boot staging
+and observers; use the generated `target/native/layout.json` as the current map.
 
-One candidate is bank 0 `$1300..$1bff`, 2,304 bytes currently excluded from the
-heap. Commodore identifies that range for machine-language routines used with
-BASIC. That makes it a candidate for this design, not proof that a changed
-uOS boot/observer path works. [Commodore 128 Programmer's Reference Guide](https://www.pagetable.com/docs/Commodore%20128%20Programmer%27s%20Reference%20Guide.pdf)
+The low region is bank 0 `$1300..$1bff`, 2,304 bytes excluded from the heap.
+Commodore identifies that range for machine-language routines used with BASIC.
+[Commodore 128 Programmer's Reference Guide](https://www.pagetable.com/docs/Commodore%20128%20Programmer%27s%20Reference%20Guide.pdf)
 
-The current native observer writes up to 2,000 bytes at `$1400`, so that range
-cannot be assigned to resident code while retaining the present observer.
-A growth experiment must provide explicit scratch ownership or bounded
-captures elsewhere and preserve all interrupted CPU/MMU/IRQ state.
+The observer now borrows the shared transfer buffer for 512-byte chunks,
+restores its contents and checks that the low kernel remains intact. Its old
+`$1400` output path must not be used with this kernel. Host captures reject
+RAM0 sources overlapping their borrowed output or probe workspace.
 
-Keep the BASIC entry and PRG loading assumptions intact during the first
-experiment. A relocated resident section needs a bounded startup copy from
-declared staging storage, before the staging pages become available to the
-heap. Account for both its final reservation and its peak boot footprint.
+The BASIC entry remains intact. Startup copies five pages from declared
+staging at `$3e00..$42ff` into the low region before initializing the heap.
+The heap can then reuse `$4000..$42ff`; those pages are not resident reservations.
+Further growth must continue accounting for both final and peak boot footprints.
 Longer-term modules need their own owner/lifetime records; this small range
 alone is not a memory architecture for the complete OS.
 
-Acceptance: assert every section bound in the build, check initialization on
-CPU and cold boot, preserve current public addresses and usable heap accounting,
-run all existing native workflows, and use a revised independent observer on
-the physical C128. No test may save and restore memory over active kernel code.
+The checkpoint records the section bounds, startup/IRQ/staging tests, existing
+native workflows and revised observer qualification. No test may save and
+restore memory over active kernel code. The two small resident regions are a
+next-step capacity increase, not the complete scheduler/driver memory architecture.
 
 ## 2. Build a banked document model and native editor
 

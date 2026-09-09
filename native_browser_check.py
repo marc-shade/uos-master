@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import time
 
-from native_capture import ROOT,NativeCapture,calculator_screen,expected_screen,wait
+from native_capture import ROOT,NativeCapture,calculator_screen,expected_screen,wait,verify_boot_layout
 from native_image import seal
 
 
@@ -145,6 +145,7 @@ class BrowserClient:
 def browser_workflow(client,records,fixtures,fmt,report,save):
     report['events']=client.events;report['frames']=client.frames;report['captures']=client.capture.records
     report['heap_observations']=client.heaps
+    report['resident_boot']=verify_boot_layout(client.capture)
     # Preserve two unrelated workspace allocations across browser/target switches.
     protected=[]
     for bank in (0,1):
@@ -152,6 +153,7 @@ def browser_workflow(client,records,fixtures,fmt,report,save):
         client.key(ord('W'));client.key(ord('V'))
         assert client.read(0x3d16)==b'\0'
         protected.append((bank,page))
+    report['workspace_allocations']=[dict(bank=bank,page=page,bytes=8192) for bank,page in protected]
     client.key(ord('B'),quiet=client.scan_quiet)
     if fmt:
         for _ in range(fmt):client.key(ord('F'),quiet=client.scan_quiet)

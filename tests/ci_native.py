@@ -15,7 +15,7 @@ import ci_fm as ci
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-from native_capture import NativeCapture, expected_screen, calculator_screen
+from native_capture import NativeCapture, expected_screen, calculator_screen, verify_boot_layout
 from hwlib import lst_symbol
 READY, KEYS, RESULT = 0x3d12, 0x3d13, 0x3d16
 
@@ -67,6 +67,7 @@ def main():
         assert not read(0xd505)[0]&0x40,'entered C64 mode'
         capture=NativeCapture(mon,work,quiet=.2)
         report['captures']=capture.records
+        report['resident_boot']=verify_boot_layout(capture)
 
         def key(value):
             wait(lambda:read(READY)==b'\1' and read(0xd0)==b'\0','input ready')

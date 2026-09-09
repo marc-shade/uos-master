@@ -18,6 +18,8 @@ x128 -default -8 target/native/uos128.d64 -drive8true -drive8type 1541
 
 The build requires Python 3, 64tass and VICE's c1541. It creates the native
 kernel, boot-sector and two app PRGs, D64 and image hash manifest in `target/native/`.
+`layout.json` records resident, metadata and boot-staging bounds; `uos128.sym`
+exports the assembled runtime addresses. The kernel PRG remains loaded at `$1c01`.
 Track 1/sector 0 is reserved in the BAM before adding file `U`; ordinary file
 allocation therefore cannot consume the boot block. The boot sector feeds
 `RUN"U"` to native BASIC, which enters the kernel through its SYS stub.
@@ -52,7 +54,8 @@ returning to the suspended BASIC program is not supported.
 
 | Region | Purpose |
 |---|---|
-| Bank 0 `$0000..$1bff` | Native system workspace, vectors, screen and boot/BASIC entry area |
+| Bank 0 `$0000..$12ff` | Native system workspace, vectors, screen and boot area |
+| Bank 0 `$1300..$1bff` | Resident low kernel and growth space; never application scratch |
 | Bank 0 `$1c01..$37ff` | Native kernel, workspace and reserved growth space |
 | Bank 0 `$3800..$39ff` | Two page-ownership tables |
 | Bank 0 `$3a00..$3bff` | Shared 512-byte transfer buffer |
@@ -68,8 +71,25 @@ The two pools provide **442 pages / 113,152 bytes (110.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-Current kernel code/data ends at `$3775` exclusive, leaving 139 bytes before
-the page tables. Further resident services need a code-space plan.
+Main kernel code/data ends at `$32d7` exclusive, leaving 1,321 bytes before
+the page tables. The allocator occupies `$1300..$17c5`, leaving 1,082 bytes in
+the low region for further resident code/data. Public API entries and the app
+load address remain unchanged; boot, calculator and browser binaries match the
+preceding browser checkpoint.
+
+The 9,985-byte kernel PRG includes a five-page copy of the low section at
+`$3e00..$42ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
+initialization. The copy includes 58 padding bytes after the allocator. The
+source is boot-only staging: `$3e00..$3fff` subsequently remains reserved scratch,
+and `$4000..$42ff` becomes ordinary managed memory. No live code executes there.
+The workspace's first bank-0 allocation reuses those three staging pages.
+Cold entry requires a freshly loaded kernel image. Reentering SYS after that
+staging memory has been reused is unsupported; reset and boot reload the image.
+
+Native test observers borrow the existing `$3a00..$3bff` transfer buffer for
+at most 512 bytes per IRQ, assembling larger captures on the host and restoring
+the buffer afterward. They never write into the resident low region. Foreground
+calls and user input must remain idle while that shared buffer is borrowed.
 
 Transfers call the native KERNAL `INDFET`/`INDSTA` gateways at `$ff74/$ff77`.
 Their common-RAM routines switch to full RAM `$3f/$7f` for one byte, then
@@ -154,11 +174,12 @@ arbitrary machine code.
 ```sh
 python3 tests/ci_native_heap.py --report /tmp/native-heap.json
 python3 tests/ci_native_capture.py --report /tmp/native-capture.json
+python3 tests/ci_native_relocation.py --report /tmp/native-relocation.json
 python3 -u tests/run_ci.py native
 python3 -u hw_ultimate_check.py --native
 ```
 
-The first two need Py65 from the test requirements. The heap model executes
+The three CPU tests need Py65 from the test requirements. The heap model executes
 assembled instructions and the installed C128 ROM's actual bank gateways; it
 models only the memory configurations used here. x128 separately cold-boots the
 real disk and compares independent RAM-bank contents and complete screens.
@@ -171,6 +192,8 @@ The [checkpoint record](validation/2026-09-09-native-kernel/README.md) records
 exact images, test limits and physical results. Per-model C128D/DCR/ROM coverage,
 long-running load/input/NMI soak, REU/DMA coexistence and speed transitions remain
 separate acceptance gates.
+The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
+records the current layout, startup copy, staging reuse and revised observer.
 
 Hardware contracts follow the Commodore *C128 Programmer's Reference Guide*,
 printed pp. 453–455 (banked KERNAL access), 467–470 (common RAM/page relocation)

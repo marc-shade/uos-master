@@ -11,10 +11,13 @@ import json
 from pathlib import Path
 import random
 import re
+import sys
 
 from py65.devices.mpu6502 import MPU
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from hwlib import lst_symbol
 IMAGE = ROOT/'target/native/uos128.prg'
 ROM = Path('/usr/share/vice/C128/kernal-318020-05.bin')
 API = dict(alloc=0x1c20, free=0x1c23, read=0x1c26, write=0x1c29,
@@ -25,10 +28,7 @@ BUFFER, TABLES, RECORDS = 0x3a00, 0x3800, 0x3c00
 
 
 def symbol(name):
-    listing = (ROOT/'target/native/uos128.lst').read_text()
-    match = re.search(r'^[.>]([0-9a-f]+)\s+.*?\b'+re.escape(name)+r':', listing, re.M)
-    assert match, name
-    return int(match[1], 16)
+    return lst_symbol('native/uos128',name)
 
 
 class Bus:
@@ -94,6 +94,7 @@ class Machine:
     def __init__(self):
         self.bus = Bus()
         self.ram = self.bus.ram[0]
+        self.invoke(symbol('native_relocate'), check=False)
         self.invoke(symbol('heap_init'), check=False)
         assert self.stats() == (191, 251, 32)
 

@@ -1,10 +1,10 @@
 ; One-shot native C128 IRQ observer. No heap calls or C64 interrupt offsets.
-; Reserve/retain $1400..$1bcf and $3e00..$3fff while idle, with no allocations
-; or user input during the probe. Output is in the documented $1300..$1bff
-; application area, below the native BASIC stub and above KERNAL/BASIC work RAM.
+; Borrow $3a00..$3bff and $3e00..$3fff while idle, with no allocations
+; or user input during the probe. The host restores both reserved buffers.
+; Low memory contains resident kernel code and is never used as output.
 ; $3ff0 old IRQ, +2 done (1 ok, 2 timeout, 3 drift, 4 bad command),
 ; +3 mode (0 RAM / 1 VDC), +4 bank (0/1), +5 source word, +7 count word.
-; Output at $1400, at most 2000 bytes. +9 resynchronization count word.
+; Output at $3a00, at most 512 bytes. +9 resynchronization count word.
 ; +11/+12 MMU mode/common registers; +13 interrupted foreground MMU config.
 * = $3e00
         php
@@ -37,17 +37,17 @@
         sta $fc
         lda #0
         sta $fd
-        lda #$14
+        lda #$3a
         sta $fe
         lda $3ff7
         sta left
         lda $3ff8
         sta left+1
-        cmp #>2000
+        cmp #>512
         bcc count_low
         bne invalid
         lda left
-        cmp #<2001
+        cmp #<513
         bcs invalid
 count_low:
         lda left

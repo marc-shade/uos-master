@@ -1,0 +1,1290 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/target/native/browse.prg -L /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/target/native/browse.lst /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser.asm
+; Wed Sep  9 16:28:51 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=2					N_ABI_MINOR = 2
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; run a checked native PRG from IEC, then clean up
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; IEC stream: read or exclusive create
+=$1c44					N_FREAD         = $1c44          ; up to 512 bytes to N_BUFFER; exact returned count
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch from APPNAME/DEVICE
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device, 8..30
+=$3d22					N_NAMELEN       = $3d22          ; launch filename length, 1..16
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; last serial status byte
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source disk geometry, 0 D64 / 1 D71 / 2 D81
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; first nonzero DOS code in this operation
+=$3d90					N_FSTATUS       = $3d90          ; serial status; first non-EOI error retained
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; returned byte position, little-endian 32-bit
+=$3d96					N_FFORMAT       = $3d96          ; CBM disk geometry: 0 D64, 1 D71, 2 D81
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$3e00					N_RELOCBASE     = $3e00          ; boot-only staging, reusable after relocation
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$40					N_FIRST0        = $40            ; bank 0 $4000..$feff: 191 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser.asm
+
+.6000					b_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 02 00			        .byte 1,1,2,0
+>6008	58 0d				        .word b_end-b_image
+>600a	10 00				        .byte 16,0
+>600c	20 00				        .word b_entry-b_image
+>600e	00 00				        .word 0
+>6010	46 49 4c 45 53 20 41 4e		        .text "files and apps",0
+>6018	44 20 41 50 50 53 00
+>601f	00				        .fill N_APPBASE+32-*,0
+.6020					b_entry:
+.6020	d8		cld		        cld
+.6021	ad 20 3d	lda $3d20	        lda N_CURRENT
+.6024	8d 24 6c	sta $6c24	        sta b_owner
+.6027	8d 00 3d	sta $3d00	        sta N_OWNER
+.602a	a9 25		lda #$25	        lda #37                 ; 296 normalized entries, the root D81 maximum
+.602c	8d 01 3d	sta $3d01	        sta N_PAGES
+.602f	a9 01		lda #$01	        lda #1
+.6031	8d 02 3d	sta $3d02	        sta N_BANK
+.6034	20 20 1c	jsr $1c20	        jsr N_ALLOC
+.6037	90 03		bcc $603c	        bcs b_exit_error
+.6039	4c e3 60	jmp $60e3
+.603c	a2 03		ldx #$03	        ldx #3
+.603e					b_keep_cache:
+.603e	bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.6041	9d 20 6c	sta $6c20,x	        sta b_cache,x
+.6044	ca		dex		        dex
+.6045	10 f7		bpl $603e	        bpl b_keep_cache
+.6047	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.604a	c9 08		cmp #$08	        cmp #8
+.604c	90 04		bcc $6052	        bcc b_default_device
+.604e	c9 1f		cmp #$1f	        cmp #31
+.6050	90 06		bcc $6058	        bcc b_device_valid
+.6052					b_default_device:
+.6052	ad 21 3d	lda $3d21	        lda N_DEVICE
+.6055	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.6058					b_device_valid:
+.6058	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.605b	c9 03		cmp #$03	        cmp #3
+.605d	90 05		bcc $6064	        bcc b_format_valid
+.605f	a9 00		lda #$00	        lda #0
+.6061	8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
+.6064					b_format_valid:
+.6064	ad 2b 3d	lda $3d2b	        lda N_BROWSERERROR
+.6067	8d 32 6c	sta $6c32	        sta b_launch_error
+.606a	a9 00		lda #$00	        lda #0
+.606c	8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
+.606f	8d 27 6c	sta $6c27	        sta b_selected
+.6072	8d 28 6c	sta $6c28	        sta b_selected+1
+.6075	20 ad 62	jsr $62ad	        jsr b_refresh
+.6078					b_redraw:
+.6078	20 92 64	jsr $6492	        jsr b_draw
+.607b					cloop:
+.607b	a9 01		lda #$01	        lda #1
+.607d	8d 12 3d	sta $3d12	        sta N_READY
+.6080	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.6083	f0 f6		beq $607b	        beq cloop
+.6085	a2 00		ldx #$00	        ldx #0
+.6087	8e 12 3d	stx $3d12	        stx N_READY
+.608a	ae 34 6c	ldx $6c34	        ldx b_prompt
+.608d	f0 03		beq $6092	        bne b_prompt_key
+.608f	4c 18 61	jmp $6118
+.6092	ae 8c 6b	ldx $6b8c	        ldx b_preview
+.6095	f0 03		beq $609a	        bne b_preview_key
+.6097	4c c9 69	jmp $69c9
+.609a	c9 1b		cmp #$1b	        cmp #27
+.609c	f0 42		beq $60e0	        beq b_workspace
+.609e	c9 11		cmp #$11	        cmp #$11                ; native cursor down
+.60a0	d0 03		bne $60a5	        beq b_down
+.60a2	4c 8f 61	jmp $618f
+.60a5	c9 91		cmp #$91	        cmp #$91
+.60a7	d0 03		bne $60ac	        beq b_up
+.60a9	4c 9d 61	jmp $619d
+.60ac	c9 0d		cmp #$0d	        cmp #13
+.60ae	d0 03		bne $60b3	        beq b_enter
+.60b0	4c 66 62	jmp $6266
+.60b3	29 df		and #$df	        and #$df
+.60b5	c9 52		cmp #$52	        cmp #$52
+.60b7	f0 2d		beq $60e6	        beq b_rescan
+.60b9	c9 46		cmp #$46	        cmp #$46
+.60bb	f0 34		beq $60f1	        beq b_change_format
+.60bd	c9 44		cmp #$44	        cmp #$44
+.60bf	f0 4a		beq $610b	        beq b_device_prompt
+.60c1	c9 4e		cmp #$4e	        cmp #$4e
+.60c3	d0 03		bne $60c8	        beq b_next_page
+.60c5	4c b3 61	jmp $61b3
+.60c8	c9 42		cmp #$42	        cmp #$42
+.60ca	d0 03		bne $60cf	        beq b_previous_page
+.60cc	4c c4 61	jmp $61c4
+.60cf	c9 41		cmp #$41	        cmp #$41
+.60d1	d0 03		bne $60d6	        beq b_next_app
+.60d3	4c 14 62	jmp $6214
+.60d6	c9 49		cmp #$49	        cmp #$49
+.60d8	d0 03		bne $60dd	        beq b_inspect
+.60da	4c 9f 62	jmp $629f
+.60dd	4c 7b 60	jmp $607b	        jmp cloop
+.60e0					b_workspace:
+.60e0	4c 56 1c	jmp $1c56	        jmp N_WORKSPACE
+.60e3					b_exit_error:
+.60e3	4c 3e 1c	jmp $1c3e	        jmp N_EXIT
+.60e6					b_rescan:
+.60e6	a9 00		lda #$00	        lda #0
+.60e8	8d 32 6c	sta $6c32	        sta b_launch_error
+.60eb	20 ad 62	jsr $62ad	        jsr b_refresh
+.60ee	4c 78 60	jmp $6078	        jmp b_redraw
+.60f1					b_change_format:
+.60f1	ee 2a 3d	inc $3d2a	        inc N_BROWSERFMT
+.60f4	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.60f7	c9 03		cmp #$03	        cmp #3
+.60f9	d0 05		bne $6100	        bne b_change_ready
+.60fb	a9 00		lda #$00	        lda #0
+.60fd	8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
+.6100					b_change_ready:
+.6100	a9 00		lda #$00	        lda #0
+.6102	8d 27 6c	sta $6c27	        sta b_selected
+.6105	8d 28 6c	sta $6c28	        sta b_selected+1
+.6108	4c e6 60	jmp $60e6	        jmp b_rescan
+.610b					b_device_prompt:
+.610b	a9 01		lda #$01	        lda #1
+.610d	8d 34 6c	sta $6c34	        sta b_prompt
+.6110	a9 00		lda #$00	        lda #0
+.6112	8d 35 6c	sta $6c35	        sta b_device_length
+.6115	4c 78 60	jmp $6078	        jmp b_redraw
+.6118					b_prompt_key:
+.6118	c9 1b		cmp #$1b	        cmp #27
+.611a	f0 6b		beq $6187	        beq b_prompt_cancel
+.611c	c9 0d		cmp #$0d	        cmp #13
+.611e	f0 2a		beq $614a	        beq b_prompt_enter
+.6120	c9 14		cmp #$14	        cmp #20
+.6122	f0 1b		beq $613f	        beq b_prompt_delete
+.6124	c9 30		cmp #$30	        cmp #$30
+.6126	b0 03		bcs $612b	        bcc cloop
+.6128	4c 7b 60	jmp $607b
+.612b	c9 3a		cmp #$3a	        cmp #$3a
+.612d	b0 f9		bcs $6128	        bcs cloop
+.612f	ae 35 6c	ldx $6c35	        ldx b_device_length
+.6132	e0 02		cpx #$02	        cpx #2
+.6134	f0 f2		beq $6128	        beq cloop
+.6136	9d 36 6c	sta $6c36,x	        sta b_device_text,x
+.6139	ee 35 6c	inc $6c35	        inc b_device_length
+.613c	4c 78 60	jmp $6078	        jmp b_redraw
+.613f					b_prompt_delete:
+.613f	ad 35 6c	lda $6c35	        lda b_device_length
+.6142	f0 e4		beq $6128	        beq cloop
+.6144	ce 35 6c	dec $6c35	        dec b_device_length
+.6147	4c 78 60	jmp $6078	        jmp b_redraw
+.614a					b_prompt_enter:
+.614a	ae 35 6c	ldx $6c35	        ldx b_device_length
+.614d	f0 d9		beq $6128	        beq cloop
+.614f	ad 36 6c	lda $6c36	        lda b_device_text
+.6152	29 0f		and #$0f	        and #15
+.6154	e0 01		cpx #$01	        cpx #1
+.6156	f0 16		beq $616e	        beq b_device_number
+.6158	0a		asl a		        asl
+.6159	8d 9d 69	sta $699d	        sta b_digit
+.615c	0a		asl a		        asl
+.615d	0a		asl a		        asl
+.615e	18		clc		        clc
+.615f	6d 9d 69	adc $699d	        adc b_digit
+.6162	8d 9d 69	sta $699d	        sta b_digit
+.6165	ad 37 6c	lda $6c37	        lda b_device_text+1
+.6168	29 0f		and #$0f	        and #15
+.616a	18		clc		        clc
+.616b	6d 9d 69	adc $699d	        adc b_digit
+.616e					b_device_number:
+.616e	c9 08		cmp #$08	        cmp #8
+.6170	90 b6		bcc $6128	        bcc cloop
+.6172	c9 1f		cmp #$1f	        cmp #31
+.6174	b0 b2		bcs $6128	        bcs cloop
+.6176	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.6179	a9 00		lda #$00	        lda #0
+.617b	8d 34 6c	sta $6c34	        sta b_prompt
+.617e	8d 27 6c	sta $6c27	        sta b_selected
+.6181	8d 28 6c	sta $6c28	        sta b_selected+1
+.6184	4c e6 60	jmp $60e6	        jmp b_rescan
+.6187					b_prompt_cancel:
+.6187	a9 00		lda #$00	        lda #0
+.6189	8d 34 6c	sta $6c34	        sta b_prompt
+.618c	4c 78 60	jmp $6078	        jmp b_redraw
+.618f					b_down:
+.618f	ee 27 6c	inc $6c27	        inc b_selected
+.6192	d0 03		bne $6197	        bne b_selected_changed
+.6194	ee 28 6c	inc $6c28	        inc b_selected+1
+.6197					b_selected_changed:
+.6197	20 e5 61	jsr $61e5	        jsr b_clamp
+.619a	4c 78 60	jmp $6078	        jmp b_redraw
+.619d					b_up:
+.619d	ad 27 6c	lda $6c27	        lda b_selected
+.61a0	0d 28 6c	ora $6c28	        ora b_selected+1
+.61a3	f0 83		beq $6128	        beq cloop
+.61a5	ad 27 6c	lda $6c27	        lda b_selected
+.61a8	d0 03		bne $61ad	        bne b_up_low
+.61aa	ce 28 6c	dec $6c28	        dec b_selected+1
+.61ad					b_up_low:
+.61ad	ce 27 6c	dec $6c27	        dec b_selected
+.61b0	4c 78 60	jmp $6078	        jmp b_redraw
+.61b3					b_next_page:
+.61b3	18		clc		        clc
+.61b4	ad 27 6c	lda $6c27	        lda b_selected
+.61b7	69 08		adc #$08	        adc #8
+.61b9	8d 27 6c	sta $6c27	        sta b_selected
+.61bc	90 d9		bcc $6197	        bcc b_selected_changed
+.61be	ee 28 6c	inc $6c28	        inc b_selected+1
+.61c1	4c 97 61	jmp $6197	        jmp b_selected_changed
+.61c4					b_previous_page:
+.61c4	38		sec		        sec
+.61c5	ad 27 6c	lda $6c27	        lda b_selected
+.61c8	e9 08		sbc #$08	        sbc #8
+.61ca	8d 27 6c	sta $6c27	        sta b_selected
+.61cd	ad 28 6c	lda $6c28	        lda b_selected+1
+.61d0	e9 00		sbc #$00	        sbc #0
+.61d2	8d 28 6c	sta $6c28	        sta b_selected+1
+.61d5	90 03		bcc $61da	        bcs b_redraw
+.61d7	4c 78 60	jmp $6078
+.61da	a9 00		lda #$00	        lda #0
+.61dc	8d 27 6c	sta $6c27	        sta b_selected
+.61df	8d 28 6c	sta $6c28	        sta b_selected+1
+.61e2	4c 78 60	jmp $6078	        jmp b_redraw
+.61e5					b_clamp:
+.61e5	ad 25 6c	lda $6c25	        lda b_total
+.61e8	0d 26 6c	ora $6c26	        ora b_total+1
+.61eb	f0 20		beq $620d	        beq b_clamp_zero
+.61ed	ad 27 6c	lda $6c27	        lda b_selected
+.61f0	cd 25 6c	cmp $6c25	        cmp b_total
+.61f3	ad 28 6c	lda $6c28	        lda b_selected+1
+.61f6	ed 26 6c	sbc $6c26	        sbc b_total+1
+.61f9	90 11		bcc $620c	        bcc b_clamped
+.61fb	38		sec		        sec
+.61fc	ad 25 6c	lda $6c25	        lda b_total
+.61ff	e9 01		sbc #$01	        sbc #1
+.6201	8d 27 6c	sta $6c27	        sta b_selected
+.6204	ad 26 6c	lda $6c26	        lda b_total+1
+.6207	e9 00		sbc #$00	        sbc #0
+.6209	8d 28 6c	sta $6c28	        sta b_selected+1
+.620c					b_clamped:
+.620c	60		rts		        rts
+.620d					b_clamp_zero:
+.620d	8d 27 6c	sta $6c27	        sta b_selected
+.6210	8d 28 6c	sta $6c28	        sta b_selected+1
+.6213	60		rts		        rts
+.6214					b_next_app:
+.6214	ad 25 6c	lda $6c25	        lda b_total
+.6217	0d 26 6c	ora $6c26	        ora b_total+1
+.621a	f0 42		beq $625e	        beq b_no_apps
+.621c	ad 27 6c	lda $6c27	        lda b_selected
+.621f	8d 29 6c	sta $6c29	        sta b_saved_selection
+.6222	ad 28 6c	lda $6c28	        lda b_selected+1
+.6225	8d 2a 6c	sta $6c2a	        sta b_saved_selection+1
+.6228					b_find_app:
+.6228	ee 27 6c	inc $6c27	        inc b_selected
+.622b	d0 03		bne $6230	        bne b_find_app_bound
+.622d	ee 28 6c	inc $6c28	        inc b_selected+1
+.6230					b_find_app_bound:
+.6230	ad 27 6c	lda $6c27	        lda b_selected
+.6233	cd 25 6c	cmp $6c25	        cmp b_total
+.6236	ad 28 6c	lda $6c28	        lda b_selected+1
+.6239	ed 26 6c	sbc $6c26	        sbc b_total+1
+.623c	90 08		bcc $6246	        bcc b_find_app_read
+.623e	a9 00		lda #$00	        lda #0
+.6240	8d 27 6c	sta $6c27	        sta b_selected
+.6243	8d 28 6c	sta $6c28	        sta b_selected+1
+.6246					b_find_app_read:
+.6246	20 a5 63	jsr $63a5	        jsr b_selected_record
+.6249	ad 4c 6c	lda $6c4c	        lda b_record+20
+.624c	d0 89		bne $61d7	        bne b_redraw
+.624e	ad 27 6c	lda $6c27	        lda b_selected
+.6251	cd 29 6c	cmp $6c29	        cmp b_saved_selection
+.6254	d0 d2		bne $6228	        bne b_find_app
+.6256	ad 28 6c	lda $6c28	        lda b_selected+1
+.6259	cd 2a 6c	cmp $6c2a	        cmp b_saved_selection+1
+.625c	d0 ca		bne $6228	        bne b_find_app
+.625e					b_no_apps:
+.625e	a9 20		lda #$20	        lda #$20
+.6260	8d 31 6c	sta $6c31	        sta b_error
+.6263	4c 78 60	jmp $6078	        jmp b_redraw
+.6266					b_enter:
+.6266	ad 25 6c	lda $6c25	        lda b_total
+.6269	0d 26 6c	ora $6c26	        ora b_total+1
+.626c	d0 03		bne $6271	        beq cloop
+.626e	4c 7b 60	jmp $607b
+.6271	20 a5 63	jsr $63a5	        jsr b_selected_record
+.6274	ad 4c 6c	lda $6c4c	        lda b_record+20
+.6277	d0 03		bne $627c	        beq b_view_open
+.6279	4c 9e 69	jmp $699e
+.627c	20 c5 63	jsr $63c5	        jsr b_filename
+.627f	ad 86 3d	lda $3d86	        lda N_FNAMELEN
+.6282	8d 22 3d	sta $3d22	        sta N_NAMELEN
+.6285	a2 0f		ldx #$0f	        ldx #15
+.6287					b_launch_name:
+.6287	bd a0 3d	lda $3da0,x	        lda N_FNAME,x
+.628a	9d 40 3d	sta $3d40,x	        sta N_APPNAME,x
+.628d	ca		dex		        dex
+.628e	10 f7		bpl $6287	        bpl b_launch_name
+.6290	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6293	8d 21 3d	sta $3d21	        sta N_DEVICE
+.6296	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6299	8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.629c	4c 53 1c	jmp $1c53	        jmp N_REPLACE
+.629f					b_inspect:
+.629f	ad 25 6c	lda $6c25	        lda b_total
+.62a2	0d 26 6c	ora $6c26	        ora b_total+1
+.62a5	f0 c7		beq $626e	        beq cloop
+.62a7	20 a5 63	jsr $63a5	        jsr b_selected_record
+.62aa	4c 9e 69	jmp $699e	        jmp b_view_open
+.62ad					b_refresh:
+.62ad	a9 00		lda #$00	        lda #0
+.62af	8d 25 6c	sta $6c25	        sta b_total
+.62b2	8d 26 6c	sta $6c26	        sta b_total+1
+.62b5	8d 31 6c	sta $6c31	        sta b_error
+.62b8	8d 2d 6c	sta $6c2d	        sta b_page
+.62bb	a9 01		lda #$01	        lda #1
+.62bd	8d 30 6c	sta $6c30	        sta b_busy
+.62c0	20 92 64	jsr $6492	        jsr b_draw
+.62c3					b_scan_page:
+.62c3	ad 24 6c	lda $6c24	        lda b_owner
+.62c6	8d 80 3d	sta $3d80	        sta N_FOWNER
+.62c9	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.62cc	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.62cf	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.62d2	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.62d5	ad 2d 6c	lda $6c2d	        lda b_page
+.62d8	8d 97 3d	sta $3d97	        sta N_DPAGE
+.62db	20 50 1c	jsr $1c50	        jsr N_DIRPAGE
+.62de	b0 7c		bcs $635c	        bcs b_scan_failed
+.62e0	ad 98 3d	lda $3d98	        lda N_DNEXT
+.62e3	8d 2e 6c	sta $6c2e	        sta b_next
+.62e6	ad 99 3d	lda $3d99	        lda N_DCOUNT
+.62e9	f0 7f		beq $636a	        beq b_scan_done
+.62eb	a2 00		ldx #$00	        ldx #0
+.62ed					b_page_copy:
+.62ed	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.62f0	9d 58 6c	sta $6c58,x	        sta b_page_data,x
+.62f3	e8		inx		        inx
+.62f4	d0 f7		bne $62ed	        bne b_page_copy
+.62f6	8e 2f 6c	stx $6c2f	        stx b_scan_offset
+.62f9					b_scan_record:
+.62f9	ae 2f 6c	ldx $6c2f	        ldx b_scan_offset
+.62fc	bd 58 6c	lda $6c58,x	        lda b_page_data,x
+.62ff	f0 43		beq $6344	        beq b_scan_next
+.6301	a0 00		ldy #$00	        ldy #0
+.6303					b_record_copy:
+.6303	bd 58 6c	lda $6c58,x	        lda b_page_data,x
+.6306	99 38 6c	sta $6c38,y	        sta b_record,y
+.6309	e8		inx		        inx
+.630a	c8		iny		        iny
+.630b	c0 20		cpy #$20	        cpy #32
+.630d	d0 f4		bne $6303	        bne b_record_copy
+.630f	a9 00		lda #$00	        lda #0
+.6311	8d 4c 6c	sta $6c4c	        sta b_record+20
+.6314	8d 4d 6c	sta $6c4d	        sta b_record+21
+.6317	20 4c 64	jsr $644c	        jsr b_probe_app
+.631a	ad 25 6c	lda $6c25	        lda b_total
+.631d	8d 2b 6c	sta $6c2b	        sta b_index
+.6320	ad 26 6c	lda $6c26	        lda b_total+1
+.6323	8d 2c 6c	sta $6c2c	        sta b_index+1
+.6326	20 72 63	jsr $6372	        jsr b_cache_select
+.6329	a2 1f		ldx #$1f	        ldx #31
+.632b					b_record_store:
+.632b	bd 38 6c	lda $6c38,x	        lda b_record,x
+.632e	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.6331	ca		dex		        dex
+.6332	10 f7		bpl $632b	        bpl b_record_store
+.6334	20 29 1c	jsr $1c29	        jsr N_WRITE
+.6337	90 03		bcc $633c	        bcs b_exit_error
+.6339	4c e3 60	jmp $60e3
+.633c	ee 25 6c	inc $6c25	        inc b_total
+.633f	d0 03		bne $6344	        bne b_scan_next
+.6341	ee 26 6c	inc $6c26	        inc b_total+1
+.6344					b_scan_next:
+.6344	18		clc		        clc
+.6345	ad 2f 6c	lda $6c2f	        lda b_scan_offset
+.6348	69 20		adc #$20	        adc #32
+.634a	8d 2f 6c	sta $6c2f	        sta b_scan_offset
+.634d	d0 aa		bne $62f9	        bne b_scan_record
+.634f	ad 2e 6c	lda $6c2e	        lda b_next
+.6352	c9 ff		cmp #$ff	        cmp #$ff
+.6354	f0 14		beq $636a	        beq b_scan_done
+.6356	8d 2d 6c	sta $6c2d	        sta b_page
+.6359	4c c3 62	jmp $62c3	        jmp b_scan_page
+.635c					b_scan_failed:
+.635c	8d 31 6c	sta $6c31	        sta b_error
+.635f	ad 81 3d	lda $3d81	        lda N_FHANDLE
+.6362	f0 06		beq $636a	        beq b_scan_done
+.6364	ad 31 6c	lda $6c31	        lda b_error
+.6367	4c e3 60	jmp $60e3	        jmp b_exit_error         ; uncertain metadata cleanup remains owned
+.636a					b_scan_done:
+.636a	a9 00		lda #$00	        lda #0
+.636c	8d 30 6c	sta $6c30	        sta b_busy
+.636f	4c e5 61	jmp $61e5	        jmp b_clamp
+.6372					b_cache_select:
+.6372	ad 24 6c	lda $6c24	        lda b_owner
+.6375	8d 00 3d	sta $3d00	        sta N_OWNER
+.6378	a2 03		ldx #$03	        ldx #3
+.637a					b_cache_handle:
+.637a	bd 20 6c	lda $6c20,x	        lda b_cache,x
+.637d	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.6380	ca		dex		        dex
+.6381	10 f7		bpl $637a	        bpl b_cache_handle
+.6383	ad 2b 6c	lda $6c2b	        lda b_index
+.6386	8d 08 3d	sta $3d08	        sta N_OFFSET
+.6389	ad 2c 6c	lda $6c2c	        lda b_index+1
+.638c	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.638f	a2 05		ldx #$05	        ldx #5
+.6391					b_cache_offset:
+.6391	0e 08 3d	asl $3d08	        asl N_OFFSET
+.6394	2e 09 3d	rol $3d09	        rol N_OFFSET+1
+.6397	ca		dex		        dex
+.6398	d0 f7		bne $6391	        bne b_cache_offset
+.639a	a9 20		lda #$20	        lda #32
+.639c	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.639f	a9 00		lda #$00	        lda #0
+.63a1	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.63a4	60		rts		        rts
+.63a5					b_selected_record:
+.63a5	ad 27 6c	lda $6c27	        lda b_selected
+.63a8	8d 2b 6c	sta $6c2b	        sta b_index
+.63ab	ad 28 6c	lda $6c28	        lda b_selected+1
+.63ae	8d 2c 6c	sta $6c2c	        sta b_index+1
+.63b1					b_read_record:
+.63b1	20 72 63	jsr $6372	        jsr b_cache_select
+.63b4	20 26 1c	jsr $1c26	        jsr N_READ
+.63b7	b0 80		bcs $6339	        bcs b_exit_error
+.63b9	a2 1f		ldx #$1f	        ldx #31
+.63bb					b_record_loaded:
+.63bb	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.63be	9d 38 6c	sta $6c38,x	        sta b_record,x
+.63c1	ca		dex		        dex
+.63c2	10 f7		bpl $63bb	        bpl b_record_loaded
+.63c4	60		rts		        rts
+.63c5					b_filename:
+.63c5	a2 0f		ldx #$0f	        ldx #15
+.63c7					b_filename_byte:
+.63c7	bd 3a 6c	lda $6c3a,x	        lda b_record+2,x
+.63ca	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
+.63cd	ca		dex		        dex
+.63ce	10 f7		bpl $63c7	        bpl b_filename_byte
+.63d0	a2 10		ldx #$10	        ldx #16
+.63d2					b_filename_trim:
+.63d2	bd 9f 3d	lda $3d9f,x	        lda N_FNAME-1,x
+.63d5	c9 a0		cmp #$a0	        cmp #$a0
+.63d7	d0 03		bne $63dc	        bne b_filename_done
+.63d9	ca		dex		        dex
+.63da	d0 f6		bne $63d2	        bne b_filename_trim
+.63dc					b_filename_done:
+.63dc	8e 86 3d	stx $3d86	        stx N_FNAMELEN
+.63df	60		rts		        rts
+.63e0					b_open_record:
+.63e0	a9 00		lda #$00	        lda #0
+.63e2	8d 33 6c	sta $6c33	        sta b_open
+.63e5	8d 81 3d	sta $3d81	        sta N_FHANDLE
+.63e8	8d 82 3d	sta $3d82	        sta N_FHANDLE+1
+.63eb	8d 83 3d	sta $3d83	        sta N_FHANDLE+2
+.63ee	8d 84 3d	sta $3d84	        sta N_FHANDLE+3
+.63f1	8d 87 3d	sta $3d87	        sta N_FMODE
+.63f4	ad 39 6c	lda $6c39	        lda b_record+1
+.63f7	29 80		and #$80	        and #$80
+.63f9	f0 39		beq $6434	        beq b_unclosed
+.63fb	ad 38 6c	lda $6c38	        lda b_record
+.63fe	c9 01		cmp #$01	        cmp #1
+.6400	90 36		bcc $6438	        bcc b_unsupported
+.6402	c9 04		cmp #$04	        cmp #4
+.6404	b0 32		bcs $6438	        bcs b_unsupported
+.6406	38		sec		        sec
+.6407	e9 01		sbc #$01	        sbc #1
+.6409	8d 88 3d	sta $3d88	        sta N_FTYPE
+.640c	20 c5 63	jsr $63c5	        jsr b_filename
+.640f	ad 24 6c	lda $6c24	        lda b_owner
+.6412	8d 80 3d	sta $3d80	        sta N_FOWNER
+.6415	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6418	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.641b	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.641e	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.6421	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.6424	b0 04		bcs $642a	        bcs b_open_failed
+.6426	ee 33 6c	inc $6c33	        inc b_open
+.6429	60		rts		        rts
+.642a					b_open_failed:
+.642a	ae 81 3d	ldx $3d81	        ldx N_FHANDLE
+.642d	f0 03		beq $6432	        bne b_exit_error
+.642f	4c e3 60	jmp $60e3
+.6432	38		sec		        sec
+.6433	60		rts		        rts
+.6434					b_unclosed:
+.6434	a9 22		lda #$22	        lda #$22
+.6436	38		sec		        sec
+.6437	60		rts		        rts
+.6438					b_unsupported:
+.6438	a9 21		lda #$21	        lda #$21
+.643a	38		sec		        sec
+.643b	60		rts		        rts
+.643c					b_close_file:
+.643c	ad 33 6c	lda $6c33	        lda b_open
+.643f	f0 0a		beq $644b	        beq b_file_closed
+.6441	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.6444	b0 e9		bcs $642f	        bcs b_exit_error
+.6446	a9 00		lda #$00	        lda #0
+.6448	8d 33 6c	sta $6c33	        sta b_open
+.644b					b_file_closed:
+.644b	60		rts		        rts
+.644c					b_probe_app:
+.644c	ad 38 6c	lda $6c38	        lda b_record
+.644f	c9 02		cmp #$02	        cmp #2
+.6451	d0 3e		bne $6491	        bne b_probe_done
+.6453	ad 39 6c	lda $6c39	        lda b_record+1
+.6456	29 80		and #$80	        and #$80
+.6458	f0 37		beq $6491	        beq b_probe_done
+.645a	20 e0 63	jsr $63e0	        jsr b_open_record
+.645d	b0 2f		bcs $648e	        bcs b_probe_error
+.645f	a9 22		lda #$22	        lda #34
+.6461	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.6464	a9 00		lda #$00	        lda #0
+.6466	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.6469	20 44 1c	jsr $1c44	        jsr N_FREAD
+.646c	b0 1a		bcs $6488	        bcs b_probe_read_error
+.646e	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.6471	c9 22		cmp #$22	        cmp #34
+.6473	d0 10		bne $6485	        bne b_probe_close
+.6475	a2 05		ldx #$05	        ldx #5
+.6477					b_probe_magic:
+.6477	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.647a	dd 1a 6c	cmp $6c1a,x	        cmp b_app_magic,x
+.647d	d0 06		bne $6485	        bne b_probe_close
+.647f	ca		dex		        dex
+.6480	10 f5		bpl $6477	        bpl b_probe_magic
+.6482	ee 4c 6c	inc $6c4c	        inc b_record+20         ; discovery only: the loader validates full image/CRC
+.6485					b_probe_close:
+.6485	4c 3c 64	jmp $643c	        jmp b_close_file
+.6488					b_probe_read_error:
+.6488	8d 4d 6c	sta $6c4d	        sta b_record+21
+.648b	4c 85 64	jmp $6485	        jmp b_probe_close
+.648e					b_probe_error:
+.648e	8d 4d 6c	sta $6c4d	        sta b_record+21
+.6491					b_probe_done:
+.6491	60		rts		        rts
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser-ui.inc
+
+.6492					b_draw:
+.6492	a9 00		lda #$00	        lda #0
+.6494	8d 95 69	sta $6995	        sta b_screen
+.6497					b_draw_screen:
+.6497	a5 d7		lda $d7		        lda $d7
+.6499	2a		rol a		        rol
+.649a	a9 00		lda #$00	        lda #0
+.649c	2a		rol a		        rol
+.649d	cd 95 69	cmp $6995	        cmp b_screen
+.64a0	f0 03		beq $64a5	        beq b_screen_selected
+.64a2	20 5f ff	jsr $ff5f	        jsr $ff5f
+.64a5					b_screen_selected:
+.64a5	a9 93		lda #$93	        lda #$93
+.64a7	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.64aa	ad 8c 6b	lda $6b8c	        lda b_preview
+.64ad	f0 06		beq $64b5	        beq b_draw_list
+.64af	20 4a 6a	jsr $6a4a	        jsr b_view_draw
+.64b2	4c b8 64	jmp $64b8	        jmp b_screen_done
+.64b5					b_draw_list:
+.64b5	20 c3 64	jsr $64c3	        jsr b_list_draw
+.64b8					b_screen_done:
+.64b8	ee 95 69	inc $6995	        inc b_screen
+.64bb	ad 95 69	lda $6995	        lda b_screen
+.64be	c9 02		cmp #$02	        cmp #2
+.64c0	d0 d5		bne $6497	        bne b_draw_screen
+.64c2	60		rts		        rts
+.64c3					b_list_draw:
+.64c3	a9 ea		lda #$ea	        lda #<b_title
+.64c5	a2 66		ldx #$66	        ldx #>b_title
+.64c7	20 54 66	jsr $6654	        jsr b_puts
+.64ca	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.64cd	a2 00		ldx #$00	        ldx #0
+.64cf	20 86 66	jsr $6686	        jsr b_number
+.64d2	a9 0b		lda #$0b	        lda #<b_format_text
+.64d4	a2 67		ldx #$67	        ldx #>b_format_text
+.64d6	20 54 66	jsr $6654	        jsr b_puts
+.64d9	ae 2a 3d	ldx $3d2a	        ldx N_BROWSERFMT
+.64dc	bd fd 67	lda $67fd,x	        lda b_formats_lo,x
+.64df	48		pha		        pha
+.64e0	bd 00 68	lda $6800,x	        lda b_formats_hi,x
+.64e3	aa		tax		        tax
+.64e4	68		pla		        pla
+.64e5	20 54 66	jsr $6654	        jsr b_puts
+.64e8	a9 17		lda #$17	        lda #<b_count_text
+.64ea	a2 67		ldx #$67	        ldx #>b_count_text
+.64ec	20 54 66	jsr $6654	        jsr b_puts
+.64ef	ad 25 6c	lda $6c25	        lda b_total
+.64f2	ae 26 6c	ldx $6c26	        ldx b_total+1
+.64f5	20 86 66	jsr $6686	        jsr b_number
+.64f8	a9 20		lda #$20	        lda #<b_columns
+.64fa	a2 67		ldx #$67	        ldx #>b_columns
+.64fc	20 54 66	jsr $6654	        jsr b_puts
+.64ff	ad 30 6c	lda $6c30	        lda b_busy
+.6502	f0 07		beq $650b	        beq b_list_rows
+.6504	a9 42		lda #$42	        lda #<b_loading
+.6506	a2 67		ldx #$67	        ldx #>b_loading
+.6508	4c 54 66	jmp $6654	        jmp b_puts
+.650b					b_list_rows:
+.650b	ad 27 6c	lda $6c27	        lda b_selected
+.650e	29 f8		and #$f8	        and #$f8
+.6510	8d 2b 6c	sta $6c2b	        sta b_index
+.6513	ad 28 6c	lda $6c28	        lda b_selected+1
+.6516	8d 2c 6c	sta $6c2c	        sta b_index+1
+.6519	a9 00		lda #$00	        lda #0
+.651b	8d 96 69	sta $6996	        sta b_row
+.651e					b_list_row:
+.651e	ad 2b 6c	lda $6c2b	        lda b_index
+.6521	cd 25 6c	cmp $6c25	        cmp b_total
+.6524	ad 2c 6c	lda $6c2c	        lda b_index+1
+.6527	ed 26 6c	sbc $6c26	        sbc b_total+1
+.652a	b0 54		bcs $6580	        bcs b_row_empty
+.652c	20 b1 63	jsr $63b1	        jsr b_read_record
+.652f	ad 2b 6c	lda $6c2b	        lda b_index
+.6532	cd 27 6c	cmp $6c27	        cmp b_selected
+.6535	d0 0c		bne $6543	        bne b_row_unselected
+.6537	ad 2c 6c	lda $6c2c	        lda b_index+1
+.653a	cd 28 6c	cmp $6c28	        cmp b_selected+1
+.653d	d0 04		bne $6543	        bne b_row_unselected
+.653f	a9 3e		lda #$3e	        lda #$3e
+.6541	d0 02		bne $6545	        bne b_row_marker
+.6543					b_row_unselected:
+.6543	a9 20		lda #$20	        lda #$20
+.6545					b_row_marker:
+.6545	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6548	20 db 65	jsr $65db	        jsr b_print_name
+.654b	a9 20		lda #$20	        lda #$20
+.654d	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6550	20 08 66	jsr $6608	        jsr b_print_type
+.6553	a9 20		lda #$20	        lda #$20
+.6555	ae 39 6c	ldx $6c39	        ldx b_record+1
+.6558	30 02		bmi $655c	        bmi b_row_closed
+.655a	a9 2a		lda #$2a	        lda #$2a
+.655c					b_row_closed:
+.655c	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.655f	ad 39 6c	lda $6c39	        lda b_record+1
+.6562	29 40		and #$40	        and #$40
+.6564	f0 04		beq $656a	        beq b_row_unlocked
+.6566	a9 3c		lda #$3c	        lda #$3c
+.6568	d0 02		bne $656c	        bne b_row_lock
+.656a					b_row_unlocked:
+.656a	a9 20		lda #$20	        lda #$20
+.656c					b_row_lock:
+.656c	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.656f	a9 20		lda #$20	        lda #$20
+.6571	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6574	ad 4a 6c	lda $6c4a	        lda b_record+18
+.6577	ae 4b 6c	ldx $6c4b	        ldx b_record+19
+.657a	20 86 66	jsr $6686	        jsr b_number
+.657d	4c 92 65	jmp $6592	        jmp b_row_next
+.6580					b_row_empty:
+.6580	ad 25 6c	lda $6c25	        lda b_total
+.6583	0d 26 6c	ora $6c26	        ora b_total+1
+.6586	0d 96 69	ora $6996	        ora b_row
+.6589	d0 07		bne $6592	        bne b_row_next
+.658b	a9 57		lda #$57	        lda #<b_empty
+.658d	a2 67		ldx #$67	        ldx #>b_empty
+.658f	20 54 66	jsr $6654	        jsr b_puts
+.6592					b_row_next:
+.6592	a9 0d		lda #$0d	        lda #13
+.6594	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6597	ee 2b 6c	inc $6c2b	        inc b_index
+.659a	d0 03		bne $659f	        bne b_row_advance
+.659c	ee 2c 6c	inc $6c2c	        inc b_index+1
+.659f					b_row_advance:
+.659f	ee 96 69	inc $6996	        inc b_row
+.65a2	ad 96 69	lda $6996	        lda b_row
+.65a5	c9 08		cmp #$08	        cmp #8
+.65a7	f0 03		beq $65ac	        bne b_list_row
+.65a9	4c 1e 65	jmp $651e
+.65ac	a9 60		lda #$60	        lda #<b_help
+.65ae	a2 67		ldx #$67	        ldx #>b_help
+.65b0	20 54 66	jsr $6654	        jsr b_puts
+.65b3	20 23 66	jsr $6623	        jsr b_show_status
+.65b6	ad 34 6c	lda $6c34	        lda b_prompt
+.65b9	f0 1f		beq $65da	        beq b_list_done
+.65bb	a9 e0		lda #$e0	        lda #<b_device_question
+.65bd	a2 67		ldx #$67	        ldx #>b_device_question
+.65bf	20 54 66	jsr $6654	        jsr b_puts
+.65c2	a9 00		lda #$00	        lda #0
+.65c4	8d 97 69	sta $6997	        sta b_char
+.65c7					b_device_show:
+.65c7	ae 97 69	ldx $6997	        ldx b_char
+.65ca	ec 35 6c	cpx $6c35	        cpx b_device_length
+.65cd	f0 0b		beq $65da	        beq b_list_done
+.65cf	bd 36 6c	lda $6c36,x	        lda b_device_text,x
+.65d2	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.65d5	ee 97 69	inc $6997	        inc b_char
+.65d8	d0 ed		bne $65c7	        bne b_device_show
+.65da					b_list_done:
+.65da	60		rts		        rts
+.65db					b_print_name:
+.65db	a9 00		lda #$00	        lda #0
+.65dd	8d 97 69	sta $6997	        sta b_char
+.65e0					b_name_show:
+.65e0	ae 97 69	ldx $6997	        ldx b_char
+.65e3	bd 3a 6c	lda $6c3a,x	        lda b_record+2,x
+.65e6	c9 a0		cmp #$a0	        cmp #$a0
+.65e8	d0 02		bne $65ec	        bne b_name_visible
+.65ea	a9 20		lda #$20	        lda #$20
+.65ec					b_name_visible:
+.65ec	20 fd 65	jsr $65fd	        jsr b_safe_character
+.65ef	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.65f2	ee 97 69	inc $6997	        inc b_char
+.65f5	ad 97 69	lda $6997	        lda b_char
+.65f8	c9 10		cmp #$10	        cmp #16
+.65fa	d0 e4		bne $65e0	        bne b_name_show
+.65fc	60		rts		        rts
+.65fd					b_safe_character:
+.65fd	c9 20		cmp #$20	        cmp #$20
+.65ff	90 04		bcc $6605	        bcc b_character_dot
+.6601	c9 7f		cmp #$7f	        cmp #$7f
+.6603	90 02		bcc $6607	        bcc b_character_ready
+.6605					b_character_dot:
+.6605	a9 2e		lda #$2e	        lda #$2e
+.6607					b_character_ready:
+.6607	60		rts		        rts
+.6608					b_print_type:
+.6608	ad 4c 6c	lda $6c4c	        lda b_record+20
+.660b	f0 07		beq $6614	        beq b_disk_type
+.660d	a9 1f		lda #$1f	        lda #<b_type_app
+.660f	a2 68		ldx #$68	        ldx #>b_type_app
+.6611	4c 54 66	jmp $6654	        jmp b_puts
+.6614					b_disk_type:
+.6614	ae 38 6c	ldx $6c38	        ldx b_record
+.6617	bd 23 68	lda $6823,x	        lda b_types_lo,x
+.661a	48		pha		        pha
+.661b	bd 2b 68	lda $682b,x	        lda b_types_hi,x
+.661e	aa		tax		        tax
+.661f	68		pla		        pla
+.6620	4c 54 66	jmp $6654	        jmp b_puts
+.6623					b_show_status:
+.6623	ad 31 6c	lda $6c31	        lda b_error
+.6626	d0 05		bne $662d	        bne b_have_status
+.6628	ad 32 6c	lda $6c32	        lda b_launch_error
+.662b	f0 26		beq $6653	        beq b_status_done
+.662d					b_have_status:
+.662d	8d 98 69	sta $6998	        sta b_status_code
+.6630	a2 0b		ldx #$0b	        ldx #b_status_end-b_status_codes-1
+.6632					b_status_find:
+.6632	dd 67 69	cmp $6967,x	        cmp b_status_codes,x
+.6635	f0 10		beq $6647	        beq b_status_found
+.6637	ca		dex		        dex
+.6638	10 f8		bpl $6632	        bpl b_status_find
+.663a	a9 60		lda #$60	        lda #<b_unknown_error
+.663c	a2 69		ldx #$69	        ldx #>b_unknown_error
+.663e	20 54 66	jsr $6654	        jsr b_puts
+.6641	ad 98 69	lda $6998	        lda b_status_code
+.6644	4c 6e 66	jmp $666e	        jmp b_hex
+.6647					b_status_found:
+.6647	bd 73 69	lda $6973,x	        lda b_status_lo,x
+.664a	48		pha		        pha
+.664b	bd 7f 69	lda $697f,x	        lda b_status_hi,x
+.664e	aa		tax		        tax
+.664f	68		pla		        pla
+.6650	4c 54 66	jmp $6654	        jmp b_puts
+.6653					b_status_done:
+.6653	60		rts		        rts
+.6654					b_puts:
+.6654	8d 5b 66	sta $665b	        sta b_text_read+1
+.6657	8e 5c 66	stx $665c	        stx b_text_read+2
+.665a					b_text_read:
+.665a	ad ff ff	lda $ffff	        lda $ffff
+.665d	f0 0e		beq $666d	        beq b_text_done
+.665f	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6662	ee 5b 66	inc $665b	        inc b_text_read+1
+.6665	d0 f3		bne $665a	        bne b_text_read
+.6667	ee 5c 66	inc $665c	        inc b_text_read+2
+.666a	4c 5a 66	jmp $665a	        jmp b_text_read
+.666d					b_text_done:
+.666d	60		rts		        rts
+.666e					b_hex:
+.666e	48		pha		        pha
+.666f	4a		lsr a		        lsr
+.6670	4a		lsr a		        lsr
+.6671	4a		lsr a		        lsr
+.6672	4a		lsr a		        lsr
+.6673	20 79 66	jsr $6679	        jsr b_nibble
+.6676	68		pla		        pla
+.6677	29 0f		and #$0f	        and #15
+.6679					b_nibble:
+.6679	c9 0a		cmp #$0a	        cmp #10
+.667b	90 03		bcc $6680	        bcc b_hex_digit
+.667d	18		clc		        clc
+.667e	69 07		adc #$07	        adc #7
+.6680					b_hex_digit:
+.6680	18		clc		        clc
+.6681	69 30		adc #$30	        adc #$30
+.6683	4c d2 ff	jmp $ffd2	        jmp $ffd2
+.6686					b_number:
+.6686	8d 99 69	sta $6999	        sta b_num
+.6689	8e 9a 69	stx $699a	        stx b_num+1
+.668c	a9 00		lda #$00	        lda #0
+.668e	8d 9b 69	sta $699b	        sta b_num_pos
+.6691	8d 9c 69	sta $699c	        sta b_num_started
+.6694					b_number_digit:
+.6694	a9 00		lda #$00	        lda #0
+.6696	8d 9d 69	sta $699d	        sta b_digit
+.6699					b_number_subtract:
+.6699	ae 9b 69	ldx $699b	        ldx b_num_pos
+.669c	ad 99 69	lda $6999	        lda b_num
+.669f	dd 8b 69	cmp $698b,x	        cmp b_powers_lo,x
+.66a2	ad 9a 69	lda $699a	        lda b_num+1
+.66a5	fd 90 69	sbc $6990,x	        sbc b_powers_hi,x
+.66a8	90 18		bcc $66c2	        bcc b_number_emit
+.66aa	38		sec		        sec
+.66ab	ad 99 69	lda $6999	        lda b_num
+.66ae	fd 8b 69	sbc $698b,x	        sbc b_powers_lo,x
+.66b1	8d 99 69	sta $6999	        sta b_num
+.66b4	ad 9a 69	lda $699a	        lda b_num+1
+.66b7	fd 90 69	sbc $6990,x	        sbc b_powers_hi,x
+.66ba	8d 9a 69	sta $699a	        sta b_num+1
+.66bd	ee 9d 69	inc $699d	        inc b_digit
+.66c0	d0 d7		bne $6699	        bne b_number_subtract
+.66c2					b_number_emit:
+.66c2	ad 9d 69	lda $699d	        lda b_digit
+.66c5	0d 9c 69	ora $699c	        ora b_num_started
+.66c8	d0 07		bne $66d1	        bne b_number_nonzero
+.66ca	ae 9b 69	ldx $699b	        ldx b_num_pos
+.66cd	e0 04		cpx #$04	        cpx #4
+.66cf	d0 0e		bne $66df	        bne b_number_next
+.66d1					b_number_nonzero:
+.66d1	a9 01		lda #$01	        lda #1
+.66d3	8d 9c 69	sta $699c	        sta b_num_started
+.66d6	ad 9d 69	lda $699d	        lda b_digit
+.66d9	18		clc		        clc
+.66da	69 30		adc #$30	        adc #$30
+.66dc	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.66df					b_number_next:
+.66df	ee 9b 69	inc $699b	        inc b_num_pos
+.66e2	ad 9b 69	lda $699b	        lda b_num_pos
+.66e5	c9 05		cmp #$05	        cmp #5
+.66e7	d0 ab		bne $6694	        bne b_number_digit
+.66e9	60		rts		        rts
+>66ea	55 4f 53 20 31 32 38 20		b_title: .text "uos 128 files and apps",13,13,"device: ",0
+>66f2	46 49 4c 45 53 20 41 4e 44 20 41 50 50 53 0d 0d
+>6702	44 45 56 49 43 45 3a 20 00
+>670b	20 20 20 46 4f 52 4d 41		b_format_text: .text "   format: ",0
+>6713	54 3a 20 00
+>6717	0d 46 49 4c 45 53 3a 20		b_count_text: .text 13,"files: ",0
+>671f	00
+>6720	0d 20 4e 41 4d 45 20 20		b_columns: .text 13," name             type   blocks",13,0
+>6728	20 20 20 20 20 20 20 20 20 20 20 54 59 50 45 20
+>6738	20 20 42 4c 4f 43 4b 53 0d 00
+>6742	52 45 41 44 49 4e 47 20		b_loading: .text "reading directory...",0
+>674a	44 49 52 45 43 54 4f 52 59 2e 2e 2e 00
+>6757	4e 4f 20 46 49 4c 45 53		b_empty: .text "no files",0
+>675f	00
+>6760	0d 55 50 2f 44 4f 57 4e		b_help: .text 13,"up/down select  n/b page  a next app",13
+>6768	20 53 45 4c 45 43 54 20 20 4e 2f 42 20 50 41 47
+>6778	45 20 20 41 20 4e 45 58 54 20 41 50 50 0d
+>6786	45 4e 54 45 52 20 4f 50		        .text "enter open  i inspect  r refresh",13
+>678e	45 4e 20 20 49 20 49 4e 53 50 45 43 54 20 20 52
+>679e	20 52 45 46 52 45 53 48 0d
+>67a7	44 20 44 45 56 49 43 45		        .text "d device  f format  esc workspace",13
+>67af	20 20 46 20 46 4f 52 4d 41 54 20 20 45 53 43 20
+>67bf	57 4f 52 4b 53 50 41 43 45 0d
+>67c9	2a 20 55 4e 43 4c 4f 53		        .text "* unclosed  < locked",13,13,0
+>67d1	45 44 20 20 3c 20 4c 4f 43 4b 45 44 0d 0d 00
+>67e0	0d 44 45 56 49 43 45 20		b_device_question: .text 13,"device (8-30): ",0
+>67e8	28 38 2d 33 30 29 3a 20 00
+>67f1	44 36 34 00			b_format64: .text "d64",0
+>67f5	44 37 31 00			b_format71: .text "d71",0
+>67f9	44 38 31 00			b_format81: .text "d81",0
+>67fd	f1 f5 f9			b_formats_lo: .byte <b_format64,<b_format71,<b_format81
+>6800	67 67 67			b_formats_hi: .byte >b_format64,>b_format71,>b_format81
+>6803	44 45 4c 00			b_type_del: .text "del",0
+>6807	53 45 51 00			b_type_seq: .text "seq",0
+>680b	50 52 47 00			b_type_prg: .text "prg",0
+>680f	55 53 52 00			b_type_usr: .text "usr",0
+>6813	52 45 4c 00			b_type_rel: .text "rel",0
+>6817	43 42 4d 00			b_type_cbm: .text "cbm",0
+>681b	3f 3f 3f 00			b_type_unknown: .text "???",0
+>681f	41 50 50 00			b_type_app: .text "app",0
+>6823	03 07 0b 0f 13 17 1b 1b		b_types_lo: .byte <b_type_del,<b_type_seq,<b_type_prg,<b_type_usr,<b_type_rel,<b_type_cbm,<b_type_unknown,<b_type_unknown
+>682b	68 68 68 68 68 68 68 68		b_types_hi: .byte >b_type_del,>b_type_seq,>b_type_prg,>b_type_usr,>b_type_rel,>b_type_cbm,>b_type_unknown,>b_type_unknown
+>6833	49 4e 56 41 4c 49 44 20		b_bad_name: .text "invalid name or device",0
+>683b	4e 41 4d 45 20 4f 52 20 44 45 56 49 43 45 00
+>684a	4e 4f 20 46 49 4c 45 20		b_no_handle: .text "no file handle available",0
+>6852	48 41 4e 44 4c 45 20 41 56 41 49 4c 41 42 4c 45
+>6862	00
+>6863	49 4e 56 41 4c 49 44 20		b_bad_directory: .text "invalid disk directory",0
+>686b	44 49 53 4b 20 44 49 52 45 43 54 4f 52 59 00
+>687a	49 4e 56 41 4c 49 44 20		b_bad_image: .text "invalid application image",0
+>6882	41 50 50 4c 49 43 41 54 49 4f 4e 20 49 4d 41 47
+>6892	45 00
+>6894	44 49 53 4b 20 49 2f 4f		b_disk_error: .text "disk i/o error",0
+>689c	20 45 52 52 4f 52 00
+>68a3	41 50 50 4c 49 43 41 54		b_short_image: .text "application file is incomplete",0
+>68ab	49 4f 4e 20 46 49 4c 45 20 49 53 20 49 4e 43 4f
+>68bb	4d 50 4c 45 54 45 00
+>68c2	41 50 50 4c 49 43 41 54		b_long_image: .text "application file has extra data",0
+>68ca	49 4f 4e 20 46 49 4c 45 20 48 41 53 20 45 58 54
+>68da	52 41 20 44 41 54 41 00
+>68e2	41 50 50 4c 49 43 41 54		b_checksum_error: .text "application checksum failed",0
+>68ea	49 4f 4e 20 43 48 45 43 4b 53 55 4d 20 46 41 49
+>68fa	4c 45 44 00
+>68fe	44 49 53 4b 20 43 48 41		b_channels_error: .text "disk channel is in use",0
+>6906	4e 4e 45 4c 20 49 53 20 49 4e 20 55 53 45 00
+>6915	4e 4f 20 4e 41 54 49 56		b_no_apps_text: .text "no native applications found",0
+>691d	45 20 41 50 50 4c 49 43 41 54 49 4f 4e 53 20 46
+>692d	4f 55 4e 44 00
+>6932	46 49 4c 45 20 54 59 50		b_unsupported_text: .text "file type cannot be opened",0
+>693a	45 20 43 41 4e 4e 4f 54 20 42 45 20 4f 50 45 4e
+>694a	45 44 00
+>694d	46 49 4c 45 20 49 53 20		b_unclosed_text: .text "file is not closed",0
+>6955	4e 4f 54 20 43 4c 4f 53 45 44 00
+>6960	45 52 52 4f 52 20 00		b_unknown_error: .text "error ",0
+>6967	01 03 09 10 11 12 13 14		b_status_codes: .byte 1,3,9,$10,$11,$12,$13,$14,$15,$20,$21,$22
+>696f	15 20 21 22
+.6973					b_status_end:
+>6973	33 4a 63 7a 94 a3 c2 e2		b_status_lo: .byte <b_bad_name,<b_no_handle,<b_bad_directory,<b_bad_image,<b_disk_error,<b_short_image,<b_long_image,<b_checksum_error,<b_channels_error,<b_no_apps_text,<b_unsupported_text,<b_unclosed_text
+>697b	fe 15 32 4d
+>697f	68 68 68 68 68 68 68 68		b_status_hi: .byte >b_bad_name,>b_no_handle,>b_bad_directory,>b_bad_image,>b_disk_error,>b_short_image,>b_long_image,>b_checksum_error,>b_channels_error,>b_no_apps_text,>b_unsupported_text,>b_unclosed_text
+>6987	68 69 69 69
+>698b	10 e8 64 0a 01			b_powers_lo: .byte <10000,<1000,<100,<10,<1
+>6990	27 03 00 00 00			b_powers_hi: .byte >10000,>1000,>100,>10,>1
+>6995	00				b_screen: .byte 0
+>6996	00				b_row: .byte 0
+>6997	00				b_char: .byte 0
+>6998	00				b_status_code: .byte 0
+>6999	00 00				b_num: .word 0
+>699b	00				b_num_pos: .byte 0
+>699c	00				b_num_started: .byte 0
+>699d	00				b_digit: .byte 0
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser-view.inc
+
+.699e					b_view_open:
+.699e	a9 00		lda #$00	        lda #0
+.69a0	8d 31 6c	sta $6c31	        sta b_error
+.69a3	8d 32 6c	sta $6c32	        sta b_launch_error
+.69a6	20 e0 63	jsr $63e0	        jsr b_open_record
+.69a9	b0 18		bcs $69c3	        bcs b_view_failed
+.69ab	a9 01		lda #$01	        lda #1
+.69ad	8d 8c 6b	sta $6b8c	        sta b_preview
+.69b0	a9 00		lda #$00	        lda #0
+.69b2	8d 8d 6b	sta $6b8d	        sta b_eof
+.69b5	a2 03		ldx #$03	        ldx #3
+.69b7					b_view_zero_offset:
+.69b7	9d 93 6b	sta $6b93,x	        sta b_next_offset,x
+.69ba	ca		dex		        dex
+.69bb	10 fa		bpl $69b7	        bpl b_view_zero_offset
+.69bd	20 f5 69	jsr $69f5	        jsr b_view_read
+.69c0	4c 78 60	jmp $6078	        jmp b_redraw
+.69c3					b_view_failed:
+.69c3	8d 31 6c	sta $6c31	        sta b_error
+.69c6	4c 78 60	jmp $6078	        jmp b_redraw
+.69c9					b_preview_key:
+.69c9	c9 1b		cmp #$1b	        cmp #27
+.69cb	f0 1d		beq $69ea	        beq b_view_back
+.69cd	c9 0d		cmp #$0d	        cmp #13
+.69cf	f0 09		beq $69da	        beq b_view_next
+.69d1	29 df		and #$df	        and #$df
+.69d3	c9 4e		cmp #$4e	        cmp #$4e
+.69d5	f0 03		beq $69da	        bne cloop
+.69d7	4c 7b 60	jmp $607b
+.69da					b_view_next:
+.69da	ad 8d 6b	lda $6b8d	        lda b_eof
+.69dd	d0 f8		bne $69d7	        bne cloop
+.69df	ad 33 6c	lda $6c33	        lda b_open
+.69e2	f0 f3		beq $69d7	        beq cloop
+.69e4	20 f5 69	jsr $69f5	        jsr b_view_read
+.69e7	4c 78 60	jmp $6078	        jmp b_redraw
+.69ea					b_view_back:
+.69ea	20 3c 64	jsr $643c	        jsr b_close_file
+.69ed	a9 00		lda #$00	        lda #0
+.69ef	8d 8c 6b	sta $6b8c	        sta b_preview
+.69f2	4c 78 60	jmp $6078	        jmp b_redraw
+.69f5					b_view_read:
+.69f5	a2 03		ldx #$03	        ldx #3
+.69f7					b_view_copy_offset:
+.69f7	bd 93 6b	lda $6b93,x	        lda b_next_offset,x
+.69fa	9d 8f 6b	sta $6b8f,x	        sta b_offset,x
+.69fd	ca		dex		        dex
+.69fe	10 f7		bpl $69f7	        bpl b_view_copy_offset
+.6a00	a9 80		lda #$80	        lda #128
+.6a02	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.6a05	a9 00		lda #$00	        lda #0
+.6a07	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.6a0a	20 44 1c	jsr $1c44	        jsr N_FREAD
+.6a0d	8d 31 6c	sta $6c31	        sta b_error
+.6a10	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.6a13	8d 8e 6b	sta $6b8e	        sta b_view_count
+.6a16	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.6a19	8d 8d 6b	sta $6b8d	        sta b_eof
+.6a1c	a2 03		ldx #$03	        ldx #3
+.6a1e					b_view_save_offset:
+.6a1e	bd 92 3d	lda $3d92,x	        lda N_FPOSITION,x
+.6a21	9d 93 6b	sta $6b93,x	        sta b_next_offset,x
+.6a24	ca		dex		        dex
+.6a25	10 f7		bpl $6a1e	        bpl b_view_save_offset
+.6a27	a2 00		ldx #$00	        ldx #0
+.6a29					b_view_copy:
+.6a29	ec 8e 6b	cpx $6b8e	        cpx b_view_count
+.6a2c	f0 09		beq $6a37	        beq b_view_copied
+.6a2e	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.6a31	9d 9a 6b	sta $6b9a,x	        sta b_view_data,x
+.6a34	e8		inx		        inx
+.6a35	d0 f2		bne $6a29	        bne b_view_copy
+.6a37					b_view_copied:
+.6a37	ad 31 6c	lda $6c31	        lda b_error
+.6a3a	f0 05		beq $6a41	        beq b_view_clean
+.6a3c	a9 01		lda #$01	        lda #1
+.6a3e	8d 8d 6b	sta $6b8d	        sta b_eof
+.6a41					b_view_clean:
+.6a41	ad 8d 6b	lda $6b8d	        lda b_eof
+.6a44	f0 03		beq $6a49	        beq b_view_read_done
+.6a46	20 3c 64	jsr $643c	        jsr b_close_file
+.6a49					b_view_read_done:
+.6a49	60		rts		        rts
+.6a4a					b_view_draw:
+.6a4a	a9 41		lda #$41	        lda #<b_file_title
+.6a4c	a2 6b		ldx #$6b	        ldx #>b_file_title
+.6a4e	20 54 66	jsr $6654	        jsr b_puts
+.6a51	20 db 65	jsr $65db	        jsr b_print_name
+.6a54	a9 48		lda #$48	        lda #<b_offset_title
+.6a56	a2 6b		ldx #$6b	        ldx #>b_offset_title
+.6a58	20 54 66	jsr $6654	        jsr b_puts
+.6a5b	a9 03		lda #$03	        lda #3
+.6a5d	8d 97 69	sta $6997	        sta b_char
+.6a60					b_view_print_offset:
+.6a60	ae 97 69	ldx $6997	        ldx b_char
+.6a63	bd 8f 6b	lda $6b8f,x	        lda b_offset,x
+.6a66	20 6e 66	jsr $666e	        jsr b_hex
+.6a69	ce 97 69	dec $6997	        dec b_char
+.6a6c	10 f2		bpl $6a60	        bpl b_view_print_offset
+.6a6e	a9 52		lda #$52	        lda #<b_bytes_title
+.6a70	a2 6b		ldx #$6b	        ldx #>b_bytes_title
+.6a72	20 54 66	jsr $6654	        jsr b_puts
+.6a75	ad 8e 6b	lda $6b8e	        lda b_view_count
+.6a78	a2 00		ldx #$00	        ldx #0
+.6a7a	20 86 66	jsr $6686	        jsr b_number
+.6a7d	a9 0d		lda #$0d	        lda #13
+.6a7f	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6a82	a9 0d		lda #$0d	        lda #13
+.6a84	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6a87	a9 00		lda #$00	        lda #0
+.6a89	8d 97 6b	sta $6b97	        sta b_view_line
+.6a8c					b_view_draw_line:
+.6a8c	ad 97 6b	lda $6b97	        lda b_view_line
+.6a8f	cd 8e 6b	cmp $6b8e	        cmp b_view_count
+.6a92	b0 7d		bcs $6b11	        bcs b_view_blank_line
+.6a94	18		clc		        clc
+.6a95	6d 8f 6b	adc $6b8f	        adc b_offset
+.6a98	8d 99 6b	sta $6b99	        sta b_line_offset
+.6a9b	ad 90 6b	lda $6b90	        lda b_offset+1
+.6a9e	69 00		adc #$00	        adc #0
+.6aa0	20 6e 66	jsr $666e	        jsr b_hex
+.6aa3	ad 99 6b	lda $6b99	        lda b_line_offset
+.6aa6	20 6e 66	jsr $666e	        jsr b_hex
+.6aa9	a9 20		lda #$20	        lda #$20
+.6aab	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6aae	a9 00		lda #$00	        lda #0
+.6ab0	8d 98 6b	sta $6b98	        sta b_view_column
+.6ab3					b_view_hex_byte:
+.6ab3	18		clc		        clc
+.6ab4	ad 97 6b	lda $6b97	        lda b_view_line
+.6ab7	6d 98 6b	adc $6b98	        adc b_view_column
+.6aba	cd 8e 6b	cmp $6b8e	        cmp b_view_count
+.6abd	b0 0a		bcs $6ac9	        bcs b_view_hex_blank
+.6abf	aa		tax		        tax
+.6ac0	bd 9a 6b	lda $6b9a,x	        lda b_view_data,x
+.6ac3	20 6e 66	jsr $666e	        jsr b_hex
+.6ac6	4c d3 6a	jmp $6ad3	        jmp b_view_hex_space
+.6ac9					b_view_hex_blank:
+.6ac9	a9 20		lda #$20	        lda #$20
+.6acb	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6ace	a9 20		lda #$20	        lda #$20
+.6ad0	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6ad3					b_view_hex_space:
+.6ad3	a9 20		lda #$20	        lda #$20
+.6ad5	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6ad8	ee 98 6b	inc $6b98	        inc b_view_column
+.6adb	ad 98 6b	lda $6b98	        lda b_view_column
+.6ade	c9 08		cmp #$08	        cmp #8
+.6ae0	d0 d1		bne $6ab3	        bne b_view_hex_byte
+.6ae2	a9 20		lda #$20	        lda #$20
+.6ae4	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6ae7	a9 00		lda #$00	        lda #0
+.6ae9	8d 98 6b	sta $6b98	        sta b_view_column
+.6aec					b_view_ascii_byte:
+.6aec	18		clc		        clc
+.6aed	ad 97 6b	lda $6b97	        lda b_view_line
+.6af0	6d 98 6b	adc $6b98	        adc b_view_column
+.6af3	cd 8e 6b	cmp $6b8e	        cmp b_view_count
+.6af6	b0 0a		bcs $6b02	        bcs b_view_ascii_blank
+.6af8	aa		tax		        tax
+.6af9	bd 9a 6b	lda $6b9a,x	        lda b_view_data,x
+.6afc	20 fd 65	jsr $65fd	        jsr b_safe_character
+.6aff	4c 04 6b	jmp $6b04	        jmp b_view_ascii_print
+.6b02					b_view_ascii_blank:
+.6b02	a9 20		lda #$20	        lda #$20
+.6b04					b_view_ascii_print:
+.6b04	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6b07	ee 98 6b	inc $6b98	        inc b_view_column
+.6b0a	ad 98 6b	lda $6b98	        lda b_view_column
+.6b0d	c9 08		cmp #$08	        cmp #8
+.6b0f	d0 db		bne $6aec	        bne b_view_ascii_byte
+.6b11					b_view_blank_line:
+.6b11	a9 0d		lda #$0d	        lda #13
+.6b13	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6b16	18		clc		        clc
+.6b17	ad 97 6b	lda $6b97	        lda b_view_line
+.6b1a	69 08		adc #$08	        adc #8
+.6b1c	8d 97 6b	sta $6b97	        sta b_view_line
+.6b1f	c9 80		cmp #$80	        cmp #128
+.6b21	f0 03		beq $6b26	        bne b_view_draw_line
+.6b23	4c 8c 6a	jmp $6a8c
+.6b26	a9 5c		lda #$5c	        lda #<b_view_help
+.6b28	a2 6b		ldx #$6b	        ldx #>b_view_help
+.6b2a	20 54 66	jsr $6654	        jsr b_puts
+.6b2d	ad 8d 6b	lda $6b8d	        lda b_eof
+.6b30	f0 0c		beq $6b3e	        beq b_view_status
+.6b32	ad 31 6c	lda $6c31	        lda b_error
+.6b35	d0 07		bne $6b3e	        bne b_view_status
+.6b37	a9 7f		lda #$7f	        lda #<b_view_end
+.6b39	a2 6b		ldx #$6b	        ldx #>b_view_end
+.6b3b	20 54 66	jsr $6654	        jsr b_puts
+.6b3e					b_view_status:
+.6b3e	4c 23 66	jmp $6623	        jmp b_show_status
+>6b41	46 49 4c 45 3a 20 00		b_file_title: .text "file: ",0
+>6b48	0d 4f 46 46 53 45 54 3a		b_offset_title: .text 13,"offset: ",0
+>6b50	20 00
+>6b52	20 20 42 59 54 45 53 3a		b_bytes_title: .text "  bytes: ",0
+>6b5a	20 00
+>6b5c	0d 45 4e 54 45 52 2f 4e		b_view_help: .text 13,"enter/n next page  esc file list",13,0
+>6b64	20 4e 45 58 54 20 50 41 47 45 20 20 45 53 43 20
+>6b74	46 49 4c 45 20 4c 49 53 54 0d 00
+>6b7f	45 4e 44 20 4f 46 20 46		b_view_end: .text "end of file",13,0
+>6b87	49 4c 45 0d 00
+>6b8c	00				b_preview: .byte 0
+>6b8d	00				b_eof: .byte 0
+>6b8e	00				b_view_count: .byte 0
+>6b8f	00 00 00 00			b_offset: .fill 4,0
+>6b93	00 00 00 00			b_next_offset: .fill 4,0
+>6b97	00				b_view_line: .byte 0
+>6b98	00				b_view_column: .byte 0
+>6b99	00				b_line_offset: .byte 0
+>6b9a	00 00 00 00 00 00 00 00		b_view_data: .fill 128,0
+>6ba2	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 6 times (96 bytes)...
+>6c12	00 00 00 00 00 00 00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-relocation-package-20260909/clean/src/native/browser.asm
+
+>6c1a	00 60 4e 41 50 50		b_app_magic: .byte 0,$60,$4e,$41,$50,$50
+>6c20	00 00 00 00			b_cache: .fill 4,0
+>6c24	00				b_owner: .byte 0
+>6c25	00 00				b_total: .word 0
+>6c27	00 00				b_selected: .word 0
+>6c29	00 00				b_saved_selection: .word 0
+>6c2b	00 00				b_index: .word 0
+>6c2d	00				b_page: .byte 0
+>6c2e	00				b_next: .byte 0
+>6c2f	00				b_scan_offset: .byte 0
+>6c30	00				b_busy: .byte 0
+>6c31	00				b_error: .byte 0
+>6c32	00				b_launch_error: .byte 0
+>6c33	00				b_open: .byte 0
+>6c34	00				b_prompt: .byte 0
+>6c35	00				b_device_length: .byte 0
+>6c36	00 00				b_device_text: .fill 2,0
+>6c38	00 00 00 00 00 00 00 00		b_record: .fill 32,0
+>6c40	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6c50	00 00 00 00 00 00 00 00
+>6c58	00 00 00 00 00 00 00 00		b_page_data: .fill 256,0
+>6c60	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>6d50	00 00 00 00 00 00 00 00
+.6d58					b_end:
+
+;******  End of listing

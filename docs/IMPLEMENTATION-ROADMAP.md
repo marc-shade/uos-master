@@ -301,15 +301,22 @@ launches selected filenames and returns through owned cleanup. It provides
 source device/format for verified export. The
 [browser checkpoint](validation/2026-09-09-native-browser/README.md) records
 the model, emulator and physical qualification separately. Full D81 enumeration
-still rewalks directory pages, and the kernel has only 139 bytes before its
-page tables; performance and resident code space need explicit attention.
+still rewalks directory pages and needs performance work.
 
-Next implementation: plan resident code growth, add native banked document
+The allocator now runs in the reserved low region, preserving public API
+addresses and all 442 managed pages. Startup copies it before heap initialization
+and makes the managed staging pages available for reuse. Observers use the shared buffer
+in bounded chunks instead of writing over the low kernel. The
+[resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
+records exact images and qualification. Main/low growth space is now 1,321/1,082
+bytes; larger services still need explicit memory/lifetime records.
+
+Next implementation: add native banked document
 editing and reusable display/input services for the existing desktop/Ultimate
 apps, and extend drive qualification. Integrate other selector backends and
 complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and
 other expansion allocators, system-disk recovery and application parity remain
-required. R3 is partial; this browser milestone does not complete it or the OS.
+required. R3 is partial; the resident-growth milestone does not complete it or the OS.
 The [next native platform steps](NATIVE-PLATFORM-NEXT.md) identify the memory
 constraints, observer changes and document/service acceptance gates for that work.
 
