@@ -6,8 +6,8 @@ image provides a memory workspace, application-facing allocator and a
 [disk-loaded native calculator](NATIVE-APPS.md) with verified history export
 through [owned IEC files](NATIVE-FILES.md), plus a
 [file/app browser and byte viewer](NATIVE-BROWSER.md) and
-[banked text editor](NATIVE-EDITOR.md). The graphical desktop,
-Ultimate services and remaining application suite still require migration.
+[banked text editor](NATIVE-EDITOR.md) with [native Ultimate files](NATIVE-ULTIMATE.md).
+The graphical desktop, remaining Ultimate services and application suite still require migration.
 The existing `target/ultos.d64` remains the graphical desktop build.
 
 Use the native CPU observer when a hardware test needs bytes from a specific
@@ -69,28 +69,30 @@ returning to the suspended BASIC program is not supported.
 | Bank 0 `$3a00..$3bff` | Shared 512-byte transfer buffer |
 | Bank 0 `$3c00..$3cff` | 32 eight-byte allocation records |
 | Bank 0 `$3d00..$3fff` | API mailbox and reserved system space |
-| Bank 0 `$4000..$feff` | 191 managed pages, 48,896 bytes |
+| Bank 0 `$4000..$4fff` | Resident Ultimate file service, buffers and path/status mailboxes |
+| Bank 0 `$5000..$feff` | 175 managed pages, 44,800 bytes |
 | Bank 1 `$0000..$03ff` | Common-area alias; excluded from allocation |
 | Bank 1 `$0400..$feff` | 251 managed pages, 64,256 bytes |
 | Both banks `$ff00..$ffff` | MMU register window and native interrupt stubs/vectors; excluded |
 
-The two pools provide **442 pages / 113,152 bytes (110.5 KiB)** from stock
+The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 128 KiB RAM. Allocation is contiguous within one bank. Automatic placement
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-Main kernel code/data ends at `$32d7` exclusive, leaving 1,321 bytes before
+Main kernel code/data ends at `$3318` exclusive, leaving 1,256 bytes before
 the page tables. The allocator occupies `$1300..$17c5`, leaving 1,082 bytes in
 the low region for further resident code/data. Public API entries and the app
-load address remain unchanged; boot, calculator and browser binaries match the
-preceding browser checkpoint.
+load address remain unchanged; boot, calculator and browser PRGs retain their
+preceding behavior and binary contents.
 
-The 9,985-byte kernel PRG includes a five-page copy of the low section at
-`$3e00..$42ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
+The 14,593-byte kernel PRG includes a five-page copy of the low section at
+`$5000..$54ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
 initialization. The copy includes 58 padding bytes after the allocator. The
-source is boot-only staging: `$3e00..$3fff` subsequently remains reserved scratch,
-and `$4000..$42ff` becomes ordinary managed memory. No live code executes there.
-The workspace's first bank-0 allocation reuses those three staging pages.
+source is boot-only staging; all five pages become ordinary managed memory.
+No live code executes there. `$3e00..$3fff` remains reserved observer scratch.
+The workspace reserves `$c000..$dfff` in bank 0 for its 8 KiB block so that the
+application slot remains available. CPU bank gateways access this RAM beneath ROM.
 Cold entry requires a freshly loaded kernel image. Reentering SYS after that
 staging memory has been reused is unsupported; reset and boot reload the image.
 

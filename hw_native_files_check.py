@@ -76,7 +76,7 @@ def run(ult):
             assert vdc==calculator_screen(80,'42',['42'],save_status=status)
             save()
         client.key(27,expected=None)
-        assert read(0x3d0e,3)==bytes([191,251,32]) and read(0x98)==b'\0'
+        assert read(0x3d0e,3)==bytes([175,251,32]) and read(0x98)==b'\0'
         report['calculator_save_reopen_compare_and_exclusive_rejection']=True;save()
 
         ult.mount(disk.read_bytes(),'a','d64','readwrite')

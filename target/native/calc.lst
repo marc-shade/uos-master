@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -o /home/marc/geos128/uos/target/native/calc.prg -L /home/marc/geos128/uos/target/native/calc.lst /home/marc/geos128/uos/src/native/calc.asm
-; Wed Sep  9 16:28:51 2026
+; Wed Sep  9 20:26:59 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -11,7 +11,7 @@
 ;******  Processing file: /home/marc/geos128/uos/src/native/api.inc
 
 =1					N_ABI_MAJOR = 1
-=2					N_ABI_MINOR = 2
+=3					N_ABI_MINOR = 3
 =$1c20					N_ALLOC         = $1c20
 =$1c23					N_FREE          = $1c23
 =$1c26					N_READ          = $1c26
@@ -23,7 +23,7 @@
 =$1c38					N_LAUNCH        = $1c38          ; run a checked native PRG from IEC, then clean up
 =$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
 =$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
-=$1c41					N_FOPEN         = $1c41          ; IEC stream: read or exclusive create
+=$1c41					N_FOPEN         = $1c41          ; owned IEC/Ultimate stream: read or exclusive create
 =$1c44					N_FREAD         = $1c44          ; up to 512 bytes to N_BUFFER; exact returned count
 =$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
 =$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
@@ -74,11 +74,13 @@
 =$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
 =$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
 =$3d8e					N_FERROR        = $3d8e
-=$3d8f					N_FDOS          = $3d8f          ; first nonzero DOS code in this operation
-=$3d90					N_FSTATUS       = $3d90          ; serial status; first non-EOI error retained
+=$3d8f					N_FDOS          = $3d8f          ; IEC first error; Ultimate most recent numeric status
+=$3d90					N_FSTATUS       = $3d90          ; IEC serial error; Ultimate transport/verification detail
 =$3d91					N_FBUSY         = $3d91
 =$3d92					N_FPOSITION     = $3d92          ; returned byte position, little-endian 32-bit
-=$3d96					N_FFORMAT       = $3d96          ; CBM disk geometry: 0 D64, 1 D71, 2 D81
+=$3d96					N_FFORMAT       = $3d96          ; 0 D64, 1 D71, 2 D81, 3 Ultimate DOS
+=$4e00					N_UPATH         = $4e00          ; 256-byte path mailbox, bank 0, reserved
+=$4f00					N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes + NUL
 =$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
 =$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
 =$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
@@ -106,12 +108,14 @@
 =32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
 =$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
 =$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
-=$3e00					N_RELOCBASE     = $3e00          ; boot-only staging, reusable after relocation
+=$5000					N_RELOCBASE     = $5000          ; boot-only staging, reusable after relocation
+=$4000					N_SERVICEBASE   = $4000          ; resident Ultimate services and mailboxes
+=$5000					N_SERVICELIMIT  = $5000
 =$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
 =$3900					NPAGES1         = $3900
 =$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
 =32					NSLOTS          = 32
-=$40					N_FIRST0        = $40            ; bank 0 $4000..$feff: 191 pages
+=$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
 =$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm

@@ -1,27 +1,30 @@
 # Native banked text editor
 
 Build with `python3 build-native.py`, boot `target/native/uos128.d64`, press
-**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.2
+**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.3
 application. It edits a document held in owned allocations across both C128
 RAM banks, with a 24-bit byte position and length. Both displays show the
 same document and cursor; the 80-column display shows more of each line.
 
 | Key | Action |
 |---|---|
-| F1 | Open a named SEQ file on the selected IEC device |
-| F3 | Save As a new SEQ file, close it, reopen it and compare every byte |
+| F1 | Open an IEC SEQ file or an absolute Ultimate path |
+| F3 | Save As a new file, close it, reopen it and compare every byte |
 | F5 | New empty document |
 | F7 | Go to a hexadecimal byte offset, including offsets beyond `$ffff` |
 | F2 / F4 | Beginning / end of document |
-| F6 | Cycle D64, D71 and D81 geometry |
-| F8 | Select IEC device 8–30 |
+| F6 | Cycle D64, D71, D81 and Ultimate storage |
+| F8 | Select IEC device 8–30, or Ultimate DOS context 1–2 |
 | Arrow keys | Move by character or logical line; vertical movement retains the desired column |
 | Home / Ctrl-E | Beginning / end of the current line |
 | Del | Delete the character before the cursor |
 | Enter | Insert the document's first observed newline convention; a new document uses CR |
 | Esc | Cancel a prompt or return to Files and Apps; during I/O, cancel after a transfer |
 
-Open and Save As accept a filename of at most 16 characters. Enter confirms
+Open and Save As accept an IEC filename of at most 16 characters, or an
+absolute [Ultimate path](NATIVE-ULTIMATE.md) of at most 255 bytes. Long fields
+and document names show their tail with `<` while retaining the complete path.
+Enter confirms
 a field and Esc cancels it. New, Open and exit ask before discarding a dirty
 document. **N** keeps it; **Y** proceeds. An asterisk after the filename means
 there are unsaved changes. Save As refuses an existing filename. There is no
@@ -36,8 +39,9 @@ scrolls vertically and horizontally to keep the cursor visible; `<` and `>`
 indicate clipped text.
 
 The editor inherits the browser's data device and geometry. Changes made with
-F6/F8 persist when returning to Files and Apps. The system browser image still
-loads from the boot device. Choose geometry to match the mounted disk; automatic
+F6/F8 persist for IEC selections when returning to Files and Apps. The browser
+returns to the system boot device/D64 after an Ultimate editor session; it still loads
+its system image from the boot device. Choose geometry to match the mounted disk; automatic
 drive/media detection remains part of the platform work.
 
 ## Memory and storage behavior
@@ -65,12 +69,23 @@ An uncertain IEC CLOSE retains the file service's ownership record and can
 block subsequent file actions; reset/recovery of those retained resources is
 still a platform limitation. It must not be described as a successful save.
 
-The current backend uses standard KERNAL IEC and walks the file's sector chain
-before reading. On the reference Ultimate drive in 1541 mode, the 66 KB Open
-took about 296 seconds and Save As with verification about 523 seconds under
-the hardware harness. Esc is polled between data transfers; the initial extent
-walk and individual KERNAL calls remain blocking. A native Ultimate file backend,
-faster IEC paths and finer cancellation are still needed.
+The IEC backend uses standard KERNAL calls and walks the file's sector chain
+before reading. On the reference C128/Ultimate II+, opening 66,053 bytes took
+295.976 seconds through the emulated 1541 and 38.311 seconds through native
+Ultimate DOS. Save As of the edited 66,056 bytes, including a complete reopen
+comparison, took 523.278 and 78.891 seconds respectively. Reopening the Ultimate
+file through DOS context 2 took 38.312 seconds. These are hardware-harness
+workflow times, including a 30-second initial quiet interval and 2-second
+polling; they exclude entering the path and are not isolated throughput tests.
+Esc is polled between data transfers; the IEC extent walk and individual
+KERNAL calls remain blocking. Ultimate mode verifies each write before the
+editor's full reopen comparison. Faster IEC paths and finer cancellation remain
+required.
+
+Field input still redraws the whole document on both displays. Ten queued
+filename characters took about 26 seconds with a small document and 46 seconds
+with the cursor beyond 64 KiB under the same hardware harness. Incremental
+field and document redraw is a required performance improvement.
 
 Allocation failure occurs before an edit mutates logical bytes. Unexpected
 handle/transfer failure poisons that context; subsequent reads/edits/saves
@@ -78,9 +93,10 @@ reject it instead of treating uncertain memory as a valid document. Cleanup
 retains failed handles for a later release attempt. Ordinary application exit
 uses the kernel's owner cleanup for both contexts and the application image.
 
-The current app occupies `$6000..$87d4` (10,197 payload bytes, 40 heap pages).
-The kernel, boot, calculator and browser PRGs are unchanged from the resident
-relocation checkpoint. The stock disk adds EDITOR; no public ABI entry changed.
+The current app occupies `$6000..$8aae` (10,927 payload bytes, 43 heap pages).
+The kernel reserves 4 KiB for Ultimate services and manages 426 heap pages.
+The existing public file entries dispatch both backends; ABI 1.3 adds the
+Ultimate path/status mailboxes. Boot, calculator and browser PRGs are unchanged.
 
 ## ROM integration
 
@@ -100,9 +116,11 @@ screen comparisons cover that behavior through the actual ROM.
 
 ## Qualification and remaining work
 
-The [editor checkpoint](validation/2026-09-09-native-editor/README.md) records
-exact images, CPU and emulator checks, physical C128 readback and the initial
-observation failure with its correction.
+The [Ultimate checkpoint](validation/2026-09-09-native-ultimate/README.md) records
+the current images, CPU and emulator checks, physical C128 USB readback and
+workflow timings. The preceding
+[IEC editor checkpoint](validation/2026-09-09-native-editor/README.md) records
+the initial observation failure with its correction and the IEC timing baseline.
 
 Use an environment with Py65 for the CPU models, and VICE/64tass for emulator
 checks:
@@ -110,13 +128,17 @@ checks:
 ```sh
 python3 tests/ci_native_document.py --report /tmp/native-document.json
 python3 tests/ci_native_editor.py --report /tmp/native-editor.json
+python3 tests/ci_native_editor_ultimate.py --report /tmp/native-editor-ultimate.json
 python3 -u tests/run_ci.py nativeeditor nativeeditor71 nativeeditor81
 python3 -u hw_ultimate_check.py --native-editor
+python3 -u hw_ultimate_check.py --native-ultimate
 ```
 
-The physical command requires the reference machine's deployed, idle legacy
-desktop. It mounts a private test D64, restores that desktop and settings, and
-then reads back the closed test disk through Ultimate DOS. A completed native
+Both physical commands require the reference machine's deployed, idle legacy
+desktop and restore that desktop and settings. `--native-editor` mounts a
+private test D64 and then reads back the closed test disk through Ultimate DOS.
+`--native-ultimate` uses a new private USB directory and independently compares
+all five closed source/output files before removing its fixtures. A completed IEC
 workflow can resume only its independent readback with
 `--native-editor-readback /path/to/report.json`.
 Editor metadata is captured by the C128 CPU into bounded low-memory chunks;

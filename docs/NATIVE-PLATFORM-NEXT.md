@@ -2,9 +2,11 @@
 
 The browser checkpoint left 139 bytes before the page tables at `$3800`.
 The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
-now moves the allocator to `$1300`, leaving 1,321 main-region bytes and 1,082
-low-region bytes for further resident code/data. It retains the public ABI and
-442-page heap. The native banked text editor now uses that heap; shared desktop
+moved the allocator to `$1300`. The native Ultimate backend now reserves an
+additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
+entry addresses and the `$6000` app slot remain stable. The current main region
+has 1,256 free bytes, the low region has 1,082, and the service region leaves
+1,527 bytes between its code and command buffer. Shared directory/loader/dialog
 services are next. Scheduling and a larger module architecture remain required.
 
 ## 1. Resident growth and its remaining limits
@@ -24,15 +26,17 @@ restores its contents and checks that the low kernel remains intact. Its old
 RAM0 sources overlapping their borrowed output or probe workspace.
 
 The BASIC entry remains intact. Startup copies five pages from declared
-staging at `$3e00..$42ff` into the low region before initializing the heap.
-The heap can then reuse `$4000..$42ff`; those pages are not resident reservations.
+staging at `$5000..$54ff` into the low region before initializing the heap.
+The heap can then reuse all five staging pages. `$4000..$4fff` remains reserved
+for Ultimate services. The bank-0 workspace block occupies `$c000..$dfff`
+beneath ROM and is accessed through the CPU's native bank gateways.
 Further growth must continue accounting for both final and peak boot footprints.
 Longer-term modules need their own owner/lifetime records; this small range
 alone is not a memory architecture for the complete OS.
 
 The checkpoint records the section bounds, startup/IRQ/staging tests, existing
 native workflows and revised observer qualification. No test may save and
-restore memory over active kernel code. The two small resident regions are a
+restore memory over active kernel code. These resident regions are a
 next-step capacity increase, not the complete scheduler/driver memory architecture.
 
 ## 2. Extend the banked document model and native editor
@@ -60,6 +64,14 @@ claiming media-failure recovery is complete.
 Extract reusable field/list/viewport behavior from real applications rather
 than adding unused kernel stubs. Define events and focus for both displays,
 then an Open/Save As contract that keeps the caller's document allocated.
+Replace full-screen redraw on every field/document character with bounded
+updates to the changed rows. In the native Ultimate hardware harness, ten
+queued filename characters took about 26 seconds for a small document and
+46 seconds with the cursor beyond 64 KiB.
+That measurement includes monitoring and is not an isolated keyboard benchmark;
+the full redraw in each field-append path is explicit in the current source.
+Measure both cases after the change and retain complete VIC/VDC comparisons
+for long-field clipping, deletion, cancellation and document cursor movement.
 Unify loader and stream backend ownership; add persistent directory cursors,
 media identity, operation progress/cancel and recovery from retained errors.
 
@@ -67,10 +79,13 @@ Acceptance: browse a data drive, return to an intact document, save through
 the selected backend, and reopen the system browser from its boot device.
 Repeat with missing media, full disks and directory/transfer failures. Measure
 large-directory I/O and redraw cost before claiming performance improvements.
-The editor's physical 66 KB workflow also records roughly 296-second Open and
-523-second verified Save As through standard 1541 IEC. Reduce repeated extent
-I/O, add cancellation within long operations and integrate the native Ultimate
-file backend; keep the complete byte comparisons when measuring improvements.
+The older editor checkpoint recorded roughly 296-second Open and 523-second
+verified Save As through standard 1541 IEC. The [native Ultimate backend](NATIVE-ULTIMATE.md)
+now supplies raw absolute-path streams and verified writes to the editor.
+Add native Ultimate directory cursors and a common file picker, then route
+application loading through the shared backend ownership model. Reduce IEC
+extent I/O and add cancellation within long operations. Keep complete byte
+comparisons and state the harness's quiet/poll intervals when measuring timing.
 
 ## 4. Migrate the desktop and Ultimate services
 

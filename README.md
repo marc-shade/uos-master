@@ -36,6 +36,9 @@ Select **EDITOR** there for the [native banked text editor](docs/NATIVE-EDITOR.m
 cursor editing across both RAM banks, Open with dirty-document protection,
 and Save As with a complete reopen comparison. Documents can cross a 64 KiB
 byte offset; available heap memory limits capacity.
+ABI 1.3 also provides [native Ultimate files](docs/NATIVE-ULTIMATE.md): select
+**ULT** with F6 in the editor to open absolute USB paths and save with complete
+readback verification. The native browser and app loader still use IEC.
 
 ## Storage and loader update (2026-09-08)
 
