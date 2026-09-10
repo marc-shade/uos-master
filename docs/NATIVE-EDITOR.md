@@ -43,6 +43,10 @@ F6/F8 persist for IEC selections when returning to Files and Apps. The browser
 returns to the system boot device/D64 after an Ultimate editor session; it still loads
 its system image from the boot device. Choose geometry to match the mounted disk; automatic
 drive/media detection remains part of the platform work.
+The browser's **L** field can also load the editor PRG from USB. Its valid
+data preferences still take priority over the app's load source; select Ultimate
+with F6 when needed. The app remains ABI 1.3 compatible and runs unchanged on
+the ABI 1.4 shared loader.
 
 ## Memory and storage behavior
 
@@ -120,7 +124,8 @@ The redraw code and cache add five allocated pages (1,280 bytes); document
 capacity still depends on the remaining heap and 4 KiB allocation fragmentation.
 The kernel reserves 4 KiB for Ultimate services and manages 426 heap pages.
 The existing public file entries dispatch both backends; ABI 1.3 adds the
-Ultimate path/status mailboxes. Boot, calculator and browser PRGs are unchanged.
+Ultimate path/status mailboxes. The later ABI 1.4 loader checkpoint leaves this
+editor and the boot PRG byte-identical to the redraw checkpoint.
 
 ## ROM integration
 
@@ -141,9 +146,11 @@ screen comparisons cover that behavior through the actual ROM.
 ## Qualification and remaining work
 
 The [redraw checkpoint](validation/2026-09-09-native-redraw/README.md) records
-the current images and display performance checks. The
+the editor image and display performance checks. The
 [Ultimate checkpoint](validation/2026-09-09-native-ultimate/README.md) records
-the unchanged kernel/backend and its initial physical C128 USB timings. The preceding
+the earlier kernel/backend and its initial physical C128 USB timings. The
+[USB app checkpoint](validation/2026-09-09-native-usb-apps/README.md) loads
+the same editor from USB through the ABI 1.4 kernel. The preceding
 [IEC editor checkpoint](validation/2026-09-09-native-editor/README.md) records
 the initial observation failure with its correction and the IEC timing baseline.
 
@@ -159,6 +166,7 @@ python3 -u tests/run_ci.py nativeeditor nativeeditor71 nativeeditor81
 python3 -u hw_ultimate_check.py --native-editor
 python3 -u hw_ultimate_check.py --native-ultimate
 python3 -u hw_ultimate_check.py --native-redraw
+python3 -u hw_ultimate_check.py --native-usb-apps
 ```
 
 The physical commands require the reference machine's deployed, idle legacy
@@ -167,6 +175,8 @@ private test D64 and then reads back the closed test disk through Ultimate DOS.
 `--native-ultimate` uses a new private USB directory and independently compares
 all five closed source/output files before removing its fixtures.
 `--native-redraw` adds field/cursor timing checks to that complete USB workflow.
+`--native-usb-apps` adds browser path input, USB calculator/history, rejected app
+images and USB editor loading before the complete large-document workflow.
 A completed IEC workflow can resume only its independent readback with
 `--native-editor-readback /path/to/report.json`.
 Editor metadata is captured by the C128 CPU into bounded low-memory chunks;

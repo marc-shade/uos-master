@@ -38,7 +38,11 @@ and Save As with a complete reopen comparison. Documents can cross a 64 KiB
 byte offset; available heap memory limits capacity.
 ABI 1.3 also provides [native Ultimate files](docs/NATIVE-ULTIMATE.md): select
 **ULT** with F6 in the editor to open absolute USB paths and save with complete
-readback verification. The native browser and app loader still use IEC.
+readback verification. ABI 1.4 also loads apps through owned Ultimate streams:
+press **L** in Files and Apps for an absolute USB app path, **Tab** to choose
+DOS context 1/2 and **Enter** to launch. A USB-loaded calculator saves verified
+history beside its image. Boot and the browser's directory list still use IEC;
+native USB directory navigation and shared file dialogs remain in progress.
 
 ## Storage and loader update (2026-09-08)
 

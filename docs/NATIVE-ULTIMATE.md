@@ -2,9 +2,11 @@
 
 Native ABI **1.3** adds Ultimate DOS to the existing owned file service. The
 editor can open and save USB files without routing their data through an
-emulated IEC drive. Boot, application loading and the Files and Apps directory
-browser still use IEC. Native Ultimate directory navigation, file dialogs,
-application loading, control/network/RTC services and capability discovery
+emulated IEC drive. ABI **1.4** routes application loading through the same
+owned service. **L** in Files and Apps launches an absolute USB app path, and
+a USB-loaded calculator saves history beside its image. Boot and the browser's
+directory list still use IEC. Native Ultimate directory navigation, file dialogs,
+control/network/RTC services and capability discovery
 remain required by the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
 In the editor, press **F6** until the status line shows **DOS:01 ULT**.
@@ -13,6 +15,8 @@ path. F8 selects DOS context 1 or 2. Neither context's current directory is
 changed. Long paths show a leading `<` and their tail when they exceed the
 screen row; all bytes remain in the field. Returning to the IEC browser
 selects the system boot device and D64 geometry.
+The editor's data backend is independent of its app-image source; loading its
+PRG through USB preserves valid browser data preferences until F6/F8 changes them.
 
 ## File API
 
@@ -34,6 +38,9 @@ descriptor; later changes to the input device/format fields cannot redirect
 an open handle. Two streams are available in total, shared with IEC. One
 stream may use IEC while the other uses Ultimate. Each Ultimate context can
 have at most one owned file. `N_DIRPAGE` remains IEC-only and rejects format 3.
+The ABI 1.4 loader consumes one slot during loading and closes it before entry.
+It uses `N_APPFORMAT=3`, `N_DEVICE=1/2`, `N_NAMELEN` and `N_UPATH`; see the
+[app contract](NATIVE-APPS.md) for source and boot-device fields.
 
 Transfers use `N_BUFFER` and counts 1–512. Read extent and position are 32-bit;
 the requested position increment must not wrap. Read requests are clipped to
@@ -99,8 +106,11 @@ leaving the application slot at `$6000` available. See the generated
 python3 build-native.py
 python3 tests/ci_native_ultimate.py --report /tmp/native-ultimate.json
 python3 tests/ci_native_editor_ultimate.py --report /tmp/native-editor-ultimate.json
+python3 tests/ci_native_loader_ultimate.py --report /tmp/native-loader-ultimate.json
+python3 tests/ci_native_usb_apps.py --report /tmp/native-usb-apps.json
 python3 -u tests/run_ci.py native nativeeditor nativeeditor71 nativeeditor81
 python3 -u hw_ultimate_check.py --native-ultimate
+python3 -u hw_ultimate_check.py --native-usb-apps
 ```
 
 CPU checks compose the native C128 MMU/ROM bus with the existing independent
@@ -117,6 +127,9 @@ polling intervals. The editor's later
 [incremental redraw checkpoint](validation/2026-09-09-native-redraw/README.md)
 addresses field/document input cost. The storage checkpoint
 does not qualify additional cartridge models or every firmware revision.
+The [USB app checkpoint](validation/2026-09-09-native-usb-apps/README.md)
+records the shared loader, full-path launch field, calculator save/recovery
+and USB-loaded editor against the later ABI 1.4 kernel.
 
 Protocol references: [Ultimate DOS](https://1541u-documentation.readthedocs.io/en/master/uci/ultimate_dos_target.html)
 and [UCI registers and queues](https://1541u-documentation.readthedocs.io/en/latest/uci/core_uci_architecture.html).

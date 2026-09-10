@@ -3,7 +3,7 @@
 Press **B** in the native memory workspace to browse files and launch native
 applications. The same file list and byte viewer appear on the complete
 40- and 80-column screens. Build with `python3 build-native.py` and boot
-`target/native/uos128.d64`; it contains `U`, `CALC` and `BROWSE`.
+`target/native/uos128.d64`; it contains `U`, `CALC`, `BROWSE` and `EDITOR`.
 
 ## Controls
 
@@ -17,6 +17,7 @@ applications. The same file list and byte viewer appear on the complete
 | R | Refresh the root directory |
 | D | Enter an IEC device number, 8–30; Enter accepts, Del edits, Esc cancels |
 | F | Cycle the explicit D64 / D71 / D81 format |
+| L | Enter an absolute Ultimate app path |
 | Esc | Return from the file list to the memory workspace |
 
 The list shows the stored name, file type and allocated block count. `*` marks
@@ -28,6 +29,14 @@ The stream API accepts printable filenames without wildcard or DOS command
 syntax. Other stored names remain visible, but opening them reports an error.
 Only trailing shifted-space padding is removed; an embedded shifted-space
 must never select a different file with a shorter name.
+
+**L** opens a USB app path field, initially `/Usb0/`. **Tab** selects DOS
+context 1 or 2, **Ctrl-U** clears the field, **Del** deletes one byte,
+**Enter** launches and **Esc** cancels. Up to 255 printable bytes are retained;
+long paths show their tail with a leading `<`. Empty or relative paths are
+rejected without I/O. Editing only repaints the field rows and preserves the
+IEC cache, selection and preferences. This field launches a known absolute
+path; USB directory listing and folder navigation remain to be implemented.
 
 The byte viewer reads closed SEQ, PRG and USR files, showing up to 128 bytes
 per page as hex with a safe PETSCII column. Control and high bytes appear as
@@ -57,10 +66,14 @@ For example, a calculator PRG named `NUMBER` on device 9/D71 can be discovered
 and launched without adding a fixed launcher entry. Its **S** command writes
 and verifies history on that source device/format. **Esc** returns to BROWSE
 on the boot disk while keeping the device-9/D71 file list preference.
+An app launched through **L** uses the same checked loader. A USB-loaded
+calculator saves history beside its app file and returns to the boot browser.
+The editor retains its selected data backend independently of where its app
+image was loaded; use F6/F8 to choose the data source.
 
 ## Resources and current limits
 
-BROWSE is a 3,416-byte image plus its two-byte PRG address. It reserves 16
+BROWSE is a 4,147-byte image plus its two-byte PRG address. It reserves 17
 bank-0 pages for code/data and 37 bank-1 pages for 296 compact directory
 records. Its 16-bit count and selection cover the complete root-D81 capacity.
 Workspace allocations remain owned across browser/app handoffs. Exit closes
@@ -73,7 +86,7 @@ work are needed for large directories. Enumeration has geometry bounds, but
 there is no removable-media identity check or resumable background scan.
 
 This application adds a native file list, app discovery and byte inspection.
-Native copy/rename/delete, shared file dialogs, file associations, document
+Native copy/rename/delete, shared file dialogs, file associations, richer document
 editing, GUI controls, scheduling and migration of the Ultimate desktop
 services remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
@@ -82,8 +95,10 @@ services remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 ```sh
 python3 tests/ci_native_directory.py --report /tmp/native-directory.json
 python3 tests/ci_native_browser.py --report /tmp/native-browser.json
+python3 tests/ci_native_usb_apps.py --report /tmp/native-usb-apps.json
 python3 -u tests/run_ci.py nativebrowse nativebrowse71 nativebrowse81
 python3 -u hw_ultimate_check.py --native-browser
+python3 -u hw_ultimate_check.py --native-usb-apps
 ```
 
 CPU tests require Py65. The emulator workflows use true 1541/1571/1581 drive
@@ -93,3 +108,5 @@ restores the legacy desktop, then reads back the complete closed disk through
 Ultimate DOS for independent file comparisons. It does not qualify physical
 D71/D81 drives. See the [dated evidence](validation/2026-09-09-native-browser/README.md)
 for exact builds, outcomes and retained failed observations.
+The [USB app checkpoint](validation/2026-09-09-native-usb-apps/README.md)
+adds full-path field, shared-loader and USB calculator/editor qualification.

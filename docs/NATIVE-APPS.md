@@ -1,7 +1,9 @@
 # Native applications and checked loading
 
-The native workspace loads separate applications from its IEC disk.
+The native workspace loads separate applications through owned IEC or
+Ultimate streams, with the same manifest and checksum checks for both.
 Press **C** for the calculator or **B** for the [file/app browser](NATIVE-BROWSER.md).
+In the browser, **L** opens an absolute USB app path field.
 Applications run in native C128 mode, use the kernel's owned RAM services and
 return with the workspace's existing allocations intact.
 The graphical desktop and remaining Ultimate/productivity apps still need
@@ -27,15 +29,21 @@ for a new SEQ filename on the application's source device and disk format.
 It exports history oldest first, closes, reopens and verifies every byte.
 Existing names are rejected;
 Esc cancels the prompt. See the [native file guide](NATIVE-FILES.md).
+When loaded from Ultimate, the calculator instead creates the raw history file
+beside its app image, using the selected DOS context. The leaf name remains
+1–16 bytes, and the complete path must fit 255 bytes. An overlong path is
+rejected before I/O. A failed CLOSE retains the handle; another **S** first
+retries that owned CLOSE and permits another save only after cleanup succeeds.
 History import, larger/signed/fractional/scientific arithmetic and graphical
 controls remain application work.
 
 ## Build a native app
 
-`python3 build-native.py` assembles and seals `target/native/calc.prg` and
-`target/native/browse.prg`, then adds them as `CALC` and `BROWSE` to the native
+`python3 build-native.py` assembles and seals `target/native/calc.prg`,
+`target/native/browse.prg` and `target/native/editor.prg`, then adds them as
+`CALC`, `BROWSE` and `EDITOR` to the native
 disk alongside kernel file `U` and the reserved native boot sector.
-The calculator PRG is 2,571 bytes plus its two-byte load
+The calculator PRG is 3,082 bytes plus its two-byte load
 address; it requests 16 pages (4 KiB) for code/data and separately allocates
 two bank-1 pages for its history.
 
@@ -64,7 +72,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..3; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3 |
+| 6 | 1 | Required ABI minor: 0..4; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4 |
 | 7 | 1 | Flags: 0 |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -81,13 +89,19 @@ The checksum detects damaged images; it is not an application signature.
 
 ## Launch, execution and return
 
-`N_LAUNCH` at `$1c38` takes `N_DEVICE` (8..30), `N_NAMELEN` (1..16),
-`N_APPNAME` and `N_APPFORMAT` (0 D64, 1 D71, 2 root D81). The format is source
-context for the application; the loader itself uses a KERNAL PRG stream.
-Names must be printable and cannot contain wildcards or DOS path/
-command separators. The read-only loader requests `,P,R`, uses native SETBNK
-for its filename and streams bytes through CHRIN. It never passes an unchecked
-PRG address to KERNAL LOAD.
+`N_LAUNCH` at `$1c38` uses these source arguments:
+
+| Backend | Source arguments |
+|---|---|
+| IEC | `N_APPFORMAT` 0 D64, 1 D71 or 2 root D81; `N_DEVICE` 8..30; `N_NAMELEN` 1..16; `N_APPNAME` |
+| Ultimate | `N_APPFORMAT` 3; `N_DEVICE` DOS context 1 or 2; `N_NAMELEN` 1..255; raw absolute path in `N_UPATH` |
+
+The format selects both the loader backend and the source context visible to
+the app. IEC geometry must match the disk because OPEN checks its sector-chain
+extent. IEC names must be printable and cannot contain wildcards or DOS command
+separators. Ultimate ignores `N_APPNAME` and uses the exact declared path bytes.
+Both paths use the shared file service and its 512-byte buffer. The loader
+never passes an unchecked PRG address to KERNAL LOAD.
 
 The kernel checks the manifest before reserving code memory. The fixed slot
 is bank 0 `$6000..$bfff`, up to 24 KiB, entirely below native editor/KERNAL ROM.
@@ -97,20 +111,21 @@ checks the CRC before entering any app instruction. Existing allocations in
 the requested range cause allocation failure and remain intact.
 
 The loader requires the normal native MMU/common/zero-page/stack configuration,
-enabled interrupts and the keyboard/screen as default input/output. It reserves
-logical files 120/121, data secondary address 7 and command channel 15 on the
-requested device. Existing logical-file conflicts or any existing file on that
-device are rejected. Unrelated files on other devices are retained. Loader
-channels are closed, and filename/device/bank/message parameters are restored
-before app entry. DOS status is checked after opening and when closing the data
-file.
+enabled interrupts and the keyboard/screen as default input/output. It needs
+one of the two shared stream slots and owns its handle as app owner 32.
+An existing native IEC stream on the same device may share its command lease;
+foreign files on that device remain rejected. An Ultimate launch may coexist
+with another owner's stream on the other context. Foreign open files and busy
+UCI transactions are preserved. The loader closes its stream before app entry,
+and the file service restores borrowed KERNAL parameters around IEC calls.
+No private LFNs 120/121 are used.
 
 The app enters with MMU `$0e`, decimal mode clear and owner ID in `N_CURRENT`.
 Use that owner for every heap call. ID 32 is reserved for the current app in
 this initial implementation; owner 16 belongs to the workspace. The code
 allocation is itself owned by the app. APIs and execution are foreground-only,
 and nested launches are rejected. The [native file service](NATIVE-FILES.md)
-provides owned IEC handles. Direct raw KERNAL file use still requires the app
+provides owned IEC and Ultimate handles. Direct raw KERNAL file use still requires the app
 to close its own files.
 
 Return with a balanced **RTS**, A holding the application's result, or use
@@ -127,11 +142,13 @@ cleanup. The app's own result is separate in `N_EXITCODE`; the workspace shows
 it when the loader itself succeeded. Loader/cleanup failures return carry set
 and their error in A and `N_APPERROR`. Decimal and interrupt flags are preserved;
 masked-interrupt callers are rejected before I/O. A/X/Y are otherwise scratch.
+Reentrant launch rejection preserves the existing lifecycle/error context;
+use the returned carry/A result for that rejected call.
 
 ABI 1.2 adds two one-way exits, using the same stack restoration and cleanup:
 
-* **JMP N_REPLACE** (`$1c53`) requests a new app using N_APPNAME, N_NAMELEN,
-  N_DEVICE and N_APPFORMAT. It sets N_ACTION=1 and N_EXITCODE=0.
+* **JMP N_REPLACE** (`$1c53`) requests a new app using the launch source
+  arguments above, including N_UPATH for Ultimate. It sets N_ACTION=1 and N_EXITCODE=0.
 * **JMP N_WORKSPACE** (`$1c56`) requests the memory workspace. It sets
   N_ACTION=2 and N_EXITCODE=0.
 
@@ -145,6 +162,10 @@ boot device, preserving the selected data device/format. A target load failure
 with completed cleanup reopens BROWSE with the error. Browser-load failures
 or retained resources return an error to the workspace. The C shortcut always
 selects CALC on the boot D64, independently of the browser's data device.
+ABI 1.4 exposes that boot IEC device in `N_BOOTDEVICE`; `N_DEVICE` may now be
+an Ultimate context. Apps that use their source for subsequent I/O must inspect
+`N_APPFORMAT`, even if they require an older ABI minor. The image validator
+accepts older manifests; it cannot infer an app's assumptions about its source.
 
 `N_KEYIN` at `$1c3b` calls native GETIN, returns A=0 when there is no key, and
 accounts for consumed keys in `N_KEYS`/`N_LASTKEY`. Applications set `N_READY=1`
@@ -159,29 +180,36 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d21..$3d22` | N_DEVICE, N_NAMELEN |
 | `$3d23` | N_APPSTATE: 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained cleanup error |
 | `$3d24` | N_EXITCODE: last app return value |
-| `$3d25` | N_DOSCODE: first nonzero DOS error when available |
-| `$3d26` | N_IOSTATUS: last observed serial status; may reflect subsequent cleanup |
+| `$3d25` | N_DOSCODE: first nonzero DOS diagnostic from failed loader file calls; `$ff` may mean nonnumeric/absent Ultimate status |
+| `$3d26` | N_IOSTATUS: first nonzero serial/transport diagnostic from failed loader file calls |
 | `$3d27` | N_APPERROR: stable loader/cleanup result |
 | `$3d28` | N_ACTION: 0 normal return, 1 replace request, 2 workspace request |
 | `$3d29..$3d2a` | N_BROWSERDEV, N_BROWSERFMT: browser preferences |
 | `$3d2b` | N_BROWSERERROR: pending dispatcher error shown by BROWSE |
-| `$3d2c` | N_APPFORMAT: application's source geometry |
+| `$3d2c` | N_APPFORMAT: application's source geometry/backend, 0..3 |
+| `$3d2d` | N_BOOTDEVICE: boot IEC device, independent of the current app source |
 | `$3d40..$3d4f` | N_APPNAME |
 | `$3d60..$3d7f` | N_APPHEADER: last manifest read; valid for a running app |
 
 Existing heap errors retain their values. Loader errors are hexadecimal:
-`10` bad image/ABI/address, `11` IEC/DOS failure, `12` premature EOF,
+`10` bad image/ABI/address, `11` file/DOS failure, `12` premature EOF (including an empty file),
 `13` declared end without EOF, `14` checksum mismatch and `15` channel/default
 I/O conflict. N_APPERROR stays separate from the heap's N_ERROR so subsequent
 statistics or cleanup do not erase the loader result.
+The first loader failure also survives a later cleanup failure. Ultimate CLOSE
+can be retried while owned; an uncertain IEC CLOSE quarantines the stream and
+retains the app's owner/code instead of replaying the operation.
 
 ## Verification and remaining scope
 
 ```sh
 python3 tests/ci_native_apps.py --report /tmp/native-apps.json
 python3 tests/ci_native_calc.py --report /tmp/native-calc.json
+python3 tests/ci_native_loader_ultimate.py --report /tmp/native-loader-ultimate.json
+python3 tests/ci_native_usb_apps.py --report /tmp/native-usb-apps.json
 python3 -u tests/run_ci.py native
 python3 -u hw_ultimate_check.py --native
+python3 -u hw_ultimate_check.py --native-usb-apps
 ```
 
 CPU tests need Py65. They cover the 24 KiB bound, malformed/short/long/damaged
@@ -198,7 +226,9 @@ for their respective tested images and outcomes.
 See the [browser checkpoint](validation/2026-09-09-native-browser/README.md)
 for directory discovery, renamed-app dispatch and source-format export results.
 
-Multiple executable banks, cooperative scheduling,
-cartridge/backend integration, display/input widgets, history import and
-banked document editing remain work. These services are the next foundation
+The [USB app checkpoint](validation/2026-09-09-native-usb-apps/README.md)
+records the shared loader and USB launch/save workflows against exact images.
+Multiple executable banks, cooperative scheduling, native Ultimate directory
+navigation, shared display/input widgets, history import and richer banked
+document editing remain work. These services are the next foundation
 for migrating the existing desktop and Ultimate applications.

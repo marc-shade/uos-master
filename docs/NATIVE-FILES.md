@@ -6,6 +6,7 @@ same or different IEC devices. Each handle belongs to an owner and includes a
 generation, so a released handle cannot select a later file. Application exit
 closes its native files before releasing its executable and banked memory.
 ABI 1.3 extends these same entries with an owned [Ultimate backend](NATIVE-ULTIMATE.md).
+ABI 1.4 also routes the [application loader](NATIVE-APPS.md) through these streams.
 The IEC-specific geometry, names, channels and quarantine rules below still apply to IEC.
 
 The calculator is the first product client: **S** exports up to 32 history
@@ -19,7 +20,7 @@ history into a later calculator session.
 The [native browser](NATIVE-BROWSER.md) uses directory pages to list files,
 discover applications and inspect byte streams. This is a foreground IEC backend.
 Native file pickers,
-seek/append/replacement, REL and GEOS/VLIR formats, cartridge directory/loader
+seek/append/replacement, REL and GEOS/VLIR formats, cartridge directory
 integration, removable-media identity and the driver registry remain open.
 The existing graphical desktop still uses the separate legacy APIs.
 
@@ -27,7 +28,7 @@ The existing graphical desktop still uses the separate legacy APIs.
 
 Include [`api.inc`](../src/native/api.inc) and declare required ABI minor **1**
 for streams or **2** for directory pages in the application manifest.
-The current kernel accepts required minors 0 through 3.
+The current kernel accepts required minors 0 through 4.
 Use the active `N_CURRENT` owner for file and memory allocations. File arguments
 use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 
@@ -173,14 +174,16 @@ closes. LFN 126/secondary 10 is used temporarily during read OPEN and DIRPAGE. T
 checks the complete KERNAL table before issuing I/O, preserves unrelated files
 on other devices and rejects foreign files on the selected device. Closing
 command channel 15 can close that device's other files, so it must be last.
-The private app loader similarly rejects existing files on its selected device
-and closes its own LFNs 120/121 before entering the app.
+The app loader uses one of these same two owned stream slots and closes it
+before entering the app. A native stream owned by another caller can retain
+the same-device command lease throughout loading. Foreign device files are
+still rejected; the loader no longer has private LFNs 120/121.
 
 The geometry selector is explicit, not device discovery. It covers standard
 35-track D64, 70-track D71 and unpartitioned/root 80-track D81 layouts. It does
 not qualify arbitrary IEC devices, firmware, partitions, enlarged D64 formats,
 SD2IEC native directories or media changes during an open stream. More than
-two streams and integrating the loader with this backend remain future work.
+two streams, persistent directory cursors and media identity remain future work.
 
 The read-only block commands and disk layouts follow the original Commodore
 [1571 User's Guide, chapters 7 and appendix C](https://s3.amazonaws.com/com.c64os.resources/weblog/sd2iecdocumentation/manuals/1571_Users_Guide.pdf)

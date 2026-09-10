@@ -4,7 +4,7 @@ The separate `target/native/uos128.d64` boots through the C128 KERNAL into
 BASIC 7 and enters the native kernel. It never enters C64 mode. The native
 image provides a memory workspace, application-facing allocator and a
 [disk-loaded native calculator](NATIVE-APPS.md) with verified history export
-through [owned IEC files](NATIVE-FILES.md), plus a
+through [owned IEC and Ultimate files](NATIVE-FILES.md), plus a
 [file/app browser and byte viewer](NATIVE-BROWSER.md) and
 [banked text editor](NATIVE-EDITOR.md) with [native Ultimate files](NATIVE-ULTIMATE.md).
 The graphical desktop, remaining Ultimate services and application suite still require migration.
@@ -49,6 +49,7 @@ entries are documented in the [native app guide](NATIVE-APPS.md).
 Press **B** for Files and Apps. It discovers native applications on the selected
 IEC disk and returns to the browser after each application exits. **Esc** in
 the file list returns to the workspace with its allocations preserved.
+**L** in the browser launches a native app from an absolute Ultimate path.
 Select **EDITOR** for the [banked text editor](NATIVE-EDITOR.md), including
 cursor editing beyond a 64 KiB offset and verified Save As to a new SEQ file.
 
@@ -80,11 +81,12 @@ The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-Main kernel code/data ends at `$3318` exclusive, leaving 1,256 bytes before
+Main kernel code/data ends at `$3210` exclusive, leaving 1,520 bytes before
 the page tables. The allocator occupies `$1300..$17c5`, leaving 1,082 bytes in
 the low region for further resident code/data. Public API entries and the app
-load address remain unchanged; boot, calculator and browser PRGs retain their
-preceding behavior and binary contents.
+load address remain unchanged. Sharing the owned file service removes 264 bytes
+from the main region. Boot and editor PRGs retain their preceding bytes; the
+calculator and browser now require ABI 1.4 for USB app source handling.
 
 The 14,593-byte kernel PRG includes a five-page copy of the low section at
 `$5000..$54ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
