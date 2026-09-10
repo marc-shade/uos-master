@@ -82,10 +82,32 @@ KERNAL calls remain blocking. Ultimate mode verifies each write before the
 editor's full reopen comparison. Faster IEC paths and finer cancellation remain
 required.
 
-Field input still redraws the whole document on both displays. Ten queued
-filename characters took about 26 seconds with a small document and 46 seconds
-with the cursor beyond 64 KiB under the same hardware harness. Incremental
-field and document redraw is a required performance improvement.
+The preceding Ultimate checkpoint measured about 26 seconds for ten queued
+filename characters with a small document and 46 seconds with the cursor beyond
+64 KiB. The editor now updates field/status row 6 directly through the native
+ROM cursor-positioning call. Field edits, deletion, cancellation and range-error
+messages leave the document and its read cache alone. Each field update emits
+at most one row per display, including spaces that erase a shortened value.
+
+Ordinary byte edits and cursor moves within the current viewport redraw the old
+and new caret rows plus mutable headings/status. Scrolling, line splits/joins,
+new documents and file-operation returns use the complete renderer. The two
+displays keep the same viewport and byte-preserving document model.
+
+Two 512-byte read pages prevent repeated banked reads around a page boundary;
+one uses the existing document output buffer and the other is private app RAM.
+Edits and file-operation returns invalidate both pages. A failed cache fill
+invalidates them as well. Seventeen 24-bit line offsets describe the visible
+rows and their end. Single-byte edits adjust later offsets with carry/borrow;
+structural changes rebuild the table. Cursor-only updates retain valid pages.
+The [redraw checkpoint](validation/2026-09-09-native-redraw/README.md) records
+CPU work counts, complete frame comparisons and physical timing qualification.
+On the reference C128, ten queued field characters take 1.230 seconds in the
+small document and 1.229 seconds beyond 64 KiB, including a 0.1-second quiet
+interval. With the preceding 4-second interval retained, all 31 ordinary
+ten-character queues take 4.194–4.198 seconds (median 4.196), compared with
+25.705–45.988 seconds (median 26.632) previously. These elapsed times include
+host monitoring; they are not isolated keyboard or CPU benchmarks.
 
 Allocation failure occurs before an edit mutates logical bytes. Unexpected
 handle/transfer failure poisons that context; subsequent reads/edits/saves
@@ -93,7 +115,9 @@ reject it instead of treating uncertain memory as a valid document. Cleanup
 retains failed handles for a later release attempt. Ordinary application exit
 uses the kernel's owner cleanup for both contexts and the application image.
 
-The current app occupies `$6000..$8aae` (10,927 payload bytes, 43 heap pages).
+The current app occupies `$6000..$8fa7` (12,200 payload bytes, 48 heap pages).
+The redraw code and cache add five allocated pages (1,280 bytes); document
+capacity still depends on the remaining heap and 4 KiB allocation fragmentation.
 The kernel reserves 4 KiB for Ultimate services and manages 426 heap pages.
 The existing public file entries dispatch both backends; ABI 1.3 adds the
 Ultimate path/status mailboxes. Boot, calculator and browser PRGs are unchanged.
@@ -116,9 +140,10 @@ screen comparisons cover that behavior through the actual ROM.
 
 ## Qualification and remaining work
 
-The [Ultimate checkpoint](validation/2026-09-09-native-ultimate/README.md) records
-the current images, CPU and emulator checks, physical C128 USB readback and
-workflow timings. The preceding
+The [redraw checkpoint](validation/2026-09-09-native-redraw/README.md) records
+the current images and display performance checks. The
+[Ultimate checkpoint](validation/2026-09-09-native-ultimate/README.md) records
+the unchanged kernel/backend and its initial physical C128 USB timings. The preceding
 [IEC editor checkpoint](validation/2026-09-09-native-editor/README.md) records
 the initial observation failure with its correction and the IEC timing baseline.
 
@@ -129,26 +154,29 @@ checks:
 python3 tests/ci_native_document.py --report /tmp/native-document.json
 python3 tests/ci_native_editor.py --report /tmp/native-editor.json
 python3 tests/ci_native_editor_ultimate.py --report /tmp/native-editor-ultimate.json
+python3 tests/ci_native_editor_redraw.py --report /tmp/native-editor-redraw.json
 python3 -u tests/run_ci.py nativeeditor nativeeditor71 nativeeditor81
 python3 -u hw_ultimate_check.py --native-editor
 python3 -u hw_ultimate_check.py --native-ultimate
+python3 -u hw_ultimate_check.py --native-redraw
 ```
 
-Both physical commands require the reference machine's deployed, idle legacy
+The physical commands require the reference machine's deployed, idle legacy
 desktop and restore that desktop and settings. `--native-editor` mounts a
 private test D64 and then reads back the closed test disk through Ultimate DOS.
 `--native-ultimate` uses a new private USB directory and independently compares
-all five closed source/output files before removing its fixtures. A completed IEC
-workflow can resume only its independent readback with
+all five closed source/output files before removing its fixtures.
+`--native-redraw` adds field/cursor timing checks to that complete USB workflow.
+A completed IEC workflow can resume only its independent readback with
 `--native-editor-readback /path/to/report.json`.
 Editor metadata is captured by the C128 CPU into bounded low-memory chunks;
-the host also retains direct DMA observations for comparison. During physical
-qualification a complete 109-byte direct snapshot matched BASIC ROM at the
-requested application RAM address, while the CPU snapshot and screens matched
-the document. Direct cartridge reads are therefore not the editor-state oracle.
-The native app
-may use RAM occupied by the inactive legacy settings record. After rebooting
-the legacy desktop, the harness checks its active settings fields and restores
+the host also retains direct DMA observations for comparison. The earlier IEC
+checkpoint recorded a 109-byte direct snapshot matching BASIC ROM. The redraw
+checkpoint records two more complete ROM snapshots, of 128 and 587 bytes, while
+the corresponding CPU snapshots and screens match the document. The host uses
+CPU captures as its editor-state oracle and retains these ROM comparisons.
+The native app may use RAM occupied by the inactive legacy settings record.
+After rebooting the legacy desktop, the harness checks its active settings fields and restores
 the saved record's header and reserved bytes as well.
 
 Selection, clipboard, undo/redo, find/replace, visual file dialogs, document

@@ -113,7 +113,9 @@ the reference C128/Ultimate II+ workflow, both DOS contexts, complete VIC/VDC
 screens, preserved workspace RAM and independent closed-file byte comparisons.
 Opening 66,053 bytes took 38.311 seconds; verified Save As of 66,056 bytes took
 78.891 seconds. These workflow measurements include the harness's quiet and
-polling intervals. Field input still needs incremental redraw. The checkpoint
+polling intervals. The editor's later
+[incremental redraw checkpoint](validation/2026-09-09-native-redraw/README.md)
+addresses field/document input cost. The storage checkpoint
 does not qualify additional cartridge models or every firmware revision.
 
 Protocol references: [Ultimate DOS](https://1541u-documentation.readthedocs.io/en/master/uci/ultimate_dos_target.html)

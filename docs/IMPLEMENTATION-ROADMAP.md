@@ -331,12 +331,18 @@ The [Ultimate storage checkpoint](validation/2026-09-09-native-ultimate/README.m
 records twelve CPU reports, seven emulator suites and the physical C128 workflow,
 including a 66,056-byte verified save through cartridge registers. Its measured
 Open/verified Save As times are about 38/79 seconds, including hardware-harness
-quiet and polling intervals. Full redraw on each character remains a separate
-input-performance gap.
+quiet and polling intervals.
 
-Next implementation: incremental field/document redraw, native Ultimate
-directory enumeration and loader ownership, then reusable display/input and
-file-dialog services for the editor and existing desktop/Ultimate apps, plus
+The [native editor redraw checkpoint](validation/2026-09-09-native-redraw/README.md)
+adds field-row updates, partial document repaint, two cached read pages and
+24-bit visible-line offsets. It preserves complete redraw for structural and
+viewport changes. The editor uses a 12 KiB allocation, and the kernel,
+boot, calculator and browser PRGs retain their previous bytes. Broader shared
+input/dialog services and further UI performance work remain required.
+
+Next implementation: native Ultimate directory enumeration and loader ownership,
+then reusable display/input and file-dialog services for the editor and
+existing desktop/Ultimate apps, plus
 broader drive qualification.
 Integrate other selector backends and
 complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and

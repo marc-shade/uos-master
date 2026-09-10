@@ -64,14 +64,17 @@ claiming media-failure recovery is complete.
 Extract reusable field/list/viewport behavior from real applications rather
 than adding unused kernel stubs. Define events and focus for both displays,
 then an Open/Save As contract that keeps the caller's document allocated.
-Replace full-screen redraw on every field/document character with bounded
-updates to the changed rows. In the native Ultimate hardware harness, ten
-queued filename characters took about 26 seconds for a small document and
-46 seconds with the cursor beyond 64 KiB.
-That measurement includes monitoring and is not an isolated keyboard benchmark;
-the full redraw in each field-append path is explicit in the current source.
-Measure both cases after the change and retain complete VIC/VDC comparisons
-for long-field clipping, deletion, cancellation and document cursor movement.
+The [native editor redraw checkpoint](validation/2026-09-09-native-redraw/README.md)
+replaces full repaint for fields and ordinary edits/cursor motion with affected
+rows. A second read page and cached line offsets remove repeated banked reads.
+It retains full repaint for structural changes and viewport movement. Keep the
+complete VIC/VDC comparisons for clipping, deletion, cancellation, line-offset
+carry/borrow and document cursor movement when extracting these services.
+The physical ten-character filename queues now take about 4.20 seconds versus
+26–46 seconds previously, with the same 4-second quiet interval. Extra checks
+with a 0.1-second quiet interval take about 1.23 seconds in both small documents
+and positions beyond 64 KiB. Continue measuring both cases; isolate device
+throughput from UI and observation cost before making broader performance claims.
 Unify loader and stream backend ownership; add persistent directory cursors,
 media identity, operation progress/cancel and recovery from retained errors.
 
