@@ -39,14 +39,14 @@ scrolls vertically and horizontally to keep the cursor visible; `<` and `>`
 indicate clipped text.
 
 The editor inherits the browser's data device and geometry. Changes made with
-F6/F8 persist for IEC selections when returning to Files and Apps. The browser
-returns to the system boot device/D64 after an Ultimate editor session; it still loads
-its system image from the boot device. Choose geometry to match the mounted disk; automatic
+F6/F8 persist when returning to Files and Apps, including Ultimate contexts.
+The ABI 1.5 browser retains its USB folder and selected filename while loading
+its system image from the boot device. **F** returns to IEC/D64. Choose geometry to match the mounted disk; automatic
 drive/media detection remains part of the platform work.
 The browser's **L** field can also load the editor PRG from USB. Its valid
 data preferences still take priority over the app's load source; select Ultimate
 with F6 when needed. The app remains ABI 1.3 compatible and runs unchanged on
-the ABI 1.4 shared loader.
+the ABI 1.4/1.5 shared loader.
 
 ## Memory and storage behavior
 

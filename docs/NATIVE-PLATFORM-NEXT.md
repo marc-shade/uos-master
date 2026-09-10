@@ -5,10 +5,11 @@ The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.
 moved the allocator to `$1300`. The native Ultimate backend now reserves an
 additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
 entry addresses and the `$6000` app slot remain stable. The current main region
-has 1,520 free bytes, the low region has 1,082, and the service region leaves
-1,527 bytes between its code and command buffer. The ABI 1.4 loader shares owned
-IEC/Ultimate streams, freeing 264 main-region bytes. Shared directory/dialog
-services are next. Scheduling and a larger module architecture remain required.
+has 402 free bytes, the low region has 1,082, and the service region leaves
+904 bytes before the retained browser path at `$4a00`. The ABI 1.5 directory
+cursor shares the owned stream API and supports native folder navigation.
+Shared input/dialog services are next. Scheduling and a larger module
+architecture remain required.
 
 ## 1. Resident growth and its remaining limits
 
@@ -76,8 +77,9 @@ The physical ten-character filename queues now take about 4.20 seconds versus
 with a 0.1-second quiet interval take about 1.23 seconds in both small documents
 and positions beyond 64 KiB. Continue measuring both cases; isolate device
 throughput from UI and observation cost before making broader performance claims.
-Loader and stream backend ownership are now shared; add persistent directory cursors,
-media identity, operation progress/cancel and recovery from retained errors.
+Loader, stream and Ultimate directory ownership are now shared; add media
+identity, operation progress/cancel across the remaining backends and recovery
+from retained errors.
 
 Acceptance: browse a data drive, return to an intact document, save through
 the selected backend, and reopen the system browser from its boot device.
@@ -87,16 +89,14 @@ The older editor checkpoint recorded roughly 296-second Open and 523-second
 verified Save As through standard 1541 IEC. The [native Ultimate backend](NATIVE-ULTIMATE.md)
 now supplies raw absolute-path streams and verified writes to the editor.
 The browser's absolute-path field now launches USB apps through the shared
-backend, and the calculator saves beside its USB image. Add native Ultimate
-directory cursors and a common file picker. The inspected firmware implements
-READ_DIR as one multi-packet command and offers no explicit directory CLOSE
-or idle directory-owner query. Define cancellation, cursor ownership, CWD
-restoration and long-name retention before adopting it as a native service.
-The path field alone does not supply enumeration or folder navigation. Reduce IEC
-extent I/O and add cancellation within long operations. Keep complete byte
-comparisons and state the harness's quiet/poll intervals when measuring timing.
+backend, and the calculator saves beside its USB image. ABI 1.5 adds owned
+directory cursors, complete names, canonical paths, checked cancellation/CWD
+restoration and browser folder navigation. Extract a common file picker while
+keeping a caller's document allocated. Reduce IEC extent I/O and add cancellation
+within long operations. Keep complete byte comparisons and state the harness's
+quiet/poll intervals when measuring timing.
 
-The next directory contract must make these lifetimes explicit:
+The implemented directory contract makes these lifetimes explicit:
 
 * A caller owns its cursor, complete selected name, path and cached records.
   Abbreviated display text must never become an OPEN target.
@@ -104,24 +104,29 @@ The next directory contract must make these lifetimes explicit:
   packet or checked cancellation. The UCI transport is shared across both DOS
   contexts, so even other-context file calls must wait while packets remain
   pending. File operations and another scan must not reuse the reserved context.
-* Capture the selected context's original CWD, restore it on every completed
-  or cancelled scan, and retain the owner if restoration is uncertain.
+* Capture the selected context's original CWD, restore it on checked CLOSE,
+  and retain the owner if restoration is uncertain. EOF alone leaves ownership
+  intact; the browser closes its cursor at EOF or when abandoning the scan.
 * Bound packet size, entry count and RAM use. Report a partial list explicitly;
   do not treat exhaustion, timeout or malformed response as end of directory.
-* Preserve the caller's document and selection while a dialog scans. Exercise
-  empty/large directories, long and quoted names, parent navigation, cancellation,
-  foreign transactions, absent media and failed CWD restoration.
+* Preserve the visible browser page and selection during an incomplete scan.
+  Empty/large directories, long and quoted names, parent navigation, cancellation,
+  foreign transactions, absent media and failed CWD restoration have dedicated
+  CPU cases. A shared dialog must additionally preserve its caller's document.
 
-These are proposed acceptance rules, not new exported entry points. The source
+The service uses existing OPEN/READ/CLOSE entries with format 3/mode 2.
+The source
 inspection above uses `1541ultimate` revision
 `a01c04e8267a0d916b7203cb34dcf1127f75981d`,
 [`software/filemanager/dos.cc`](https://github.com/GideonZ/1541ultimate/blob/a01c04e8267a0d916b7203cb34dcf1127f75981d/software/filemanager/dos.cc).
 The [documented DOS commands](https://1541u-documentation.readthedocs.io/en/master/uci/ultimate_dos_target.html)
-describe the transport operations; the installed cartridge firmware still needs
-separate qualification of the proposed cursor contract.
+describe the transport operations; physical qualification remains specific to
+the recorded cartridge and firmware observations.
 FILE_INFO can establish that no file is open; it cannot establish that a
-foreign client has no retained directory snapshot. Define that ownership limit
-before treating a fresh OPEN_DIR as harmless to other clients.
+foreign client has no retained directory snapshot. The native service claims
+the selected context's idle snapshot for uOS; a future broker must coordinate
+that ownership with other clients. It preserves foreign files and active UCI
+transactions. See the [full contract](NATIVE-ULTIMATE.md#directory-cursors--abi-15).
 
 ## 4. Migrate the desktop and Ultimate services
 

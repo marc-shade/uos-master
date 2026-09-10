@@ -7,6 +7,8 @@ generation, so a released handle cannot select a later file. Application exit
 closes its native files before releasing its executable and banked memory.
 ABI 1.3 extends these same entries with an owned [Ultimate backend](NATIVE-ULTIMATE.md).
 ABI 1.4 also routes the [application loader](NATIVE-APPS.md) through these streams.
+ABI 1.5 adds [owned Ultimate directory cursors](NATIVE-ULTIMATE.md#directory-cursors--abi-15)
+through OPEN/READ/CLOSE with format 3 and mode 2; N_DIRPAGE remains IEC-only.
 The IEC-specific geometry, names, channels and quarantine rules below still apply to IEC.
 
 The calculator is the first product client: **S** exports up to 32 history
@@ -19,16 +21,15 @@ history into a later calculator session.
 
 The [native browser](NATIVE-BROWSER.md) uses directory pages to list files,
 discover applications and inspect byte streams. This is a foreground IEC backend.
-Native file pickers,
-seek/append/replacement, REL and GEOS/VLIR formats, cartridge directory
-integration, removable-media identity and the driver registry remain open.
+Native file pickers, seek/append/replacement, REL and GEOS/VLIR formats,
+removable-media identity and the driver registry remain open.
 The existing graphical desktop still uses the separate legacy APIs.
 
 ## Calls and mailbox
 
 Include [`api.inc`](../src/native/api.inc) and declare required ABI minor **1**
 for streams or **2** for directory pages in the application manifest.
-The current kernel accepts required minors 0 through 4.
+The current kernel accepts required minors 0 through 5.
 Use the active `N_CURRENT` owner for file and memory allocations. File arguments
 use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 

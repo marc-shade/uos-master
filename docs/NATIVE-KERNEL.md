@@ -81,18 +81,21 @@ The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-Main kernel code/data ends at `$3210` exclusive, leaving 1,520 bytes before
+Main kernel code/data ends at `$366e` exclusive, leaving 402 bytes before
 the page tables. The allocator occupies `$1300..$17c5`, leaving 1,082 bytes in
 the low region for further resident code/data. Public API entries and the app
-load address remain unchanged. Sharing the owned file service removes 264 bytes
-from the main region. Boot and editor PRGs retain their preceding bytes; the
-calculator and browser now require ABI 1.4 for USB app source handling.
+load address remain unchanged. ABI 1.5 adds owned Ultimate directory cursors;
+the browser requires minor 5, calculator 4 and editor 3. Boot, calculator and
+editor PRGs retain their ABI 1.4 checkpoint bytes.
 
 The 14,593-byte kernel PRG includes a five-page copy of the low section at
 `$5000..$54ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
 initialization. The copy includes 58 padding bytes after the allocator. The
 source is boot-only staging; all five pages become ordinary managed memory.
-No live code executes there. `$3e00..$3fff` remains reserved observer scratch.
+No live code executes there. `$3e00..$3eff` retains the browser's complete
+selected filename. The observer borrows `$3e00..$3fff` while input is idle,
+saves and restores all 512 bytes, and rejects this range as a capture source.
+The retained path occupies `$4a00..$4aff` in the existing service reservation.
 The workspace reserves `$c000..$dfff` in bank 0 for its 8 KiB block so that the
 application slot remains available. CPU bank gateways access this RAM beneath ROM.
 Cold entry requires a freshly loaded kernel image. Reentering SYS after that

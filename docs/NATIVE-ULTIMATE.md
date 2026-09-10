@@ -4,17 +4,18 @@ Native ABI **1.3** adds Ultimate DOS to the existing owned file service. The
 editor can open and save USB files without routing their data through an
 emulated IEC drive. ABI **1.4** routes application loading through the same
 owned service. **L** in Files and Apps launches an absolute USB app path, and
-a USB-loaded calculator saves history beside its image. Boot and the browser's
-directory list still use IEC. Native Ultimate directory navigation, file dialogs,
-control/network/RTC services and capability discovery
+a USB-loaded calculator saves history beside its image. ABI **1.5** adds owned
+directory cursors and native USB folder navigation. Boot still uses IEC.
+Shared file dialogs, control/network/RTC services and capability discovery
 remain required by the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
 In the editor, press **F6** until the status line shows **DOS:01 ULT**.
 F1 opens an absolute path such as `/Usb0/Notes/Example.txt`; F3 saves to a new
 path. F8 selects DOS context 1 or 2. Neither context's current directory is
 changed. Long paths show a leading `<` and their tail when they exceed the
-screen row; all bytes remain in the field. Returning to the IEC browser
-selects the system boot device and D64 geometry.
+screen row; all bytes remain in the field. Returning to the browser preserves
+the Ultimate data context, folder and complete selected filename. **F** in the
+browser cycles back to the boot IEC device and D64 geometry.
 The editor's data backend is independent of its app-image source; loading its
 PRG through USB preserves valid browser data preferences until F6/F8 changes them.
 
@@ -29,7 +30,7 @@ The entry points and owner/generation handle format are unchanged. Include
 | `N_FDEVICE` | DOS context 1 or 2 |
 | `N_FNAMELEN` | 1–255 bytes |
 | `N_UPATH` (`$4e00`) | Exact path bytes, starting with `/`; no NUL within the declared length |
-| `N_FMODE` | 0 read, 1 exclusively create a new read/write firmware file |
+| `N_FMODE` | 0 read, 1 exclusively create a new read/write firmware file; ABI 1.5 mode 2 opens a directory cursor |
 | `N_FTYPE` | Valid values 0–2; raw file bytes are independent of the CBM type |
 | `N_USTATUS` (`$4f00`) | Up to 31 status bytes plus a NUL terminator |
 
@@ -53,6 +54,49 @@ All native file calls require foreground execution with IRQs enabled, MMU
 Ultimate code borrows no zero-page bytes, changes no MMU register and opens
 no KERNAL channels. Native IRQs remain serviceable during cartridge polling.
 The common file-service lock rejects reentry before issuing a command.
+
+## Directory cursors — ABI 1.5
+
+Require ABI minor 5, set format 3, mode 2, owner, DOS context, path length and
+`N_UPATH`, then call `N_FOPEN`. The service checks that the context has no open
+file, saves its original CWD, changes to the requested directory and opens the
+firmware snapshot. Successful OPEN returns the canonical absolute path in
+`N_UPATH` and `N_FNAMELEN`. Original and resulting paths must each fit 255 bytes.
+The cursor uses one of the two shared stream handles; only one native directory
+cursor can exist at a time.
+
+Set `N_FCOUNT=512` for every directory `N_FREAD`. Each successful call returns
+one complete packet: the attribute byte followed by 1–255 raw filename bytes.
+`N_FACTUAL` is 2–256, with no terminator. Embedded NUL, slash or backslash,
+oversized packets and failed status replies are errors. The 32-bit
+`N_FPOSITION` counts entries consumed. EOF returns zero bytes on later calls
+without another command. An empty OPEN sets EOF without issuing READ_DIR.
+Do not interpret the file byte-count or IEC page-record layout as this format.
+
+Forward reads continue one READ_DIR transaction. While packets remain pending,
+other Ultimate operations return `N_CHANNELS` before touching or poisoning
+their handles; IEC transfers can continue. Before the first READ or after EOF,
+the other DOS context can service a file, but the directory's context stays
+reserved until CLOSE. This is a foreground service, with no background broker.
+
+EOF leaves the cursor owned. `N_FCLOSE` cancels only its active transaction,
+confirms transport idle, restores the original CWD and compares GET_PATH with
+every saved byte. Failed cancellation or restoration retains the handle for
+checked cleanup. `N_FRELEASE` closes an owned directory before other owned
+Ultimate files, regardless of slot order. Transfer errors are not replayed.
+
+The inspected firmware has no explicit directory CLOSE and no query for an
+idle foreign directory snapshot. OPEN therefore claims the selected context's
+idle directory snapshot for uOS. The service preserves foreign open files and
+active transactions; it cannot promise to preserve an undetectable idle
+snapshot from another client. This ownership limit must be addressed when a
+shared broker or background applications are introduced.
+
+The [browser](NATIVE-BROWSER.md) is the first cursor consumer. It retains eight
+complete names per page and fills a second buffer before publishing navigation.
+Failed or cancelled scans preserve the previous visible page and selection.
+App returns search for the complete selected filename, so a saved file that
+reorders the listing does not silently select a different app.
 
 ## Ownership and error handling
 
@@ -108,9 +152,12 @@ python3 tests/ci_native_ultimate.py --report /tmp/native-ultimate.json
 python3 tests/ci_native_editor_ultimate.py --report /tmp/native-editor-ultimate.json
 python3 tests/ci_native_loader_ultimate.py --report /tmp/native-loader-ultimate.json
 python3 tests/ci_native_usb_apps.py --report /tmp/native-usb-apps.json
+python3 tests/ci_native_directory_ultimate.py --report /tmp/native-directory-ultimate.json
+python3 tests/ci_native_browser_ultimate.py --report /tmp/native-browser-ultimate.json
 python3 -u tests/run_ci.py native nativeeditor nativeeditor71 nativeeditor81
 python3 -u hw_ultimate_check.py --native-ultimate
 python3 -u hw_ultimate_check.py --native-usb-apps
+python3 -u hw_ultimate_check.py --native-usb-browser
 ```
 
 CPU checks compose the native C128 MMU/ROM bus with the existing independent
@@ -135,3 +182,7 @@ Protocol references: [Ultimate DOS](https://1541u-documentation.readthedocs.io/e
 and [UCI registers and queues](https://1541u-documentation.readthedocs.io/en/latest/uci/core_uci_architecture.html).
 Firmware-specific caveats and the inspected source revision are documented in
 [Ultimate files](ULTIMATE-FILES.md).
+
+The [ABI 1.5 directory checkpoint](validation/2026-09-10-native-directories/README.md)
+records owned cursors, complete names, folder navigation and selection after
+app saves reorder the listing, with CPU, emulator and physical qualification.

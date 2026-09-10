@@ -41,8 +41,11 @@ ABI 1.3 also provides [native Ultimate files](docs/NATIVE-ULTIMATE.md): select
 readback verification. ABI 1.4 also loads apps through owned Ultimate streams:
 press **L** in Files and Apps for an absolute USB app path, **Tab** to choose
 DOS context 1/2 and **Enter** to launch. A USB-loaded calculator saves verified
-history beside its image. Boot and the browser's directory list still use IEC;
-native USB directory navigation and shared file dialogs remain in progress.
+history beside its image. ABI 1.5 adds USB directories: **F** selects ULT,
+**Enter** opens a folder or file, **P** goes to the parent and **G** enters a
+directory path. App returns retain the folder and full selected filename even
+when a save reorders the listing. Boot still uses IEC; shared file dialogs,
+native desktop migration and the broader OS roadmap remain open.
 
 ## Storage and loader update (2026-09-08)
 

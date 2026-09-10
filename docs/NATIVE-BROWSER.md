@@ -11,12 +11,14 @@ applications. The same file list and byte viewer appear on the complete
 |---|---|
 | Up / Down | Select the previous / next file |
 | N / B | Move forward / back eight entries |
-| A | Select the next discovered native application, wrapping at the end |
+| A | On IEC, select the next discovered native application, wrapping at the end |
 | Enter | Launch a selected APP, otherwise inspect the file |
 | I | Inspect file bytes, including a native application's PRG header |
-| R | Refresh the root directory |
+| R | Refresh the current directory |
 | D | Enter an IEC device number, 8–30; Enter accepts, Del edits, Esc cancels |
-| F | Cycle the explicit D64 / D71 / D81 format |
+| F | Cycle D64 / D71 / D81 / ULT |
+| G / P | On ULT, enter an absolute directory path / navigate to the parent |
+| Tab | On ULT, switch DOS context 1 / 2 |
 | L | Enter an absolute Ultimate app path |
 | Esc | Return from the file list to the memory workspace |
 
@@ -24,7 +26,7 @@ The list shows the stored name, file type and allocated block count. `*` marks
 an unclosed file and `<` marks a locked file. Choose the actual disk format;
 the selector does not identify hardware or guarantee support for every IEC
 device. Root directories on standard D64, D71 and unpartitioned D81 images
-are supported. Folders and partitions require further backend work.
+are supported. IEC folders and partitions require further backend work.
 The stream API accepts printable filenames without wildcard or DOS command
 syntax. Other stored names remain visible, but opening them reports an error.
 Only trailing shifted-space padding is removed; an embedded shifted-space
@@ -35,8 +37,23 @@ context 1 or 2, **Ctrl-U** clears the field, **Del** deletes one byte,
 **Enter** launches and **Esc** cancels. Up to 255 printable bytes are retained;
 long paths show their tail with a leading `<`. Empty or relative paths are
 rejected without I/O. Editing only repaints the field rows and preserves the
-IEC cache, selection and preferences. This field launches a known absolute
-path; USB directory listing and folder navigation remain to be implemented.
+current listing, selection and preferences. This field launches a known
+absolute path. **G** instead opens a directory path, using the same editing keys.
+
+In **ULT** mode, **Enter** opens a folder or file and **P** opens the parent.
+**N/B** page through eight entries at a time; Up/Down also cross page boundaries.
+Names retain all 255 raw bytes even when the screen shows only their tail.
+The complete canonical path is retained, and the selected raw name is used to
+build the file target. A joined path longer than 255 bytes is rejected before I/O.
+
+Forward pages continue one owned directory cursor. Backward pages, refreshes
+and returns after a closed preview reopen and scan to the requested ordinal.
+Both position and displayed page number use 32-bit counters. A second cache
+buffer keeps the old page visible until the next page is complete. **Esc**
+during scanning cancels and retains that page; another queued key is kept for
+the event loop. A failed open or scan also preserves the previous listing.
+An empty directory clears all eight rows. Canonical paths returned by the
+backend keep parent navigation correct after `..` or redundant slashes.
 
 The byte viewer reads closed SEQ, PRG and USR files, showing up to 128 bytes
 per page as hex with a safe PETSCII column. Control and high bytes appear as
@@ -58,7 +75,10 @@ therefore appear as APP and be rejected when launched.
 Launching releases the browser's code allocation and directory cache before
 loading the selected app. A normal app return reopens the browser from the
 boot disk. The selected data device and format survive; the row selection
-starts at the first file. Load errors with completed cleanup also return to
+starts at the first file for IEC. Ultimate additionally retains the canonical
+folder and selected full filename. On app return it scans for that name, even
+if a saved file changed its ordinal or page; a removed name falls back to the
+first page. Load errors with completed cleanup also return to
 the browser and display the error. Uncertain resource cleanup retains the
 owner and returns an error to the workspace; recovery still needs a dedicated UI.
 
@@ -73,9 +93,13 @@ image was loaded; use F6/F8 to choose the data source.
 
 ## Resources and current limits
 
-BROWSE is a 4,147-byte image plus its two-byte PRG address. It reserves 17
+BROWSE is a 7,110-byte image plus its two-byte PRG address. It reserves 28
 bank-0 pages for code/data and 37 bank-1 pages for 296 compact directory
-records. Its 16-bit count and selection cover the complete root-D81 capacity.
+records on IEC. ULT reuses that allocation for two eight-entry buffers, each
+entry occupying 512 bytes. Its retained path uses `$4a00..$4aff`; the selected
+name uses `$3e00..$3eff`, with lengths and the 32-bit ordinal in the native
+mailbox. These regions were already excluded from the heap. The browser
+requires ABI 1.5; the allocator still manages 426 pages.
 Workspace allocations remain owned across browser/app handoffs. Exit closes
 owned files before releasing memory. Neither a mouse nor an REU is required.
 
@@ -84,6 +108,10 @@ each page. Reading all 37 D81 pages can require 703 directory-sector reads,
 plus file extent/header probes for PRGs. A persistent cursor and performance
 work are needed for large directories. Enumeration has geometry bounds, but
 there is no removable-media identity check or resumable background scan.
+ULT uses the [owned cursor contract](NATIVE-ULTIMATE.md#directory-cursors--abi-15).
+A pending page reserves the shared UCI transport until it is consumed or
+closed. Native scheduling and a broker for background clients remain required.
+ULT file headers are inspected when opened; it does not prelabel every row APP.
 
 This application adds a native file list, app discovery and byte inspection.
 Native copy/rename/delete, shared file dialogs, file associations, richer document
@@ -96,9 +124,12 @@ services remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 python3 tests/ci_native_directory.py --report /tmp/native-directory.json
 python3 tests/ci_native_browser.py --report /tmp/native-browser.json
 python3 tests/ci_native_usb_apps.py --report /tmp/native-usb-apps.json
+python3 tests/ci_native_directory_ultimate.py --report /tmp/native-directory-ultimate.json
+python3 tests/ci_native_browser_ultimate.py --report /tmp/native-browser-ultimate.json
 python3 -u tests/run_ci.py nativebrowse nativebrowse71 nativebrowse81
 python3 -u hw_ultimate_check.py --native-browser
 python3 -u hw_ultimate_check.py --native-usb-apps
+python3 -u hw_ultimate_check.py --native-usb-browser
 ```
 
 CPU tests require Py65. The emulator workflows use true 1541/1571/1581 drive
@@ -110,3 +141,7 @@ D71/D81 drives. See the [dated evidence](validation/2026-09-09-native-browser/RE
 for exact builds, outcomes and retained failed observations.
 The [USB app checkpoint](validation/2026-09-09-native-usb-apps/README.md)
 adds full-path field, shared-loader and USB calculator/editor qualification.
+
+The [ABI 1.5 directory checkpoint](validation/2026-09-10-native-directories/README.md)
+records owned cursors, complete names, folder navigation and selection after
+app saves reorder the listing, with CPU, emulator and physical qualification.

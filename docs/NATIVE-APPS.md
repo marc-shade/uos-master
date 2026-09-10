@@ -4,6 +4,8 @@ The native workspace loads separate applications through owned IEC or
 Ultimate streams, with the same manifest and checksum checks for both.
 Press **C** for the calculator or **B** for the [file/app browser](NATIVE-BROWSER.md).
 In the browser, **L** opens an absolute USB app path field.
+**F** also selects ULT directory navigation; **Enter** opens the selected folder
+or launches the selected native app through the checked loader.
 Applications run in native C128 mode, use the kernel's owned RAM services and
 return with the workspace's existing allocations intact.
 The graphical desktop and remaining Ultimate/productivity apps still need
@@ -72,7 +74,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..4; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4 |
+| 6 | 1 | Required ABI minor: 0..5; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5 |
 | 7 | 1 | Flags: 0 |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -166,6 +168,9 @@ ABI 1.4 exposes that boot IEC device in `N_BOOTDEVICE`; `N_DEVICE` may now be
 an Ultimate context. Apps that use their source for subsequent I/O must inspect
 `N_APPFORMAT`, even if they require an older ABI minor. The image validator
 accepts older manifests; it cannot infer an app's assumptions about its source.
+ABI 1.5 additionally retains the Ultimate browser folder and full selected name.
+The browser searches by name on return, preserving selection when file creation
+changes directory order; if that name disappeared, it selects the first page.
 
 `N_KEYIN` at `$1c3b` calls native GETIN, returns A=0 when there is no key, and
 accounts for consumed keys in `N_KEYS`/`N_LASTKEY`. Applications set `N_READY=1`
@@ -188,6 +193,11 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d2b` | N_BROWSERERROR: pending dispatcher error shown by BROWSE |
 | `$3d2c` | N_APPFORMAT: application's source geometry/backend, 0..3 |
 | `$3d2d` | N_BOOTDEVICE: boot IEC device, independent of the current app source |
+| `$3d2e` | N_BROWSERLEN: retained Ultimate path length, 1..255 |
+| `$3d30..$3d33` | N_BROWSERPOS: selected directory ordinal, little-endian 32-bit |
+| `$3d34` | N_BROWSERNAME_LEN: selected raw name length, 0 when empty |
+| `$3e00..$3eff` | N_BROWSERNAME: complete retained raw name |
+| `$4a00..$4aff` | N_BROWSERPATH: complete retained canonical path |
 | `$3d40..$3d4f` | N_APPNAME |
 | `$3d60..$3d7f` | N_APPHEADER: last manifest read; valid for a running app |
 
@@ -232,3 +242,7 @@ Multiple executable banks, cooperative scheduling, native Ultimate directory
 navigation, shared display/input widgets, history import and richer banked
 document editing remain work. These services are the next foundation
 for migrating the existing desktop and Ultimate applications.
+
+The [ABI 1.5 directory checkpoint](validation/2026-09-10-native-directories/README.md)
+records owned cursors, complete names, folder navigation and selection after
+app saves reorder the listing, with CPU, emulator and physical qualification.

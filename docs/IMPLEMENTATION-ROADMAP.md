@@ -61,7 +61,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | 1351 movement, clamping | Two buttons, drag/drop, jitter filter, acceleration, hot plug; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
-| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages and byte viewer | Native registry/file dialogs; Ultimate directory integration; faster persistent enumeration; copy/rename/delete and append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
+| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages, ABI 1.5 owned Ultimate cursors/folder navigation and byte viewer | Native registry/file dialogs; faster IEC enumeration; copy/rename/delete and append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
 | FR-F2 devices | Legacy manual 8–11 selection; native browser 8–30 with explicit D64/D71/D81 geometry; system-app source restored after data-device app launch | Inventory, type/capability handshake, hot presence, explicit copy destination, broader physical qualification | Real and emulated drives; absent device returns to UI; last-used device never changes system-app source accidentally |
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
@@ -103,7 +103,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
 | UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, interrupted operations and per-firmware protocol coverage |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.4 owned app loading, launch field, calculator export and editor access | Native directory cursors/navigation and shared dialogs; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.5 owned app loading, directory cursors/navigation with retained full names, calculator export and editor access | Native shared dialogs; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
@@ -349,10 +349,23 @@ without reducing the 426-page heap. The editor and boot images retain their
 preceding bytes. This provides direct USB launching, with directory navigation
 and shared file dialogs still open.
 
-Next implementation: native Ultimate directory ownership, enumeration and navigation,
-then reusable display/input and file-dialog services for the editor and
-existing desktop/Ultimate apps, plus
-broader drive qualification.
+ABI 1.5 now implements an owned Ultimate directory cursor through the existing
+stream entries. The browser consumes one READ_DIR transaction across forward
+pages, retains complete names and canonical paths, supports folders/parents
+and restores selection by name after app saves reorder the listing. A second
+page buffer preserves the previous page after failed/cancelled navigation.
+The 426-page heap and boot/calculator/editor PRG bytes remain unchanged.
+The [directory checkpoint](validation/2026-09-10-native-directories/README.md)
+passes 17 CPU suites plus two targeted follow-ups, ten emulator workflows and
+the full physical C128 workflow: 1,096-entry navigation past ordinal 255,
+selection after saves reorder pages, nine independently verified files and
+complete workspace/resource/desktop restoration. The audit retains an
+interrupted harness attempt and two unexplained direct DMA bytes; CPU captures
+remain the RAM authority.
+
+Next implementation: reusable display/input and file-dialog services that keep
+the editor document allocated, followed by migration of the existing
+desktop/Ultimate apps and broader drive qualification.
 Integrate other selector backends and
 complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and
 other expansion allocators, system-disk recovery and application parity remain
