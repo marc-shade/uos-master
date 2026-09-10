@@ -81,19 +81,20 @@ The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-Main kernel code/data ends at `$366e` exclusive, leaving 402 bytes before
-the page tables. The allocator occupies `$1300..$17c5`, leaving 1,082 bytes in
-the low region for further resident code/data. Public API entries and the app
-load address remain unchanged. ABI 1.5 adds owned Ultimate directory cursors;
-the browser and editor require minor 5, and the calculator requires minor 4.
-Boot and calculator PRGs retain their preceding bytes. The editor now embeds
-the [shared file picker](NATIVE-FILE-DIALOGS.md), with CPU, emulator and physical
-qualification in the [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md).
+Main kernel code/data ends at `$379d` exclusive, leaving 99 bytes before
+page tables. The allocator and field editor occupy `$1300..$1ab8`, leaving
+327 bytes in the low region. Public entries and the app load address remain
+stable. ABI 1.6 adds [shared focused field editing and drawing](NATIVE-FIELDS.md);
+all three supplied apps require minor 6. The boot PRG retains its preceding
+bytes. The [field checkpoint](validation/2026-09-10-native-fields/README.md)
+passes twenty CPU suites, ten emulator workflows and complete physical USB/IEC
+qualification, including independent saved-file verification.
+Larger modules remain necessary for the complete native OS.
 
-The 14,593-byte kernel PRG includes a five-page copy of the low section at
-`$5000..$54ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
-initialization. The copy includes 58 padding bytes after the allocator. The
-source is boot-only staging; all five pages become ordinary managed memory.
+The 15,361-byte kernel PRG includes an eight-page low-section copy at
+`$5000..$57ff`. Startup copies those 2,048 bytes to `$1300..$1aff` before heap
+initialization, including 71 padding bytes. All eight staging pages then become
+ordinary managed memory.
 No live code executes there. `$3e00..$3eff` retains the browser's complete
 selected filename. The observer borrows `$3e00..$3fff` while input is idle,
 saves and restores all 512 bytes, and rejects this range as a capture source.

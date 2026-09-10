@@ -48,7 +48,12 @@ when a save reorders the listing. The editor's Open and Save As fields now
 offer **Tab** for a [shared file picker](docs/NATIVE-FILE-DIALOGS.md), keeping
 the document allocated while browsing IEC or Ultimate storage. The
 [picker checkpoint](docs/validation/2026-09-10-native-file-dialogs/README.md)
-passes CPU, emulator and physical USB/IEC qualification. Boot still uses IEC; native desktop migration
+passes CPU, emulator and physical USB/IEC qualification. ABI 1.6 now adds
+[shared field editing](docs/NATIVE-FIELDS.md) to all three native apps, with
+caret navigation, insertion, forward deletion and clipping on both displays;
+the [field checkpoint](docs/validation/2026-09-10-native-fields/README.md) passes
+20 CPU suites, ten emulator workflows and physical USB/IEC qualification.
+Boot still uses IEC; native desktop migration
 and the broader OS roadmap remain open.
 
 ## Storage and loader update (2026-09-08)

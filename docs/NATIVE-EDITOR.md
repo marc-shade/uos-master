@@ -1,7 +1,7 @@
 # Native banked text editor
 
 Build with `python3 build-native.py`, boot `target/native/uos128.d64`, press
-**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.5
+**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.6
 application. It edits a document held in owned allocations across both C128
 RAM banks, with a 24-bit byte position and length. Both displays show the
 same document and cursor; the 80-column display shows more of each line.
@@ -24,7 +24,9 @@ same document and cursor; the 80-column display shows more of each line.
 
 Open and Save As accept an IEC filename of at most 16 characters, or an
 absolute [Ultimate path](NATIVE-ULTIMATE.md) of at most 255 bytes. Long fields
-and document names show their tail with `<` while retaining the complete path.
+show the caret with `<` and `>` clipping markers; document names show their
+tail with `<`. Both retain the complete path. [Shared field keys](NATIVE-FIELDS.md)
+allow Left/Right, Home/Ctrl-E, insertion, Del/Ctrl-D and Ctrl-U.
 Enter confirms
 a field and Esc cancels it. New, Open and exit ask before discarding a dirty
 document. **N** keeps it; **Y** proceeds. An asterisk after the filename means
@@ -35,9 +37,9 @@ The [shared file picker](NATIVE-FILE-DIALOGS.md) keeps the document allocated
 and returns the complete selected name to the field. It can select IEC
 SEQ/PRG/USR files, including raw PRG load-address bytes, and Ultimate files
 and folders. Its directory and backend choices are separate from the desktop's
-saved selection. The current dialog build is undergoing emulator and physical
-qualification; the preceding directory checkpoint remains the last fully
-qualified release.
+saved selection. The [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md)
+is followed by the fully qualified [field checkpoint](validation/2026-09-10-native-fields/README.md),
+which preserves the caret and both viewports when the picker is cancelled.
 
 Imported CRLF, lone CR, lone LF, NUL and other bytes are preserved. CRLF is
 one navigation/deletion unit; a Go To position between its bytes advances
@@ -54,7 +56,7 @@ its system image from the boot device. **F** returns to IEC/D64. Choose geometry
 drive/media detection remains part of the platform work.
 The browser's **L** field can also load the editor PRG from USB. Its valid
 data preferences still take priority over the app's load source; select Ultimate
-with F6 when needed. The shared picker requires ABI 1.5 directory cursors;
+with F6 when needed. The shared picker uses ABI 1.5 directory cursors and ABI 1.6 field controls;
 older kernels reject this image before executing it.
 
 ## Memory and storage behavior
@@ -156,7 +158,14 @@ screen comparisons cover that behavior through the actual ROM.
 
 ## Qualification and remaining work
 
-The current [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md)
+The [field checkpoint](validation/2026-09-10-native-fields/README.md) adds shared
+caret editing and exact field-state retention through picker cancellation.
+Twenty CPU suites, ten emulator workflows, 57 physical USB frame pairs and
+24 physical IEC frame pairs pass. Both physical paths independently verify the
+saved 66,056-byte document and restore the deployed desktop. The archived
+initial boot/upload failure is excluded from the passing workflow counts.
+
+The preceding [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md)
 qualifies the shared Open/Save As library with 18 CPU suites, four final-image
 follow-ups, all ten native emulator workflows and complete physical USB/IEC
 checks. All seventeen document chunks match the expected 66,056 bytes while
@@ -200,6 +209,12 @@ through Ultimate DOS. `--native-editor` and `--native-usb-browser` use a
 is unknown.
 The IEC helper retries TCP connection establishment at most three times before
 sending HTTP request bytes; it disables reconnection after sending begins.
+It checks stored disk-upload sizes before boot, independently verifies a recovery
+loader before switching disks, and restores using that loader and the original
+mounted system disk. After independent saved-file readback, it removes its own
+temporary disks and loader. This avoids the earlier empty-upload failure when
+the cartridge's `/Temp` storage filled. The archive includes 24 host fault tests
+and the successful hardware recovery record.
 `--native-ultimate` uses a new private USB directory and independently compares
 all five closed source/output files before removing its fixtures.
 `--native-redraw` adds field/cursor timing checks to that complete USB workflow.

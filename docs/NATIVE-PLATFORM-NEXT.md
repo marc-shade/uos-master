@@ -5,7 +5,7 @@ The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.
 moved the allocator to `$1300`. The native Ultimate backend now reserves an
 additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
 entry addresses and the `$6000` app slot remain stable. The current main region
-has 402 free bytes, the low region has 1,082, and the service region leaves
+has 99 free bytes, the low region has 327, and the service region leaves
 904 bytes before the retained browser path at `$4a00`. The ABI 1.5 directory
 cursor shares the owned stream API and supports native folder navigation.
 The [shared file picker](NATIVE-FILE-DIALOGS.md) is now implemented in the
@@ -28,14 +28,55 @@ restores its contents and checks that the low kernel remains intact. Its old
 `$1400` output path must not be used with this kernel. Host captures reject
 RAM0 sources overlapping their borrowed output or probe workspace.
 
-The BASIC entry remains intact. Startup copies five pages from declared
-staging at `$5000..$54ff` into the low region before initializing the heap.
-The heap can then reuse all five staging pages. `$4000..$4fff` remains reserved
+The BASIC entry remains intact. Startup copies eight pages from declared
+staging at `$5000..$57ff` into the low region before initializing the heap.
+The heap can then reuse all eight staging pages. `$4000..$4fff` remains reserved
 for Ultimate services. The bank-0 workspace block occupies `$df00..$feff`
 beneath ROM and is accessed through the CPU's native bank gateways.
 Further growth must continue accounting for both final and peak boot footprints.
 Longer-term modules need their own owner/lifetime records; this small range
 alone is not a memory architecture for the complete OS.
+
+The shared-field build makes the next memory constraint concrete. The editor
+uses 79 pages, both workspace blocks use 64, and a 66,056-byte document uses
+seventeen 16-page chunks. That is 415 of 426 pages before opening the picker;
+its eight extra cache pages raise the total to 423. The tested allocation
+order fills bank 0 and leaves three free pages in bank 1. Reserving another
+bank-0 resident region would break this workload unless other live storage is
+reduced or moved to an implemented backing store.
+
+The tested allocation order has the following page budget. Document ranges
+are also recorded in the emulator's complete live-document capture. Picker
+cache pages are allocated lazily, up to the eight-page case shown here.
+
+| Use | Bank 0 | Bank 1 | Pages |
+|---|---|---|---|
+| Editor code and persistent state | `$6000..$aeff` | — | 79 |
+| Workspace blocks | `$df00..$feff` | `$0400..$23ff` | 64 |
+| Seventeen document chunks | `$5000..$5fff`, `$af00..$deff` | `$2400..$f3ff` | 272 |
+| Extra picker cache at peak | — | `$f400..$fbff` | 8 |
+| Remaining heap | — | `$fc00..$feff` | 3 |
+
+Evaluate a checked bank-0 module window inside an app's declared allocation
+before extending fixed reservations. App code outside that window, its field
+state and its document handles must remain live while a picker or device panel
+occupies the window. A module load needs separate image/version/extent checks,
+an invalid state until complete verification, checked stream cleanup and a
+generation that prevents calling a replaced module. It must never overwrite
+caller code, and a missing or damaged module must return to the intact app.
+This is a proposed next implementation, not an available ABI. Acceptance must
+retain the existing large-document/two-workspace case, preserve ROM/IRQ and
+both-display behavior, and exercise failed module loads and stale entry tokens.
+REU-backed caching and banked execution remain additional work; a module
+window alone does not implement app suspension or background scheduling.
+
+Bo Zimmerman's [geoModules project](https://www.zimmers.net/geos/geomods.html)
+is a useful original-author comparison: it defines a common calling convention
+and shared scratch for linked UI modules, plus VLIR module loading and calls.
+It also documents file dialogs and overlapping movable windows. Those are
+separate contracts to account for in uOS; adding a loader does not supply the
+remaining shared widgets, clipping, focus or window behavior. No geoModules
+code has been imported into the native field implementation.
 
 The checkpoint records the section bounds, startup/IRQ/staging tests, existing
 native workflows and revised observer qualification. No test may save and
@@ -64,8 +105,12 @@ claiming media-failure recovery is complete.
 
 ## 3. Share input, dialogs and backend state
 
-Extract reusable field/list/viewport behavior from real applications rather
-than adding unused kernel stubs. Define events and focus for both displays,
+ABI 1.6 now implements [shared focused fields](NATIVE-FIELDS.md) in the kernel,
+used by the editor, browser and calculator. Caret navigation, middle insertion,
+forward deletion, filters and independent clipped viewports pass
+[CPU, emulator and physical qualification](validation/2026-09-10-native-fields/README.md).
+Picker cancellation retains the field state and document.
+Next, extend shared list/viewport behavior and define events and focus for both displays,
 and preserve the Open/Save As contract that keeps the caller's document allocated.
 The current file-picker implementation shares browser navigation source with
 the editor. CPU workflows retain a 66,056-byte document and both 8 KiB workspace

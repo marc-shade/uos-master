@@ -16,7 +16,9 @@ cursor and viewport remain allocated while the picker has focus.
 
 This is a source library used by two applications, not a new resident ABI
 entry or a dynamically loaded GUI service. Kernel ABI 1.5 provides its owned
-directory/file and heap operations. The editor now requires minor version 5.
+directory/file and heap operations. The current applications also require
+ABI 1.6 [shared field controls](NATIVE-FIELDS.md), which retain the field caret
+and display viewports on cancellation. The editor now requires minor version 6.
 Desktop and dialog navigation share `file-browser.inc`, `browser-ui.inc`,
 `browser-usb.inc` and `browser-ultimate.inc`; `FD_EMBEDDED` excludes application
 discovery, launch and binary-preview code from the editor.
@@ -66,6 +68,13 @@ passes the CPU workflow with both 8 KiB workspace blocks, a document over
 emulator geometries and the physical USB/IEC workflows also pass.
 
 ## Qualification and remaining work
+
+The current library uses ABI 1.6 shared fields; applications must require minor
+6 in their manifests. The [field checkpoint](validation/2026-09-10-native-fields/README.md)
+qualifies its caret and viewport retention with twenty CPU suites, ten emulator
+workflows and full physical USB/IEC checks. All five complete document captures
+and the eight-byte field records match across picker cancellation. The older
+counts below describe the preceding ABI 1.5 picker release.
 
 All 18 CPU suites passed before the final six-byte F8 preference fix; the
 editor, Ultimate editor, redraw and file-dialog suites passed again afterward.

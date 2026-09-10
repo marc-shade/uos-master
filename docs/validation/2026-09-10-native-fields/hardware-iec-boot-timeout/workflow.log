@@ -1,0 +1,29 @@
+Native editor hardware evidence: /var/tmp/arc-scratch/uos-hardware-native-editor-zg1n_txn
+Native editor boot: waiting 60 seconds for IEC before any RAM DMA
+Native editor boot: continuing quiet boot interval
+Restoring the deployed legacy desktop before independent readback
+Legacy desktop boot: waiting 60 seconds for IEC before any RAM DMA
+Legacy desktop boot: continuing quiet boot interval
+Traceback (most recent call last):
+  File "/home/marc/geos128/uos/hw_native_editor_check.py", line 62, in run
+    wait(lambda:read(0x1c13,6)==b'UOS128' and read(0x3d12)==b'\1','native editor boot',120)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/geos128/uos/native_capture.py", line 18, in wait
+    raise AssertionError(label)
+AssertionError: native editor boot
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/marc/geos128/uos/hw_ultimate_check.py", line 725, in <module>
+    main()
+    ~~~~^^
+  File "/home/marc/geos128/uos/hw_ultimate_check.py", line 490, in main
+    run(ConnectingUltimate(timeout=60))
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/geos128/uos/hw_native_editor_check.py", line 83, in run
+    wait(lambda:read(0x33c,2)==desk_tick().to_bytes(2,'little'),'legacy desktop vector',120)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marc/geos128/uos/native_capture.py", line 18, in wait
+    raise AssertionError(label)
+AssertionError: legacy desktop vector

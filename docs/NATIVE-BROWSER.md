@@ -35,7 +35,9 @@ must never select a different file with a shorter name.
 **L** opens a USB app path field, initially `/Usb0/`. **Tab** selects DOS
 context 1 or 2, **Ctrl-U** clears the field, **Del** deletes one byte,
 **Enter** launches and **Esc** cancels. Up to 255 printable bytes are retained;
-long paths show their tail with a leading `<`. Empty or relative paths are
+long paths keep the caret visible with `<` and `>` clipping markers.
+[Shared field keys](NATIVE-FIELDS.md) also provide Left/Right, Home/Ctrl-E,
+insertion and Ctrl-D forward deletion. Empty or relative paths are
 rejected without I/O. Editing only repaints the field rows and preserves the
 current listing, selection and preferences. This field launches a known
 absolute path. **G** instead opens a directory path, using the same editing keys.
@@ -93,13 +95,13 @@ image was loaded; use F6/F8 to choose the data source.
 
 ## Resources and current limits
 
-BROWSE is a 7,110-byte image plus its two-byte PRG address. It reserves 28
+BROWSE is a 7,127-byte image plus its two-byte PRG address. It reserves 28
 bank-0 pages for code/data and 37 bank-1 pages for 296 compact directory
 records on IEC. ULT reuses that allocation for two eight-entry buffers, each
 entry occupying 512 bytes. Its retained path uses `$4a00..$4aff`; the selected
 name uses `$3e00..$3eff`, with lengths and the 32-bit ordinal in the native
 mailbox. These regions were already excluded from the heap. The browser
-requires ABI 1.5; the allocator still manages 426 pages.
+requires ABI 1.6 for shared field controls; the allocator still manages 426 pages.
 Workspace allocations remain owned across browser/app handoffs. Exit closes
 owned files before releasing memory. Neither a mouse nor an REU is required.
 
@@ -118,6 +120,9 @@ The editor's [shared file picker](NATIVE-FILE-DIALOGS.md) now includes the same
 navigation source, with caller-owned buffers and checked return to its filename
 field. The [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md)
 qualifies both applications against CPU, emulator and physical USB/IEC workflows.
+The [field checkpoint](validation/2026-09-10-native-fields/README.md) also qualifies
+middle edits, both clipped viewports and the full 255-byte browser path through
+the shared ABI 1.6 controls, without increasing the 28-page app allocation.
 
 Native copy/rename/delete, file associations, richer document
 editing, GUI controls, scheduling and migration of the Ultimate desktop

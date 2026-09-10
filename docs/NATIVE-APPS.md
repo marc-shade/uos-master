@@ -30,7 +30,8 @@ its code allocation and history; reopening starts a new session. Both complete
 for a new SEQ filename on the application's source device and disk format.
 It exports history oldest first, closes, reopens and verifies every byte.
 Existing names are rejected;
-Esc cancels the prompt. See the [native file guide](NATIVE-FILES.md).
+Esc cancels the prompt. The [shared field keys](NATIVE-FIELDS.md) provide
+caret movement, insertion and forward deletion. See the [native file guide](NATIVE-FILES.md).
 When loaded from Ultimate, the calculator instead creates the raw history file
 beside its app image, using the selected DOS context. The leaf name remains
 1–16 bytes, and the complete path must fit 255 bytes. An overlong path is
@@ -45,7 +46,7 @@ controls remain application work.
 `target/native/browse.prg` and `target/native/editor.prg`, then adds them as
 `CALC`, `BROWSE` and `EDITOR` to the native
 disk alongside kernel file `U` and the reserved native boot sector.
-The calculator PRG is 3,082 bytes plus its two-byte load
+The calculator PRG is 3,094 bytes plus its two-byte load
 address; it requests 16 pages (4 KiB) for code/data and separately allocates
 two bank-1 pages for its history.
 
@@ -74,7 +75,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..5; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5 |
+| 6 | 1 | Required ABI minor: 0..6; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6 |
 | 7 | 1 | Flags: 0 |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -211,6 +212,11 @@ can be retried while owned; an uncertain IEC CLOSE quarantines the stream and
 retains the app's owner/code instead of replaying the operation.
 
 ## Verification and remaining scope
+
+The [ABI 1.6 field checkpoint](validation/2026-09-10-native-fields/README.md)
+passes twenty CPU suites, all ten native emulator workflows and full physical
+USB/IEC checks. Real browser dispatch verifies that app memory handles remain
+distinct from closed source-file handles when their generations diverge.
 
 ```sh
 python3 tests/ci_native_apps.py --report /tmp/native-apps.json

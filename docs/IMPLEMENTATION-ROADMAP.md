@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-09. This is the current completion checklist. The older
+Updated 2026-09-10. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -42,6 +42,15 @@ Primary references used for the comparison and implementation direction:
 A feature-by-feature Wheels manual audit and repeatable comparison sessions
 remain open. Record manual edition/page and observed behavior for every parity
 claim; do not infer the entire Wheels feature set from a summary website.
+The [MegaPatch 3 manual audit](MEGAPATCH-3-PARITY.md) now maps all fifteen pages
+of the supplied 2019/Jan/27 manual to sixteen behavior groups and concrete uOS
+acceptance checks. Runtime comparison sessions remain open. Its task manager
+pauses inactive applications, so suspended-app switching and background-service
+scheduling have separate acceptance requirements.
+The [local reference inventory](REFERENCE-FIXTURES.md) records nineteen images,
+their hashes and directory listings, including geoWrite, geoPaint, geoSpell
+and the write utilities. These are named candidates for the application and
+format comparisons; they have not been qualified as running under uOS.
 
 ## Kernel, desktop, and application gaps
 
@@ -56,7 +65,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Memory and FR-M1 | Native 426-page allocator with owner/generation checks, bounded transfers and 4 KiB resident Ultimate services; legacy fixed REU snapshot banks | REU/expansion size detection and allocation, larger app heaps, RAM disks, persistence, no-REU desktop fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Menu, modal windows, disk-scanned launcher | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
-| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; per-app drawing | Widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
+| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; per-app drawing | Widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
 | FR-D1/D2 display | VIC graphics + VDC text mirror; persisted display selection | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
@@ -103,7 +112,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
 | UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, interrupted operations and per-firmware protocol coverage |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.5 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access and qualified shared picker | Shared graphical controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.6 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access, shared picker and focused fields | Shared graphical controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
@@ -371,8 +380,21 @@ the complete physical USB/IEC workflows pass. Independent readback matches
 nine USB files and four IEC files; five complete document captures match while
 the picker has focus. Two interrupted IEC attempts remain archived alongside
 the host connection fix and eight tests enforcing the no-replay boundary.
-Continue reusable display/input services, followed by migration of the existing
-desktop/Ultimate apps and broader drive qualification. Integrate other selector
+ABI 1.6 [shared focused fields](NATIVE-FIELDS.md) now provide bounded caret
+navigation, insertion, forward deletion and independent clipping on both displays.
+The [field checkpoint](validation/2026-09-10-native-fields/README.md) passes
+all twenty CPU suites, all ten native emulator workflows and complete physical
+USB/IEC qualification. App allocations and the 426-page heap remain unchanged.
+The physical runs verify 57 USB and 24 IEC frame pairs, all nine USB files and
+all four IEC files. A failed IEC boot exposed partial/empty REST uploads from
+cartridge temporary-storage exhaustion. The retained recovery verifies the
+deployed loader before starting it, restores the original desktop, and reclaims
+only exact archived test images. Upload-size checks and reuse of a verified
+recovery loader now protect qualification; 24 host fault checks pass.
+The shared controls retain a 66,056-byte document and both workspace blocks
+through a full 255-byte field edit and picker cancellation. Continue events,
+list/viewport services and a larger module architecture, followed by migration
+of the existing desktop/Ultimate apps and broader drive qualification. Integrate other selector
 backends and complete drive media identity/recovery. Scheduling, 2 MHz/DMA regions, REU and
 other expansion allocators, system-disk recovery and application parity remain
 required. R3 is partial; the editor milestone does not complete it or the OS.
