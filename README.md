@@ -44,8 +44,12 @@ DOS context 1/2 and **Enter** to launch. A USB-loaded calculator saves verified
 history beside its image. ABI 1.5 adds USB directories: **F** selects ULT,
 **Enter** opens a folder or file, **P** goes to the parent and **G** enters a
 directory path. App returns retain the folder and full selected filename even
-when a save reorders the listing. Boot still uses IEC; shared file dialogs,
-native desktop migration and the broader OS roadmap remain open.
+when a save reorders the listing. The editor's Open and Save As fields now
+offer **Tab** for a [shared file picker](docs/NATIVE-FILE-DIALOGS.md), keeping
+the document allocated while browsing IEC or Ultimate storage. The
+[picker checkpoint](docs/validation/2026-09-10-native-file-dialogs/README.md)
+passes CPU, emulator and physical USB/IEC qualification. Boot still uses IEC; native desktop migration
+and the broader OS roadmap remain open.
 
 ## Storage and loader update (2026-09-08)
 
@@ -77,10 +81,10 @@ exclusive creation, verified writes and 32-bit seeks. **C / Copy** opens an
 editable destination path with progress and cancellation. A copy is reported
 verified only after closing, reopening and comparing both files completely.
 Existing destinations are rejected; cancelled or failed new files are retained.
-[Shared Open and Save As](docs/FILE-DIALOGS.md) now keep the editor in memory
+[Legacy Open and Save As](docs/FILE-DIALOGS.md) keep the editor in memory
 while browsing folders. Saves are closed, reopened and compared before success.
-An IEC selector backend, larger documents and the broader application suite
-remain in progress.
+IEC selection and banked documents still need migration into the graphical
+desktop, alongside the broader application suite.
 The [file-service validation](docs/validation/2026-09-08-ultimate-files/README.md)
 records exact physical create/copy/readback, viewer restoration and firmware limits.
 The [desktop-copy validation](docs/validation/2026-09-08-desktop-copy/README.md)

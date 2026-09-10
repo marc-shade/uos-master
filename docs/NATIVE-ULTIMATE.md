@@ -5,8 +5,11 @@ editor can open and save USB files without routing their data through an
 emulated IEC drive. ABI **1.4** routes application loading through the same
 owned service. **L** in Files and Apps launches an absolute USB app path, and
 a USB-loaded calculator saves history beside its image. ABI **1.5** adds owned
-directory cursors and native USB folder navigation. Boot still uses IEC.
-Shared file dialogs, control/network/RTC services and capability discovery
+directory cursors and native USB folder navigation. The editor's Open/Save As
+fields now offer **Tab** for a [shared picker](NATIVE-FILE-DIALOGS.md), qualified
+through the [USB/IEC picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md).
+Boot still uses IEC.
+Shared GUI input, control/network/RTC services and capability discovery
 remain required by the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
 In the editor, press **F6** until the status line shows **DOS:01 ULT**.
@@ -142,7 +145,7 @@ Bank-0 `$4000..$4fff` is reserved for the native Ultimate service, command and
 verification buffers, and path/status mailboxes. The allocator manages 175
 bank-0 pages and 251 bank-1 pages: **426 pages / 109,056 bytes**. Startup stages
 the low kernel at `$5000..$54ff`, then releases those five pages for allocation.
-The workspace's 8 KiB bank-0 block uses RAM beneath ROM at `$c000..$dfff`,
+The workspace's 8 KiB bank-0 block uses RAM beneath ROM at `$df00..$feff`,
 leaving the application slot at `$6000` available. See the generated
 [`layout.json`](../target/native/layout.json) and [kernel contract](NATIVE-KERNEL.md).
 

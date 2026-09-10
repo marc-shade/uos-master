@@ -238,11 +238,15 @@ for directory discovery, renamed-app dispatch and source-format export results.
 
 The [USB app checkpoint](validation/2026-09-09-native-usb-apps/README.md)
 records the shared loader and USB launch/save workflows against exact images.
-Multiple executable banks, cooperative scheduling, native Ultimate directory
-navigation, shared display/input widgets, history import and richer banked
+Multiple executable banks, cooperative scheduling,
+shared display/input widgets, history import and richer banked
 document editing remain work. These services are the next foundation
 for migrating the existing desktop and Ultimate applications.
 
 The [ABI 1.5 directory checkpoint](validation/2026-09-10-native-directories/README.md)
 records owned cursors, complete names, folder navigation and selection after
 app saves reorder the listing, with CPU, emulator and physical qualification.
+The editor now requires minor 5 and includes a [shared file picker](NATIVE-FILE-DIALOGS.md)
+that preserves its document while browsing. The
+[picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md) records
+CPU, emulator and physical USB/IEC qualification.

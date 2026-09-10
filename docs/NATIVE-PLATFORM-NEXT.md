@@ -8,8 +8,9 @@ entry addresses and the `$6000` app slot remain stable. The current main region
 has 402 free bytes, the low region has 1,082, and the service region leaves
 904 bytes before the retained browser path at `$4a00`. The ABI 1.5 directory
 cursor shares the owned stream API and supports native folder navigation.
-Shared input/dialog services are next. Scheduling and a larger module
-architecture remain required.
+The [shared file picker](NATIVE-FILE-DIALOGS.md) is now implemented in the
+editor and passes [CPU, emulator and physical qualification](validation/2026-09-10-native-file-dialogs/README.md).
+Scheduling and a larger module architecture remain required.
 
 ## 1. Resident growth and its remaining limits
 
@@ -30,7 +31,7 @@ RAM0 sources overlapping their borrowed output or probe workspace.
 The BASIC entry remains intact. Startup copies five pages from declared
 staging at `$5000..$54ff` into the low region before initializing the heap.
 The heap can then reuse all five staging pages. `$4000..$4fff` remains reserved
-for Ultimate services. The bank-0 workspace block occupies `$c000..$dfff`
+for Ultimate services. The bank-0 workspace block occupies `$df00..$feff`
 beneath ROM and is accessed through the CPU's native bank gateways.
 Further growth must continue accounting for both final and peak boot footprints.
 Longer-term modules need their own owner/lifetime records; this small range
@@ -65,7 +66,14 @@ claiming media-failure recovery is complete.
 
 Extract reusable field/list/viewport behavior from real applications rather
 than adding unused kernel stubs. Define events and focus for both displays,
-then an Open/Save As contract that keeps the caller's document allocated.
+and preserve the Open/Save As contract that keeps the caller's document allocated.
+The current file-picker implementation shares browser navigation source with
+the editor. CPU workflows retain a 66,056-byte document and both 8 KiB workspace
+blocks through paging past ordinal 255, cancellation and verified Save As.
+The fault cases cover missing directories, cache exhaustion and retained
+directory-close recovery. All ten emulator workflows and the complete physical
+USB/IEC checks pass, including independent saved-file readback and full document
+captures while the picker has focus.
 The [native editor redraw checkpoint](validation/2026-09-09-native-redraw/README.md)
 replaces full repaint for fields and ordinary edits/cursor motion with affected
 rows. A second read page and cached line offsets remove repeated banked reads.
@@ -91,8 +99,9 @@ now supplies raw absolute-path streams and verified writes to the editor.
 The browser's absolute-path field now launches USB apps through the shared
 backend, and the calculator saves beside its USB image. ABI 1.5 adds owned
 directory cursors, complete names, canonical paths, checked cancellation/CWD
-restoration and browser folder navigation. Extract a common file picker while
-keeping a caller's document allocated. Reduce IEC extent I/O and add cancellation
+restoration and browser folder navigation. Preserve the qualified shared picker
+while extending common focus/input behavior and remaining selector backends.
+Reduce IEC extent I/O and add cancellation
 within long operations. Keep complete byte comparisons and state the harness's
 quiet/poll intervals when measuring timing.
 

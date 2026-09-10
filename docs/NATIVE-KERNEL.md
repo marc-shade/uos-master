@@ -85,8 +85,10 @@ Main kernel code/data ends at `$366e` exclusive, leaving 402 bytes before
 the page tables. The allocator occupies `$1300..$17c5`, leaving 1,082 bytes in
 the low region for further resident code/data. Public API entries and the app
 load address remain unchanged. ABI 1.5 adds owned Ultimate directory cursors;
-the browser requires minor 5, calculator 4 and editor 3. Boot, calculator and
-editor PRGs retain their ABI 1.4 checkpoint bytes.
+the browser and editor require minor 5, and the calculator requires minor 4.
+Boot and calculator PRGs retain their preceding bytes. The editor now embeds
+the [shared file picker](NATIVE-FILE-DIALOGS.md), with CPU, emulator and physical
+qualification in the [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md).
 
 The 14,593-byte kernel PRG includes a five-page copy of the low section at
 `$5000..$54ff`. Startup copies those 1,280 bytes to `$1300..$17ff` before heap
@@ -96,8 +98,9 @@ No live code executes there. `$3e00..$3eff` retains the browser's complete
 selected filename. The observer borrows `$3e00..$3fff` while input is idle,
 saves and restores all 512 bytes, and rejects this range as a capture source.
 The retained path occupies `$4a00..$4aff` in the existing service reservation.
-The workspace reserves `$c000..$dfff` in bank 0 for its 8 KiB block so that the
-application slot remains available. CPU bank gateways access this RAM beneath ROM.
+The workspace reserves `$df00..$feff` in bank 0 for its 8 KiB block so that the
+application slot remains available and the remaining high RAM stays contiguous
+for document chunks. CPU bank gateways access this RAM beneath ROM and I/O.
 Cold entry requires a freshly loaded kernel image. Reentering SYS after that
 staging memory has been reused is unsupported; reset and boot reload the image.
 

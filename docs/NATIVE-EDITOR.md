@@ -1,7 +1,7 @@
 # Native banked text editor
 
 Build with `python3 build-native.py`, boot `target/native/uos128.d64`, press
-**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.3
+**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.5
 application. It edits a document held in owned allocations across both C128
 RAM banks, with a 24-bit byte position and length. Both displays show the
 same document and cursor; the 80-column display shows more of each line.
@@ -10,6 +10,7 @@ same document and cursor; the 80-column display shows more of each line.
 |---|---|
 | F1 | Open an IEC SEQ file or an absolute Ultimate path |
 | F3 | Save As a new file, close it, reopen it and compare every byte |
+| Tab in Open/Save As | Browse files or choose a Save As folder/device |
 | F5 | New empty document |
 | F7 | Go to a hexadecimal byte offset, including offsets beyond `$ffff` |
 | F2 / F4 | Beginning / end of document |
@@ -30,6 +31,14 @@ document. **N** keeps it; **Y** proceeds. An asterisk after the filename means
 there are unsaved changes. Save As refuses an existing filename. There is no
 overwrite operation in this version.
 
+The [shared file picker](NATIVE-FILE-DIALOGS.md) keeps the document allocated
+and returns the complete selected name to the field. It can select IEC
+SEQ/PRG/USR files, including raw PRG load-address bytes, and Ultimate files
+and folders. Its directory and backend choices are separate from the desktop's
+saved selection. The current dialog build is undergoing emulator and physical
+qualification; the preceding directory checkpoint remains the last fully
+qualified release.
+
 Imported CRLF, lone CR, lone LF, NUL and other bytes are preserved. CRLF is
 one navigation/deletion unit; a Go To position between its bytes advances
 past the pair. Nonprintable file bytes appear as dots. Typing inserts printable
@@ -45,8 +54,8 @@ its system image from the boot device. **F** returns to IEC/D64. Choose geometry
 drive/media detection remains part of the platform work.
 The browser's **L** field can also load the editor PRG from USB. Its valid
 data preferences still take priority over the app's load source; select Ultimate
-with F6 when needed. The app remains ABI 1.3 compatible and runs unchanged on
-the ABI 1.4/1.5 shared loader.
+with F6 when needed. The shared picker requires ABI 1.5 directory cursors;
+older kernels reject this image before executing it.
 
 ## Memory and storage behavior
 
@@ -119,13 +128,15 @@ reject it instead of treating uncertain memory as a valid document. Cleanup
 retains failed handles for a later release attempt. Ordinary application exit
 uses the kernel's owner cleanup for both contexts and the application image.
 
-The current app occupies `$6000..$8fa7` (12,200 payload bytes, 48 heap pages).
-The redraw code and cache add five allocated pages (1,280 bytes); document
-capacity still depends on the remaining heap and 4 KiB allocation fragmentation.
+The dialog build reserves 79 heap pages for code and local state. The picker
+borrows four idle editor transfer buffers and allocates additional cache blocks
+only while browsing. Document capacity still depends on the remaining heap
+and 4 KiB allocation fragmentation. The workspace's bank-0 block now sits at
+the top of managed RAM, keeping the free region below it contiguous.
 The kernel reserves 4 KiB for Ultimate services and manages 426 heap pages.
 The existing public file entries dispatch both backends; ABI 1.3 adds the
-Ultimate path/status mailboxes. The later ABI 1.4 loader checkpoint leaves this
-editor and the boot PRG byte-identical to the redraw checkpoint.
+Ultimate path/status mailboxes. The preceding loader and directory checkpoints
+kept the editor image unchanged; this dialog build changes that image.
 
 ## ROM integration
 
@@ -145,6 +156,14 @@ screen comparisons cover that behavior through the actual ROM.
 
 ## Qualification and remaining work
 
+The current [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md)
+qualifies the shared Open/Save As library with 18 CPU suites, four final-image
+follow-ups, all ten native emulator workflows and complete physical USB/IEC
+checks. All seventeen document chunks match the expected 66,056 bytes while
+the picker has focus. The archive records both interrupted IEC attempts and
+the host-only connection fix, alongside the completed run and independent
+closed-file readback.
+
 The [redraw checkpoint](validation/2026-09-09-native-redraw/README.md) records
 the editor image and display performance checks. The
 [Ultimate checkpoint](validation/2026-09-09-native-ultimate/README.md) records
@@ -162,21 +181,32 @@ python3 tests/ci_native_document.py --report /tmp/native-document.json
 python3 tests/ci_native_editor.py --report /tmp/native-editor.json
 python3 tests/ci_native_editor_ultimate.py --report /tmp/native-editor-ultimate.json
 python3 tests/ci_native_editor_redraw.py --report /tmp/native-editor-redraw.json
+python3 tests/ci_native_file_dialog.py --report /tmp/native-file-dialog.json
 python3 -u tests/run_ci.py nativeeditor nativeeditor71 nativeeditor81
 python3 -u hw_ultimate_check.py --native-editor
 python3 -u hw_ultimate_check.py --native-ultimate
 python3 -u hw_ultimate_check.py --native-redraw
 python3 -u hw_ultimate_check.py --native-usb-apps
+python3 -u hw_ultimate_check.py --native-usb-browser
 ```
 
 The physical commands require the reference machine's deployed, idle legacy
-desktop and restore that desktop and settings. `--native-editor` mounts a
-private test D64 and then reads back the closed test disk through Ultimate DOS.
+desktop and restore that desktop and settings. `--native-editor` mounts the
+complete system D64 on drive A/device 8 and a separate document D64 on drive
+B/device 9. Drive B must initially be an enabled, empty 1541 on device 9;
+the helper returns it to that state, then reads back the closed data disk
+through Ultimate DOS. `--native-editor` and `--native-usb-browser` use a
+60-second host request timeout and never replay a RAM write whose acceptance
+is unknown.
+The IEC helper retries TCP connection establishment at most three times before
+sending HTTP request bytes; it disables reconnection after sending begins.
 `--native-ultimate` uses a new private USB directory and independently compares
 all five closed source/output files before removing its fixtures.
 `--native-redraw` adds field/cursor timing checks to that complete USB workflow.
 `--native-usb-apps` adds browser path input, USB calculator/history, rejected app
 images and USB editor loading before the complete large-document workflow.
+`--native-usb-browser` also checks folders and paging beyond ordinal 255 in
+both Files and Apps and the editor picker, with the complete document retained.
 A completed IEC workflow can resume only its independent readback with
 `--native-editor-readback /path/to/report.json`.
 Editor metadata is captured by the C128 CPU into bounded low-memory chunks;
@@ -189,7 +219,7 @@ The native app may use RAM occupied by the inactive legacy settings record.
 After rebooting the legacy desktop, the harness checks its active settings fields and restores
 the saved record's header and reserved bytes as well.
 
-Selection, clipboard, undo/redo, find/replace, visual file dialogs, document
+Selection, clipboard, undo/redo, find/replace, graphical widgets and pointer input, document
 associations, multiple open tabs and session recovery remain open. Fonts,
 styles, pagination, images, spelling and printing belong to the word processor
 work. The [completion roadmap](IMPLEMENTATION-ROADMAP.md) retains those

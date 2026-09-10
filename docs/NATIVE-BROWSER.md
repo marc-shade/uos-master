@@ -114,7 +114,12 @@ closed. Native scheduling and a broker for background clients remain required.
 ULT file headers are inspected when opened; it does not prelabel every row APP.
 
 This application adds a native file list, app discovery and byte inspection.
-Native copy/rename/delete, shared file dialogs, file associations, richer document
+The editor's [shared file picker](NATIVE-FILE-DIALOGS.md) now includes the same
+navigation source, with caller-owned buffers and checked return to its filename
+field. The [picker checkpoint](validation/2026-09-10-native-file-dialogs/README.md)
+qualifies both applications against CPU, emulator and physical USB/IEC workflows.
+
+Native copy/rename/delete, file associations, richer document
 editing, GUI controls, scheduling and migration of the Ultimate desktop
 services remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
