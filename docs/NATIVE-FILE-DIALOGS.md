@@ -14,11 +14,14 @@ every byte after reopening. The picker itself does not launch applications
 or write file contents. **Esc** returns to the original field. The document,
 cursor and viewport remain allocated while the picker has focus.
 
-This is a source library used by two applications, not a new resident ABI
-entry or a dynamically loaded GUI service. Kernel ABI 1.5 provides its owned
-directory/file and heap operations. The current applications also require
-ABI 1.6 [shared field controls](NATIVE-FIELDS.md), which retain the field caret
-and display viewports on cancellation. The editor now requires minor version 6.
+Navigation remains a source library shared by two applications. The current
+editor packages its picker as an [ABI 1.7 module](NATIVE-MODULES.md), loaded
+into its existing allocation on first use. All 22 CPU suites, ten emulator
+workflows and complete physical USB/IEC workflows pass in the
+[module checkpoint](validation/2026-09-11-native-modules/README.md). Kernel ABI 1.5
+provides owned directory/file and heap operations, and ABI 1.6
+[shared field controls](NATIVE-FIELDS.md) retain the field caret and display
+viewports on cancellation. The current editor requires minor version 7.
 Desktop and dialog navigation share `file-browser.inc`, `browser-ui.inc`,
 `browser-usb.inc` and `browser-ultimate.inc`; `FD_EMBEDDED` excludes application
 discovery, launch and binary-preview code from the editor.
@@ -30,6 +33,9 @@ As, `fd_device`/`fd_format` to the data backend, and `fd_name`/`fd_length` to
 the proposed name (0–255 bytes). `FD_NAME_BUFFER` supplies a writable 256-byte
 bank-0 field. Calls are foreground only, with interrupts enabled and a valid
 active app owner. Decimal and interrupt flags are preserved.
+`FD_SAFE_CHARACTER` supplies a caller routine which returns a safe printable
+character, replacing control bytes with a dot; the editor keeps it in its core
+so document filenames can be drawn before the module loads.
 
 Carry clear/A=0 returns a candidate filename and its backend. `fd_type`
 identifies SEQ/PRG/USR for IEC Open, preserving raw PRG load-address bytes.
@@ -69,8 +75,9 @@ emulator geometries and the physical USB/IEC workflows also pass.
 
 ## Qualification and remaining work
 
-The current library uses ABI 1.6 shared fields; applications must require minor
-6 in their manifests. The [field checkpoint](validation/2026-09-10-native-fields/README.md)
+The library uses ABI 1.6 shared fields; embedded callers require at least minor
+6, and the current modular editor requires 7. The preceding
+[field checkpoint](validation/2026-09-10-native-fields/README.md)
 qualifies its caret and viewport retention with twenty CPU suites, ten emulator
 workflows and full physical USB/IEC checks. All five complete document captures
 and the eight-byte field records match across picker cancellation. The older
@@ -93,4 +100,5 @@ The archive retains two interrupted IEC attempts and the host connection fix,
 with eight fault-injection cases proving that sent writes are never replayed.
 D71/D81 results are emulator evidence; the physical IEC run uses Ultimate
 emulated 1541 drives. Shared GUI events, dynamic modules, scheduling and the
-full OS roadmap remain open.
+full OS roadmap remain open; dynamic module qualification is tracked separately
+in [NATIVE-MODULES.md](NATIVE-MODULES.md).

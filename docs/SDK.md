@@ -10,6 +10,12 @@ ABI 1.2 adds directory pages and application handoff, used by the
 [native file/app browser](NATIVE-BROWSER.md).
 ABI 1.3 adds [Ultimate file streams](NATIVE-ULTIMATE.md), used by the
 [native editor](NATIVE-EDITOR.md) for USB Open and verified Save As.
+ABI 1.5 adds owned directory cursors, ABI 1.6 provides shared focused fields,
+and the ABI 1.7 candidate adds checked app-bound modules. The buildable
+[native module example](../examples/native-module/README.md) demonstrates
+manifests, token reuse, explicit load retry and both native consoles using
+the public native API. Its separate CPU workflows pass; the ABI 1.7 system
+images are still undergoing physical qualification.
 Its `$1c20` jump table and memory map are separate from this
 legacy desktop ABI. Desktop/app migration remains in progress.
 

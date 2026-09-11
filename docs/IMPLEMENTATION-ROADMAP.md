@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-10. This is the current completion checklist. The older
+Updated 2026-09-11. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -39,9 +39,17 @@ Primary references used for the comparison and implementation direction:
 * The local `../mp3-manual-en.pdf`, GEOS application disks, and MegaPatch image
   are comparison fixtures. Their presence does not establish uOS compatibility.
 
-A feature-by-feature Wheels manual audit and repeatable comparison sessions
-remain open. Record manual edition/page and observed behavior for every parity
-claim; do not infer the entire Wheels feature set from a summary website.
+The [Wheels owner-manual audit](WHEELS-PARITY.md) now covers all 67 PDF pages
+of the 1998 copyright edition and maps 23 behavior groups to uOS acceptance
+work. Repeatable comparison sessions and later-release coverage remain open.
+Record manual edition/page and observed behavior for every parity claim.
+The [Wheels programming-reference review](WHEELS-PROGRAMMING-REFERENCE.md)
+now covers all 38 pages of the edited author correspondence. It supplies
+specific module, source-location, expansion-memory, driver and display topics;
+it complements the owner-manual review and does not establish runtime parity.
+The same review now covers the seven-page 1998 installation leaflet visually,
+with keyboard-only setup, memory/device choices and source-disk protection
+mapped to installer acceptance work.
 The [MegaPatch 3 manual audit](MEGAPATCH-3-PARITY.md) now maps all fifteen pages
 of the supplied 2019/Jan/27 manual to sixteen behavior groups and concrete uOS
 acceptance checks. Runtime comparison sessions remain open. Its task manager
@@ -76,7 +84,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
 | FR-S4 shell | Commands, CAT, memory monitor, UCI navigation, HTTP socket GET | Shared FS integration, history/completion, scripts/pipes/redirection, jobs, useful errors, document/app launch | Scripted end-to-end workflow with removable media and network failures |
 | FR-S5 editor/calculator | Native banked text editor with 24-bit positions, transactional Open, verified exclusive Save As and qualified shared picker; 768-byte legacy editor; native integer calculator with 32-result banked history and verified SEQ export | Selection/clipboard/undo/find, shared GUI input and document/session recovery; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
-| FR-S6 SDK | Legacy application guide plus native ABI, manifest/image validator/sealer and calculator example | Broader versioned APIs, docs generated from exports, clean-checkout third-party workflow and portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
+| FR-S6 SDK | Legacy application guide plus native ABI, manifest/image validator/sealer, calculator and [standalone module example](../examples/native-module/README.md); 15 separate module-example CPU workflows reproduce from archived sources | Broader versioned APIs, docs generated from exports, clean-checkout third-party workflow and portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
 | FR-S7 appearance | Basic background colors | Backdrops, font/theme/pointer selection, screen saver, desktop arrangements and persistence | Change/restart/restore; memory budgets and low-RAM fallback |
 
 ## Application parity backlog
@@ -111,7 +119,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
-| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, interrupted operations and per-firmware protocol coverage |
+| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, observed completion of native-owned aborts, interrupted operations and per-firmware protocol coverage |
 | UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.6 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access, shared picker and focused fields | Shared graphical controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
@@ -400,6 +408,21 @@ other expansion allocators, system-disk recovery and application parity remain
 required. R3 is partial; the editor milestone does not complete it or the OS.
 The [next native platform steps](NATIVE-PLATFORM-NEXT.md) identify the memory
 constraints, observer changes and document/service acceptance gates for that work.
+
+The [ABI 1.7 module loader](NATIVE-MODULES.md) now loads the editor picker
+from the original app source into its existing 79-page allocation. Frozen-image
+CPU checks cover loader faults, token generations, caller/entry/allocation
+bounds, both Ultimate contexts, warm reuse and complete document retention.
+All 22 CPU suites and ten emulator workflows pass, as do 51 distinct host fault
+checks. The first physical USB run failed during a browser rescan before reaching
+the editor. Its initiating transport failure remains unresolved; the original
+desktop was restored and private resources were reclaimed with full byte proofs.
+The complete USB retry and physical IEC workflow pass on the same images.
+The [module checkpoint](validation/2026-09-11-native-modules/README.md) records
+194 screen pairs, 1,203 CPU captures, five complete retained documents and
+independent comparison of ten USB files and all four IEC document-disk files.
+The [desktop migration plan](NATIVE-DESKTOP-MIGRATION.md) identifies the actual
+legacy/native memory conflicts and the first display-ownership acceptance gate.
 
 Before calling the complete OS finished, audit every FR in the original PRD,
 every row above, all named app/hardware/firmware combinations, documentation,

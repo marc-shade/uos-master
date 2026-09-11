@@ -81,22 +81,27 @@ The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-Main kernel code/data ends at `$379d` exclusive, leaving 99 bytes before
-page tables. The allocator and field editor occupy `$1300..$1ab8`, leaving
-327 bytes in the low region. Public entries and the app load address remain
-stable. ABI 1.6 adds [shared focused field editing and drawing](NATIVE-FIELDS.md);
-all three supplied apps require minor 6. The boot PRG retains its preceding
-bytes. The [field checkpoint](validation/2026-09-10-native-fields/README.md)
+The current module kernel ends at `$37a9` exclusive, leaving
+87 bytes before page tables. The low region ends at `$1bc1`, leaving 63 bytes.
+Public entries and the app load address remain stable. ABI 1.6 adds
+[shared focused field editing and drawing](NATIVE-FIELDS.md); the calculator
+and browser require minor 6. The editor now requires the
+[ABI 1.7 module service](NATIVE-MODULES.md), whose 22 CPU suites, ten emulator
+workflows and complete physical USB/IEC workflows pass in the
+[module checkpoint](validation/2026-09-11-native-modules/README.md).
+The boot PRG retains its preceding bytes.
+The signed [field checkpoint](validation/2026-09-10-native-fields/README.md)
 passes twenty CPU suites, ten emulator workflows and complete physical USB/IEC
 qualification, including independent saved-file verification.
-Larger modules remain necessary for the complete native OS.
+Further module services and scheduling remain necessary for the complete native OS.
 
-The 15,361-byte kernel PRG includes an eight-page low-section copy at
-`$5000..$57ff`. Startup copies those 2,048 bytes to `$1300..$1aff` before heap
-initialization, including 71 padding bytes. All eight staging pages then become
+The 15,617-byte kernel PRG includes a nine-page low-section copy at
+`$5000..$58ff`. Startup copies those 2,304 bytes to `$1300..$1bff` before heap
+initialization, including 63 padding bytes. All nine staging pages then become
 ordinary managed memory.
 No live code executes there. `$3e00..$3eff` retains the browser's complete
-selected filename. The observer borrows `$3e00..$3fff` while input is idle,
+selected filename; `$3f00..$3fff` retains the original app source folder.
+The observer borrows `$3e00..$3fff` while input is idle,
 saves and restores all 512 bytes, and rejects this range as a capture source.
 The retained path occupies `$4a00..$4aff` in the existing service reservation.
 The workspace reserves `$df00..$feff` in bank 0 for its 8 KiB block so that the

@@ -37,9 +37,11 @@ not evidence for a native C128 MegaPatch reference installation. The older
 `mp33-en.d81` lists several one-block setup components; inspect their file
 structure before selecting it as a complete installer.
 
-No Wheels disk or manual was identified by this inventory. A primary Wheels
-reference and a recorded runtime comparison remain open. This inventory covers
-the local directory, not the user's complete software collection.
+No Wheels disk or manual was identified by this inventory. Subsequent primary
+[owner-manual](WHEELS-PARITY.md) and [programming/installation reference](WHEELS-PROGRAMMING-REFERENCE.md)
+reviews supply the documentary comparison. A Wheels runtime image and recorded
+comparison remain open. This inventory covers the local directory, not the
+user's complete software collection.
 
 For each runtime comparison, record the original image hash, private working
 copy, ROMs, display/input and memory configuration, reference version shown

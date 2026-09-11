@@ -1,10 +1,16 @@
 # Native banked text editor
 
 Build with `python3 build-native.py`, boot `target/native/uos128.d64`, press
-**B**, select **EDITOR** and press Enter. The editor is a checked ABI 1.6
+**B**, select **EDITOR** and press Enter. The current editor is an ABI 1.7
 application. It edits a document held in owned allocations across both C128
 RAM banks, with a 24-bit byte position and length. Both displays show the
 same document and cursor; the 80-column display shows more of each line.
+
+The [module loader](NATIVE-MODULES.md) loads its picker from `EDPICK.PRG`
+beside the original app. Both files are included on the generated disk. For
+USB, copy `edpick.prg` as `EDPICK.PRG` beside the editor. All 22 CPU suites,
+ten emulator workflows and complete physical USB/IEC workflows pass in the
+[ABI 1.7 checkpoint](validation/2026-09-11-native-modules/README.md).
 
 | Key | Action |
 |---|---|

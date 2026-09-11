@@ -5,12 +5,19 @@ The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.
 moved the allocator to `$1300`. The native Ultimate backend now reserves an
 additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
 entry addresses and the `$6000` app slot remain stable. The current main region
-has 99 free bytes, the low region has 327, and the service region leaves
-904 bytes before the retained browser path at `$4a00`. The ABI 1.5 directory
+has 87 free bytes, the low region has 63, and the service region leaves
+246 bytes before the retained browser path at `$4a00`. The ABI 1.5 directory
 cursor shares the owned stream API and supports native folder navigation.
 The [shared file picker](NATIVE-FILE-DIALOGS.md) is now implemented in the
 editor and passes [CPU, emulator and physical qualification](validation/2026-09-10-native-file-dialogs/README.md).
-Scheduling and a larger module architecture remain required.
+The [ABI 1.7 module loader](NATIVE-MODULES.md) now loads that picker into
+the editor's existing allocation. All 22 CPU suites, ten emulator workflows
+and complete physical USB/IEC workflows pass on the
+[frozen checkpoint images](validation/2026-09-11-native-modules/README.md).
+The first physical USB run failed on a browser rescan
+before reaching the editor; its evidence and successful resource cleanup are
+retained. The complete USB retry passed on the same images; the initiating
+fault remains unresolved. Scheduling and further module services remain required.
 
 ## 1. Resident growth and its remaining limits
 
@@ -28,9 +35,9 @@ restores its contents and checks that the low kernel remains intact. Its old
 `$1400` output path must not be used with this kernel. Host captures reject
 RAM0 sources overlapping their borrowed output or probe workspace.
 
-The BASIC entry remains intact. Startup copies eight pages from declared
-staging at `$5000..$57ff` into the low region before initializing the heap.
-The heap can then reuse all eight staging pages. `$4000..$4fff` remains reserved
+The BASIC entry remains intact. Startup copies nine pages from declared
+staging at `$5000..$58ff` into the low region before initializing the heap.
+The heap can then reuse all nine staging pages. `$4000..$4fff` remains reserved
 for Ultimate services. The bank-0 workspace block occupies `$df00..$feff`
 beneath ROM and is accessed through the CPU's native bank gateways.
 Further growth must continue accounting for both final and peak boot footprints.
@@ -57,16 +64,18 @@ cache pages are allocated lazily, up to the eight-page case shown here.
 | Extra picker cache at peak | — | `$f400..$fbff` | 8 |
 | Remaining heap | — | `$fc00..$feff` | 3 |
 
-Evaluate a checked bank-0 module window inside an app's declared allocation
-before extending fixed reservations. App code outside that window, its field
+ABI 1.7 implements a checked bank-0 module window inside an app's declared
+allocation. App code outside that window, its field
 state and its document handles must remain live while a picker or device panel
 occupies the window. A module load needs separate image/version/extent checks,
 an invalid state until complete verification, checked stream cleanup and a
 generation that prevents calling a replaced module. It must never overwrite
 caller code, and a missing or damaged module must return to the intact app.
-This is a proposed next implementation, not an available ABI. Acceptance must
-retain the existing large-document/two-workspace case, preserve ROM/IRQ and
-both-display behavior, and exercise failed module loads and stale entry tokens.
+CPU checks retain the large-document/two-workspace case and exercise failed
+module loads, stale entry tokens, allocation ownership and both displays.
+The completed emulator checks retain ROM/IRQ behavior and the full document
+and source lifecycle. Complete physical USB/IEC workflows also pass on the
+same frozen images, including independent saved-file readback.
 REU-backed caching and banked execution remain additional work; a module
 window alone does not implement app suspension or background scheduling.
 
@@ -182,7 +191,21 @@ the selected context's idle snapshot for uOS; a future broker must coordinate
 that ownership with other clients. It preserves foreign files and active UCI
 transactions. See the [full contract](NATIVE-ULTIMATE.md#directory-cursors--abi-15).
 
+The [first ABI 1.7 USB failure](validation/2026-09-11-native-modules/hardware-usb-initial-failure/README.md)
+also exposed a recovery gap in the CPU model: a timed-out native command
+submits an abort and returns before its completion is observed. Immediate
+directory cleanup can then report a busy interface and retain its owner.
+Qualify a bounded wait for that owned abort while preserving the initiating
+error, avoiding command replay and retaining ownership if completion remains
+uncertain. This modeled gap does not establish the physical failure's cause.
+
 ## 4. Migrate the desktop and Ultimate services
+
+The [native desktop migration plan](NATIVE-DESKTOP-MIGRATION.md) records the
+actual legacy/native address conflicts, a provisional surface budget and the
+first display-ownership/return acceptance gate. The old bitmap and matrix
+overlap the editor and its document storage; moving drawing-code origins alone
+does not make the graphical desktop native.
 
 Move the existing graphical desktop, cartridge file/control service, drive
 panel, network/RTC behavior and applications onto the versioned native services.
