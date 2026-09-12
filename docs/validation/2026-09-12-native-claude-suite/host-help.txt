@@ -1,0 +1,33 @@
+usage: bridge.py [-h] (--connect HOST:PORT | --listen PORT)
+                 [--command COMMAND] [--cwd CWD] [--machine {c128,c64}]
+                 [--no-panel] [--rate RATE] [-v] [--log-file LOG_FILE]
+                 [--log-level {DEBUG,INFO,WARNING,ERROR}]
+
+claude-c128 bridge: run Claude Code on Linux, display it on a real C128.
+
+Spawns Claude Code in an 80x25 PTY, emulates the terminal, converts each frame
+to PETSCII screen codes, and ships only the changed cells over a serial link to
+the C128. Keystrokes come back the other way.
+
+Transports:
+  --connect HOST:PORT   dial the Ultimate II+ modem listener (real hardware)
+  --listen PORT         wait for a client (VICE's -rsdev1 points here)
+  --stdio               run the client model locally, for development
+
+Example, against the real machine:
+  python3 server/bridge.py --connect 192.168.1.237:3000
+
+options:
+  -h, --help            show this help message and exit
+  --connect HOST:PORT   dial the Ultimate II+ modem listener
+  --listen PORT         wait for a client on 127.0.0.1:PORT (VICE)
+  --command COMMAND     what to run in the PTY (default: claude)
+  --cwd CWD             working directory for the child
+  --machine {c128,c64}  target machine: c128 uses the 80-column VDC and the
+                        40-column screen as a status panel; c64 uses the
+                        40-column screen as the terminal and has no panel
+  --no-panel            do not drive the 40-column companion screen
+  --rate RATE           link speed in bytes/sec (38400 baud 8N1 = 3840)
+  -v, --verbose
+  --log-file LOG_FILE   write the session log here as well as to stderr
+  --log-level {DEBUG,INFO,WARNING,ERROR}

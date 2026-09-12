@@ -1,0 +1,389 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -I /var/tmp/arc-scratch/uos-native-claude-suite/src/native -I /var/tmp/arc-scratch/uos-native-claude-suite/examples/native-module --labels=/var/tmp/arc-scratch/uos-native-claude-suite/cpu-regressions/sdk-build/parent.sym --list=/var/tmp/arc-scratch/uos-native-claude-suite/cpu-regressions/sdk-build/parent.lst -o /var/tmp/arc-scratch/uos-native-claude-suite/cpu-regressions/sdk-build/assemble-meheocqo/parent.prg /var/tmp/arc-scratch/uos-native-claude-suite/examples/native-module/parent.asm
+; Sat Sep 12 15:07:27 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-claude-suite/examples/native-module/parent.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-claude-suite/src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=10					N_ABI_MINOR = 10
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; checked PRG through owned IEC/Ultimate streams
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; owned read/create stream or Ultimate directory cursor
+=$1c44					N_FREAD         = $1c44          ; up to 512 file bytes, or one complete directory entry
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch with source fields
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$1c59					N_FEDIT         = $1c59          ; edit the active app's bounded field, no input polling
+=$1c5c					N_FDRAW         = $1c5c          ; draw that focused field at the current console position
+=$1c5f					N_MLOAD         = $1c5f          ; checked module from the original app's source folder
+=$1c62					N_MCALL         = $1c62          ; call the current module using its generation token
+=$1c65					N_MCLOSE        = $1c65          ; invalidate module; close/recover only its source stream
+=$1c68					N_VSHOW         = $1c68          ; experimental: present owned bank-0 $c000..$e3ff
+=$1c6b					N_VCLOSE        = $1c6b          ; experimental: restore text; keep surface allocation
+=$1c6e					N_UQUERY        = $1c6e          ; checked, read-only Ultimate query; shared file lock
+=$1bf0					N_NMIGATE       = $1bf0
+=$3d3e					N_NMIPTR        = $3d3e
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d17					N_MTOKEN        = $3d17          ; LE24: MLOAD output / MCALL input; zero is invalid
+=$3d1a					N_MERROR        = $3d1a          ; gate/loader error; MCALL preserves module's A/carry
+=$3d1b					N_MSTATE        = $3d1b          ; read-only: 0 empty, 1 loading, 2 ready, 3 running, 4 close retained
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device 8..30, or Ultimate DOS context 1/2
+=$3d22					N_NAMELEN       = $3d22          ; IEC launch name 1..16; Ultimate path length 1..255
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; first failed loader stream's nonzero transport status
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
+=$3d2d					N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
+=$3d2e					N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
+=$3d2f					N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude
+=$3d30					N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
+=$3d34					N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
+=$3d35					N_UIPTR         = $3d35          ; word: field-state address
+=$3d37					N_UIKEY         = $3d37
+=$3d38					N_UIWIDTH       = $3d38
+=$3d39					N_UIFLAGS       = $3d39          ; successful edit: bit 0 content, bit 1 caret changed
+=$3d3a					N_UIERROR       = $3d3a
+=$3d3b					N_UIBUSY        = $3d3b
+=$3d3c					N_UOP           = $3d3c
+=$3d3d					N_UARG          = $3d3d
+=0					N_U_IDENTIFY    = 0             ; UARG target 1..15; interface identification
+=1					N_U_HARDWARE    = 1             ; control hardware model, selector 0
+=2					N_U_DRIVES      = 2             ; control inventory, effective IEC addresses
+=3					N_U_POWER_A     = 3
+=4					N_U_POWER_B     = 4
+=5					N_U_INTERFACES  = 5             ; network interface count
+=6					N_U_MAC         = 6             ; UARG interface index
+=7					N_U_IP          = 7             ; UARG interface index; IP/mask/gateway
+=8					N_U_TIME        = 8             ; DOS GET_TIME; running cartridge RTC
+=9					N_U_QUERY_COUNT = 9
+=0					UI_LENGTH       = 0
+=1					UI_CARET        = 1
+=2					UI_MAXIMUM      = 2
+=3					UI_BUFFER       = 3
+=5					UI_VIEW40       = 5
+=6					UI_VIEW80       = 6
+=7					UI_FILTER       = 7
+=8					UI_STATE_BYTES  = 8
+=$3e00					N_BROWSERNAME   = $3e00          ; 256 bytes; restore selection after directory edits
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d50					N_MHEADER       = $3d50          ; private: independent 16-byte module manifest
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3f00					N_SOURCEPATH    = $3f00          ; private: original Ultimate app parent directory
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30 or Ultimate DOS context 1/2
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; IEC first error; Ultimate most recent numeric status
+=$3d90					N_FSTATUS       = $3d90          ; IEC serial error; Ultimate transport/verification detail
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; LE32 byte position, or directory entries consumed
+=$3d96					N_FFORMAT       = $3d96          ; 0 D64, 1 D71, 2 D81, 3 Ultimate DOS
+=$4e00					N_UPATH         = $4e00          ; 256-byte path mailbox, bank 0, reserved
+=$4a00					N_BROWSERPATH   = $4a00          ; ABI 1.5: persistent browser path, 1..255 raw bytes
+=$4f00					N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes + NUL
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$16					N_MEXHAUSTED    = $16            ; module generation retired until the next kernel boot
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$5000					N_RELOCBASE     = $5000          ; boot-only staging, reusable after relocation
+=$4000					N_SERVICEBASE   = $4000          ; resident Ultimate services and mailboxes
+=$5000					N_SERVICELIMIT  = $5000
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-claude-suite/examples/native-module/parent.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-claude-suite/examples/native-module/layout.inc
+
+=4					DEMO_PAGES = 4
+=25344					DEMO_WINDOW = N_APPBASE+$0300
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-claude-suite/examples/native-module/parent.asm
+
+.6000					app_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 07 00			        .byte 1,1,7,<(DEMO_WINDOW-N_APPBASE)
+>6008	2a 02				        .word app_end-app_image
+>600a	04 03				        .byte DEMO_PAGES,>(DEMO_WINDOW-N_APPBASE)
+>600c	20 00				        .word app_entry-app_image
+>600e	00 00				        .word 0                ; build.py seals the app before binding its module
+>6010	4d 4f 44 55 4c 45 20 44		        .text "module demo",0
+>6018	45 4d 4f 00
+>601c	00 00 00 00			        .fill N_APPBASE+32-*,0
+.6020					app_entry:
+.6020	d8		cld		        cld
+.6021	20 5a 60	jsr $605a	        jsr load_module        ; one initial attempt; R is an explicit retry
+.6024	20 f0 60	jsr $60f0	        jsr draw
+.6027					input_loop:
+.6027	a9 01		lda #$01	        lda #1
+.6029	8d 12 3d	sta $3d12	        sta N_READY
+.602c	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.602f	f0 f6		beq $6027	        beq input_loop
+.6031	a2 00		ldx #$00	        ldx #0
+.6033	8e 12 3d	stx $3d12	        stx N_READY
+.6036	c9 1b		cmp #$1b	        cmp #$1b
+.6038	f0 1b		beq $6055	        beq exit
+.603a	c9 0d		cmp #$0d	        cmp #13
+.603c	f0 0e		beq $604c	        beq call_key
+.603e	c9 52		cmp #$52	        cmp #$52               ; unshifted PETSCII R
+.6040	f0 04		beq $6046	        beq reload_key
+.6042	c9 72		cmp #$72	        cmp #$72
+.6044	d0 e1		bne $6027	        bne input_loop
+.6046					reload_key:
+.6046	20 5a 60	jsr $605a	        jsr load_module
+.6049	4c 4f 60	jmp $604f	        jmp redraw
+.604c					call_key:
+.604c	20 a0 60	jsr $60a0	        jsr call_module
+.604f					redraw:
+.604f	20 f0 60	jsr $60f0	        jsr draw
+.6052	4c 27 60	jmp $6027	        jmp input_loop
+.6055					exit:
+.6055	a9 00		lda #$00	        lda #0
+.6057	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; one-way exit releases the app and its module
+.605a					load_module:
+.605a	a9 00		lda #$00	        lda #0
+.605c	8d 71 61	sta $6171	        sta token
+.605f	8d 72 61	sta $6172	        sta token+1
+.6062	8d 73 61	sta $6173	        sta token+2
+.6065	8d 74 61	sta $6174	        sta result
+.6068	8d 77 61	sta $6177	        sta module_carry
+.606b	8d 78 61	sta $6178	        sta error
+.606e	8d 79 61	sta $6179	        sta status
+.6071	20 65 1c	jsr $1c65	        jsr N_MCLOSE           ; check retained loader cleanup before loading
+.6074	b0 21		bcs $6097	        bcs load_failed
+.6076	a2 0a		ldx #$0a	        ldx #module_name_end-module_name-1
+.6078					copy_name:
+.6078	bd 8c 61	lda $618c,x	        lda module_name,x
+.607b	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
+.607e	ca		dex		        dex
+.607f	10 f7		bpl $6078	        bpl copy_name
+.6081	a9 0b		lda #$0b	        lda #module_name_end-module_name
+.6083	8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.6086	20 5f 1c	jsr $1c5f	        jsr N_MLOAD             ; original app source, even if data CWD changed
+.6089	b0 0c		bcs $6097	        bcs load_failed
+.608b	a2 02		ldx #$02	        ldx #2
+.608d					save_token:
+.608d	bd 17 3d	lda $3d17,x	        lda N_MTOKEN,x
+.6090	9d 71 61	sta $6171,x	        sta token,x            ; retain all 24 bits outside the module window
+.6093	ca		dex		        dex
+.6094	10 f7		bpl $608d	        bpl save_token
+.6096	60		rts		        rts
+.6097					load_failed:
+.6097	8d 78 61	sta $6178	        sta error
+.609a	a9 01		lda #$01	        lda #1
+.609c	8d 79 61	sta $6179	        sta status
+.609f	60		rts		        rts
+.60a0					call_module:
+.60a0	ad 71 61	lda $6171	        lda token
+.60a3	0d 72 61	ora $6172	        ora token+1
+.60a6	0d 73 61	ora $6173	        ora token+2
+.60a9	f0 33		beq $60de	        beq call_done          ; Return does not retry a failed load
+.60ab	a2 02		ldx #$02	        ldx #2
+.60ad					restore_token:
+.60ad	bd 71 61	lda $6171,x	        lda token,x
+.60b0	9d 17 3d	sta $3d17,x	        sta N_MTOKEN,x
+.60b3	ca		dex		        dex
+.60b4	10 f7		bpl $60ad	        bpl restore_token
+.60b6	20 62 1c	jsr $1c62	        jsr N_MCALL
+.60b9	8d 75 61	sta $6175	        sta call_value
+.60bc	08		php		        php                    ; module A/carry are separate from N_MERROR
+.60bd	68		pla		        pla
+.60be	29 01		and #$01	        and #1
+.60c0	8d 76 61	sta $6176	        sta call_carry
+.60c3	ad 1a 3d	lda $3d1a	        lda N_MERROR
+.60c6	8d 78 61	sta $6178	        sta error
+.60c9	d0 14		bne $60df	        bne call_failed
+.60cb	ad 75 61	lda $6175	        lda call_value
+.60ce	8d 74 61	sta $6174	        sta result             ; a gate error must not become a counter value
+.60d1	ad 76 61	lda $6176	        lda call_carry
+.60d4	8d 77 61	sta $6177	        sta module_carry
+.60d7	f0 02		beq $60db	        beq call_status
+.60d9	a9 03		lda #$03	        lda #3                 ; this module reports counter wrap with carry
+.60db					call_status:
+.60db	8d 79 61	sta $6179	        sta status
+.60de					call_done:
+.60de	60		rts		        rts
+.60df					call_failed:
+.60df	a9 00		lda #$00	        lda #0
+.60e1	8d 71 61	sta $6171	        sta token
+.60e4	8d 72 61	sta $6172	        sta token+1
+.60e7	8d 73 61	sta $6173	        sta token+2
+.60ea	a9 02		lda #$02	        lda #2
+.60ec	8d 79 61	sta $6179	        sta status
+.60ef	60		rts		        rts
+.60f0					draw:
+.60f0	a9 00		lda #$00	        lda #0
+.60f2	8d 7a 61	sta $617a	        sta screen
+.60f5					draw_screen:
+.60f5	a5 d7		lda $d7		        lda $d7                ; C128 KERNAL's current display bit
+.60f7	2a		rol a		        rol
+.60f8	a9 00		lda #$00	        lda #0
+.60fa	2a		rol a		        rol
+.60fb	cd 7a 61	cmp $617a	        cmp screen
+.60fe	f0 03		beq $6103	        beq display_ready
+.6100	20 5f ff	jsr $ff5f	        jsr $ff5f              ; SWAPPER: select the other native console
+.6103					display_ready:
+.6103	a9 93		lda #$93	        lda #$93
+.6105	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6108	a9 97		lda #$97	        lda #<title
+.610a	a2 61		ldx #$61	        ldx #>title
+.610c	20 42 61	jsr $6142	        jsr puts
+.610f	ad 74 61	lda $6174	        lda result
+.6112	20 5b 61	jsr $615b	        jsr hex_byte
+.6115	a9 0d		lda #$0d	        lda #13
+.6117	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.611a	ad 79 61	lda $6179	        lda status
+.611d	0a		asl a		        asl
+.611e	a8		tay		        tay
+.611f	b9 b4 61	lda $61b4,y	        lda status_text,y
+.6122	be b5 61	ldx $61b5,y	        ldx status_text+1,y
+.6125	20 42 61	jsr $6142	        jsr puts
+.6128	ad 78 61	lda $6178	        lda error
+.612b	f0 03		beq $6130	        beq draw_help
+.612d	20 5b 61	jsr $615b	        jsr hex_byte
+.6130					draw_help:
+.6130	a9 ec		lda #$ec	        lda #<help
+.6132	a2 61		ldx #$61	        ldx #>help
+.6134	20 42 61	jsr $6142	        jsr puts
+.6137	ee 7a 61	inc $617a	        inc screen
+.613a	ad 7a 61	lda $617a	        lda screen
+.613d	c9 02		cmp #$02	        cmp #2
+.613f	d0 b4		bne $60f5	        bne draw_screen
+.6141	60		rts		        rts
+.6142					puts:
+.6142	8d 49 61	sta $6149	        sta puts_read+1
+.6145	8e 4a 61	stx $614a	        stx puts_read+2
+.6148					puts_read:
+.6148	ad ff ff	lda $ffff	        lda $ffff
+.614b	f0 0d		beq $615a	        beq puts_done
+.614d	20 d2 ff	jsr $ffd2	        jsr $ffd2              ; KERNAL may change A/X/Y
+.6150	ee 49 61	inc $6149	        inc puts_read+1
+.6153	d0 f3		bne $6148	        bne puts_read
+.6155	ee 4a 61	inc $614a	        inc puts_read+2
+.6158	d0 ee		bne $6148	        bne puts_read
+.615a					puts_done:
+.615a	60		rts		        rts
+.615b					hex_byte:
+.615b	8d 7b 61	sta $617b	        sta hex_value
+.615e	4a		lsr a		        lsr
+.615f	4a		lsr a		        lsr
+.6160	4a		lsr a		        lsr
+.6161	4a		lsr a		        lsr
+.6162	20 6a 61	jsr $616a	        jsr hex_digit
+.6165	ad 7b 61	lda $617b	        lda hex_value
+.6168	29 0f		and #$0f	        and #15
+.616a					hex_digit:
+.616a	aa		tax		        tax
+.616b	bd 7c 61	lda $617c,x	        lda hex_digits,x
+.616e	4c d2 ff	jmp $ffd2	        jmp $ffd2
+>6171	00 00 00			token:          .fill 3,0
+>6174	00				result:         .byte 0
+>6175	00				call_value:     .byte 0
+>6176	00				call_carry:     .byte 0
+>6177	00				module_carry:   .byte 0
+>6178	00				error:          .byte 0
+>6179	00				status:         .byte 0
+>617a	00				screen:         .byte 0
+>617b	00				hex_value:      .byte 0
+>617c	30 31 32 33 34 35 36 37		hex_digits:     .text "0123456789abcdef"
+>6184	38 39 41 42 43 44 45 46
+>618c	43 4f 55 4e 54 45 52 2e		module_name:    .text "counter.prg"
+>6194	50 52 47
+.6197					module_name_end:
+>6197	4d 4f 44 55 4c 45 20 44		title:          .text "module demo",13,"counter (hex): $",0
+>619f	45 4d 4f 0d 43 4f 55 4e 54 45 52 20 28 48 45 58
+>61af	29 3a 20 24 00
+>61b4	bc 61 c2 61 cf 61 dc 61		status_text:    .word ready_text,load_text,call_text,wrapped_text
+>61bc	52 45 41 44 59 00		ready_text:     .text "ready",0
+>61c2	4c 4f 41 44 20 45 52 52		load_text:      .text "load error $",0
+>61ca	4f 52 20 24 00
+>61cf	43 41 4c 4c 20 45 52 52		call_text:      .text "call error $",0
+>61d7	4f 52 20 24 00
+>61dc	43 4f 55 4e 54 45 52 20		wrapped_text:   .text "counter wrapped",0
+>61e4	57 52 41 50 50 45 44 00
+>61ec	0d 0d 52 45 54 55 52 4e		help:           .text 13,13,"return: call loaded module",13
+>61f4	3a 20 43 41 4c 4c 20 4c 4f 41 44 45 44 20 4d 4f
+>6204	44 55 4c 45 0d
+>6209	52 3a 20 52 45 4c 4f 41		                .text "r: reload counter.prg",13,"esc: exit",13,0
+>6211	44 20 43 4f 55 4e 54 45 52 2e 50 52 47 0d 45 53
+>6221	43 3a 20 45 58 49 54 0d 00
+.622a					app_end:
+
+;******  End of listing
