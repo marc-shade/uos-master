@@ -246,3 +246,19 @@ occupies eight bytes below BASIC; all 426 managed heap pages remain available.
 [Ultimate queries](NATIVE-ULTIMATE-CONTROLS.md) reuse the existing serialized
 file transport. Mutating device controls and native physical qualification of
 these added apps remain open.
+
+The [Claude lifecycle checkpoint](validation/2026-09-12-native-claude-lifecycle/README.md)
+addresses the Ultimate's asynchronous relay: the client keeps its NMI handler
+and receive credits active until the host acknowledges F8. Timeout and a second
+F8 both take normal native teardown. The Linux PTY starts only after RESYNC.
+Two frozen VICE workflows verify both exit directions, font/NMI restoration
+and complete desktop return; a separate rebuild matches all 19 images.
+
+Read-only physical discovery found DE00/NMI, port 3000, DTR disconnect and
+incoming RING already enabled. This did not boot or exercise either added app.
+The next physical candidate must be frozen from the updated suite, use the
+connect-only bridge after opening the client, and retain the existing verified
+desktop/disk/settings restoration. VDC observation during a serial session
+requires settled output: the IRQ observer does not preserve an interrupted
+client's selected VDC register and must not be treated as a concurrent drawing
+observer.

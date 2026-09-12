@@ -66,12 +66,17 @@ The current ABI 1.10 app suite has its own software qualification; its new
 Ultimate panel and Claude serial client still require native physical testing.
 
 The [Claude app](apps/claude/README.md) is included on both native desktop suite
-disks. Press **A** on the desktop, start the supplied Linux bridge using your
-Claude login and project, then press Return in the app to connect. F8 returns
+disks. Press **A** on the desktop and **Return** in the app to open the modem,
+then start the supplied Linux bridge using your Claude login and project. F8 returns
 to uOS; Escape is forwarded to Claude during the session. Building this client
 also requires cc65. The [Ultimate panel](docs/NATIVE-ULTIMATE-CONTROLS.md), opened
 with **U**, shows hardware identification, drive inventory, network addresses
 and the cartridge clock through shared native services.
+
+The [Claude lifecycle update](docs/validation/2026-09-12-native-claude-lifecycle/README.md)
+adds acknowledged F8 shutdown with a bounded fallback and starts the Linux
+process only after the C128 handshake. Its software tests and independent
+rebuild pass; native physical serial testing remains open.
 
 ## Storage and loader update (2026-09-08)
 
