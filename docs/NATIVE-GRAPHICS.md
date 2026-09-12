@@ -19,6 +19,11 @@ bytes, including the consumed-key counter and last key, and fully restored
 the original deployment. The [pinned Commodore source](COMMODORE-SOURCE-REFERENCE.md)
 confirms the ROM interrupt mapping and editor `CLI` path. Full physical desktop
 qualification remains open.
+The [observer integration](validation/2026-09-12-native-observer-integration/README.md)
+now applies these mapping and evidence fixes in production. The complete
+desktop/app sequence passes in VICE with 66 restored captures; physical mode
+snapshots use the same pause context and failed workflows complete verified
+cleanup before returning their error.
 
 ## Build and controls
 

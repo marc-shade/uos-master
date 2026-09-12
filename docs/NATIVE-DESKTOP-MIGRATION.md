@@ -181,6 +181,14 @@ physical input source and the earlier payload/buffer differences remain
 unresolved. Two controlled cursor-down events reproduce the exact three-byte
 pattern in VICE; the strict comparison correctly rejects it and is retained.
 
+The [integrated observer](validation/2026-09-12-native-observer-integration/README.md)
+now accepts the qualified mappings and records all completed first readbacks
+before rejecting differences. Mode capture and scripted keys share the pause
+context. Its full Calculator/Editor/Files sequence passes in VICE with 66
+restored captures and 101,274 payload bytes. Hardware cleanup also runs after
+capture failure, while failed restoration/readback retains recovery resources.
+The kernel, apps, disks and probe binaries are unchanged.
+
 Build the initial native display client against the public heap/file/module
 services. Keep optional graphics executable code in the app allocation or a
 declared module window. Before changing display registers, reserve all required
