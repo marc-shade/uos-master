@@ -10,6 +10,16 @@ through [owned IEC and Ultimate files](NATIVE-FILES.md), plus a
 The graphical desktop, remaining Ultimate services and application suite still require migration.
 The existing `target/ultos.d64` remains the graphical desktop build.
 
+The current source includes the [owned-abort completion follow-up](validation/2026-09-11-native-owned-abort/README.md).
+Its 24 CPU suites, clean build and ten emulator workflows pass. The first
+physical USB attempt failed during a saved-file reopen through DOS context 2.
+The full unmodified retry passes, including all closed-file readbacks and
+restoration/cleanup. Physical IEC qualification and the combined audits also
+pass, including independent readback of all four document-disk files. The
+initiating USB fault remains unexplained. The signed
+[module checkpoint](validation/2026-09-11-native-modules/README.md) is the
+preceding qualified kernel. The ABI and 426-page heap are unchanged.
+
 Use the native CPU observer when a hardware test needs bytes from a specific
 RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM
 address; the [editor checkpoint](validation/2026-09-09-native-editor/README.md)
@@ -23,7 +33,8 @@ x128 -default -8 target/native/uos128.d64 -drive8true -drive8type 1541
 ```
 
 The build requires Python 3, 64tass and VICE's c1541. It creates the native
-kernel, boot-sector and three app PRGs, D64 and image hash manifest in `target/native/`.
+kernel, boot-sector, three app PRGs and the picker module, D64 and image hash
+manifest in `target/native/`.
 `layout.json` records resident, metadata and boot-staging bounds; `uos128.sym`
 exports the assembled runtime addresses. The kernel PRG remains loaded at `$1c01`.
 Track 1/sector 0 is reserved in the BAM before adding file `U`; ordinary file

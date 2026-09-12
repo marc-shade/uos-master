@@ -116,6 +116,21 @@ excess response bytes and malformed statuses fail instead of masquerading as
 EOF. FILE_INFO supplies the checked extent; an empty READ status is accepted
 only when every requested byte arrived.
 
+The current [owned-abort follow-up](validation/2026-09-11-native-owned-abort/README.md)
+also observes completion of that native-owned abort before returning the error.
+It waits for transport idle or a second bounded timeout, preserving the
+initiating `$ff`/`$fc` status and making no further submission inside the wait.
+This lets immediate explicit directory cleanup proceed after a delayed abort.
+If the abort never completes, the error still returns within the bound and the
+owner remains retained for later checked recovery. Foreign transactions still
+receive no abort. The changed kernel passes 24 CPU suites and ten emulator
+workflows. The first physical USB attempt failed during a saved-file reopen
+through DOS context 2. The full unmodified retry passes, including complete
+readback of ten files, native cleanup and restoration of the desktop and DOS
+paths. Physical IEC qualification also passes with independent readback of all
+four document-disk files and full restoration/cleanup. Neither the synthetic
+delays nor these passing runs establish the initiating cause of the earlier USB failures.
+
 Writes preserve the source bytes, split a full 512-byte request into **511 + 1**,
 seek back and compare a complete read of the same extent. This retains the
 [physical USB corruption workaround](ULTIMATE-FILES.md) established for the

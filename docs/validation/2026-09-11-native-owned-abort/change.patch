@@ -1,0 +1,20 @@
+--- a/src/native/ultimate.inc
++++ b/src/native/ultimate.inc
+@@ -724,6 +724,17 @@
+         pha
+         lda #4
+         sta $df1c
++        ; This abort belongs to the command submitted above. Give firmware
++        ; a bounded interval to finish it before callers attempt cleanup.
++        ; Preserve the initiating error and never replay the command/abort.
++        jsr nu_timer_init
++nu_abort_wait:
++        lda $df1c
++        and #$3f
++        beq nu_abort_return
++        jsr nu_tick
++        bcc nu_abort_wait
++nu_abort_return:
+         pla
+ nu_transport_error:
+         sta N_FSTATUS
