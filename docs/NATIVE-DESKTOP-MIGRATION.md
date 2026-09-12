@@ -166,9 +166,20 @@ adds exact RAM-write receipts and bounded pause/resume batches. Its physical
 run stopped on a saved-MMU guard despite 856 complete write acknowledgements
 and exact borrower restoration. Original deployment and private-file cleanup
 were verified. A CPU model executing the actual ROM demonstrates that a nested
-IRQ can legitimately save MMU `$00`, which this guard rejects. Qualify that
-context before updating the observer; the prior payload/buffer differences
-remain unresolved.
+IRQ can legitimately save MMU `$00`, which this guard rejects.
+
+The [subsequent context qualification](validation/2026-09-12-native-capture-context/README.md)
+retains 48 CPU cases, 60 host controls, the focused VICE sequence, and forced
+nested RAM/VDC captures with complete foreground returns. The
+[pinned Commodore source comparison](COMMODORE-SOURCE-REFERENCE.md) independently
+matches the relevant IRQ/CLI excerpts to the local ROM. A physical run with
+the corrected private observer accepted both saved mappings and captured exact
+boot VIC/VDC payloads. It stopped on three ABI differences: the fill-value
+argument, consumed-key counter and last key. The allocator tables matched.
+Original deployment and both temporary-file deletions were verified. The
+physical input source and the earlier payload/buffer differences remain
+unresolved. Two controlled cursor-down events reproduce the exact three-byte
+pattern in VICE; the strict comparison correctly rejects it and is retained.
 
 Build the initial native display client against the public heap/file/module
 services. Keep optional graphics executable code in the app allocation or a

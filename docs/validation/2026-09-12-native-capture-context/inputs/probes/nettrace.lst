@@ -1,0 +1,291 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -I src -o probes/nettrace.bin -L probes/nettrace.lst probes/nettrace.asm
+; Sun Sep  6 14:36:15 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: probes/nettrace.asm
+
+
+;******  Processing file: src/equates.inc
+
+=$02					r0              =       $02
+=$02					r0L             =       $02
+=$03					r0H             =       $03
+=$04					r1              =       $04
+=$04					r1L             =       $04
+=$05					r1H             =       $05
+=$06					r2              =       $06
+=$06					r2L             =       $06
+=$07					r2H             =       $07
+=$08					r3              =       $08
+=$08					r3L             =       $08
+=$09					r3H             =       $09
+=$0a					r4              =       $0a
+=$0a					r4L             =       $0a
+=$0b					r4H             =       $0b
+=$0c					r5              =       $0c
+=$0c					r5L             =       $0c
+=$0d					r5H             =       $0d
+=$0e					r6              =       $0e
+=$0e					r6L             =       $0e
+=$0f					r6H             =       $0f
+=$10					r7              =       $10
+=$10					r7L             =       $10
+=$11					r7H             =       $11
+=$12					r8              =       $12
+=$12					r8L             =       $12
+=$13					r8H             =       $13
+=$14					r9              =       $14
+=$14					r9L             =       $14
+=$15					r9H             =       $15
+=$16					r10             =       $16
+=$16					r10L            =       $16
+=$17					r10H            =       $17
+=$18					r11             =       $18
+=$18					r11L            =       $18
+=$19					r11H            =       $19
+=$1a					r12             =       $1a
+=$1a					r12L            =       $1a
+=$1b					r12H            =       $1b
+=$1c					r13             =       $1c
+=$1c					r13L            =       $1c
+=$1d					r13H            =       $1d
+=$1e					r14             =       $1e
+=$1e					r14L            =       $1e
+=$1f					r14H            =       $1f
+=$20					r15             =       $20
+=$20					r15L            =       $20
+=$21					r15H            =       $21
+=$22					r16             =       $22
+=$02					X1              =       $02
+=$04					Y1              =       $04
+=$06					X2              =       $06
+=$08					Y2              =       $08
+=$fb					a0              =       $fb
+=$fb					a0L             =       $fb
+=$fc					a0H             =       $fc
+=$fd					a1              =       $fd
+=$fd					a1L             =       $fd
+=$fe					a1H             =       $fe
+=$70					a2              =       $70
+=$70					a2L             =       $70
+=$71					a2H             =       $71
+=$72					a3              =       $72
+=$72					a3L             =       $72
+=$73					a3H             =       $73
+=$74					a4              =       $74
+=$74					a4L             =       $74
+=$75					a4H             =       $75
+=$76					a5              =       $76
+=$76					a5L             =       $76
+=$77					a5H             =       $77
+=$78					a6              =       $78
+=$78					a6L             =       $78
+=$79					a6H             =       $79
+=$7a					a7              =       $7a
+=$7a					a7L             =       $7a
+=$7b					a7H             =       $7b
+=$7c					a8              =       $7c
+=$7c					a8L             =       $7c
+=$7d					a8H             =       $7d
+=$7e					a9              =       $7e
+=$7e					a9L             =       $7e
+=$7f					a9H             =       $7f
+
+;******  Return to file: probes/nettrace.asm
+
+
+;******  Processing file: src/routines.inc
+
+=$0316					brkVectorlo     = $0316
+=$0317					brkVectorhi     = $0317
+=$0811					MAINLOOP        = $0811
+=$0814					FIND_CTL        = $0814
+=$0817					FS_APP          = $0817
+=$081a					FS_SCREEN       = $081a
+=$081d					FS_RECT         = $081d
+=$0820					CLR_RECT        = $0820
+=$0823					LOAD_IMM        = $0823
+=$0826					APP_LOADER      = $0826
+=$0829					FILLFILE        = $0829
+=$082c					KEYIN           = $082c
+=$082f					GETCAP          = $082f
+=$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+=$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+=$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+=$7350					SETREC          = $7350
+=$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+=$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
+=$cc00					VDC_GETREG      = $cc00
+=$cc03					VDC_SETREG      = $cc03
+=$cc06					VDC_SEEK        = $cc06
+=$cc09					VDC_PUTS        = $cc09
+=$cc0c					VDC_PUTCHR      = $cc0c
+=$cc0f					VDC_CLS         = $cc0f
+=$cc12					VDC_FONTUP      = $cc12
+=$cc15					VDC_INIT        = $cc15
+=$cc18					VDC_PRESENT     = $cc18
+=$cc1b					VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+=$cc1e					VDC_CLR         = $cc1e  ; A=row -> blank the row
+=$cc21					VDC_BANNER      = $cc21  ; header rows 0-1
+=$cc24					VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
+=$23					vdcbpL          = $23
+=$24					vdcbpH          = $24
+=$25					vdcdpL          = $25
+=$26					vdcdpH          = $26
+=$1000					DESK_START      = $1000
+=$2fff					DESK_END        = $2fff
+=$5000					APP_START       = $5000
+=$8fff					APP_END         = $8fff
+=$9000					APP_CTL_TBL     = $9000
+=$9000					APP_CTL_CTR     = $9000
+=$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
+=$9b00					APP_ID_TBL      = $9b00
+=$9c00					REU_SIZE        = $9c00
+=$9c03					REU_STASH       = $9c03
+=$9c06					REU_FETCH       = $9c06
+=$9c09					REU_PARAMS      = $9c09
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
+=$a000					BITMAP_START    = $a000
+=$c000					GFX_INIT        = $c000
+=$c00f					GFX_SETPIXEL    = $c00f
+=$c021					GFX_DRAWBYTEPATTERN = $c021
+=$c006					GFX_ON          = $c006
+=$c009					GFX_OFF         = $c009
+=$c00c					GFX_SETCOLOR    = $c00c
+=$c015					GFX_LINE        = $c015
+=$c018					GFX_CIRCLE      = $c018
+=$c01b					GPUTC           = $c01b
+=$c01e					GPUTS           = $c01e
+
+;******  Return to file: probes/nettrace.asm
+
+.7f00	a9 00		lda #$00	        lda #$00
+=$7f01					VEC0 = *-1
+.7f02	8d 3c 03	sta $033c	        sta $033c
+.7f05	a9 00		lda #$00	        lda #$00
+=$7f06					VEC1 = *-1
+.7f07	8d 3d 03	sta $033d	        sta $033d
+.7f0a	a9 bd		lda #$bd	        lda #<host
+.7f0c	85 02		sta $02		        sta r0L
+.7f0e	a9 7f		lda #$7f	        lda #>host
+.7f10	85 03		sta $03		        sta r0H
+.7f12	ad ba 7f	lda $7fba	        lda portL
+.7f15	85 04		sta $04		        sta r1L
+.7f17	ad bb 7f	lda $7fbb	        lda portH
+.7f1a	85 05		sta $05		        sta r1H
+.7f1c	ad b9 7f	lda $7fb9	        lda proto
+.7f1f	20 09 91	jsr $9109	        jsr NET_OPEN
+.7f22	8d 00 60	sta $6000	        sta $6000
+.7f25	a9 00		lda #$00	        lda #$00
+.7f27	2a		rol a		        rol
+.7f28	8d 01 60	sta $6001	        sta $6001
+.7f2b	a2 02		ldx #$02	        ldx #$02
+.7f2d	20 a7 7f	jsr $7fa7	        jsr logstat
+.7f30	ad 01 60	lda $6001	        lda $6001
+.7f33	d0 6a		bne $7f9f	        bne done
+.7f35	a9 d6		lda #$d6	        lda #<req
+.7f37	85 02		sta $02		        sta r0L
+.7f39	a9 7f		lda #$7f	        lda #>req
+.7f3b	85 03		sta $03		        sta r0H
+.7f3d	ae bc 7f	ldx $7fbc	        ldx reqlen
+.7f40	ad 41 91	lda $9141	        lda NET_SOCK
+.7f43	20 12 91	jsr $9112	        jsr NET_WRITE
+.7f46	8d 40 60	sta $6040	        sta $6040
+.7f49	a2 41		ldx #$41	        ldx #$41
+.7f4b	20 a7 7f	jsr $7fa7	        jsr logstat
+.7f4e	a9 00		lda #$00	        lda #$00
+.7f50	8d b8 7f	sta $7fb8	        sta tries
+.7f53	ee b8 7f	inc $7fb8	rd:     inc tries
+.7f56	a9 c8		lda #$c8	        lda #200
+.7f58	85 04		sta $04		        sta r1L
+.7f5a	a9 00		lda #$00	        lda #$00
+.7f5c	85 05		sta $05		        sta r1H
+.7f5e	ad 41 91	lda $9141	        lda NET_SOCK
+.7f61	20 0f 91	jsr $910f	        jsr NET_READ
+.7f64	8d 81 60	sta $6081	        sta $6081
+.7f67	c9 01		cmp #$01	        cmp #$01
+.7f69	d0 07		bne $7f72	        bne rdone
+.7f6b	ad b8 7f	lda $7fb8	        lda tries
+.7f6e	c9 c8		cmp #$c8	        cmp #200
+.7f70	d0 e1		bne $7f53	        bne rd
+.7f72	ad b8 7f	lda $7fb8	rdone:  lda tries
+.7f75	8d 80 60	sta $6080	        sta $6080
+.7f78	a2 82		ldx #$82	        ldx #$82
+.7f7a	20 a7 7f	jsr $7fa7	        jsr logstat
+.7f7d	ad 3f 91	lda $913f	        lda NET_LEN
+.7f80	8d c0 60	sta $60c0	        sta $60c0
+.7f83	ad 40 91	lda $9140	        lda NET_LEN+1
+.7f86	8d c1 60	sta $60c1	        sta $60c1
+.7f89	a0 00		ldy #$00	        ldy #$00
+.7f8b	b9 02 88	lda $8802,y	cp:     lda NET_DATA+2,y
+.7f8e	99 c2 60	sta $60c2,y	        sta $60c2,y
+.7f91	c8		iny		        iny
+.7f92	c0 30		cpy #$30	        cpy #48
+.7f94	d0 f5		bne $7f8b	        bne cp
+.7f96	ad 41 91	lda $9141	        lda NET_SOCK
+.7f99	20 0c 91	jsr $910c	        jsr NET_CLOSE
+.7f9c	8d f8 60	sta $60f8	        sta $60f8
+.7f9f	a9 a5		lda #$a5	done:   lda #$a5
+.7fa1	8d ff 60	sta $60ff	        sta $60ff
+.7fa4	6c 3c 03	jmp ($033c)	        jmp ($033c)
+.7fa7					logstat:
+.7fa7	a0 00		ldy #$00	        ldy #$00
+.7fa9	b9 42 91	lda $9142,y	ls:     lda NET_STAT,y
+.7fac	9d 00 60	sta $6000,x	        sta $6000,x
+.7faf	f0 06		beq $7fb7	        beq lsd
+.7fb1	e8		inx		        inx
+.7fb2	c8		iny		        iny
+.7fb3	c0 1f		cpy #$1f	        cpy #31
+.7fb5	d0 f2		bne $7fa9	        bne ls
+.7fb7	60		rts		lsd:    rts
+>7fb8	00				tries:  .byte 0
+>7fb9	08				proto:  .byte $08               ; 7 tcp / 8 udp
+>7fba	7b				portL:  .byte 123
+>7fbb	00				portH:  .byte 0
+>7fbc	30				reqlen: .byte 48
+>7fbd	50 4f 4f 4c 2e 4e 54 50		host:   .text "pool.ntp.org", $00
+>7fc5	2e 4f 52 47 00
+>7fca	00 00 00 00 00 00 00 00		        .fill 12, 0
+>7fd2	00 00 00 00
+>7fd6	23				req:    .byte $23
+>7fd7	00 00 00 00 00 00 00 00		        .fill 31, 0             ; keep the probe under $8000 (sprite data)
+>7fdf	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>7fef	00 00 00 00 00 00 00
+
+;******  End of listing

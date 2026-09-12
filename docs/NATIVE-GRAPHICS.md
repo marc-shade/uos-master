@@ -12,6 +12,13 @@ The subsequent [focused capture diagnosis](validation/2026-09-12-native-capture-
 retains another restored failure and a reproducible observer guard defect:
 a nested C128 ROM interrupt can legitimately save MMU `$00`. Earlier captured
 byte differences remain unexplained.
+The [next context experiment](validation/2026-09-12-native-capture-context/README.md)
+qualifies nested RAM/VDC observation in VICE and retains a physical run with
+exact boot display payloads. That run failed a strict comparison of three ABI
+bytes, including the consumed-key counter and last key, and fully restored
+the original deployment. The [pinned Commodore source](COMMODORE-SOURCE-REFERENCE.md)
+confirms the ROM interrupt mapping and editor `CLI` path. Full physical desktop
+qualification remains open.
 
 ## Build and controls
 

@@ -21,6 +21,10 @@ application scheduler, or desktop Ultimate control application in that revision.
 
 Primary references used for the comparison and implementation direction:
 
+* [Pinned Commodore source collection](COMMODORE-SOURCE-REFERENCE.md): C128
+  KERNAL/editor IRQ and VDC behavior, 1571/1581 drive code, and REU RAMDOS.
+  Two IRQ/editor excerpts match the local ROM exactly; broader driver work
+  remains subject to the acceptance checks below.
 * [Ultimate UCI DOS target](https://1541u-documentation.readthedocs.io/en/master/uci/ultimate_dos_target.html)
   and [control target](https://1541u-documentation.readthedocs.io/en/latest/uci/control_target.html):
   cartridge-side storage/control commands. Use the installed firmware's commands
@@ -459,6 +463,13 @@ independently, including three incomplete attempts, full restoration and
 verified private-file cleanup. The final attempt retains seven differing
 restored-buffer bytes and 71 unexpected captured bytes. The cause remains
 unproven; capture-transport investigation precedes another full physical run.
+
+The [capture-context checkpoint](validation/2026-09-12-native-capture-context/README.md)
+qualifies the ROM's nested interrupt mapping in CPU/VICE tests and retains a
+further restored physical attempt. All boot VIC/VDC payloads matched, but the
+strict observer rejected three ABI bytes consistent with consumed keyboard
+input. The allocator tables matched; the source of physical input is not
+established. This checkpoint does not complete physical desktop qualification.
 
 The next [owned-abort completion change](validation/2026-09-11-native-owned-abort/README.md)
 is implemented as fifteen resident bytes with no additional heap reservation.
