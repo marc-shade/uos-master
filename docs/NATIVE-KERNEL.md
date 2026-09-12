@@ -29,6 +29,10 @@ physical desktop qualification has a separate [hardware record](validation/2026-
 ABI 1.9 adds `N_DESKTOPSEL` at `$3d2f`, retaining the desktop selection across
 app/workspace returns and clearing it on native restart. The resident intervals,
 public entry addresses and 426-page heap are unchanged.
+The [complete physical ABI 1.9 workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
+now passes all three app handoffs and returns, full CPU-captured display RAM,
+resident-code audits and verified restoration/cleanup. Physical video pixels
+and additional machine/ROM combinations remain separate qualification gates.
 
 Use the native CPU observer when a hardware test needs bytes from a specific
 RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM

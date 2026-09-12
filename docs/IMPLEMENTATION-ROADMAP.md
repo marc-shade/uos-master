@@ -485,6 +485,15 @@ pass, including all four document-disk files, the edited 66,056-byte save,
 restoration and confirmed removal of the three private temporary uploads.
 Neither physical failure's initiating cause has been established.
 
+The [complete ABI 1.9 physical desktop run](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
+now passes the native boot, Calculator/Editor/Files workflow, retained selection,
+full display-RAM and resident-code comparisons, final workspace and all 426
+pages free. It retains 66 captures, 101,274 CPU payload bytes, 264 matching
+borrower pairs and 1,906 exact RAM-write receipts. The original deployment,
+drives, settings, DOS paths and controls are restored; both private uploads
+have complete readback and confirmed deletion. Physical video pixels, the
+earlier failure causes and native Ultimate panels remain separate open work.
+
 Before calling the complete OS finished, audit every FR in the original PRD,
 every row above, all named app/hardware/firmware combinations, documentation,
 packaging and performance gates. Missing hardware evidence remains unverified;

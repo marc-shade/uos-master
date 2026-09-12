@@ -215,11 +215,13 @@ first display-ownership/return acceptance gate. The old bitmap and matrix
 overlap the editor and its document storage; moving drawing-code origins alone
 does not make the graphical desktop native.
 
-The private [native launcher](validation/2026-09-11-native-desktop-launcher/README.md)
-now boots a working graphical app selector with VDC text controls, actual
+The integrated [native launcher](NATIVE-GRAPHICS.md)
+boots a working graphical app selector with VDC text controls, actual
 Calculator/Editor/Files handoff, app return and allocation fallback. Its software
-qualification is sealed; physical graphics and production integration remain
-open. It releases the launcher and surface before opening another app, preserving
+qualification is sealed. The [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
+also passes, with complete CPU display-RAM/mode observations and verified
+restoration/cleanup. Physical video pixels remain unqualified.
+It releases the launcher and surface before opening another app, preserving
 the full native application memory budget.
 
 Move the existing graphical desktop, cartridge file/control service, drive

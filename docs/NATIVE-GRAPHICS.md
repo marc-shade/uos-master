@@ -7,8 +7,10 @@ services. The dispatcher releases the desktop before loading an app and reloads
 it when the app returns. The desktop keeps its selected app across app and
 workspace returns for the current session.
 
-Software qualification passes. Physical desktop qualification remains incomplete
-after three restored test interruptions; see the [hardware record](validation/2026-09-11-native-desktop-hardware/README.md).
+Software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
+pass. The C128 run verifies all three app handoffs, retained selection, complete
+display RAM, mode restoration and cleanup. Physical video pixels remain a
+separate gate. Earlier interruptions remain in the [hardware history](validation/2026-09-11-native-desktop-hardware/README.md).
 The subsequent [focused capture diagnosis](validation/2026-09-12-native-capture-transport/README.md)
 retains another restored failure and a reproducible observer guard defect:
 a nested C128 ROM interrupt can legitimately save MMU `$00`. Earlier captured
@@ -18,8 +20,8 @@ qualifies nested RAM/VDC observation in VICE and retains a physical run with
 exact boot display payloads. That run failed a strict comparison of three ABI
 bytes, including the consumed-key counter and last key, and fully restored
 the original deployment. The [pinned Commodore source](COMMODORE-SOURCE-REFERENCE.md)
-confirms the ROM interrupt mapping and editor `CLI` path. Full physical desktop
-qualification remains open.
+confirms the ROM interrupt mapping and editor `CLI` path. The later complete
+physical pass retains 12 successful captures interrupted with MMU `$00`.
 The [observer integration](validation/2026-09-12-native-observer-integration/README.md)
 now applies these mapping and evidence fixes in production. The complete
 desktop/app sequence passes in VICE with 66 restored captures; physical mode

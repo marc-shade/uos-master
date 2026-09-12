@@ -194,7 +194,12 @@ then adds desktop selection retained across app/workspace reloads, using one
 previously unused mailbox byte. Restart clears it and invalid values recover
 to Calculator. Resident layout and heap capacity are unchanged. All 265 CPU
 cases and six VICE workflows pass, including 2,496,000 rendered pixels and
-the complete shared app sequence. Physical qualification remains open.
+the complete shared app sequence. The subsequent [physical ABI 1.9 run](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
+passes that full sequence on the C128: all 66 captures and 264 borrower pairs
+match, all app/surface allocations are released, and the original deployment
+is restored. Both private uploads have complete readback and confirmed deletion.
+This records display RAM and mode registers; physical video pixels, the earlier
+failure causes and the remaining pointer/window/VDC bitmap work remain open.
 
 Build the initial native display client against the public heap/file/module
 services. Keep optional graphics executable code in the app allocation or a
