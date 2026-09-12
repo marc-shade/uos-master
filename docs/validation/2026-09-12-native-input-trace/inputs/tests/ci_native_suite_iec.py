@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Exercise the complete physical suite workflow through VICE and CPU capture."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import shlex
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+sys.dont_write_bytecode = True
+ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT),str(ROOT/'tests')]
+import ci_fm as ci
+from native_capture import NativeCapture, wait
+from native_capture_transport import PausedViceMonitor
+from native_suite_workflow import run_suite_workflow, absent_reference, close_bridges
+
+
+def free_port():
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1',0))
+        return sock.getsockname()[1]
+
+
+class ViceBridge:
+    def __init__(self, port):
+        self.port = port
+        self.prepared = {}
+        self.processes = []
+
+    def prepare(self, label, work, row):
+        if label not in self.prepared:
+            path = work/(label+'-bridge.log')
+            log = path.open('w')
+            command = [sys.executable,'-B',str(ROOT/'apps/claude/run.py'),'--listen',str(self.port),
+                '--command',shlex.join([sys.executable,'-B',str(ROOT/'tests/fixtures/claude-session.py')]),
+                '--no-panel','-v']
+            proc = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
+            self.processes.append((proc,log))
+            self.prepared[label] = (proc,log,command)
+            wait(lambda:'listening on' in path.read_text(), 'VICE serial bridge listening', 15)
+        row['bridge_command'] = self.prepared[label][2]
+
+    def __call__(self, label, work, row):
+        return self.prepared[label][:2]
+
+
+def main():
+    work = Path(tempfile.mkdtemp(prefix='uos-native-suite-iec-',dir='/var/tmp/arc-scratch'))
+    print('Native suite CPU workflow:',work,flush=True)
+    disk = work/'suite.d64'
+    shutil.copyfile(ROOT/'target/native-desktop/uos128.d64',disk)
+    report = dict(passed=False,physical_hardware_io=False,events=[],desktops=[],screens=[],
+        suite_reference=absent_reference(),images={name:hashlib.sha256((ROOT/'target/native-desktop'/name).read_bytes()).hexdigest()
+             for name in ('uos128.prg','uos128.d64','desktop.prg','controls.prg','claude.prg')})
+    def save(): (work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
+    save()
+    linkport, monport = free_port(), free_port()
+    factory = ViceBridge(linkport)
+    xv = None; mon = emu = None
+    log = (work/'vice.log').open('w')
+    try:
+        factory.prepare('claude-f8',work,{})
+        xv = ci.cbm.Xvfb()
+        command = ['x128','-default','-40col','-8',str(disk),'-drive8true','-drive8type','1541',
+            '-VDC16KB','-sounddev','dummy','-jamaction','0','-warp',
+            '-acia1','-acia1base','0xDE00','-acia1irq','1','-acia1mode','1','-myaciadev','0',
+            '-rsdev1',f'127.0.0.1:{linkport}','-rsdev1baud','38400',
+            '-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{monport}']
+        report['emulator_command'] = command; save()
+        emu = subprocess.Popen(command,env=dict(os.environ,DISPLAY=xv.display,
+            __EGL_VENDOR_LIBRARY_FILENAMES=ci.cbm.MESA_EGL),stdout=log,stderr=subprocess.STDOUT)
+        deadline = time.monotonic()+30
+        while mon is None:
+            assert emu.poll() is None, 'VICE exited during startup'
+            try: mon = ci.Monitor(port=monport)
+            except OSError:
+                if time.monotonic() >= deadline: raise
+                time.sleep(.1)
+        mon.resume()
+        paused = PausedViceMonitor(mon)
+        capture = NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=paused.paused)
+        report['captures'] = capture.records
+        report['paused_capture_batches'] = paused.batches
+        run_suite_workflow(paused,capture,work,disk,report,save,bridge_factory=factory,key_quiet=.1,key_poll=.1)
+        assert hashlib.sha256(disk.read_bytes()).hexdigest() == report['images']['uos128.d64']
+        report['passed'] = True
+        print('PASS: full shared suite workflow, two serial lifetimes, resident preservation and 426 free pages',flush=True)
+    except BaseException as error:
+        report['error'] = dict(type=type(error).__name__,message=str(error))
+        raise
+    finally:
+        if mon is not None:
+            try: mon.quit_emulator()
+            except (OSError,EOFError): pass
+            mon.close()
+        if emu is not None:
+            try: emu.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                emu.terminate()
+                try: emu.wait(timeout=5)
+                except subprocess.TimeoutExpired: emu.kill(); emu.wait()
+        close_bridges(factory)
+        if xv is not None: xv.stop()
+        log.close()
+        report['all_host_processes_terminal'] = all(proc.poll() is not None for proc,_ in factory.processes)
+        save()
+
+
+if __name__ == '__main__': main()

@@ -1,0 +1,1386 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o target/uos.prg -L target/uos.lst src/uos.asm
+; Wed Sep  9 09:46:01 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: src/uos.asm
+
+
+;******  Processing file: src/equates.inc
+
+=$02					r0              =       $02
+=$02					r0L             =       $02
+=$03					r0H             =       $03
+=$04					r1              =       $04
+=$04					r1L             =       $04
+=$05					r1H             =       $05
+=$06					r2              =       $06
+=$06					r2L             =       $06
+=$07					r2H             =       $07
+=$08					r3              =       $08
+=$08					r3L             =       $08
+=$09					r3H             =       $09
+=$0a					r4              =       $0a
+=$0a					r4L             =       $0a
+=$0b					r4H             =       $0b
+=$0c					r5              =       $0c
+=$0c					r5L             =       $0c
+=$0d					r5H             =       $0d
+=$0e					r6              =       $0e
+=$0e					r6L             =       $0e
+=$0f					r6H             =       $0f
+=$10					r7              =       $10
+=$10					r7L             =       $10
+=$11					r7H             =       $11
+=$12					r8              =       $12
+=$12					r8L             =       $12
+=$13					r8H             =       $13
+=$14					r9              =       $14
+=$14					r9L             =       $14
+=$15					r9H             =       $15
+=$16					r10             =       $16
+=$16					r10L            =       $16
+=$17					r10H            =       $17
+=$18					r11             =       $18
+=$18					r11L            =       $18
+=$19					r11H            =       $19
+=$1a					r12             =       $1a
+=$1a					r12L            =       $1a
+=$1b					r12H            =       $1b
+=$1c					r13             =       $1c
+=$1c					r13L            =       $1c
+=$1d					r13H            =       $1d
+=$1e					r14             =       $1e
+=$1e					r14L            =       $1e
+=$1f					r14H            =       $1f
+=$20					r15             =       $20
+=$20					r15L            =       $20
+=$21					r15H            =       $21
+=$22					r16             =       $22
+=$02					X1              =       $02
+=$04					Y1              =       $04
+=$06					X2              =       $06
+=$08					Y2              =       $08
+=$fb					a0              =       $fb
+=$fb					a0L             =       $fb
+=$fc					a0H             =       $fc
+=$fd					a1              =       $fd
+=$fd					a1L             =       $fd
+=$fe					a1H             =       $fe
+=$70					a2              =       $70
+=$70					a2L             =       $70
+=$71					a2H             =       $71
+=$72					a3              =       $72
+=$72					a3L             =       $72
+=$73					a3H             =       $73
+=$74					a4              =       $74
+=$74					a4L             =       $74
+=$75					a4H             =       $75
+=$76					a5              =       $76
+=$76					a5L             =       $76
+=$77					a5H             =       $77
+=$78					a6              =       $78
+=$78					a6L             =       $78
+=$79					a6H             =       $79
+=$7a					a7              =       $7a
+=$7a					a7L             =       $7a
+=$7b					a7H             =       $7b
+=$7c					a8              =       $7c
+=$7c					a8L             =       $7c
+=$7d					a8H             =       $7d
+=$7e					a9              =       $7e
+=$7e					a9L             =       $7e
+=$7f					a9H             =       $7f
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/routines.inc
+
+=$0316					brkVectorlo     = $0316
+=$0317					brkVectorhi     = $0317
+=$0811					MAINLOOP        = $0811
+=$0814					FIND_CTL        = $0814
+=$0817					FS_APP          = $0817
+=$081a					FS_SCREEN       = $081a
+=$081d					FS_RECT         = $081d
+=$0820					CLR_RECT        = $0820
+=$0823					LOAD_IMM        = $0823
+=$0826					APP_LOADER      = $0826
+=$0829					FILLFILE        = $0829
+=$082c					KEYIN           = $082c
+=$082f					GETCAP          = $082f
+=$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+=$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+=$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+=$083b					OS_TICK         = $083b  ; service the current once-per-second callback; clobbers callback registers
+=$083e					READ_BUTTON     = $083e  ; A=0 while either mouse fire button is down; nonzero when released
+=$7350					SETREC          = $7350
+=$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+=$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
+=$cc00					VDC_GETREG      = $cc00
+=$cc03					VDC_SETREG      = $cc03
+=$cc06					VDC_SEEK        = $cc06
+=$cc09					VDC_PUTS        = $cc09
+=$cc0c					VDC_PUTCHR      = $cc0c
+=$cc0f					VDC_CLS         = $cc0f
+=$cc12					VDC_FONTUP      = $cc12
+=$cc15					VDC_INIT        = $cc15
+=$cc18					VDC_PRESENT     = $cc18
+=$cc1b					VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+=$cc1e					VDC_CLR         = $cc1e  ; A=row -> blank the row
+=$cc21					VDC_BANNER      = $cc21  ; header rows 0-1
+=$cc24					VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
+=$23					vdcbpL          = $23
+=$24					vdcbpH          = $24
+=$25					vdcdpL          = $25
+=$26					vdcdpH          = $26
+=$1000					DESK_START      = $1000
+=$2fff					DESK_END        = $2fff
+=$5000					APP_START       = $5000
+=$8fff					APP_END         = $8fff
+=$9000					APP_CTL_TBL     = $9000
+=$9000					APP_CTL_CTR     = $9000
+=$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
+=$9b00					APP_ID_TBL      = $9b00
+=$9c00					REU_SIZE        = $9c00
+=$9c03					REU_STASH       = $9c03
+=$9c06					REU_FETCH       = $9c06
+=$9c09					REU_PARAMS      = $9c09
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=37218					NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
+=37219					NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+=37220					NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+=37223					NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+=37224					NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+=37225					NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
+=$a000					BITMAP_START    = $a000
+=$c000					GFX_INIT        = $c000
+=$c00f					GFX_SETPIXEL    = $c00f
+=$c021					GFX_DRAWBYTEPATTERN = $c021
+=$c006					GFX_ON          = $c006
+=$c009					GFX_OFF         = $c009
+=$c00c					GFX_SETCOLOR    = $c00c
+=$c015					GFX_LINE        = $c015
+=$c018					GFX_CIRCLE      = $c018
+=$c01b					GPUTC           = $c01b
+=$c01e					GPUTS           = $c01e
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/macros.inc
+
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/kernal.inc
+
+=$ff81					CINT   = $FF81;  ----  FF5B  init VIC & screen editor                                                  - - -  - - -  A X Y
+=$ff84					IOINIT = $FF84;  ----  FDA3  initialize CIA & IRQ                                                      - - -  - - -  A X Y
+=$ff87					RAMTAS = $FF87;  ----  FD50  RAM test & search RAM end                                                 - - -  - - -  A X Y
+=$ff8a					RESTOR = $FF8A;  ----  FD15  restore default I/O vectors                                               - - -  - - -  A - Y
+=$ff8d					VECTOR = $FF8D;  ----  FD1A  read/set I/O vectors               in: C=0 moves from Y/X to vectors      - X Y  - X -  A - Y
+=$ff90					SETMSG = $FF90;  ----  FE18  enable/disable KERNAL messages     in: A bit7=1 error msgs on             A - -  - - -  A - -
+=$ff93					SECOND = $FF93;  ----  EDB9  send secondary addr after listen   in: A=secondary address                A - -  - - -  A - -
+=$ff96					TKSA   = $FF96;  ----  EDC7  send secondary addr after talk     in: A=secondary address                A - -  - - -  A - -
+=$ff99					MEMTOP = $FF99;  ----  FE25  read/set top of memory             in: C=0; Y/X address                   - X Y  - X Y  - - -
+=$ff9c					MEMBOT = $FF9C;  ----  FE34  read/set bottom of memory          in: C=0; Y/X address                   - X Y  - X Y  - - -
+=$ff9f					SCNKEY = $FF9F;  ----  EA87  scan keyboard                                                             - - -  - - -  A X Y
+=$ffa2					SETTMO = $FFA2;  ----  FE21  set IEEE timeout                   in: A bit7=1 disable, bit7=0 enable    A - -  A - -  - - -
+=$ffa5					ACPTR  = $FFA5;  ----  EE13  input byte from SERIAL             out:A=byte, C=1 and ST=2 if timeout    - - -  A - -  A - -
+=$ffa8					CIOUT  = $FFA8;  ----  EDDD  output byte to SERIAL              in: A=byte, C=1 and ST=3 if timeout    A - -  A - -  - - -
+=$ffab					UNTLK  = $FFAB;  ----  EDEF  untalk all SERIAL devices                                                 - - -  - - -  A - -
+=$ffae					UNLSN  = $FFAE;  ----  EDFE  unlisten all SERIAL devices                                               - - -  - - -  A - -
+=$ffb1					LISTEN = $FFB1;  ----  ED0C  make SERIAL device listen          in: A=device number                    A - -  - - -  A - -
+=$ffb4					TALK   = $FFB4;  ----  ED09  make SERIAL device talk            in: A=device number                    A - -  - - -  A - -
+=$ffb7					READST = $FFB7;  ----  FE07  read I/O status byte               out:A=status byte                      - - -  A - -  A - -
+=$ffba					SETLFS = $FFBA;  ----  FE00  set file parameters                in: A=logical file number              A X Y  A X Y  - - -
+=$ffbd					SETNAM = $FFBD;  ----  FDF9  set file name                      in: A=length of filename               A X Y  A X Y  - - -
+=$ffc0					OPEN   = $FFC0;  031A  F34A  open log.file after SETLFS,SETNAM  out:A=error# if C=1                    - - -  - - -  A X Y
+=$ffc3					CLOSE  = $FFC3;  031C  F291  close a logical file               in: A=logical file number              A - -  - - -  A X Y
+=$ffc6					CHKIN  = $FFC6;  031E  F20E  open channel for input             in: X=logical file number              - X -  - - -  A X -
+=$ffc9					CHKOUT = $FFC9;  0320  F250  open channel for output            in: X=logical file number              - X -  - - -  A X -
+=$ffcc					CLRCHN = $FFCC;  0322  F333  restore default devices                                                   - - -  - - -  A X -
+=$ffcf					CHRIN  = $FFCF;  0324  F157  input character                    out:A=character, C=1 and ST=error      - - -  A - -  A - -
+=$ffd2					CHROUT = $FFD2;  0326  F1CA  output character                   in: A=character, C=1 and ST=error      A - -  A - -  - - -
+=$ffd5					LOAD   = $FFD5;  0330  F49E  load after call SETLFS,SETNAM      in: A=0 load, a=1 verify               A X Y  A X Y  A X Y
+=$ffd8					SAVE   = $FFD8;  0332  F5DD  save after call SETLFS,SETNAM      in: A=zero page pointer to start.addr  A X Y  - - -  A X Y
+=$ffdb					SETTIM = $FFDB;  ----  F6E4  set jiffy clock                    in: A=MSB, X=middle, Y=LSB             A X Y  - - -  - - -
+=$ffde					RDTIM  = $FFDE;  ----  F6DD  read jiffy clock                   out:A=MSB, X=middle, Y=LSB             - - -  A X Y  A X Y
+=$ffe1					STOP   = $FFE1;  0328  F6ED  check stop key                     out:Z=0 if STOP not used; X unchanged  - - -  A - -  A - -
+=$ffe4					GETIN  = $FFE4;  032A  F13E  get a byte from channel            out:keyboard:A=0 if puffer empty       - - -  A - -  A X Y
+=$ffe7					CLALL  = $FFE7;  032C  F32F  close or abort all files                                                  - - -  - - -  A X -
+=$ffea					UDTIM  = $FFEA;  ----  F69B  update jiffy clock                                                        - - -  - - -  A X -
+=$ffed					SCREEN = $FFED;  ----  E505  return screen size                 out:X=columns, Y=rows                  - - -  - X Y  - X Y
+=$fff0					PLOT   = $FFF0;  ----  E50A  read/set cursor position           in: C=0, X=row, Y=column               - X Y  - X Y  - - -
+=$fff3					IOBASE = $FFF3;  ----  E500  returns the addr of I/O devices    out:Y/X=addr($DC00)                    - - -  - X Y  - X Y
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/vic-ii.inc
+
+=$d000					VIC_BASE        = $d000
+=$d800					VIC_COLOR_RAM   = $d800
+=$0400					VIC_HIRES_COLOR = $0400
+=$00					VIC_SPR0_X      = $00     ; Sprite x / y screen position registers
+=$01					VIC_SPR0_Y      = $01
+=$02					VIC_SPR1_X      = $02
+=$03					VIC_SPR1_Y      = $03
+=$04					VIC_SPR2_X      = $04
+=$05					VIC_SPR2_Y      = $05
+=$06					VIC_SPR3_X      = $06
+=$07					VIC_SPR3_Y      = $07
+=$08					VIC_SPR4_X      = $08
+=$09					VIC_SPR4_Y      = $09
+=$0a					VIC_SPR5_X      = $0A
+=$0b					VIC_SPR5_Y      = $0B
+=$0c					VIC_SPR6_X      = $0C
+=$0d					VIC_SPR6_Y      = $0D
+=$0e					VIC_SPR7_X      = $0E
+=$0f					VIC_SPR7_Y      = $0F
+=$10					VIC_SPR_XMSb    = $10     ; MSB of the X coordinate (since 320 > 255). Bit 7 = sprite 7, 6 = sprite 6, etc
+=$11					VIC_CTRL_1      = $11
+=$11					SCROLY			= $11     ; Control register 1
+=$12					VIC_RASTER      = $12     ; Number of raster GFX_LINE at which a raster IRQ should be generated.
+=$13					VIC_LTPEN_X     = $13     ; X-portion of the screen position at which the beam was found when a strobe was generated (light pen)
+=$14					VIC_LTPEN_Y     = $14     ; Y-portion of the screen position at which the beam was found when a strobe was generated (light pen)
+=$15					VIC_SPR_ENBL    = $15     ; Sprite enable (bit 7= sprite 7, bit 6 = sprite 6 etc)
+=$16					VIC_CTRL_2      = $16     ; Control register 2
+=$17					VIC_SPR_XPND_X  = $17     ; Sprite expand (bit 7= sprite 7, bit 6 = sprite 6 etc)
+=$18					VIC_RAM_BASE    = $18     ; Base address of the character generator and video RAM
+=$19					VIC_IRR         = $19     ; IRR:Interrupt Request Register
+=$1a					VIC_IMR         = $1a     ; IMR:Interrupt Mask Register
+=$1b					VIC_SPR_PRI     = $1b     ; Priority register(sprites)
+=$1c					VIC_SPR_MULTI   = $1c     ; Multi-color register (sprites)
+=$1d					VIC_SPR_XPND_Y  = $1d     ; Sprite expand Y The sprites can be doubled in the Y-direction by setting
+=$1e					VIC_SPSP_COL    = $1e     ; Sprite/sprite collision
+=$1f					VIC_SPBK_COL    = $1f     ; Sprite/background collision
+=$20					VIC_BORDER_COL  = $20     ; Exterior color(border color) The border color is set in this register (0-15).
+=$21					VIC_BG_COL0     = $21     ; Background color registers 0-3
+=$22					VIC_BG_COL1     = $22     ; Background color register 0 determines the background color in
+=$23					VIC_BG_COL2     = $23     ; the "normal" text mode. If the multi-color mode is enabled, it
+=$24					VIC_BG_COL3     = $24     ; accesses registers 1-3
+=$25					VIC_SPR_MCOL0   = $25     ; Spritemulti-colorcolor0/1
+=$26					VIC_SPR_MCOL1   = $26     ; Sprites which are represented in multi-color can assume the back
+=$27					VIC_SPR_COL0    = $27     ; Color sprite 0-8
+=$28					VIC_SPR_COL1    = $28     ; The colors for the individual sprites are placed in these registers.
+=$29					VIC_SPR_COL2    = $29
+=$2a					VIC_SPR_COL3    = $2a
+=$2b					VIC_SPR_COL4    = $2b
+=$2c					VIC_SPR_COL5    = $2c
+=$2d					VIC_SPR_COL6    = $2d
+=$2e					VIC_SPR_COL7    = $2e
+=$2f					VIC_KYBRD_CTRL  = $2f     ; Keyboard control register
+=$30					VIC_CLOCK       = $30     ; 2MHz bit
+=$00					VIC_COLOR_BLACK   = $00
+=$01					VIC_COLOR_WHITE   = $01
+=$02					VIC_COLOR_RED     = $02
+=$03					VIC_COLOR_CYAN    = $03
+=$04					VIC_COLOR_PURPLE  = $04
+=$05					VIC_COLOR_GREEN   = $05
+=$06					VIC_COLOR_BLUE    = $06
+=$07					VIC_COLOR_YELLOW  = $07
+=$08					VIC_COLOR_ORANGE  = $08
+=$09					VIC_COLOR_BROWN   = $09
+=$0a					VIC_COLOR_LRED    = $0A
+=$0b					VIC_COLOR_DGREY   = $0B
+=$0c					VIC_COLOR_MGREY   = $0C
+=$0d					VIC_COLOR_LGREEN  = $0D
+=$0e					VIC_COLOR_LBLUE   = $0E
+=$0f					VIC_COLOR_LGREY   = $0F
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/io.inc
+
+=$dc08					TODTEN      = $DC08
+=$dc09					TODSEC      = $DC09
+=$dc0a					TODMIN      = $DC0A
+=$dc0b					TODHRS      = $DC0B
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/ultimate-files.inc
+
+=$4100					UFS_OPEN        = $4100  ; r0 -> NUL name (1..893 bytes), A=1 read / 7 create new read-write
+=$4103					UFS_CLOSE       = $4103  ; closes only a service-owned (including uncertain) handle
+=$4106					UFS_READ        = $4106  ; r0 -> app buffer, r1=1..512; COUNT actual, EOF at known size
+=$4109					UFS_WRITE       = $4109  ; r0 -> app bytes, r1=1..512; read-back verification before success
+=$410c					UFS_SEEK        = $410c  ; r0/r1 = 32-bit LE offset, within known file size
+=$410f					UFS_TELL        = $410f  ; copy owned handle's tracked SIZE/POS to public result
+=$4112					UFS_CLOSEALL    = $4112  ; release owned contexts; first failure returned, failed owner retained
+=$4115					UFS_VERSION     = $4115  ; byte = 1
+=$4116					UFS_RESULT      = $4116
+=$4117					UFS_COUNT       = $4117  ; word; caller must discard buffer/count when C=1
+=$4119					UFS_SIZE        = $4119  ; 32-bit LE; size at open or after verified writes
+=$411d					UFS_POS         = $411d  ; 32-bit LE; tracked position, valid only after success
+=$4121					UFS_EOF         = $4121  ; byte; successful READ reached known end (also set by TELL/SEEK)
+=$4122					UFS_MODE        = $4122  ; two bytes: 0=unowned, 1=read, 7=create read-write, $ff=close required
+=$4124					UFS_STATUS      = $4124  ; 32-byte NUL-terminated copy of last firmware status for this call
+=$8080					UFS_COMMAND     = $8080  ; 896 private bytes, through $83ff; sprites use only $8000..$807f
+=$4800					UFS_VIEW        = $4800  ; r0 -> filename, X=context; modal hex/ASCII viewer, Esc returns
+=$e0					UFS_BADARG      = $e0
+=$e1					UFS_NOTOPEN     = $e1
+=$e2					UFS_BUSY        = $e2    ; context owned, foreign file open, or nested call
+=$e3					UFS_READONLY    = $e3
+=$e4					UFS_PROTOCOL    = $e4
+=$e5					UFS_SHORT      = $e5    ; fewer bytes than known size/request says must be available
+=$e6					UFS_VERIFY     = $e6    ; write read-back differs
+=$e7					UFS_RANGE      = $e7    ; seek past known end / position overflow
+=$e8					UFS_UNCERTAIN  = $e8    ; retry CLOSE; never continue from an uncertain stream position
+
+;******  Return to file: src/uos.asm
+
+
+;******  Processing file: src/file-dialog.inc
+
+=$4c80					UFP_PICK        = $4c80
+=$4c83					UFP_RECOVER     = $4c83  ; restore pending CWD only once its owned file is closed
+=$4c86					UFP_VERSION     = $4c86
+=$4c87					UFP_RESULT      = $4c87
+=$4c88					UFP_PENDING     = $4c88  ; 0 none, 1 borrowed, 2 restore failed (OPEN blocked)
+=$4c89					UFP_CONTEXT     = $4c89
+=$4c8a					UFP_CWDLEN      = $4c8a  ; private saved CHANGE_DIR command length
+=$4c8c					UFP_PATHLEN     = $4c8c  ; returned absolute path length (word)
+=$4c8e					UFP_ACTIVE      = $4c8e  ; private: library running
+=$4c8f					UFP_MODE        = $4c8f  ; private requested OPEN mode
+=$4c90					UFP_DEFAULT     = $4c90  ; private caller default pointer
+=$4e00					UFP_CWD         = $4e00  ; private recovery command; survives app replacement
+=$6200					UFP_LIBRARY     = $6200
+=$7200					UFP_LEAF        = $7200  ; filename editor, max 127 bytes + NUL
+=$7400					UFP_DIRECTORY   = $7400 ; returned CWD, max 510 bytes + NUL
+=$7600					UFP_NAME        = $7600 ; returned complete selected name, max 511 + NUL
+=$7800					UFP_PATH        = $7800 ; returned absolute path, max 1021 + NUL
+=$e9					UFP_CANCELLED   = $e9
+=$ea					UFP_LOAD        = $ea
+
+;******  Return to file: src/uos.asm
+
+>0801	0c 08				.byte $0C, $08      ; pointer to next GFX_LINE
+>0803	0a 00				.byte $0A, $00      ; GFX_LINE number (10)
+>0805	9e				.byte $9E           ; SYS token
+>0806	20 32 30 36 32			.text " 2062"       ; SYS address in ASCII
+>080b	00 00 00			.byte $00, $00, $00 ; end-of-program
+.080e	4c 41 08	jmp $0841	        jmp START
+.0811	4c 6f 09	jmp $096f	        jmp main_loop   ; main loop entry
+.0814	4c 01 0a	jmp $0a01	        jmp find_control
+.0817	4c 1b 0f	jmp $0f1b	        jmp FETCH_STASH_APP
+.081a	4c ec 0e	jmp $0eec	        jmp FETCH_STASH_SCREEN
+.081d	4c 4e 0f	jmp $0f4e	        jmp FETCH_STASH_RECT
+.0820	4c cb 0e	jmp $0ecb	        jmp CLEAR_RECT
+.0823	4c e0 0a	jmp $0ae0	        jmp LOADIMM
+.0826	4c 55 0a	jmp $0a55	        jmp LOADER
+.0829	4c a3 0a	jmp $0aa3	        jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
+.082c	4c 09 9e	jmp $9e09	        jmp KEYIN_EXT   ; A = keyboard event (0 = none): KERNAL GETIN + C128 ESC/cursor scan (drv1351)
+.082f	4c d6 0f	jmp $0fd6	        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
+.0832	4c be 0a	jmp $0abe	        jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
+.0835	4c 1b cc	jmp $cc1b	        jmp VDC_TEXT    ; 80-col companion: A=row X=col r9->PETSCII text (driver, no-op w/o VDC)
+.0838	4c 1e cc	jmp $cc1e	        jmp VDC_CLR     ; 80-col companion: A=row -> blank the row (driver, no-op w/o VDC)
+.083b	4c 92 0b	jmp $0b92	        jmp TICK        ; app input loops can keep the desktop clock serviced
+.083e	4c da 09	jmp $09da	        jmp READ_BTN    ; shared, IRQ-guarded button read for either control port
+.0841					START:
+.0841	a9 12		lda #$12	        LDA #$12	; Load clock registers with inital time
+.0843	8d 0b dc	sta $dc0b		STA TODHRS	; Store 12 in hour  (Bit 7=PM)
+.0846	a9 00		lda #$00		LDA #$00
+.0848	8d 0a dc	sta $dc0a		STA TODMIN	; Store 0 in minutes
+.084b	a9 00		lda #$00		LDA #$00
+.084d	8d 09 dc	sta $dc09		STA TODSEC	; Store 0 in seconds
+.0850	a9 00		lda #$00		LDA #$00
+.0852	8d 08 dc	sta $dc08		STA TODTEN	; Store 0 in tenth of a second
+.0855	a9 01		lda #$01	        lda #$01
+.0857	85 22		sta $22		        sta r16         ; second register test
+.0859	a9 00		lda #$00	        lda #$00
+.085b	8d 20 d0	sta $d020	        sta VIC_BASE + VIC_BORDER_COL
+.085e	a9 00		lda #$00	        lda #$00
+.0860	8d 21 d0	sta $d021	        sta VIC_BASE + VIC_BG_COL0
+.0863	a9 93		lda #$93	        lda #$93
+.0865	20 d2 ff	jsr $ffd2	        jsr CHROUT
+.0868					_prmsg1
+.0868	a0 00		ldy #$00	        LDY #$00
+.086a					_prloop:
+.086a	b9 7e 08	lda $087e,y	        LDA msg1,Y
+.086d	f0 07		beq $0876	        BEQ _prdone
+.086f	20 d2 ff	jsr $ffd2	        JSR CHROUT
+.0872	c8		iny		        INY
+.0873	4c 6a 08	jmp $086a	        JMP _prloop
+.0876					_prdone:
+.0876	a9 0d		lda #$0d	        LDA #$0D
+.0878	20 d2 ff	jsr $ffd2	        JSR CHROUT
+.087b	4c 85 08	jmp $0885	        jmp loadfiles
+>087e	55 4c 54 4f 53 0d 00		msg1:   .text "ultos", $0d, $00
+.0885					loadfiles:
+.0885	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>0888	55 4f 53 2d 47 46 58 00			    .text "uos-gfx",$00
+.0890	20 55 0a	jsr $0a55	        jsr LOADER
+.0893	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>0896	55 4f 53 2d 56 44 43 00			    .text "uos-vdc",$00
+.089e	20 55 0a	jsr $0a55	        jsr LOADER
+.08a1	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>08a4	55 4f 53 2d 44 52 56 31			    .text "uos-drv1351",$00
+>08ac	33 35 31 00
+.08b0	20 55 0a	jsr $0a55	        jsr LOADER
+.08b3	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>08b6	55 4f 53 2d 53 50 52 49			    .text "uos-sprites",$00
+>08be	54 45 53 00
+.08c2	20 55 0a	jsr $0a55	        jsr LOADER
+.08c5	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>08c8	55 4f 53 2d 52 45 55 00			    .text "uos-reu",$00
+.08d0	20 55 0a	jsr $0a55	        jsr LOADER
+.08d3	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>08d6	55 4f 53 2d 4e 45 54 00			    .text "uos-net",$00
+.08de	20 55 0a	jsr $0a55	        jsr LOADER
+.08e1	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>08e4	55 4f 53 2d 46 49 4c 45		            .text "uos-files",$00
+>08ec	53 00
+.08ee	20 55 0a	jsr $0a55	        jsr LOADER
+.08f1	20 e0 0a	jsr $0ae0	        JSR LOADIMM
+>08f4	55 4f 53 2d 44 45 53 4b			    .text "uos-desktop",$00
+>08fc	54 4f 50 00
+.0900	20 55 0a	jsr $0a55	        jsr LOADER
+.0903					setup:
+.0903	20 00 c0	jsr $c000	    JSR GFX_INIT
+.0906	a9 03		lda #$03	    LDA #(VIC_COLOR_BLACK * 16 + VIC_COLOR_CYAN)
+.0908	20 06 c0	jsr $c006	    JSR GFX_ON
+.090b	78		sei		        sei
+.090c	a9 aa		lda #$aa	        lda #<SYSERR
+.090e	8d 16 03	sta $0316	        sta brkVectorlo
+.0911	a9 0b		lda #$0b	        lda #>SYSERR
+.0913	8d 17 03	sta $0317	        sta brkVectorhi
+.0916	58		cli		        cli
+.0917	a9 ff		lda #$ff	        lda #$ff
+.0919	8d 00 9b	sta $9b00	        sta APP_ID_TBL
+.091c	20 53 0e	jsr $0e53	        jsr SETUP_CTL_BUF
+.091f	a9 01		lda #$01	        lda #$01
+.0921	8d 15 d0	sta $d015	        sta VIC_BASE + VIC_SPR_ENBL
+.0924	a9 01		lda #$01	        lda #VIC_COLOR_WHITE
+.0926	8d 27 d0	sta $d027	        sta VIC_BASE + VIC_SPR_COL0
+.0929	a9 00		lda #$00	        lda #$00        ; $8000 = sprite table
+.092b	8d f8 87	sta $87f8	        sta $87f8
+.092e	a9 80		lda #$80	        lda #$80
+.0930	8d 00 d0	sta $d000	        sta VIC_BASE + VIC_SPR0_X
+.0933	8d 01 d0	sta $d001	        sta VIC_BASE + VIC_SPR0_Y
+.0936					setup_banking:
+.0936	a9 36		lda #$36	        lda #$36
+.0938	85 01		sta $01		        sta $01
+.093a	a9 00		lda #$00	        lda #<BITMAP_START              ; source addr
+.093c	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.093f	a9 a0		lda #$a0	        lda #>BITMAP_START
+.0941	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0944	a9 00		lda #$00	        lda #<$0000                     ; expanson ram addr
+.0946	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
+.0949	a9 00		lda #$00	        lda #>$0000
+.094b	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.094e	a9 00		lda #$00	        lda #$00                        ; bank 0
+.0950	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0953	a9 00		lda #$00	        lda #<$2000                     ; bytes to move  (8192)
+.0955	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0958	a9 20		lda #$20	        lda #>$2000
+.095a	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.095d	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0960	20 7d 0f	jsr $0f7d	        jsr VDPREF
+.0963	20 a0 0f	jsr $0fa0	        jsr VDSETUP
+.0966	20 15 91	jsr $9115	        jsr NET_SYNC
+.0969	20 03 9e	jsr $9e03	        jsr INIT_MOUSE
+.096c	20 00 10	jsr $1000	        jsr DESK_START
+.096f					main_loop:
+.096f	20 92 0b	jsr $0b92	        jsr TICK
+.0972	20 2c 08	jsr $082c	        jsr KEYIN
+.0975	c9 1b		cmp #$1b	        cmp #$1b
+.0977	f0 08		beq $0981	        beq esc_to_desk
+.0979	20 da 09	jsr $09da	        jsr READ_BTN
+.097c	f0 1e		beq $099c	        beq btnclick
+.097e	4c 6f 09	jmp $096f	        jmp main_loop
+.0981					esc_to_desk:
+.0981	ce 00 9b	dec $9b00	    dec APP_ID_TBL
+.0984	ad 00 9b	lda $9b00	    lda APP_ID_TBL
+.0987	20 23 08	jsr $0823	        jsr LOAD_IMM
+>098a	55 4f 53 2d 44 45 53 4b		        .text "uos-desktop",$00
+>0992	54 4f 50 00
+.0996	20 26 08	jsr $0826	        jsr APP_LOADER
+.0999	4c 00 10	jmp $1000	        jmp DESK_START
+.099c					btnclick:
+.099c	ee d8 09	inc $09d8	        inc mousedowntime
+.099f	d0 0d		bne $09ae	        bne _keepwaiting
+.09a1	ee d9 09	inc $09d9	        inc mousedowntime+1
+.09a4	ad d9 09	lda $09d9	        lda mousedowntime+1
+.09a7	c9 20		cmp #$20	        cmp #$20                ; just check if mouse down for a certain length of time
+.09a9	d0 03		bne $09ae	        bne _keepwaiting
+.09ab	20 c4 09	jsr $09c4	        jsr dragmode
+.09ae					_keepwaiting:
+.09ae	20 da 09	jsr $09da	        jsr READ_BTN
+.09b1	f0 e9		beq $099c	        beq btnclick
+.09b3	20 ca 09	jsr $09ca	        jsr normalmode
+.09b6	20 16 0b	jsr $0b16	        jsr TESTCLICK
+.09b9	d0 03		bne $09be	        bne goodclick
+.09bb	4c c1 09	jmp $09c1	        jmp next
+.09be					goodclick:
+.09be	6c 0a 00	jmp ($000a)	        jmp (r4L)
+.09c1					next:
+.09c1	4c 6f 09	jmp $096f	        jmp main_loop
+.09c4					dragmode:
+.09c4	a9 01		lda #$01	        lda #$01        ; $8000 = sprite table
+.09c6	8d f8 87	sta $87f8	        sta $87f8
+.09c9	60		rts		        rts
+.09ca					normalmode:
+.09ca	a9 00		lda #$00	        lda #$00
+.09cc	8d d8 09	sta $09d8	        sta mousedowntime
+.09cf	8d d9 09	sta $09d9	        sta mousedowntime + 1
+.09d2	a9 00		lda #$00	        lda #$00        ; $8000 = sprite table
+.09d4	8d f8 87	sta $87f8	        sta $87f8
+.09d7	60		rts		        rts
+.09d8					mousedowntime:
+>09d8	00 00				        .byte $00, $00
+.09da					READ_BTN:
+.09da	ad 01 dc	lda $dc01	        lda $dc01
+.09dd	29 10		and #$10	        and #$10
+.09df	f0 1c		beq $09fd	        beq _rb_down            ; port 1 fire down (port B is already input)
+.09e1	08		php		        php
+.09e2	78		sei		        sei
+.09e3	ad 02 dc	lda $dc02	        lda $dc02
+.09e6	48		pha		        pha
+.09e7	29 ef		and #$ef	        and #$ef                ; ONLY bit4 (fire) -> input; bits 6-7 stay
+.09e9	8d 02 dc	sta $dc02	        sta $dc02               ; outputs = the SID pot MUX select, or the
+.09ec	ad 00 dc	lda $dc00	        lda $dc00
+.09ef	29 10		and #$10	        and #$10                ; port 2 fire
+.09f1	8d 00 0a	sta $0a00	        sta rbtmp
+.09f4	68		pla		        pla
+.09f5	8d 02 dc	sta $dc02	        sta $dc02
+.09f8	28		plp		        plp
+.09f9	ad 00 0a	lda $0a00	        lda rbtmp
+.09fc	60		rts		        rts                     ; Z=1 iff port 2 fire down
+.09fd					_rb_down:
+.09fd	a9 00		lda #$00	        lda #$00
+.09ff	60		rts		        rts
+>0a00	00				rbtmp:  .byte $00
+.0a01					find_control:
+.0a01	a9 01		lda #$01	        lda #<APP_CTL_BUF
+.0a03	85 08		sta $08		        sta r3L
+.0a05	a9 90		lda #$90	        lda #>APP_CTL_BUF
+.0a07	85 09		sta $09		        sta r3H
+.0a09	a0 00		ldy #$00	        ldy #$00
+.0a0b	a2 00		ldx #$00	        ldx #$00
+.0a0d					 _loop:
+.0a0d	a5 09		lda $09		        lda r3H
+.0a0f	c9 91		cmp #$91	        cmp #>APP_CTL_END
+.0a11	f0 2d		beq $0a40	        beq _notfound
+.0a13					_skip:
+.0a13	b1 08		lda ($08),y	        lda (r3),y
+.0a15	c5 04		cmp $04		        cmp r1         ; check app id
+.0a17	f0 02		beq $0a1b	        beq _foundappid
+.0a19	d0 16		bne $0a31	        bne _skip9
+.0a1b					_foundappid:
+.0a1b	c8		iny		        iny
+.0a1c	b1 08		lda ($08),y	        lda (r3),y      ; get 1st byte
+.0a1e	c5 06		cmp $06		        cmp r2         ; compare to the id we want
+.0a20	f0 1d		beq $0a3f	        beq _foundctlid
+.0a22	88		dey		        dey             ; not same app id
+.0a23	a5 08		lda $08		        lda r3L
+.0a25	18		clc		        clc
+.0a26	69 0a		adc #$0a	        adc #$0a        ; skip 10 bytes
+.0a28	90 02		bcc $0a2c	        bcc _cont
+.0a2a	e6 09		inc $09		        inc r3H         ; if so, increase hi byte
+.0a2c					_cont:
+.0a2c	85 08		sta $08		        sta r3L         ; increase lo byte
+.0a2e	4c 0d 0a	jmp $0a0d	        jmp _loop       ; do it again
+.0a31					_skip9:
+.0a31	a5 08		lda $08		        lda r3L
+.0a33	18		clc		        clc
+.0a34	69 0a		adc #$0a	        adc #$0a
+.0a36	90 02		bcc $0a3a	        bcc _cont2
+.0a38	e6 09		inc $09		        inc r3H         ; if so, increase hi byte
+.0a3a					_cont2:
+.0a3a	85 08		sta $08		        sta r3L         ; increase lo byte
+.0a3c	4c 0d 0a	jmp $0a0d	        jmp _loop       ; do checks again
+.0a3f					_foundctlid:
+.0a3f	60		rts		        rts
+.0a40					_notfound:
+.0a40	a9 00		lda #$00	        lda #$00
+.0a42	85 09		sta $09		        sta r3H
+.0a44	85 08		sta $08		        sta r3L
+.0a46	60		rts		        rts
+.0a47					TOBASIC:
+.0a47	a9 93		lda #$93	    lda #$93
+.0a49	20 d2 ff	jsr $ffd2	    jsr CHROUT
+.0a4c	20 09 c0	jsr $c009	    jsr GFX_OFF
+.0a4f	a9 01		lda #$01	        lda #$01
+.0a51	8d 15 d0	sta $d015	        sta VIC_BASE + VIC_SPR_ENBL
+.0a54	60		rts		        RTS
+.0a55					LOADER:
+.0a55	a9 00		lda #$00	        lda #$00
+.0a57	8d 91 0a	sta $0a91	        sta LOADERR             ; this attempt owns the error latch
+.0a5a	a0 00		ldy #$00	        LDY #$00        ; print file name being loaded
+.0a5c					_prloop:
+.0a5c	b9 92 0a	lda $0a92,y	        LDA file,Y
+.0a5f	f0 07		beq $0a68	        BEQ _prdone
+.0a61	20 d2 ff	jsr $ffd2	        JSR CHROUT
+.0a64	c8		iny		        INY
+.0a65	4c 5c 0a	jmp $0a5c	        JMP _prloop
+.0a68					_prdone:
+.0a68	a9 0d		lda #$0d	        LDA #$0D
+.0a6a	20 d2 ff	jsr $ffd2	        JSR CHROUT
+.0a6d	ad 90 0a	lda $0a90	        LDA ftmp
+.0a70	a2 92		ldx #$92	        LDX #<file
+.0a72	a0 0a		ldy #$0a	        LDY #>file
+.0a74	20 bd ff	jsr $ffbd	        JSR $FFBD     ; call SETNAM
+.0a77	a9 01		lda #$01	        LDA #$01
+.0a79	a6 ba		ldx $ba		        LDX $BA       ; last used device number
+.0a7b	d0 02		bne $0a7f	        BNE _skip
+.0a7d	a2 08		ldx #$08	        LDX #$08      ; default to device 8
+.0a7f	a0 01		ldy #$01	_skip   LDY #$01      ; not $01 means: load to address stored in file
+.0a81	20 ba ff	jsr $ffba	        JSR $FFBA     ; call SETLFS
+.0a84	a9 00		lda #$00	        LDA #$00      ; $00 means: load to memory (not verify)
+.0a86	20 d5 ff	jsr $ffd5	        JSR $FFD5     ; call LOAD
+.0a89	b0 01		bcs $0a8c	        BCS _error    ; if carry set, a load error has happened
+.0a8b	60		rts		        RTS
+.0a8c					_error
+.0a8c	8d 91 0a	sta $0a91	        STA LOADERR   ; latch the kernal error for callers / diagnostics
+.0a8f	60		rts		        RTS
+>0a90	00				ftmp:   .byte $00
+>0a91	00				LOADERR: .byte $00     ; last kernal LOAD error ($04 file not found, $05 device
+>0a92	00 00 00 00 00 00 00 00		file:   .fill 17, 0              ; 16 filename bytes plus the terminator
+>0a9a	00 00 00 00 00 00 00 00 00
+.0aa3					FILLFILE_RT:
+.0aa3	a0 00		ldy #$00	        ldy #$00
+.0aa5	a2 00		ldx #$00	        ldx #$00
+.0aa7					_ffloop:
+.0aa7	b1 02		lda ($02),y	        lda (r0),y
+.0aa9	f0 09		beq $0ab4	        beq _ffdone
+.0aab	9d 92 0a	sta $0a92,x	        sta file,x
+.0aae	e8		inx		        inx
+.0aaf	c8		iny		        iny
+.0ab0	e0 10		cpx #$10	        cpx #$10                ; 1541 filenames cap at 16 chars
+.0ab2	d0 f3		bne $0aa7	        bne _ffloop
+.0ab4					_ffdone:
+.0ab4	8a		txa		        txa
+.0ab5	8d 90 0a	sta $0a90	        sta ftmp
+.0ab8	a9 00		lda #$00	        lda #$00
+.0aba	9d 92 0a	sta $0a92,x	        sta file,x
+.0abd	60		rts		        rts
+.0abe					LAUNCH_APP_RT:
+.0abe	20 12 41	jsr $4112	        jsr UFS_CLOSEALL        ; resident ownership survives a failed close
+.0ac1	20 83 4c	jsr $4c83	        jsr UFP_RECOVER
+.0ac4	ad 56 73	lda $7356	        lda SETREC_BG
+.0ac7	29 0f		and #$0f	        and #$0f
+.0ac9	d0 02		bne $0acd	        bne la_bg
+.0acb	a9 10		lda #$10	        lda #$10
+.0acd	20 06 c0	jsr $c006	la_bg:  jsr GFX_ON
+.0ad0	a9 00		lda #$00	        lda #$00
+.0ad2	8d f8 87	sta $87f8	        sta $87f8
+.0ad5	20 55 0a	jsr $0a55	        jsr LOADER
+.0ad8	90 03		bcc $0add	        bcc la_loaded
+.0ada	4c 00 10	jmp $1000	        jmp DESK_START          ; a failed/partial load cannot enter APP_START
+.0add					la_loaded:
+.0add	4c 00 50	jmp $5000	        jmp APP_START
+.0ae0					LOADIMM:
+.0ae0	48		pha			PHA     		; save A
+.0ae1	98		tya			TYA			; copy Y
+.0ae2	48		pha			PHA  			; save Y
+.0ae3	8a		txa			TXA			; copy X
+.0ae4	48		pha			PHA  			; save X
+.0ae5	ba		tsx			TSX			; get stack pointer
+.0ae6	bd 04 01	lda $0104,x		LDA $0104,X		; get return address low byte (+4 to correct pointer)
+.0ae9	85 bc		sta $bc			STA $BC			; save in page zero
+.0aeb	bd 05 01	lda $0105,x		LDA $0105,X		; get return address high byte (+5 to correct pointer)
+.0aee	85 bd		sta $bd			STA $BD			; save in page zero
+.0af0	a0 01		ldy #$01		LDY #$01		; set index (+1 to allow for return address offset)
+.0af2					LOADIMM2:
+.0af2	b1 bc		lda ($bc),y		LDA ($BC),Y		; get byte from string
+.0af4	f0 0c		beq $0b02		BEQ LOADIMM3	        ; exit if null (end of text)
+.0af6	88		dey		        DEY
+.0af7	99 92 0a	sta $0a92,y		STA file,Y
+.0afa	c8		iny		        INY
+.0afb	98		tya		        TYA
+.0afc	8d 90 0a	sta $0a90	        STA ftmp
+.0aff	c8		iny		        INY			; increment index
+.0b00	d0 f0		bne $0af2		BNE LOADIMM2	        ; loop (exit if 256th character)
+.0b02					LOADIMM3:
+.0b02	98		tya			TYA                     ; copy index
+.0b03	18		clc			CLC			; clear carry
+.0b04	65 bc		adc $bc			ADC $BC			; add string pointer low byte to index
+.0b06	9d 04 01	sta $0104,x		STA $0104,X		; put on stack as return address low byte
+.0b09	a9 00		lda #$00		LDA #$00		; clear A
+.0b0b	65 bd		adc $bd			ADC $BD		        ; add string pointer high byte
+.0b0d	9d 05 01	sta $0105,x		STA $0105,X		; put on stack as return address high byte
+.0b10	68		pla			PLA			; pull value
+.0b11	aa		tax			TAX  			; restore X
+.0b12	68		pla			PLA			; pull value
+.0b13	a8		tay			TAY  			; restore Y
+.0b14	68		pla			PLA  			; restore A
+.0b15	60		rts			RTS
+.0b16					TESTCLICK:
+.0b16	08		php		        php
+.0b17	78		sei		        sei
+.0b18	ad 10 d0	lda $d010	        lda VIC_BASE + VIC_SPR_XMSb
+.0b1b	29 01		and #$01	        and #1
+.0b1d	85 0d		sta $0d		        sta r5H
+.0b1f	38		sec		        sec
+.0b20	ad 00 d0	lda $d000	        lda VIC_BASE + VIC_SPR0_X
+.0b23	e9 18		sbc #$18	        sbc #24
+.0b25	85 0c		sta $0c		        sta r5L
+.0b27	a5 0d		lda $0d		        lda r5H
+.0b29	e9 00		sbc #$00	        sbc #0
+.0b2b	85 0d		sta $0d		        sta r5H
+.0b2d	ad 01 d0	lda $d001	        lda VIC_BASE + VIC_SPR0_Y
+.0b30	38		sec		        sec
+.0b31	e9 32		sbc #$32	        sbc #50
+.0b33	85 0e		sta $0e		        sta r6L
+.0b35	28		plp		        plp
+.0b36	a2 00		ldx #$00	        ldx #$00
+.0b38	a9 19		lda #$19	        lda #25                 ; scan the whole bounded table (25 slots),
+.0b3a	85 04		sta $04		        sta r1                  ; not the counter: a freed slot in the middle
+.0b3c					_loopbtns:
+.0b3c	bd 01 90	lda $9001,x	        lda APP_CTL_BUF,x
+.0b3f	c9 ff		cmp #$ff	        cmp #$ff
+.0b41	f0 43		beq $0b86	        beq _checknextbtn
+.0b43	a5 0d		lda $0d		        lda r5H
+.0b45	dd 06 90	cmp $9006,x	        cmp APP_CTL_BUF+5,x
+.0b48	90 3c		bcc $0b86	        bcc _checknextbtn
+.0b4a	d0 07		bne $0b53	        bne _test_right
+.0b4c	a5 0c		lda $0c		        lda r5L
+.0b4e	dd 05 90	cmp $9005,x	        cmp APP_CTL_BUF+4,x
+.0b51	90 33		bcc $0b86	        bcc _checknextbtn
+.0b53					_test_right:
+.0b53	a5 0d		lda $0d		        lda r5H
+.0b55	dd 09 90	cmp $9009,x	        cmp APP_CTL_BUF+8,x
+.0b58	90 09		bcc $0b63	        bcc _test_vertical
+.0b5a	d0 2a		bne $0b86	        bne _checknextbtn
+.0b5c	a5 0c		lda $0c		        lda r5L
+.0b5e	dd 08 90	cmp $9008,x	        cmp APP_CTL_BUF+7,x
+.0b61	b0 23		bcs $0b86	        bcs _checknextbtn
+.0b63					_test_vertical:
+.0b63	a5 0e		lda $0e		        lda r6L
+.0b65	dd 07 90	cmp $9007,x	        cmp APP_CTL_BUF+6,x
+.0b68	90 1c		bcc $0b86	        bcc _checknextbtn
+.0b6a	dd 0a 90	cmp $900a,x	        cmp APP_CTL_BUF+9,x
+.0b6d	b0 17		bcs $0b86	        bcs _checknextbtn
+.0b6f	bd 01 90	lda $9001,x	        lda APP_CTL_BUF,x
+.0b72	85 06		sta $06		        sta r2
+.0b74	bd 02 90	lda $9002,x	        lda APP_CTL_BUF+1,x
+.0b77	85 08		sta $08		        sta r3
+.0b79	bd 03 90	lda $9003,x	        lda APP_CTL_BUF+2,x
+.0b7c	85 0a		sta $0a		        sta r4L
+.0b7e	bd 04 90	lda $9004,x	        lda APP_CTL_BUF+3,x
+.0b81	85 0b		sta $0b		        sta r4H
+.0b83	a9 01		lda #$01	        lda #1
+.0b85	60		rts		        rts
+.0b86					_checknextbtn
+.0b86	8a		txa		        txa
+.0b87	18		clc		        clc
+.0b88	69 0a		adc #$0a	        adc #$0a
+.0b8a	aa		tax		        tax
+.0b8b	c6 04		dec $04		        dec r1
+.0b8d	d0 ad		bne $0b3c	        bne _loopbtns
+.0b8f					_badclick:
+.0b8f	a9 00		lda #$00	        lda #$00
+.0b91	60		rts		        rts
+.0b92					TICK:
+.0b92	a5 22		lda $22		        lda r16
+.0b94	cd 09 dc	cmp $dc09	        cmp $DC09
+.0b97	d0 03		bne $0b9c	        bne _tick
+.0b99	4c a9 0b	jmp $0ba9	        jmp _skip
+.0b9c					_tick:
+.0b9c	ad 09 dc	lda $dc09	        lda $DC09
+.0b9f	85 22		sta $22		        sta r16
+.0ba1	ad 3d 03	lda $033d	        lda $033d
+.0ba4	f0 03		beq $0ba9	        beq _skip
+.0ba6	6c 3c 03	jmp ($033c)	        jmp ($033c)
+.0ba9					_skip:
+.0ba9	60		rts		        rts
+.0baa					SYSERR:
+.0baa	68		pla		        pla
+.0bab	68		pla		        pla
+.0bac	68		pla		        pla
+.0bad	68		pla		        pla
+.0bae	68		pla			pla
+.0baf	85 02		sta $02			sta r0+0
+.0bb1	68		pla			pla
+.0bb2	85 03		sta $03			sta r0+1
+.0bb4	38		sec			sec
+.0bb5	a5 02		lda $02			lda r0+0
+.0bb7	e9 02		sbc #$02		sbc #<(2)
+.0bb9	85 02		sta $02			sta r0+0
+.0bbb	a5 03		lda $03			lda r0+1
+.0bbd	e9 00		sbc #$00		sbc #>(2)
+.0bbf	85 03		sta $03			sta r0+1
+.0bc1	a5 03		lda $03		        lda r0H
+.0bc3	a2 00		ldx #$00	        ldx #0
+.0bc5	20 ce 0d	jsr $0dce		jsr er1
+.0bc8	a5 02		lda $02		        lda r0L
+.0bca	20 ce 0d	jsr $0dce		jsr er1
+.0bcd	a9 00		lda #$00	        lda #$00
+.0bcf	85 03		sta $03		        sta X1+1
+.0bd1	a9 64		lda #$64	        lda #100
+.0bd3	85 02		sta $02		        sta X1
+.0bd5	a9 00		lda #$00	        lda #$00
+.0bd7	85 07		sta $07		        sta X2+1
+.0bd9	a9 db		lda #$db	        lda #100 + 119
+.0bdb	85 06		sta $06		        sta X2
+.0bdd	a9 46		lda #$46	        lda #70
+.0bdf	85 04		sta $04		        sta Y1
+.0be1	a9 46		lda #$46	        lda #70
+.0be3	85 08		sta $08		        sta Y2
+.0be5	a9 00		lda #$00	        lda #$00
+.0be7	85 05		sta $05		        sta Y1+1
+.0be9	85 09		sta $09		        sta Y2+1
+.0beb	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0bee	a9 00		lda #$00	        lda #$00
+.0bf0	85 03		sta $03		        sta X1+1
+.0bf2	a9 64		lda #$64	        lda #100
+.0bf4	85 02		sta $02		        sta X1
+.0bf6	a9 00		lda #$00	        lda #$00
+.0bf8	85 07		sta $07		        sta X2+1
+.0bfa	a9 db		lda #$db	        lda #100 + 119
+.0bfc	85 06		sta $06		        sta X2
+.0bfe	a9 8c		lda #$8c	        lda #70 + 70
+.0c00	85 04		sta $04		        sta Y1
+.0c02	a9 8c		lda #$8c	        lda #70 + 70
+.0c04	85 08		sta $08		        sta Y2
+.0c06	a9 00		lda #$00	        lda #$00
+.0c08	85 05		sta $05		        sta Y1+1
+.0c0a	85 09		sta $09		        sta Y2+1
+.0c0c	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c0f	a9 00		lda #$00	        lda #$00
+.0c11	85 03		sta $03		        sta X1+1
+.0c13	a9 64		lda #$64	        lda #100
+.0c15	85 02		sta $02		        sta X1
+.0c17	a9 00		lda #$00	        lda #$00
+.0c19	85 07		sta $07		        sta X2+1
+.0c1b	a9 64		lda #$64	        lda #100
+.0c1d	85 06		sta $06		        sta X2
+.0c1f	a9 46		lda #$46	        lda #70
+.0c21	85 04		sta $04		        sta Y1
+.0c23	a9 8c		lda #$8c	        lda #70 + 70
+.0c25	85 08		sta $08		        sta Y2
+.0c27	a9 00		lda #$00	        lda #$00
+.0c29	85 05		sta $05		        sta Y1+1
+.0c2b	85 09		sta $09		        sta Y2+1
+.0c2d	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c30	a9 00		lda #$00	        lda #$00
+.0c32	85 03		sta $03		        sta X1+1
+.0c34	a9 db		lda #$db	        lda #100 + 119
+.0c36	85 02		sta $02		        sta X1
+.0c38	a9 00		lda #$00	        lda #$00
+.0c3a	85 07		sta $07		        sta X2+1
+.0c3c	a9 db		lda #$db	        lda #100 + 119
+.0c3e	85 06		sta $06		        sta X2
+.0c40	a9 46		lda #$46	        lda #70
+.0c42	85 04		sta $04		        sta Y1
+.0c44	a9 8c		lda #$8c	        lda #70 + 70
+.0c46	85 08		sta $08		        sta Y2
+.0c48	a9 00		lda #$00	        lda #$00
+.0c4a	85 05		sta $05		        sta Y1+1
+.0c4c	85 09		sta $09		        sta Y2+1
+.0c4e	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c51	a9 00		lda #$00	        lda #$00
+.0c53	85 03		sta $03		        sta X1+1
+.0c55	a9 69		lda #$69	        lda #100+5
+.0c57	85 02		sta $02		        sta X1
+.0c59	a9 00		lda #$00	        lda #$00
+.0c5b	85 07		sta $07		        sta X2+1
+.0c5d	a9 e0		lda #$e0	        lda #100+119+5
+.0c5f	85 06		sta $06		        sta X2
+.0c61	a9 8d		lda #$8d	        lda #70+70+1
+.0c63	85 04		sta $04		        sta Y1
+.0c65	a9 8d		lda #$8d	        lda #70+70+1
+.0c67	85 08		sta $08		        sta Y2
+.0c69	a9 00		lda #$00	        lda #$00
+.0c6b	85 05		sta $05		        sta Y1+1
+.0c6d	85 09		sta $09		        sta Y2+1
+.0c6f	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c72	a9 00		lda #$00	        lda #$00
+.0c74	85 03		sta $03		        sta X1+1
+.0c76	a9 69		lda #$69	        lda #100+5
+.0c78	85 02		sta $02		        sta X1
+.0c7a	a9 00		lda #$00	        lda #$00
+.0c7c	85 07		sta $07		        sta X2+1
+.0c7e	a9 e0		lda #$e0	        lda #100+119+5
+.0c80	85 06		sta $06		        sta X2
+.0c82	a9 8e		lda #$8e	        lda #70+70+2
+.0c84	85 04		sta $04		        sta Y1
+.0c86	a9 8e		lda #$8e	        lda #70+70+2
+.0c88	85 08		sta $08		        sta Y2
+.0c8a	a9 00		lda #$00	        lda #$00
+.0c8c	85 05		sta $05		        sta Y1+1
+.0c8e	85 09		sta $09		        sta Y2+1
+.0c90	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0c93	a9 00		lda #$00	        lda #$00
+.0c95	85 03		sta $03		        sta X1+1
+.0c97	a9 69		lda #$69	        lda #100+5
+.0c99	85 02		sta $02		        sta X1
+.0c9b	a9 00		lda #$00	        lda #$00
+.0c9d	85 07		sta $07		        sta X2+1
+.0c9f	a9 e0		lda #$e0	        lda #100+119+5
+.0ca1	85 06		sta $06		        sta X2
+.0ca3	a9 8f		lda #$8f	        lda #70+70+3
+.0ca5	85 04		sta $04		        sta Y1
+.0ca7	a9 8f		lda #$8f	        lda #70+70+3
+.0ca9	85 08		sta $08		        sta Y2
+.0cab	a9 00		lda #$00	        lda #$00
+.0cad	85 05		sta $05		        sta Y1+1
+.0caf	85 09		sta $09		        sta Y2+1
+.0cb1	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0cb4	a9 00		lda #$00	        lda #$00
+.0cb6	85 03		sta $03		        sta X1+1
+.0cb8	a9 69		lda #$69	        lda #100+5
+.0cba	85 02		sta $02		        sta X1
+.0cbc	a9 00		lda #$00	        lda #$00
+.0cbe	85 07		sta $07		        sta X2+1
+.0cc0	a9 e0		lda #$e0	        lda #100+119+5
+.0cc2	85 06		sta $06		        sta X2
+.0cc4	a9 90		lda #$90	        lda #70+70+4
+.0cc6	85 04		sta $04		        sta Y1
+.0cc8	a9 90		lda #$90	        lda #70+70+4
+.0cca	85 08		sta $08		        sta Y2
+.0ccc	a9 00		lda #$00	        lda #$00
+.0cce	85 05		sta $05		        sta Y1+1
+.0cd0	85 09		sta $09		        sta Y2+1
+.0cd2	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0cd5	a9 00		lda #$00	        lda #$00
+.0cd7	85 03		sta $03		        sta X1+1
+.0cd9	a9 69		lda #$69	        lda #100+5
+.0cdb	85 02		sta $02		        sta X1
+.0cdd	a9 00		lda #$00	        lda #$00
+.0cdf	85 07		sta $07		        sta X2+1
+.0ce1	a9 e0		lda #$e0	        lda #100+119+5
+.0ce3	85 06		sta $06		        sta X2
+.0ce5	a9 91		lda #$91	        lda #70+70+5
+.0ce7	85 04		sta $04		        sta Y1
+.0ce9	a9 91		lda #$91	        lda #70+70+5
+.0ceb	85 08		sta $08		        sta Y2
+.0ced	a9 00		lda #$00	        lda #$00
+.0cef	85 05		sta $05		        sta Y1+1
+.0cf1	85 09		sta $09		        sta Y2+1
+.0cf3	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0cf6	a9 00		lda #$00	        lda #$00
+.0cf8	85 03		sta $03		        sta X1+1
+.0cfa	a9 dc		lda #$dc	        lda #100+119+1
+.0cfc	85 02		sta $02		        sta X1
+.0cfe	a9 00		lda #$00	        lda #$00
+.0d00	85 07		sta $07		        sta X2+1
+.0d02	a9 dc		lda #$dc	        lda #100+119+1
+.0d04	85 06		sta $06		        sta X2
+.0d06	a9 4b		lda #$4b	        lda #70+5
+.0d08	85 04		sta $04		        sta Y1
+.0d0a	a9 91		lda #$91	        lda #70+70+5
+.0d0c	85 08		sta $08		        sta Y2
+.0d0e	a9 00		lda #$00	        lda #$00
+.0d10	85 05		sta $05		        sta Y1+1
+.0d12	85 09		sta $09		        sta Y2+1
+.0d14	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0d17	a9 00		lda #$00	        lda #$00
+.0d19	85 03		sta $03		        sta X1+1
+.0d1b	a9 dd		lda #$dd	        lda #100+119+2
+.0d1d	85 02		sta $02		        sta X1
+.0d1f	a9 00		lda #$00	        lda #$00
+.0d21	85 07		sta $07		        sta X2+1
+.0d23	a9 dd		lda #$dd	        lda #100+119+2
+.0d25	85 06		sta $06		        sta X2
+.0d27	a9 4b		lda #$4b	        lda #70+5
+.0d29	85 04		sta $04		        sta Y1
+.0d2b	a9 91		lda #$91	        lda #70+70+5
+.0d2d	85 08		sta $08		        sta Y2
+.0d2f	a9 00		lda #$00	        lda #$00
+.0d31	85 05		sta $05		        sta Y1+1
+.0d33	85 09		sta $09		        sta Y2+1
+.0d35	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0d38	a9 00		lda #$00	        lda #$00
+.0d3a	85 03		sta $03		        sta X1+1
+.0d3c	a9 de		lda #$de	        lda #100+119+3
+.0d3e	85 02		sta $02		        sta X1
+.0d40	a9 00		lda #$00	        lda #$00
+.0d42	85 07		sta $07		        sta X2+1
+.0d44	a9 de		lda #$de	        lda #100+119+3
+.0d46	85 06		sta $06		        sta X2
+.0d48	a9 4b		lda #$4b	        lda #70+5
+.0d4a	85 04		sta $04		        sta Y1
+.0d4c	a9 91		lda #$91	        lda #70+70+5
+.0d4e	85 08		sta $08		        sta Y2
+.0d50	a9 00		lda #$00	        lda #$00
+.0d52	85 05		sta $05		        sta Y1+1
+.0d54	85 09		sta $09		        sta Y2+1
+.0d56	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0d59	a9 00		lda #$00	        lda #$00
+.0d5b	85 03		sta $03		        sta X1+1
+.0d5d	a9 df		lda #$df	        lda #100+119+4
+.0d5f	85 02		sta $02		        sta X1
+.0d61	a9 00		lda #$00	        lda #$00
+.0d63	85 07		sta $07		        sta X2+1
+.0d65	a9 df		lda #$df	        lda #100+119+4
+.0d67	85 06		sta $06		        sta X2
+.0d69	a9 4b		lda #$4b	        lda #70+5
+.0d6b	85 04		sta $04		        sta Y1
+.0d6d	a9 91		lda #$91	        lda #70+70+5
+.0d6f	85 08		sta $08		        sta Y2
+.0d71	a9 00		lda #$00	        lda #$00
+.0d73	85 05		sta $05		        sta Y1+1
+.0d75	85 09		sta $09		        sta Y2+1
+.0d77	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0d7a	a9 00		lda #$00	        lda #$00
+.0d7c	85 03		sta $03		        sta X1+1
+.0d7e	a9 e0		lda #$e0	        lda #100+119+5
+.0d80	85 02		sta $02		        sta X1
+.0d82	a9 00		lda #$00	        lda #$00
+.0d84	85 07		sta $07		        sta X2+1
+.0d86	a9 e0		lda #$e0	        lda #100+119+5
+.0d88	85 06		sta $06		        sta X2
+.0d8a	a9 4b		lda #$4b	        lda #70+5
+.0d8c	85 04		sta $04		        sta Y1
+.0d8e	a9 91		lda #$91	        lda #70+70+5
+.0d90	85 08		sta $08		        sta Y2
+.0d92	a9 00		lda #$00	        lda #$00
+.0d94	85 05		sta $05		        sta Y1+1
+.0d96	85 09		sta $09		        sta Y2+1
+.0d98	20 15 c0	jsr $c015	        jsr GFX_LINE
+.0d9b	a9 70		lda #$70	    lda #112
+.0d9d	85 02		sta $02		    sta X1
+.0d9f	a9 00		lda #$00	    lda #$00
+.0da1	85 03		sta $03		    sta X1+1
+.0da3	c8		iny		    iny
+.0da4	a9 55		lda #$55	    lda #85
+.0da6	85 04		sta $04		    sta Y1
+.0da8	a9 ef		lda #$ef	    lda #<oops
+.0daa	85 14		sta $14		    sta r9L
+.0dac	a9 0d		lda #$0d	    lda #>oops
+.0dae	85 15		sta $15		    sta r9H
+.0db0	20 1e c0	jsr $c01e	    jsr GPUTS
+.0db3	a9 70		lda #$70	    lda #112
+.0db5	85 02		sta $02		    sta X1
+.0db7	a9 00		lda #$00	    lda #$00
+.0db9	85 03		sta $03		    sta X1+1
+.0dbb	c8		iny		    iny
+.0dbc	a9 69		lda #$69	    lda #105
+.0dbe	85 04		sta $04		    sta Y1
+.0dc0	a9 00		lda #$00	    lda #<panicstr
+.0dc2	85 14		sta $14		    sta r9L
+.0dc4	a9 0e		lda #$0e	    lda #>panicstr
+.0dc6	85 15		sta $15		    sta r9H
+.0dc8	20 1e c0	jsr $c01e	    jsr GPUTS
+.0dcb					_forever:
+.0dcb	4c cb 0d	jmp $0dcb	        jmp _forever
+.0dce	48		pha		er1:	pha
+.0dcf	4a		lsr a			lsr
+.0dd0	4a		lsr a			lsr
+.0dd1	4a		lsr a			lsr
+.0dd2	4a		lsr a			lsr
+.0dd3	20 df 0d	jsr $0ddf		jsr er2
+.0dd6	e8		inx			inx
+.0dd7	68		pla			pla
+.0dd8	29 0f		and #$0f		and #%00001111
+.0dda	20 df 0d	jsr $0ddf		jsr er2
+.0ddd	e8		inx			inx
+.0dde	60		rts			rts
+.0ddf	c9 0a		cmp #$0a	er2:	cmp #10
+.0de1	b0 05		bcs $0de8		bcs er3
+.0de3	18		clc			clc
+.0de4	69 30		adc #$30		adc #'0'
+.0de6	d0 03		bne $0deb		bne er4
+.0de8					er3:
+.0de8	18		clc			clc
+.0de9	69 37		adc #$37		adc #'0'+7
+.0deb	9d 0c 0e	sta $0e0c,x	er4:	sta panicaddr,x
+.0dee	60		rts			rts
+.0def					oops:
+>0def	d3 d9 d3 d4 c5 cd 20 d3		        .text "SYSTEM SUSPENDED", $00
+>0df7	d5 d3 d0 c5 ce c4 c5 c4 00
+.0e00					panicstr:
+>0e00	c5 52 52 4f 52 20 4e 45		        .text "Error near "
+>0e08	41 52 20
+>0e0b	24				        .byte "$"
+.0e0c					panicaddr:
+>0e0c	58 58 58 58				.text "xxxx"
+>0e10	00					.byte $00
+.0e11					img_stop:
+>0e11	00 00 00			.byte %00000000,%00000000,%00000000
+>0e14	00 00 00			.byte %00000000,%00000000,%00000000
+>0e17	00 00 00			.byte %00000000,%00000000,%00000000
+>0e1a	00 00 00			.byte %00000000,%00000000,%00000000
+>0e1d	00 7e 00			.byte %00000000,%01111110,%00000000
+>0e20	00 ff 00			.byte %00000000,%11111111,%00000000
+>0e23	01 ff 80			.byte %00000001,%11111111,%10000000
+>0e26	03 ff c0			.byte %00000011,%11111111,%11000000
+>0e29	07 0a 60			.byte %00000111,%00001010,%01100000
+>0e2c	06 d4 a0			.byte %00000110,%11010100,%10100000
+>0e2f	07 54 60			.byte %00000111,%01010100,%01100000
+>0e32	06 da e0			.byte %00000110,%11011010,%11100000
+>0e35	03 ff c0			.byte %00000011,%11111111,%11000000
+>0e38	01 ff 80			.byte %00000001,%11111111,%10000000
+>0e3b	00 ff 00			.byte %00000000,%11111111,%00000000
+>0e3e	00 7e 00			.byte %00000000,%01111110,%00000000
+>0e41	00 00 00			.byte %00000000,%00000000,%00000000
+>0e44	00 00 00			.byte %00000000,%00000000,%00000000
+>0e47	00 00 00			.byte %00000000,%00000000,%00000000
+>0e4a	00 00 00			.byte %00000000,%00000000,%00000000
+>0e4d	00 00 00			.byte %00000000,%00000000,%00000000
+>0e50	00 00 00			.byte %00000000,%00000000,%00000000
+.0e53					SETUP_CTL_BUF:
+.0e53	a9 00		lda #$00	        lda #$00
+.0e55	8d 00 90	sta $9000	        sta APP_CTL_CTR         ; was never initialised: RAM garbage (122-135
+.0e58	a9 01		lda #$01	        lda #<APP_CTL_BUF
+.0e5a	85 04		sta $04		        sta r1L
+.0e5c	a9 90		lda #$90	        lda #>APP_CTL_BUF
+.0e5e	85 05		sta $05		        sta r1H
+.0e60	a9 91		lda #$91	        lda #>APP_CTL_END
+.0e62	85 06		sta $06		        sta r2
+.0e64	a0 00		ldy #$00	        ldy #$00
+.0e66	a2 00		ldx #$00	        ldx #$00
+.0e68					 _loop:
+.0e68					_skip:
+.0e68	a9 ff		lda #$ff	        lda #$ff        ; set app id to $ff
+.0e6a	91 04		sta ($04),y	        sta (r1L),y
+.0e6c	e6 04		inc $04		        inc r1L
+.0e6e	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e71	a9 ff		lda #$ff	        lda #$ff        ; set ctl id to $ff
+.0e73	91 04		sta ($04),y	        sta (r1L),y
+.0e75	e6 04		inc $04		        inc r1L
+.0e77	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e7a	a9 00		lda #$00	        lda #$00
+.0e7c	91 04		sta ($04),y	        sta (r1L),y
+.0e7e	e6 04		inc $04		        inc r1L
+.0e80	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e83	91 04		sta ($04),y	        sta (r1L),y
+.0e85	e6 04		inc $04		        inc r1L
+.0e87	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e8a	91 04		sta ($04),y	        sta (r1L),y
+.0e8c	e6 04		inc $04		        inc r1L
+.0e8e	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e91	91 04		sta ($04),y	        sta (r1L),y
+.0e93	e6 04		inc $04		        inc r1L
+.0e95	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e98	91 04		sta ($04),y	        sta (r1L),y
+.0e9a	e6 04		inc $04		        inc r1L
+.0e9c	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0e9f	91 04		sta ($04),y	        sta (r1L),y
+.0ea1	e6 04		inc $04		        inc r1L
+.0ea3	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0ea6	91 04		sta ($04),y	        sta (r1L),y
+.0ea8	e6 04		inc $04		        inc r1L
+.0eaa	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0ead	91 04		sta ($04),y	        sta (r1L),y
+.0eaf	e6 04		inc $04		        inc r1L
+.0eb1	20 b9 0e	jsr $0eb9	        jsr _addhi
+.0eb4	91 04		sta ($04),y	        sta (r1L),y
+.0eb6	4c 68 0e	jmp $0e68	        jmp _loop
+.0eb9					 _addhi:
+.0eb9	d0 0c		bne $0ec7	        bne _cont
+.0ebb	e6 05		inc $05		        inc r1H
+.0ebd	a5 05		lda $05		        lda r1H        ; if we have reached the end
+.0ebf	c5 06		cmp $06		        cmp r2         ; of control table, exit
+.0ec1	f0 05		beq $0ec8	        beq _return
+.0ec3	a9 00		lda #$00	        lda #$00
+.0ec5	85 04		sta $04		        sta r1L
+.0ec7					_cont:
+.0ec7	60		rts		        rts
+.0ec8					_return:
+.0ec8	68		pla		        pla             ; break out of inner loop
+.0ec9	68		pla		        pla
+.0eca	60		rts		        rts
+.0ecb					CLEAR_RECT:
+.0ecb	a5 06		lda $06		        lda r2L
+.0ecd	05 07		ora $07		        ora r2H
+.0ecf	f0 1a		beq $0eeb	        beq cr_done
+.0ed1	a0 00		ldy #$00	        ldy #$00
+.0ed3					cr_loop:
+.0ed3	a9 00		lda #$00	        lda #$00
+.0ed5	91 02		sta ($02),y	        sta (r0),y
+.0ed7	e6 02		inc $02		        inc r0L
+.0ed9	d0 02		bne $0edd	        bne cr_count
+.0edb	e6 03		inc $03		        inc r0H
+.0edd					cr_count:
+.0edd	a5 06		lda $06		        lda r2L
+.0edf	d0 02		bne $0ee3	        bne cr_low
+.0ee1	c6 07		dec $07		        dec r2H
+.0ee3					cr_low:
+.0ee3	c6 06		dec $06		        dec r2L
+.0ee5	a5 06		lda $06		        lda r2L
+.0ee7	05 07		ora $07		        ora r2H
+.0ee9	d0 e8		bne $0ed3	        bne cr_loop
+.0eeb					cr_done:
+.0eeb	60		rts		        rts
+.0eec					FETCH_STASH_SCREEN:
+.0eec	48		pha		        pha
+.0eed	a9 00		lda #$00	        lda #<BITMAP_START              ; source addr
+.0eef	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0ef2	a9 a0		lda #$a0	        lda #>BITMAP_START
+.0ef4	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0ef7	a9 00		lda #$00	        lda #<$2000                     ; expanson ram addr
+.0ef9	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2                ; $2000 - $3fff
+.0efc	a9 20		lda #$20	        lda #>$2000
+.0efe	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0f01	a9 00		lda #$00	        lda #$00                        ; bank 0
+.0f03	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0f06	a9 00		lda #$00	        lda #<$2000                     ; bytes to move  (8192)
+.0f08	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0f0b	a9 20		lda #$20	        lda #>$2000
+.0f0d	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0f10	68		pla		        pla
+.0f11	f0 04		beq $0f17	        beq _stash
+.0f13	20 06 9c	jsr $9c06	        jsr REU_FETCH
+.0f16	60		rts		        rts
+.0f17					_stash:
+.0f17	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0f1a	60		rts		        rts
+.0f1b					FETCH_STASH_APP:
+.0f1b	48		pha		        pha
+.0f1c	a9 00		lda #$00	        lda #<APP_START                 ; source addr
+.0f1e	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0f21	a9 50		lda #$50	        lda #>APP_START
+.0f23	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0f26	a9 00		lda #$00	        lda #$00                        ; expanson ram addr
+.0f28	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
+.0f2b	a9 00		lda #$00	        lda #$00
+.0f2d	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0f30	a9 01		lda #$01	        lda #$01                        ; bank 1
+.0f32	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0f35	a9 ff		lda #$ff	        lda #<(APP_END-APP_START)    ; bytes to move
+.0f37	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0f3a	a9 3f		lda #$3f	        lda #>(APP_END-APP_START)
+.0f3c	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0f3f	68		pla		        pla
+.0f40	f0 06		beq $0f48	        beq _stash
+.0f42	20 06 9c	jsr $9c06	        jsr REU_FETCH
+.0f45	4c 11 08	jmp $0811	        jmp MAINLOOP
+.0f48					_stash:
+.0f48	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0f4b	4c 11 08	jmp $0811	        jmp MAINLOOP
+.0f4e					FETCH_STASH_RECT:
+.0f4e	48		pha		        pha
+.0f4f	a5 02		lda $02		        lda r0L                 ; source addr
+.0f51	8d 09 9c	sta $9c09	        sta REU_PARAMS
+.0f54	a5 03		lda $03		        lda r0H
+.0f56	8d 0a 9c	sta $9c0a	        sta REU_PARAMS+1
+.0f59	a5 04		lda $04		        lda r1L                        ; expanson ram addr
+.0f5b	8d 0b 9c	sta $9c0b	        sta REU_PARAMS+2
+.0f5e	a5 05		lda $05		        lda r1H
+.0f60	8d 0c 9c	sta $9c0c	        sta REU_PARAMS+3
+.0f63	a9 02		lda #$02	        lda #$02                        ; bank 2
+.0f65	8d 0d 9c	sta $9c0d	        sta REU_PARAMS+4                ; expansion bank #
+.0f68	a5 06		lda $06		        lda r2L                        ; bytes to move
+.0f6a	8d 0e 9c	sta $9c0e	        sta REU_PARAMS+5
+.0f6d	a5 07		lda $07		        lda r2H
+.0f6f	8d 0f 9c	sta $9c0f	        sta REU_PARAMS+6
+.0f72	68		pla		        pla
+.0f73	f0 04		beq $0f79	        beq _stash
+.0f75	20 06 9c	jsr $9c06	        jsr REU_FETCH
+.0f78	60		rts		        rts
+.0f79					_stash:
+.0f79	20 03 9c	jsr $9c03	        jsr REU_STASH
+.0f7c	60		rts		        rts
+.0f7d					VDPREF:
+.0f7d	a9 98		lda #$98	        lda #<setrecname
+.0f7f	85 02		sta $02		        sta r0L
+.0f81	a9 0f		lda #$0f	        lda #>setrecname
+.0f83	85 03		sta $03		        sta r0H
+.0f85	20 29 08	jsr $0829	        jsr FILLFILE
+.0f88	20 55 0a	jsr $0a55	        jsr LOADER              ; "UOS-SET" -> record at $7350; C=1 if absent
+.0f8b	90 0a		bcc $0f97	        bcc vdpr_ok
+.0f8d	a9 02		lda #$02	        lda #$02                ; defaults when no record exists
+.0f8f	8d 55 73	sta $7355	        sta SETREC_DISP
+.0f92	a9 03		lda #$03	        lda #VIC_COLOR_CYAN
+.0f94	8d 56 73	sta $7356	        sta SETREC_BG
+.0f97					vdpr_ok:
+.0f97	60		rts		        rts
+>0f98	55 4f 53 2d 53 45 54 00		setrecname: .byte $55,$4f,$53,$2d,$53,$45,$54,$00
+.0fa0					VDSETUP:
+.0fa0	ad 55 73	lda $7355	        lda SETREC_DISP
+.0fa3	f0 1b		beq $0fc0	        beq vds_no              ; persisted 0 = 40-column only
+.0fa5	78		sei		        sei
+.0fa6	20 15 cc	jsr $cc15	        jsr VDC_INIT
+.0fa9	20 18 cc	jsr $cc18	        jsr VDC_PRESENT
+.0fac	c9 01		cmp #$01	        cmp #$01
+.0fae	d0 0e		bne $0fbe	        bne vds_off
+.0fb0	20 12 cc	jsr $cc12	        jsr VDC_FONTUP          ; per-glyph bank-flip upload (see driver)
+.0fb3	20 0f cc	jsr $cc0f	        jsr VDC_CLS
+.0fb6	a9 01		lda #$01	        lda #$01
+.0fb8	8d 24 cc	sta $cc24	        sta VDC_LIVE            ; VDC_TEXT/VDC_CLR are live from here on
+.0fbb	20 21 cc	jsr $cc21	        jsr VDC_BANNER
+.0fbe					vds_off:
+.0fbe	58		cli		        cli
+.0fbf	60		rts		        rts
+.0fc0					vds_no:
+.0fc0	60		rts		        rts
+=$01					CAP_GFX         = $01
+=$02					CAP_VDC         = $02
+=$03					CAP_REU         = $03
+=$04					CAP_KEYIN       = $04
+=$05					CAP_FILLFILE    = $05
+=$06					CAP_FILES       = $06
+=$07					CAP_PICKER      = $07
+.0fc1					CAPTBL:
+>0fc1	01				        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
+>0fc2	00 c0				        .word $c000
+>0fc4	02				        .byte CAP_VDC
+>0fc5	00 cc				        .word $cc00
+>0fc7	03				        .byte CAP_REU
+>0fc8	00 9c				        .word $9c00
+>0fca	04				        .byte CAP_KEYIN
+>0fcb	2c 08				        .word $082c
+>0fcd	05				        .byte CAP_FILLFILE
+>0fce	29 08				        .word $0829
+>0fd0	06				        .byte CAP_FILES
+>0fd1	00 41				        .word UFS_OPEN
+>0fd3	07				        .byte CAP_PICKER
+>0fd4	80 4c				        .word UFP_PICK
+.0fd6					CAPTBLEND:
+.0fd6					GETCAP_RT:
+.0fd6	8a		txa		        txa                     ; retain the requested id while X scans entries
+.0fd7	a2 00		ldx #$00	        ldx #$00
+.0fd9	dd c1 0f	cmp $0fc1,x	gc_l:   cmp CAPTBL,x
+.0fdc	f0 0b		beq $0fe9	        beq gc_found
+.0fde	e8		inx		        inx
+.0fdf	e8		inx		        inx
+.0fe0	e8		inx		        inx
+.0fe1	e0 15		cpx #$15	        cpx #CAPTBLEND-CAPTBL
+.0fe3	90 f4		bcc $0fd9	        bcc gc_l
+.0fe5	a9 00		lda #$00	        lda #$00
+.0fe7	aa		tax		        tax
+.0fe8	60		rts		        rts
+.0fe9					gc_found:
+.0fe9	bd c2 0f	lda $0fc2,x	        lda CAPTBL+1,x          ; low byte survives loading X with the high byte
+.0fec	48		pha		        pha
+.0fed	bd c3 0f	lda $0fc3,x	        lda CAPTBL+2,x
+.0ff0	aa		tax		        tax
+.0ff1	68		pla		        pla
+.0ff2	60		rts		        rts
+.0ff3					getcap_end:
+
+;******  End of listing

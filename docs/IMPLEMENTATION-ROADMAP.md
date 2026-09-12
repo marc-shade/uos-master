@@ -508,6 +508,15 @@ were consumed, the last was cursor down, and selection changed from 0 to 3.
 No scripted input or added app launch had occurred. The changed resident bytes
 are declared drawing state; input origin remains unestablished. The original
 deployment was restored and both owned uploads were verified and removed.
+The [bounded input trace](validation/2026-09-12-native-input-trace/README.md)
+then recorded four Down and two Insert ROM scan/consumption pairs during a
+CPU capture, with no events during idle or pause-only phases. Insert used
+scan index 89, beyond the normal keyboard table. The initiating signal is
+still unknown. A separate high-memory host read matched mapped BASIC ROM,
+leaving the diagnostic's borrowed high-RAM restoration unverified; its
+original-deployment restoration and owned-upload cleanup passed. Corrected
+bank-aware diagnostic access and full keyboard/control-port testing remain
+required before native physical suite qualification.
 Additional Ultimate controls, persistent preferences, window/pointer services
 and the remaining application/parity roadmap remain open.
 

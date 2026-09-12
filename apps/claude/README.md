@@ -85,3 +85,10 @@ The [suite record](../../docs/validation/2026-09-12-native-suite-workflow/README
 also retains a physical attempt that stopped before app launch because input
 changed during the initial desktop capture. Native physical modem testing
 and an actual authenticated Claude session remain unverified.
+
+The [follow-up input diagnostic](../../docs/validation/2026-09-12-native-input-trace/README.md)
+recorded six ROM-produced and consumed keys during a CPU capture. The input
+signal's source remains unknown. It also exposed mapped BASIC ROM in a host
+read of high memory; that diagnostic requires corrected bank access before
+reuse. The original physical deployment was restored, and temporary-file
+cleanup completed after the failed run.
