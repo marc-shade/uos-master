@@ -84,7 +84,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; per-app drawing | Widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
 | FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and VDC text controls | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
-| FR-I1 keyboard | GETIN, ESC and dedicated cursors | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
+| FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | 1351 movement, clamping | Two buttons, drag/drop, jitter filter, acceleration, hot plug; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
 | FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages, ABI 1.5 owned Ultimate cursors/folder navigation and byte viewer; qualified shared picker | Native registry and media identity; faster IEC enumeration; copy/rename/delete and append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
 | FR-F2 devices | Legacy manual 8–11 selection; native browser 8–30 with explicit D64/D71/D81 geometry; system-app source restored after data-device app launch | Inventory, type/capability handshake, hot presence, explicit copy destination, broader physical qualification | Real and emulated drives; absent device returns to UI; last-used device never changes system-app source accidentally |
@@ -517,6 +517,12 @@ leaving the diagnostic's borrowed high-RAM restoration unverified; its
 original-deployment restoration and owned-upload cleanup passed. Corrected
 bank-aware diagnostic access and full keyboard/control-port testing remain
 required before native physical suite qualification.
+The [native keyboard guard](NATIVE-KEYBOARD.md) now rejects indices outside
+the 88-key matrix while preserving valid callbacks and counting rejected
+activity. Real ROM CPU tests and a VICE joystick negative control reproduce
+index 89 producing Insert without the guard. The shared five-app workflow
+passes with the guard and unchanged 426-page capacity. Physical valid-index
+Down events and their initiating signal remain unresolved.
 Additional Ultimate controls, persistent preferences, window/pointer services
 and the remaining application/parity roadmap remain open.
 

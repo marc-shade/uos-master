@@ -1,0 +1,3139 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o target/uos-fmgr.prg -L target/uos-fmgr.lst src/uos-fmgr.asm
+; Tue Sep  8 15:30:28 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: src/uos-fmgr.asm
+
+
+;******  Processing file: src/equates.inc
+
+=$02					r0              =       $02
+=$02					r0L             =       $02
+=$03					r0H             =       $03
+=$04					r1              =       $04
+=$04					r1L             =       $04
+=$05					r1H             =       $05
+=$06					r2              =       $06
+=$06					r2L             =       $06
+=$07					r2H             =       $07
+=$08					r3              =       $08
+=$08					r3L             =       $08
+=$09					r3H             =       $09
+=$0a					r4              =       $0a
+=$0a					r4L             =       $0a
+=$0b					r4H             =       $0b
+=$0c					r5              =       $0c
+=$0c					r5L             =       $0c
+=$0d					r5H             =       $0d
+=$0e					r6              =       $0e
+=$0e					r6L             =       $0e
+=$0f					r6H             =       $0f
+=$10					r7              =       $10
+=$10					r7L             =       $10
+=$11					r7H             =       $11
+=$12					r8              =       $12
+=$12					r8L             =       $12
+=$13					r8H             =       $13
+=$14					r9              =       $14
+=$14					r9L             =       $14
+=$15					r9H             =       $15
+=$16					r10             =       $16
+=$16					r10L            =       $16
+=$17					r10H            =       $17
+=$18					r11             =       $18
+=$18					r11L            =       $18
+=$19					r11H            =       $19
+=$1a					r12             =       $1a
+=$1a					r12L            =       $1a
+=$1b					r12H            =       $1b
+=$1c					r13             =       $1c
+=$1c					r13L            =       $1c
+=$1d					r13H            =       $1d
+=$1e					r14             =       $1e
+=$1e					r14L            =       $1e
+=$1f					r14H            =       $1f
+=$20					r15             =       $20
+=$20					r15L            =       $20
+=$21					r15H            =       $21
+=$22					r16             =       $22
+=$02					X1              =       $02
+=$04					Y1              =       $04
+=$06					X2              =       $06
+=$08					Y2              =       $08
+=$fb					a0              =       $fb
+=$fb					a0L             =       $fb
+=$fc					a0H             =       $fc
+=$fd					a1              =       $fd
+=$fd					a1L             =       $fd
+=$fe					a1H             =       $fe
+=$70					a2              =       $70
+=$70					a2L             =       $70
+=$71					a2H             =       $71
+=$72					a3              =       $72
+=$72					a3L             =       $72
+=$73					a3H             =       $73
+=$74					a4              =       $74
+=$74					a4L             =       $74
+=$75					a4H             =       $75
+=$76					a5              =       $76
+=$76					a5L             =       $76
+=$77					a5H             =       $77
+=$78					a6              =       $78
+=$78					a6L             =       $78
+=$79					a6H             =       $79
+=$7a					a7              =       $7a
+=$7a					a7L             =       $7a
+=$7b					a7H             =       $7b
+=$7c					a8              =       $7c
+=$7c					a8L             =       $7c
+=$7d					a8H             =       $7d
+=$7e					a9              =       $7e
+=$7e					a9L             =       $7e
+=$7f					a9H             =       $7f
+
+;******  Return to file: src/uos-fmgr.asm
+
+
+;******  Processing file: src/routines.inc
+
+=$0316					brkVectorlo     = $0316
+=$0317					brkVectorhi     = $0317
+=$0811					MAINLOOP        = $0811
+=$0814					FIND_CTL        = $0814
+=$0817					FS_APP          = $0817
+=$081a					FS_SCREEN       = $081a
+=$081d					FS_RECT         = $081d
+=$0820					CLR_RECT        = $0820
+=$0823					LOAD_IMM        = $0823
+=$0826					APP_LOADER      = $0826
+=$0829					FILLFILE        = $0829
+=$082c					KEYIN           = $082c
+=$082f					GETCAP          = $082f
+=$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+=$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+=$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+=$083b					OS_TICK         = $083b  ; service the current once-per-second callback; clobbers callback registers
+=$083e					READ_BUTTON     = $083e  ; A=0 while either mouse fire button is down; nonzero when released
+=$7350					SETREC          = $7350
+=$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+=$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
+=$cc00					VDC_GETREG      = $cc00
+=$cc03					VDC_SETREG      = $cc03
+=$cc06					VDC_SEEK        = $cc06
+=$cc09					VDC_PUTS        = $cc09
+=$cc0c					VDC_PUTCHR      = $cc0c
+=$cc0f					VDC_CLS         = $cc0f
+=$cc12					VDC_FONTUP      = $cc12
+=$cc15					VDC_INIT        = $cc15
+=$cc18					VDC_PRESENT     = $cc18
+=$cc1b					VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+=$cc1e					VDC_CLR         = $cc1e  ; A=row -> blank the row
+=$cc21					VDC_BANNER      = $cc21  ; header rows 0-1
+=$cc24					VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
+=$23					vdcbpL          = $23
+=$24					vdcbpH          = $24
+=$25					vdcdpL          = $25
+=$26					vdcdpH          = $26
+=$1000					DESK_START      = $1000
+=$2fff					DESK_END        = $2fff
+=$5000					APP_START       = $5000
+=$8fff					APP_END         = $8fff
+=$9000					APP_CTL_TBL     = $9000
+=$9000					APP_CTL_CTR     = $9000
+=$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
+=$9b00					APP_ID_TBL      = $9b00
+=$9c00					REU_SIZE        = $9c00
+=$9c03					REU_STASH       = $9c03
+=$9c06					REU_FETCH       = $9c06
+=$9c09					REU_PARAMS      = $9c09
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=37218					NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
+=37219					NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+=37220					NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+=37223					NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+=37224					NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+=37225					NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
+=$a000					BITMAP_START    = $a000
+=$c000					GFX_INIT        = $c000
+=$c00f					GFX_SETPIXEL    = $c00f
+=$c021					GFX_DRAWBYTEPATTERN = $c021
+=$c006					GFX_ON          = $c006
+=$c009					GFX_OFF         = $c009
+=$c00c					GFX_SETCOLOR    = $c00c
+=$c015					GFX_LINE        = $c015
+=$c018					GFX_CIRCLE      = $c018
+=$c01b					GPUTC           = $c01b
+=$c01e					GPUTS           = $c01e
+
+;******  Return to file: src/uos-fmgr.asm
+
+
+;******  Processing file: src/macros.inc
+
+
+;******  Return to file: src/uos-fmgr.asm
+
+
+;******  Processing file: src/kernal.inc
+
+=$ff81					CINT   = $FF81;  ----  FF5B  init VIC & screen editor                                                  - - -  - - -  A X Y
+=$ff84					IOINIT = $FF84;  ----  FDA3  initialize CIA & IRQ                                                      - - -  - - -  A X Y
+=$ff87					RAMTAS = $FF87;  ----  FD50  RAM test & search RAM end                                                 - - -  - - -  A X Y
+=$ff8a					RESTOR = $FF8A;  ----  FD15  restore default I/O vectors                                               - - -  - - -  A - Y
+=$ff8d					VECTOR = $FF8D;  ----  FD1A  read/set I/O vectors               in: C=0 moves from Y/X to vectors      - X Y  - X -  A - Y
+=$ff90					SETMSG = $FF90;  ----  FE18  enable/disable KERNAL messages     in: A bit7=1 error msgs on             A - -  - - -  A - -
+=$ff93					SECOND = $FF93;  ----  EDB9  send secondary addr after listen   in: A=secondary address                A - -  - - -  A - -
+=$ff96					TKSA   = $FF96;  ----  EDC7  send secondary addr after talk     in: A=secondary address                A - -  - - -  A - -
+=$ff99					MEMTOP = $FF99;  ----  FE25  read/set top of memory             in: C=0; Y/X address                   - X Y  - X Y  - - -
+=$ff9c					MEMBOT = $FF9C;  ----  FE34  read/set bottom of memory          in: C=0; Y/X address                   - X Y  - X Y  - - -
+=$ff9f					SCNKEY = $FF9F;  ----  EA87  scan keyboard                                                             - - -  - - -  A X Y
+=$ffa2					SETTMO = $FFA2;  ----  FE21  set IEEE timeout                   in: A bit7=1 disable, bit7=0 enable    A - -  A - -  - - -
+=$ffa5					ACPTR  = $FFA5;  ----  EE13  input byte from SERIAL             out:A=byte, C=1 and ST=2 if timeout    - - -  A - -  A - -
+=$ffa8					CIOUT  = $FFA8;  ----  EDDD  output byte to SERIAL              in: A=byte, C=1 and ST=3 if timeout    A - -  A - -  - - -
+=$ffab					UNTLK  = $FFAB;  ----  EDEF  untalk all SERIAL devices                                                 - - -  - - -  A - -
+=$ffae					UNLSN  = $FFAE;  ----  EDFE  unlisten all SERIAL devices                                               - - -  - - -  A - -
+=$ffb1					LISTEN = $FFB1;  ----  ED0C  make SERIAL device listen          in: A=device number                    A - -  - - -  A - -
+=$ffb4					TALK   = $FFB4;  ----  ED09  make SERIAL device talk            in: A=device number                    A - -  - - -  A - -
+=$ffb7					READST = $FFB7;  ----  FE07  read I/O status byte               out:A=status byte                      - - -  A - -  A - -
+=$ffba					SETLFS = $FFBA;  ----  FE00  set file parameters                in: A=logical file number              A X Y  A X Y  - - -
+=$ffbd					SETNAM = $FFBD;  ----  FDF9  set file name                      in: A=length of filename               A X Y  A X Y  - - -
+=$ffc0					OPEN   = $FFC0;  031A  F34A  open log.file after SETLFS,SETNAM  out:A=error# if C=1                    - - -  - - -  A X Y
+=$ffc3					CLOSE  = $FFC3;  031C  F291  close a logical file               in: A=logical file number              A - -  - - -  A X Y
+=$ffc6					CHKIN  = $FFC6;  031E  F20E  open channel for input             in: X=logical file number              - X -  - - -  A X -
+=$ffc9					CHKOUT = $FFC9;  0320  F250  open channel for output            in: X=logical file number              - X -  - - -  A X -
+=$ffcc					CLRCHN = $FFCC;  0322  F333  restore default devices                                                   - - -  - - -  A X -
+=$ffcf					CHRIN  = $FFCF;  0324  F157  input character                    out:A=character, C=1 and ST=error      - - -  A - -  A - -
+=$ffd2					CHROUT = $FFD2;  0326  F1CA  output character                   in: A=character, C=1 and ST=error      A - -  A - -  - - -
+=$ffd5					LOAD   = $FFD5;  0330  F49E  load after call SETLFS,SETNAM      in: A=0 load, a=1 verify               A X Y  A X Y  A X Y
+=$ffd8					SAVE   = $FFD8;  0332  F5DD  save after call SETLFS,SETNAM      in: A=zero page pointer to start.addr  A X Y  - - -  A X Y
+=$ffdb					SETTIM = $FFDB;  ----  F6E4  set jiffy clock                    in: A=MSB, X=middle, Y=LSB             A X Y  - - -  - - -
+=$ffde					RDTIM  = $FFDE;  ----  F6DD  read jiffy clock                   out:A=MSB, X=middle, Y=LSB             - - -  A X Y  A X Y
+=$ffe1					STOP   = $FFE1;  0328  F6ED  check stop key                     out:Z=0 if STOP not used; X unchanged  - - -  A - -  A - -
+=$ffe4					GETIN  = $FFE4;  032A  F13E  get a byte from channel            out:keyboard:A=0 if puffer empty       - - -  A - -  A X Y
+=$ffe7					CLALL  = $FFE7;  032C  F32F  close or abort all files                                                  - - -  - - -  A X -
+=$ffea					UDTIM  = $FFEA;  ----  F69B  update jiffy clock                                                        - - -  - - -  A X -
+=$ffed					SCREEN = $FFED;  ----  E505  return screen size                 out:X=columns, Y=rows                  - - -  - X Y  - X Y
+=$fff0					PLOT   = $FFF0;  ----  E50A  read/set cursor position           in: C=0, X=row, Y=column               - X Y  - X Y  - - -
+=$fff3					IOBASE = $FFF3;  ----  E500  returns the addr of I/O devices    out:Y/X=addr($DC00)                    - - -  - X Y  - X Y
+
+;******  Return to file: src/uos-fmgr.asm
+
+
+;******  Processing file: src/vic-ii.inc
+
+=$d000					VIC_BASE        = $d000
+=$d800					VIC_COLOR_RAM   = $d800
+=$0400					VIC_HIRES_COLOR = $0400
+=$00					VIC_SPR0_X      = $00     ; Sprite x / y screen position registers
+=$01					VIC_SPR0_Y      = $01
+=$02					VIC_SPR1_X      = $02
+=$03					VIC_SPR1_Y      = $03
+=$04					VIC_SPR2_X      = $04
+=$05					VIC_SPR2_Y      = $05
+=$06					VIC_SPR3_X      = $06
+=$07					VIC_SPR3_Y      = $07
+=$08					VIC_SPR4_X      = $08
+=$09					VIC_SPR4_Y      = $09
+=$0a					VIC_SPR5_X      = $0A
+=$0b					VIC_SPR5_Y      = $0B
+=$0c					VIC_SPR6_X      = $0C
+=$0d					VIC_SPR6_Y      = $0D
+=$0e					VIC_SPR7_X      = $0E
+=$0f					VIC_SPR7_Y      = $0F
+=$10					VIC_SPR_XMSb    = $10     ; MSB of the X coordinate (since 320 > 255). Bit 7 = sprite 7, 6 = sprite 6, etc
+=$11					VIC_CTRL_1      = $11
+=$11					SCROLY			= $11     ; Control register 1
+=$12					VIC_RASTER      = $12     ; Number of raster GFX_LINE at which a raster IRQ should be generated.
+=$13					VIC_LTPEN_X     = $13     ; X-portion of the screen position at which the beam was found when a strobe was generated (light pen)
+=$14					VIC_LTPEN_Y     = $14     ; Y-portion of the screen position at which the beam was found when a strobe was generated (light pen)
+=$15					VIC_SPR_ENBL    = $15     ; Sprite enable (bit 7= sprite 7, bit 6 = sprite 6 etc)
+=$16					VIC_CTRL_2      = $16     ; Control register 2
+=$17					VIC_SPR_XPND_X  = $17     ; Sprite expand (bit 7= sprite 7, bit 6 = sprite 6 etc)
+=$18					VIC_RAM_BASE    = $18     ; Base address of the character generator and video RAM
+=$19					VIC_IRR         = $19     ; IRR:Interrupt Request Register
+=$1a					VIC_IMR         = $1a     ; IMR:Interrupt Mask Register
+=$1b					VIC_SPR_PRI     = $1b     ; Priority register(sprites)
+=$1c					VIC_SPR_MULTI   = $1c     ; Multi-color register (sprites)
+=$1d					VIC_SPR_XPND_Y  = $1d     ; Sprite expand Y The sprites can be doubled in the Y-direction by setting
+=$1e					VIC_SPSP_COL    = $1e     ; Sprite/sprite collision
+=$1f					VIC_SPBK_COL    = $1f     ; Sprite/background collision
+=$20					VIC_BORDER_COL  = $20     ; Exterior color(border color) The border color is set in this register (0-15).
+=$21					VIC_BG_COL0     = $21     ; Background color registers 0-3
+=$22					VIC_BG_COL1     = $22     ; Background color register 0 determines the background color in
+=$23					VIC_BG_COL2     = $23     ; the "normal" text mode. If the multi-color mode is enabled, it
+=$24					VIC_BG_COL3     = $24     ; accesses registers 1-3
+=$25					VIC_SPR_MCOL0   = $25     ; Spritemulti-colorcolor0/1
+=$26					VIC_SPR_MCOL1   = $26     ; Sprites which are represented in multi-color can assume the back
+=$27					VIC_SPR_COL0    = $27     ; Color sprite 0-8
+=$28					VIC_SPR_COL1    = $28     ; The colors for the individual sprites are placed in these registers.
+=$29					VIC_SPR_COL2    = $29
+=$2a					VIC_SPR_COL3    = $2a
+=$2b					VIC_SPR_COL4    = $2b
+=$2c					VIC_SPR_COL5    = $2c
+=$2d					VIC_SPR_COL6    = $2d
+=$2e					VIC_SPR_COL7    = $2e
+=$2f					VIC_KYBRD_CTRL  = $2f     ; Keyboard control register
+=$30					VIC_CLOCK       = $30     ; 2MHz bit
+=$00					VIC_COLOR_BLACK   = $00
+=$01					VIC_COLOR_WHITE   = $01
+=$02					VIC_COLOR_RED     = $02
+=$03					VIC_COLOR_CYAN    = $03
+=$04					VIC_COLOR_PURPLE  = $04
+=$05					VIC_COLOR_GREEN   = $05
+=$06					VIC_COLOR_BLUE    = $06
+=$07					VIC_COLOR_YELLOW  = $07
+=$08					VIC_COLOR_ORANGE  = $08
+=$09					VIC_COLOR_BROWN   = $09
+=$0a					VIC_COLOR_LRED    = $0A
+=$0b					VIC_COLOR_DGREY   = $0B
+=$0c					VIC_COLOR_MGREY   = $0C
+=$0d					VIC_COLOR_LGREEN  = $0D
+=$0e					VIC_COLOR_LBLUE   = $0E
+=$0f					VIC_COLOR_LGREY   = $0F
+
+;******  Return to file: src/uos-fmgr.asm
+
+
+;******  Processing file: src/io.inc
+
+=$dc08					TODTEN      = $DC08
+=$dc09					TODSEC      = $DC09
+=$dc0a					TODMIN      = $DC0A
+=$dc0b					TODHRS      = $DC0B
+
+;******  Return to file: src/uos-fmgr.asm
+
+=10					LIST_MAX        := 10
+=64					CACHE_MAX       := 64    ; bounded RAM cache; cursor refills it on demand
+=55					CACHE_STEP      := CACHE_MAX - LIST_MAX + 1
+=13					LISTN           := 13   ; list-state key table entries
+=5					INPN            := 5    ; input-state key table entries
+=30					COL_X           := 30
+=22					CUR_X           := 22
+=40					TOP_Y           := 40    ; below the title text (drawn at y=14)
+=12					ROW_PX          := 12
+=164					ACT_Y           := 164   ; status/hint line
+=176					IN_Y            := 176   ; input line (rename/copy text)
+=$40					fmrow           = $40
+=$41					fmcnt           = $41
+=$42					rowi            = $42
+=$43					fmdev           = $43    ; current device (default 8)
+=$44					state           = $44    ; 0 = list, 1 = confirm, 2 = line editor
+=$45					mode            = $45    ; editor purpose: 1 = rename, 2 = copy, 3 = copy to other device
+=$46					gllen           = $46    ; editor buffer length
+=$47					fci             = $47    ; fncmd write index
+=$48					keytmp          = $48    ; A save for the editor path
+=$49					fmclose         = $49    ; dirscan: closing-quote offset
+=$4a					opentmp         = $4a    ; openseq: LFN save
+=$4b					opensa          = $4b    ; openseq: secondary address save
+=$55					namlen          = $55    ; openseq: filename length
+=$4c					tchr0           = $4c
+=$4d					tchr1           = $4d
+=$4e					tchr2           = $4e
+=$4f					kd_lo           = $4f    ; keyfind jump target
+=$50					kd_hi           = $50
+=$51					dnum            = $51
+=$52					kcnt            = $52
+=$53					ktblo           = $53    ; keyfind: table pointer (2 bytes)
+=$54					ktbhi           = $54
+=$56					cdst            = $56    ; cross-device copy: the other device (8<->9)
+.5000	ee 00 9b	inc $9b00	    inc APP_ID_TBL
+.5003	ad 00 9b	lda $9b00	    lda APP_ID_TBL
+.5006	a5 ba		lda $ba		        lda $ba                 ; device that loaded this application
+.5008	d0 02		bne $500c	        bne fm_bootdev
+.500a	a9 08		lda #$08	        lda #8
+.500c					fm_bootdev:
+.500c	8d af 67	sta $67af	        sta sysdev
+.500f	a9 00		lda #$00	        lda #$00
+.5011	85 40		sta $40		        sta fmrow
+.5013	85 44		sta $44		        sta state
+.5015	8d a9 67	sta $67a9	        sta scroll
+.5018	8d ab 67	sta $67ab	        sta cachebase
+.501b	8d ac 67	sta $67ac	        sta cachebase+1
+.501e	8d ae 67	sta $67ae	        sta fmready
+.5021	a5 02		lda $02		    lda r0L
+.5023	48		pha		    pha
+.5024	a5 03		lda $03		    lda r0H
+.5026	48		pha		    pha
+.5027	a5 04		lda $04		    lda r1L
+.5029	48		pha		    pha
+.502a	a5 05		lda $05		    lda r1H
+.502c	48		pha		    pha
+.502d	a5 06		lda $06		    lda r2L
+.502f	48		pha		    pha
+.5030	a5 07		lda $07		    lda r2H
+.5032	48		pha		    pha
+=0					    exploc      := 0
+=1					    firstrow    := 8 / 8
+=23					    lastrow     := (8 + 180 - 1) / 8
+=0					    row         := 0
+=2					    col         := (16 / 8)
+=38					    lastcol     := ((16 + 288 - 1) / 8) + 1
+=288					    memsz       := (lastcol - col) * 8
+=41296					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5033	a9 50		lda #$50	        lda #<memloc
+.5035	85 02		sta $02		        sta r0L
+.5037	a9 a1		lda #$a1	        lda #>memloc
+.5039	85 03		sta $03		        sta r0H
+.503b	a9 00		lda #$00	        lda #<exploc
+.503d	85 04		sta $04		        sta r1L
+.503f	a9 00		lda #$00	        lda #>exploc
+.5041	85 05		sta $05		        sta r1H
+.5043	a9 20		lda #$20	        lda #<memsz
+.5045	85 06		sta $06		        sta r2L
+.5047	a9 01		lda #$01	        lda #>memsz
+.5049	85 07		sta $07		        sta r2H
+.504b	20 20 08	jsr $0820	        jsr CLR_RECT
+=289					        exploc := exploc + memsz + 1
+=41616					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.504e	a9 90		lda #$90	        lda #<memloc
+.5050	85 02		sta $02		        sta r0L
+.5052	a9 a2		lda #$a2	        lda #>memloc
+.5054	85 03		sta $03		        sta r0H
+.5056	a9 21		lda #$21	        lda #<exploc
+.5058	85 04		sta $04		        sta r1L
+.505a	a9 01		lda #$01	        lda #>exploc
+.505c	85 05		sta $05		        sta r1H
+.505e	a9 20		lda #$20	        lda #<memsz
+.5060	85 06		sta $06		        sta r2L
+.5062	a9 01		lda #$01	        lda #>memsz
+.5064	85 07		sta $07		        sta r2H
+.5066	20 20 08	jsr $0820	        jsr CLR_RECT
+=578					        exploc := exploc + memsz + 1
+=41936					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5069	a9 d0		lda #$d0	        lda #<memloc
+.506b	85 02		sta $02		        sta r0L
+.506d	a9 a3		lda #$a3	        lda #>memloc
+.506f	85 03		sta $03		        sta r0H
+.5071	a9 42		lda #$42	        lda #<exploc
+.5073	85 04		sta $04		        sta r1L
+.5075	a9 02		lda #$02	        lda #>exploc
+.5077	85 05		sta $05		        sta r1H
+.5079	a9 20		lda #$20	        lda #<memsz
+.507b	85 06		sta $06		        sta r2L
+.507d	a9 01		lda #$01	        lda #>memsz
+.507f	85 07		sta $07		        sta r2H
+.5081	20 20 08	jsr $0820	        jsr CLR_RECT
+=867					        exploc := exploc + memsz + 1
+=42256					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5084	a9 10		lda #$10	        lda #<memloc
+.5086	85 02		sta $02		        sta r0L
+.5088	a9 a5		lda #$a5	        lda #>memloc
+.508a	85 03		sta $03		        sta r0H
+.508c	a9 63		lda #$63	        lda #<exploc
+.508e	85 04		sta $04		        sta r1L
+.5090	a9 03		lda #$03	        lda #>exploc
+.5092	85 05		sta $05		        sta r1H
+.5094	a9 20		lda #$20	        lda #<memsz
+.5096	85 06		sta $06		        sta r2L
+.5098	a9 01		lda #$01	        lda #>memsz
+.509a	85 07		sta $07		        sta r2H
+.509c	20 20 08	jsr $0820	        jsr CLR_RECT
+=1156					        exploc := exploc + memsz + 1
+=42576					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.509f	a9 50		lda #$50	        lda #<memloc
+.50a1	85 02		sta $02		        sta r0L
+.50a3	a9 a6		lda #$a6	        lda #>memloc
+.50a5	85 03		sta $03		        sta r0H
+.50a7	a9 84		lda #$84	        lda #<exploc
+.50a9	85 04		sta $04		        sta r1L
+.50ab	a9 04		lda #$04	        lda #>exploc
+.50ad	85 05		sta $05		        sta r1H
+.50af	a9 20		lda #$20	        lda #<memsz
+.50b1	85 06		sta $06		        sta r2L
+.50b3	a9 01		lda #$01	        lda #>memsz
+.50b5	85 07		sta $07		        sta r2H
+.50b7	20 20 08	jsr $0820	        jsr CLR_RECT
+=1445					        exploc := exploc + memsz + 1
+=42896					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.50ba	a9 90		lda #$90	        lda #<memloc
+.50bc	85 02		sta $02		        sta r0L
+.50be	a9 a7		lda #$a7	        lda #>memloc
+.50c0	85 03		sta $03		        sta r0H
+.50c2	a9 a5		lda #$a5	        lda #<exploc
+.50c4	85 04		sta $04		        sta r1L
+.50c6	a9 05		lda #$05	        lda #>exploc
+.50c8	85 05		sta $05		        sta r1H
+.50ca	a9 20		lda #$20	        lda #<memsz
+.50cc	85 06		sta $06		        sta r2L
+.50ce	a9 01		lda #$01	        lda #>memsz
+.50d0	85 07		sta $07		        sta r2H
+.50d2	20 20 08	jsr $0820	        jsr CLR_RECT
+=1734					        exploc := exploc + memsz + 1
+=43216					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.50d5	a9 d0		lda #$d0	        lda #<memloc
+.50d7	85 02		sta $02		        sta r0L
+.50d9	a9 a8		lda #$a8	        lda #>memloc
+.50db	85 03		sta $03		        sta r0H
+.50dd	a9 c6		lda #$c6	        lda #<exploc
+.50df	85 04		sta $04		        sta r1L
+.50e1	a9 06		lda #$06	        lda #>exploc
+.50e3	85 05		sta $05		        sta r1H
+.50e5	a9 20		lda #$20	        lda #<memsz
+.50e7	85 06		sta $06		        sta r2L
+.50e9	a9 01		lda #$01	        lda #>memsz
+.50eb	85 07		sta $07		        sta r2H
+.50ed	20 20 08	jsr $0820	        jsr CLR_RECT
+=2023					        exploc := exploc + memsz + 1
+=43536					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.50f0	a9 10		lda #$10	        lda #<memloc
+.50f2	85 02		sta $02		        sta r0L
+.50f4	a9 aa		lda #$aa	        lda #>memloc
+.50f6	85 03		sta $03		        sta r0H
+.50f8	a9 e7		lda #$e7	        lda #<exploc
+.50fa	85 04		sta $04		        sta r1L
+.50fc	a9 07		lda #$07	        lda #>exploc
+.50fe	85 05		sta $05		        sta r1H
+.5100	a9 20		lda #$20	        lda #<memsz
+.5102	85 06		sta $06		        sta r2L
+.5104	a9 01		lda #$01	        lda #>memsz
+.5106	85 07		sta $07		        sta r2H
+.5108	20 20 08	jsr $0820	        jsr CLR_RECT
+=2312					        exploc := exploc + memsz + 1
+=43856					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.510b	a9 50		lda #$50	        lda #<memloc
+.510d	85 02		sta $02		        sta r0L
+.510f	a9 ab		lda #$ab	        lda #>memloc
+.5111	85 03		sta $03		        sta r0H
+.5113	a9 08		lda #$08	        lda #<exploc
+.5115	85 04		sta $04		        sta r1L
+.5117	a9 09		lda #$09	        lda #>exploc
+.5119	85 05		sta $05		        sta r1H
+.511b	a9 20		lda #$20	        lda #<memsz
+.511d	85 06		sta $06		        sta r2L
+.511f	a9 01		lda #$01	        lda #>memsz
+.5121	85 07		sta $07		        sta r2H
+.5123	20 20 08	jsr $0820	        jsr CLR_RECT
+=2601					        exploc := exploc + memsz + 1
+=44176					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5126	a9 90		lda #$90	        lda #<memloc
+.5128	85 02		sta $02		        sta r0L
+.512a	a9 ac		lda #$ac	        lda #>memloc
+.512c	85 03		sta $03		        sta r0H
+.512e	a9 29		lda #$29	        lda #<exploc
+.5130	85 04		sta $04		        sta r1L
+.5132	a9 0a		lda #$0a	        lda #>exploc
+.5134	85 05		sta $05		        sta r1H
+.5136	a9 20		lda #$20	        lda #<memsz
+.5138	85 06		sta $06		        sta r2L
+.513a	a9 01		lda #$01	        lda #>memsz
+.513c	85 07		sta $07		        sta r2H
+.513e	20 20 08	jsr $0820	        jsr CLR_RECT
+=2890					        exploc := exploc + memsz + 1
+=44496					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5141	a9 d0		lda #$d0	        lda #<memloc
+.5143	85 02		sta $02		        sta r0L
+.5145	a9 ad		lda #$ad	        lda #>memloc
+.5147	85 03		sta $03		        sta r0H
+.5149	a9 4a		lda #$4a	        lda #<exploc
+.514b	85 04		sta $04		        sta r1L
+.514d	a9 0b		lda #$0b	        lda #>exploc
+.514f	85 05		sta $05		        sta r1H
+.5151	a9 20		lda #$20	        lda #<memsz
+.5153	85 06		sta $06		        sta r2L
+.5155	a9 01		lda #$01	        lda #>memsz
+.5157	85 07		sta $07		        sta r2H
+.5159	20 20 08	jsr $0820	        jsr CLR_RECT
+=3179					        exploc := exploc + memsz + 1
+=44816					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.515c	a9 10		lda #$10	        lda #<memloc
+.515e	85 02		sta $02		        sta r0L
+.5160	a9 af		lda #$af	        lda #>memloc
+.5162	85 03		sta $03		        sta r0H
+.5164	a9 6b		lda #$6b	        lda #<exploc
+.5166	85 04		sta $04		        sta r1L
+.5168	a9 0c		lda #$0c	        lda #>exploc
+.516a	85 05		sta $05		        sta r1H
+.516c	a9 20		lda #$20	        lda #<memsz
+.516e	85 06		sta $06		        sta r2L
+.5170	a9 01		lda #$01	        lda #>memsz
+.5172	85 07		sta $07		        sta r2H
+.5174	20 20 08	jsr $0820	        jsr CLR_RECT
+=3468					        exploc := exploc + memsz + 1
+=45136					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5177	a9 50		lda #$50	        lda #<memloc
+.5179	85 02		sta $02		        sta r0L
+.517b	a9 b0		lda #$b0	        lda #>memloc
+.517d	85 03		sta $03		        sta r0H
+.517f	a9 8c		lda #$8c	        lda #<exploc
+.5181	85 04		sta $04		        sta r1L
+.5183	a9 0d		lda #$0d	        lda #>exploc
+.5185	85 05		sta $05		        sta r1H
+.5187	a9 20		lda #$20	        lda #<memsz
+.5189	85 06		sta $06		        sta r2L
+.518b	a9 01		lda #$01	        lda #>memsz
+.518d	85 07		sta $07		        sta r2H
+.518f	20 20 08	jsr $0820	        jsr CLR_RECT
+=3757					        exploc := exploc + memsz + 1
+=45456					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5192	a9 90		lda #$90	        lda #<memloc
+.5194	85 02		sta $02		        sta r0L
+.5196	a9 b1		lda #$b1	        lda #>memloc
+.5198	85 03		sta $03		        sta r0H
+.519a	a9 ad		lda #$ad	        lda #<exploc
+.519c	85 04		sta $04		        sta r1L
+.519e	a9 0e		lda #$0e	        lda #>exploc
+.51a0	85 05		sta $05		        sta r1H
+.51a2	a9 20		lda #$20	        lda #<memsz
+.51a4	85 06		sta $06		        sta r2L
+.51a6	a9 01		lda #$01	        lda #>memsz
+.51a8	85 07		sta $07		        sta r2H
+.51aa	20 20 08	jsr $0820	        jsr CLR_RECT
+=4046					        exploc := exploc + memsz + 1
+=45776					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.51ad	a9 d0		lda #$d0	        lda #<memloc
+.51af	85 02		sta $02		        sta r0L
+.51b1	a9 b2		lda #$b2	        lda #>memloc
+.51b3	85 03		sta $03		        sta r0H
+.51b5	a9 ce		lda #$ce	        lda #<exploc
+.51b7	85 04		sta $04		        sta r1L
+.51b9	a9 0f		lda #$0f	        lda #>exploc
+.51bb	85 05		sta $05		        sta r1H
+.51bd	a9 20		lda #$20	        lda #<memsz
+.51bf	85 06		sta $06		        sta r2L
+.51c1	a9 01		lda #$01	        lda #>memsz
+.51c3	85 07		sta $07		        sta r2H
+.51c5	20 20 08	jsr $0820	        jsr CLR_RECT
+=4335					        exploc := exploc + memsz + 1
+=46096					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.51c8	a9 10		lda #$10	        lda #<memloc
+.51ca	85 02		sta $02		        sta r0L
+.51cc	a9 b4		lda #$b4	        lda #>memloc
+.51ce	85 03		sta $03		        sta r0H
+.51d0	a9 ef		lda #$ef	        lda #<exploc
+.51d2	85 04		sta $04		        sta r1L
+.51d4	a9 10		lda #$10	        lda #>exploc
+.51d6	85 05		sta $05		        sta r1H
+.51d8	a9 20		lda #$20	        lda #<memsz
+.51da	85 06		sta $06		        sta r2L
+.51dc	a9 01		lda #$01	        lda #>memsz
+.51de	85 07		sta $07		        sta r2H
+.51e0	20 20 08	jsr $0820	        jsr CLR_RECT
+=4624					        exploc := exploc + memsz + 1
+=46416					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.51e3	a9 50		lda #$50	        lda #<memloc
+.51e5	85 02		sta $02		        sta r0L
+.51e7	a9 b5		lda #$b5	        lda #>memloc
+.51e9	85 03		sta $03		        sta r0H
+.51eb	a9 10		lda #$10	        lda #<exploc
+.51ed	85 04		sta $04		        sta r1L
+.51ef	a9 12		lda #$12	        lda #>exploc
+.51f1	85 05		sta $05		        sta r1H
+.51f3	a9 20		lda #$20	        lda #<memsz
+.51f5	85 06		sta $06		        sta r2L
+.51f7	a9 01		lda #$01	        lda #>memsz
+.51f9	85 07		sta $07		        sta r2H
+.51fb	20 20 08	jsr $0820	        jsr CLR_RECT
+=4913					        exploc := exploc + memsz + 1
+=46736					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.51fe	a9 90		lda #$90	        lda #<memloc
+.5200	85 02		sta $02		        sta r0L
+.5202	a9 b6		lda #$b6	        lda #>memloc
+.5204	85 03		sta $03		        sta r0H
+.5206	a9 31		lda #$31	        lda #<exploc
+.5208	85 04		sta $04		        sta r1L
+.520a	a9 13		lda #$13	        lda #>exploc
+.520c	85 05		sta $05		        sta r1H
+.520e	a9 20		lda #$20	        lda #<memsz
+.5210	85 06		sta $06		        sta r2L
+.5212	a9 01		lda #$01	        lda #>memsz
+.5214	85 07		sta $07		        sta r2H
+.5216	20 20 08	jsr $0820	        jsr CLR_RECT
+=5202					        exploc := exploc + memsz + 1
+=47056					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5219	a9 d0		lda #$d0	        lda #<memloc
+.521b	85 02		sta $02		        sta r0L
+.521d	a9 b7		lda #$b7	        lda #>memloc
+.521f	85 03		sta $03		        sta r0H
+.5221	a9 52		lda #$52	        lda #<exploc
+.5223	85 04		sta $04		        sta r1L
+.5225	a9 14		lda #$14	        lda #>exploc
+.5227	85 05		sta $05		        sta r1H
+.5229	a9 20		lda #$20	        lda #<memsz
+.522b	85 06		sta $06		        sta r2L
+.522d	a9 01		lda #$01	        lda #>memsz
+.522f	85 07		sta $07		        sta r2H
+.5231	20 20 08	jsr $0820	        jsr CLR_RECT
+=5491					        exploc := exploc + memsz + 1
+=47376					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5234	a9 10		lda #$10	        lda #<memloc
+.5236	85 02		sta $02		        sta r0L
+.5238	a9 b9		lda #$b9	        lda #>memloc
+.523a	85 03		sta $03		        sta r0H
+.523c	a9 73		lda #$73	        lda #<exploc
+.523e	85 04		sta $04		        sta r1L
+.5240	a9 15		lda #$15	        lda #>exploc
+.5242	85 05		sta $05		        sta r1H
+.5244	a9 20		lda #$20	        lda #<memsz
+.5246	85 06		sta $06		        sta r2L
+.5248	a9 01		lda #$01	        lda #>memsz
+.524a	85 07		sta $07		        sta r2H
+.524c	20 20 08	jsr $0820	        jsr CLR_RECT
+=5780					        exploc := exploc + memsz + 1
+=47696					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.524f	a9 50		lda #$50	        lda #<memloc
+.5251	85 02		sta $02		        sta r0L
+.5253	a9 ba		lda #$ba	        lda #>memloc
+.5255	85 03		sta $03		        sta r0H
+.5257	a9 94		lda #$94	        lda #<exploc
+.5259	85 04		sta $04		        sta r1L
+.525b	a9 16		lda #$16	        lda #>exploc
+.525d	85 05		sta $05		        sta r1H
+.525f	a9 20		lda #$20	        lda #<memsz
+.5261	85 06		sta $06		        sta r2L
+.5263	a9 01		lda #$01	        lda #>memsz
+.5265	85 07		sta $07		        sta r2H
+.5267	20 20 08	jsr $0820	        jsr CLR_RECT
+=6069					        exploc := exploc + memsz + 1
+=48016					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.526a	a9 90		lda #$90	        lda #<memloc
+.526c	85 02		sta $02		        sta r0L
+.526e	a9 bb		lda #$bb	        lda #>memloc
+.5270	85 03		sta $03		        sta r0H
+.5272	a9 b5		lda #$b5	        lda #<exploc
+.5274	85 04		sta $04		        sta r1L
+.5276	a9 17		lda #$17	        lda #>exploc
+.5278	85 05		sta $05		        sta r1H
+.527a	a9 20		lda #$20	        lda #<memsz
+.527c	85 06		sta $06		        sta r2L
+.527e	a9 01		lda #$01	        lda #>memsz
+.5280	85 07		sta $07		        sta r2H
+.5282	20 20 08	jsr $0820	        jsr CLR_RECT
+=6358					        exploc := exploc + memsz + 1
+=48336					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5285	a9 d0		lda #$d0	        lda #<memloc
+.5287	85 02		sta $02		        sta r0L
+.5289	a9 bc		lda #$bc	        lda #>memloc
+.528b	85 03		sta $03		        sta r0H
+.528d	a9 d6		lda #$d6	        lda #<exploc
+.528f	85 04		sta $04		        sta r1L
+.5291	a9 18		lda #$18	        lda #>exploc
+.5293	85 05		sta $05		        sta r1H
+.5295	a9 20		lda #$20	        lda #<memsz
+.5297	85 06		sta $06		        sta r2L
+.5299	a9 01		lda #$01	        lda #>memsz
+.529b	85 07		sta $07		        sta r2H
+.529d	20 20 08	jsr $0820	        jsr CLR_RECT
+=6647					        exploc := exploc + memsz + 1
+.52a0	68		pla		    pla
+.52a1	85 07		sta $07		    sta r2H
+.52a3	68		pla		    pla
+.52a4	85 06		sta $06		    sta r2L
+.52a6	68		pla		    pla
+.52a7	85 05		sta $05		    sta r1H
+.52a9	68		pla		    pla
+.52aa	85 04		sta $04		    sta r1L
+.52ac	68		pla		    pla
+.52ad	85 03		sta $03		    sta r0H
+.52af	68		pla		    pla
+.52b0	85 02		sta $02		    sta r0L
+.52b2	a9 00		lda #$00	        lda #$00
+.52b4	85 03		sta $03		        sta X1+1
+.52b6	a9 10		lda #$10	        lda #16
+.52b8	85 02		sta $02		        sta X1
+.52ba	a9 01		lda #$01	        lda #$01
+.52bc	85 07		sta $07		        sta X2+1
+.52be	a9 30		lda #$30	        lda #16 + 288-256
+.52c0	85 06		sta $06		        sta X2
+.52c2	a9 08		lda #$08	        lda #8
+.52c4	85 04		sta $04		        sta Y1
+.52c6	a9 08		lda #$08	        lda #8
+.52c8	85 08		sta $08		        sta Y2
+.52ca	a9 00		lda #$00	        lda #$00
+.52cc	85 05		sta $05		        sta Y1+1
+.52ce	85 09		sta $09		        sta Y2+1
+.52d0	20 15 c0	jsr $c015	        jsr GFX_LINE
+.52d3	a9 00		lda #$00	        lda #$00
+.52d5	85 03		sta $03		        sta X1+1
+.52d7	a9 10		lda #$10	        lda #16
+.52d9	85 02		sta $02		        sta X1
+.52db	a9 01		lda #$01	        lda #$01
+.52dd	85 07		sta $07		        sta X2+1
+.52df	a9 30		lda #$30	        lda #16 + 288-256
+.52e1	85 06		sta $06		        sta X2
+.52e3	a9 bc		lda #$bc	        lda #8 + 180
+.52e5	85 04		sta $04		        sta Y1
+.52e7	a9 bc		lda #$bc	        lda #8 + 180
+.52e9	85 08		sta $08		        sta Y2
+.52eb	a9 00		lda #$00	        lda #$00
+.52ed	85 05		sta $05		        sta Y1+1
+.52ef	85 09		sta $09		        sta Y2+1
+.52f1	20 15 c0	jsr $c015	        jsr GFX_LINE
+.52f4	a9 00		lda #$00	        lda #$00
+.52f6	85 03		sta $03		        sta X1+1
+.52f8	a9 10		lda #$10	        lda #16
+.52fa	85 02		sta $02		        sta X1
+.52fc	a9 00		lda #$00	        lda #$00
+.52fe	85 07		sta $07		        sta X2+1
+.5300	a9 10		lda #$10	        lda #16
+.5302	85 06		sta $06		        sta X2
+.5304	a9 08		lda #$08	        lda #8
+.5306	85 04		sta $04		        sta Y1
+.5308	a9 bc		lda #$bc	        lda #8 + 180
+.530a	85 08		sta $08		        sta Y2
+.530c	a9 00		lda #$00	        lda #$00
+.530e	85 05		sta $05		        sta Y1+1
+.5310	85 09		sta $09		        sta Y2+1
+.5312	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5315	a9 01		lda #$01	        lda #$01
+.5317	85 03		sta $03		        sta X1+1
+.5319	a9 30		lda #$30	        lda #16 + 288-256
+.531b	85 02		sta $02		        sta X1
+.531d	a9 01		lda #$01	        lda #$01
+.531f	85 07		sta $07		        sta X2+1
+.5321	a9 30		lda #$30	        lda #16 + 288-256
+.5323	85 06		sta $06		        sta X2
+.5325	a9 08		lda #$08	        lda #8
+.5327	85 04		sta $04		        sta Y1
+.5329	a9 bc		lda #$bc	        lda #8 + 180
+.532b	85 08		sta $08		        sta Y2
+.532d	a9 00		lda #$00	        lda #$00
+.532f	85 05		sta $05		        sta Y1+1
+.5331	85 09		sta $09		        sta Y2+1
+.5333	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5336	a9 00		lda #$00	        lda #$00
+.5338	85 03		sta $03		        sta X1+1
+.533a	a9 15		lda #$15	        lda #16+5
+.533c	85 02		sta $02		        sta X1
+.533e	a9 01		lda #$01	        lda #$01
+.5340	85 07		sta $07		        sta X2+1
+.5342	a9 35		lda #$35	        lda #16+288+5-256
+.5344	85 06		sta $06		        sta X2
+.5346	a9 bd		lda #$bd	        lda #8+180+1
+.5348	85 04		sta $04		        sta Y1
+.534a	a9 bd		lda #$bd	        lda #8+180+1
+.534c	85 08		sta $08		        sta Y2
+.534e	a9 00		lda #$00	        lda #$00
+.5350	85 05		sta $05		        sta Y1+1
+.5352	85 09		sta $09		        sta Y2+1
+.5354	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5357	a9 00		lda #$00	        lda #$00
+.5359	85 03		sta $03		        sta X1+1
+.535b	a9 15		lda #$15	        lda #16+5
+.535d	85 02		sta $02		        sta X1
+.535f	a9 01		lda #$01	        lda #$01
+.5361	85 07		sta $07		        sta X2+1
+.5363	a9 35		lda #$35	        lda #16+288+5-256
+.5365	85 06		sta $06		        sta X2
+.5367	a9 be		lda #$be	        lda #8+180+2
+.5369	85 04		sta $04		        sta Y1
+.536b	a9 be		lda #$be	        lda #8+180+2
+.536d	85 08		sta $08		        sta Y2
+.536f	a9 00		lda #$00	        lda #$00
+.5371	85 05		sta $05		        sta Y1+1
+.5373	85 09		sta $09		        sta Y2+1
+.5375	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5378	a9 00		lda #$00	        lda #$00
+.537a	85 03		sta $03		        sta X1+1
+.537c	a9 15		lda #$15	        lda #16+5
+.537e	85 02		sta $02		        sta X1
+.5380	a9 01		lda #$01	        lda #$01
+.5382	85 07		sta $07		        sta X2+1
+.5384	a9 35		lda #$35	        lda #16+288+5-256
+.5386	85 06		sta $06		        sta X2
+.5388	a9 bf		lda #$bf	        lda #8+180+3
+.538a	85 04		sta $04		        sta Y1
+.538c	a9 bf		lda #$bf	        lda #8+180+3
+.538e	85 08		sta $08		        sta Y2
+.5390	a9 00		lda #$00	        lda #$00
+.5392	85 05		sta $05		        sta Y1+1
+.5394	85 09		sta $09		        sta Y2+1
+.5396	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5399	a9 00		lda #$00	        lda #$00
+.539b	85 03		sta $03		        sta X1+1
+.539d	a9 15		lda #$15	        lda #16+5
+.539f	85 02		sta $02		        sta X1
+.53a1	a9 01		lda #$01	        lda #$01
+.53a3	85 07		sta $07		        sta X2+1
+.53a5	a9 35		lda #$35	        lda #16+288+5-256
+.53a7	85 06		sta $06		        sta X2
+.53a9	a9 c0		lda #$c0	        lda #8+180+4
+.53ab	85 04		sta $04		        sta Y1
+.53ad	a9 c0		lda #$c0	        lda #8+180+4
+.53af	85 08		sta $08		        sta Y2
+.53b1	a9 00		lda #$00	        lda #$00
+.53b3	85 05		sta $05		        sta Y1+1
+.53b5	85 09		sta $09		        sta Y2+1
+.53b7	20 15 c0	jsr $c015	        jsr GFX_LINE
+.53ba	a9 00		lda #$00	        lda #$00
+.53bc	85 03		sta $03		        sta X1+1
+.53be	a9 15		lda #$15	        lda #16+5
+.53c0	85 02		sta $02		        sta X1
+.53c2	a9 01		lda #$01	        lda #$01
+.53c4	85 07		sta $07		        sta X2+1
+.53c6	a9 35		lda #$35	        lda #16+288+5-256
+.53c8	85 06		sta $06		        sta X2
+.53ca	a9 c1		lda #$c1	        lda #8+180+5
+.53cc	85 04		sta $04		        sta Y1
+.53ce	a9 c1		lda #$c1	        lda #8+180+5
+.53d0	85 08		sta $08		        sta Y2
+.53d2	a9 00		lda #$00	        lda #$00
+.53d4	85 05		sta $05		        sta Y1+1
+.53d6	85 09		sta $09		        sta Y2+1
+.53d8	20 15 c0	jsr $c015	        jsr GFX_LINE
+.53db	a9 01		lda #$01	        lda #$01
+.53dd	85 03		sta $03		        sta X1+1
+.53df	a9 31		lda #$31	        lda #16+288+1-256
+.53e1	85 02		sta $02		        sta X1
+.53e3	a9 01		lda #$01	        lda #$01
+.53e5	85 07		sta $07		        sta X2+1
+.53e7	a9 31		lda #$31	        lda #16+288+1-256
+.53e9	85 06		sta $06		        sta X2
+.53eb	a9 0d		lda #$0d	        lda #8+5
+.53ed	85 04		sta $04		        sta Y1
+.53ef	a9 c1		lda #$c1	        lda #8+180+5
+.53f1	85 08		sta $08		        sta Y2
+.53f3	a9 00		lda #$00	        lda #$00
+.53f5	85 05		sta $05		        sta Y1+1
+.53f7	85 09		sta $09		        sta Y2+1
+.53f9	20 15 c0	jsr $c015	        jsr GFX_LINE
+.53fc	a9 01		lda #$01	        lda #$01
+.53fe	85 03		sta $03		        sta X1+1
+.5400	a9 32		lda #$32	        lda #16+288+2-256
+.5402	85 02		sta $02		        sta X1
+.5404	a9 01		lda #$01	        lda #$01
+.5406	85 07		sta $07		        sta X2+1
+.5408	a9 32		lda #$32	        lda #16+288+2-256
+.540a	85 06		sta $06		        sta X2
+.540c	a9 0d		lda #$0d	        lda #8+5
+.540e	85 04		sta $04		        sta Y1
+.5410	a9 c1		lda #$c1	        lda #8+180+5
+.5412	85 08		sta $08		        sta Y2
+.5414	a9 00		lda #$00	        lda #$00
+.5416	85 05		sta $05		        sta Y1+1
+.5418	85 09		sta $09		        sta Y2+1
+.541a	20 15 c0	jsr $c015	        jsr GFX_LINE
+.541d	a9 01		lda #$01	        lda #$01
+.541f	85 03		sta $03		        sta X1+1
+.5421	a9 33		lda #$33	        lda #16+288+3-256
+.5423	85 02		sta $02		        sta X1
+.5425	a9 01		lda #$01	        lda #$01
+.5427	85 07		sta $07		        sta X2+1
+.5429	a9 33		lda #$33	        lda #16+288+3-256
+.542b	85 06		sta $06		        sta X2
+.542d	a9 0d		lda #$0d	        lda #8+5
+.542f	85 04		sta $04		        sta Y1
+.5431	a9 c1		lda #$c1	        lda #8+180+5
+.5433	85 08		sta $08		        sta Y2
+.5435	a9 00		lda #$00	        lda #$00
+.5437	85 05		sta $05		        sta Y1+1
+.5439	85 09		sta $09		        sta Y2+1
+.543b	20 15 c0	jsr $c015	        jsr GFX_LINE
+.543e	a9 01		lda #$01	        lda #$01
+.5440	85 03		sta $03		        sta X1+1
+.5442	a9 34		lda #$34	        lda #16+288+4-256
+.5444	85 02		sta $02		        sta X1
+.5446	a9 01		lda #$01	        lda #$01
+.5448	85 07		sta $07		        sta X2+1
+.544a	a9 34		lda #$34	        lda #16+288+4-256
+.544c	85 06		sta $06		        sta X2
+.544e	a9 0d		lda #$0d	        lda #8+5
+.5450	85 04		sta $04		        sta Y1
+.5452	a9 c1		lda #$c1	        lda #8+180+5
+.5454	85 08		sta $08		        sta Y2
+.5456	a9 00		lda #$00	        lda #$00
+.5458	85 05		sta $05		        sta Y1+1
+.545a	85 09		sta $09		        sta Y2+1
+.545c	20 15 c0	jsr $c015	        jsr GFX_LINE
+.545f	a9 01		lda #$01	        lda #$01
+.5461	85 03		sta $03		        sta X1+1
+.5463	a9 35		lda #$35	        lda #16+288+5-256
+.5465	85 02		sta $02		        sta X1
+.5467	a9 01		lda #$01	        lda #$01
+.5469	85 07		sta $07		        sta X2+1
+.546b	a9 35		lda #$35	        lda #16+288+5-256
+.546d	85 06		sta $06		        sta X2
+.546f	a9 0d		lda #$0d	        lda #8+5
+.5471	85 04		sta $04		        sta Y1
+.5473	a9 c1		lda #$c1	        lda #8+180+5
+.5475	85 08		sta $08		        sta Y2
+.5477	a9 00		lda #$00	        lda #$00
+.5479	85 05		sta $05		        sta Y1+1
+.547b	85 09		sta $09		        sta Y2+1
+.547d	20 15 c0	jsr $c015	        jsr GFX_LINE
+.5480	a9 18		lda #$18	        lda #24
+.5482	85 02		sta $02		        sta X1
+.5484	a9 00		lda #$00	        lda #$00
+.5486	85 03		sta $03		        sta X1+1
+.5488	a9 0e		lda #$0e	        lda #14
+.548a	85 04		sta $04		        sta Y1
+.548c	a9 48		lda #$48	        lda #<fm_title
+.548e	85 14		sta $14		        sta r9L
+.5490	a9 69		lda #$69	        lda #>fm_title
+.5492	85 15		sta $15		        sta r9H
+.5494	20 1e c0	jsr $c01e	        jsr GPUTS
+.5497	20 48 60	jsr $6048	        jsr vd_clear_area
+.549a	a9 48		lda #$48	        lda #<fm_title
+.549c	85 14		sta $14		        sta r9L
+.549e	a9 69		lda #$69	        lda #>fm_title
+.54a0	85 15		sta $15		        sta r9H
+.54a2	a9 02		lda #$02	        lda #$02
+.54a4	a2 00		ldx #$00	        ldx #$00
+.54a6	20 35 08	jsr $0835	        jsr VDTEXT
+.54a9	a9 59		lda #$59	        lda #<vd_dev8
+.54ab	85 14		sta $14		        sta r9L
+.54ad	a9 60		lda #$60	        lda #>vd_dev8
+.54af	85 15		sta $15		        sta r9H
+.54b1	a9 02		lda #$02	        lda #$02
+.54b3	a2 16		ldx #$16	        ldx #$16
+.54b5	20 35 08	jsr $0835	        jsr VDTEXT
+.54b8	a9 8b		lda #$8b	        lda #<p_hint
+.54ba	85 14		sta $14		        sta r9L
+.54bc	a9 69		lda #$69	        lda #>p_hint
+.54be	85 15		sta $15		        sta r9H
+.54c0	a9 17		lda #$17	        lda #23
+.54c2	a2 00		ldx #$00	        ldx #$00
+.54c4	20 35 08	jsr $0835	        jsr VDTEXT
+.54c7	a9 08		lda #$08	        lda #$08
+.54c9	85 43		sta $43		        sta fmdev
+.54cb	a9 00		lda #$00	        lda #$00
+.54cd	8d 21 6c	sta $6c21	        sta linebuf     ; empty status line: nothing to erase later
+.54d0	a9 01		lda #$01	        lda #$01
+.54d2	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR ; pen = write (a desktop ClrRect may have left erase)
+.54d5	20 5a 5d	jsr $5d5a	        jsr refresh
+.54d8	a9 01		lda #$01	fmloop: lda #$01
+.54da	8d ae 67	sta $67ae	        sta fmready             ; published only after scan + both paints
+.54dd	20 2c 08	jsr $082c	        jsr KEYIN
+.54e0	85 48		sta $48		        sta keytmp      ; the key, kept for the editor path
+.54e2	c9 00		cmp #$00	        cmp #$00
+.54e4	f0 f2		beq $54d8	        beq fmloop
+.54e6	a9 00		lda #$00	        lda #$00
+.54e8	8d ae 67	sta $67ae	        sta fmready
+.54eb	a5 48		lda $48		        lda keytmp
+.54ed	20 1d 5b	jsr $5b1d	        jsr normkey
+.54f0	85 48		sta $48		        sta keytmp
+.54f2	a5 44		lda $44		        lda state
+.54f4	c9 00		cmp #$00	        cmp #$00
+.54f6	f0 07		beq $54ff	        beq j_list
+.54f8	c9 01		cmp #$01	        cmp #$01
+.54fa	f0 06		beq $5502	        beq j_confirm
+.54fc	4c 05 55	jmp $5505	        jmp j_input
+.54ff	4c 0b 55	jmp $550b	j_list: jmp st_list
+.5502					j_confirm:
+.5502	4c 22 55	jmp $5522	        jmp st_confirm
+.5505					j_input:
+.5505	4c 43 55	jmp $5543	        jmp st_input
+.5508					j_fmloop:
+.5508	4c d8 54	jmp $54d8	        jmp fmloop
+.550b					st_list:
+.550b	a9 81		lda #$81	        lda #<listtbl
+.550d	85 53		sta $53		        sta ktblo
+.550f	a9 55		lda #$55	        lda #>listtbl
+.5511	85 54		sta $54		        sta ktbhi
+.5513	a5 48		lda $48		        lda keytmp
+.5515	a2 0d		ldx #$0d	        ldx #LISTN
+.5517	20 63 55	jsr $5563	        jsr keyfind
+.551a	f0 03		beq $551f	        beq s_list_no
+.551c	6c 4f 00	jmp ($004f)	        jmp (kd_lo)
+.551f					s_list_no:
+.551f	4c 08 55	jmp $5508	        jmp j_fmloop
+.5522					st_confirm:
+.5522	a5 48		lda $48		        lda keytmp
+.5524	c9 59		cmp #$59	        cmp #$59                        ; Y
+.5526	f0 07		beq $552f	        beq cf_yes
+.5528	c9 4e		cmp #$4e	        cmp #$4e                        ; N
+.552a	f0 0d		beq $5539	        beq cf_no
+.552c	4c 08 55	jmp $5508	        jmp j_fmloop
+.552f					cf_yes:
+.552f	a9 00		lda #$00	        lda #$00
+.5531	85 44		sta $44		        sta state
+.5533	20 95 57	jsr $5795	        jsr do_scratch
+.5536	4c 08 55	jmp $5508	        jmp j_fmloop
+.5539					cf_no:
+.5539	a9 00		lda #$00	        lda #$00
+.553b	85 44		sta $44		        sta state
+.553d	20 25 5c	jsr $5c25	        jsr show_hint
+.5540	4c 08 55	jmp $5508	        jmp j_fmloop
+.5543					st_input:
+.5543	a9 a8		lda #$a8	        lda #<inputtbl
+.5545	85 53		sta $53		        sta ktblo
+.5547	a9 55		lda #$55	        lda #>inputtbl
+.5549	85 54		sta $54		        sta ktbhi
+.554b	a5 48		lda $48		        lda keytmp
+.554d	a2 05		ldx #$05	        ldx #INPN
+.554f	20 63 55	jsr $5563	        jsr keyfind
+.5552	f0 03		beq $5557	        beq s_in_prt
+.5554	6c 4f 00	jmp ($004f)	        jmp (kd_lo)
+.5557					s_in_prt:
+.5557	a5 48		lda $48		        lda keytmp
+.5559	c9 20		cmp #$20	        cmp #$20                        ; printable -> editor add path
+.555b	90 03		bcc $5560	        bcc s_in_none
+.555d	4c cd 55	jmp $55cd	        jmp gl_add
+.5560					s_in_none:
+.5560	4c 08 55	jmp $5508	        jmp j_fmloop
+.5563					keyfind:
+.5563	85 51		sta $51		        sta dnum
+.5565	a0 00		ldy #$00	        ldy #$00
+.5567	d1 53		cmp ($53),y	kf_l:   cmp (ktblo),y
+.5569	f0 09		beq $5574	        beq kf_hit
+.556b	c8		iny		        iny
+.556c	c8		iny		        iny
+.556d	c8		iny		        iny
+.556e	ca		dex		        dex
+.556f	d0 f6		bne $5567	        bne kf_l
+.5571	a9 00		lda #$00	        lda #$00                        ; no match
+.5573	60		rts		        rts
+.5574	c8		iny		kf_hit: iny
+.5575	b1 53		lda ($53),y	        lda (ktblo),y
+.5577	85 4f		sta $4f		        sta kd_lo
+.5579	c8		iny		        iny
+.557a	b1 53		lda ($53),y	        lda (ktblo),y
+.557c	85 50		sta $50		        sta kd_hi
+.557e	a9 01		lda #$01	        lda #$01
+.5580	60		rts		        rts
+.5581					listtbl:
+>5581	11 1f 56			        .byte $11, <fmdn, >fmdn
+>5584	91 57 56			        .byte $91, <fmup_, >fmup_
+>5587	0d 89 56			        .byte $0d, <fmopen, >fmopen
+>558a	1b a0 56			        .byte $1b, <fmescape, >fmescape
+>558d	44 a8 56			        .byte $44, <ask_scratch, >ask_scratch
+>5590	52 d9 56			        .byte $52, <ask_rename, >ask_rename
+>5593	43 00 57			        .byte $43, <ask_copy, >ask_copy
+>5596	49 4e 57			        .byte $49, <show_info, >show_info
+>5599	38 33 5a			        .byte $38, <fmdev8, >fmdev8
+>559c	39 40 5a			        .byte $39, <fmdev9, >fmdev9
+>559f	30 44 5a			        .byte $30, <fmdev10, >fmdev10
+>55a2	31 48 5a			        .byte $31, <fmdev11, >fmdev11
+>55a5	42 27 57			        .byte $42, <ask_copyx, >ask_copyx
+.55a8					inputtbl:
+>55a8	0d f8 55			        .byte $0d, <gl_accept, >gl_accept
+>55ab	1b eb 55			        .byte $1b, <gl_cancel, >gl_cancel
+>55ae	14 b7 55			        .byte $14, <gl_del, >gl_del
+>55b1	11 d8 54			        .byte $11, <fmloop, >fmloop
+>55b4	91 d8 54			        .byte $91, <fmloop, >fmloop
+.55b7					gl_del:
+.55b7	a5 46		lda $46		        lda gllen
+.55b9	f0 0f		beq $55ca	        beq inp_ret2
+.55bb	38		sec		        sec
+.55bc	e9 01		sbc #$01	        sbc #$01
+.55be	85 46		sta $46		        sta gllen
+.55c0	a4 46		ldy $46		        ldy gllen
+.55c2	a9 00		lda #$00	        lda #$00
+.55c4	99 b6 6b	sta $6bb6,y	        sta fnbuf2,y
+.55c7	20 31 5c	jsr $5c31	        jsr gl_show
+.55ca					inp_ret2:
+.55ca	4c 08 55	jmp $5508	        jmp j_fmloop
+.55cd					gl_add:
+.55cd	a5 46		lda $46		        lda gllen
+.55cf	c9 10		cmp #$10	        cmp #16                         ; cap at 16 chars
+.55d1	90 03		bcc $55d6	        bcc gla_add
+.55d3	4c ca 55	jmp $55ca	        jmp inp_ret2
+.55d6					gla_add:
+.55d6	a4 46		ldy $46		        ldy gllen
+.55d8	a5 48		lda $48		        lda keytmp
+.55da	99 b6 6b	sta $6bb6,y	        sta fnbuf2,y
+.55dd	c8		iny		        iny
+.55de	a9 00		lda #$00	        lda #$00
+.55e0	99 b6 6b	sta $6bb6,y	        sta fnbuf2,y
+.55e3	84 46		sty $46		        sty gllen
+.55e5	20 31 5c	jsr $5c31	        jsr gl_show
+.55e8	4c 08 55	jmp $5508	        jmp j_fmloop
+.55eb					gl_cancel:
+.55eb	a9 00		lda #$00	        lda #$00
+.55ed	85 44		sta $44		        sta state
+.55ef	20 e0 5c	jsr $5ce0	        jsr clr_inline
+.55f2	20 25 5c	jsr $5c25	        jsr show_hint
+.55f5	4c ca 55	jmp $55ca	        jmp inp_ret2
+.55f8					gl_accept:
+.55f8	a5 46		lda $46		        lda gllen
+.55fa	f0 ef		beq $55eb	        beq gl_cancel
+.55fc	a9 00		lda #$00	        lda #$00
+.55fe	85 44		sta $44		        sta state
+.5600	a5 45		lda $45		        lda mode
+.5602	c9 01		cmp #$01	        cmp #$01
+.5604	d0 06		bne $560c	        bne gla_cp2
+.5606	20 c1 57	jsr $57c1	        jsr do_rename
+.5609	4c 19 56	jmp $5619	        jmp gla_ret
+.560c					gla_cp2:
+.560c	c9 03		cmp #$03	        cmp #$03                        ; 3 = copy to the other device
+.560e	f0 06		beq $5616	        beq gla_cpx
+.5610	20 fa 57	jsr $57fa	        jsr do_copy
+.5613	4c 19 56	jmp $5619	        jmp gla_ret
+.5616					gla_cpx:
+.5616	20 42 58	jsr $5842	        jsr do_copyx
+.5619					gla_ret:
+.5619	20 e0 5c	jsr $5ce0	        jsr clr_inline
+.561c	4c 08 55	jmp $5508	        jmp j_fmloop
+.561f	a5 41		lda $41		fmdn:   lda fmcnt
+.5621	f0 2c		beq $564f	        beq cur_ret       ; no files, back to the loop
+.5623	a6 40		ldx $40		        ldx fmrow
+.5625	e8		inx		        inx
+.5626	e4 41		cpx $41		        cpx fmcnt
+.5628	90 28		bcc $5652	        bcc cur_ok
+.562a	ad ad 67	lda $67ad	        lda morefiles
+.562d	f0 20		beq $564f	        beq cur_ret
+.562f	18		clc		        clc
+.5630	ad ab 67	lda $67ab	        lda cachebase
+.5633	69 37		adc #$37	        adc #CACHE_STEP
+.5635	8d ab 67	sta $67ab	        sta cachebase
+.5638	90 03		bcc $563d	        bcc cur_next
+.563a	ee ac 67	inc $67ac	        inc cachebase+1
+.563d					cur_next:
+.563d	a9 09		lda #$09	        lda #LIST_MAX-1
+.563f	85 40		sta $40		        sta fmrow
+.5641	a9 00		lda #$00	        lda #$00
+.5643	8d a9 67	sta $67a9	        sta scroll
+.5646	20 5a 5d	jsr $5d5a	        jsr refresh
+.5649	4c 4f 56	jmp $564f	        jmp cur_ret
+.564c					cur_ret2:
+.564c	4c d8 54	jmp $54d8	        jmp fmloop
+.564f					cur_ret:
+.564f	4c ca 55	jmp $55ca	        jmp inp_ret2
+.5652					cur_ok:
+.5652	86 40		stx $40		        stx fmrow
+.5654	4c c6 5d	jmp $5dc6	        jmp repaint
+.5657					fmup_:
+.5657	a6 40		ldx $40		        ldx fmrow
+.5659	d0 28		bne $5683	        bne cur_up
+.565b	ad ab 67	lda $67ab	        lda cachebase
+.565e	0d ac 67	ora $67ac	        ora cachebase+1
+.5661	f0 ec		beq $564f	        beq cur_ret
+.5663	38		sec		        sec
+.5664	ad ab 67	lda $67ab	        lda cachebase
+.5667	e9 37		sbc #$37	        sbc #CACHE_STEP
+.5669	8d ab 67	sta $67ab	        sta cachebase
+.566c	ad ac 67	lda $67ac	        lda cachebase+1
+.566f	e9 00		sbc #$00	        sbc #$00
+.5671	8d ac 67	sta $67ac	        sta cachebase+1
+.5674	a9 36		lda #$36	        lda #CACHE_STEP-1
+.5676	85 40		sta $40		        sta fmrow
+.5678	a9 2d		lda #$2d	        lda #CACHE_STEP-LIST_MAX
+.567a	8d a9 67	sta $67a9	        sta scroll
+.567d	20 5a 5d	jsr $5d5a	        jsr refresh
+.5680	4c 4f 56	jmp $564f	        jmp cur_ret
+.5683					cur_up:
+.5683	ca		dex		        dex
+.5684	86 40		stx $40		        stx fmrow
+.5686	4c c6 5d	jmp $5dc6	        jmp repaint
+.5689					fmopen:
+.5689	a5 41		lda $41		        lda fmcnt
+.568b	f0 c2		beq $564f	        beq cur_ret
+.568d	a5 40		lda $40		        lda fmrow
+.568f	aa		tax		        tax
+.5690	bd a9 61	lda $61a9,x	        lda fmnamesL,x
+.5693	85 02		sta $02		        sta r0L
+.5695	bd e9 61	lda $61e9,x	        lda fmnamesH,x
+.5698	85 03		sta $03		        sta r0H
+.569a	20 29 08	jsr $0829	        jsr FILLFILE
+.569d	4c 32 08	jmp $0832	        jmp LAUNCH_APP                  ; core-resident: the new app loads
+.56a0					fmescape:
+.56a0	ad af 67	lda $67af	        lda sysdev              ; subsequent desktop app loads use system disk
+.56a3	85 ba		sta $ba		        sta $ba
+.56a5	4c 00 10	jmp $1000	        jmp DESK_START
+.56a8					ask_scratch:
+.56a8	a5 41		lda $41		        lda fmcnt
+.56aa	d0 03		bne $56af	        bne as_have
+.56ac	4c d8 54	jmp $54d8	        jmp fmloop
+.56af					as_have:
+.56af	a9 00		lda #$00	        lda #$00
+.56b1	85 47		sta $47		        sta fci
+.56b3	a9 b5		lda #$b5	        lda #<p_del
+.56b5	85 02		sta $02		        sta r0L
+.56b7	a9 69		lda #$69	        lda #>p_del
+.56b9	85 03		sta $03		        sta r0H
+.56bb	20 63 5a	jsr $5a63	        jsr apstr
+.56be	20 a2 5a	jsr $5aa2	        jsr apcur
+.56c1	a9 ba		lda #$ba	        lda #<p_yn
+.56c3	85 02		sta $02		        sta r0L
+.56c5	a9 69		lda #$69	        lda #>p_yn
+.56c7	85 03		sta $03		        sta r0H
+.56c9	20 63 5a	jsr $5a63	        jsr apstr
+.56cc	20 7e 5a	jsr $5a7e	        jsr apnull
+.56cf	20 93 5b	jsr $5b93	        jsr showlinecmd
+.56d2	a9 01		lda #$01	        lda #$01
+.56d4	85 44		sta $44		        sta state
+.56d6	4c d8 54	jmp $54d8	        jmp fmloop
+.56d9					ask_rename:
+.56d9	a5 41		lda $41		        lda fmcnt
+.56db	d0 03		bne $56e0	        bne ar_have
+.56dd	4c d8 54	jmp $54d8	        jmp fmloop
+.56e0					ar_have:
+.56e0	a9 c5		lda #$c5	        lda #<p_ren
+.56e2	85 02		sta $02		        sta r0L
+.56e4	a9 69		lda #$69	        lda #>p_ren
+.56e6	85 03		sta $03		        sta r0H
+.56e8	20 7a 5b	jsr $5b7a	        jsr setline
+.56eb	a9 00		lda #$00	        lda #$00
+.56ed	85 46		sta $46		        sta gllen
+.56ef	8d b6 6b	sta $6bb6	        sta fnbuf2
+.56f2	a9 01		lda #$01	        lda #$01
+.56f4	85 45		sta $45		        sta mode
+.56f6	a9 02		lda #$02	        lda #$02                        ; line editor state (1 = Y/N confirm)
+.56f8	85 44		sta $44		        sta state
+.56fa	20 31 5c	jsr $5c31	        jsr gl_show
+.56fd	4c d8 54	jmp $54d8	        jmp fmloop
+.5700					ask_copy:
+.5700	a5 41		lda $41		        lda fmcnt
+.5702	d0 03		bne $5707	        bne ac_have
+.5704	4c d8 54	jmp $54d8	        jmp fmloop
+.5707					ac_have:
+.5707	a9 d0		lda #$d0	        lda #<p_cpy
+.5709	85 02		sta $02		        sta r0L
+.570b	a9 69		lda #$69	        lda #>p_cpy
+.570d	85 03		sta $03		        sta r0H
+.570f	20 7a 5b	jsr $5b7a	        jsr setline
+.5712	a9 00		lda #$00	        lda #$00
+.5714	85 46		sta $46		        sta gllen
+.5716	8d b6 6b	sta $6bb6	        sta fnbuf2
+.5719	a9 02		lda #$02	        lda #$02
+.571b	85 45		sta $45		        sta mode
+.571d	a9 02		lda #$02	        lda #$02
+.571f	85 44		sta $44		        sta state
+.5721	20 31 5c	jsr $5c31	        jsr gl_show
+.5724	4c d8 54	jmp $54d8	        jmp fmloop
+.5727					ask_copyx:
+.5727	a5 41		lda $41		        lda fmcnt
+.5729	d0 03		bne $572e	        bne ax_have
+.572b	4c d8 54	jmp $54d8	        jmp fmloop
+.572e					ax_have:
+.572e	a9 d9		lda #$d9	        lda #<p_cpyx
+.5730	85 02		sta $02		        sta r0L
+.5732	a9 69		lda #$69	        lda #>p_cpyx
+.5734	85 03		sta $03		        sta r0H
+.5736	20 7a 5b	jsr $5b7a	        jsr setline
+.5739	a9 00		lda #$00	        lda #$00
+.573b	85 46		sta $46		        sta gllen
+.573d	8d b6 6b	sta $6bb6	        sta fnbuf2
+.5740	a9 03		lda #$03	        lda #$03
+.5742	85 45		sta $45		        sta mode
+.5744	a9 02		lda #$02	        lda #$02
+.5746	85 44		sta $44		        sta state
+.5748	20 31 5c	jsr $5c31	        jsr gl_show
+.574b	4c d8 54	jmp $54d8	        jmp fmloop
+.574e					show_info:
+.574e	a5 41		lda $41		        lda fmcnt
+.5750	d0 03		bne $5755	        bne si_have
+.5752	4c d8 54	jmp $54d8	        jmp fmloop
+.5755					si_have:
+.5755	a9 00		lda #$00	        lda #$00
+.5757	85 47		sta $47		        sta fci
+.5759	20 a2 5a	jsr $5aa2	        jsr apcur
+.575c	a9 f3		lda #$f3	        lda #<p_bsep
+.575e	85 02		sta $02		        sta r0L
+.5760	a9 69		lda #$69	        lda #>p_bsep
+.5762	85 03		sta $03		        sta r0H
+.5764	20 63 5a	jsr $5a63	        jsr apstr
+.5767	a6 40		ldx $40		        ldx fmrow
+.5769	bd 29 62	lda $6229,x	        lda fmblockL,x
+.576c	8d 1b 6c	sta $6c1b	        sta bnum
+.576f	bd 69 62	lda $6269,x	        lda fmblockH,x
+.5772	8d 1c 6c	sta $6c1c	        sta bnum+1
+.5775	20 29 5b	jsr $5b29	        jsr bin2dec
+.5778	a5 40		lda $40		        lda fmrow
+.577a	0a		asl a		        asl
+.577b	18		clc		        clc
+.577c	65 40		adc $40		        adc fmrow
+.577e	a8		tay		        tay
+.577f	b9 a9 62	lda $62a9,y	        lda fmtype,y
+.5782	f0 08		beq $578c	        beq si_fin
+.5784	a9 20		lda #$20	        lda #' '
+.5786	20 76 5a	jsr $5a76	        jsr apchr
+.5789	20 86 5a	jsr $5a86	        jsr aptype
+.578c					si_fin:
+.578c	20 7e 5a	jsr $5a7e	        jsr apnull
+.578f	20 93 5b	jsr $5b93	        jsr showlinecmd
+.5792	4c d8 54	jmp $54d8	        jmp fmloop
+.5795					do_scratch:
+.5795	a9 00		lda #$00	        lda #$00
+.5797	85 47		sta $47		        sta fci
+.5799	a9 ad		lda #$ad	        lda #<p_s0
+.579b	85 02		sta $02		        sta r0L
+.579d	a9 69		lda #$69	        lda #>p_s0
+.579f	85 03		sta $03		        sta r0H
+.57a1	20 63 5a	jsr $5a63	        jsr apstr
+.57a4	20 a2 5a	jsr $5aa2	        jsr apcur
+.57a7	20 7e 5a	jsr $5a7e	        jsr apnull
+.57aa	20 e3 5a	jsr $5ae3	        jsr sendcmd
+.57ad	90 03		bcc $57b2	        bcc scratch_ok
+.57af	4c 33 58	jmp $5833	        jmp dc_err
+.57b2					scratch_ok:
+.57b2	20 5a 5d	jsr $5d5a	        jsr refresh
+.57b5	a9 fc		lda #$fc	        lda #<msg_scr
+.57b7	85 02		sta $02		        sta r0L
+.57b9	a9 69		lda #$69	        lda #>msg_scr
+.57bb	85 03		sta $03		        sta r0H
+.57bd	20 7a 5b	jsr $5b7a	        jsr setline
+.57c0	60		rts		        rts
+.57c1					do_rename:
+.57c1	a9 00		lda #$00	        lda #$00
+.57c3	85 47		sta $47		        sta fci
+.57c5	a9 b1		lda #$b1	        lda #<p_r0
+.57c7	85 02		sta $02		        sta r0L
+.57c9	a9 69		lda #$69	        lda #>p_r0
+.57cb	85 03		sta $03		        sta r0H
+.57cd	20 63 5a	jsr $5a63	        jsr apstr
+.57d0	a9 b6		lda #$b6	        lda #<fnbuf2
+.57d2	85 02		sta $02		        sta r0L
+.57d4	a9 6b		lda #$6b	        lda #>fnbuf2
+.57d6	85 03		sta $03		        sta r0H
+.57d8	20 63 5a	jsr $5a63	        jsr apstr
+.57db	a9 3d		lda #$3d	        lda #$3d                        ; '='
+.57dd	20 76 5a	jsr $5a76	        jsr apchr
+.57e0	20 a2 5a	jsr $5aa2	        jsr apcur
+.57e3	20 7e 5a	jsr $5a7e	        jsr apnull
+.57e6	20 e3 5a	jsr $5ae3	        jsr sendcmd
+.57e9	b0 48		bcs $5833	        bcs dc_err
+.57eb	20 5a 5d	jsr $5d5a	        jsr refresh
+.57ee	a9 06		lda #$06	        lda #<msg_ren
+.57f0	85 02		sta $02		        sta r0L
+.57f2	a9 6a		lda #$6a	        lda #>msg_ren
+.57f4	85 03		sta $03		        sta r0H
+.57f6	20 7a 5b	jsr $5b7a	        jsr setline
+.57f9	60		rts		        rts
+.57fa					do_copy:
+.57fa	a9 00		lda #$00	        lda #$00
+.57fc	85 47		sta $47		        sta fci
+.57fe	a9 c1		lda #$c1	        lda #<p_c0
+.5800	85 02		sta $02		        sta r0L
+.5802	a9 69		lda #$69	        lda #>p_c0
+.5804	85 03		sta $03		        sta r0H
+.5806	20 63 5a	jsr $5a63	        jsr apstr                       ; "C0:"
+.5809	a9 b6		lda #$b6	        lda #<fnbuf2
+.580b	85 02		sta $02		        sta r0L
+.580d	a9 6b		lda #$6b	        lda #>fnbuf2
+.580f	85 03		sta $03		        sta r0H
+.5811	20 63 5a	jsr $5a63	        jsr apstr                       ; <new>
+.5814	a9 3d		lda #$3d	        lda #$3d                        ; '='
+.5816	20 76 5a	jsr $5a76	        jsr apchr
+.5819	20 a2 5a	jsr $5aa2	        jsr apcur                       ; <old>
+.581c	20 7e 5a	jsr $5a7e	        jsr apnull
+.581f	20 e3 5a	jsr $5ae3	        jsr sendcmd
+.5822	b0 0f		bcs $5833	        bcs dc_err
+.5824	20 5a 5d	jsr $5d5a	        jsr refresh
+.5827	a9 0e		lda #$0e	        lda #<msg_cpy
+.5829	85 02		sta $02		        sta r0L
+.582b	a9 6a		lda #$6a	        lda #>msg_cpy
+.582d	85 03		sta $03		        sta r0H
+.582f	20 7a 5b	jsr $5b7a	        jsr setline
+.5832	60		rts		        rts
+.5833					dc_err:
+.5833	20 5a 5d	jsr $5d5a	        jsr refresh
+.5836	a9 6b		lda #$6b	        lda #<msg_err
+.5838	85 02		sta $02		        sta r0L
+.583a	a9 6a		lda #$6a	        lda #>msg_err
+.583c	85 03		sta $03		        sta r0H
+.583e	20 7a 5b	jsr $5b7a	        jsr setline
+.5841	60		rts		        rts
+.5842					do_copyx:
+.5842	a5 43		lda $43		        lda fmdev
+.5844	49 01		eor #$01	        eor #$01
+.5846	85 56		sta $56		        sta cdst
+.5848	20 64 58	jsr $5864	        jsr dc_seqcopy
+.584b	b0 e6		bcs $5833	        bcs dc_err
+.584d	20 5a 5d	jsr $5d5a	        jsr refresh
+.5850	a5 56		lda $56		        lda cdst
+.5852	38		sec		        sec
+.5853	e9 08		sbc #$08	        sbc #8
+.5855	aa		tax		        tax
+.5856	bd 63 6a	lda $6a63,x	        lda copymsgL,x
+.5859	85 02		sta $02		        sta r0L
+.585b	bd 67 6a	lda $6a67,x	        lda copymsgH,x
+.585e	85 03		sta $03		        sta r0H
+.5860	20 7a 5b	jsr $5b7a	        jsr setline
+.5863	60		rts		        rts
+.5864					dc_seqcopy:
+.5864	a9 00		lda #$00	        lda #$00
+.5866	8d 08 5a	sta $5a08	        sta cperror
+.5869	8d 09 5a	sta $5a09	        sta cpcreated
+.586c	a5 40		lda $40		        lda fmrow
+.586e	0a		asl a		        asl
+.586f	18		clc		        clc
+.5870	65 40		adc $40		        adc fmrow
+.5872	a8		tay		        tay
+.5873	b9 a9 62	lda $62a9,y	        lda fmtype,y
+.5876	20 1d 5b	jsr $5b1d	        jsr normkey
+.5879	c9 50		cmp #$50	        cmp #$50               ; PRG
+.587b	f0 0a		beq $5887	        beq dcs_typeok
+.587d	c9 53		cmp #$53	        cmp #$53               ; SEQ
+.587f	f0 06		beq $5887	        beq dcs_typeok
+.5881	c9 55		cmp #$55	        cmp #$55               ; USR
+.5883	f0 02		beq $5887	        beq dcs_typeok
+.5885	38		sec		        sec                    ; REL requires record-aware copying
+.5886	60		rts		        rts
+.5887					dcs_typeok:
+.5887	8d f8 69	sta $69f8	        sta w_sufx+1
+.588a	a6 40		ldx $40		        ldx fmrow
+.588c	18		clc		        clc
+.588d	bd 29 62	lda $6229,x	        lda fmblockL,x
+.5890	69 01		adc #$01	        adc #$01
+.5892	8d 06 5a	sta $5a06	        sta cpbudget
+.5895	bd 69 62	lda $6269,x	        lda fmblockH,x
+.5898	69 00		adc #$00	        adc #$00
+.589a	8d 07 5a	sta $5a07	        sta cpbudget+1
+.589d	a0 00		ldy #$00	        ldy #$00
+.589f					dcs_n:
+.589f	b9 b6 6b	lda $6bb6,y	        lda fnbuf2,y
+.58a2	f0 08		beq $58ac	        beq dcs_s
+.58a4	99 8d 6a	sta $6a8d,y	        sta csrcbuf,y
+.58a7	c8		iny		        iny
+.58a8	c0 10		cpy #$10	        cpy #16
+.58aa	d0 f3		bne $589f	        bne dcs_n
+.58ac					dcs_s:
+.58ac	a2 00		ldx #$00	        ldx #$00
+.58ae					dcs_s2:
+.58ae	bd f7 69	lda $69f7,x	        lda w_sufx,x
+.58b1	99 8d 6a	sta $6a8d,y	        sta csrcbuf,y
+.58b4	f0 04		beq $58ba	        beq dcs_source
+.58b6	c8		iny		        iny
+.58b7	e8		inx		        inx
+.58b8	d0 f4		bne $58ae	        bne dcs_s2
+.58ba					dcs_source:
+.58ba	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.58bd	a6 40		ldx $40		        ldx fmrow
+.58bf	bd a9 61	lda $61a9,x	        lda fmnamesL,x
+.58c2	85 02		sta $02		        sta r0L
+.58c4	bd e9 61	lda $61e9,x	        lda fmnamesH,x
+.58c7	85 03		sta $03		        sta r0H
+.58c9	a9 02		lda #$02	        lda #$02
+.58cb	a0 02		ldy #$02	        ldy #$02
+.58cd	20 b1 5a	jsr $5ab1	        jsr openseq
+.58d0	90 03		bcc $58d5	        bcc dcs_source_status
+.58d2	4c 67 59	jmp $5967	        jmp dcs_error
+.58d5					dcs_source_status:
+.58d5	a5 43		lda $43		        lda fmdev
+.58d7	20 b5 59	jsr $59b5	        jsr drive_status
+.58da	90 03		bcc $58df	        bcc dcs_dest
+.58dc	4c 67 59	jmp $5967	        jmp dcs_error
+.58df					dcs_dest:
+.58df	a9 8d		lda #$8d	        lda #<csrcbuf
+.58e1	85 02		sta $02		        sta r0L
+.58e3	a9 6a		lda #$6a	        lda #>csrcbuf
+.58e5	85 03		sta $03		        sta r0H
+.58e7	20 ce 5a	jsr $5ace	        jsr strlen
+.58ea	a9 03		lda #$03	        lda #$03
+.58ec	a6 56		ldx $56		        ldx cdst
+.58ee	a0 03		ldy #$03	        ldy #$03
+.58f0	20 ba ff	jsr $ffba	        jsr SETLFS
+.58f3	a5 55		lda $55		        lda namlen
+.58f5	a2 8d		ldx #$8d	        ldx #<csrcbuf
+.58f7	a0 6a		ldy #$6a	        ldy #>csrcbuf
+.58f9	20 bd ff	jsr $ffbd	        jsr SETNAM
+.58fc	20 c0 ff	jsr $ffc0	        jsr OPEN
+.58ff	90 03		bcc $5904	        bcc dcs_dest_status
+.5901	4c 67 59	jmp $5967	        jmp dcs_error
+.5904					dcs_dest_status:
+.5904	a5 56		lda $56		        lda cdst
+.5906	20 b5 59	jsr $59b5	        jsr drive_status
+.5909	90 03		bcc $590e	        bcc dcs_dstok
+.590b	4c 67 59	jmp $5967	        jmp dcs_error
+.590e					dcs_dstok:
+.590e	ee 09 5a	inc $5a09	        inc cpcreated
+.5911					dcs_pg:
+.5911	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.5914	a2 02		ldx #$02	        ldx #$02
+.5916	20 c6 ff	jsr $ffc6	        jsr CHKIN
+.5919	90 03		bcc $591e	        bcc dcs_inputok
+.591b	4c 67 59	jmp $5967	        jmp dcs_error
+.591e					dcs_inputok:
+.591e	a0 00		ldy #$00	        ldy #$00
+.5920					dcs_rd:
+.5920	20 cf ff	jsr $ffcf	        jsr CHRIN
+.5923	99 a5 6a	sta $6aa5,y	        sta cpbuf,y
+.5926	20 b7 ff	jsr $ffb7	        jsr READST
+.5929	8d 1e 6c	sta $6c1e	        sta cpst
+.592c	29 bf		and #$bf	        and #$bf
+.592e	d0 37		bne $5967	        bne dcs_error
+.5930	c8		iny		        iny
+.5931	ad 1e 6c	lda $6c1e	        lda cpst
+.5934	29 40		and #$40	        and #$40
+.5936	d0 04		bne $593c	        bne dcs_weof
+.5938	c0 00		cpy #$00	        cpy #$00
+.593a	d0 e4		bne $5920	        bne dcs_rd
+.593c					dcs_weof:
+.593c	84 51		sty $51		        sty dnum               ; zero means a full 256-byte page
+.593e	20 92 59	jsr $5992	        jsr dcs_write
+.5941	b0 24		bcs $5967	        bcs dcs_error
+.5943	ad 1e 6c	lda $6c1e	        lda cpst
+.5946	29 40		and #$40	        and #$40
+.5948	d0 22		bne $596c	        bne dcs_fin
+.594a	ad 06 5a	lda $5a06	        lda cpbudget
+.594d	d0 03		bne $5952	        bne dcs_dec
+.594f	ce 07 5a	dec $5a07	        dec cpbudget+1
+.5952					dcs_dec:
+.5952	ce 06 5a	dec $5a06	        dec cpbudget
+.5955	ad 06 5a	lda $5a06	        lda cpbudget
+.5958	0d 07 5a	ora $5a07	        ora cpbudget+1
+.595b	f0 0a		beq $5967	        beq dcs_error
+.595d	20 2c 08	jsr $082c	        jsr KEYIN
+.5960	c9 1b		cmp #$1b	        cmp #$1b
+.5962	f0 03		beq $5967	        beq dcs_error
+.5964	4c 11 59	jmp $5911	        jmp dcs_pg
+.5967					dcs_error:
+.5967	a9 01		lda #$01	        lda #$01
+.5969	8d 08 5a	sta $5a08	        sta cperror
+.596c					dcs_fin:
+.596c	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.596f	a9 02		lda #$02	        lda #$02
+.5971	20 c3 ff	jsr $ffc3	        jsr CLOSE
+.5974	a9 03		lda #$03	        lda #$03
+.5976	20 c3 ff	jsr $ffc3	        jsr CLOSE
+.5979	ad 09 5a	lda $5a09	        lda cpcreated
+.597c	f0 0a		beq $5988	        beq dcs_result
+.597e	a5 56		lda $56		        lda cdst
+.5980	20 b5 59	jsr $59b5	        jsr drive_status       ; includes flush/disk-full failure at CLOSE
+.5983	90 03		bcc $5988	        bcc dcs_result
+.5985	ee 08 5a	inc $5a08	        inc cperror
+.5988					dcs_result:
+.5988	58		cli		        cli
+.5989	ad 08 5a	lda $5a08	        lda cperror
+.598c	f0 02		beq $5990	        beq dcs_ok
+.598e	38		sec		        sec
+.598f	60		rts		        rts
+.5990					dcs_ok:
+.5990	18		clc		        clc
+.5991	60		rts		        rts
+.5992					dcs_write:
+.5992	20 cc ff	jsr $ffcc	        jsr CLRCHN             ; UNTALK source before LISTEN destination
+.5995	a2 03		ldx #$03	        ldx #$03
+.5997	20 c9 ff	jsr $ffc9	        jsr CHKOUT
+.599a	b0 17		bcs $59b3	        bcs dcw_fail
+.599c	a0 00		ldy #$00	        ldy #$00
+.599e					dcw_l:
+.599e	b9 a5 6a	lda $6aa5,y	        lda cpbuf,y
+.59a1	20 d2 ff	jsr $ffd2	        jsr CHROUT
+.59a4	20 b7 ff	jsr $ffb7	        jsr READST
+.59a7	d0 0a		bne $59b3	        bne dcw_fail
+.59a9	c8		iny		        iny
+.59aa	c4 51		cpy $51		        cpy dnum
+.59ac	d0 f0		bne $599e	        bne dcw_l
+.59ae	20 cc ff	jsr $ffcc	        jsr CLRCHN             ; flush the last byte and UNLISTEN
+.59b1	18		clc		        clc
+.59b2	60		rts		        rts
+.59b3					dcw_fail:
+.59b3	38		sec		        sec
+.59b4	60		rts		        rts
+.59b5					drive_status:
+.59b5	48		pha		        pha
+.59b6	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.59b9	a9 00		lda #$00	        lda #$00
+.59bb	85 90		sta $90		        sta $90                ; fresh KERNAL serial status
+.59bd	8d 0a 5a	sta $5a0a	        sta statlen
+.59c0	68		pla		        pla
+.59c1	20 b4 ff	jsr $ffb4	        jsr TALK
+.59c4	a9 6f		lda #$6f	        lda #$6f
+.59c6	20 96 ff	jsr $ff96	        jsr TKSA
+.59c9					status_read:
+.59c9	20 a5 ff	jsr $ffa5	        jsr ACPTR
+.59cc	ae 0a 5a	ldx $5a0a	        ldx statlen
+.59cf	9d 0b 5a	sta $5a0b,x	        sta statusbuf,x
+.59d2	ee 0a 5a	inc $5a0a	        inc statlen
+.59d5	c9 0d		cmp #$0d	        cmp #$0d
+.59d7	f0 0c		beq $59e5	        beq status_end
+.59d9	20 b7 ff	jsr $ffb7	        jsr READST
+.59dc	d0 07		bne $59e5	        bne status_end
+.59de	ad 0a 5a	lda $5a0a	        lda statlen
+.59e1	c9 26		cmp #$26	        cmp #38
+.59e3	90 e4		bcc $59c9	        bcc status_read
+.59e5					status_end:
+.59e5	20 ab ff	jsr $ffab	        jsr UNTLK
+.59e8	ae 0a 5a	ldx $5a0a	        ldx statlen
+.59eb	a9 00		lda #$00	        lda #$00
+.59ed	9d 0b 5a	sta $5a0b,x	        sta statusbuf,x
+.59f0	ad 0b 5a	lda $5a0b	        lda statusbuf
+.59f3	c9 30		cmp #$30	        cmp #$30
+.59f5	d0 0d		bne $5a04	        bne status_bad
+.59f7	ad 0c 5a	lda $5a0c	        lda statusbuf+1
+.59fa	c9 30		cmp #$30	        cmp #$30
+.59fc	f0 04		beq $5a02	        beq status_ok
+.59fe	c9 31		cmp #$31	        cmp #$31
+.5a00	d0 02		bne $5a04	        bne status_bad
+.5a02					status_ok:
+.5a02	18		clc		        clc
+.5a03	60		rts		        rts
+.5a04					status_bad:
+.5a04	38		sec		        sec
+.5a05	60		rts		        rts
+>5a06	00 00				cpbudget: .word 0
+>5a08	00				cperror: .byte 0
+>5a09	00				cpcreated: .byte 0
+>5a0a	00				statlen: .byte 0
+>5a0b	00 00 00 00 00 00 00 00		statusbuf: .fill 40, 0
+>5a13	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>5a23	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+.5a33					fmdev8:
+.5a33	a9 08		lda #$08	        lda #$08
+.5a35	85 43		sta $43		        sta fmdev
+.5a37	20 55 5a	jsr $5a55	        jsr firstpage
+.5a3a	20 5a 5d	jsr $5d5a	        jsr refresh
+.5a3d	4c 08 55	jmp $5508	        jmp j_fmloop
+.5a40					fmdev9:
+.5a40	a9 09		lda #$09	        lda #$09
+.5a42	d0 06		bne $5a4a	        bne fmdevice
+.5a44					fmdev10:
+.5a44	a9 0a		lda #$0a	        lda #10
+.5a46	d0 02		bne $5a4a	        bne fmdevice
+.5a48					fmdev11:
+.5a48	a9 0b		lda #$0b	        lda #11
+.5a4a					fmdevice:
+.5a4a	85 43		sta $43		        sta fmdev
+.5a4c	20 55 5a	jsr $5a55	        jsr firstpage
+.5a4f	20 5a 5d	jsr $5d5a	        jsr refresh
+.5a52	4c 08 55	jmp $5508	        jmp j_fmloop
+.5a55					firstpage:
+.5a55	a9 00		lda #$00	        lda #$00
+.5a57	85 40		sta $40		        sta fmrow
+.5a59	8d a9 67	sta $67a9	        sta scroll
+.5a5c	8d ab 67	sta $67ab	        sta cachebase
+.5a5f	8d ac 67	sta $67ac	        sta cachebase+1
+.5a62	60		rts		        rts
+.5a63					apstr:
+.5a63	a6 47		ldx $47		        ldx fci
+.5a65	a0 00		ldy #$00	        ldy #$00
+.5a67	b1 02		lda ($02),y	ap_l:   lda (r0),y
+.5a69	f0 08		beq $5a73	        beq ap_d
+.5a6b	9d e9 6b	sta $6be9,x	        sta fncmd,x
+.5a6e	e8		inx		        inx
+.5a6f	c8		iny		        iny
+.5a70	4c 67 5a	jmp $5a67	        jmp ap_l
+.5a73	86 47		stx $47		ap_d:   stx fci
+.5a75	60		rts		        rts
+.5a76					apchr:
+.5a76	a6 47		ldx $47		        ldx fci
+.5a78	9d e9 6b	sta $6be9,x	        sta fncmd,x
+.5a7b	e6 47		inc $47		        inc fci
+.5a7d	60		rts		        rts
+.5a7e					apnull:
+.5a7e	a6 47		ldx $47		        ldx fci
+.5a80	a9 00		lda #$00	        lda #$00
+.5a82	9d e9 6b	sta $6be9,x	        sta fncmd,x
+.5a85	60		rts		        rts
+.5a86					aptype:
+.5a86	a5 40		lda $40		        lda fmrow
+.5a88	0a		asl a		        asl
+.5a89	18		clc		        clc
+.5a8a	65 40		adc $40		        adc fmrow
+.5a8c	a8		tay		        tay
+.5a8d	b9 a9 62	lda $62a9,y	        lda fmtype,y
+.5a90	20 76 5a	jsr $5a76	        jsr apchr
+.5a93	c8		iny		        iny
+.5a94	b9 a9 62	lda $62a9,y	        lda fmtype,y
+.5a97	20 76 5a	jsr $5a76	        jsr apchr
+.5a9a	c8		iny		        iny
+.5a9b	b9 a9 62	lda $62a9,y	        lda fmtype,y
+.5a9e	20 76 5a	jsr $5a76	        jsr apchr
+.5aa1	60		rts		        rts
+.5aa2					apcur:
+.5aa2	a6 40		ldx $40		        ldx fmrow
+.5aa4	bd a9 61	lda $61a9,x	        lda fmnamesL,x
+.5aa7	85 02		sta $02		        sta r0L
+.5aa9	bd e9 61	lda $61e9,x	        lda fmnamesH,x
+.5aac	85 03		sta $03		        sta r0H
+.5aae	4c 63 5a	jmp $5a63	        jmp apstr
+.5ab1					openseq:
+.5ab1	85 4a		sta $4a		        sta opentmp
+.5ab3	84 4b		sty $4b		        sty opensa
+.5ab5	20 ce 5a	jsr $5ace	        jsr strlen
+.5ab8	a5 4a		lda $4a		        lda opentmp
+.5aba	a6 43		ldx $43		        ldx fmdev
+.5abc	a4 4b		ldy $4b		        ldy opensa
+.5abe	20 ba ff	jsr $ffba	        jsr SETLFS
+.5ac1	a5 55		lda $55		        lda namlen
+.5ac3	a6 02		ldx $02		        ldx r0L
+.5ac5	a4 03		ldy $03		        ldy r0H
+.5ac7	20 bd ff	jsr $ffbd	        jsr SETNAM
+.5aca	20 c0 ff	jsr $ffc0	        jsr OPEN
+.5acd	60		rts		        rts
+.5ace					strlen:
+.5ace	a9 00		lda #$00	        lda #$00
+.5ad0	85 55		sta $55		        sta namlen
+.5ad2	a0 00		ldy #$00	        ldy #$00
+.5ad4	b1 02		lda ($02),y	stl_l:  lda (r0),y
+.5ad6	f0 0a		beq $5ae2	        beq stl_d
+.5ad8	c0 18		cpy #$18	        cpy #24
+.5ada	b0 06		bcs $5ae2	        bcs stl_d
+.5adc	e6 55		inc $55		        inc namlen
+.5ade	c8		iny		        iny
+.5adf	4c d4 5a	jmp $5ad4	        jmp stl_l
+.5ae2	60		rts		stl_d:  rts
+.5ae3					sendcmd:
+.5ae3	a9 0f		lda #$0f	        lda #$0f
+.5ae5	a6 43		ldx $43		        ldx fmdev
+.5ae7	a0 0f		ldy #$0f	        ldy #$0f
+.5ae9	20 ba ff	jsr $ffba	        jsr SETLFS
+.5aec	a9 00		lda #$00	        lda #$00
+.5aee	a2 00		ldx #$00	        ldx #$00
+.5af0	a0 00		ldy #$00	        ldy #$00
+.5af2	20 bd ff	jsr $ffbd	        jsr SETNAM
+.5af5	20 c0 ff	jsr $ffc0	        jsr OPEN
+.5af8	a2 0f		ldx #$0f	        ldx #$0f
+.5afa	20 c9 ff	jsr $ffc9	        jsr CHKOUT
+.5afd	a0 00		ldy #$00	        ldy #$00
+.5aff	b9 e9 6b	lda $6be9,y	sc_cp:  lda fncmd,y
+.5b02	f0 07		beq $5b0b	        beq sc_cr
+.5b04	20 d2 ff	jsr $ffd2	        jsr CHROUT
+.5b07	c8		iny		        iny
+.5b08	4c ff 5a	jmp $5aff	        jmp sc_cp
+.5b0b	a9 0d		lda #$0d	sc_cr:  lda #$0d
+.5b0d	20 d2 ff	jsr $ffd2	        jsr CHROUT
+.5b10	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.5b13	a9 0f		lda #$0f	        lda #$0f
+.5b15	20 c3 ff	jsr $ffc3	        jsr CLOSE
+.5b18	a5 43		lda $43		        lda fmdev
+.5b1a	4c b5 59	jmp $59b5	        jmp drive_status
+.5b1d					normkey:
+.5b1d	c9 c1		cmp #$c1	        cmp #$c1
+.5b1f	90 07		bcc $5b28	        bcc nk_ret
+.5b21	c9 db		cmp #$db	        cmp #$db
+.5b23	b0 03		bcs $5b28	        bcs nk_ret
+.5b25	38		sec		        sec
+.5b26	e9 80		sbc #$80	        sbc #$80
+.5b28	60		rts		nk_ret: rts
+.5b29					bin2dec:
+.5b29	a0 00		ldy #$00	        ldy #$00
+.5b2b	8c 79 5b	sty $5b79	        sty decseen
+.5b2e					bd_digit:
+.5b2e	a9 30		lda #$30	        lda #$30
+.5b30	8d 78 5b	sta $5b78	        sta decdigit
+.5b33					bd_sub:
+.5b33	38		sec		        sec
+.5b34	ad 1b 6c	lda $6c1b	        lda bnum
+.5b37	f9 6e 5b	sbc $5b6e,y	        sbc decpowersL,y
+.5b3a	aa		tax		        tax
+.5b3b	ad 1c 6c	lda $6c1c	        lda bnum+1
+.5b3e	f9 73 5b	sbc $5b73,y	        sbc decpowersH,y
+.5b41	90 0b		bcc $5b4e	        bcc bd_emit
+.5b43	8d 1c 6c	sta $6c1c	        sta bnum+1
+.5b46	8e 1b 6c	stx $6c1b	        stx bnum
+.5b49	ee 78 5b	inc $5b78	        inc decdigit
+.5b4c	d0 e5		bne $5b33	        bne bd_sub
+.5b4e					bd_emit:
+.5b4e	ad 78 5b	lda $5b78	        lda decdigit
+.5b51	c9 30		cmp #$30	        cmp #$30
+.5b53	d0 0d		bne $5b62	        bne bd_seen
+.5b55	c0 04		cpy #$04	        cpy #$04
+.5b57	f0 09		beq $5b62	        beq bd_seen
+.5b59	ae 79 5b	ldx $5b79	        ldx decseen
+.5b5c	d0 04		bne $5b62	        bne bd_seen
+.5b5e	a9 20		lda #$20	        lda #$20
+.5b60	d0 03		bne $5b65	        bne bd_put
+.5b62					bd_seen:
+.5b62	ee 79 5b	inc $5b79	        inc decseen
+.5b65					bd_put:
+.5b65	20 76 5a	jsr $5a76	        jsr apchr
+.5b68	c8		iny		        iny
+.5b69	c0 05		cpy #$05	        cpy #$05
+.5b6b	d0 c1		bne $5b2e	        bne bd_digit
+.5b6d	60		rts		        rts
+>5b6e	10 e8 64 0a 01			decpowersL: .byte <10000,<1000,<100,<10,<1
+>5b73	27 03 00 00 00			decpowersH: .byte >10000,>1000,>100,>10,>1
+>5b78	00				decdigit: .byte 0
+>5b79	00				decseen: .byte 0
+.5b7a					setline:
+.5b7a	a0 00		ldy #$00	        ldy #$00
+.5b7c	b1 02		lda ($02),y	sl_cp:  lda (r0),y
+.5b7e	f0 0a		beq $5b8a	        beq sl_d
+.5b80	c0 26		cpy #$26	        cpy #38
+.5b82	b0 06		bcs $5b8a	        bcs sl_d
+.5b84	99 21 6c	sta $6c21,y	        sta linebuf,y
+.5b87	c8		iny		        iny
+.5b88	d0 f2		bne $5b7c	        bne sl_cp
+.5b8a	a9 00		lda #$00	sl_d:   lda #$00
+.5b8c	99 21 6c	sta $6c21,y	        sta linebuf,y
+.5b8f	20 9e 5b	jsr $5b9e	        jsr drawlinea
+.5b92	60		rts		        rts
+.5b93					showlinecmd:
+.5b93	a9 e9		lda #$e9	        lda #<fncmd
+.5b95	85 02		sta $02		        sta r0L
+.5b97	a9 6b		lda #$6b	        lda #>fncmd
+.5b99	85 03		sta $03		        sta r0H
+.5b9b	4c 7a 5b	jmp $5b7a	        jmp setline
+.5b9e					drawlinea:
+.5b9e	a5 02		lda $02		    lda r0L
+.5ba0	48		pha		    pha
+.5ba1	a5 03		lda $03		    lda r0H
+.5ba3	48		pha		    pha
+.5ba4	a5 04		lda $04		    lda r1L
+.5ba6	48		pha		    pha
+.5ba7	a5 05		lda $05		    lda r1H
+.5ba9	48		pha		    pha
+.5baa	a5 06		lda $06		    lda r2L
+.5bac	48		pha		    pha
+.5bad	a5 07		lda $07		    lda r2H
+.5baf	48		pha		    pha
+=0					    exploc      := 0
+=20					    firstrow    := (ACT_Y - 2) / 8
+=21					    lastrow     := ((ACT_Y - 2) + 12 - 1) / 8
+=0					    row         := 0
+=3					    col         := (24 / 8)
+=38					    lastcol     := ((24 + 280 - 1) / 8) + 1
+=280					    memsz       := (lastcol - col) * 8
+=47384					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5bb0	a9 18		lda #$18	        lda #<memloc
+.5bb2	85 02		sta $02		        sta r0L
+.5bb4	a9 b9		lda #$b9	        lda #>memloc
+.5bb6	85 03		sta $03		        sta r0H
+.5bb8	a9 00		lda #$00	        lda #<exploc
+.5bba	85 04		sta $04		        sta r1L
+.5bbc	a9 00		lda #$00	        lda #>exploc
+.5bbe	85 05		sta $05		        sta r1H
+.5bc0	a9 18		lda #$18	        lda #<memsz
+.5bc2	85 06		sta $06		        sta r2L
+.5bc4	a9 01		lda #$01	        lda #>memsz
+.5bc6	85 07		sta $07		        sta r2H
+.5bc8	20 20 08	jsr $0820	        jsr CLR_RECT
+=281					        exploc := exploc + memsz + 1
+=47704					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5bcb	a9 58		lda #$58	        lda #<memloc
+.5bcd	85 02		sta $02		        sta r0L
+.5bcf	a9 ba		lda #$ba	        lda #>memloc
+.5bd1	85 03		sta $03		        sta r0H
+.5bd3	a9 19		lda #$19	        lda #<exploc
+.5bd5	85 04		sta $04		        sta r1L
+.5bd7	a9 01		lda #$01	        lda #>exploc
+.5bd9	85 05		sta $05		        sta r1H
+.5bdb	a9 18		lda #$18	        lda #<memsz
+.5bdd	85 06		sta $06		        sta r2L
+.5bdf	a9 01		lda #$01	        lda #>memsz
+.5be1	85 07		sta $07		        sta r2H
+.5be3	20 20 08	jsr $0820	        jsr CLR_RECT
+=562					        exploc := exploc + memsz + 1
+.5be6	68		pla		    pla
+.5be7	85 07		sta $07		    sta r2H
+.5be9	68		pla		    pla
+.5bea	85 06		sta $06		    sta r2L
+.5bec	68		pla		    pla
+.5bed	85 05		sta $05		    sta r1H
+.5bef	68		pla		    pla
+.5bf0	85 04		sta $04		    sta r1L
+.5bf2	68		pla		    pla
+.5bf3	85 03		sta $03		    sta r0H
+.5bf5	68		pla		    pla
+.5bf6	85 02		sta $02		    sta r0L
+.5bf8	a9 18		lda #$18	        lda #24
+.5bfa	85 02		sta $02		        sta X1
+.5bfc	a9 00		lda #$00	        lda #$00
+.5bfe	85 03		sta $03		        sta X1+1
+.5c00	85 05		sta $05		        sta Y1+1
+.5c02	a9 a4		lda #$a4	        lda #ACT_Y
+.5c04	85 04		sta $04		        sta Y1
+.5c06	a9 21		lda #$21	        lda #<linebuf
+.5c08	85 14		sta $14		        sta r9L
+.5c0a	a9 6c		lda #$6c	        lda #>linebuf
+.5c0c	85 15		sta $15		        sta r9H
+.5c0e	20 1e c0	jsr $c01e	        jsr GPUTS
+.5c11	a9 15		lda #$15	        lda #21
+.5c13	20 38 08	jsr $0838	        jsr VDCLR
+.5c16	a9 21		lda #$21	        lda #<linebuf
+.5c18	85 14		sta $14		        sta r9L
+.5c1a	a9 6c		lda #$6c	        lda #>linebuf
+.5c1c	85 15		sta $15		        sta r9H
+.5c1e	a9 15		lda #$15	        lda #21
+.5c20	a2 00		ldx #$00	        ldx #0
+.5c22	4c 35 08	jmp $0835	        jmp VDTEXT
+.5c25					show_hint:
+.5c25	a9 8b		lda #$8b	        lda #<p_hint
+.5c27	85 02		sta $02		        sta r0L
+.5c29	a9 69		lda #$69	        lda #>p_hint
+.5c2b	85 03		sta $03		        sta r0H
+.5c2d	20 7a 5b	jsr $5b7a	        jsr setline
+.5c30	60		rts		        rts
+.5c31					gl_show:
+.5c31	a5 02		lda $02		    lda r0L
+.5c33	48		pha		    pha
+.5c34	a5 03		lda $03		    lda r0H
+.5c36	48		pha		    pha
+.5c37	a5 04		lda $04		    lda r1L
+.5c39	48		pha		    pha
+.5c3a	a5 05		lda $05		    lda r1H
+.5c3c	48		pha		    pha
+.5c3d	a5 06		lda $06		    lda r2L
+.5c3f	48		pha		    pha
+.5c40	a5 07		lda $07		    lda r2H
+.5c42	48		pha		    pha
+=0					    exploc      := 0
+=21					    firstrow    := (IN_Y - 2) / 8
+=23					    lastrow     := ((IN_Y - 2) + 12 - 1) / 8
+=0					    row         := 0
+=3					    col         := (24 / 8)
+=33					    lastcol     := ((24 + 240 - 1) / 8) + 1
+=240					    memsz       := (lastcol - col) * 8
+=47704					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5c43	a9 58		lda #$58	        lda #<memloc
+.5c45	85 02		sta $02		        sta r0L
+.5c47	a9 ba		lda #$ba	        lda #>memloc
+.5c49	85 03		sta $03		        sta r0H
+.5c4b	a9 00		lda #$00	        lda #<exploc
+.5c4d	85 04		sta $04		        sta r1L
+.5c4f	a9 00		lda #$00	        lda #>exploc
+.5c51	85 05		sta $05		        sta r1H
+.5c53	a9 f0		lda #$f0	        lda #<memsz
+.5c55	85 06		sta $06		        sta r2L
+.5c57	a9 00		lda #$00	        lda #>memsz
+.5c59	85 07		sta $07		        sta r2H
+.5c5b	20 20 08	jsr $0820	        jsr CLR_RECT
+=241					        exploc := exploc + memsz + 1
+=48024					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5c5e	a9 98		lda #$98	        lda #<memloc
+.5c60	85 02		sta $02		        sta r0L
+.5c62	a9 bb		lda #$bb	        lda #>memloc
+.5c64	85 03		sta $03		        sta r0H
+.5c66	a9 f1		lda #$f1	        lda #<exploc
+.5c68	85 04		sta $04		        sta r1L
+.5c6a	a9 00		lda #$00	        lda #>exploc
+.5c6c	85 05		sta $05		        sta r1H
+.5c6e	a9 f0		lda #$f0	        lda #<memsz
+.5c70	85 06		sta $06		        sta r2L
+.5c72	a9 00		lda #$00	        lda #>memsz
+.5c74	85 07		sta $07		        sta r2H
+.5c76	20 20 08	jsr $0820	        jsr CLR_RECT
+=482					        exploc := exploc + memsz + 1
+=48344					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5c79	a9 d8		lda #$d8	        lda #<memloc
+.5c7b	85 02		sta $02		        sta r0L
+.5c7d	a9 bc		lda #$bc	        lda #>memloc
+.5c7f	85 03		sta $03		        sta r0H
+.5c81	a9 e2		lda #$e2	        lda #<exploc
+.5c83	85 04		sta $04		        sta r1L
+.5c85	a9 01		lda #$01	        lda #>exploc
+.5c87	85 05		sta $05		        sta r1H
+.5c89	a9 f0		lda #$f0	        lda #<memsz
+.5c8b	85 06		sta $06		        sta r2L
+.5c8d	a9 00		lda #$00	        lda #>memsz
+.5c8f	85 07		sta $07		        sta r2H
+.5c91	20 20 08	jsr $0820	        jsr CLR_RECT
+=723					        exploc := exploc + memsz + 1
+.5c94	68		pla		    pla
+.5c95	85 07		sta $07		    sta r2H
+.5c97	68		pla		    pla
+.5c98	85 06		sta $06		    sta r2L
+.5c9a	68		pla		    pla
+.5c9b	85 05		sta $05		    sta r1H
+.5c9d	68		pla		    pla
+.5c9e	85 04		sta $04		    sta r1L
+.5ca0	68		pla		    pla
+.5ca1	85 03		sta $03		    sta r0H
+.5ca3	68		pla		    pla
+.5ca4	85 02		sta $02		    sta r0L
+.5ca6	a0 00		ldy #$00	        ldy #$00
+.5ca8	b9 b6 6b	lda $6bb6,y	gs_cp:  lda fnbuf2,y
+.5cab	99 c7 6b	sta $6bc7,y	        sta glnold,y
+.5cae	f0 05		beq $5cb5	        beq gs_d
+.5cb0	c8		iny		        iny
+.5cb1	c0 11		cpy #$11	        cpy #17
+.5cb3	d0 f3		bne $5ca8	        bne gs_cp
+.5cb5	a9 18		lda #$18	gs_d:   lda #24
+.5cb7	85 02		sta $02		        sta X1
+.5cb9	a9 00		lda #$00	        lda #$00
+.5cbb	85 03		sta $03		        sta X1+1
+.5cbd	a9 b0		lda #$b0	        lda #IN_Y
+.5cbf	85 04		sta $04		        sta Y1
+.5cc1	a9 c7		lda #$c7	        lda #<glnold
+.5cc3	85 14		sta $14		        sta r9L
+.5cc5	a9 6b		lda #$6b	        lda #>glnold
+.5cc7	85 15		sta $15		        sta r9H
+.5cc9	20 1e c0	jsr $c01e	        jsr GPUTS
+.5ccc	a9 14		lda #$14	        lda #20
+.5cce	20 38 08	jsr $0838	        jsr VDCLR
+.5cd1	a9 c7		lda #$c7	        lda #<glnold
+.5cd3	85 14		sta $14		        sta r9L
+.5cd5	a9 6b		lda #$6b	        lda #>glnold
+.5cd7	85 15		sta $15		        sta r9H
+.5cd9	a9 14		lda #$14	        lda #20
+.5cdb	a2 00		ldx #$00	        ldx #0
+.5cdd	4c 35 08	jmp $0835	        jmp VDTEXT
+.5ce0					clr_inline:
+.5ce0	a5 02		lda $02		    lda r0L
+.5ce2	48		pha		    pha
+.5ce3	a5 03		lda $03		    lda r0H
+.5ce5	48		pha		    pha
+.5ce6	a5 04		lda $04		    lda r1L
+.5ce8	48		pha		    pha
+.5ce9	a5 05		lda $05		    lda r1H
+.5ceb	48		pha		    pha
+.5cec	a5 06		lda $06		    lda r2L
+.5cee	48		pha		    pha
+.5cef	a5 07		lda $07		    lda r2H
+.5cf1	48		pha		    pha
+=0					    exploc      := 0
+=21					    firstrow    := (IN_Y - 2) / 8
+=23					    lastrow     := ((IN_Y - 2) + 12 - 1) / 8
+=0					    row         := 0
+=3					    col         := (24 / 8)
+=33					    lastcol     := ((24 + 240 - 1) / 8) + 1
+=240					    memsz       := (lastcol - col) * 8
+=47704					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5cf2	a9 58		lda #$58	        lda #<memloc
+.5cf4	85 02		sta $02		        sta r0L
+.5cf6	a9 ba		lda #$ba	        lda #>memloc
+.5cf8	85 03		sta $03		        sta r0H
+.5cfa	a9 00		lda #$00	        lda #<exploc
+.5cfc	85 04		sta $04		        sta r1L
+.5cfe	a9 00		lda #$00	        lda #>exploc
+.5d00	85 05		sta $05		        sta r1H
+.5d02	a9 f0		lda #$f0	        lda #<memsz
+.5d04	85 06		sta $06		        sta r2L
+.5d06	a9 00		lda #$00	        lda #>memsz
+.5d08	85 07		sta $07		        sta r2H
+.5d0a	20 20 08	jsr $0820	        jsr CLR_RECT
+=241					        exploc := exploc + memsz + 1
+=48024					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5d0d	a9 98		lda #$98	        lda #<memloc
+.5d0f	85 02		sta $02		        sta r0L
+.5d11	a9 bb		lda #$bb	        lda #>memloc
+.5d13	85 03		sta $03		        sta r0H
+.5d15	a9 f1		lda #$f1	        lda #<exploc
+.5d17	85 04		sta $04		        sta r1L
+.5d19	a9 00		lda #$00	        lda #>exploc
+.5d1b	85 05		sta $05		        sta r1H
+.5d1d	a9 f0		lda #$f0	        lda #<memsz
+.5d1f	85 06		sta $06		        sta r2L
+.5d21	a9 00		lda #$00	        lda #>memsz
+.5d23	85 07		sta $07		        sta r2H
+.5d25	20 20 08	jsr $0820	        jsr CLR_RECT
+=482					        exploc := exploc + memsz + 1
+=48344					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5d28	a9 d8		lda #$d8	        lda #<memloc
+.5d2a	85 02		sta $02		        sta r0L
+.5d2c	a9 bc		lda #$bc	        lda #>memloc
+.5d2e	85 03		sta $03		        sta r0H
+.5d30	a9 e2		lda #$e2	        lda #<exploc
+.5d32	85 04		sta $04		        sta r1L
+.5d34	a9 01		lda #$01	        lda #>exploc
+.5d36	85 05		sta $05		        sta r1H
+.5d38	a9 f0		lda #$f0	        lda #<memsz
+.5d3a	85 06		sta $06		        sta r2L
+.5d3c	a9 00		lda #$00	        lda #>memsz
+.5d3e	85 07		sta $07		        sta r2H
+.5d40	20 20 08	jsr $0820	        jsr CLR_RECT
+=723					        exploc := exploc + memsz + 1
+.5d43	68		pla		    pla
+.5d44	85 07		sta $07		    sta r2H
+.5d46	68		pla		    pla
+.5d47	85 06		sta $06		    sta r2L
+.5d49	68		pla		    pla
+.5d4a	85 05		sta $05		    sta r1H
+.5d4c	68		pla		    pla
+.5d4d	85 04		sta $04		    sta r1L
+.5d4f	68		pla		    pla
+.5d50	85 03		sta $03		    sta r0H
+.5d52	68		pla		    pla
+.5d53	85 02		sta $02		    sta r0L
+.5d55	a9 14		lda #$14	        lda #20
+.5d57	4c 38 08	jmp $0838	        jmp VDCLR
+.5d5a					refresh:
+.5d5a	a9 00		lda #$00	        lda #$00
+.5d5c	8d ae 67	sta $67ae	        sta fmready
+.5d5f					ref_scan:
+.5d5f	20 b7 67	jsr $67b7	        jsr dirscan
+.5d62	ad b2 67	lda $67b2	        lda direrror
+.5d65	d0 27		bne $5d8e	        bne ref_draw
+.5d67	a5 41		lda $41		        lda fmcnt
+.5d69	d0 23		bne $5d8e	        bne ref_draw
+.5d6b	ad ab 67	lda $67ab	        lda cachebase
+.5d6e	0d ac 67	ora $67ac	        ora cachebase+1
+.5d71	f0 1b		beq $5d8e	        beq ref_draw
+.5d73	38		sec		        sec
+.5d74	ad ab 67	lda $67ab	        lda cachebase
+.5d77	e9 37		sbc #$37	        sbc #CACHE_STEP
+.5d79	8d ab 67	sta $67ab	        sta cachebase
+.5d7c	ad ac 67	lda $67ac	        lda cachebase+1
+.5d7f	e9 00		sbc #$00	        sbc #$00
+.5d81	8d ac 67	sta $67ac	        sta cachebase+1
+.5d84	a9 00		lda #$00	        lda #$00
+.5d86	85 40		sta $40		        sta fmrow
+.5d88	8d a9 67	sta $67a9	        sta scroll
+.5d8b	4c 5f 5d	jmp $5d5f	        jmp ref_scan
+.5d8e					ref_draw:
+.5d8e	20 d2 60	jsr $60d2	        jsr show_device
+.5d91	a9 01		lda #$01	        lda #$01
+.5d93	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
+.5d96	a5 40		lda $40		        lda fmrow
+.5d98	c5 41		cmp $41		        cmp fmcnt
+.5d9a	90 10		bcc $5dac	        bcc ref_ok
+.5d9c	a5 41		lda $41		        lda fmcnt
+.5d9e	f0 08		beq $5da8	        beq ref_zero
+.5da0	38		sec		        sec
+.5da1	e9 01		sbc #$01	        sbc #$01
+.5da3	85 40		sta $40		        sta fmrow
+.5da5	4c ac 5d	jmp $5dac	        jmp ref_ok
+.5da8					ref_zero:
+.5da8	a9 00		lda #$00	        lda #$00
+.5daa	85 40		sta $40		        sta fmrow
+.5dac	20 d9 5d	jsr $5dd9	ref_ok: jsr keepvisible
+.5daf	20 f7 5d	jsr $5df7	        jsr paintrows
+.5db2	ad b2 67	lda $67b2	        lda direrror
+.5db5	f0 0b		beq $5dc2	        beq ref_hint
+.5db7	a9 77		lda #$77	        lda #<msg_direrr
+.5db9	85 02		sta $02		        sta r0L
+.5dbb	a9 6a		lda #$6a	        lda #>msg_direrr
+.5dbd	85 03		sta $03		        sta r0H
+.5dbf	4c 7a 5b	jmp $5b7a	        jmp setline
+.5dc2					ref_hint:
+.5dc2	20 25 5c	jsr $5c25	        jsr show_hint
+.5dc5	60		rts		        rts
+.5dc6					repaint:
+.5dc6	a9 00		lda #$00	        lda #$00
+.5dc8	8d ae 67	sta $67ae	        sta fmready
+.5dcb	a9 01		lda #$01	        lda #$01
+.5dcd	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
+.5dd0	20 d9 5d	jsr $5dd9	        jsr keepvisible
+.5dd3	20 f7 5d	jsr $5df7	        jsr paintrows
+.5dd6	4c d8 54	jmp $54d8	        jmp fmloop
+.5dd9					keepvisible:
+.5dd9	a5 40		lda $40		        lda fmrow
+.5ddb	cd a9 67	cmp $67a9	        cmp scroll
+.5dde	b0 03		bcs $5de3	        bcs kv_down
+.5de0	8d a9 67	sta $67a9	        sta scroll
+.5de3					kv_down:
+.5de3	38		sec		        sec
+.5de4	ed a9 67	sbc $67a9	        sbc scroll
+.5de7	c9 0a		cmp #$0a	        cmp #LIST_MAX
+.5de9	90 08		bcc $5df3	        bcc kv_done
+.5deb	a5 40		lda $40		        lda fmrow
+.5ded	38		sec		        sec
+.5dee	e9 09		sbc #$09	        sbc #LIST_MAX-1
+.5df0	8d a9 67	sta $67a9	        sta scroll
+.5df3					kv_done:
+.5df3	60		rts		        rts
+.5df4					ON_CLOSE:
+.5df4	4c a0 56	jmp $56a0	        jmp fmescape
+.5df7					paintrows:
+.5df7	a5 02		lda $02		    lda r0L
+.5df9	48		pha		    pha
+.5dfa	a5 03		lda $03		    lda r0H
+.5dfc	48		pha		    pha
+.5dfd	a5 04		lda $04		    lda r1L
+.5dff	48		pha		    pha
+.5e00	a5 05		lda $05		    lda r1H
+.5e02	48		pha		    pha
+.5e03	a5 06		lda $06		    lda r2L
+.5e05	48		pha		    pha
+.5e06	a5 07		lda $07		    lda r2H
+.5e08	48		pha		    pha
+=0					    exploc      := 0
+=4					    firstrow    := (TOP_Y - 2) / 8
+=19					    lastrow     := ((TOP_Y - 2) + (LIST_MAX * ROW_PX) - 1) / 8
+=0					    row         := 0
+=2					    col         := ((CUR_X - 2) / 8)
+=39					    lastcol     := (((CUR_X - 2) + 288 - 1) / 8) + 1
+=296					    memsz       := (lastcol - col) * 8
+=42256					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5e09	a9 10		lda #$10	        lda #<memloc
+.5e0b	85 02		sta $02		        sta r0L
+.5e0d	a9 a5		lda #$a5	        lda #>memloc
+.5e0f	85 03		sta $03		        sta r0H
+.5e11	a9 00		lda #$00	        lda #<exploc
+.5e13	85 04		sta $04		        sta r1L
+.5e15	a9 00		lda #$00	        lda #>exploc
+.5e17	85 05		sta $05		        sta r1H
+.5e19	a9 28		lda #$28	        lda #<memsz
+.5e1b	85 06		sta $06		        sta r2L
+.5e1d	a9 01		lda #$01	        lda #>memsz
+.5e1f	85 07		sta $07		        sta r2H
+.5e21	20 20 08	jsr $0820	        jsr CLR_RECT
+=297					        exploc := exploc + memsz + 1
+=42576					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5e24	a9 50		lda #$50	        lda #<memloc
+.5e26	85 02		sta $02		        sta r0L
+.5e28	a9 a6		lda #$a6	        lda #>memloc
+.5e2a	85 03		sta $03		        sta r0H
+.5e2c	a9 29		lda #$29	        lda #<exploc
+.5e2e	85 04		sta $04		        sta r1L
+.5e30	a9 01		lda #$01	        lda #>exploc
+.5e32	85 05		sta $05		        sta r1H
+.5e34	a9 28		lda #$28	        lda #<memsz
+.5e36	85 06		sta $06		        sta r2L
+.5e38	a9 01		lda #$01	        lda #>memsz
+.5e3a	85 07		sta $07		        sta r2H
+.5e3c	20 20 08	jsr $0820	        jsr CLR_RECT
+=594					        exploc := exploc + memsz + 1
+=42896					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5e3f	a9 90		lda #$90	        lda #<memloc
+.5e41	85 02		sta $02		        sta r0L
+.5e43	a9 a7		lda #$a7	        lda #>memloc
+.5e45	85 03		sta $03		        sta r0H
+.5e47	a9 52		lda #$52	        lda #<exploc
+.5e49	85 04		sta $04		        sta r1L
+.5e4b	a9 02		lda #$02	        lda #>exploc
+.5e4d	85 05		sta $05		        sta r1H
+.5e4f	a9 28		lda #$28	        lda #<memsz
+.5e51	85 06		sta $06		        sta r2L
+.5e53	a9 01		lda #$01	        lda #>memsz
+.5e55	85 07		sta $07		        sta r2H
+.5e57	20 20 08	jsr $0820	        jsr CLR_RECT
+=891					        exploc := exploc + memsz + 1
+=43216					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5e5a	a9 d0		lda #$d0	        lda #<memloc
+.5e5c	85 02		sta $02		        sta r0L
+.5e5e	a9 a8		lda #$a8	        lda #>memloc
+.5e60	85 03		sta $03		        sta r0H
+.5e62	a9 7b		lda #$7b	        lda #<exploc
+.5e64	85 04		sta $04		        sta r1L
+.5e66	a9 03		lda #$03	        lda #>exploc
+.5e68	85 05		sta $05		        sta r1H
+.5e6a	a9 28		lda #$28	        lda #<memsz
+.5e6c	85 06		sta $06		        sta r2L
+.5e6e	a9 01		lda #$01	        lda #>memsz
+.5e70	85 07		sta $07		        sta r2H
+.5e72	20 20 08	jsr $0820	        jsr CLR_RECT
+=1188					        exploc := exploc + memsz + 1
+=43536					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5e75	a9 10		lda #$10	        lda #<memloc
+.5e77	85 02		sta $02		        sta r0L
+.5e79	a9 aa		lda #$aa	        lda #>memloc
+.5e7b	85 03		sta $03		        sta r0H
+.5e7d	a9 a4		lda #$a4	        lda #<exploc
+.5e7f	85 04		sta $04		        sta r1L
+.5e81	a9 04		lda #$04	        lda #>exploc
+.5e83	85 05		sta $05		        sta r1H
+.5e85	a9 28		lda #$28	        lda #<memsz
+.5e87	85 06		sta $06		        sta r2L
+.5e89	a9 01		lda #$01	        lda #>memsz
+.5e8b	85 07		sta $07		        sta r2H
+.5e8d	20 20 08	jsr $0820	        jsr CLR_RECT
+=1485					        exploc := exploc + memsz + 1
+=43856					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5e90	a9 50		lda #$50	        lda #<memloc
+.5e92	85 02		sta $02		        sta r0L
+.5e94	a9 ab		lda #$ab	        lda #>memloc
+.5e96	85 03		sta $03		        sta r0H
+.5e98	a9 cd		lda #$cd	        lda #<exploc
+.5e9a	85 04		sta $04		        sta r1L
+.5e9c	a9 05		lda #$05	        lda #>exploc
+.5e9e	85 05		sta $05		        sta r1H
+.5ea0	a9 28		lda #$28	        lda #<memsz
+.5ea2	85 06		sta $06		        sta r2L
+.5ea4	a9 01		lda #$01	        lda #>memsz
+.5ea6	85 07		sta $07		        sta r2H
+.5ea8	20 20 08	jsr $0820	        jsr CLR_RECT
+=1782					        exploc := exploc + memsz + 1
+=44176					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5eab	a9 90		lda #$90	        lda #<memloc
+.5ead	85 02		sta $02		        sta r0L
+.5eaf	a9 ac		lda #$ac	        lda #>memloc
+.5eb1	85 03		sta $03		        sta r0H
+.5eb3	a9 f6		lda #$f6	        lda #<exploc
+.5eb5	85 04		sta $04		        sta r1L
+.5eb7	a9 06		lda #$06	        lda #>exploc
+.5eb9	85 05		sta $05		        sta r1H
+.5ebb	a9 28		lda #$28	        lda #<memsz
+.5ebd	85 06		sta $06		        sta r2L
+.5ebf	a9 01		lda #$01	        lda #>memsz
+.5ec1	85 07		sta $07		        sta r2H
+.5ec3	20 20 08	jsr $0820	        jsr CLR_RECT
+=2079					        exploc := exploc + memsz + 1
+=44496					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5ec6	a9 d0		lda #$d0	        lda #<memloc
+.5ec8	85 02		sta $02		        sta r0L
+.5eca	a9 ad		lda #$ad	        lda #>memloc
+.5ecc	85 03		sta $03		        sta r0H
+.5ece	a9 1f		lda #$1f	        lda #<exploc
+.5ed0	85 04		sta $04		        sta r1L
+.5ed2	a9 08		lda #$08	        lda #>exploc
+.5ed4	85 05		sta $05		        sta r1H
+.5ed6	a9 28		lda #$28	        lda #<memsz
+.5ed8	85 06		sta $06		        sta r2L
+.5eda	a9 01		lda #$01	        lda #>memsz
+.5edc	85 07		sta $07		        sta r2H
+.5ede	20 20 08	jsr $0820	        jsr CLR_RECT
+=2376					        exploc := exploc + memsz + 1
+=44816					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5ee1	a9 10		lda #$10	        lda #<memloc
+.5ee3	85 02		sta $02		        sta r0L
+.5ee5	a9 af		lda #$af	        lda #>memloc
+.5ee7	85 03		sta $03		        sta r0H
+.5ee9	a9 48		lda #$48	        lda #<exploc
+.5eeb	85 04		sta $04		        sta r1L
+.5eed	a9 09		lda #$09	        lda #>exploc
+.5eef	85 05		sta $05		        sta r1H
+.5ef1	a9 28		lda #$28	        lda #<memsz
+.5ef3	85 06		sta $06		        sta r2L
+.5ef5	a9 01		lda #$01	        lda #>memsz
+.5ef7	85 07		sta $07		        sta r2H
+.5ef9	20 20 08	jsr $0820	        jsr CLR_RECT
+=2673					        exploc := exploc + memsz + 1
+=45136					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5efc	a9 50		lda #$50	        lda #<memloc
+.5efe	85 02		sta $02		        sta r0L
+.5f00	a9 b0		lda #$b0	        lda #>memloc
+.5f02	85 03		sta $03		        sta r0H
+.5f04	a9 71		lda #$71	        lda #<exploc
+.5f06	85 04		sta $04		        sta r1L
+.5f08	a9 0a		lda #$0a	        lda #>exploc
+.5f0a	85 05		sta $05		        sta r1H
+.5f0c	a9 28		lda #$28	        lda #<memsz
+.5f0e	85 06		sta $06		        sta r2L
+.5f10	a9 01		lda #$01	        lda #>memsz
+.5f12	85 07		sta $07		        sta r2H
+.5f14	20 20 08	jsr $0820	        jsr CLR_RECT
+=2970					        exploc := exploc + memsz + 1
+=45456					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5f17	a9 90		lda #$90	        lda #<memloc
+.5f19	85 02		sta $02		        sta r0L
+.5f1b	a9 b1		lda #$b1	        lda #>memloc
+.5f1d	85 03		sta $03		        sta r0H
+.5f1f	a9 9a		lda #$9a	        lda #<exploc
+.5f21	85 04		sta $04		        sta r1L
+.5f23	a9 0b		lda #$0b	        lda #>exploc
+.5f25	85 05		sta $05		        sta r1H
+.5f27	a9 28		lda #$28	        lda #<memsz
+.5f29	85 06		sta $06		        sta r2L
+.5f2b	a9 01		lda #$01	        lda #>memsz
+.5f2d	85 07		sta $07		        sta r2H
+.5f2f	20 20 08	jsr $0820	        jsr CLR_RECT
+=3267					        exploc := exploc + memsz + 1
+=45776					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5f32	a9 d0		lda #$d0	        lda #<memloc
+.5f34	85 02		sta $02		        sta r0L
+.5f36	a9 b2		lda #$b2	        lda #>memloc
+.5f38	85 03		sta $03		        sta r0H
+.5f3a	a9 c3		lda #$c3	        lda #<exploc
+.5f3c	85 04		sta $04		        sta r1L
+.5f3e	a9 0c		lda #$0c	        lda #>exploc
+.5f40	85 05		sta $05		        sta r1H
+.5f42	a9 28		lda #$28	        lda #<memsz
+.5f44	85 06		sta $06		        sta r2L
+.5f46	a9 01		lda #$01	        lda #>memsz
+.5f48	85 07		sta $07		        sta r2H
+.5f4a	20 20 08	jsr $0820	        jsr CLR_RECT
+=3564					        exploc := exploc + memsz + 1
+=46096					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5f4d	a9 10		lda #$10	        lda #<memloc
+.5f4f	85 02		sta $02		        sta r0L
+.5f51	a9 b4		lda #$b4	        lda #>memloc
+.5f53	85 03		sta $03		        sta r0H
+.5f55	a9 ec		lda #$ec	        lda #<exploc
+.5f57	85 04		sta $04		        sta r1L
+.5f59	a9 0d		lda #$0d	        lda #>exploc
+.5f5b	85 05		sta $05		        sta r1H
+.5f5d	a9 28		lda #$28	        lda #<memsz
+.5f5f	85 06		sta $06		        sta r2L
+.5f61	a9 01		lda #$01	        lda #>memsz
+.5f63	85 07		sta $07		        sta r2H
+.5f65	20 20 08	jsr $0820	        jsr CLR_RECT
+=3861					        exploc := exploc + memsz + 1
+=46416					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5f68	a9 50		lda #$50	        lda #<memloc
+.5f6a	85 02		sta $02		        sta r0L
+.5f6c	a9 b5		lda #$b5	        lda #>memloc
+.5f6e	85 03		sta $03		        sta r0H
+.5f70	a9 15		lda #$15	        lda #<exploc
+.5f72	85 04		sta $04		        sta r1L
+.5f74	a9 0f		lda #$0f	        lda #>exploc
+.5f76	85 05		sta $05		        sta r1H
+.5f78	a9 28		lda #$28	        lda #<memsz
+.5f7a	85 06		sta $06		        sta r2L
+.5f7c	a9 01		lda #$01	        lda #>memsz
+.5f7e	85 07		sta $07		        sta r2H
+.5f80	20 20 08	jsr $0820	        jsr CLR_RECT
+=4158					        exploc := exploc + memsz + 1
+=46736					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5f83	a9 90		lda #$90	        lda #<memloc
+.5f85	85 02		sta $02		        sta r0L
+.5f87	a9 b6		lda #$b6	        lda #>memloc
+.5f89	85 03		sta $03		        sta r0H
+.5f8b	a9 3e		lda #$3e	        lda #<exploc
+.5f8d	85 04		sta $04		        sta r1L
+.5f8f	a9 10		lda #$10	        lda #>exploc
+.5f91	85 05		sta $05		        sta r1H
+.5f93	a9 28		lda #$28	        lda #<memsz
+.5f95	85 06		sta $06		        sta r2L
+.5f97	a9 01		lda #$01	        lda #>memsz
+.5f99	85 07		sta $07		        sta r2H
+.5f9b	20 20 08	jsr $0820	        jsr CLR_RECT
+=4455					        exploc := exploc + memsz + 1
+=47056					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.5f9e	a9 d0		lda #$d0	        lda #<memloc
+.5fa0	85 02		sta $02		        sta r0L
+.5fa2	a9 b7		lda #$b7	        lda #>memloc
+.5fa4	85 03		sta $03		        sta r0H
+.5fa6	a9 67		lda #$67	        lda #<exploc
+.5fa8	85 04		sta $04		        sta r1L
+.5faa	a9 11		lda #$11	        lda #>exploc
+.5fac	85 05		sta $05		        sta r1H
+.5fae	a9 28		lda #$28	        lda #<memsz
+.5fb0	85 06		sta $06		        sta r2L
+.5fb2	a9 01		lda #$01	        lda #>memsz
+.5fb4	85 07		sta $07		        sta r2H
+.5fb6	20 20 08	jsr $0820	        jsr CLR_RECT
+=4752					        exploc := exploc + memsz + 1
+.5fb9	68		pla		    pla
+.5fba	85 07		sta $07		    sta r2H
+.5fbc	68		pla		    pla
+.5fbd	85 06		sta $06		    sta r2L
+.5fbf	68		pla		    pla
+.5fc0	85 05		sta $05		    sta r1H
+.5fc2	68		pla		    pla
+.5fc3	85 04		sta $04		    sta r1L
+.5fc5	68		pla		    pla
+.5fc6	85 03		sta $03		    sta r0H
+.5fc8	68		pla		    pla
+.5fc9	85 02		sta $02		    sta r0L
+.5fcb	a9 00		lda #$00	        lda #$00
+.5fcd	85 42		sta $42		        sta rowi
+.5fcf					pr_l:
+.5fcf	a5 42		lda $42		        lda rowi
+.5fd1	18		clc		        clc
+.5fd2	69 04		adc #$04	        adc #$04
+.5fd4	20 38 08	jsr $0838	        jsr VDCLR
+.5fd7	a5 42		lda $42		        lda rowi
+.5fd9	18		clc		        clc
+.5fda	6d a9 67	adc $67a9	        adc scroll
+.5fdd	c5 41		cmp $41		        cmp fmcnt
+.5fdf	b0 5e		bcs $603f	        bcs pr_nomark
+.5fe1	8d aa 67	sta $67aa	        sta rowindex
+.5fe4	aa		tax		        tax
+.5fe5	bd a9 61	lda $61a9,x	        lda fmnamesL,x
+.5fe8	85 14		sta $14		        sta r9L
+.5fea	bd e9 61	lda $61e9,x	        lda fmnamesH,x
+.5fed	85 15		sta $15		        sta r9H
+.5fef	a9 1e		lda #$1e	        lda #COL_X
+.5ff1	85 02		sta $02		        sta X1
+.5ff3	a9 00		lda #$00	        lda #$00
+.5ff5	85 03		sta $03		        sta X1+1
+.5ff7	85 05		sta $05		        sta Y1+1
+.5ff9	a9 28		lda #$28	        lda #TOP_Y
+.5ffb	85 04		sta $04		        sta Y1
+.5ffd	a5 42		lda $42		        lda rowi
+.5fff	20 8e 61	jsr $618e	        jsr addrowy
+.6002	20 1e c0	jsr $c01e	        jsr GPUTS
+.6005	ae aa 67	ldx $67aa	        ldx rowindex
+.6008	bd a9 61	lda $61a9,x	        lda fmnamesL,x
+.600b	85 14		sta $14		        sta r9L
+.600d	bd e9 61	lda $61e9,x	        lda fmnamesH,x
+.6010	85 15		sta $15		        sta r9H
+.6012	a5 42		lda $42		        lda rowi
+.6014	18		clc		        clc
+.6015	69 04		adc #$04	        adc #$04
+.6017	a2 04		ldx #$04	        ldx #$04
+.6019	20 35 08	jsr $0835	        jsr VDTEXT
+.601c	ad aa 67	lda $67aa	        lda rowindex
+.601f	c5 40		cmp $40		        cmp fmrow
+.6021	d0 1c		bne $603f	        bne pr_nomark
+.6023	a5 42		lda $42		        lda rowi
+.6025	20 76 61	jsr $6176	        jsr marky
+.6028	a9 3e		lda #$3e	        lda #$3e
+.602a	20 1b c0	jsr $c01b	        jsr GPUTC
+.602d	a9 57		lda #$57	        lda #<vd_mark
+.602f	85 14		sta $14		        sta r9L
+.6031	a9 60		lda #$60	        lda #>vd_mark
+.6033	85 15		sta $15		        sta r9H
+.6035	a5 42		lda $42		        lda rowi
+.6037	18		clc		        clc
+.6038	69 04		adc #$04	        adc #$04
+.603a	a2 02		ldx #$02	        ldx #$02
+.603c	20 35 08	jsr $0835	        jsr VDTEXT
+.603f					pr_nomark:
+.603f	e6 42		inc $42		        inc rowi
+.6041	a5 42		lda $42		        lda rowi
+.6043	c9 0a		cmp #$0a	        cmp #LIST_MAX
+.6045	d0 88		bne $5fcf	        bne pr_l
+.6047					pr_done:
+.6047	60		rts		        rts
+.6048					vd_clear_area:
+.6048	a9 02		lda #$02	        lda #$02
+.604a	48		pha		vca_l:  pha
+.604b	20 38 08	jsr $0838	        jsr VDCLR
+.604e	68		pla		        pla
+.604f	18		clc		        clc
+.6050	69 01		adc #$01	        adc #$01
+.6052	c9 18		cmp #$18	        cmp #24
+.6054	d0 f4		bne $604a	        bne vca_l
+.6056	60		rts		        rts
+>6057	3e 00				vd_mark: .text ">", $00
+>6059	44 45 56 49 43 45 20 30		vd_dev8: .text "device 08", $00
+>6061	38 00
+>6063	44 49 53 4b 20 30 38 20		devhint: .text "disk 08  8/9/0/1=device  up/dn=scroll", 0
+>606b	20 38 2f 39 2f 30 2f 31 3d 44 45 56 49 43 45 20
+>607b	20 55 50 2f 44 4e 3d 53 43 52 4f 4c 4c 00
+>6089	c2 3a 20 43 4f 50 59 20		vd_keys: .text "B: copy to paired drive. PRG/SEQ/USR supported; REL needs record copying", 0
+>6091	54 4f 20 50 41 49 52 45 44 20 44 52 49 56 45 2e
+>60a1	20 d0 d2 c7 2f d3 c5 d1 2f d5 d3 d2 20 53 55 50
+>60b1	50 4f 52 54 45 44 3b 20 d2 c5 cc 20 4e 45 45 44
+>60c1	53 20 52 45 43 4f 52 44 20 43 4f 50 59 49 4e 47
+>60d1	00
+.60d2					show_device:
+.60d2	a9 30		lda #$30	        lda #$30
+.60d4	8d 68 60	sta $6068	        sta devhint+5
+.60d7	8d 60 60	sta $6060	        sta vd_dev8+7
+.60da	a5 43		lda $43		        lda fmdev
+.60dc	c9 0a		cmp #$0a	        cmp #10
+.60de	90 09		bcc $60e9	        bcc sd_one
+.60e0	38		sec		        sec
+.60e1	e9 0a		sbc #$0a	        sbc #10
+.60e3	ee 68 60	inc $6068	        inc devhint+5
+.60e6	ee 60 60	inc $6060	        inc vd_dev8+7
+.60e9					sd_one:
+.60e9	18		clc		        clc
+.60ea	69 30		adc #$30	        adc #$30
+.60ec	8d 69 60	sta $6069	        sta devhint+6
+.60ef	8d 61 60	sta $6061	        sta vd_dev8+8
+.60f2	a5 02		lda $02		    lda r0L
+.60f4	48		pha		    pha
+.60f5	a5 03		lda $03		    lda r0H
+.60f7	48		pha		    pha
+.60f8	a5 04		lda $04		    lda r1L
+.60fa	48		pha		    pha
+.60fb	a5 05		lda $05		    lda r1H
+.60fd	48		pha		    pha
+.60fe	a5 06		lda $06		    lda r2L
+.6100	48		pha		    pha
+.6101	a5 07		lda $07		    lda r2H
+.6103	48		pha		    pha
+=0					    exploc      := 0
+=3					    firstrow    := 24 / 8
+=3					    lastrow     := (24 + 8 - 1) / 8
+=0					    row         := 0
+=3					    col         := (24 / 8)
+=36					    lastcol     := ((24 + 264 - 1) / 8) + 1
+=264					    memsz       := (lastcol - col) * 8
+=41944					        memloc := BITMAP_START + (row * 320) + (col * 8)
+.6104	a9 d8		lda #$d8	        lda #<memloc
+.6106	85 02		sta $02		        sta r0L
+.6108	a9 a3		lda #$a3	        lda #>memloc
+.610a	85 03		sta $03		        sta r0H
+.610c	a9 00		lda #$00	        lda #<exploc
+.610e	85 04		sta $04		        sta r1L
+.6110	a9 00		lda #$00	        lda #>exploc
+.6112	85 05		sta $05		        sta r1H
+.6114	a9 08		lda #$08	        lda #<memsz
+.6116	85 06		sta $06		        sta r2L
+.6118	a9 01		lda #$01	        lda #>memsz
+.611a	85 07		sta $07		        sta r2H
+.611c	20 20 08	jsr $0820	        jsr CLR_RECT
+=265					        exploc := exploc + memsz + 1
+.611f	68		pla		    pla
+.6120	85 07		sta $07		    sta r2H
+.6122	68		pla		    pla
+.6123	85 06		sta $06		    sta r2L
+.6125	68		pla		    pla
+.6126	85 05		sta $05		    sta r1H
+.6128	68		pla		    pla
+.6129	85 04		sta $04		    sta r1L
+.612b	68		pla		    pla
+.612c	85 03		sta $03		    sta r0H
+.612e	68		pla		    pla
+.612f	85 02		sta $02		    sta r0L
+.6131	a9 18		lda #$18	    lda #24
+.6133	85 02		sta $02		    sta X1
+.6135	a9 00		lda #$00	    lda #$00
+.6137	85 03		sta $03		    sta X1+1
+.6139	c8		iny		    iny
+.613a	a9 18		lda #$18	    lda #24
+.613c	85 04		sta $04		    sta Y1
+.613e	a9 63		lda #$63	    lda #<devhint
+.6140	85 14		sta $14		    sta r9L
+.6142	a9 60		lda #$60	    lda #>devhint
+.6144	85 15		sta $15		    sta r9H
+.6146	20 1e c0	jsr $c01e	    jsr GPUTS
+.6149	a9 59		lda #$59	        lda #<vd_dev8
+.614b	85 14		sta $14		        sta r9L
+.614d	a9 60		lda #$60	        lda #>vd_dev8
+.614f	85 15		sta $15		        sta r9H
+.6151	a9 02		lda #$02	        lda #2
+.6153	a2 16		ldx #$16	        ldx #22
+.6155	20 35 08	jsr $0835	        jsr VDTEXT
+.6158	a9 63		lda #$63	        lda #<devhint
+.615a	85 14		sta $14		        sta r9L
+.615c	a9 60		lda #$60	        lda #>devhint
+.615e	85 15		sta $15		        sta r9H
+.6160	a9 03		lda #$03	        lda #3
+.6162	a2 00		ldx #$00	        ldx #0
+.6164	20 35 08	jsr $0835	        jsr VDTEXT
+.6167	a9 89		lda #$89	        lda #<vd_keys
+.6169	85 14		sta $14		        sta r9L
+.616b	a9 60		lda #$60	        lda #>vd_keys
+.616d	85 15		sta $15		        sta r9H
+.616f	a9 16		lda #$16	        lda #22
+.6171	a2 00		ldx #$00	        ldx #0
+.6173	4c 35 08	jmp $0835	        jmp VDTEXT
+.6176					marky:
+.6176	8d 19 6c	sta $6c19	        sta vtmp2
+.6179	a9 16		lda #$16	        lda #CUR_X
+.617b	85 02		sta $02		        sta X1
+.617d	a9 00		lda #$00	        lda #$00
+.617f	85 03		sta $03		        sta X1+1
+.6181	85 05		sta $05		        sta Y1+1
+.6183	a9 28		lda #$28	        lda #TOP_Y
+.6185	85 04		sta $04		        sta Y1
+.6187	ad 19 6c	lda $6c19	        lda vtmp2
+.618a	20 8e 61	jsr $618e	        jsr addrowy
+.618d	60		rts		        rts
+.618e					addrowy:
+.618e	8d 18 6c	sta $6c18	        sta vtmp
+.6191	ad 18 6c	lda $6c18	        lda vtmp
+.6194	0a		asl a		        asl
+.6195	0a		asl a		        asl
+.6196	0a		asl a		        asl                             ; row*8
+.6197	8d 19 6c	sta $6c19	        sta vtmp2
+.619a	ad 18 6c	lda $6c18	        lda vtmp
+.619d	0a		asl a		        asl
+.619e	0a		asl a		        asl                             ; row*4
+.619f	18		clc		        clc
+.61a0	6d 19 6c	adc $6c19	        adc vtmp2
+.61a3	18		clc		        clc
+.61a4	65 04		adc $04		        adc Y1
+.61a6	85 04		sta $04		        sta Y1
+.61a8	60		rts		        rts
+.61a9					fmnamesL:
+>61a9	69				        .byte <(fmnames + n * 17)
+>61aa	7a				        .byte <(fmnames + n * 17)
+>61ab	8b				        .byte <(fmnames + n * 17)
+>61ac	9c				        .byte <(fmnames + n * 17)
+>61ad	ad				        .byte <(fmnames + n * 17)
+>61ae	be				        .byte <(fmnames + n * 17)
+>61af	cf				        .byte <(fmnames + n * 17)
+>61b0	e0				        .byte <(fmnames + n * 17)
+>61b1	f1				        .byte <(fmnames + n * 17)
+>61b2	02				        .byte <(fmnames + n * 17)
+>61b3	13				        .byte <(fmnames + n * 17)
+>61b4	24				        .byte <(fmnames + n * 17)
+>61b5	35				        .byte <(fmnames + n * 17)
+>61b6	46				        .byte <(fmnames + n * 17)
+>61b7	57				        .byte <(fmnames + n * 17)
+>61b8	68				        .byte <(fmnames + n * 17)
+>61b9	79				        .byte <(fmnames + n * 17)
+>61ba	8a				        .byte <(fmnames + n * 17)
+>61bb	9b				        .byte <(fmnames + n * 17)
+>61bc	ac				        .byte <(fmnames + n * 17)
+>61bd	bd				        .byte <(fmnames + n * 17)
+>61be	ce				        .byte <(fmnames + n * 17)
+>61bf	df				        .byte <(fmnames + n * 17)
+>61c0	f0				        .byte <(fmnames + n * 17)
+>61c1	01				        .byte <(fmnames + n * 17)
+>61c2	12				        .byte <(fmnames + n * 17)
+>61c3	23				        .byte <(fmnames + n * 17)
+>61c4	34				        .byte <(fmnames + n * 17)
+>61c5	45				        .byte <(fmnames + n * 17)
+>61c6	56				        .byte <(fmnames + n * 17)
+>61c7	67				        .byte <(fmnames + n * 17)
+>61c8	78				        .byte <(fmnames + n * 17)
+>61c9	89				        .byte <(fmnames + n * 17)
+>61ca	9a				        .byte <(fmnames + n * 17)
+>61cb	ab				        .byte <(fmnames + n * 17)
+>61cc	bc				        .byte <(fmnames + n * 17)
+>61cd	cd				        .byte <(fmnames + n * 17)
+>61ce	de				        .byte <(fmnames + n * 17)
+>61cf	ef				        .byte <(fmnames + n * 17)
+>61d0	00				        .byte <(fmnames + n * 17)
+>61d1	11				        .byte <(fmnames + n * 17)
+>61d2	22				        .byte <(fmnames + n * 17)
+>61d3	33				        .byte <(fmnames + n * 17)
+>61d4	44				        .byte <(fmnames + n * 17)
+>61d5	55				        .byte <(fmnames + n * 17)
+>61d6	66				        .byte <(fmnames + n * 17)
+>61d7	77				        .byte <(fmnames + n * 17)
+>61d8	88				        .byte <(fmnames + n * 17)
+>61d9	99				        .byte <(fmnames + n * 17)
+>61da	aa				        .byte <(fmnames + n * 17)
+>61db	bb				        .byte <(fmnames + n * 17)
+>61dc	cc				        .byte <(fmnames + n * 17)
+>61dd	dd				        .byte <(fmnames + n * 17)
+>61de	ee				        .byte <(fmnames + n * 17)
+>61df	ff				        .byte <(fmnames + n * 17)
+>61e0	10				        .byte <(fmnames + n * 17)
+>61e1	21				        .byte <(fmnames + n * 17)
+>61e2	32				        .byte <(fmnames + n * 17)
+>61e3	43				        .byte <(fmnames + n * 17)
+>61e4	54				        .byte <(fmnames + n * 17)
+>61e5	65				        .byte <(fmnames + n * 17)
+>61e6	76				        .byte <(fmnames + n * 17)
+>61e7	87				        .byte <(fmnames + n * 17)
+>61e8	98				        .byte <(fmnames + n * 17)
+.61e9					fmnamesH:
+>61e9	63				        .byte >(fmnames + n * 17)
+>61ea	63				        .byte >(fmnames + n * 17)
+>61eb	63				        .byte >(fmnames + n * 17)
+>61ec	63				        .byte >(fmnames + n * 17)
+>61ed	63				        .byte >(fmnames + n * 17)
+>61ee	63				        .byte >(fmnames + n * 17)
+>61ef	63				        .byte >(fmnames + n * 17)
+>61f0	63				        .byte >(fmnames + n * 17)
+>61f1	63				        .byte >(fmnames + n * 17)
+>61f2	64				        .byte >(fmnames + n * 17)
+>61f3	64				        .byte >(fmnames + n * 17)
+>61f4	64				        .byte >(fmnames + n * 17)
+>61f5	64				        .byte >(fmnames + n * 17)
+>61f6	64				        .byte >(fmnames + n * 17)
+>61f7	64				        .byte >(fmnames + n * 17)
+>61f8	64				        .byte >(fmnames + n * 17)
+>61f9	64				        .byte >(fmnames + n * 17)
+>61fa	64				        .byte >(fmnames + n * 17)
+>61fb	64				        .byte >(fmnames + n * 17)
+>61fc	64				        .byte >(fmnames + n * 17)
+>61fd	64				        .byte >(fmnames + n * 17)
+>61fe	64				        .byte >(fmnames + n * 17)
+>61ff	64				        .byte >(fmnames + n * 17)
+>6200	64				        .byte >(fmnames + n * 17)
+>6201	65				        .byte >(fmnames + n * 17)
+>6202	65				        .byte >(fmnames + n * 17)
+>6203	65				        .byte >(fmnames + n * 17)
+>6204	65				        .byte >(fmnames + n * 17)
+>6205	65				        .byte >(fmnames + n * 17)
+>6206	65				        .byte >(fmnames + n * 17)
+>6207	65				        .byte >(fmnames + n * 17)
+>6208	65				        .byte >(fmnames + n * 17)
+>6209	65				        .byte >(fmnames + n * 17)
+>620a	65				        .byte >(fmnames + n * 17)
+>620b	65				        .byte >(fmnames + n * 17)
+>620c	65				        .byte >(fmnames + n * 17)
+>620d	65				        .byte >(fmnames + n * 17)
+>620e	65				        .byte >(fmnames + n * 17)
+>620f	65				        .byte >(fmnames + n * 17)
+>6210	66				        .byte >(fmnames + n * 17)
+>6211	66				        .byte >(fmnames + n * 17)
+>6212	66				        .byte >(fmnames + n * 17)
+>6213	66				        .byte >(fmnames + n * 17)
+>6214	66				        .byte >(fmnames + n * 17)
+>6215	66				        .byte >(fmnames + n * 17)
+>6216	66				        .byte >(fmnames + n * 17)
+>6217	66				        .byte >(fmnames + n * 17)
+>6218	66				        .byte >(fmnames + n * 17)
+>6219	66				        .byte >(fmnames + n * 17)
+>621a	66				        .byte >(fmnames + n * 17)
+>621b	66				        .byte >(fmnames + n * 17)
+>621c	66				        .byte >(fmnames + n * 17)
+>621d	66				        .byte >(fmnames + n * 17)
+>621e	66				        .byte >(fmnames + n * 17)
+>621f	66				        .byte >(fmnames + n * 17)
+>6220	67				        .byte >(fmnames + n * 17)
+>6221	67				        .byte >(fmnames + n * 17)
+>6222	67				        .byte >(fmnames + n * 17)
+>6223	67				        .byte >(fmnames + n * 17)
+>6224	67				        .byte >(fmnames + n * 17)
+>6225	67				        .byte >(fmnames + n * 17)
+>6226	67				        .byte >(fmnames + n * 17)
+>6227	67				        .byte >(fmnames + n * 17)
+>6228	67				        .byte >(fmnames + n * 17)
+>6229	00 00 00 00 00 00 00 00		fmblockL: .fill CACHE_MAX, 0
+>6231	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 2 times (32 bytes)...
+>6261	00 00 00 00 00 00 00 00
+>6269	00 00 00 00 00 00 00 00		fmblockH: .fill CACHE_MAX, 0
+>6271	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 2 times (32 bytes)...
+>62a1	00 00 00 00 00 00 00 00
+>62a9	00 00 00 00 00 00 00 00		fmtype:   .fill CACHE_MAX * 3, 0
+>62b1	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 10 times (160 bytes)...
+>6361	00 00 00 00 00 00 00 00
+>6369	00 00 00 00 00 00 00 00		fmnames:  .fill CACHE_MAX * 17, 0
+>6371	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 66 times (1056 bytes)...
+>67a1	00 00 00 00 00 00 00 00
+>67a9	00				scroll:   .byte 0
+>67aa	00				rowindex: .byte 0
+>67ab	00 00				cachebase: .word 0          ; absolute directory ordinal of cache entry zero
+>67ad	00				morefiles: .byte 0
+>67ae	00				fmready:  .byte 0
+>67af	08				sysdev:   .byte 8
+>67b0	00 00				scanindex: .word 0
+>67b2	00				direrror: .byte 0
+>67b3	00				dslink:   .byte 0
+>67b4	00 00				dsblocks: .word 0
+>67b6	00				dslen:    .byte 0
+.67b7					dirscan:
+.67b7	a9 00		lda #$00	        lda #$00
+.67b9	85 41		sta $41		        sta fmcnt
+.67bb	8d ad 67	sta $67ad	        sta morefiles
+.67be	8d b2 67	sta $67b2	        sta direrror
+.67c1	8d 49 6c	sta $6c49	        sta dseof
+.67c4	8d b0 67	sta $67b0	        sta scanindex
+.67c7	8d b1 67	sta $67b1	        sta scanindex+1
+.67ca	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.67cd	a9 05		lda #$05	        lda #$05
+.67cf	a6 43		ldx $43		        ldx fmdev
+.67d1	a0 00		ldy #$00	        ldy #$00
+.67d3	20 ba ff	jsr $ffba	        jsr SETLFS
+.67d6	a9 01		lda #$01	        lda #$01
+.67d8	a2 17		ldx #$17	        ldx #<dname
+.67da	a0 6c		ldy #$6c	        ldy #>dname
+.67dc	20 bd ff	jsr $ffbd	        jsr SETNAM
+.67df	20 c0 ff	jsr $ffc0	        jsr OPEN
+.67e2	90 03		bcc $67e7	        bcc ds_open
+.67e4	4c 0b 69	jmp $690b	        jmp ds_fail
+.67e7					ds_open:
+.67e7	a2 05		ldx #$05	        ldx #$05
+.67e9	20 c6 ff	jsr $ffc6	        jsr CHKIN
+.67ec	90 03		bcc $67f1	        bcc ds_input
+.67ee	4c 0b 69	jmp $690b	        jmp ds_fail
+.67f1					ds_input:
+.67f1	20 1a 69	jsr $691a	        jsr ds_get               ; load-address low/high
+.67f4	20 1a 69	jsr $691a	        jsr ds_get
+.67f7	a9 01		lda #$01	        lda #$01
+.67f9	8d 4a 6c	sta $6c4a	        sta dsfirst
+.67fc					ds_ent:
+.67fc	20 1a 69	jsr $691a	        jsr ds_get
+.67ff	8d b3 67	sta $67b3	        sta dslink
+.6802	20 1a 69	jsr $691a	        jsr ds_get
+.6805	0d b3 67	ora $67b3	        ora dslink
+.6808	d0 03		bne $680d	        bne ds_line
+.680a	4c 10 69	jmp $6910	        jmp ds_end               ; null BASIC link = directory end
+.680d					ds_line:
+.680d	ad b2 67	lda $67b2	        lda direrror
+.6810	f0 03		beq $6815	        beq ds_readline
+.6812	4c 10 69	jmp $6910	        jmp ds_end
+.6815					ds_readline:
+.6815	20 1a 69	jsr $691a	        jsr ds_get
+.6818	8d b4 67	sta $67b4	        sta dsblocks
+.681b	20 1a 69	jsr $691a	        jsr ds_get
+.681e	8d b5 67	sta $67b5	        sta dsblocks+1
+.6821	a9 00		lda #$00	        lda #$00
+.6823	8d b6 67	sta $67b6	        sta dslen
+.6826					ds_text:
+.6826	20 1a 69	jsr $691a	        jsr ds_get
+.6829	f0 12		beq $683d	        beq ds_parse
+.682b	ae b6 67	ldx $67b6	        ldx dslen
+.682e	e0 3f		cpx #$3f	        cpx #63
+.6830	90 03		bcc $6835	        bcc ds_savechar
+.6832	4c 0b 69	jmp $690b	        jmp ds_fail
+.6835					ds_savechar:
+.6835	9d 4b 6c	sta $6c4b,x	        sta dline,x
+.6838	ee b6 67	inc $67b6	        inc dslen
+.683b	d0 e9		bne $6826	        bne ds_text
+.683d					ds_parse:
+.683d	ae b6 67	ldx $67b6	        ldx dslen
+.6840	a9 00		lda #$00	        lda #$00
+.6842	9d 4b 6c	sta $6c4b,x	        sta dline,x
+.6845	9d 4c 6c	sta $6c4c,x	        sta dline+1,x
+.6848	9d 4d 6c	sta $6c4d,x	        sta dline+2,x
+.684b	ad 4a 6c	lda $6c4a	        lda dsfirst
+.684e	f0 06		beq $6856	        beq ds_name
+.6850	ce 4a 6c	dec $6c4a	        dec dsfirst
+.6853	4c fc 67	jmp $67fc	        jmp ds_ent
+.6856					ds_name:
+.6856	a2 00		ldx #$00	        ldx #$00
+.6858					ds_q1:
+.6858	ec b6 67	cpx $67b6	        cpx dslen
+.685b	90 03		bcc $6860	        bcc ds_quotechar
+.685d	4c fc 67	jmp $67fc	        jmp ds_ent
+.6860					ds_quotechar:
+.6860	bd 4b 6c	lda $6c4b,x	        lda dline,x
+.6863	e8		inx		        inx
+.6864	c9 22		cmp #$22	        cmp #$22
+.6866	d0 f0		bne $6858	        bne ds_q1
+.6868	a0 00		ldy #$00	        ldy #$00
+.686a					ds_nc:
+.686a	ec b6 67	cpx $67b6	        cpx dslen
+.686d	90 03		bcc $6872	        bcc ds_namechar
+.686f	4c 0b 69	jmp $690b	        jmp ds_fail
+.6872					ds_namechar:
+.6872	bd 4b 6c	lda $6c4b,x	        lda dline,x
+.6875	e8		inx		        inx
+.6876	c9 22		cmp #$22	        cmp #$22
+.6878	f0 0d		beq $6887	        beq ds_ncend
+.687a	c0 10		cpy #$10	        cpy #16
+.687c	90 03		bcc $6881	        bcc ds_savename
+.687e	4c 0b 69	jmp $690b	        jmp ds_fail
+.6881					ds_savename:
+.6881	99 a5 6b	sta $6ba5,y	        sta fnbuf,y
+.6884	c8		iny		        iny
+.6885	d0 e3		bne $686a	        bne ds_nc
+.6887					ds_ncend:
+.6887	a9 00		lda #$00	        lda #$00
+.6889	99 a5 6b	sta $6ba5,y	        sta fnbuf,y
+.688c	86 49		stx $49		        stx fmclose
+.688e	ad b1 67	lda $67b1	        lda scanindex+1
+.6891	cd ac 67	cmp $67ac	        cmp cachebase+1
+.6894	90 68		bcc $68fe	        bcc ds_skip
+.6896	d0 08		bne $68a0	        bne ds_store
+.6898	ad b0 67	lda $67b0	        lda scanindex
+.689b	cd ab 67	cmp $67ab	        cmp cachebase
+.689e	90 5e		bcc $68fe	        bcc ds_skip
+.68a0					ds_store:
+.68a0	a6 41		ldx $41		        ldx fmcnt
+.68a2	e0 40		cpx #$40	        cpx #CACHE_MAX
+.68a4	90 08		bcc $68ae	        bcc ds_slot
+.68a6	a9 01		lda #$01	        lda #$01
+.68a8	8d ad 67	sta $67ad	        sta morefiles
+.68ab	4c 10 69	jmp $6910	        jmp ds_end
+.68ae					ds_slot:
+.68ae	bd a9 61	lda $61a9,x	        lda fmnamesL,x
+.68b1	85 02		sta $02		        sta r0L
+.68b3	bd e9 61	lda $61e9,x	        lda fmnamesH,x
+.68b6	85 03		sta $03		        sta r0H
+.68b8	ad b4 67	lda $67b4	        lda dsblocks
+.68bb	9d 29 62	sta $6229,x	        sta fmblockL,x
+.68be	ad b5 67	lda $67b5	        lda dsblocks+1
+.68c1	9d 69 62	sta $6269,x	        sta fmblockH,x
+.68c4	a0 00		ldy #$00	        ldy #$00
+.68c6					ds_cp:
+.68c6	b9 a5 6b	lda $6ba5,y	        lda fnbuf,y
+.68c9	91 02		sta ($02),y	        sta (r0),y
+.68cb	c8		iny		        iny
+.68cc	c0 11		cpy #$11	        cpy #17
+.68ce	d0 f6		bne $68c6	        bne ds_cp
+.68d0	a6 49		ldx $49		        ldx fmclose
+.68d2					ds_typestart:
+.68d2	bd 4b 6c	lda $6c4b,x	        lda dline,x
+.68d5	c9 20		cmp #$20	        cmp #$20
+.68d7	f0 04		beq $68dd	        beq ds_typepad
+.68d9	c9 2a		cmp #$2a	        cmp #$2a
+.68db	d0 06		bne $68e3	        bne ds_typegot
+.68dd					ds_typepad:
+.68dd	e8		inx		        inx
+.68de	ec b6 67	cpx $67b6	        cpx dslen
+.68e1	90 ef		bcc $68d2	        bcc ds_typestart
+.68e3					ds_typegot:
+.68e3	a5 41		lda $41		        lda fmcnt
+.68e5	0a		asl a		        asl
+.68e6	18		clc		        clc
+.68e7	65 41		adc $41		        adc fmcnt
+.68e9	a8		tay		        tay
+.68ea	bd 4b 6c	lda $6c4b,x	        lda dline,x
+.68ed	99 a9 62	sta $62a9,y	        sta fmtype,y
+.68f0	bd 4c 6c	lda $6c4c,x	        lda dline+1,x
+.68f3	99 aa 62	sta $62aa,y	        sta fmtype+1,y
+.68f6	bd 4d 6c	lda $6c4d,x	        lda dline+2,x
+.68f9	99 ab 62	sta $62ab,y	        sta fmtype+2,y
+.68fc	e6 41		inc $41		        inc fmcnt
+.68fe					ds_skip:
+.68fe	ee b0 67	inc $67b0	        inc scanindex
+.6901	d0 05		bne $6908	        bne ds_continue
+.6903	ee b1 67	inc $67b1	        inc scanindex+1
+.6906	f0 03		beq $690b	        beq ds_fail
+.6908					ds_continue:
+.6908	4c fc 67	jmp $67fc	        jmp ds_ent
+.690b					ds_fail:
+.690b	a9 01		lda #$01	        lda #$01
+.690d	8d b2 67	sta $67b2	        sta direrror
+.6910					ds_end:
+.6910	20 cc ff	jsr $ffcc	        jsr CLRCHN
+.6913	a9 05		lda #$05	        lda #$05
+.6915	20 c3 ff	jsr $ffc3	        jsr CLOSE
+.6918	58		cli		        cli
+.6919	60		rts		        rts
+.691a					ds_get:
+.691a	ad b2 67	lda $67b2	        lda direrror
+.691d	0d 49 6c	ora $6c49	        ora dseof
+.6920	d0 13		bne $6935	        bne ds_bad
+.6922	20 cf ff	jsr $ffcf	        jsr CHRIN
+.6925	8d 1d 6c	sta $6c1d	        sta cpbyte
+.6928	20 b7 ff	jsr $ffb7	        jsr READST
+.692b	8d 49 6c	sta $6c49	        sta dseof
+.692e	29 bf		and #$bf	        and #$bf
+.6930	f0 06		beq $6938	        beq ds_good
+.6932	8d b2 67	sta $67b2	        sta direrror
+.6935					ds_bad:
+.6935	a9 00		lda #$00	        lda #$00
+.6937	60		rts		        rts
+.6938					ds_good:
+.6938	ad 1d 6c	lda $6c1d	        lda cpbyte
+.693b	60		rts		        rts
+>693c	55 4f 53 2d 44 45 53 4b		dskstr: .text "uos-desktop", 0
+>6944	54 4f 50 00
+>6948	c6 49 4c 45 20 4d 41 4e		fm_title: .text "File manager", 0
+>6950	41 47 45 52 00
+>6955	58 00				x:      .text "x", $00
+=6					SYSCOMPS_N      := 6
+.6957					syscomps:
+>6957	55 4f 53 00			        .text "uos", $00
+>695b	55 4f 53 2d 47 46 58 00		        .text "uos-gfx", $00
+>6963	55 4f 53 2d 56 44 43 00		        .text "uos-vdc", $00
+>696b	55 4f 53 2d 44 52 56 31		        .text "uos-drv1351", $00
+>6973	33 35 31 00
+>6977	55 4f 53 2d 53 50 52 49		        .text "uos-sprites", $00
+>697f	54 45 53 00
+>6983	55 4f 53 2d 52 45 55 00		        .text "uos-reu", $00
+>698b	c4 3d 44 45 4c 20 d2 3d		p_hint: .text "D=del R=ren C=cpy I=info ESC=desk", 0
+>6993	52 45 4e 20 c3 3d 43 50 59 20 c9 3d 49 4e 46 4f
+>69a3	20 c5 d3 c3 3d 44 45 53 4b 00
+>69ad	53 30 3a 00			p_s0:   .byte $53,$30,$3a,$00   ; "S0:" — unshifted: 64tass .text would
+>69b1	52 30 3a 00			p_r0:   .byte $52,$30,$3a,$00   ; "R0:"   emit shifted uppercase, which the
+>69b5	c4 c5 cc 20 00			p_del:  .text "DEL ", 0
+>69ba	20 28 d9 2f ce 29 00		p_yn:   .text " (Y/N)", 0
+>69c1	43 30 3a 00			p_c0:   .byte $43,$30,$3a,$00   ; "C0:" unshifted (see p_s0 note)
+>69c5	d2 c5 ce c1 cd c5 20 d4		p_ren:  .text "RENAME TO:", 0
+>69cd	cf 3a 00
+>69d0	c3 cf d0 d9 20 c1 d3 3a		p_cpy:  .text "COPY AS:", 0
+>69d8	00
+>69d9	c3 cf d0 d9 20 d4 cf 20		p_cpyx: .text "COPY TO OTHER DEV AS:", 0
+>69e1	cf d4 c8 c5 d2 20 c4 c5 d6 20 c1 d3 3a 00
+>69ef	24 30 3a 00			p_d0:   .byte $24,$30,$3a,$00   ; "$0:" unshifted (see p_s0 note)
+>69f3	20 c2 3d 00			p_bsep: .text " B=", 0
+>69f7	2c 53 2c 57 00			w_sufx: .byte $2c,$53,$2c,$57,$00     ; ",S,W" unshifted (see p_s0 note)
+>69fc	53 43 52 41 54 43 48 45		msg_scr: .text "scratched", 0
+>6a04	44 00
+>6a06	52 45 4e 41 4d 45 44 00		msg_ren: .text "renamed", 0
+>6a0e	43 4f 50 49 45 44 00		msg_cpy: .text "copied", 0
+>6a15	43 4f 50 49 45 44 20 54		msg_to8: .text "copied to device 8", 0
+>6a1d	4f 20 44 45 56 49 43 45 20 38 00
+>6a28	43 4f 50 49 45 44 20 54		msg_to9: .text "copied to device 9", 0
+>6a30	4f 20 44 45 56 49 43 45 20 39 00
+>6a3b	43 4f 50 49 45 44 20 54		msg_to10: .text "copied to device 10", 0
+>6a43	4f 20 44 45 56 49 43 45 20 31 30 00
+>6a4f	43 4f 50 49 45 44 20 54		msg_to11: .text "copied to device 11", 0
+>6a57	4f 20 44 45 56 49 43 45 20 31 31 00
+>6a63	15 28 3b 4f			copymsgL: .byte <msg_to8,<msg_to9,<msg_to10,<msg_to11
+>6a67	6a 6a 6a 6a			copymsgH: .byte >msg_to8,>msg_to9,>msg_to10,>msg_to11
+>6a6b	43 4f 50 59 20 46 41 49		msg_err: .text "copy failed", 0
+>6a73	4c 45 44 00
+>6a77	44 49 52 45 43 54 4f 52		msg_direrr: .text "directory read failed", 0
+>6a7f	59 20 52 45 41 44 20 46 41 49 4c 45 44 00
+>6a8d	00 00 00 00 00 00 00 00		csrcbuf: .fill 24, 0                      ; copy: dest name (name + ",S,W")
+>6a95	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6aa5	00 00 00 00 00 00 00 00		cpbuf:   .fill 256, 0                     ; copy: one page in flight
+>6aad	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>6b9d	00 00 00 00 00 00 00 00
+>6ba5	00 00 00 00 00 00 00 00		fnbuf:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6bad	00 00 00 00 00 00 00 00 00
+>6bb6	00 00 00 00 00 00 00 00		fnbuf2: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6bbe	00 00 00 00 00 00 00 00 00
+>6bc7	00 00 00 00 00 00 00 00		glnold: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6bcf	00 00 00 00 00 00 00 00 00
+>6bd8	00 00 00 00 00 00 00 00		srcname: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6be0	00 00 00 00 00 00 00 00 00
+>6be9	00 00 00 00 00 00 00 00		fncmd:  .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6bf1	00 00 00 00 00 00 00 00 00
+>6bfa	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6c02	00 00 00 00 00 00 00 00 00
+>6c0b	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0
+>6c13	00 00 00 00
+>6c17	24				dname:  .text "$"
+>6c18	00				vtmp:   .byte 0
+>6c19	00				vtmp2:  .byte 0
+>6c1a	00				prev_row: .byte 0
+>6c1b	00 00				bnum:   .word 0
+>6c1d	00				cpbyte: .byte 0
+>6c1e	00				cpst:   .byte 0
+>6c1f	00				errtag: .byte 0
+>6c20	00				dc_cnt: .byte 0
+>6c21	00 00 00 00 00 00 00 00		linebuf:.byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6c29	00 00 00 00 00 00 00 00 00 00 00 00
+>6c35	00 00 00 00 00 00 00 00		        .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+>6c3d	00 00 00 00 00 00 00 00 00 00 00 00
+>6c49	00				dseof:  .byte 0
+>6c4a	00				dsfirst: .byte 0
+>6c4b	00 00 00 00 00 00 00 00		dline:  .fill 66, 0
+>6c53	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 2 times (32 bytes)...
+>6c83	00 00 00 00 00 00 00 00 00 00
+
+;******  End of listing
