@@ -1,0 +1,137 @@
+# Native graphics and desktop
+
+The ABI 1.8 desktop starts in C128 native mode and launches Calculator, Text
+Editor and Files. It presents a 320×200 VIC bitmap and mirrors its controls in
+the VDC text console. Apps use the existing owner-checked heap, file and module
+services. The dispatcher releases the desktop before loading an app and reloads
+it when the app returns.
+
+Software qualification passes. Physical desktop qualification remains incomplete
+after three restored test interruptions; see the [hardware record](validation/2026-09-11-native-desktop-hardware/README.md).
+
+## Build and controls
+
+```sh
+python3 -B build-native-desktop.py
+x128 -default -40col -8 target/native-desktop/uos128.d64 -drive8true -drive8type 1541
+```
+
+The builder retains three distinct boot disks:
+
+| Disk | Initial view | B from the diagnostic workspace |
+|---|---|---|
+| `target/native-desktop/uos128.d64` | Graphical desktop | Desktop |
+| `target/native-desktop/workspace.d64` | Diagnostic workspace | Desktop |
+| `target/native/uos128.d64` | Diagnostic workspace | Original Files and Apps browser |
+
+Use arrows or Tab to select an app, Home to select Calculator, and Enter to
+open the selection. C, E and F open Calculator, Editor and Files directly.
+Escape returns to the diagnostic workspace. When graphics cannot be reserved
+or the current display configuration is unsupported, the same desktop controls
+remain available as text on both consoles. A missing app reports its load error
+and returns to the desktop. A missing desktop leaves a usable workspace.
+
+On a physical C128, mount the desktop disk on device 8 and boot in native mode.
+The Ultimate PRG runner enters C64 mode; use native disk boot for this kernel.
+`python3 -u hw_ultimate_check.py --native-desktop` runs the bounded qualification
+workflow from the existing idle legacy deployment and restores it afterward.
+
+The desktop PRG occupies 18 app pages and reserves 36 surface pages, leaving
+372 of the 426 managed pages free. Both allocations are released before an app
+handoff. There is one foreground app; persistent desktop state, pointer input,
+overlapping windows, VDC bitmap presentation and graphical application editing
+remain roadmap work.
+
+## Presentation lifetime
+
+Include [`src/native/api.inc`](../src/native/api.inc). Declare minimum ABI 1.8
+in an app that calls the presentation services.
+
+| Service | Address | Contract |
+|---|---:|---|
+| `N_VSHOW` | `$1c68` | Present the current app's initialized 36-page allocation at bank 0 `$c000..$e3ff`; supply `N_OWNER` and the four-byte `N_HANDLE` |
+| `N_VCLOSE` | `$1c6b` | Restore the saved text display while retaining the allocation |
+
+Reserve the surface early using `N_RESERVE` with bank 0, page `$c0`, 36 pages
+and the current app owner. The surface must exist as one exact allocation.
+Free space elsewhere cannot satisfy a reservation blocked by an allocation at
+`$d000`. A failed reservation must leave the app able to continue in text mode.
+
+Initialize the surface through the heap transfer services before `N_VSHOW`.
+Bitmap bytes occupy offsets 0–7999; offsets 8192–9191 hold the 40×25 color
+attributes. The allocation also includes the intervening and trailing padding.
+For pixel `(x,y)`, the bitmap byte offset is `(y//8)*320+(x//8)*8+y%8`, and its
+bit is `128>>(x%8)`. An attribute byte supplies foreground in its upper nibble
+and background in its lower nibble.
+
+Presentation requires a valid running app, its current owner, a consistent
+allocation record, enabled interrupts, the supported native memory mapping,
+text display state, a raster IRQ mask of one, no active sprites, and output
+direction on the VIC bank-select pins. Refusal returns a native status in A
+with carry set. Existing presentation or a busy heap/file/UI operation returns
+`N_REENTRANT`; unsupported display state returns `N_PLATFORM`. Handle, owner,
+range and metadata failures use their corresponding native statuses.
+
+The resident teardown restores text before a visible allocation is freed or
+its owner is released. App return, explicit exit and replacement follow the
+same cleanup path. Teardown precedes file cleanup even when an uncertain file
+close retains app ownership. It needs no disk access or dynamically loaded code.
+Closing twice is harmless for the valid current app. It does not free pages.
+
+## Drawing library
+
+Include [`graphics-core.inc`](../src/native/graphics/graphics-core.inc) after
+the native API definitions, and optionally include
+[`text-core.inc`](../src/native/graphics/text-core.inc). Keep the code and its
+state in the app's writable allocation or a declared module window. The
+complete library with the original 8×8 ASCII font occupies 2,685 bytes. The
+[desktop source](../src/native/desktop.asm) is a complete caller.
+
+| Entry | Inputs and behavior |
+|---|---|
+| `gfx_bind` | `N_OWNER`, `N_HANDLE`; validate access through byte 9215 and retain the handle; reset the clip to the full surface on success |
+| `gfx_set_clip` | Signed little-endian 16-bit `gfx_x0`, `gfx_y0`, `gfx_x1`, `gfx_y1`; set a half-open pixel clip intersected with the surface |
+| `gfx_rect` | The same half-open pixel bounds; `gfx_pen` 0 clears, 1 sets, 2 XORs |
+| `gfx_colors` | Half-open bounds in 40×25 attribute cells; fill with `gfx_color` |
+| `gfx_glyph` | Signed pixel origin `gfx_x0`, `gfx_y0` and eight rows in `gfx_bits`; pens 0/1/2 affect ink pixels, pen 3 replaces the clipped glyph rectangle |
+| `gfx_text` | Signed origin, pen 0–3, at most 64 bytes in `gfx_text_buffer` and `gfx_text_length`; advance x by eight per byte, saturating at 32767 |
+
+Drawing clips signed coordinates without wrapping extreme values into the
+surface. Empty or inverted bounds perform no transfer. Attribute clipping
+rounds inward to complete 8×8 cells, preserving colors outside the pixel clip.
+Text replaces bytes outside printable ASCII with `?`. Drawing can target an
+owned logical surface in either RAM bank; presentation currently requires the
+fixed bank-0 surface described above.
+
+Calls return A=0 with carry clear on success, otherwise a native status with
+carry set; `gfx_error` retains the result. Decimal and interrupt flags are
+preserved. Other registers, heap argument mailboxes and `N_BUFFER` are scratch.
+The library stores one binding and clip, uses writable operands, and accepts
+foreground calls only. Busy-state refusal precedes drawing. An attempted bind
+that reaches handle validation invalidates the old binding on failure; a busy
+refusal preserves it. Heap services revalidate the retained handle on transfers.
+
+## Verification
+
+The source and captured evidence are linked from the
+[desktop migration record](NATIVE-DESKTOP-MIGRATION.md). CPU model, emulator
+pixels and physical CPU captures are distinct evidence. The hardware workflow
+captures complete surface RAM, VDC cells and CPU mode registers; it does not
+capture physical video pixels.
+
+```sh
+python3 -B build-native-desktop.py
+python3 -B build-native-graphics.py
+python3 -B tests/ci_native_desktop.py --desktop-boot --report /tmp/desktop-cpu.json
+python3 -B tests/ci_native_graphics.py
+python3 -B tests/ci_native_glyph.py
+python3 -B tests/ci_native_graphics_text.py
+python3 -B tests/ci_native_graphics_clip.py
+python3 -u tests/run_ci.py nativedesktop nativedesktopworkspace nativedesktop80 nativedesktopmissingapp nativedesktopmissing nativedesktopsequence
+```
+
+CPU suites require py65 and the local C128 KERNAL ROM used by the existing
+native tests. Builders use Python 3, 64tass and VICE's `c1541`; emulator suites
+use VICE and the existing Xvfb/ImageMagick capture tools. Reports retain image
+hashes. The running-code audit compares all immutable resident bytes and saves
+every declared mutable byte separately.

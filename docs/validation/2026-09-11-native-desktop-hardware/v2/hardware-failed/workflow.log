@@ -1,0 +1,40 @@
+Native desktop hardware evidence: /var/tmp/arc-scratch/uos-hardware-native-desktop-qro_yaya
+Native desktop boot: waiting 60 seconds for IEC before any RAM DMA
+Native desktop boot: continuing quiet boot interval
+Verified native desktop RAM, VDC and display mode: desktop-boot
+Verified native desktop RAM, VDC and display mode: desktop-editor-selected
+Verified native screens: calculator-new
+Verified native screens: calculator-result
+Native desktop key 1B: waiting for complete operation (31s)
+Verified native desktop RAM, VDC and display mode: desktop-after-calculator
+Native desktop key 45: waiting for complete operation (30s)
+Verified native screens: editor-new
+Verified native screens: editor-typed
+Native desktop key 59: waiting for complete operation (31s)
+Legacy desktop boot: waiting 60 seconds for IEC before any RAM DMA
+Legacy desktop boot: continuing quiet boot interval
+Traceback (most recent call last):
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/hw_ultimate_check.py", line 836, in <module>
+    main()
+    ~~~~^^
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/hw_ultimate_check.py", line 530, in main
+    run(VerifiedUltimate(timeout=60))
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/hw_native_desktop_check.py", line 163, in run
+    run_native_workflow(mon,capture,work,disk,report,save)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/hw_native_desktop_check.py", line 81, in run_native_workflow
+    key(27);key(ord('Y'));desktop('desktop-after-editor')
+                          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/hw_native_desktop_check.py", line 51, in desktop
+    actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
+                     count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/hw_native_desktop_check.py", line 51, in <genexpr>
+    actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
+                    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/tmp/arc-scratch/uos-native-desktop-hardware-v2/native_capture.py", line 126, in capture
+    assert self.read(0x3800,0x600)==metadata,'native heap changed during observation'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: native heap changed during observation

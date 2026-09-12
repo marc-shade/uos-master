@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-11. This is the current completion checklist. The older
+Updated 2026-09-12. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -59,6 +59,10 @@ The [local reference inventory](REFERENCE-FIXTURES.md) records nineteen images,
 their hashes and directory listings, including geoWrite, geoPaint, geoSpell
 and the write utilities. These are named candidates for the application and
 format comparisons; they have not been qualified as running under uOS.
+The first [GEOS128 reference boots](reference/2026-09-11-geos-boots/README.md)
+now reach a visible desktop in VICE from unchanged private disk copies with
+both initial display settings. Authentic input and application comparisons
+remain open; this is reference boot evidence, not uOS compatibility.
 
 ## Kernel, desktop, and application gaps
 
@@ -69,12 +73,12 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Requirement | Current evidence | Remaining implementation | Acceptance evidence |
 |---|---|---|---|
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
-| Native C128 platform, FR-M3 | Native boot/kernel, dual-screen memory workspace, file/app browser and calculator at 1 MHz; banked KERNAL gateways | Desktop/remaining app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
+| Native C128 platform, FR-M3 | Native boot/kernel, two-screen workspace, banked files/apps and keyboard graphical desktop at 1 MHz; owned display lifetime and KERNAL gateways | Remaining desktop/app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
 | Memory and FR-M1 | Native 426-page allocator with owner/generation checks, bounded transfers and 4 KiB resident Ultimate services; legacy fixed REU snapshot banks | REU/expansion size detection and allocation, larger app heaps, RAM disks, persistence, no-REU desktop fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
-| Desktop and FR-S1 | Menu, modal windows, disk-scanned launcher | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
+| Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard launcher with VDC controls, app handoff and text fallback | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; per-app drawing | Widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
-| FR-D1/D2 display | VIC graphics + VDC text mirror; persisted display selection | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
+| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and VDC text controls | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | 1351 movement, clamping | Two buttons, drag/drop, jitter filter, acceleration, hot plug; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
@@ -423,6 +427,52 @@ The [module checkpoint](validation/2026-09-11-native-modules/README.md) records
 independent comparison of ten USB files and all four IEC document-disk files.
 The [desktop migration plan](NATIVE-DESKTOP-MIGRATION.md) identifies the actual
 legacy/native memory conflicts and the first display-ownership acceptance gate.
+The isolated [display lifetime candidate](validation/2026-09-11-native-display-lifetime/README.md)
+passes 25 CPU suites, ten existing emulator workflows and five graphics
+lifecycles. The later [window clipping and layout candidate](validation/2026-09-11-native-graphics-clipping/README.md)
+passes 1,243 CPU cases and five complete pixel/return workflows. It also retains
+a 66,056-byte edited document, surface and picker cache with 31 pages free in a
+CPU model using the actual editor and kernel code. Its renderer fits the existing
+editor module window; save verification, replacement and cleanup pass. This
+models foreground calls and does not yet provide an interactive graphical editor.
+Masked band processing reduces the preceding identical scene's modeled
+instructions by 3.741 times. The final drawing and display-lifetime sources
+are now integrated with the separate native desktop build. The concurrent
+graphical-editor workflow remains a model fixture. Physical video pixels and
+timing, VDC bitmap presentation and pointer/window focus remain open.
+
+The private [native launcher checkpoint](validation/2026-09-11-native-desktop-launcher/README.md)
+adds direct desktop boot, keyboard selection, Calculator/Editor/Files handoff,
+VDC text controls and app return. Nine launcher CPU workflows pass on both
+private kernels, alongside five additional boot-kernel suites and five emulator
+workflows. Capture audits match 26 complete surfaces and 1,664,000 rendered
+pixels. Missing app files and unavailable graphics leave usable controls.
+The launcher and surface are released before opening an app; no persistent
+desktop heap reservation is added. Physical graphics, pointer/window input,
+VDC bitmap presentation, persistent state and native Ultimate panels remain
+open. The subsequent [production integration](validation/2026-09-12-native-desktop-integration/README.md)
+reproduces the same kernels/apps/disks from standard source locations, passes
+eighteen desktop CPU workflows and 1,243 drawing cases, and checks six VICE
+workflows with 2,112,000 complete rendered pixels. The separate desktop target
+preserves the diagnostic workspace build. Physical qualification is recorded
+independently, including three incomplete attempts, full restoration and
+verified private-file cleanup. The final attempt retains seven differing
+restored-buffer bytes and 71 unexpected captured bytes. The cause remains
+unproven; capture-transport investigation precedes another full physical run.
+
+The next [owned-abort completion change](validation/2026-09-11-native-owned-abort/README.md)
+is implemented as fifteen resident bytes with no additional heap reservation.
+It preserves the initiating transport error while waiting for the abort's
+completion, with a bounded return and retained owner if completion stays
+uncertain. All 24 CPU suites and ten emulator workflows pass on its exact
+images. The first physical USB attempt failed during a saved-file reopen through
+DOS context 2 after the editor had verified the save. The full unmodified retry
+passes, including independent readback of ten closed files, all native cleanup
+and restoration of the desktop, drives and DOS paths. All 87 current host fault
+checks also pass. Physical IEC qualification and the final combined audits now
+pass, including all four document-disk files, the edited 66,056-byte save,
+restoration and confirmed removal of the three private temporary uploads.
+Neither physical failure's initiating cause has been established.
 
 Before calling the complete OS finished, audit every FR in the original PRD,
 every row above, all named app/hardware/firmware combinations, documentation,

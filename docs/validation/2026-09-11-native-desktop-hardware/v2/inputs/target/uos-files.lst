@@ -1,0 +1,1802 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -o target/uos-files.prg -L target/uos-files.lst src/uos-files.asm
+; Wed Sep  9 09:46:01 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: src/uos-files.asm
+
+
+;******  Processing file: src/equates.inc
+
+=$02					r0              =       $02
+=$02					r0L             =       $02
+=$03					r0H             =       $03
+=$04					r1              =       $04
+=$04					r1L             =       $04
+=$05					r1H             =       $05
+=$06					r2              =       $06
+=$06					r2L             =       $06
+=$07					r2H             =       $07
+=$08					r3              =       $08
+=$08					r3L             =       $08
+=$09					r3H             =       $09
+=$0a					r4              =       $0a
+=$0a					r4L             =       $0a
+=$0b					r4H             =       $0b
+=$0c					r5              =       $0c
+=$0c					r5L             =       $0c
+=$0d					r5H             =       $0d
+=$0e					r6              =       $0e
+=$0e					r6L             =       $0e
+=$0f					r6H             =       $0f
+=$10					r7              =       $10
+=$10					r7L             =       $10
+=$11					r7H             =       $11
+=$12					r8              =       $12
+=$12					r8L             =       $12
+=$13					r8H             =       $13
+=$14					r9              =       $14
+=$14					r9L             =       $14
+=$15					r9H             =       $15
+=$16					r10             =       $16
+=$16					r10L            =       $16
+=$17					r10H            =       $17
+=$18					r11             =       $18
+=$18					r11L            =       $18
+=$19					r11H            =       $19
+=$1a					r12             =       $1a
+=$1a					r12L            =       $1a
+=$1b					r12H            =       $1b
+=$1c					r13             =       $1c
+=$1c					r13L            =       $1c
+=$1d					r13H            =       $1d
+=$1e					r14             =       $1e
+=$1e					r14L            =       $1e
+=$1f					r14H            =       $1f
+=$20					r15             =       $20
+=$20					r15L            =       $20
+=$21					r15H            =       $21
+=$22					r16             =       $22
+=$02					X1              =       $02
+=$04					Y1              =       $04
+=$06					X2              =       $06
+=$08					Y2              =       $08
+=$fb					a0              =       $fb
+=$fb					a0L             =       $fb
+=$fc					a0H             =       $fc
+=$fd					a1              =       $fd
+=$fd					a1L             =       $fd
+=$fe					a1H             =       $fe
+=$70					a2              =       $70
+=$70					a2L             =       $70
+=$71					a2H             =       $71
+=$72					a3              =       $72
+=$72					a3L             =       $72
+=$73					a3H             =       $73
+=$74					a4              =       $74
+=$74					a4L             =       $74
+=$75					a4H             =       $75
+=$76					a5              =       $76
+=$76					a5L             =       $76
+=$77					a5H             =       $77
+=$78					a6              =       $78
+=$78					a6L             =       $78
+=$79					a6H             =       $79
+=$7a					a7              =       $7a
+=$7a					a7L             =       $7a
+=$7b					a7H             =       $7b
+=$7c					a8              =       $7c
+=$7c					a8L             =       $7c
+=$7d					a8H             =       $7d
+=$7e					a9              =       $7e
+=$7e					a9L             =       $7e
+=$7f					a9H             =       $7f
+
+;******  Return to file: src/uos-files.asm
+
+
+;******  Processing file: src/routines.inc
+
+=$0316					brkVectorlo     = $0316
+=$0317					brkVectorhi     = $0317
+=$0811					MAINLOOP        = $0811
+=$0814					FIND_CTL        = $0814
+=$0817					FS_APP          = $0817
+=$081a					FS_SCREEN       = $081a
+=$081d					FS_RECT         = $081d
+=$0820					CLR_RECT        = $0820
+=$0823					LOAD_IMM        = $0823
+=$0826					APP_LOADER      = $0826
+=$0829					FILLFILE        = $0829
+=$082c					KEYIN           = $082c
+=$082f					GETCAP          = $082f
+=$0832					LAUNCH_APP      = $0832  ; file buffer -> LOADER + jmp APP_START, core-resident
+=$0835					VDTEXT          = $0835  ; 80-col companion: A=row X=col r9->PETSCII (no-op if no VDC)
+=$0838					VDCLR           = $0838  ; 80-col companion: A=row -> blank the row (no-op if no VDC)
+=$083b					OS_TICK         = $083b  ; service the current once-per-second callback; clobbers callback registers
+=$083e					READ_BUTTON     = $083e  ; A=0 while either mouse fire button is down; nonzero when released
+=$7350					SETREC          = $7350
+=$7355					SETREC_DISP     = $7355  ; display mode  (0=40 1=80 2=both)
+=$7356					SETREC_BG       = $7356  ; desktop background colour (0-15 VIC colour)
+=$7352					SETREC_VER      = $7352  ; 2 = the zone bytes below are valid
+=$7353					SETREC_TZ       = $7353  ; time zone, signed quarter-hours from UTC (-48..+56)
+=$7354					SETREC_TZMAG    = $7354  ; $a5 when SETREC_TZ was written by the OS
+=$cc00					VDC_GETREG      = $cc00
+=$cc03					VDC_SETREG      = $cc03
+=$cc06					VDC_SEEK        = $cc06
+=$cc09					VDC_PUTS        = $cc09
+=$cc0c					VDC_PUTCHR      = $cc0c
+=$cc0f					VDC_CLS         = $cc0f
+=$cc12					VDC_FONTUP      = $cc12
+=$cc15					VDC_INIT        = $cc15
+=$cc18					VDC_PRESENT     = $cc18
+=$cc1b					VDC_TEXT        = $cc1b  ; A=row X=col r9->PETSCII text on the 80-col display
+=$cc1e					VDC_CLR         = $cc1e  ; A=row -> blank the row
+=$cc21					VDC_BANNER      = $cc21  ; header rows 0-1
+=$cc24					VDC_LIVE        = $cc24  ; byte: 1 once VDSETUP brought the 8563 up
+=$23					vdcbpL          = $23
+=$24					vdcbpH          = $24
+=$25					vdcdpL          = $25
+=$26					vdcdpH          = $26
+=$1000					DESK_START      = $1000
+=$2fff					DESK_END        = $2fff
+=$5000					APP_START       = $5000
+=$8fff					APP_END         = $8fff
+=$9000					APP_CTL_TBL     = $9000
+=$9000					APP_CTL_CTR     = $9000
+=$9001					APP_CTL_BUF     = $9001
+=$9100					APP_CTL_END     = $9100  ; 25 ten-byte control slots; TESTCLICK indexes them
+=$9b00					APP_ID_TBL      = $9b00
+=$9c00					REU_SIZE        = $9c00
+=$9c03					REU_STASH       = $9c03
+=$9c06					REU_FETCH       = $9c06
+=$9c09					REU_PARAMS      = $9c09
+=$9100					NET_BASE        = $9100
+=37120					NET_PRESENT     = NET_BASE+$00  ; A=1 when the command interface answers
+=37123					NET_CMD         = NET_BASE+$03  ; r0->bytes (target first), A=len -> A=status code, C=1 absent/timeout
+=37126					NET_GETIP       = NET_BASE+$06  ; A=1 when an interface has an address (NET_IP/NET_IPSTR)
+=37129					NET_OPEN        = NET_BASE+$09  ; A=7 tcp / 8 udp, r0->host, r1=port -> A=socket, C=1 failed
+=37132					NET_CLOSE       = NET_BASE+$0c  ; A=socket
+=37135					NET_READ        = NET_BASE+$0f  ; A=socket, r1=max -> NET_DATA+2.., NET_LEN; A: 0 ok 1 none 2 closed 3 error
+=37138					NET_WRITE       = NET_BASE+$12  ; A=socket, r0->data, X=len (1..200) -> A=status code
+=37141					NET_SYNC        = NET_BASE+$15  ; network check + SNTP -> CIA TOD + Ultimate RTC; A=NET_STATE
+=37144					NET_APPLYNTP    = NET_BASE+$18  ; NET_DATA+2.. = 48-byte NTP reply -> time/date/TOD; A=0 ok
+=37147					NET_RTCTIME     = NET_BASE+$1b  ; Ultimate RTC "YYYY/MM/DD HH:MM:SS" -> NET_DATA; A=status code
+=37150					NET_TZSHIFT     = NET_BASE+$1e  ; A=signed quarter-hours -> shift the running TOD
+=37153					NET_STATE       = NET_BASE+$21  ; $ff not tried, 0 ntp synced, 1 no reply, 2 no network, 3 no ultimate, 4 open failed
+=37154					NET_HOUR        = NET_BASE+$22  ; local time 24 h binary
+=37155					NET_MIN         = NET_BASE+$23
+=37156					NET_SEC         = NET_BASE+$24
+=37157					NET_YEAR        = NET_BASE+$25  ; word
+=37159					NET_MON         = NET_BASE+$27
+=37160					NET_DAY         = NET_BASE+$28
+=37161					NET_WDAY        = NET_BASE+$29  ; 0 = sunday
+=37162					NET_TZ          = NET_BASE+$2a  ; quarter-hours applied
+=37163					NET_IP          = NET_BASE+$2b  ; 4 bytes
+=37167					NET_IPSTR       = NET_BASE+$2f  ; dotted decimal, 0-terminated ("" = none)
+=37183					NET_LEN         = NET_BASE+$3f  ; word: payload length of the last reply / read
+=37185					NET_SOCK        = NET_BASE+$41
+=37186					NET_STAT        = NET_BASE+$42  ; 32 bytes: last status line "NN,TEXT"
+=37218					NET_DIRMODE     = NET_BASE+$62  ; 1 = READ_DIR mode (NET_CMD null-separates + counts each block)
+=37219					NET_DIRN        = NET_BASE+$63  ; directory entry count after a dir read
+=37220					NET_STREAM      = NET_BASE+$64  ; r0=command, r1=len(2..896), r3=callback (0=aggregate)
+=37223					NET_TRUNC       = NET_BASE+$67  ; any reply data discarded; reset on each command
+=37224					NET_PACKET_TRUNC = NET_BASE+$68 ; current packet clipped; raw stream packets cap at 512
+=37225					NET_PACKETS     = NET_BASE+$69  ; word: number of reply packets delivered
+=$8800					NET_DATA        = $8800  ; 512-byte reply buffer (socket payload at +2)
+=$9e03					INIT_MOUSE      = $9e03
+=$9e09					KEYIN_EXT       = $9e09
+=$9e0c					KEY_EXTSEEN     = $9e0c  ; byte: sticky 1 once the C128 ESC line was seen low (tests)
+=$a000					BITMAP_START    = $a000
+=$c000					GFX_INIT        = $c000
+=$c00f					GFX_SETPIXEL    = $c00f
+=$c021					GFX_DRAWBYTEPATTERN = $c021
+=$c006					GFX_ON          = $c006
+=$c009					GFX_OFF         = $c009
+=$c00c					GFX_SETCOLOR    = $c00c
+=$c015					GFX_LINE        = $c015
+=$c018					GFX_CIRCLE      = $c018
+=$c01b					GPUTC           = $c01b
+=$c01e					GPUTS           = $c01e
+
+;******  Return to file: src/uos-files.asm
+
+
+;******  Processing file: src/ultimate-files.inc
+
+=$4100					UFS_OPEN        = $4100  ; r0 -> NUL name (1..893 bytes), A=1 read / 7 create new read-write
+=$4103					UFS_CLOSE       = $4103  ; closes only a service-owned (including uncertain) handle
+=$4106					UFS_READ        = $4106  ; r0 -> app buffer, r1=1..512; COUNT actual, EOF at known size
+=$4109					UFS_WRITE       = $4109  ; r0 -> app bytes, r1=1..512; read-back verification before success
+=$410c					UFS_SEEK        = $410c  ; r0/r1 = 32-bit LE offset, within known file size
+=$410f					UFS_TELL        = $410f  ; copy owned handle's tracked SIZE/POS to public result
+=$4112					UFS_CLOSEALL    = $4112  ; release owned contexts; first failure returned, failed owner retained
+=$4115					UFS_VERSION     = $4115  ; byte = 1
+=$4116					UFS_RESULT      = $4116
+=$4117					UFS_COUNT       = $4117  ; word; caller must discard buffer/count when C=1
+=$4119					UFS_SIZE        = $4119  ; 32-bit LE; size at open or after verified writes
+=$411d					UFS_POS         = $411d  ; 32-bit LE; tracked position, valid only after success
+=$4121					UFS_EOF         = $4121  ; byte; successful READ reached known end (also set by TELL/SEEK)
+=$4122					UFS_MODE        = $4122  ; two bytes: 0=unowned, 1=read, 7=create read-write, $ff=close required
+=$4124					UFS_STATUS      = $4124  ; 32-byte NUL-terminated copy of last firmware status for this call
+=$8080					UFS_COMMAND     = $8080  ; 896 private bytes, through $83ff; sprites use only $8000..$807f
+=$4800					UFS_VIEW        = $4800  ; r0 -> filename, X=context; modal hex/ASCII viewer, Esc returns
+=$e0					UFS_BADARG      = $e0
+=$e1					UFS_NOTOPEN     = $e1
+=$e2					UFS_BUSY        = $e2    ; context owned, foreign file open, or nested call
+=$e3					UFS_READONLY    = $e3
+=$e4					UFS_PROTOCOL    = $e4
+=$e5					UFS_SHORT      = $e5    ; fewer bytes than known size/request says must be available
+=$e6					UFS_VERIFY     = $e6    ; write read-back differs
+=$e7					UFS_RANGE      = $e7    ; seek past known end / position overflow
+=$e8					UFS_UNCERTAIN  = $e8    ; retry CLOSE; never continue from an uncertain stream position
+
+;******  Return to file: src/uos-files.asm
+
+
+;******  Processing file: src/file-dialog.inc
+
+=$4c80					UFP_PICK        = $4c80
+=$4c83					UFP_RECOVER     = $4c83  ; restore pending CWD only once its owned file is closed
+=$4c86					UFP_VERSION     = $4c86
+=$4c87					UFP_RESULT      = $4c87
+=$4c88					UFP_PENDING     = $4c88  ; 0 none, 1 borrowed, 2 restore failed (OPEN blocked)
+=$4c89					UFP_CONTEXT     = $4c89
+=$4c8a					UFP_CWDLEN      = $4c8a  ; private saved CHANGE_DIR command length
+=$4c8c					UFP_PATHLEN     = $4c8c  ; returned absolute path length (word)
+=$4c8e					UFP_ACTIVE      = $4c8e  ; private: library running
+=$4c8f					UFP_MODE        = $4c8f  ; private requested OPEN mode
+=$4c90					UFP_DEFAULT     = $4c90  ; private caller default pointer
+=$4e00					UFP_CWD         = $4e00  ; private recovery command; survives app replacement
+=$6200					UFP_LIBRARY     = $6200
+=$7200					UFP_LEAF        = $7200  ; filename editor, max 127 bytes + NUL
+=$7400					UFP_DIRECTORY   = $7400 ; returned CWD, max 510 bytes + NUL
+=$7600					UFP_NAME        = $7600 ; returned complete selected name, max 511 + NUL
+=$7800					UFP_PATH        = $7800 ; returned absolute path, max 1021 + NUL
+=$e9					UFP_CANCELLED   = $e9
+=$ea					UFP_LOAD        = $ea
+
+;******  Return to file: src/uos-files.asm
+
+.4100	4c e7 41	jmp $41e7	        jmp open_file
+.4103	4c 2b 43	jmp $432b	        jmp close_file
+.4106	4c d6 43	jmp $43d6	        jmp read_file
+.4109	4c 45 44	jmp $4445	        jmp write_file
+.410c	4c 68 45	jmp $4568	        jmp seek_file
+.410f	4c 59 43	jmp $4359	        jmp tell_file
+.4112	4c 57 47	jmp $4757	        jmp close_all
+>4115	01				        .byte 1
+>4116	00				result: .byte 0
+>4117	00 00				count:  .word 0
+>4119	00 00 00 00			size:   .fill 4, 0
+>411d	00 00 00 00			pos:    .fill 4, 0
+>4121	00				eof:    .byte 0
+>4122	00 00				modes:  .byte 0, 0
+>4124	00 00 00 00 00 00 00 00		status: .fill 32, 0
+>412c	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>413c	00 00 00 00 00 00 00 00
+.4144					begin:
+.4144	48		pha		        pha
+.4145	e0 01		cpx #$01	        cpx #1
+.4147	90 35		bcc $417e	        bcc begin_arg
+.4149	e0 03		cpx #$03	        cpx #3
+.414b	b0 31		bcs $417e	        bcs begin_arg
+.414d	ad 90 47	lda $4790	        lda busy
+.4150	d0 31		bne $4183	        bne begin_busy
+.4152	8e 92 47	stx $4792	        stx target
+.4155	ca		dex		        dex
+.4156	8e 93 47	stx $4793	        stx index
+.4159	8a		txa		        txa
+.415a	0a		asl a		        asl
+.415b	0a		asl a		        asl
+.415c	8d 94 47	sta $4794	        sta slot
+.415f	a9 01		lda #$01	        lda #1
+.4161	8d 90 47	sta $4790	        sta busy
+.4164	a9 00		lda #$00	        lda #0
+.4166	8d 16 41	sta $4116	        sta result
+.4169	8d 17 41	sta $4117	        sta count
+.416c	8d 18 41	sta $4118	        sta count+1
+.416f	8d 21 41	sta $4121	        sta eof
+.4172	8d 24 41	sta $4124	        sta status
+.4175	8d ab 47	sta $47ab	        sta packet_error
+.4178	8d 62 91	sta $9162	        sta NET_DIRMODE
+.417b	68		pla		        pla
+.417c	18		clc		        clc
+.417d	60		rts		        rts
+.417e					begin_arg:
+.417e	68		pla		        pla
+.417f	a9 e0		lda #$e0	        lda #UFS_BADARG
+.4181	38		sec		        sec
+.4182	60		rts		        rts
+.4183					begin_busy:
+.4183	68		pla		        pla
+.4184	a9 e2		lda #$e2	        lda #UFS_BUSY
+.4186	38		sec		        sec
+.4187	60		rts		        rts
+.4188					owned:
+.4188	ae 93 47	ldx $4793	        ldx index
+.418b	bd 22 41	lda $4122,x	        lda modes,x
+.418e	f0 06		beq $4196	        beq no_file
+.4190	c9 ff		cmp #$ff	        cmp #$ff
+.4192	f0 06		beq $419a	        beq uncertain
+.4194	18		clc		        clc
+.4195	60		rts		        rts
+.4196					no_file:
+.4196	a9 e1		lda #$e1	        lda #UFS_NOTOPEN
+.4198	38		sec		        sec
+.4199	60		rts		        rts
+.419a					uncertain:
+.419a	a9 e8		lda #$e8	        lda #UFS_UNCERTAIN
+.419c	38		sec		        sec
+.419d	60		rts		        rts
+.419e					ok:
+.419e	a9 00		lda #$00	        lda #0
+.41a0					finish:
+.41a0	8d 16 41	sta $4116	        sta result
+.41a3	ae 94 47	ldx $4794	        ldx slot
+.41a6	a0 00		ldy #$00	        ldy #0
+.41a8					finish_copy:
+.41a8	bd ac 47	lda $47ac,x	        lda sizes,x
+.41ab	99 19 41	sta $4119,y	        sta size,y
+.41ae	bd b4 47	lda $47b4,x	        lda positions,x
+.41b1	99 1d 41	sta $411d,y	        sta pos,y
+.41b4	e8		inx		        inx
+.41b5	c8		iny		        iny
+.41b6	c0 04		cpy #$04	        cpy #4
+.41b8	d0 ee		bne $41a8	        bne finish_copy
+.41ba	a9 00		lda #$00	        lda #0
+.41bc	8d 90 47	sta $4790	        sta busy
+.41bf	ad 16 41	lda $4116	        lda result
+.41c2	f0 02		beq $41c6	        beq success
+.41c4	38		sec		        sec
+.41c5	60		rts		        rts
+.41c6					success:
+.41c6	a2 03		ldx #$03	        ldx #3
+.41c8					finish_eof:
+.41c8	bd 19 41	lda $4119,x	        lda size,x
+.41cb	dd 1d 41	cmp $411d,x	        cmp pos,x
+.41ce	d0 06		bne $41d6	        bne finish_not_eof
+.41d0	ca		dex		        dex
+.41d1	10 f5		bpl $41c8	        bpl finish_eof
+.41d3	ee 21 41	inc $4121	        inc eof
+.41d6					finish_not_eof:
+.41d6	a9 00		lda #$00	        lda #0
+.41d8	18		clc		        clc
+.41d9	60		rts		        rts
+.41da					quarantine:
+.41da	48		pha		        pha
+.41db	ae 93 47	ldx $4793	        ldx index
+.41de	a9 ff		lda #$ff	        lda #$ff
+.41e0	9d 22 41	sta $4122,x	        sta modes,x
+.41e3	68		pla		        pla
+.41e4	4c a0 41	jmp $41a0	        jmp finish
+.41e7					open_file:
+.41e7	20 44 41	jsr $4144	        jsr begin
+.41ea	90 01		bcc $41ed	        bcc open_begin
+.41ec	60		rts		        rts
+.41ed					open_begin:
+.41ed	c9 01		cmp #$01	        cmp #1
+.41ef	f0 09		beq $41fa	        beq open_mode
+.41f1	c9 07		cmp #$07	        cmp #7
+.41f3	f0 05		beq $41fa	        beq open_mode
+.41f5	a9 e0		lda #$e0	        lda #UFS_BADARG
+.41f7	4c a0 41	jmp $41a0	        jmp finish
+.41fa					open_mode:
+.41fa	8d 95 47	sta $4795	        sta wanted_mode
+.41fd	ae 93 47	ldx $4793	        ldx index
+.4200	bd 22 41	lda $4122,x	        lda modes,x
+.4203	f0 05		beq $420a	        beq open_name
+.4205	a9 e2		lda #$e2	        lda #UFS_BUSY
+.4207	4c a0 41	jmp $41a0	        jmp finish
+.420a					open_name:
+.420a	ad 88 4c	lda $4c88	        lda pick_pending
+.420d	c9 02		cmp #$02	        cmp #2
+.420f	d0 0d		bne $421e	        bne open_directory_ok
+.4211	ad 92 47	lda $4792	        lda target
+.4214	cd 89 4c	cmp $4c89	        cmp pick_context
+.4217	d0 05		bne $421e	        bne open_directory_ok
+.4219	a9 e8		lda #$e8	        lda #UFS_UNCERTAIN
+.421b	4c a0 41	jmp $41a0	        jmp finish
+.421e					open_directory_ok:
+.421e	ad 92 47	lda $4792	        lda target
+.4221	8d 80 80	sta $8080	        sta UFS_COMMAND
+.4224	a9 02		lda #$02	        lda #2
+.4226	8d 81 80	sta $8081	        sta UFS_COMMAND+1
+.4229	ad 95 47	lda $4795	        lda wanted_mode
+.422c	8d 82 80	sta $8082	        sta UFS_COMMAND+2
+.422f	a9 83		lda #$83	        lda #<UFS_COMMAND+3
+.4231	85 0a		sta $0a		        sta r4L
+.4233	a9 80		lda #$80	        lda #>UFS_COMMAND+3
+.4235	85 0b		sta $0b		        sta r4H
+.4237	a9 03		lda #$03	        lda #3
+.4239	8d 96 47	sta $4796	        sta command_len
+.423c	a9 00		lda #$00	        lda #0
+.423e	8d 97 47	sta $4797	        sta command_len+1
+.4241	8d 91 47	sta $4791	        sta name_component
+.4244	a0 00		ldy #$00	        ldy #0
+.4246					name_byte:
+.4246	a5 03		lda $03		        lda r0H
+.4248	c9 50		cmp #$50	        cmp #$50
+.424a	90 18		bcc $4264	        bcc name_bad
+.424c	c9 80		cmp #$80	        cmp #$80
+.424e	b0 14		bcs $4264	        bcs name_bad
+.4250	b1 02		lda ($02),y	        lda (r0),y
+.4252	f0 4d		beq $42a1	        beq name_end
+.4254	48		pha		        pha
+.4255	ad 97 47	lda $4797	        lda command_len+1
+.4258	c9 03		cmp #$03	        cmp #>896
+.425a	d0 0d		bne $4269	        bne name_room
+.425c	ad 96 47	lda $4796	        lda command_len
+.425f	c9 80		cmp #$80	        cmp #<896
+.4261	90 06		bcc $4269	        bcc name_room
+.4263	68		pla		        pla
+.4264					name_bad:
+.4264	a9 e0		lda #$e0	        lda #UFS_BADARG
+.4266	4c a0 41	jmp $41a0	        jmp finish
+.4269					name_room:
+.4269	68		pla		        pla
+.426a	ae 95 47	ldx $4795	        ldx wanted_mode
+.426d	e0 07		cpx #$07	        cpx #7
+.426f	d0 17		bne $4288	        bne name_store
+.4271	c9 2f		cmp #$2f	        cmp #$2f
+.4273	f0 0e		beq $4283	        beq name_separator
+.4275	c9 5c		cmp #$5c	        cmp #$5c
+.4277	f0 0a		beq $4283	        beq name_separator
+.4279	ee 91 47	inc $4791	        inc name_component
+.427c	10 0a		bpl $4288	        bpl name_store
+.427e	a9 e0		lda #$e0	        lda #UFS_BADARG
+.4280	4c a0 41	jmp $41a0	        jmp finish
+.4283					name_separator:
+.4283	a2 00		ldx #$00	        ldx #0
+.4285	8e 91 47	stx $4791	        stx name_component
+.4288					name_store:
+.4288	91 0a		sta ($0a),y	        sta (r4),y
+.428a	e6 0a		inc $0a		        inc r4L
+.428c	d0 02		bne $4290	        bne name_dst
+.428e	e6 0b		inc $0b		        inc r4H
+.4290					name_dst:
+.4290	e6 02		inc $02		        inc r0L
+.4292	d0 02		bne $4296	        bne name_src
+.4294	e6 03		inc $03		        inc r0H
+.4296					name_src:
+.4296	ee 96 47	inc $4796	        inc command_len
+.4299	d0 ab		bne $4246	        bne name_byte
+.429b	ee 97 47	inc $4797	        inc command_len+1
+.429e	4c 46 42	jmp $4246	        jmp name_byte
+.42a1					name_end:
+.42a1	ad 97 47	lda $4797	        lda command_len+1
+.42a4	d0 07		bne $42ad	        bne open_probe
+.42a6	ad 96 47	lda $4796	        lda command_len
+.42a9	c9 03		cmp #$03	        cmp #3
+.42ab	f0 b7		beq $4264	        beq name_bad
+.42ad					open_probe:
+.42ad	a9 07		lda #$07	        lda #7
+.42af	20 cb 45	jsr $45cb	        jsr short_two
+.42b2	b0 0a		bcs $42be	        bcs open_probe_error
+.42b4	c9 55		cmp #$55	        cmp #85
+.42b6	f0 09		beq $42c1	        beq open_issue
+.42b8	c9 00		cmp #$00	        cmp #0
+.42ba	d0 02		bne $42be	        bne open_probe_error
+.42bc	a9 e2		lda #$e2	        lda #UFS_BUSY
+.42be					open_probe_error:
+.42be	4c a0 41	jmp $41a0	        jmp finish
+.42c1					open_issue:
+.42c1	ae 93 47	ldx $4793	        ldx index
+.42c4	a9 ff		lda #$ff	        lda #$ff
+.42c6	9d 22 41	sta $4122,x	        sta modes,x
+.42c9	20 e7 45	jsr $45e7	        jsr send_full
+.42cc	b0 5a		bcs $4328	        bcs open_failed
+.42ce	c9 00		cmp #$00	        cmp #0
+.42d0	d0 48		bne $431a	        bne open_rejected
+.42d2	a9 07		lda #$07	        lda #7
+.42d4	20 cb 45	jsr $45cb	        jsr short_two
+.42d7	b0 4f		bcs $4328	        bcs open_failed
+.42d9	c9 00		cmp #$00	        cmp #0
+.42db	d0 4b		bne $4328	        bne open_failed
+.42dd	ad 40 91	lda $9140	        lda NET_LEN+1
+.42e0	d0 0b		bne $42ed	        bne open_info
+.42e2	ad 3f 91	lda $913f	        lda NET_LEN
+.42e5	c9 0c		cmp #$0c	        cmp #12
+.42e7	b0 04		bcs $42ed	        bcs open_info
+.42e9	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.42eb	d0 3b		bne $4328	        bne open_failed
+.42ed					open_info:
+.42ed	ad 0b 88	lda $880b	        lda NET_DATA+11
+.42f0	29 18		and #$18	        and #$18                ; directory / volume records are not files
+.42f2	f0 04		beq $42f8	        beq open_regular
+.42f4	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.42f6	d0 30		bne $4328	        bne open_failed
+.42f8					open_regular:
+.42f8	ae 94 47	ldx $4794	        ldx slot
+.42fb	a0 00		ldy #$00	        ldy #0
+.42fd					open_size:
+.42fd	b9 00 88	lda $8800,y	        lda NET_DATA,y
+.4300	9d ac 47	sta $47ac,x	        sta sizes,x
+.4303	a9 00		lda #$00	        lda #0
+.4305	9d b4 47	sta $47b4,x	        sta positions,x
+.4308	e8		inx		        inx
+.4309	c8		iny		        iny
+.430a	c0 04		cpy #$04	        cpy #4
+.430c	d0 ef		bne $42fd	        bne open_size
+.430e	ae 93 47	ldx $4793	        ldx index
+.4311	ad 95 47	lda $4795	        lda wanted_mode
+.4314	9d 22 41	sta $4122,x	        sta modes,x
+.4317	4c 9e 41	jmp $419e	        jmp ok
+.431a					open_rejected:
+.431a	c9 64		cmp #$64	        cmp #100
+.431c	b0 0a		bcs $4328	        bcs open_failed
+.431e	48		pha		        pha
+.431f	ae 93 47	ldx $4793	        ldx index
+.4322	a9 00		lda #$00	        lda #0
+.4324	9d 22 41	sta $4122,x	        sta modes,x
+.4327	68		pla		        pla
+.4328					open_failed:
+.4328	4c a0 41	jmp $41a0	        jmp finish             ; uncertain ownership remains available to CLOSE
+.432b					close_file:
+.432b	20 44 41	jsr $4144	        jsr begin
+.432e	90 01		bcc $4331	        bcc close_begin
+.4330	60		rts		        rts
+.4331					close_begin:
+.4331	ae 93 47	ldx $4793	        ldx index
+.4334	bd 22 41	lda $4122,x	        lda modes,x
+.4337	d0 03		bne $433c	        bne close_issue
+.4339	4c 0c 4d	jmp $4d0c	        jmp pick_close_finish  ; never close an unowned firmware handle
+.433c					close_issue:
+.433c	a9 03		lda #$03	        lda #3
+.433e	20 cb 45	jsr $45cb	        jsr short_two
+.4341	b0 08		bcs $434b	        bcs close_failed
+.4343	c9 00		cmp #$00	        cmp #0
+.4345	f0 07		beq $434e	        beq close_done
+.4347	c9 54		cmp #$54	        cmp #84
+.4349	f0 03		beq $434e	        beq close_done
+.434b					close_failed:
+.434b	4c da 41	jmp $41da	        jmp quarantine
+.434e					close_done:
+.434e	ae 93 47	ldx $4793	        ldx index
+.4351	a9 00		lda #$00	        lda #0
+.4353	9d 22 41	sta $4122,x	        sta modes,x
+.4356	4c 0c 4d	jmp $4d0c	        jmp pick_close_finish
+.4359					tell_file:
+.4359	20 44 41	jsr $4144	        jsr begin
+.435c	90 01		bcc $435f	        bcc tell_begin
+.435e	60		rts		        rts
+.435f					tell_begin:
+.435f	20 88 41	jsr $4188	        jsr owned
+.4362	b0 03		bcs $4367	        bcs tell_error
+.4364	4c 9e 41	jmp $419e	        jmp ok
+.4367					tell_error:
+.4367	4c a0 41	jmp $41a0	        jmp finish
+.436a					buffer:
+.436a	a5 05		lda $05		        lda r1H
+.436c	c9 02		cmp #$02	        cmp #2
+.436e	90 06		bcc $4376	        bcc buffer_small
+.4370	d0 60		bne $43d2	        bne buffer_bad
+.4372	a5 04		lda $04		        lda r1L
+.4374	d0 5c		bne $43d2	        bne buffer_bad
+.4376					buffer_small:
+.4376	a5 04		lda $04		        lda r1L
+.4378	05 05		ora $05		        ora r1H
+.437a	f0 56		beq $43d2	        beq buffer_bad
+.437c	a5 03		lda $03		        lda r0H
+.437e	c9 50		cmp #$50	        cmp #$50
+.4380	90 50		bcc $43d2	        bcc buffer_bad
+.4382	18		clc		        clc
+.4383	a5 02		lda $02		        lda r0L
+.4385	65 04		adc $04		        adc r1L
+.4387	8d a2 47	sta $47a2	        sta endptr
+.438a	a5 03		lda $03		        lda r0H
+.438c	65 05		adc $05		        adc r1H
+.438e	8d a3 47	sta $47a3	        sta endptr+1
+.4391	b0 3f		bcs $43d2	        bcs buffer_bad
+.4393	c9 80		cmp #$80	        cmp #$80
+.4395	90 07		bcc $439e	        bcc buffer_settings
+.4397	d0 39		bne $43d2	        bne buffer_bad
+.4399	ad a2 47	lda $47a2	        lda endptr
+.439c	d0 34		bne $43d2	        bne buffer_bad
+.439e					buffer_settings:
+.439e	a5 03		lda $03		        lda r0H
+.43a0	c9 73		cmp #$73	        cmp #$73
+.43a2	90 08		bcc $43ac	        bcc buffer_before
+.43a4	d0 16		bne $43bc	        bne buffer_good
+.43a6	a5 02		lda $02		        lda r0L
+.43a8	c9 59		cmp #$59	        cmp #$59
+.43aa	b0 10		bcs $43bc	        bcs buffer_good
+.43ac					buffer_before:
+.43ac	ad a3 47	lda $47a3	        lda endptr+1
+.43af	c9 73		cmp #$73	        cmp #$73
+.43b1	90 09		bcc $43bc	        bcc buffer_good
+.43b3	d0 1d		bne $43d2	        bne buffer_bad
+.43b5	ad a2 47	lda $47a2	        lda endptr
+.43b8	c9 51		cmp #$51	        cmp #$51
+.43ba	b0 16		bcs $43d2	        bcs buffer_bad
+.43bc					buffer_good:
+.43bc	a5 02		lda $02		        lda r0L
+.43be	8d a0 47	sta $47a0	        sta bufptr
+.43c1	a5 03		lda $03		        lda r0H
+.43c3	8d a1 47	sta $47a1	        sta bufptr+1
+.43c6	a5 04		lda $04		        lda r1L
+.43c8	8d 9e 47	sta $479e	        sta expected
+.43cb	a5 05		lda $05		        lda r1H
+.43cd	8d 9f 47	sta $479f	        sta expected+1
+.43d0	18		clc		        clc
+.43d1	60		rts		        rts
+.43d2					buffer_bad:
+.43d2	a9 e0		lda #$e0	        lda #UFS_BADARG
+.43d4	38		sec		        sec
+.43d5	60		rts		        rts
+.43d6					read_file:
+.43d6	20 44 41	jsr $4144	        jsr begin
+.43d9	90 01		bcc $43dc	        bcc read_begin
+.43db	60		rts		        rts
+.43dc					read_begin:
+.43dc	20 88 41	jsr $4188	        jsr owned
+.43df	b0 4e		bcs $442f	        bcs read_argument
+.43e1	20 6a 43	jsr $436a	        jsr buffer
+.43e4	b0 49		bcs $442f	        bcs read_argument
+.43e6	ae 94 47	ldx $4794	        ldx slot
+.43e9	a0 00		ldy #$00	        ldy #0
+.43eb	38		sec		        sec
+.43ec					read_remaining:
+.43ec	bd ac 47	lda $47ac,x	        lda sizes,x
+.43ef	fd b4 47	sbc $47b4,x	        sbc positions,x
+.43f2	99 a4 47	sta $47a4,y	        sta offset,y
+.43f5	08		php		        php                     ; CPY must not replace the borrow between bytes
+.43f6	e8		inx		        inx
+.43f7	c8		iny		        iny
+.43f8	c0 04		cpy #$04	        cpy #4
+.43fa	f0 04		beq $4400	        beq read_remaining_done
+.43fc	28		plp		        plp
+.43fd	4c ec 43	jmp $43ec	        jmp read_remaining
+.4400					read_remaining_done:
+.4400	28		plp		        plp
+.4401	ad a6 47	lda $47a6	        lda offset+2
+.4404	0d a7 47	ora $47a7	        ora offset+3
+.4407	d0 29		bne $4432	        bne read_issue
+.4409	ad a5 47	lda $47a5	        lda offset+1
+.440c	cd 9f 47	cmp $479f	        cmp expected+1
+.440f	90 0a		bcc $441b	        bcc read_clip
+.4411	d0 1f		bne $4432	        bne read_issue
+.4413	ad a4 47	lda $47a4	        lda offset
+.4416	cd 9e 47	cmp $479e	        cmp expected
+.4419	b0 17		bcs $4432	        bcs read_issue
+.441b					read_clip:
+.441b	ad a4 47	lda $47a4	        lda offset
+.441e	8d 9e 47	sta $479e	        sta expected
+.4421	ad a5 47	lda $47a5	        lda offset+1
+.4424	8d 9f 47	sta $479f	        sta expected+1
+.4427	0d 9e 47	ora $479e	        ora expected
+.442a	d0 06		bne $4432	        bne read_issue
+.442c	4c 9e 41	jmp $419e	        jmp ok                 ; EOF needs no zero-length firmware command
+.442f					read_argument:
+.442f	4c a0 41	jmp $41a0	        jmp finish
+.4432					read_issue:
+.4432	a9 00		lda #$00	        lda #0
+.4434	8d aa 47	sta $47aa	        sta compare
+.4437	20 25 46	jsr $4625	        jsr read_block
+.443a	b0 06		bcs $4442	        bcs read_failed
+.443c	20 30 47	jsr $4730	        jsr advance
+.443f	4c 9e 41	jmp $419e	        jmp ok
+.4442					read_failed:
+.4442	4c da 41	jmp $41da	        jmp quarantine
+.4445					write_file:
+.4445	20 44 41	jsr $4144	        jsr begin
+.4448	90 01		bcc $444b	        bcc write_begin
+.444a	60		rts		        rts
+.444b					write_begin:
+.444b	20 88 41	jsr $4188	        jsr owned
+.444e	b0 2b		bcs $447b	        bcs write_argument
+.4450	c9 07		cmp #$07	        cmp #7
+.4452	f0 04		beq $4458	        beq write_buffer
+.4454	a9 e3		lda #$e3	        lda #UFS_READONLY
+.4456	d0 23		bne $447b	        bne write_argument
+.4458					write_buffer:
+.4458	20 6a 43	jsr $436a	        jsr buffer
+.445b	b0 1e		bcs $447b	        bcs write_argument
+.445d	ae 94 47	ldx $4794	        ldx slot
+.4460	18		clc		        clc
+.4461	bd b4 47	lda $47b4,x	        lda positions,x
+.4464	6d 9e 47	adc $479e	        adc expected
+.4467	bd b5 47	lda $47b5,x	        lda positions+1,x
+.446a	6d 9f 47	adc $479f	        adc expected+1
+.446d	bd b6 47	lda $47b6,x	        lda positions+2,x
+.4470	69 00		adc #$00	        adc #0
+.4472	bd b7 47	lda $47b7,x	        lda positions+3,x
+.4475	69 00		adc #$00	        adc #0
+.4477	90 05		bcc $447e	        bcc write_copy
+.4479	a9 e7		lda #$e7	        lda #UFS_RANGE
+.447b					write_argument:
+.447b	4c a0 41	jmp $41a0	        jmp finish
+.447e					write_copy:
+.447e	a9 84		lda #$84	        lda #<UFS_COMMAND+4
+.4480	85 0a		sta $0a		        sta r4L
+.4482	a9 80		lda #$80	        lda #>UFS_COMMAND+4
+.4484	85 0b		sta $0b		        sta r4H
+.4486	ad 9e 47	lda $479e	        lda expected
+.4489	85 0c		sta $0c		        sta r5L
+.448b	ad 9f 47	lda $479f	        lda expected+1
+.448e	85 0d		sta $0d		        sta r5H
+.4490	a0 00		ldy #$00	        ldy #0
+.4492					write_byte:
+.4492	b1 02		lda ($02),y	        lda (r0),y
+.4494	91 0a		sta ($0a),y	        sta (r4),y
+.4496	e6 02		inc $02		        inc r0L
+.4498	d0 02		bne $449c	        bne write_src
+.449a	e6 03		inc $03		        inc r0H
+.449c					write_src:
+.449c	e6 0a		inc $0a		        inc r4L
+.449e	d0 02		bne $44a2	        bne write_dst
+.44a0	e6 0b		inc $0b		        inc r4H
+.44a2					write_dst:
+.44a2	20 23 47	jsr $4723	        jsr decrement
+.44a5	d0 eb		bne $4492	        bne write_byte
+.44a7	ad 92 47	lda $4792	        lda target
+.44aa	8d 80 80	sta $8080	        sta UFS_COMMAND
+.44ad	a9 05		lda #$05	        lda #5
+.44af	8d 81 80	sta $8081	        sta UFS_COMMAND+1
+.44b2	a9 00		lda #$00	        lda #0
+.44b4	8d 82 80	sta $8082	        sta UFS_COMMAND+2
+.44b7	8d 83 80	sta $8083	        sta UFS_COMMAND+3
+.44ba	18		clc		        clc
+.44bb	ad 9e 47	lda $479e	        lda expected
+.44be	69 04		adc #$04	        adc #4
+.44c0	8d 96 47	sta $4796	        sta command_len
+.44c3	ad 9f 47	lda $479f	        lda expected+1
+.44c6	69 00		adc #$00	        adc #0
+.44c8	8d 97 47	sta $4797	        sta command_len+1
+.44cb	ad 9f 47	lda $479f	        lda expected+1
+.44ce	c9 02		cmp #$02	        cmp #2
+.44d0	d0 03		bne $44d5	        bne write_first
+.44d2	ce 96 47	dec $4796	        dec command_len        ; 512-byte request: first send 511 bytes
+.44d5					write_first:
+.44d5	20 e7 45	jsr $45e7	        jsr send_full
+.44d8	90 03		bcc $44dd	        bcc write_first_status
+.44da	4c 65 45	jmp $4565	        jmp write_failed
+.44dd					write_first_status:
+.44dd	c9 00		cmp #$00	        cmp #0
+.44df	f0 03		beq $44e4	        beq write_tail
+.44e1	4c 65 45	jmp $4565	        jmp write_failed
+.44e4					write_tail:
+.44e4	ad 9f 47	lda $479f	        lda expected+1
+.44e7	c9 02		cmp #$02	        cmp #2
+.44e9	d0 1e		bne $4509	        bne write_verify
+.44eb	a9 05		lda #$05	        lda #5
+.44ed	8d 99 47	sta $4799	        sta short_command+1
+.44f0	a9 00		lda #$00	        lda #0
+.44f2	8d 9a 47	sta $479a	        sta short_command+2
+.44f5	8d 9b 47	sta $479b	        sta short_command+3
+.44f8	ad 83 82	lda $8283	        lda UFS_COMMAND+515
+.44fb	8d 9c 47	sta $479c	        sta short_command+4
+.44fe	a9 05		lda #$05	        lda #5
+.4500	20 d0 45	jsr $45d0	        jsr send_short
+.4503	b0 60		bcs $4565	        bcs write_failed
+.4505	c9 00		cmp #$00	        cmp #0
+.4507	d0 5c		bne $4565	        bne write_failed
+.4509					write_verify:
+.4509	ae 94 47	ldx $4794	        ldx slot
+.450c	a0 00		ldy #$00	        ldy #0
+.450e					write_seek:
+.450e	bd b4 47	lda $47b4,x	        lda positions,x
+.4511	99 9a 47	sta $479a,y	        sta short_command+2,y
+.4514	e8		inx		        inx
+.4515	c8		iny		        iny
+.4516	c0 04		cpy #$04	        cpy #4
+.4518	d0 f4		bne $450e	        bne write_seek
+.451a	20 c1 45	jsr $45c1	        jsr seek_command
+.451d	b0 46		bcs $4565	        bcs write_failed
+.451f	c9 00		cmp #$00	        cmp #0
+.4521	d0 42		bne $4565	        bne write_failed
+.4523	a9 84		lda #$84	        lda #<UFS_COMMAND+4
+.4525	8d a0 47	sta $47a0	        sta bufptr
+.4528	a9 80		lda #$80	        lda #>UFS_COMMAND+4
+.452a	8d a1 47	sta $47a1	        sta bufptr+1
+.452d	a9 01		lda #$01	        lda #1
+.452f	8d aa 47	sta $47aa	        sta compare
+.4532	20 25 46	jsr $4625	        jsr read_block
+.4535	b0 2e		bcs $4565	        bcs write_failed
+.4537	20 30 47	jsr $4730	        jsr advance
+.453a	ae 94 47	ldx $4794	        ldx slot
+.453d	e8		inx		        inx
+.453e	e8		inx		        inx
+.453f	e8		inx		        inx
+.4540	a0 04		ldy #$04	        ldy #4
+.4542					write_extent:
+.4542	bd ac 47	lda $47ac,x	        lda sizes,x
+.4545	dd b4 47	cmp $47b4,x	        cmp positions,x
+.4548	90 09		bcc $4553	        bcc write_grew
+.454a	d0 04		bne $4550	        bne write_done
+.454c	ca		dex		        dex
+.454d	88		dey		        dey
+.454e	d0 f2		bne $4542	        bne write_extent
+.4550					write_done:
+.4550	4c 9e 41	jmp $419e	        jmp ok
+.4553					write_grew:
+.4553	ae 94 47	ldx $4794	        ldx slot
+.4556	a0 04		ldy #$04	        ldy #4
+.4558					write_size:
+.4558	bd b4 47	lda $47b4,x	        lda positions,x
+.455b	9d ac 47	sta $47ac,x	        sta sizes,x
+.455e	e8		inx		        inx
+.455f	88		dey		        dey
+.4560	d0 f6		bne $4558	        bne write_size
+.4562	4c 9e 41	jmp $419e	        jmp ok
+.4565					write_failed:
+.4565	4c da 41	jmp $41da	        jmp quarantine
+.4568					seek_file:
+.4568	20 44 41	jsr $4144	        jsr begin
+.456b	90 01		bcc $456e	        bcc seek_begin
+.456d	60		rts		        rts
+.456e					seek_begin:
+.456e	20 88 41	jsr $4188	        jsr owned
+.4571	b0 1d		bcs $4590	        bcs seek_argument
+.4573	ae 94 47	ldx $4794	        ldx slot
+.4576	e8		inx		        inx
+.4577	e8		inx		        inx
+.4578	e8		inx		        inx
+.4579	a0 03		ldy #$03	        ldy #3
+.457b					seek_range:
+.457b	b9 02 00	lda $0002,y	        lda r0,y
+.457e	99 a4 47	sta $47a4,y	        sta offset,y
+.4581	dd ac 47	cmp $47ac,x	        cmp sizes,x
+.4584	90 0d		bcc $4593	        bcc seek_allowed
+.4586	d0 06		bne $458e	        bne seek_bad_range
+.4588	ca		dex		        dex
+.4589	88		dey		        dey
+.458a	10 ef		bpl $457b	        bpl seek_range
+.458c	30 05		bmi $4593	        bmi seek_allowed
+.458e					seek_bad_range:
+.458e	a9 e7		lda #$e7	        lda #UFS_RANGE
+.4590					seek_argument:
+.4590	4c a0 41	jmp $41a0	        jmp finish
+.4593					seek_allowed:
+.4593	a0 03		ldy #$03	        ldy #3
+.4595					seek_copy:
+.4595	b9 02 00	lda $0002,y	        lda r0,y
+.4598	99 a4 47	sta $47a4,y	        sta offset,y
+.459b	99 9a 47	sta $479a,y	        sta short_command+2,y
+.459e	88		dey		        dey
+.459f	10 f4		bpl $4595	        bpl seek_copy
+.45a1	20 c1 45	jsr $45c1	        jsr seek_command
+.45a4	b0 18		bcs $45be	        bcs seek_failed
+.45a6	c9 00		cmp #$00	        cmp #0
+.45a8	d0 14		bne $45be	        bne seek_failed
+.45aa	ae 94 47	ldx $4794	        ldx slot
+.45ad	a0 00		ldy #$00	        ldy #0
+.45af					seek_position:
+.45af	b9 a4 47	lda $47a4,y	        lda offset,y
+.45b2	9d b4 47	sta $47b4,x	        sta positions,x
+.45b5	e8		inx		        inx
+.45b6	c8		iny		        iny
+.45b7	c0 04		cpy #$04	        cpy #4
+.45b9	d0 f4		bne $45af	        bne seek_position
+.45bb	4c 9e 41	jmp $419e	        jmp ok
+.45be					seek_failed:
+.45be	4c da 41	jmp $41da	        jmp quarantine
+.45c1					seek_command:
+.45c1	a9 06		lda #$06	        lda #6
+.45c3	8d 99 47	sta $4799	        sta short_command+1
+.45c6	a9 06		lda #$06	        lda #6
+.45c8	4c d0 45	jmp $45d0	        jmp send_short
+.45cb					short_two:
+.45cb	8d 99 47	sta $4799	        sta short_command+1
+.45ce	a9 02		lda #$02	        lda #2
+.45d0					send_short:
+.45d0	85 04		sta $04		        sta r1L
+.45d2	a9 00		lda #$00	        lda #0
+.45d4	85 05		sta $05		        sta r1H
+.45d6	ad 92 47	lda $4792	        lda target
+.45d9	8d 98 47	sta $4798	        sta short_command
+.45dc	a9 98		lda #$98	        lda #<short_command
+.45de	85 02		sta $02		        sta r0L
+.45e0	a9 47		lda #$47	        lda #>short_command
+.45e2	85 03		sta $03		        sta r0H
+.45e4	4c f9 45	jmp $45f9	        jmp send_plain
+.45e7					send_full:
+.45e7	a9 80		lda #$80	        lda #<UFS_COMMAND
+.45e9	85 02		sta $02		        sta r0L
+.45eb	a9 80		lda #$80	        lda #>UFS_COMMAND
+.45ed	85 03		sta $03		        sta r0H
+.45ef	ad 96 47	lda $4796	        lda command_len
+.45f2	85 04		sta $04		        sta r1L
+.45f4	ad 97 47	lda $4797	        lda command_len+1
+.45f7	85 05		sta $05		        sta r1H
+.45f9					send_plain:
+.45f9	a9 00		lda #$00	        lda #0
+.45fb	85 08		sta $08		        sta r3L
+.45fd	85 09		sta $09		        sta r3H
+.45ff					send:
+.45ff	20 64 91	jsr $9164	        jsr NET_STREAM
+.4602	08		php		        php
+.4603	48		pha		        pha
+.4604	a2 1f		ldx #$1f	        ldx #31
+.4606					send_status:
+.4606	bd 42 91	lda $9142,x	        lda NET_STAT,x
+.4609	9d 24 41	sta $4124,x	        sta status,x
+.460c	ca		dex		        dex
+.460d	10 f7		bpl $4606	        bpl send_status
+.460f	68		pla		        pla
+.4610	28		plp		        plp
+.4611	b0 0a		bcs $461d	        bcs send_return
+.4613	ae 67 91	ldx $9167	        ldx NET_TRUNC
+.4616	d0 06		bne $461e	        bne send_invalid
+.4618	ae ab 47	ldx $47ab	        ldx packet_error
+.461b	d0 05		bne $4622	        bne send_packet
+.461d					send_return:
+.461d	60		rts		        rts
+.461e					send_invalid:
+.461e	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.4620	38		sec		        sec
+.4621	60		rts		        rts
+.4622					send_packet:
+.4622	8a		txa		        txa
+.4623	38		sec		        sec
+.4624	60		rts		        rts
+.4625					read_block:
+.4625	ad 92 47	lda $4792	        lda target
+.4628	8d 98 47	sta $4798	        sta short_command
+.462b	a9 04		lda #$04	        lda #4
+.462d	8d 99 47	sta $4799	        sta short_command+1
+.4630	ad 9e 47	lda $479e	        lda expected
+.4633	8d 9a 47	sta $479a	        sta short_command+2
+.4636	ad 9f 47	lda $479f	        lda expected+1
+.4639	8d 9b 47	sta $479b	        sta short_command+3
+.463c	a9 98		lda #$98	        lda #<short_command
+.463e	85 02		sta $02		        sta r0L
+.4640	a9 47		lda #$47	        lda #>short_command
+.4642	85 03		sta $03		        sta r0H
+.4644	a9 04		lda #$04	        lda #4
+.4646	85 04		sta $04		        sta r1L
+.4648	a9 00		lda #$00	        lda #0
+.464a	85 05		sta $05		        sta r1H
+.464c	8d 17 41	sta $4117	        sta count
+.464f	8d 18 41	sta $4118	        sta count+1
+.4652	8d ab 47	sta $47ab	        sta packet_error
+.4655	a9 93		lda #$93	        lda #<receive
+.4657	85 08		sta $08		        sta r3L
+.4659	a9 46		lda #$46	        lda #>receive
+.465b	85 09		sta $09		        sta r3H
+.465d	20 ff 45	jsr $45ff	        jsr send
+.4660	ae ab 47	ldx $47ab	        ldx packet_error
+.4663	d0 23		bne $4688	        bne read_packet_error
+.4665	b0 20		bcs $4687	        bcs read_return
+.4667	c9 00		cmp #$00	        cmp #0
+.4669	f0 09		beq $4674	        beq read_count
+.466b	c9 ff		cmp #$ff	        cmp #$ff
+.466d	d0 1a		bne $4689	        bne read_status_error
+.466f	ae 24 41	ldx $4124	        ldx status
+.4672	d0 17		bne $468b	        bne read_invalid
+.4674					read_count:
+.4674	ad 17 41	lda $4117	        lda count
+.4677	cd 9e 47	cmp $479e	        cmp expected
+.467a	d0 13		bne $468f	        bne read_short
+.467c	ad 18 41	lda $4118	        lda count+1
+.467f	cd 9f 47	cmp $479f	        cmp expected+1
+.4682	d0 0b		bne $468f	        bne read_short
+.4684	a9 00		lda #$00	        lda #0
+.4686	18		clc		        clc
+.4687					read_return:
+.4687	60		rts		        rts
+.4688					read_packet_error:
+.4688	8a		txa		        txa
+.4689					read_status_error:
+.4689	38		sec		        sec
+.468a	60		rts		        rts
+.468b					read_invalid:
+.468b	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.468d	38		sec		        sec
+.468e	60		rts		        rts
+.468f					read_short:
+.468f	a9 e5		lda #$e5	        lda #UFS_SHORT
+.4691	38		sec		        sec
+.4692	60		rts		        rts
+.4693					receive:
+.4693	ad 68 91	lda $9168	        lda NET_PACKET_TRUNC
+.4696	d0 26		bne $46be	        bne packet_invalid
+.4698	18		clc		        clc
+.4699	ad 17 41	lda $4117	        lda count
+.469c	6d 3f 91	adc $913f	        adc NET_LEN
+.469f	8d a8 47	sta $47a8	        sta total
+.46a2	ad 18 41	lda $4118	        lda count+1
+.46a5	6d 40 91	adc $9140	        adc NET_LEN+1
+.46a8	b0 14		bcs $46be	        bcs packet_invalid
+.46aa	8d a9 47	sta $47a9	        sta total+1
+.46ad	cd 9f 47	cmp $479f	        cmp expected+1
+.46b0	90 10		bcc $46c2	        bcc packet_fits
+.46b2	d0 0a		bne $46be	        bne packet_invalid
+.46b4	ad a8 47	lda $47a8	        lda total
+.46b7	cd 9e 47	cmp $479e	        cmp expected
+.46ba	90 06		bcc $46c2	        bcc packet_fits
+.46bc	f0 04		beq $46c2	        beq packet_fits
+.46be					packet_invalid:
+.46be	a9 e4		lda #$e4	        lda #UFS_PROTOCOL
+.46c0	d0 5c		bne $471e	        bne packet_fail
+.46c2					packet_fits:
+.46c2	a9 00		lda #$00	        lda #<NET_DATA
+.46c4	85 0a		sta $0a		        sta r4L
+.46c6	a9 88		lda #$88	        lda #>NET_DATA
+.46c8	85 0b		sta $0b		        sta r4H
+.46ca	ad a0 47	lda $47a0	        lda bufptr
+.46cd	85 0e		sta $0e		        sta r6L
+.46cf	ad a1 47	lda $47a1	        lda bufptr+1
+.46d2	85 0f		sta $0f		        sta r6H
+.46d4	ad 3f 91	lda $913f	        lda NET_LEN
+.46d7	85 0c		sta $0c		        sta r5L
+.46d9	ad 40 91	lda $9140	        lda NET_LEN+1
+.46dc	85 0d		sta $0d		        sta r5H
+.46de	05 0c		ora $0c		        ora r5L
+.46e0	f0 22		beq $4704	        beq packet_done
+.46e2	a0 00		ldy #$00	        ldy #0
+.46e4					packet_byte:
+.46e4	b1 0a		lda ($0a),y	        lda (r4),y
+.46e6	ae aa 47	ldx $47aa	        ldx compare
+.46e9	f0 06		beq $46f1	        beq packet_store
+.46eb	d1 0e		cmp ($0e),y	        cmp (r6),y
+.46ed	d0 2d		bne $471c	        bne packet_differs
+.46ef	f0 02		beq $46f3	        beq packet_next
+.46f1					packet_store:
+.46f1	91 0e		sta ($0e),y	        sta (r6),y
+.46f3					packet_next:
+.46f3	e6 0a		inc $0a		        inc r4L
+.46f5	d0 02		bne $46f9	        bne packet_src
+.46f7	e6 0b		inc $0b		        inc r4H
+.46f9					packet_src:
+.46f9	e6 0e		inc $0e		        inc r6L
+.46fb	d0 02		bne $46ff	        bne packet_dst
+.46fd	e6 0f		inc $0f		        inc r6H
+.46ff					packet_dst:
+.46ff	20 23 47	jsr $4723	        jsr decrement
+.4702	d0 e0		bne $46e4	        bne packet_byte
+.4704					packet_done:
+.4704	ad a8 47	lda $47a8	        lda total
+.4707	8d 17 41	sta $4117	        sta count
+.470a	ad a9 47	lda $47a9	        lda total+1
+.470d	8d 18 41	sta $4118	        sta count+1
+.4710	a5 0e		lda $0e		        lda r6L
+.4712	8d a0 47	sta $47a0	        sta bufptr
+.4715	a5 0f		lda $0f		        lda r6H
+.4717	8d a1 47	sta $47a1	        sta bufptr+1
+.471a	18		clc		        clc
+.471b	60		rts		        rts
+.471c					packet_differs:
+.471c	a9 e6		lda #$e6	        lda #UFS_VERIFY
+.471e					packet_fail:
+.471e	8d ab 47	sta $47ab	        sta packet_error
+.4721	38		sec		        sec
+.4722	60		rts		        rts
+.4723					decrement:
+.4723	a5 0c		lda $0c		        lda r5L
+.4725	d0 02		bne $4729	        bne decrement_low
+.4727	c6 0d		dec $0d		        dec r5H
+.4729					decrement_low:
+.4729	c6 0c		dec $0c		        dec r5L
+.472b	a5 0c		lda $0c		        lda r5L
+.472d	05 0d		ora $0d		        ora r5H
+.472f	60		rts		        rts
+.4730					advance:
+.4730	ae 94 47	ldx $4794	        ldx slot
+.4733	18		clc		        clc
+.4734	bd b4 47	lda $47b4,x	        lda positions,x
+.4737	6d 17 41	adc $4117	        adc count
+.473a	9d b4 47	sta $47b4,x	        sta positions,x
+.473d	bd b5 47	lda $47b5,x	        lda positions+1,x
+.4740	6d 18 41	adc $4118	        adc count+1
+.4743	9d b5 47	sta $47b5,x	        sta positions+1,x
+.4746	bd b6 47	lda $47b6,x	        lda positions+2,x
+.4749	69 00		adc #$00	        adc #0
+.474b	9d b6 47	sta $47b6,x	        sta positions+2,x
+.474e	bd b7 47	lda $47b7,x	        lda positions+3,x
+.4751	69 00		adc #$00	        adc #0
+.4753	9d b7 47	sta $47b7,x	        sta positions+3,x
+.4756	60		rts		        rts
+.4757					close_all:
+.4757	ad 90 47	lda $4790	        lda busy
+.475a	f0 04		beq $4760	        beq close_all_begin
+.475c	a9 e2		lda #$e2	        lda #UFS_BUSY
+.475e	38		sec		        sec
+.475f	60		rts		        rts
+.4760					close_all_begin:
+.4760	a2 01		ldx #$01	        ldx #1
+.4762	20 2b 43	jsr $432b	        jsr close_file
+.4765	48		pha		        pha
+.4766	a2 1f		ldx #$1f	        ldx #31
+.4768					close_all_save:
+.4768	bd 24 41	lda $4124,x	        lda status,x
+.476b	9d bc 47	sta $47bc,x	        sta close_status,x
+.476e	ca		dex		        dex
+.476f	10 f7		bpl $4768	        bpl close_all_save
+.4771	a2 02		ldx #$02	        ldx #2
+.4773	20 2b 43	jsr $432b	        jsr close_file
+.4776	8d 16 41	sta $4116	        sta result
+.4779	68		pla		        pla
+.477a	f0 0e		beq $478a	        beq close_all_second
+.477c	8d 16 41	sta $4116	        sta result
+.477f	a2 1f		ldx #$1f	        ldx #31
+.4781					close_all_restore:
+.4781	bd bc 47	lda $47bc,x	        lda close_status,x
+.4784	9d 24 41	sta $4124,x	        sta status,x
+.4787	ca		dex		        dex
+.4788	10 f7		bpl $4781	        bpl close_all_restore
+.478a					close_all_second:
+.478a	ad 16 41	lda $4116	        lda result
+.478d	c9 01		cmp #$01	        cmp #1                  ; C=0 only when A=0
+.478f	60		rts		        rts
+>4790	00				busy:           .byte 0
+>4791	00				name_component: .byte 0
+>4792	00				target:         .byte 0
+>4793	00				index:          .byte 0
+>4794	00				slot:           .byte 0
+>4795	00				wanted_mode:    .byte 0
+>4796	00 00				command_len:    .word 0
+>4798	00 00 00 00 00 00		short_command:  .fill 6, 0
+>479e	00 00				expected:       .word 0
+>47a0	00 00				bufptr:         .word 0
+>47a2	00 00				endptr:         .word 0
+>47a4	00 00 00 00			offset:         .fill 4, 0
+>47a8	00 00				total:          .word 0
+>47aa	00				compare:        .byte 0
+>47ab	00				packet_error:   .byte 0
+>47ac	00 00 00 00 00 00 00 00		sizes:          .fill 8, 0
+>47b4	00 00 00 00 00 00 00 00		positions:      .fill 8, 0
+>47bc	00 00 00 00 00 00 00 00		close_status:   .fill 32, 0
+>47c4	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>47d4	00 00 00 00 00 00 00 00
+.47dc					files_end:
+
+;******  Processing file: src/ultimate-view.inc
+
+.4800					view_file:
+.4800	e0 01		cpx #$01	        cpx #1
+.4802	90 0d		bcc $4811	        bcc view_bad_argument
+.4804	e0 03		cpx #$03	        cpx #3
+.4806	b0 09		bcs $4811	        bcs view_bad_argument
+.4808	bd 21 41	lda $4121,x	        lda UFS_MODE-1,x
+.480b	f0 08		beq $4815	        beq view_begin
+.480d	a9 e2		lda #$e2	        lda #UFS_BUSY
+.480f	38		sec		        sec
+.4810	60		rts		        rts
+.4811					view_bad_argument:
+.4811	a9 e0		lda #$e0	        lda #UFS_BADARG
+.4813	38		sec		        sec
+.4814	60		rts		        rts
+.4815					view_begin:
+.4815	8e 60 4c	stx $4c60	        stx view_target
+.4818	a5 02		lda $02		        lda r0L
+.481a	8d 61 4c	sta $4c61	        sta view_name
+.481d	a5 03		lda $03		        lda r0H
+.481f	8d 62 4c	sta $4c62	        sta view_name+1
+.4822	a9 00		lda #$00	        lda #0
+.4824	8d 63 4c	sta $4c63	        sta view_error
+.4827	8d 64 4c	sta $4c64	        sta view_held
+.482a	8d 65 4c	sta $4c65	        sta view_ready
+.482d	a0 03		ldy #$03	        ldy #3
+.482f					view_zero:
+.482f	99 68 4c	sta $4c68,y	        sta view_page,y
+.4832	88		dey		        dey
+.4833	10 fa		bpl $482f	        bpl view_zero
+.4835	a9 01		lda #$01	        lda #1
+.4837	20 00 41	jsr $4100	        jsr UFS_OPEN
+.483a	90 03		bcc $483f	        bcc view_read
+.483c	4c 6b 48	jmp $486b	        jmp view_failed
+.483f					view_read:
+.483f	a9 00		lda #$00	        lda #0
+.4841	8d 65 4c	sta $4c65	        sta view_ready
+.4844	a9 00		lda #$00	        lda #<$7c00
+.4846	85 02		sta $02		        sta r0L
+.4848	a9 7c		lda #$7c	        lda #>$7c00
+.484a	85 03		sta $03		        sta r0H
+.484c	a9 60		lda #$60	        lda #96
+.484e	85 04		sta $04		        sta r1L
+.4850	a9 00		lda #$00	        lda #0
+.4852	85 05		sta $05		        sta r1H
+.4854	ae 60 4c	ldx $4c60	        ldx view_target
+.4857	20 06 41	jsr $4106	        jsr UFS_READ
+.485a	b0 0f		bcs $486b	        bcs view_failed
+.485c	ad 17 41	lda $4117	        lda UFS_COUNT
+.485f	8d 66 4c	sta $4c66	        sta view_count
+.4862	ad 21 41	lda $4121	        lda UFS_EOF
+.4865	8d 67 4c	sta $4c67	        sta view_eof
+.4868	4c 78 48	jmp $4878	        jmp view_paint
+.486b					view_failed:
+.486b	8d 63 4c	sta $4c63	        sta view_error
+.486e	a9 00		lda #$00	        lda #0
+.4870	8d 66 4c	sta $4c66	        sta view_count
+.4873	a9 01		lda #$01	        lda #1
+.4875	8d 67 4c	sta $4c67	        sta view_eof
+.4878					view_paint:
+.4878	a9 00		lda #$00	        lda #0
+.487a	8d 65 4c	sta $4c65	        sta view_ready
+.487d	20 3b 49	jsr $493b	        jsr view_draw
+.4880					view_loop:
+.4880	a9 01		lda #$01	        lda #1
+.4882	8d 65 4c	sta $4c65	        sta view_ready
+.4885	20 3b 08	jsr $083b	        jsr OS_TICK
+.4888	20 2c 08	jsr $082c	        jsr KEYIN
+.488b	d0 1a		bne $48a7	        bne view_key
+.488d	20 3e 08	jsr $083e	        jsr READ_BUTTON
+.4890	d0 08		bne $489a	        bne view_released
+.4892	a9 01		lda #$01	        lda #1
+.4894	8d 64 4c	sta $4c64	        sta view_held
+.4897	4c 80 48	jmp $4880	        jmp view_loop
+.489a					view_released:
+.489a	ad 64 4c	lda $4c64	        lda view_held
+.489d	f0 e1		beq $4880	        beq view_loop
+.489f	a9 00		lda #$00	        lda #0
+.48a1	8d 64 4c	sta $4c64	        sta view_held
+.48a4	20 5b 4b	jsr $4b5b	        jsr view_mouse
+.48a7					view_key:
+.48a7	c9 1b		cmp #$1b	        cmp #$1b
+.48a9	f0 72		beq $491d	        beq view_exit
+.48ab	29 7f		and #$7f	        and #$7f
+.48ad	c9 61		cmp #$61	        cmp #$61
+.48af	90 06		bcc $48b7	        bcc view_normalized
+.48b1	c9 7b		cmp #$7b	        cmp #$7b
+.48b3	b0 02		bcs $48b7	        bcs view_normalized
+.48b5	29 df		and #$df	        and #$df
+.48b7					view_normalized:
+.48b7	ae 63 4c	ldx $4c63	        ldx view_error
+.48ba	d0 c4		bne $4880	        bne view_loop
+.48bc	c9 4e		cmp #$4e	        cmp #$4e
+.48be	f0 07		beq $48c7	        beq view_next
+.48c0	c9 42		cmp #$42	        cmp #$42
+.48c2	f0 16		beq $48da	        beq view_previous
+.48c4	4c 80 48	jmp $4880	        jmp view_loop
+.48c7					view_next:
+.48c7	ad 67 4c	lda $4c67	        lda view_eof
+.48ca	d0 b4		bne $4880	        bne view_loop
+.48cc	a2 03		ldx #$03	        ldx #3
+.48ce					view_next_page:
+.48ce	bd 1d 41	lda $411d,x	        lda UFS_POS,x
+.48d1	9d 68 4c	sta $4c68,x	        sta view_page,x
+.48d4	ca		dex		        dex
+.48d5	10 f7		bpl $48ce	        bpl view_next_page
+.48d7	4c 3f 48	jmp $483f	        jmp view_read
+.48da					view_previous:
+.48da	ad 68 4c	lda $4c68	        lda view_page
+.48dd	0d 69 4c	ora $4c69	        ora view_page+1
+.48e0	0d 6a 4c	ora $4c6a	        ora view_page+2
+.48e3	0d 6b 4c	ora $4c6b	        ora view_page+3
+.48e6	f0 98		beq $4880	        beq view_loop
+.48e8	38		sec		        sec
+.48e9	ad 68 4c	lda $4c68	        lda view_page
+.48ec	e9 60		sbc #$60	        sbc #96
+.48ee	85 02		sta $02		        sta r0L
+.48f0	ad 69 4c	lda $4c69	        lda view_page+1
+.48f3	e9 00		sbc #$00	        sbc #0
+.48f5	85 03		sta $03		        sta r0H
+.48f7	ad 6a 4c	lda $4c6a	        lda view_page+2
+.48fa	e9 00		sbc #$00	        sbc #0
+.48fc	85 04		sta $04		        sta r1L
+.48fe	ad 6b 4c	lda $4c6b	        lda view_page+3
+.4901	e9 00		sbc #$00	        sbc #0
+.4903	85 05		sta $05		        sta r1H
+.4905	a2 03		ldx #$03	        ldx #3
+.4907					view_seek_copy:
+.4907	b5 02		lda $02,x	        lda r0,x
+.4909	9d 68 4c	sta $4c68,x	        sta view_page,x
+.490c	ca		dex		        dex
+.490d	10 f8		bpl $4907	        bpl view_seek_copy
+.490f	ae 60 4c	ldx $4c60	        ldx view_target
+.4912	20 0c 41	jsr $410c	        jsr UFS_SEEK
+.4915	90 03		bcc $491a	        bcc view_read_previous
+.4917	4c 6b 48	jmp $486b	        jmp view_failed
+.491a					view_read_previous:
+.491a	4c 3f 48	jmp $483f	        jmp view_read
+.491d					view_exit:
+.491d	a9 00		lda #$00	        lda #0
+.491f	8d 65 4c	sta $4c65	        sta view_ready
+.4922	ae 60 4c	ldx $4c60	        ldx view_target
+.4925	20 03 41	jsr $4103	        jsr UFS_CLOSE
+.4928	90 08		bcc $4932	        bcc view_exit_result
+.492a	ae 63 4c	ldx $4c63	        ldx view_error
+.492d	d0 03		bne $4932	        bne view_exit_result
+.492f	8d 63 4c	sta $4c63	        sta view_error
+.4932					view_exit_result:
+.4932	ad 63 4c	lda $4c63	        lda view_error
+.4935	8d 16 41	sta $4116	        sta UFS_RESULT
+.4938	c9 01		cmp #$01	        cmp #1                 ; C=0/A=0 normal return; original error otherwise
+.493a	60		rts		        rts
+.493b					view_draw:
+.493b	a9 50		lda #$50	        lda #<$a150             ; row band 1, column 2 ($a000 + 320 + 16)
+.493d	8d 70 4c	sta $4c70	        sta view_clear
+.4940	a9 a1		lda #$a1	        lda #>$a150
+.4942	8d 71 4c	sta $4c71	        sta view_clear+1
+.4945	a9 16		lda #$16	        lda #22
+.4947	8d 72 4c	sta $4c72	        sta view_row
+.494a					view_clear_band:
+.494a	ad 70 4c	lda $4c70	        lda view_clear
+.494d	85 02		sta $02		        sta r0L
+.494f	ad 71 4c	lda $4c71	        lda view_clear+1
+.4952	85 03		sta $03		        sta r0H
+.4954	a9 00		lda #$00	        lda #0
+.4956	85 04		sta $04		        sta r1L
+.4958	85 05		sta $05		        sta r1H
+.495a	a9 20		lda #$20	        lda #<288
+.495c	85 06		sta $06		        sta r2L
+.495e	a9 01		lda #$01	        lda #>288
+.4960	85 07		sta $07		        sta r2H
+.4962	20 20 08	jsr $0820	        jsr CLR_RECT
+.4965	18		clc		        clc
+.4966	ad 70 4c	lda $4c70	        lda view_clear
+.4969	69 40		adc #$40	        adc #<320
+.496b	8d 70 4c	sta $4c70	        sta view_clear
+.496e	ad 71 4c	lda $4c71	        lda view_clear+1
+.4971	69 01		adc #$01	        adc #>320
+.4973	8d 71 4c	sta $4c71	        sta view_clear+1
+.4976	ce 72 4c	dec $4c72	        dec view_row
+.4979	d0 cf		bne $494a	        bne view_clear_band
+.497b	a9 02		lda #$02	        lda #2
+.497d	8d 72 4c	sta $4c72	        sta view_row
+.4980					view_clear_vdc:
+.4980	ad 72 4c	lda $4c72	        lda view_row
+.4983	20 38 08	jsr $0838	        jsr VDCLR
+.4986	ee 72 4c	inc $4c72	        inc view_row
+.4989	ad 72 4c	lda $4c72	        lda view_row
+.498c	c9 18		cmp #$18	        cmp #24
+.498e	d0 f0		bne $4980	        bne view_clear_vdc
+.4990	a9 01		lda #$01	        lda #1
+.4992	20 0c c0	jsr $c00c	        jsr GFX_SETCOLOR
+.4995	a9 ba		lda #$ba	        lda #<view_title
+.4997	a2 4b		ldx #$4b	        ldx #>view_title
+.4999	20 e8 4a	jsr $4ae8	        jsr view_text
+.499c	a9 0e		lda #$0e	        lda #14
+.499e	a2 02		ldx #$02	        ldx #2
+.49a0	20 fc 4a	jsr $4afc	        jsr view_line
+.49a3	20 d8 4a	jsr $4ad8	        jsr view_blank
+.49a6	ad 61 4c	lda $4c61	        lda view_name
+.49a9	85 0a		sta $0a		        sta r4L
+.49ab	ad 62 4c	lda $4c62	        lda view_name+1
+.49ae	85 0b		sta $0b		        sta r4H
+.49b0	a0 00		ldy #$00	        ldy #0
+.49b2					view_name_byte:
+.49b2	b1 0a		lda ($0a),y	        lda (r4),y
+.49b4	f0 0b		beq $49c1	        beq view_name_done
+.49b6	20 3e 4b	jsr $4b3e	        jsr view_ascii
+.49b9	99 3c 4c	sta $4c3c,y	        sta view_buffer,y
+.49bc	c8		iny		        iny
+.49bd	c0 22		cpy #$22	        cpy #34
+.49bf	d0 f1		bne $49b2	        bne view_name_byte
+.49c1					view_name_done:
+.49c1	a9 1a		lda #$1a	        lda #26
+.49c3	a2 03		ldx #$03	        ldx #3
+.49c5	20 fc 4a	jsr $4afc	        jsr view_line
+.49c8	a2 03		ldx #$03	        ldx #3
+.49ca					view_offset_copy:
+.49ca	bd 68 4c	lda $4c68,x	        lda view_page,x
+.49cd	9d 6c 4c	sta $4c6c,x	        sta view_offset,x
+.49d0	ca		dex		        dex
+.49d1	10 f7		bpl $49ca	        bpl view_offset_copy
+.49d3	a9 00		lda #$00	        lda #0
+.49d5	8d 72 4c	sta $4c72	        sta view_row
+.49d8	8d 73 4c	sta $4c73	        sta view_byte
+.49db					view_rows:
+.49db	20 d8 4a	jsr $4ad8	        jsr view_blank
+.49de	ad 73 4c	lda $4c73	        lda view_byte
+.49e1	cd 66 4c	cmp $4c66	        cmp view_count
+.49e4	b0 70		bcs $4a56	        bcs view_row_draw
+.49e6	a0 00		ldy #$00	        ldy #0
+.49e8	a2 03		ldx #$03	        ldx #3
+.49ea					view_address:
+.49ea	8e 74 4c	stx $4c74	        stx view_j
+.49ed	bd 6c 4c	lda $4c6c,x	        lda view_offset,x
+.49f0	20 25 4b	jsr $4b25	        jsr view_hex
+.49f3	ae 74 4c	ldx $4c74	        ldx view_j
+.49f6	ca		dex		        dex
+.49f7	10 f1		bpl $49ea	        bpl view_address
+.49f9	a9 3a		lda #$3a	        lda #$3a
+.49fb	8d 44 4c	sta $4c44	        sta view_buffer+8
+.49fe	a9 00		lda #$00	        lda #0
+.4a00	8d 74 4c	sta $4c74	        sta view_j
+.4a03	a0 0a		ldy #$0a	        ldy #10
+.4a05					view_bytes:
+.4a05	ae 73 4c	ldx $4c73	        ldx view_byte
+.4a08	ec 66 4c	cpx $4c66	        cpx view_count
+.4a0b	b0 28		bcs $4a35	        bcs view_bytes_done
+.4a0d	bd 00 7c	lda $7c00,x	        lda $7c00,x
+.4a10	20 25 4b	jsr $4b25	        jsr view_hex
+.4a13	8c 75 4c	sty $4c75	        sty view_y
+.4a16	ae 73 4c	ldx $4c73	        ldx view_byte
+.4a19	bd 00 7c	lda $7c00,x	        lda $7c00,x
+.4a1c	20 3e 4b	jsr $4b3e	        jsr view_ascii
+.4a1f	ae 74 4c	ldx $4c74	        ldx view_j
+.4a22	9d 57 4c	sta $4c57,x	        sta view_buffer+27,x
+.4a25	ac 75 4c	ldy $4c75	        ldy view_y
+.4a28	ee 73 4c	inc $4c73	        inc view_byte
+.4a2b	ee 74 4c	inc $4c74	        inc view_j
+.4a2e	ad 74 4c	lda $4c74	        lda view_j
+.4a31	c9 08		cmp #$08	        cmp #8
+.4a33	d0 d0		bne $4a05	        bne view_bytes
+.4a35					view_bytes_done:
+.4a35	18		clc		        clc
+.4a36	ad 6c 4c	lda $4c6c	        lda view_offset
+.4a39	69 08		adc #$08	        adc #8
+.4a3b	8d 6c 4c	sta $4c6c	        sta view_offset
+.4a3e	ad 6d 4c	lda $4c6d	        lda view_offset+1
+.4a41	69 00		adc #$00	        adc #0
+.4a43	8d 6d 4c	sta $4c6d	        sta view_offset+1
+.4a46	ad 6e 4c	lda $4c6e	        lda view_offset+2
+.4a49	69 00		adc #$00	        adc #0
+.4a4b	8d 6e 4c	sta $4c6e	        sta view_offset+2
+.4a4e	ad 6f 4c	lda $4c6f	        lda view_offset+3
+.4a51	69 00		adc #$00	        adc #0
+.4a53	8d 6f 4c	sta $4c6f	        sta view_offset+3
+.4a56					view_row_draw:
+.4a56	ad 72 4c	lda $4c72	        lda view_row
+.4a59	0a		asl a		        asl
+.4a5a	8d 75 4c	sta $4c75	        sta view_y
+.4a5d	0a		asl a		        asl
+.4a5e	0a		asl a		        asl
+.4a5f	18		clc		        clc
+.4a60	6d 75 4c	adc $4c75	        adc view_y
+.4a63	69 28		adc #$28	        adc #40
+.4a65	48		pha		        pha
+.4a66	ad 72 4c	lda $4c72	        lda view_row
+.4a69	18		clc		        clc
+.4a6a	69 06		adc #$06	        adc #6
+.4a6c	aa		tax		        tax
+.4a6d	68		pla		        pla
+.4a6e	20 fc 4a	jsr $4afc	        jsr view_line
+.4a71	ee 72 4c	inc $4c72	        inc view_row
+.4a74	ad 72 4c	lda $4c72	        lda view_row
+.4a77	c9 0c		cmp #$0c	        cmp #12
+.4a79	f0 03		beq $4a7e	        beq view_rows_done
+.4a7b	4c db 49	jmp $49db	        jmp view_rows
+.4a7e					view_rows_done:
+.4a7e	ad 63 4c	lda $4c63	        lda view_error
+.4a81	f0 12		beq $4a95	        beq view_size
+.4a83	a9 f6		lda #$f6	        lda #<view_error_text
+.4a85	a2 4b		ldx #$4b	        ldx #>view_error_text
+.4a87	20 e8 4a	jsr $4ae8	        jsr view_text
+.4a8a	a0 07		ldy #$07	        ldy #7
+.4a8c	ad 63 4c	lda $4c63	        lda view_error
+.4a8f	20 25 4b	jsr $4b25	        jsr view_hex
+.4a92	4c c3 4a	jmp $4ac3	        jmp view_footer
+.4a95					view_size:
+.4a95	a9 17		lda #$17	        lda #<view_size_text
+.4a97	a2 4c		ldx #$4c	        ldx #>view_size_text
+.4a99	20 e8 4a	jsr $4ae8	        jsr view_text
+.4a9c	a0 05		ldy #$05	        ldy #5
+.4a9e	a2 03		ldx #$03	        ldx #3
+.4aa0					view_size_digits:
+.4aa0	8e 74 4c	stx $4c74	        stx view_j
+.4aa3	bd 19 41	lda $4119,x	        lda UFS_SIZE,x
+.4aa6	20 25 4b	jsr $4b25	        jsr view_hex
+.4aa9	ae 74 4c	ldx $4c74	        ldx view_j
+.4aac	ca		dex		        dex
+.4aad	10 f1		bpl $4aa0	        bpl view_size_digits
+.4aaf	ad 67 4c	lda $4c67	        lda view_eof
+.4ab2	f0 0f		beq $4ac3	        beq view_footer
+.4ab4	a9 c5		lda #$c5	        lda #$c5
+.4ab6	8d 55 4c	sta $4c55	        sta view_buffer+25
+.4ab9	a9 ce		lda #$ce	        lda #$ce
+.4abb	8d 56 4c	sta $4c56	        sta view_buffer+26
+.4abe	a9 c4		lda #$c4	        lda #$c4
+.4ac0	8d 57 4c	sta $4c57	        sta view_buffer+27
+.4ac3					view_footer:
+.4ac3	a9 a2		lda #$a2	        lda #162
+.4ac5	a2 15		ldx #$15	        ldx #21
+.4ac7	20 fc 4a	jsr $4afc	        jsr view_line
+.4aca	a9 d4		lda #$d4	        lda #<view_buttons
+.4acc	a2 4b		ldx #$4b	        ldx #>view_buttons
+.4ace	20 e8 4a	jsr $4ae8	        jsr view_text
+.4ad1	a9 b0		lda #$b0	        lda #176
+.4ad3	a2 16		ldx #$16	        ldx #22
+.4ad5	4c fc 4a	jmp $4afc	        jmp view_line
+.4ad8					view_blank:
+.4ad8	a9 20		lda #$20	        lda #$20
+.4ada	a2 22		ldx #$22	        ldx #34
+.4adc					view_blank_byte:
+.4adc	9d 3c 4c	sta $4c3c,x	        sta view_buffer,x
+.4adf	ca		dex		        dex
+.4ae0	10 fa		bpl $4adc	        bpl view_blank_byte
+.4ae2	a9 00		lda #$00	        lda #0
+.4ae4	8d 5f 4c	sta $4c5f	        sta view_buffer+35
+.4ae7	60		rts		        rts
+.4ae8					view_text:
+.4ae8	85 0a		sta $0a		        sta r4L
+.4aea	86 0b		stx $0b		        stx r4H
+.4aec	20 d8 4a	jsr $4ad8	        jsr view_blank
+.4aef	a0 00		ldy #$00	        ldy #0
+.4af1					view_text_byte:
+.4af1	b1 0a		lda ($0a),y	        lda (r4),y
+.4af3	f0 06		beq $4afb	        beq view_text_done
+.4af5	99 3c 4c	sta $4c3c,y	        sta view_buffer,y
+.4af8	c8		iny		        iny
+.4af9	d0 f6		bne $4af1	        bne view_text_byte
+.4afb					view_text_done:
+.4afb	60		rts		        rts
+.4afc					view_line:
+.4afc	8e 76 4c	stx $4c76	        stx view_vrow
+.4aff	85 04		sta $04		        sta Y1
+.4b01	a9 00		lda #$00	        lda #0
+.4b03	85 05		sta $05		        sta Y1+1
+.4b05	85 03		sta $03		        sta X1+1
+.4b07	a9 18		lda #$18	        lda #24
+.4b09	85 02		sta $02		        sta X1
+.4b0b	20 1c 4b	jsr $4b1c	        jsr view_pointer
+.4b0e	20 1e c0	jsr $c01e	        jsr GPUTS
+.4b11	20 1c 4b	jsr $4b1c	        jsr view_pointer
+.4b14	ad 76 4c	lda $4c76	        lda view_vrow
+.4b17	a2 00		ldx #$00	        ldx #0
+.4b19	4c 35 08	jmp $0835	        jmp VDTEXT
+.4b1c					view_pointer:
+.4b1c	a9 3c		lda #$3c	        lda #<view_buffer
+.4b1e	85 14		sta $14		        sta r9L
+.4b20	a9 4c		lda #$4c	        lda #>view_buffer
+.4b22	85 15		sta $15		        sta r9H
+.4b24	60		rts		        rts
+.4b25					view_hex:
+.4b25	48		pha		        pha
+.4b26	4a		lsr a		        lsr
+.4b27	4a		lsr a		        lsr
+.4b28	4a		lsr a		        lsr
+.4b29	4a		lsr a		        lsr
+.4b2a	aa		tax		        tax
+.4b2b	bd 2c 4c	lda $4c2c,x	        lda view_digits,x
+.4b2e	99 3c 4c	sta $4c3c,y	        sta view_buffer,y
+.4b31	c8		iny		        iny
+.4b32	68		pla		        pla
+.4b33	29 0f		and #$0f	        and #15
+.4b35	aa		tax		        tax
+.4b36	bd 2c 4c	lda $4c2c,x	        lda view_digits,x
+.4b39	99 3c 4c	sta $4c3c,y	        sta view_buffer,y
+.4b3c	c8		iny		        iny
+.4b3d	60		rts		        rts
+.4b3e					view_ascii:
+.4b3e	c9 20		cmp #$20	        cmp #$20
+.4b40	90 16		bcc $4b58	        bcc view_dot
+.4b42	c9 7b		cmp #$7b	        cmp #$7b
+.4b44	b0 12		bcs $4b58	        bcs view_dot
+.4b46	c9 61		cmp #$61	        cmp #$61
+.4b48	90 03		bcc $4b4d	        bcc view_upper
+.4b4a	29 df		and #$df	        and #$df
+.4b4c	60		rts		        rts
+.4b4d					view_upper:
+.4b4d	c9 41		cmp #$41	        cmp #$41
+.4b4f	90 06		bcc $4b57	        bcc view_ascii_done
+.4b51	c9 5b		cmp #$5b	        cmp #$5b
+.4b53	b0 02		bcs $4b57	        bcs view_ascii_done
+.4b55	09 80		ora #$80	        ora #$80
+.4b57					view_ascii_done:
+.4b57	60		rts		        rts
+.4b58					view_dot:
+.4b58	a9 2e		lda #$2e	        lda #$2e
+.4b5a	60		rts		        rts
+.4b5b					view_mouse:
+.4b5b	08		php		        php
+.4b5c	78		sei		        sei
+.4b5d	ad 10 d0	lda $d010	        lda $d010
+.4b60	29 01		and #$01	        and #1
+.4b62	8d 78 4c	sta $4c78	        sta view_mx+1
+.4b65	38		sec		        sec
+.4b66	ad 00 d0	lda $d000	        lda $d000
+.4b69	e9 18		sbc #$18	        sbc #24
+.4b6b	8d 77 4c	sta $4c77	        sta view_mx
+.4b6e	ad 78 4c	lda $4c78	        lda view_mx+1
+.4b71	e9 00		sbc #$00	        sbc #0
+.4b73	8d 78 4c	sta $4c78	        sta view_mx+1
+.4b76	ad 01 d0	lda $d001	        lda $d001
+.4b79	38		sec		        sec
+.4b7a	e9 32		sbc #$32	        sbc #50
+.4b7c	28		plp		        plp
+.4b7d	c9 b0		cmp #$b0	        cmp #176
+.4b7f	90 36		bcc $4bb7	        bcc view_no_mouse
+.4b81	c9 ba		cmp #$ba	        cmp #186
+.4b83	b0 32		bcs $4bb7	        bcs view_no_mouse
+.4b85	ad 78 4c	lda $4c78	        lda view_mx+1
+.4b88	f0 0d		beq $4b97	        beq view_low_x
+.4b8a	c9 01		cmp #$01	        cmp #1
+.4b8c	d0 29		bne $4bb7	        bne view_no_mouse
+.4b8e	ad 77 4c	lda $4c77	        lda view_mx
+.4b91	c9 30		cmp #$30	        cmp #48
+.4b93	b0 22		bcs $4bb7	        bcs view_no_mouse
+.4b95	90 17		bcc $4bae	        bcc view_mouse_exit
+.4b97					view_low_x:
+.4b97	ad 77 4c	lda $4c77	        lda view_mx
+.4b9a	c9 18		cmp #$18	        cmp #24
+.4b9c	90 19		bcc $4bb7	        bcc view_no_mouse
+.4b9e	c9 70		cmp #$70	        cmp #112
+.4ba0	90 0f		bcc $4bb1	        bcc view_mouse_previous
+.4ba2	c9 78		cmp #$78	        cmp #120
+.4ba4	90 11		bcc $4bb7	        bcc view_no_mouse
+.4ba6	c9 d0		cmp #$d0	        cmp #208
+.4ba8	90 0a		bcc $4bb4	        bcc view_mouse_next
+.4baa	c9 d8		cmp #$d8	        cmp #216
+.4bac	90 09		bcc $4bb7	        bcc view_no_mouse
+.4bae					view_mouse_exit:
+.4bae	a9 1b		lda #$1b	        lda #$1b
+.4bb0	60		rts		        rts
+.4bb1					view_mouse_previous:
+.4bb1	a9 42		lda #$42	        lda #$42
+.4bb3	60		rts		        rts
+.4bb4					view_mouse_next:
+.4bb4	a9 4e		lda #$4e	        lda #$4e
+.4bb6	60		rts		        rts
+.4bb7					view_no_mouse:
+.4bb7	a9 00		lda #$00	        lda #0
+.4bb9	60		rts		        rts
+>4bba	c6 49 4c 45 20 42 59 54		view_title:      .text "File bytes  (hex / ASCII)",0
+>4bc2	45 53 20 20 28 48 45 58 20 2f 20 c1 d3 c3 c9 c9
+>4bd2	29 00
+>4bd4	c2 20 50 52 45 56 20 20		view_buttons:    .text "B prev      N next      Esc files",0
+>4bdc	20 20 20 20 ce 20 4e 45 58 54 20 20 20 20 20 20
+>4bec	c5 53 43 20 46 49 4c 45 53 00
+>4bf6	c5 52 52 4f 52 20 24 30		view_error_text: .text "Error $00 - Esc returns to files",0
+>4bfe	30 20 2d 20 c5 53 43 20 52 45 54 55 52 4e 53 20
+>4c0e	54 4f 20 46 49 4c 45 53 00
+>4c17	53 49 5a 45 20 30 30 30		view_size_text:  .text "size 00000000h bytes",0
+>4c1f	30 30 30 30 30 48 20 42 59 54 45 53 00
+>4c2c	30 31 32 33 34 35 36 37		view_digits:     .text "0123456789abcdef"
+>4c34	38 39 41 42 43 44 45 46
+>4c3c	00 00 00 00 00 00 00 00		view_buffer:     .fill 36, 0
+>4c44	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>4c54	00 00 00 00 00 00 00 00 00 00 00 00
+>4c60	00				view_target:     .byte 0
+>4c61	00 00				view_name:       .word 0
+>4c63	00				view_error:      .byte 0
+>4c64	00				view_held:       .byte 0
+>4c65	00				view_ready:      .byte 0
+>4c66	00				view_count:      .byte 0
+>4c67	00				view_eof:        .byte 0
+>4c68	00 00 00 00			view_page:       .fill 4, 0
+>4c6c	00 00 00 00			view_offset:     .fill 4, 0
+>4c70	00 00				view_clear:      .word 0
+>4c72	00				view_row:        .byte 0
+>4c73	00				view_byte:       .byte 0
+>4c74	00				view_j:          .byte 0
+>4c75	00				view_y:          .byte 0
+>4c76	00				view_vrow:       .byte 0
+>4c77	00 00				view_mx:         .word 0
+.4c79					view_end:
+
+;******  Return to file: src/uos-files.asm
+
+
+;******  Processing file: src/file-dialog-gateway.inc
+
+.4c80	4c 93 4c	jmp $4c93	        jmp pick_file
+.4c83	4c 31 4d	jmp $4d31	        jmp pick_recover
+>4c86	01				        .byte 1
+>4c87	00				pick_result:    .byte 0
+>4c88	00				pick_pending:   .byte 0
+>4c89	00				pick_context:   .byte 0
+>4c8a	00 00				pick_cwdlen:    .word 0
+>4c8c	00 00				pick_pathlen:   .word 0
+>4c8e	00				pick_active:    .byte 0
+>4c8f	00				pick_mode:      .byte 0
+>4c90	00 00				pick_default:   .word 0
+>4c92	00				pick_request:   .byte 0
+.4c93					pick_file:
+.4c93	48		pha		        pha
+.4c94	ad 90 47	lda $4790	        lda busy
+.4c97	0d 8e 4c	ora $4c8e	        ora pick_active
+.4c9a	f0 05		beq $4ca1	        beq pick_available
+.4c9c	68		pla		        pla
+.4c9d	a9 e2		lda #$e2	        lda #UFS_BUSY
+.4c9f	38		sec		        sec
+.4ca0	60		rts		        rts
+.4ca1					pick_available:
+.4ca1	68		pla		        pla
+.4ca2	e0 01		cpx #$01	        cpx #1
+.4ca4	90 0c		bcc $4cb2	        bcc pick_argument
+.4ca6	e0 03		cpx #$03	        cpx #3
+.4ca8	b0 08		bcs $4cb2	        bcs pick_argument
+.4caa	c9 01		cmp #$01	        cmp #1
+.4cac	f0 08		beq $4cb6	        beq pick_arguments
+.4cae	c9 07		cmp #$07	        cmp #7
+.4cb0	f0 04		beq $4cb6	        beq pick_arguments
+.4cb2					pick_argument:
+.4cb2	a9 e0		lda #$e0	        lda #UFS_BADARG
+.4cb4	d0 50		bne $4d06	        bne pick_return
+.4cb6					pick_arguments:
+.4cb6	8d 8f 4c	sta $4c8f	        sta pick_mode
+.4cb9	8e 92 4c	stx $4c92	        stx pick_request
+.4cbc	a5 02		lda $02		        lda r0L
+.4cbe	8d 90 4c	sta $4c90	        sta pick_default
+.4cc1	a5 03		lda $03		        lda r0H
+.4cc3	8d 91 4c	sta $4c91	        sta pick_default+1
+.4cc6	20 31 4d	jsr $4d31	        jsr pick_recover
+.4cc9	b0 3b		bcs $4d06	        bcs pick_return
+.4ccb	ae 92 4c	ldx $4c92	        ldx pick_request
+.4cce	bd 21 41	lda $4121,x	        lda modes-1,x
+.4cd1	f0 04		beq $4cd7	        beq pick_load
+.4cd3	a9 e2		lda #$e2	        lda #UFS_BUSY
+.4cd5	d0 2f		bne $4d06	        bne pick_return
+.4cd7					pick_load:
+.4cd7	8e 89 4c	stx $4c89	        stx pick_context
+.4cda	ee 8e 4c	inc $4c8e	        inc pick_active
+.4cdd	a9 00		lda #$00	        lda #0
+.4cdf	8d 03 62	sta $6203	        sta UFP_LIBRARY+3       ; a partial/missing library cannot be entered
+.4ce2	a9 7f		lda #$7f	        lda #<pick_module
+.4ce4	85 02		sta $02		        sta r0L
+.4ce6	a9 4d		lda #$4d	        lda #>pick_module
+.4ce8	85 03		sta $03		        sta r0H
+.4cea	20 29 08	jsr $0829	        jsr FILLFILE
+.4ced	20 26 08	jsr $0826	        jsr APP_LOADER
+.4cf0	b0 0d		bcs $4cff	        bcs pick_load_failed
+.4cf2	ad 03 62	lda $6203	        lda UFP_LIBRARY+3
+.4cf5	c9 01		cmp #$01	        cmp #1
+.4cf7	d0 06		bne $4cff	        bne pick_load_failed
+.4cf9	20 00 62	jsr $6200	        jsr UFP_LIBRARY
+.4cfc	4c 01 4d	jmp $4d01	        jmp pick_loaded
+.4cff					pick_load_failed:
+.4cff	a9 ea		lda #$ea	        lda #UFP_LOAD
+.4d01					pick_loaded:
+.4d01	a2 00		ldx #$00	        ldx #0
+.4d03	8e 8e 4c	stx $4c8e	        stx pick_active
+.4d06					pick_return:
+.4d06	8d 87 4c	sta $4c87	        sta pick_result
+.4d09	c9 01		cmp #$01	        cmp #1
+.4d0b	60		rts		        rts
+.4d0c					pick_close_finish:
+.4d0c	ad 8e 4c	lda $4c8e	        lda pick_active
+.4d0f	d0 1d		bne $4d2e	        bne pick_close_ok
+.4d11	ad 92 47	lda $4792	        lda target
+.4d14	cd 89 4c	cmp $4c89	        cmp pick_context
+.4d17	d0 15		bne $4d2e	        bne pick_close_ok
+.4d19	20 31 4d	jsr $4d31	        jsr pick_recover
+.4d1c	90 10		bcc $4d2e	        bcc pick_close_ok
+.4d1e	48		pha		        pha
+.4d1f	a2 1f		ldx #$1f	        ldx #31
+.4d21					pick_close_status:
+.4d21	bd 42 91	lda $9142,x	        lda NET_STAT,x
+.4d24	9d 24 41	sta $4124,x	        sta status,x
+.4d27	ca		dex		        dex
+.4d28	10 f7		bpl $4d21	        bpl pick_close_status
+.4d2a	68		pla		        pla
+.4d2b	4c a0 41	jmp $41a0	        jmp finish
+.4d2e					pick_close_ok:
+.4d2e	4c 9e 41	jmp $419e	        jmp ok
+.4d31					pick_recover:
+.4d31	ad 88 4c	lda $4c88	        lda pick_pending
+.4d34	f0 41		beq $4d77	        beq pick_recovered
+.4d36	ae 89 4c	ldx $4c89	        ldx pick_context
+.4d39	bd 21 41	lda $4121,x	        lda modes-1,x
+.4d3c	f0 08		beq $4d46	        beq pick_restore
+.4d3e	c9 ff		cmp #$ff	        cmp #$ff
+.4d40	f0 39		beq $4d7b	        beq pick_uncertain
+.4d42	a9 e2		lda #$e2	        lda #UFS_BUSY
+.4d44	38		sec		        sec
+.4d45	60		rts		        rts
+.4d46					pick_restore:
+.4d46	a9 02		lda #$02	        lda #2
+.4d48	8d 88 4c	sta $4c88	        sta pick_pending
+.4d4b	a9 00		lda #$00	        lda #<UFP_CWD
+.4d4d	85 02		sta $02		        sta r0L
+.4d4f	a9 4e		lda #$4e	        lda #>UFP_CWD
+.4d51	85 03		sta $03		        sta r0H
+.4d53	ad 8a 4c	lda $4c8a	        lda pick_cwdlen
+.4d56	85 04		sta $04		        sta r1L
+.4d58	ad 8b 4c	lda $4c8b	        lda pick_cwdlen+1
+.4d5b	85 05		sta $05		        sta r1H
+.4d5d	a9 00		lda #$00	        lda #0
+.4d5f	8d 62 91	sta $9162	        sta NET_DIRMODE
+.4d62	85 08		sta $08		        sta r3L
+.4d64	85 09		sta $09		        sta r3H
+.4d66	20 64 91	jsr $9164	        jsr NET_STREAM
+.4d69	b0 10		bcs $4d7b	        bcs pick_uncertain
+.4d6b	c9 00		cmp #$00	        cmp #0
+.4d6d	d0 0c		bne $4d7b	        bne pick_uncertain
+.4d6f	ad 67 91	lda $9167	        lda NET_TRUNC
+.4d72	d0 07		bne $4d7b	        bne pick_uncertain
+.4d74	8d 88 4c	sta $4c88	        sta pick_pending
+.4d77					pick_recovered:
+.4d77	a9 00		lda #$00	        lda #0
+.4d79	18		clc		        clc
+.4d7a	60		rts		        rts
+.4d7b					pick_uncertain:
+.4d7b	a9 e8		lda #$e8	        lda #UFS_UNCERTAIN
+.4d7d	38		sec		        sec
+.4d7e	60		rts		        rts
+>4d7f	55 4f 53 2d 50 49 43 4b		pick_module: .text "uos-picker", 0
+>4d87	45 52 00
+.4d8a					pick_gateway_end:
+>4e00	00 00 00 00 00 00 00 00		        .fill 512, 0
+>4e08	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>4ff8	00 00 00 00 00 00 00 00
+
+;******  Return to file: src/uos-files.asm
+
+
+;******  End of listing

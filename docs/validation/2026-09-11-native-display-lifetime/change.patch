@@ -1,0 +1,344 @@
+--- a/build-native.py
++++ b/build-native.py
+@@ -70,8 +70,12 @@
+                 staging_start=address('native_low_image'),load_end=address('native_load_end'),
+                 service_start=address('native_service_start'),service_end=address('native_service_end'),
+                 module_code_start=address('module_load'),module_code_end=address('native_module_code_end'),
+-                module_context_start=address('module_source'),module_context_end=address('native_service_end'),
+-                module_gate_start=address('module_start'),module_gate_end=address('native_low_end'),
++                module_context_start=address('module_source'),module_context_end=address('native_module_context_end'),
++                module_gate_start=address('module_start'),module_gate_end=address('native_module_gate_end'),
++                display_gate_start=address('display_show'),display_gate_end=address('native_display_gate_end'),
++                display_show_start=address('display_prepare'),display_show_end=address('native_display_show_end'),
++                display_restore_start=address('display_restore'),display_restore_end=address('native_display_restore_end'),
++                display_close_start=address('display_close'),display_close_end=address('native_display_close_end'),
+                 source_path_start=0x3f00,source_path_end=0x4000,
+                 service_limit=0x5000,app_base=0x6000,managed_pages=426)
+     assert layout['main_end']<=layout['metadata_start'] and layout['low_padded_end']<=layout['low_limit']
+@@ -81,6 +85,11 @@
+     assert layout['module_code_start']==address('nu_code_end')<layout['module_code_end']<=0x4a00
+     assert 0x4f20==layout['module_context_start']<layout['module_context_end']<=0x5000
+     assert layout['low_start']<layout['module_gate_start']<layout['module_gate_end']<=layout['low_limit']
++    for start,end,next_boundary in (('display_gate_start','display_gate_end','metadata_start'),
++                                   ('display_show_start','display_show_end',None),
++                                   ('display_restore_start','display_restore_end','service_limit'),
++                                   ('display_close_start','display_close_end','low_limit')):
++        assert layout[start]<layout[end]<=(layout[next_boundary] if next_boundary else 0x4a00)
+     assert report['uos128.prg']['bytes']==layout['load_end']-layout['main_start']+2
+     (OUT/'layout.json').write_text(json.dumps(layout,indent=2)+'\n')
+     print(f'Native C128 boot disk: {disk}')
+--- a/native_image.py
++++ b/native_image.py
+@@ -9,7 +9,7 @@
+     if len(image)<35 or image[:6]!=b'\0\x60NAPP':
+         raise ValueError('expected a native NAPP PRG at $6000 with a complete manifest')
+     header=image[2:34]
+-    if header[4]!=1 or header[5]!=1 or header[6]>7:
++    if header[4]!=1 or header[5]!=1 or header[6]>8:
+         raise ValueError('unsupported native image format, ABI or flags')
+     size=int.from_bytes(header[8:10],'little')
+     pages=header[10];entry=int.from_bytes(header[12:14],'little')
+--- a/native_module.py
++++ b/native_module.py
+@@ -11,7 +11,7 @@
+     if len(image)<19 or int.from_bytes(image[:2],'little')!=parent['window']:
+         raise ValueError('module origin must match the parent window')
+     h=image[2:18]
+-    if h[:8]!=b'NMOD'+bytes([1,1,7,0]):
++    if h[:6]!=b'NMOD'+bytes([1,1]) or not 7<=h[6]<=8 or h[7]:
+         raise ValueError('unsupported module format, ABI or flags')
+     size=int.from_bytes(h[8:10],'little')
+     if size<17 or len(image)!=size+2 or parent['window']+size>0x6000+parent['pages']*256:
+--- a/src/native/api.inc
++++ b/src/native/api.inc
+@@ -1,6 +1,6 @@
+-; Native C128 ABI 1.7. This is separate from the C64-mode $0811 jump table.
++; Experimental native C128 ABI 1.8. Separate from the C64-mode $0811 table.
+ N_ABI_MAJOR = 1
+-N_ABI_MINOR = 7
++N_ABI_MINOR = 8
+ ; Call from bank-0 code with system KERNAL and I/O visible. The standard
+ ; bottom 1 KiB common area, zero page and stack mappings must remain in force.
+ ; Foreground calls only; no IRQ/NMI callbacks or reentrant use.
+@@ -29,6 +29,8 @@
+ N_MLOAD         = $1c5f          ; checked module from the original app's source folder
+ N_MCALL         = $1c62          ; call the current module using its generation token
+ N_MCLOSE        = $1c65          ; invalidate module; close/recover only its source stream
++N_VSHOW         = $1c68          ; experimental: present owned bank-0 $c000..$e3ff
++N_VCLOSE        = $1c6b          ; experimental: restore text; keep surface allocation
+ 
+ ; Allocation: OWNER=1..254, PAGES=1..255, BANK=0/1/$ff (automatic).
+ ; Automatic allocation uses bank 1 first, preserving bank-0 code space.
+--- a/src/native/apps.inc
++++ b/src/native/apps.inc
+@@ -318,6 +318,7 @@
+         sta l_result
+         jsr app_close
+ app_cleanup:
++        jsr display_restore   ; includes retained file/heap cleanup errors
+         lda #3
+         sta N_APPSTATE
+         lda NFILES
+--- /dev/null
++++ b/src/native/display-close.inc
+@@ -0,0 +1,16 @@
++display_close:
++        php
++        jsr heap_enter
++        bcc *+5
++        jmp heap_enter_failed
++        lda N_FBUSY
++        ora N_UIBUSY
++        beq +
++        lda #N_REENTRANT
++        jmp heap_finish
+++       jsr app_owned
++        bcc *+5
++        jmp heap_finish
++        jsr display_restore
++        jmp heap_success
++native_display_close_end:
+--- /dev/null
++++ b/src/native/display-gate.inc
+@@ -0,0 +1,33 @@
++; Experimental public presentation gates, GPL v3.
++display_show:
++        php
++        jsr heap_enter
++        bcc *+5
++        jmp heap_enter_failed
++        lda N_FBUSY
++        ora N_UIBUSY
++        ora v_tag
++        beq +
++        lda #N_REENTRANT
++        bne display_error
+++       tsx
++        lda $0101,x
++        and #4
++        bne display_platform
++        jsr app_owned
++        bcs display_error
++        lda N_OWNER
++        cmp N_CURRENT
++        beq +
++        lda #N_WRONGOWNER
++        bne display_error
+++       jsr heap_handle
++        bcs display_error
++        jsr heap_check_record
++        bcs display_error
++        jmp display_prepare
++display_platform:
++        lda #N_PLATFORM
++display_error:
++        jmp heap_finish
++native_display_gate_end:
+--- /dev/null
++++ b/src/native/display-restore.inc
+@@ -0,0 +1,35 @@
++; Resident teardown survives app release and needs no file or heap operation.
++display_restore:
++        lda v_tag
++        beq display_restored
++        php
++        sei
++        lda $dd00
++        and #$fc
++        ora v_bank
++        sta $dd00
++        lda v_d018
++        sta $d018
++        lda v_d016
++        sta $d016
++        lda #$ff
++        sta $d012
++        lda v_d011
++        sta $d011
++        lda $01
++        and #$f9
++        ora v_port
++        sta $01
++        lda #0
++        sta $d8
++        sta v_tag
++        plp
++display_restored:
++        rts
++v_tag:  .byte 0
++v_d011: .byte 0
++v_d016: .byte 0
++v_d018: .byte 0
++v_bank: .byte 0
++v_port: .byte 0
++native_display_restore_end:
+--- /dev/null
++++ b/src/native/display-show.inc
+@@ -0,0 +1,84 @@
++; A checked, already initialized surface; no implicit allocation or clearing.
++display_prepare:
++        ldx #>N_APPBASE
++display_app_pages:
++        lda NPAGES0,x
++        cmp l_app_handle
++        beq +
++        lda #N_BADHANDLE
++        jmp heap_finish
+++       inx
++        cpx field_app_end
++        bne display_app_pages
++        lda hbank
++        bne display_range
++        lda hstart
++        cmp #$c0
++        bne display_range
++        lda hleft
++        cmp #36
++        beq +
++display_range:
++        lda #N_RANGE
++        jmp heap_finish
+++       lda $d506
++        and #$40
++        ora $d8
++        bne display_bad_mode
++        lda $00
++        and #6
++        cmp #6
++        bne display_bad_mode
++        lda $d01a
++        and #15
++        cmp #1
++        bne display_bad_mode
++        lda $d011
++        and #$60
++        bne display_bad_mode
++        lda $d016
++        and #$10
++        bne display_bad_mode
++        lda $d015
++        bne display_bad_mode    ; sprite storage has no native ownership contract yet
++        lda $dd02
++        and #3
++        cmp #3
++        beq +
++display_bad_mode:
++        lda #N_PLATFORM
++        jmp heap_finish
+++       sei
++        lda $d011
++        and #$7f
++        sta v_d011
++        lda $d016
++        sta v_d016
++        lda $d018
++        sta v_d018
++        lda $dd00
++        and #3
++        sta v_bank
++        lda $01
++        and #6
++        sta v_port
++        lda #$ff
++        sta $d8
++        sta $d012
++        lda $01
++        and #$fd
++        ora #4
++        sta $01
++        lda #$80
++        sta $d018
++        lda #8                 ; known 40-column bitmap geometry, restored on exit
++        sta $d016
++        lda #$3b               ; 25 rows, standard scroll, raster compare high bit 0
++        sta $d011
++        lda $dd00
++        and #$fc
++        sta $dd00
++        lda htag
++        sta v_tag
++        jmp heap_success      ; restores the caller's original D/I
++native_display_show_end:
+--- a/src/native/heap.inc
++++ b/src/native/heap.inc
+@@ -379,6 +379,11 @@
+ heap_free_error:
+         jmp heap_finish
+ heap_clear_record:
++        lda htag
++        cmp v_tag
++        bne +
++        jsr display_restore   ; restore before any displayed page becomes free
+++
+         ldx hstart
+ heap_unmark:
+         lda #0
+--- a/src/native/module-validate.inc
++++ b/src/native/module-validate.inc
+@@ -1,11 +1,18 @@
+ module_validate:
+-        ldx #7
++        ldx #5
+ module_magic:
+         lda N_MHEADER,x
+         cmp m_magic,x
+         bne module_invalid
+         dex
+         bpl module_magic
++        lda N_MHEADER+7
++        bne module_invalid
++        lda N_MHEADER+6
++        cmp #7
++        bcc module_invalid
++        cmp #N_ABI_MINOR+1
++        bcs module_invalid
+         lda N_MHEADER+10
+         cmp N_APPHEADER+14
+         bne module_invalid
+--- a/src/native/ultimate.inc
++++ b/src/native/ultimate.inc
+@@ -779,6 +779,7 @@
+ .include "modules.inc"
+ .include "module-validate.inc"
+ native_module_code_end:
++.include "display-show.inc"
+         .cerror * > N_BROWSERPATH, "native Ultimate code overlaps browser path"
+ * = N_BROWSERPATH
+         .byte $2f
+--- a/src/native/uos128.asm
++++ b/src/native/uos128.asm
+@@ -38,6 +38,8 @@
+         jmp module_load
+         jmp module_call
+         jmp module_close
++        jmp display_show
++        jmp display_close
+ native_start:
+         cld
+         lda $d505
+@@ -505,6 +507,7 @@
+ ui_digit: .byte 0
+ ui_test_operation: .byte 0
+ ui_index: .word 0
++.include "display-gate.inc"
+ native_code_end:
+         .cerror * > $3800, "native kernel overlaps allocation tables"
+ * = NPAGES0
+@@ -525,6 +528,8 @@
+ native_service_start:
+ .include "ultimate.inc"
+ .include "module-context.inc"
++native_module_context_end:
++.include "display-restore.inc"
+ native_service_end:
+         .cerror * > N_SERVICELIMIT, "native Ultimate service exceeds reserved RAM"
+ * = N_RELOCBASE
+@@ -534,6 +539,8 @@
+ .include "heap.inc"
+ .include "fields.inc"
+ .include "module-gate.inc"
++native_module_gate_end:
++.include "display-close.inc"
+ native_low_end:
+         .fill (-*) & $ff,0
+ native_low_padded_end:

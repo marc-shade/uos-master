@@ -53,8 +53,15 @@ passes CPU, emulator and physical USB/IEC qualification. ABI 1.6 now adds
 caret navigation, insertion, forward deletion and clipping on both displays;
 the [field checkpoint](docs/validation/2026-09-10-native-fields/README.md) passes
 20 CPU suites, ten emulator workflows and physical USB/IEC qualification.
-Boot still uses IEC; native desktop migration
-and the broader OS roadmap remain open.
+ABI 1.8 adds a [native graphical desktop and drawing library](docs/NATIVE-GRAPHICS.md).
+Run `python3 -B build-native-desktop.py` to build
+`target/native-desktop/uos128.d64`. The desktop starts in native mode, mirrors
+its controls on the VDC, and launches Calculator, Editor and Files with
+keyboard selection. Escape opens the diagnostic workspace; B returns to the
+desktop on this disk. Unsupported graphics leave usable text controls.
+Boot still uses IEC. Pointer/window input, VDC bitmap presentation, persistent
+desktop state and the broader OS roadmap remain open. Physical desktop
+qualification is tracked in the [hardware record](docs/validation/2026-09-11-native-desktop-hardware/README.md).
 
 ## Storage and loader update (2026-09-08)
 

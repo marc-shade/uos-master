@@ -1,0 +1,1 @@
+Initial running-layout audit rejected seven bytes in an omitted file-extent include. The two command digits and five extent-state bytes were traced to their assembly writers. No kernel or desktop changes were made. This is a failed harness attempt, not a passing qualification.

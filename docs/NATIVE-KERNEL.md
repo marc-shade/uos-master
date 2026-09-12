@@ -7,8 +7,11 @@ image provides a memory workspace, application-facing allocator and a
 through [owned IEC and Ultimate files](NATIVE-FILES.md), plus a
 [file/app browser and byte viewer](NATIVE-BROWSER.md) and
 [banked text editor](NATIVE-EDITOR.md) with [native Ultimate files](NATIVE-ULTIMATE.md).
-The graphical desktop, remaining Ultimate services and application suite still require migration.
-The existing `target/ultos.d64` remains the graphical desktop build.
+The [native graphical desktop](NATIVE-GRAPHICS.md) is built separately as
+`target/native-desktop/uos128.d64`. It adds owned VIC presentation, clipped
+drawing and keyboard app selection with VDC text controls. Remaining desktop
+services, Ultimate panels and the application suite still require migration.
+The existing `target/ultos.d64` remains the legacy graphical desktop build.
 
 The current source includes the [owned-abort completion follow-up](validation/2026-09-11-native-owned-abort/README.md).
 Its 24 CPU suites, clean build and ten emulator workflows pass. The first
@@ -18,7 +21,11 @@ restoration/cleanup. Physical IEC qualification and the combined audits also
 pass, including independent readback of all four document-disk files. The
 initiating USB fault remains unexplained. The signed
 [module checkpoint](validation/2026-09-11-native-modules/README.md) is the
-preceding qualified kernel. The ABI and 426-page heap are unchanged.
+preceding qualified kernel. That follow-up preserves its ABI and heap size.
+The current source adds ABI 1.8 presentation services while keeping all 426
+heap pages and existing public entry addresses. Its exact software inputs and
+checks are retained in the [integration record](validation/2026-09-12-native-desktop-integration/README.md);
+physical desktop qualification has a separate [hardware record](validation/2026-09-11-native-desktop-hardware/README.md).
 
 Use the native CPU observer when a hardware test needs bytes from a specific
 RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM
@@ -92,8 +99,11 @@ The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-The current module kernel ends at `$37a9` exclusive, leaving
-87 bytes before page tables. The low region ends at `$1bc1`, leaving 63 bytes.
+The current workspace kernel ends at `$37f6` exclusive, leaving 10 bytes before
+page tables; the direct-desktop variant ends at `$37f8`, leaving eight bytes.
+The low region ends at `$1bf0`, leaving 16 bytes, and the service region ends
+at `$4ff9`, leaving seven bytes. Further resident growth needs a new interval
+budget. The graphical library remains app/module code.
 Public entries and the app load address remain stable. ABI 1.6 adds
 [shared focused field editing and drawing](NATIVE-FIELDS.md); the calculator
 and browser require minor 6. The editor now requires the
@@ -157,6 +167,12 @@ mailbox/buffer must remain exclusive to the foreground caller until return.
 | `N_STATS` | `$1c2f` | Returns FREE0, FREE1 and reusable SLOTS |
 | `N_RELEASE` | `$1c32` | OWNER; validates all its records before releasing any |
 | `N_RESERVE` | `$1c35` | OWNER, PAGES, explicit BANK/PAGE; reserves an exact range |
+| `N_VSHOW` | `$1c68` | ABI 1.8: current app OWNER and HANDLE for an initialized 36-page bank-0 surface at `$c000`; present the bitmap |
+| `N_VCLOSE` | `$1c6b` | ABI 1.8: restore text for the current app without freeing its surface |
+
+The [presentation contract](NATIVE-GRAPHICS.md#presentation-lifetime) covers
+display-mode refusal, owner validation and teardown before visible pages or
+app ownership are released. Drawing routines are included in app/module code.
 
 OWNER is 1..254. PAGES is 1..255, subject to contiguous availability. A handle
 is four bytes: slot+1 followed by a little-endian 24-bit generation. Each reuse

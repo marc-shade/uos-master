@@ -4,9 +4,12 @@ The browser checkpoint left 139 bytes before the page tables at `$3800`.
 The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
 moved the allocator to `$1300`. The native Ultimate backend now reserves an
 additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
-entry addresses and the `$6000` app slot remain stable. The current main region
-has 87 free bytes, the low region has 63, and the service region leaves
-246 bytes before the retained browser path at `$4a00`. The ABI 1.5 directory
+entry addresses and the `$6000` app slot remain stable. The ABI 1.8 workspace
+main region has 10 free bytes (eight in the direct-desktop variant), the low
+region has 16, and resident services end seven bytes before `$5000`.
+Presentation setup leaves 28 bytes before the retained browser path at `$4a00`.
+The [native desktop and drawing library](NATIVE-GRAPHICS.md) keep graphics code
+in the app/module allocation. The ABI 1.5 directory
 cursor shares the owned stream API and supports native folder navigation.
 The [shared file picker](NATIVE-FILE-DIALOGS.md) is now implemented in the
 editor and passes [CPU, emulator and physical qualification](validation/2026-09-10-native-file-dialogs/README.md).
@@ -195,9 +198,14 @@ The [first ABI 1.7 USB failure](validation/2026-09-11-native-modules/hardware-us
 also exposed a recovery gap in the CPU model: a timed-out native command
 submits an abort and returns before its completion is observed. Immediate
 directory cleanup can then report a busy interface and retain its owner.
-Qualify a bounded wait for that owned abort while preserving the initiating
-error, avoiding command replay and retaining ownership if completion remains
-uncertain. This modeled gap does not establish the physical failure's cause.
+The [owned-abort follow-up](validation/2026-09-11-native-owned-abort/README.md)
+now implements a bounded wait while preserving the initiating error, avoiding
+command replay and retaining ownership if completion remains uncertain. Its
+24 CPU suites and ten emulator workflows pass. Its first physical USB attempt
+failed during a saved-file reopen through DOS context 2. The full unmodified
+retry and the physical IEC workflow pass with complete file readbacks and
+restoration/cleanup. Combined audits also pass. This modeled gap and the passing runs do not
+establish either physical failure's cause.
 
 ## 4. Migrate the desktop and Ultimate services
 
@@ -206,6 +214,13 @@ actual legacy/native address conflicts, a provisional surface budget and the
 first display-ownership/return acceptance gate. The old bitmap and matrix
 overlap the editor and its document storage; moving drawing-code origins alone
 does not make the graphical desktop native.
+
+The private [native launcher](validation/2026-09-11-native-desktop-launcher/README.md)
+now boots a working graphical app selector with VDC text controls, actual
+Calculator/Editor/Files handoff, app return and allocation fallback. Its software
+qualification is sealed; physical graphics and production integration remain
+open. It releases the launcher and surface before opening another app, preserving
+the full native application memory budget.
 
 Move the existing graphical desktop, cartridge file/control service, drive
 panel, network/RTC behavior and applications onto the versioned native services.

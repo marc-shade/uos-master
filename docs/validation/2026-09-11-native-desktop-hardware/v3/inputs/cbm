@@ -1,0 +1,740 @@
+#!/usr/bin/env python3
+"""cbm — Commodore C64 / C128 BASIC toolchain.
+
+Build BASIC source to .prg and disk images, run it headlessly in VICE with
+screen-text capture and assertions, and deploy it to a real machine through
+an Ultimate II+ / Ultimate 64 network API.
+
+Subcommands: build, run, deploy, screen, reset, list, doctor
+"""
+import argparse
+import os
+import shutil
+import socket
+import struct
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+# --------------------------------------------------------------------------
+# Machine definitions
+# --------------------------------------------------------------------------
+# kbuf/ndx: KERNAL keyboard buffer and its pending-character count. Poking
+# these makes the machine "type" a command at a READY prompt without a reset.
+TARGETS = {
+    "c64": {
+        "petcat_tok": "-w2",
+        "petcat_list": "-2",
+        "emu": "x64sc",
+        "load_addr": 0x0801,
+        "kbuf": 0x0277,
+        "ndx": 0x00C6,
+        "kbuf_len": 10,
+        "basic": "BASIC 2.0",
+    },
+    "c128": {
+        "petcat_tok": "-w70",
+        "petcat_list": "-70",
+        "emu": "x128",
+        "load_addr": 0x1C01,
+        "kbuf": 0x034A,
+        "ndx": 0x00D0,
+        "kbuf_len": 10,
+        "basic": "BASIC 7.0",
+    },
+}
+
+SCREEN_BASE = 0x0400           # VIC-II text screen, both machines, 40 columns
+SCREEN_SIZE = 40 * 25
+MESA_EGL = "/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+DEFAULT_HOST = os.environ.get("CBM_ULTIMATE_HOST", "192.168.1.237")
+
+
+def die(msg, code=1):
+    print(f"cbm: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def need(tool):
+    path = shutil.which(tool)
+    if not path:
+        die(f"required tool '{tool}' not found on PATH")
+    return path
+
+
+# --------------------------------------------------------------------------
+# PETSCII / screen codes
+# --------------------------------------------------------------------------
+def screencode_to_char(code):
+    """Map a VIC-II screen code to a printable ASCII approximation."""
+    c = code & 0x7F                      # bit 7 = reverse video
+    if c == 0:
+        return "@"
+    if 1 <= c <= 26:
+        return chr(ord("A") + c - 1)
+    if c == 27:
+        return "["
+    if c == 28:
+        return "\\"                      # £ on real hardware
+    if c == 29:
+        return "]"
+    if c == 30:
+        return "^"                       # up arrow
+    if c == 31:
+        return "_"                       # left arrow
+    if 32 <= c <= 63:
+        return chr(c)
+    return "."                           # PETSCII graphics glyph
+
+
+def screen_text(mem, cols=40, rows=25):
+    out = []
+    for r in range(rows):
+        row = mem[r * cols:(r + 1) * cols]
+        out.append("".join(screencode_to_char(b) for b in row).rstrip())
+    return "\n".join(out).rstrip("\n")
+
+
+def framed(text, cols=40):
+    top = "+" + "-" * cols + "+"
+    lines = [top]
+    for line in text.split("\n"):
+        lines.append("|" + line.ljust(cols)[:cols] + "|")
+    lines.append(top)
+    return "\n".join(lines)
+
+
+def petscii_bytes(s):
+    """Encode an ASCII command string as PETSCII for the keyboard buffer."""
+    out = bytearray()
+    for ch in s:
+        o = ord(ch)
+        if "a" <= ch <= "z":
+            out.append(o - 32)           # unshifted PETSCII: A-Z live at $41-$5A
+        elif o < 128:
+            out.append(o)
+        else:
+            die(f"cannot encode {ch!r} as PETSCII")
+    return bytes(out)
+
+
+# --------------------------------------------------------------------------
+# VICE binary monitor client
+# --------------------------------------------------------------------------
+STX, API_VER = 0x02, 0x02
+CMD_MEM_GET, CMD_BANKS, CMD_EXIT, CMD_QUIT = 0x01, 0x82, 0xAA, 0xBB
+
+
+class ViceMonitor:
+    """Speaks the VICE binary monitor protocol over TCP."""
+
+    def __init__(self, port, host="127.0.0.1", timeout=15.0):
+        self.sock = socket.create_connection((host, port), timeout=timeout)
+        self.sock.settimeout(timeout)
+        self.req_id = 0
+
+    def _recv_exact(self, n):
+        buf = b""
+        while len(buf) < n:
+            chunk = self.sock.recv(n - len(buf))
+            if not chunk:
+                raise EOFError("VICE monitor closed the connection")
+            buf += chunk
+        return buf
+
+    def _send(self, cmd, body=b""):
+        self.req_id += 1
+        self.sock.sendall(
+            struct.pack("<BBIIB", STX, API_VER, len(body), self.req_id, cmd) + body
+        )
+        return self.req_id
+
+    def _recv(self, want_id):
+        # Async events (STOPPED/RESUMED) arrive with unrelated ids; skip them.
+        while True:
+            stx, _api, blen, _rtype, err, rid = struct.unpack(
+                "<BBIBBI", self._recv_exact(12)
+            )
+            if stx != STX:
+                raise ValueError(f"bad STX byte {stx:#x} from VICE monitor")
+            body = self._recv_exact(blen) if blen else b""
+            if rid == want_id:
+                return err, body
+
+    def banks(self):
+        err, body = self._recv(self._send(CMD_BANKS))
+        if err:
+            raise RuntimeError(f"BANKS_AVAILABLE failed, error {err}")
+        banks, off = {}, 2
+        (count,) = struct.unpack("<H", body[:2])
+        for _ in range(count):
+            item_len = body[off]
+            bank_id = struct.unpack("<H", body[off + 1:off + 3])[0]
+            nlen = body[off + 3]
+            banks[body[off + 4:off + 4 + nlen].decode("ascii", "replace")] = bank_id
+            off += item_len + 1
+        return banks
+
+    def read_mem(self, start, end, bank=0, memspace=0):
+        body = struct.pack("<BHHBH", 0, start, end, memspace, bank)
+        err, resp = self._recv(self._send(CMD_MEM_GET, body))
+        if err:
+            raise RuntimeError(f"MEM_GET {start:#06x}-{end:#06x} failed, error {err}")
+        (n,) = struct.unpack("<H", resp[:2])
+        return resp[2:2 + n]
+
+    def resume(self):
+        """Let emulation continue; monitor commands implicitly stop the CPU."""
+        self._recv(self._send(CMD_EXIT))
+
+    def quit_emulator(self):
+        """Clean shutdown, which is what makes -exitscreenshot fire."""
+        self._send(CMD_QUIT)
+
+    def close(self):
+        self.sock.close()
+
+
+# --------------------------------------------------------------------------
+# Ultimate II+ / Ultimate 64 REST client
+# --------------------------------------------------------------------------
+class Ultimate:
+    def __init__(self, host=DEFAULT_HOST, timeout=25.0):
+        self.host = host
+        self.timeout = timeout
+
+    def _call(self, method, path, data=None):
+        req = urllib.request.Request(
+            f"http://{self.host}{path}", data=data, method=method
+        )
+        if data is not None:
+            req.add_header("Content-Type", "application/octet-stream")
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                return resp.status, resp.read()
+        except urllib.error.HTTPError as exc:
+            return exc.code, exc.read()
+        except OSError as exc:
+            die(f"cannot reach Ultimate at {self.host}: {exc}")
+
+    def _expect_ok(self, method, path, data=None, what="request"):
+        status, body = self._call(method, path, data)
+        if status != 200:
+            die(f"{what} failed: HTTP {status}: {body[:200].decode('utf-8', 'replace')}")
+        return body
+
+    def version(self):
+        return self._expect_ok("GET", "/v1/version", what="version").decode(
+            "utf-8", "replace"
+        )
+
+    def drives(self):
+        return self._expect_ok("GET", "/v1/drives", what="drive query").decode(
+            "utf-8", "replace"
+        )
+
+    def read_mem(self, address, length):
+        body = self._expect_ok(
+            "GET",
+            f"/v1/machine:readmem?address={address:04X}&length={length}",
+            what="readmem",
+        )
+        if len(body) < length:
+            die(f"readmem returned {len(body)} bytes, expected {length}")
+        return body[:length]
+
+    def write_mem(self, address, data):
+        hexdata = data.hex().upper()
+        if len(data) > 128:
+            die("writemem accepts at most 128 bytes per call")
+        self._expect_ok(
+            "PUT",
+            f"/v1/machine:writemem?address={address:04X}&data={hexdata}",
+            what="writemem",
+        )
+
+    def mount(self, image_bytes, drive="a", img_type="d64", mode="readwrite"):
+        self._expect_ok(
+            "POST",
+            f"/v1/drives/{drive}:mount?type={img_type}&mode={mode}",
+            image_bytes,
+            what="disk mount",
+        )
+
+    def unmount(self, drive="a"):
+        self._expect_ok("PUT", f"/v1/drives/{drive}:remove", what="disk unmount")
+
+    def run_prg(self, prg_bytes):
+        self._expect_ok("POST", "/v1/runners:run_prg", prg_bytes, what="run_prg")
+
+    def reset(self):
+        self._expect_ok("PUT", "/v1/machine:reset", what="reset")
+
+    def screen(self):
+        return screen_text(self.read_mem(SCREEN_BASE, SCREEN_SIZE))
+
+    def screen_when_settled(self, timeout=60.0, poll=1.0, settle_polls=3):
+        """Poll the real screen until it stops changing.
+
+        Real hardware runs at 1MHz with no warp mode, so a fixed sleep either
+        truncates a running program or wastes time. Settling detects the end
+        of output whether or not the program returns to a READY prompt.
+        """
+        deadline = time.time() + timeout
+        previous, stable, text = None, 0, self.screen()
+        while time.time() < deadline:
+            text = self.screen()
+            if text == previous:
+                stable += 1
+                if stable >= settle_polls and text.strip():
+                    return text, True
+            else:
+                stable, previous = 0, text
+            time.sleep(poll)
+        return text, False
+
+    def type_line(self, text, spec, settle=0.25, timeout=15.0):
+        """Type a command at a READY prompt by refilling the keyboard buffer.
+
+        The buffer holds only ~10 characters, so long commands are fed in
+        chunks, waiting for the editor to drain each one.
+        """
+        payload = petscii_bytes(text) + b"\r"
+        chunk_size = spec["kbuf_len"]
+        deadline = time.time() + timeout
+        for i in range(0, len(payload), chunk_size):
+            chunk = payload[i:i + chunk_size]
+            while self.read_mem(spec["ndx"], 1)[0] != 0:
+                if time.time() > deadline:
+                    die("keyboard buffer never drained; is the machine at a READY prompt?")
+                time.sleep(settle)
+            self.write_mem(spec["kbuf"], chunk)
+            self.write_mem(spec["ndx"], bytes([len(chunk)]))
+            time.sleep(settle)
+
+
+# --------------------------------------------------------------------------
+# Build helpers
+# --------------------------------------------------------------------------
+def tokenize(src, out_prg, target):
+    """BASIC text -> tokenized .prg with the correct load address."""
+    spec = TARGETS[target]
+    need("petcat")
+    proc = subprocess.run(
+        ["petcat", spec["petcat_tok"], "-o", out_prg, "--", src],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0 or not os.path.exists(out_prg):
+        die(f"petcat failed: {proc.stderr.strip() or proc.stdout.strip()}")
+    with open(out_prg, "rb") as fh:
+        head = fh.read(2)
+    addr = head[0] | (head[1] << 8)
+    if addr != spec["load_addr"]:
+        print(
+            f"cbm: warning: load address ${addr:04X} != expected "
+            f"${spec['load_addr']:04X} for {target}",
+            file=sys.stderr,
+        )
+    return out_prg
+
+
+def cbm_name(raw):
+    """Legal CBM filename: uppercase-ish, <= 16 chars, no path or extension."""
+    base = os.path.splitext(os.path.basename(raw))[0]
+    keep = "".join(c for c in base if c.isalnum() or c in "-+ ")
+    return (keep or "prog")[:16].lower()
+
+
+def make_disk(prg_path, out_image, img_type, disk_name, file_name):
+    need("c1541")
+    if os.path.exists(out_image):
+        os.remove(out_image)
+    proc = subprocess.run(
+        [
+            "c1541",
+            "-format", f"{disk_name[:16]},cb", img_type, out_image,
+            "-write", prg_path, file_name,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0 or not os.path.exists(out_image):
+        die(f"c1541 failed: {proc.stderr.strip() or proc.stdout.strip()}")
+    return out_image
+
+
+def resolve_prg(path, target, workdir):
+    """Accept either a .prg or BASIC source; return a path to a .prg."""
+    if path.lower().endswith(".prg"):
+        return path, False
+    out = os.path.join(workdir, cbm_name(path) + ".prg")
+    tokenize(path, out, target)
+    return out, True
+
+
+# --------------------------------------------------------------------------
+# Emulator
+# --------------------------------------------------------------------------
+def free_port():
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def free_display():
+    for num in range(90, 130):
+        if not os.path.exists(f"/tmp/.X11-unix/X{num}"):
+            return num
+    die("no free X display number between :90 and :129")
+
+
+class Xvfb:
+    """Headless X server. Forces Mesa EGL: NVIDIA's EGL aborts Xvfb here."""
+
+    def __init__(self, geometry="800x600x24"):
+        self.num = free_display()
+        env = dict(os.environ, __EGL_VENDOR_LIBRARY_FILENAMES=MESA_EGL)
+        need("Xvfb")
+        self.proc = subprocess.Popen(
+            ["Xvfb", f":{self.num}", "-screen", "0", geometry],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+        )
+        for _ in range(50):
+            if os.path.exists(f"/tmp/.X11-unix/X{self.num}"):
+                return
+            if self.proc.poll() is not None:
+                die(f"Xvfb :{self.num} exited immediately (rc={self.proc.returncode})")
+            time.sleep(0.1)
+        die(f"Xvfb :{self.num} did not come up within 5s")
+
+    @property
+    def display(self):
+        return f":{self.num}"
+
+    def stop(self):
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+
+
+def run_emulator(prg, target, timeout, shot, windowed, capture, boot80,
+                 settle_polls=3):
+    """Autostart prg in VICE, wait for the screen(s) to settle.
+
+    Returns a list of (label, text, columns). The C128 drives the VIC-II and
+    the VDC independently and both are always live, so 'both' captures the
+    pair from a single run.
+    """
+    spec = TARGETS[target]
+    need(spec["emu"])
+    port = free_port()
+    xvfb = None
+    env = dict(os.environ, __EGL_VENDOR_LIBRARY_FILENAMES=MESA_EGL)
+
+    if windowed:
+        if not env.get("DISPLAY"):
+            die("--window needs a DISPLAY; drop it to run headless")
+    else:
+        xvfb = Xvfb()
+        env["DISPLAY"] = xvfb.display
+
+    cmd = [
+        spec["emu"], "-default",
+        "-autostart", prg,
+        "-binarymonitor", "-binarymonitoraddress", f"ip4://127.0.0.1:{port}",
+        "-sounddev", "dummy",
+        "-jamaction", "0",
+    ]
+    if not windowed:
+        cmd += ["-warp", "-autostart-warp"]
+    if shot:
+        cmd += ["-exitscreenshot", os.path.abspath(shot)]
+    if capture in ("80", "both") and target != "c128":
+        die("the 80-column VDC exists only on the C128")
+    if boot80:
+        if target != "c128":
+            die("--80col is C128-only")
+        cmd += ["-80col"]
+
+    emu = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, env=env)
+    mon = None
+    try:
+        deadline = time.time() + timeout
+        while True:
+            if emu.poll() is not None:
+                die(f"{spec['emu']} exited before the monitor came up")
+            try:
+                mon = ViceMonitor(port)
+                break
+            except OSError:
+                if time.time() > deadline:
+                    die(f"VICE binary monitor never opened on port {port}")
+                time.sleep(0.25)
+
+        # (label, bank, base address, columns, rows)
+        wanted = []
+        if capture in ("40", "both"):
+            wanted.append(("VIC-II 40 col", 0, SCREEN_BASE, 40, 25))
+        if capture in ("80", "both"):
+            banks = mon.banks()
+            if "vdc" not in banks:
+                die(f"{spec['emu']} exposes no VDC bank; banks: {sorted(banks)}")
+            wanted.append(("VDC 80 col", banks["vdc"], 0x0000, 80, 25))
+
+        previous, stable, shots = None, 0, []
+        while time.time() < deadline:
+            shots = []
+            for label, bank, base, cols, rows in wanted:
+                mem = mon.read_mem(base, base + cols * rows - 1, bank=bank)
+                shots.append((label, screen_text(mem, cols, rows), cols))
+            mon.resume()
+            combined = "\x00".join(s[1] for s in shots)
+            if combined == previous:
+                stable += 1
+                if stable >= settle_polls and combined.strip("\x00 \n"):
+                    break
+            else:
+                stable, previous = 0, combined
+            time.sleep(0.4)
+        return shots
+    finally:
+        if mon is not None:
+            mon.quit_emulator()          # clean exit so -exitscreenshot fires
+            mon.close()
+        try:
+            emu.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            emu.kill()
+            emu.wait(timeout=5)
+        if xvfb is not None:
+            xvfb.stop()
+
+
+# --------------------------------------------------------------------------
+# Subcommands
+# --------------------------------------------------------------------------
+def cmd_build(args):
+    target = args.target
+    out = args.output or (os.path.splitext(args.source)[0] + ".prg")
+    tokenize(args.source, out, target)
+    size = os.path.getsize(out)
+    print(f"built {out} ({size} bytes, {TARGETS[target]['basic']}, "
+          f"load ${TARGETS[target]['load_addr']:04X})")
+    if args.disk:
+        image = args.disk_out or (os.path.splitext(args.source)[0] + "." + args.disk)
+        name = args.name or cbm_name(args.source)
+        make_disk(out, image, args.disk, name, name)
+        print(f"built {image} ({args.disk}) containing \"{name}\"")
+    return 0
+
+
+def cmd_run(args):
+    with tempfile.TemporaryDirectory(prefix="cbm-") as work:
+        prg, built = resolve_prg(args.source, args.target, work)
+        if built:
+            print(f"tokenized {args.source} -> {TARGETS[args.target]['basic']}",
+                  file=sys.stderr)
+        shots = run_emulator(
+            prg, args.target, args.timeout, args.shot, args.window,
+            args.capture, args.boot80,
+        )
+    for label, text, cols in shots:
+        if len(shots) > 1:
+            print(f"--- {label} ---")
+        print(framed(text, cols))
+    if args.shot:
+        print(f"screenshot: {args.shot}")
+    if args.expect:
+        needle = args.expect.upper()
+        if any(needle in text.upper() for _, text, _ in shots):
+            print(f"cbm: OK — found {args.expect!r}")
+        else:
+            where = " or ".join(label for label, _, _ in shots)
+            print(f"cbm: FAIL — expected {args.expect!r} not found on {where}",
+                  file=sys.stderr)
+            return 1
+    return 0
+
+
+def cmd_deploy(args):
+    target = args.target
+    spec = TARGETS[target]
+    ult = Ultimate(args.host)
+    with tempfile.TemporaryDirectory(prefix="cbm-") as work:
+        prg, built = resolve_prg(args.source, target, work)
+        if built:
+            print(f"tokenized {args.source} -> {spec['basic']}", file=sys.stderr)
+        prg_bytes = open(prg, "rb").read()
+
+        if target == "c64" and args.mode in ("auto", "run_prg"):
+            print(f"deploying {len(prg_bytes)} bytes via run_prg "
+                  f"(resets the machine into C64 mode)", flush=True)
+            ult.run_prg(prg_bytes)
+        else:
+            if args.mode == "run_prg":
+                die("run_prg boots C64 mode; it cannot run a C128 BASIC 7.0 program")
+            name = args.name or cbm_name(args.source)
+            image = make_disk(prg, os.path.join(work, "deploy." + args.disk),
+                              args.disk, name, name)
+            print(f"mounting {args.disk} on drive {args.drive} with \"{name}\"",
+                  flush=True)
+            ult.mount(open(image, "rb").read(), args.drive, args.disk)
+            if args.reset:
+                print("resetting machine, waiting for READY", flush=True)
+                ult.reset()
+                time.sleep(args.reset_wait)
+            print(f"typing RUN\"{name.upper()}\" at the prompt", flush=True)
+            ult.type_line(f'run"{name}"', spec)
+
+        time.sleep(args.wait)
+        text, settled = ult.screen_when_settled(timeout=args.timeout)
+    print(framed(text))
+    if not settled:
+        print(f"cbm: note — screen still changing after {args.timeout:g}s; "
+              f"the program may still be running", file=sys.stderr)
+    if args.expect:
+        if args.expect.upper() not in text.upper():
+            print(f"cbm: FAIL — expected {args.expect!r} not on the machine's screen",
+                  file=sys.stderr)
+            return 1
+        print(f"cbm: OK — found {args.expect!r}")
+    return 0
+
+
+def cmd_screen(args):
+    print(framed(Ultimate(args.host).screen()))
+    return 0
+
+
+def cmd_eject(args):
+    Ultimate(args.host).unmount(args.drive)
+    print(f"drive {args.drive} unmounted")
+    return 0
+
+
+def cmd_reset(args):
+    ult = Ultimate(args.host)
+    ult.reset()
+    time.sleep(args.wait)
+    print(framed(ult.screen()))
+    return 0
+
+
+def cmd_list(args):
+    need("petcat")
+    proc = subprocess.run(
+        ["petcat", TARGETS[args.target]["petcat_list"], "-nh", "--", args.source],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        die(f"petcat failed: {proc.stderr.strip()}")
+    sys.stdout.write(proc.stdout)
+    return 0
+
+
+def cmd_doctor(args):
+    ok = True
+    print("== host tools ==")
+    for tool in ("petcat", "c1541", "x64sc", "x128", "Xvfb", "cartconv", "64tass", "cl65"):
+        path = shutil.which(tool)
+        print(f"  {tool:10s} {path or 'MISSING'}")
+        if not path and tool in ("petcat", "c1541", "x64sc", "x128", "Xvfb"):
+            ok = False
+    print(f"\n== Mesa EGL shim for Xvfb ==\n  {MESA_EGL} "
+          f"{'present' if os.path.exists(MESA_EGL) else 'MISSING'}")
+    print(f"\n== Ultimate at {args.host} ==")
+    try:
+        with urllib.request.urlopen(
+            f"http://{args.host}/v1/version", timeout=5
+        ) as resp:
+            print("  reachable:", resp.read().decode("utf-8", "replace").strip())
+        print(framed(Ultimate(args.host).screen()))
+    except OSError as exc:
+        print(f"  unreachable: {exc}")
+    return 0 if ok else 1
+
+
+# --------------------------------------------------------------------------
+def main():
+    p = argparse.ArgumentParser(prog="cbm", description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--target", choices=sorted(TARGETS), default="c128",
+                   help="machine/BASIC dialect (default: c128)")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    b = sub.add_parser("build", help="tokenize BASIC source to .prg (+ disk image)")
+    b.add_argument("source")
+    b.add_argument("-o", "--output")
+    b.add_argument("--disk", choices=["d64", "d71", "d81"])
+    b.add_argument("--disk-out")
+    b.add_argument("--name", help="CBM filename inside the disk image")
+    b.set_defaults(func=cmd_build)
+
+    r = sub.add_parser("run", help="run in VICE headlessly and capture the screen")
+    r.add_argument("source", help=".bas source or .prg")
+    r.add_argument("--timeout", type=float, default=25.0)
+    r.add_argument("--shot", help="write a PNG screenshot here")
+    r.add_argument("--expect", help="fail unless this text appears on screen")
+    r.add_argument("--window", action="store_true", help="show a real window")
+    r.add_argument("--capture", choices=["40", "80", "both"], default="40",
+                   help="which C128 screen(s) to read back (default: 40)")
+    r.add_argument("--80col", dest="boot80", action="store_true",
+                   help="boot the C128 with the 80-column screen active")
+    r.set_defaults(func=cmd_run)
+
+    d = sub.add_parser("deploy", help="build and run on real hardware")
+    d.add_argument("source")
+    d.add_argument("--host", default=DEFAULT_HOST)
+    d.add_argument("--mode", choices=["auto", "run_prg", "disk"], default="auto")
+    d.add_argument("--disk", choices=["d64", "d71", "d81"], default="d64")
+    d.add_argument("--drive", default="a")
+    d.add_argument("--name")
+    d.add_argument("--reset", action="store_true",
+                   help="reset first to guarantee a C128 READY prompt")
+    d.add_argument("--reset-wait", type=float, default=6.0)
+    d.add_argument("--wait", type=float, default=2.0,
+                   help="delay before polling starts")
+    d.add_argument("--timeout", type=float, default=90.0,
+                   help="how long to wait for the screen to stop changing")
+    d.add_argument("--expect")
+    d.set_defaults(func=cmd_deploy)
+
+    s = sub.add_parser("screen", help="read the live 40-column screen from hardware")
+    s.add_argument("--host", default=DEFAULT_HOST)
+    s.set_defaults(func=cmd_screen)
+
+    ej = sub.add_parser("eject", help="unmount a disk image on the real machine")
+    ej.add_argument("--host", default=DEFAULT_HOST)
+    ej.add_argument("--drive", default="a")
+    ej.set_defaults(func=cmd_eject)
+
+    rs = sub.add_parser("reset", help="reset the real machine")
+    rs.add_argument("--host", default=DEFAULT_HOST)
+    rs.add_argument("--wait", type=float, default=6.0)
+    rs.set_defaults(func=cmd_reset)
+
+    ls = sub.add_parser("list", help="detokenize a .prg back to BASIC text")
+    ls.add_argument("source")
+    ls.set_defaults(func=cmd_list)
+
+    dr = sub.add_parser("doctor", help="check toolchain and hardware reachability")
+    dr.add_argument("--host", default=DEFAULT_HOST)
+    dr.set_defaults(func=cmd_doctor)
+
+    args = p.parse_args()
+    sys.exit(args.func(args))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,10 +1,11 @@
-# Native desktop migration: concrete blockers and first acceptance gate
+# Native desktop migration and remaining gaps
 
-This is an implementation plan, not a native graphical-desktop qualification.
-The native kernel currently boots the two-screen text workspace. The graphical
-desktop and its pointer, drawing and cartridge panels still use the legacy
-core. The module loader supplies one part of their migration, but does not
-supply display ownership, window events or an app switcher.
+The [native graphical desktop](NATIVE-GRAPHICS.md) now has a separate direct-boot
+disk, owned VIC presentation, clipped drawing, VDC text controls and keyboard
+app handoff. The diagnostic text workspace remains available. This document
+retains the migration analysis and qualification history; pointer/window
+events, persistent desktop state, native cartridge panels and an app switcher
+remain open. The legacy desktop has a separate memory layout and build.
 
 ## Existing code cannot keep its legacy memory layout
 
@@ -28,10 +29,10 @@ REU snapshot nor a direct DMA sample proves ownership of native RAM.
 
 The production desktop need not keep the diagnostic workspace's two 8 KiB
 blocks allocated. They remain a useful separate allocator/IRQ regression.
-A provisional VIC surface budget is 32 pages for bitmap storage and four
-pages for its matrix. These are accounting sizes, not assigned addresses or
-a verified VIC mode. Sprites, fonts, driver code, event records and repaint
-scratch still need their own explicit entries.
+The current VIC surface uses 32 pages for bitmap storage and four pages for
+its matrix, reserved by the desktop through the kernel heap API. The table
+below retains the original concurrent-storage estimate. Sprites, additional
+driver code, event records and repaint scratch still need explicit entries.
 
 | Proposed concurrent storage | Pages |
 |---|---:|
@@ -49,7 +50,116 @@ and observer scratch. It must include rollback after a later reservation
 fails. App suspension and additional complete windows will need a separate
 backing-store/lifetime design; this budget does not implement them.
 
+## First placement and interrupt experiment
+
+The [retained native VIC experiment](reference/2026-09-11-native-vic-placement/README.md)
+places a bitmap at bank-0 `$c000..$dfff` and its matrix at `$e000..$e3ff`.
+A separate 468-byte client reserves these 36 pages through `N_RESERVE` and
+initializes them through `N_FILL`. Two full surface comparisons and two
+320×200 rendered-pixel checks pass in VICE with 16 KiB VDC RAM. Jiffies advance
+during presentation. The client's explicit teardown restores both text
+consoles after `N_EXIT` and normal return. An existing workspace allocation
+overlapping the proposed surface causes a checked reservation failure.
+
+The native text workspace uses raster interrupts. The installed C128 KERNAL
+rewrites display registers according to `$d8`; the experiment temporarily
+selects its skip state while retaining IRQ service. The first client also
+exposed a separate visibility problem: correct RAM bytes still displayed
+character ROM in the lower bitmap. Applying the KERNAL's bitmap processor-port
+sequence removes that overlay, and the original client fails the new pixel
+oracle. Register reads alone are therefore insufficient evidence for a surface.
+
+This result settles one emulator placement and explicit client-return path.
+It does not implement a kernel display lifetime. Production must keep teardown
+available before freeing or replacing the app, and prevent a visible surface
+from silently becoming another owner's allocation. Failure after later
+reservations, replacement/failed launch, graphics during file operations,
+VDC graphics and physical observations remain part of the gate below. The
+diagnostic workspace's top bank-0 allocation overlaps this candidate surface;
+production must account for that lifetime instead of assuming both fit.
+
 ## First implementation gate: owned presentation and return
+
+The [isolated display lifetime candidate](validation/2026-09-11-native-display-lifetime/README.md)
+now implements checked `N_VSHOW`/`N_VCLOSE` gates and resident teardown before
+surface release or app cleanup. It keeps the 426-page heap and unchanged app
+images. All 25 CPU suites, ten ordinary emulator workflows and five dedicated
+graphics workflows pass. The latter include complete pixel comparisons, a
+513-byte IEC read during graphics, explicit exit, normal return, visible-surface
+release, and successful/missing app replacements. The source patch and raw
+evidence are retained separately from production. Physical qualification
+remains open; the
+candidate's underlying USB transport is still under investigation.
+
+The separate [clipped drawing and text prototype](validation/2026-09-11-native-graphics-text/README.md)
+adds pixel/color rectangles, 8×8 glyphs and bounded ASCII labels through the
+owned-heap API. Its 2,022-byte library includes an original 95-character font.
+All 607 CPU cases and five emulator lifecycles pass, including complete
+surface/pixel comparisons and clipped text at screen edges. Its twelve-page
+demo allocation is separate from the 36-page display surface. The prototype
+remains outside the production images.
+The subsequent [transfer optimization](validation/2026-09-11-native-graphics-fastpaths/README.md)
+passes 697 CPU cases and the same five emulator lifecycles with unchanged
+pixels. Complete bands and aligned cells reduce the measured example instruction
+counts by 7.385–8.893 times. Its library is 2,342 bytes and its demo declares
+thirteen app pages. These are modeled instruction reductions.
+
+The [window clipping and layout candidate](validation/2026-09-11-native-graphics-clipping/README.md)
+passes 1,243 CPU cases and five complete emulator display lifecycles. Its
+2,685-byte library clips pixels, glyphs and labels to a signed window rectangle;
+attribute writes stay inside complete cells within that rectangle. A CPU model
+using the actual editor, heap, module and file code retains a 66,056-byte edited
+document, 36-page display surface and eight-page picker cache with 31 heap pages
+free. The renderer fits the editor's existing module window. Picker replacement,
+stale module rejection, verified Save As, graphics reload and full cleanup pass.
+This concurrent workflow models calls from the retained editor core; it is not
+yet an interactive graphical editor. A fragmented surface refusal leaves the
+document unchanged. Masked band processing cuts the preceding identical layout
+scene from 17,729,767 to 4,738,938 modeled instructions. The final clipping scene
+adds operations and takes 5,197,786 instructions. Physical graphics, drawing
+time, VDC bitmap presentation and desktop input/focus remain open.
+
+The subsequent [native launcher candidate](validation/2026-09-11-native-desktop-launcher/README.md)
+now provides keyboard selection and real Calculator, Editor and Files launches,
+with VDC text controls and a direct desktop boot image. The existing dispatcher
+releases the eighteen-page launcher and 36-page surface before opening an app,
+then reloads the desktop on return. Nine launcher CPU workflows pass on each of
+the two private kernels; five additional kernel CPU suites and five VICE
+workflows pass. Missing app/desktop files, dirty-document cancellation, Files
+return and allocation fallback are covered. Independent capture checks match
+26 complete surfaces, 1,664,000 pixels and 29 app/workspace screen pairs. This
+provides a working native launcher; physical graphics, pointer/window input,
+VDC bitmap presentation, persistent desktop state and Ultimate panels remain
+outside that checkpoint. Production integration followed as described below.
+
+The [physical desktop preparation](validation/2026-09-11-native-desktop-hardware/README.md)
+retains three versions with 383, 385 and 386 inputs, all reproducing the same
+boot disk exactly. Five VICE
+preflight workflows qualify the CPU observer during graphics, an explicit
+11,971-byte immutable-kernel audit, and the exact proposed hardware native
+sequence. The latter returns from Calculator, Editor and Files and releases
+all 426 pages and 32 handles. The revised observer also captures CPU mode
+registers directly. The first physical attempt failed in the legacy preflight
+before native code ran; its cause remains unproven. The original desktop,
+settings and drives were restored, and the failed attempt and recovery are
+archived. The second attempt verified desktop selection, Calculator and Editor,
+then stopped on a strict observer metadata comparison after Editor returned.
+Its original deployment was restored and both private uploads were verified
+and removed. The differing metadata bytes were not retained, leaving the
+cause unclassified. The third run retained all before/after borrower bytes and also failed: seven
+restored-buffer bytes differed, and one capture chunk contained 71 unexpected
+bytes. Its original deployment was restored and both private uploads were
+verified and removed. The cause remains unproven. Physical qualification is
+incomplete; a focused capture-transport investigation precedes another full run.
+
+The [production build integration](validation/2026-09-12-native-desktop-integration/README.md)
+reorganizes the same graphics sources under `src/native`, builds direct-desktop
+and diagnostic disks in distinct output directories, and passes eighteen
+desktop CPU workflows, 1,243 drawing cases and six VICE workflows. It reproduces
+the sealed images from a clean tree without prototype directories. This
+integration supplies the current source and separate desktop build target.
+Physical qualification remains separately reported; software passes do not
+erase the three retained hardware interruptions.
 
 Build the initial native display client against the public heap/file/module
 services. Keep optional graphics executable code in the app allocation or a

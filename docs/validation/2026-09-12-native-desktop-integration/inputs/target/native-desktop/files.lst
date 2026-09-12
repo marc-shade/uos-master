@@ -1,0 +1,2660 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-native-desktop-clean-integration/target/native-desktop/files.prg -l /var/tmp/arc-scratch/uos-native-desktop-clean-integration/target/native-desktop/files.sym -L /var/tmp/arc-scratch/uos-native-desktop-clean-integration/target/native-desktop/files.lst /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/files.asm
+; Sat Sep 12 08:26:44 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/files.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=8					N_ABI_MINOR = 8
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; checked PRG through owned IEC/Ultimate streams
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; owned read/create stream or Ultimate directory cursor
+=$1c44					N_FREAD         = $1c44          ; up to 512 file bytes, or one complete directory entry
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch with source fields
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$1c59					N_FEDIT         = $1c59          ; edit the active app's bounded field, no input polling
+=$1c5c					N_FDRAW         = $1c5c          ; draw that focused field at the current console position
+=$1c5f					N_MLOAD         = $1c5f          ; checked module from the original app's source folder
+=$1c62					N_MCALL         = $1c62          ; call the current module using its generation token
+=$1c65					N_MCLOSE        = $1c65          ; invalidate module; close/recover only its source stream
+=$1c68					N_VSHOW         = $1c68          ; experimental: present owned bank-0 $c000..$e3ff
+=$1c6b					N_VCLOSE        = $1c6b          ; experimental: restore text; keep surface allocation
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d17					N_MTOKEN        = $3d17          ; LE24: MLOAD output / MCALL input; zero is invalid
+=$3d1a					N_MERROR        = $3d1a          ; gate/loader error; MCALL preserves module's A/carry
+=$3d1b					N_MSTATE        = $3d1b          ; read-only: 0 empty, 1 loading, 2 ready, 3 running, 4 close retained
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device 8..30, or Ultimate DOS context 1/2
+=$3d22					N_NAMELEN       = $3d22          ; IEC launch name 1..16; Ultimate path length 1..255
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; first failed loader stream's nonzero transport status
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
+=$3d2d					N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
+=$3d2e					N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
+=$3d30					N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
+=$3d34					N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
+=$3d35					N_UIPTR         = $3d35          ; word: field-state address
+=$3d37					N_UIKEY         = $3d37
+=$3d38					N_UIWIDTH       = $3d38
+=$3d39					N_UIFLAGS       = $3d39          ; successful edit: bit 0 content, bit 1 caret changed
+=$3d3a					N_UIERROR       = $3d3a
+=$3d3b					N_UIBUSY        = $3d3b
+=0					UI_LENGTH       = 0
+=1					UI_CARET        = 1
+=2					UI_MAXIMUM      = 2
+=3					UI_BUFFER       = 3
+=5					UI_VIEW40       = 5
+=6					UI_VIEW80       = 6
+=7					UI_FILTER       = 7
+=8					UI_STATE_BYTES  = 8
+=$3e00					N_BROWSERNAME   = $3e00          ; 256 bytes; restore selection after directory edits
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d50					N_MHEADER       = $3d50          ; private: independent 16-byte module manifest
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3f00					N_SOURCEPATH    = $3f00          ; private: original Ultimate app parent directory
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30 or Ultimate DOS context 1/2
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; IEC first error; Ultimate most recent numeric status
+=$3d90					N_FSTATUS       = $3d90          ; IEC serial error; Ultimate transport/verification detail
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; LE32 byte position, or directory entries consumed
+=$3d96					N_FFORMAT       = $3d96          ; 0 D64, 1 D71, 2 D81, 3 Ultimate DOS
+=$4e00					N_UPATH         = $4e00          ; 256-byte path mailbox, bank 0, reserved
+=$4a00					N_BROWSERPATH   = $4a00          ; ABI 1.5: persistent browser path, 1..255 raw bytes
+=$4f00					N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes + NUL
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$16					N_MEXHAUSTED    = $16            ; module generation retired until the next kernel boot
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$5000					N_RELOCBASE     = $5000          ; boot-only staging, reusable after relocation
+=$4000					N_SERVICEBASE   = $4000          ; resident Ultimate services and mailboxes
+=$5000					N_SERVICELIMIT  = $5000
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/files.asm
+
+.6000					b_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 08 00			        .byte 1,1,8,0
+>6008	d9 1b				        .word b_end-b_image
+>600a	1c 00				        .byte (b_end-b_image+255)/256,0
+>600c	20 00				        .word b_entry-b_image
+>600e	00 00				        .word 0
+>6010	46 49 4c 45 53 20 41 4e		        .text "files and apps",0
+>6018	44 20 41 50 50 53 00
+>601f	00				        .fill N_APPBASE+32-*,0
+=0					FD_EMBEDDED = 0
+=1					FD_RETURN_TO_DESKTOP = 1
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/file-browser.inc
+
+.6020					b_entry:
+.6020	d8		cld		        cld
+.6021	ad 20 3d	lda $3d20	        lda N_CURRENT
+.6024	8d 9d 7a	sta $7a9d	        sta b_owner
+.6027	8d 00 3d	sta $3d00	        sta N_OWNER
+.602a	a9 25		lda #$25	        lda #37                 ; 296 normalized entries, the root D81 maximum
+.602c	8d 01 3d	sta $3d01	        sta N_PAGES
+.602f	a9 01		lda #$01	        lda #1
+.6031	8d 02 3d	sta $3d02	        sta N_BANK
+.6034	20 20 1c	jsr $1c20	        jsr N_ALLOC
+.6037	90 03		bcc $603c	        bcs b_exit_error
+.6039	4c 20 61	jmp $6120
+.603c	a2 03		ldx #$03	        ldx #3
+.603e					b_keep_cache:
+.603e	bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.6041	9d 99 7a	sta $7a99,x	        sta b_cache,x
+.6044	ca		dex		        dex
+.6045	10 f7		bpl $603e	        bpl b_keep_cache
+.6047	ad 2d 3d	lda $3d2d	        lda N_BOOTDEVICE
+.604a	8d 7f 79	sta $797f	        sta bu_iec_device
+.604d	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6050	c9 03		cmp #$03	        cmp #3
+.6052	d0 03		bne $6057	        beq bu_preferences
+.6054	4c 78 6f	jmp $6f78
+.6057	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.605a	c9 08		cmp #$08	        cmp #8
+.605c	90 04		bcc $6062	        bcc b_default_device
+.605e	c9 1f		cmp #$1f	        cmp #31
+.6060	90 10		bcc $6072	        bcc b_device_valid
+.6062					b_default_device:
+.6062	ad 21 3d	lda $3d21	        lda N_DEVICE
+.6065	ae 2c 3d	ldx $3d2c	        ldx N_APPFORMAT
+.6068	e0 03		cpx #$03	        cpx #3
+.606a	d0 03		bne $606f	        bne +
+.606c	ad 2d 3d	lda $3d2d	        lda N_BOOTDEVICE
+.606f					+
+.606f	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.6072					b_device_valid:
+.6072	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6075	c9 03		cmp #$03	        cmp #3
+.6077	90 05		bcc $607e	        bcc b_format_valid
+.6079	a9 00		lda #$00	        lda #0
+.607b	8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
+.607e					b_format_valid:
+.607e	ad 2b 3d	lda $3d2b	        lda N_BROWSERERROR
+.6081	8d ab 7a	sta $7aab	        sta b_launch_error
+.6084	a9 00		lda #$00	        lda #0
+.6086	8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
+.6089	8d a0 7a	sta $7aa0	        sta b_selected
+.608c	8d a1 7a	sta $7aa1	        sta b_selected+1
+.608f	20 24 63	jsr $6324	        jsr b_refresh
+.6092					b_redraw:
+.6092	20 13 65	jsr $6513	        jsr b_draw
+.6095					b_loop:
+.6095	ad 88 79	lda $7988	        lda bu_pending_key
+.6098	f0 08		beq $60a2	        beq b_publish_ready
+.609a	a2 00		ldx #$00	        ldx #0
+.609c	8e 88 79	stx $7988	        stx bu_pending_key
+.609f	4c ac 60	jmp $60ac	        jmp b_have_key
+.60a2					b_publish_ready:
+.60a2	a9 01		lda #$01	        lda #1
+.60a4	8d 12 3d	sta $3d12	        sta N_READY
+.60a7					b_get_key:
+.60a7	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.60aa	f0 e9		beq $6095	        beq b_loop
+.60ac					b_have_key:
+.60ac	a2 00		ldx #$00	        ldx #0
+.60ae	8e 12 3d	stx $3d12	        stx N_READY
+.60b1	ae ad 7a	ldx $7aad	        ldx b_prompt
+.60b4	f0 03		beq $60b9	        bne b_prompt_key
+.60b6	4c 8b 61	jmp $618b
+.60b9	ae 15 6c	ldx $6c15	        ldx b_preview
+.60bc	f0 03		beq $60c1	        bne b_preview_key
+.60be	4c 52 6a	jmp $6a52
+.60c1	ae 2a 3d	ldx $3d2a	        ldx N_BROWSERFMT
+.60c4	e0 03		cpx #$03	        cpx #3
+.60c6	d0 03		bne $60cb	        beq bu_key
+.60c8	4c be 6f	jmp $6fbe
+.60cb	c9 1b		cmp #$1b	        cmp #27
+.60cd	f0 4c		beq $611b	        beq b_workspace
+.60cf	c9 11		cmp #$11	        cmp #$11                ; native cursor down
+.60d1	d0 03		bne $60d6	        beq b_down
+.60d3	4c 06 62	jmp $6206
+.60d6	c9 91		cmp #$91	        cmp #$91
+.60d8	d0 03		bne $60dd	        beq b_up
+.60da	4c 14 62	jmp $6214
+.60dd	c9 0d		cmp #$0d	        cmp #13
+.60df	d0 03		bne $60e4	        beq b_enter
+.60e1	4c dd 62	jmp $62dd
+.60e4	29 df		and #$df	        and #$df
+.60e6	c9 52		cmp #$52	        cmp #$52
+.60e8	f0 39		beq $6123	        beq b_rescan
+.60ea	c9 46		cmp #$46	        cmp #$46
+.60ec	f0 40		beq $612e	        beq b_change_format
+.60ee	c9 44		cmp #$44	        cmp #$44
+.60f0	d0 03		bne $60f5	        beq b_device_prompt
+.60f2	4c 78 61	jmp $6178
+.60f5	c9 4e		cmp #$4e	        cmp #$4e
+.60f7	d0 03		bne $60fc	        beq b_next_page
+.60f9	4c 2a 62	jmp $622a
+.60fc	c9 42		cmp #$42	        cmp #$42
+.60fe	d0 03		bne $6103	        beq b_previous_page
+.6100	4c 3b 62	jmp $623b
+.6103	c9 41		cmp #$41	        cmp #$41
+.6105	d0 03		bne $610a	        beq b_next_app
+.6107	4c 8b 62	jmp $628b
+.610a	c9 49		cmp #$49	        cmp #$49
+.610c	d0 03		bne $6111	        beq b_inspect
+.610e	4c 16 63	jmp $6316
+.6111	c9 4c		cmp #$4c	        cmp #$4c
+.6113	d0 03		bne $6118	        beq b_usb_begin
+.6115	4c a3 6c	jmp $6ca3
+.6118	4c 95 60	jmp $6095	        jmp b_loop
+.611b					b_workspace:
+.611b	a9 00		lda #$00	        lda #0
+.611d	4c 3e 1c	jmp $1c3e	        jmp N_EXIT
+.6120					b_exit_error:
+.6120	4c 3e 1c	jmp $1c3e	        jmp N_EXIT
+.6123					b_rescan:
+.6123	a9 00		lda #$00	        lda #0
+.6125	8d ab 7a	sta $7aab	        sta b_launch_error
+.6128	20 24 63	jsr $6324	        jsr b_refresh
+.612b	4c 92 60	jmp $6092	        jmp b_redraw
+.612e					b_change_format:
+.612e	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6131	c9 03		cmp #$03	        cmp #3
+.6133	d0 0e		bne $6143	        bne b_next_format
+.6135	20 1c 72	jsr $721c	        jsr bu_close_cursor
+.6138	90 03		bcc $613d	        bcs b_redraw
+.613a	4c 92 60	jmp $6092
+.613d	ad 7f 79	lda $797f	        lda bu_iec_device
+.6140	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.6143					b_next_format:
+.6143	ee 2a 3d	inc $3d2a	        inc N_BROWSERFMT
+.6146	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6149	c9 04		cmp #$04	        cmp #4
+.614b	90 05		bcc $6152	        bcc b_format_updated
+.614d	a9 00		lda #$00	        lda #0
+.614f	8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
+.6152					b_format_updated:
+.6152	c9 03		cmp #$03	        cmp #3
+.6154	d0 17		bne $616d	        bne b_change_ready
+.6156	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6159	8d 7f 79	sta $797f	        sta bu_iec_device
+.615c	ad 73 6e	lda $6e73	        lda b_usb_device
+.615f	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.6162	a9 00		lda #$00	        lda #0
+.6164	8d 79 79	sta $7979	        sta bu_count
+.6167	8d 7b 79	sta $797b	        sta bu_side
+.616a	20 8c 6f	jsr $6f8c	        jsr bu_path_validate
+.616d					b_change_ready:
+.616d	a9 00		lda #$00	        lda #0
+.616f	8d a0 7a	sta $7aa0	        sta b_selected
+.6172	8d a1 7a	sta $7aa1	        sta b_selected+1
+.6175	4c 23 61	jmp $6123	        jmp b_rescan
+.6178					b_device_prompt:
+.6178	a9 01		lda #$01	        lda #1
+.617a	8d ad 7a	sta $7aad	        sta b_prompt
+.617d	a9 00		lda #$00	        lda #0
+.617f	8d ae 7a	sta $7aae	        sta b_device_length
+.6182	8d 37 3d	sta $3d37	        sta N_UIKEY
+.6185	20 b0 61	jsr $61b0	        jsr b_device_edit
+.6188	4c 92 60	jmp $6092	        jmp b_redraw
+.618b					b_prompt_key:
+.618b	ae ad 7a	ldx $7aad	        ldx b_prompt
+.618e	e0 02		cpx #$02	        cpx #2
+.6190	90 03		bcc $6195	        bcs b_usb_key
+.6192	4c b8 6c	jmp $6cb8
+.6195	c9 1b		cmp #$1b	        cmp #27
+.6197	f0 65		beq $61fe	        beq b_prompt_cancel
+.6199	c9 0d		cmp #$0d	        cmp #13
+.619b	f0 24		beq $61c1	        beq b_prompt_enter
+.619d	8d 37 3d	sta $3d37	        sta N_UIKEY
+.61a0	20 b0 61	jsr $61b0	        jsr b_device_edit
+.61a3	90 03		bcc $61a8	        bcs b_loop
+.61a5	4c 95 60	jmp $6095
+.61a8	ad 39 3d	lda $3d39	        lda N_UIFLAGS
+.61ab	f0 f8		beq $61a5	        beq b_loop
+.61ad	4c 92 60	jmp $6092	        jmp b_redraw
+.61b0					b_device_edit:
+.61b0	20 b6 61	jsr $61b6	        jsr b_device_pointer
+.61b3	4c 59 1c	jmp $1c59	        jmp N_FEDIT
+.61b6					b_device_pointer:
+.61b6	a9 ae		lda #$ae	        lda #<b_device_state
+.61b8	8d 35 3d	sta $3d35	        sta N_UIPTR
+.61bb	a9 7a		lda #$7a	        lda #>b_device_state
+.61bd	8d 36 3d	sta $3d36	        sta N_UIPTR+1
+.61c0	60		rts		        rts
+.61c1					b_prompt_enter:
+.61c1	ae ae 7a	ldx $7aae	        ldx b_device_length
+.61c4	f0 df		beq $61a5	        beq b_loop
+.61c6	ad b6 7a	lda $7ab6	        lda b_device_text
+.61c9	29 0f		and #$0f	        and #15
+.61cb	e0 01		cpx #$01	        cpx #1
+.61cd	f0 16		beq $61e5	        beq b_device_number
+.61cf	0a		asl a		        asl
+.61d0	8d 26 6a	sta $6a26	        sta b_digit
+.61d3	0a		asl a		        asl
+.61d4	0a		asl a		        asl
+.61d5	18		clc		        clc
+.61d6	6d 26 6a	adc $6a26	        adc b_digit
+.61d9	8d 26 6a	sta $6a26	        sta b_digit
+.61dc	ad b7 7a	lda $7ab7	        lda b_device_text+1
+.61df	29 0f		and #$0f	        and #15
+.61e1	18		clc		        clc
+.61e2	6d 26 6a	adc $6a26	        adc b_digit
+.61e5					b_device_number:
+.61e5	c9 08		cmp #$08	        cmp #8
+.61e7	90 bc		bcc $61a5	        bcc b_loop
+.61e9	c9 1f		cmp #$1f	        cmp #31
+.61eb	b0 b8		bcs $61a5	        bcs b_loop
+.61ed	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.61f0	a9 00		lda #$00	        lda #0
+.61f2	8d ad 7a	sta $7aad	        sta b_prompt
+.61f5	8d a0 7a	sta $7aa0	        sta b_selected
+.61f8	8d a1 7a	sta $7aa1	        sta b_selected+1
+.61fb	4c 23 61	jmp $6123	        jmp b_rescan
+.61fe					b_prompt_cancel:
+.61fe	a9 00		lda #$00	        lda #0
+.6200	8d ad 7a	sta $7aad	        sta b_prompt
+.6203	4c 92 60	jmp $6092	        jmp b_redraw
+.6206					b_down:
+.6206	ee a0 7a	inc $7aa0	        inc b_selected
+.6209	d0 03		bne $620e	        bne b_selected_changed
+.620b	ee a1 7a	inc $7aa1	        inc b_selected+1
+.620e					b_selected_changed:
+.620e	20 5c 62	jsr $625c	        jsr b_clamp
+.6211	4c 92 60	jmp $6092	        jmp b_redraw
+.6214					b_up:
+.6214	ad a0 7a	lda $7aa0	        lda b_selected
+.6217	0d a1 7a	ora $7aa1	        ora b_selected+1
+.621a	f0 89		beq $61a5	        beq b_loop
+.621c	ad a0 7a	lda $7aa0	        lda b_selected
+.621f	d0 03		bne $6224	        bne b_up_low
+.6221	ce a1 7a	dec $7aa1	        dec b_selected+1
+.6224					b_up_low:
+.6224	ce a0 7a	dec $7aa0	        dec b_selected
+.6227	4c 92 60	jmp $6092	        jmp b_redraw
+.622a					b_next_page:
+.622a	18		clc		        clc
+.622b	ad a0 7a	lda $7aa0	        lda b_selected
+.622e	69 08		adc #$08	        adc #8
+.6230	8d a0 7a	sta $7aa0	        sta b_selected
+.6233	90 d9		bcc $620e	        bcc b_selected_changed
+.6235	ee a1 7a	inc $7aa1	        inc b_selected+1
+.6238	4c 0e 62	jmp $620e	        jmp b_selected_changed
+.623b					b_previous_page:
+.623b	38		sec		        sec
+.623c	ad a0 7a	lda $7aa0	        lda b_selected
+.623f	e9 08		sbc #$08	        sbc #8
+.6241	8d a0 7a	sta $7aa0	        sta b_selected
+.6244	ad a1 7a	lda $7aa1	        lda b_selected+1
+.6247	e9 00		sbc #$00	        sbc #0
+.6249	8d a1 7a	sta $7aa1	        sta b_selected+1
+.624c	90 03		bcc $6251	        bcs b_redraw
+.624e	4c 92 60	jmp $6092
+.6251	a9 00		lda #$00	        lda #0
+.6253	8d a0 7a	sta $7aa0	        sta b_selected
+.6256	8d a1 7a	sta $7aa1	        sta b_selected+1
+.6259	4c 92 60	jmp $6092	        jmp b_redraw
+.625c					b_clamp:
+.625c	ad 9e 7a	lda $7a9e	        lda b_total
+.625f	0d 9f 7a	ora $7a9f	        ora b_total+1
+.6262	f0 20		beq $6284	        beq b_clamp_zero
+.6264	ad a0 7a	lda $7aa0	        lda b_selected
+.6267	cd 9e 7a	cmp $7a9e	        cmp b_total
+.626a	ad a1 7a	lda $7aa1	        lda b_selected+1
+.626d	ed 9f 7a	sbc $7a9f	        sbc b_total+1
+.6270	90 11		bcc $6283	        bcc b_clamped
+.6272	38		sec		        sec
+.6273	ad 9e 7a	lda $7a9e	        lda b_total
+.6276	e9 01		sbc #$01	        sbc #1
+.6278	8d a0 7a	sta $7aa0	        sta b_selected
+.627b	ad 9f 7a	lda $7a9f	        lda b_total+1
+.627e	e9 00		sbc #$00	        sbc #0
+.6280	8d a1 7a	sta $7aa1	        sta b_selected+1
+.6283					b_clamped:
+.6283	60		rts		        rts
+.6284					b_clamp_zero:
+.6284	8d a0 7a	sta $7aa0	        sta b_selected
+.6287	8d a1 7a	sta $7aa1	        sta b_selected+1
+.628a	60		rts		        rts
+.628b					b_next_app:
+.628b	ad 9e 7a	lda $7a9e	        lda b_total
+.628e	0d 9f 7a	ora $7a9f	        ora b_total+1
+.6291	f0 42		beq $62d5	        beq b_no_apps
+.6293	ad a0 7a	lda $7aa0	        lda b_selected
+.6296	8d a2 7a	sta $7aa2	        sta b_saved_selection
+.6299	ad a1 7a	lda $7aa1	        lda b_selected+1
+.629c	8d a3 7a	sta $7aa3	        sta b_saved_selection+1
+.629f					b_find_app:
+.629f	ee a0 7a	inc $7aa0	        inc b_selected
+.62a2	d0 03		bne $62a7	        bne b_find_app_bound
+.62a4	ee a1 7a	inc $7aa1	        inc b_selected+1
+.62a7					b_find_app_bound:
+.62a7	ad a0 7a	lda $7aa0	        lda b_selected
+.62aa	cd 9e 7a	cmp $7a9e	        cmp b_total
+.62ad	ad a1 7a	lda $7aa1	        lda b_selected+1
+.62b0	ed 9f 7a	sbc $7a9f	        sbc b_total+1
+.62b3	90 08		bcc $62bd	        bcc b_find_app_read
+.62b5	a9 00		lda #$00	        lda #0
+.62b7	8d a0 7a	sta $7aa0	        sta b_selected
+.62ba	8d a1 7a	sta $7aa1	        sta b_selected+1
+.62bd					b_find_app_read:
+.62bd	20 26 64	jsr $6426	        jsr b_selected_record
+.62c0	ad cd 7a	lda $7acd	        lda b_record+20
+.62c3	d0 89		bne $624e	        bne b_redraw
+.62c5	ad a0 7a	lda $7aa0	        lda b_selected
+.62c8	cd a2 7a	cmp $7aa2	        cmp b_saved_selection
+.62cb	d0 d2		bne $629f	        bne b_find_app
+.62cd	ad a1 7a	lda $7aa1	        lda b_selected+1
+.62d0	cd a3 7a	cmp $7aa3	        cmp b_saved_selection+1
+.62d3	d0 ca		bne $629f	        bne b_find_app
+.62d5					b_no_apps:
+.62d5	a9 20		lda #$20	        lda #$20
+.62d7	8d aa 7a	sta $7aaa	        sta b_error
+.62da	4c 92 60	jmp $6092	        jmp b_redraw
+.62dd					b_enter:
+.62dd	ad 9e 7a	lda $7a9e	        lda b_total
+.62e0	0d 9f 7a	ora $7a9f	        ora b_total+1
+.62e3	d0 03		bne $62e8	        beq b_loop
+.62e5	4c 95 60	jmp $6095
+.62e8	20 26 64	jsr $6426	        jsr b_selected_record
+.62eb	ad cd 7a	lda $7acd	        lda b_record+20
+.62ee	d0 03		bne $62f3	        beq b_view_open
+.62f0	4c 27 6a	jmp $6a27
+.62f3	20 46 64	jsr $6446	        jsr b_filename
+.62f6	ad 86 3d	lda $3d86	        lda N_FNAMELEN
+.62f9	8d 22 3d	sta $3d22	        sta N_NAMELEN
+.62fc	a2 0f		ldx #$0f	        ldx #15
+.62fe					b_launch_name:
+.62fe	bd a0 3d	lda $3da0,x	        lda N_FNAME,x
+.6301	9d 40 3d	sta $3d40,x	        sta N_APPNAME,x
+.6304	ca		dex		        dex
+.6305	10 f7		bpl $62fe	        bpl b_launch_name
+.6307	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.630a	8d 21 3d	sta $3d21	        sta N_DEVICE
+.630d	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6310	8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.6313	4c 53 1c	jmp $1c53	        jmp N_REPLACE
+.6316					b_inspect:
+.6316	ad 9e 7a	lda $7a9e	        lda b_total
+.6319	0d 9f 7a	ora $7a9f	        ora b_total+1
+.631c	f0 c7		beq $62e5	        beq b_loop
+.631e	20 26 64	jsr $6426	        jsr b_selected_record
+.6321	4c 27 6a	jmp $6a27	        jmp b_view_open
+.6324					b_refresh:
+.6324	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6327	c9 03		cmp #$03	        cmp #3
+.6329	d0 03		bne $632e	        bne +
+.632b	4c a8 70	jmp $70a8	        jmp bu_refresh_saved
+.632e					+
+.632e	a9 00		lda #$00	        lda #0
+.6330	8d 9e 7a	sta $7a9e	        sta b_total
+.6333	8d 9f 7a	sta $7a9f	        sta b_total+1
+.6336	8d aa 7a	sta $7aaa	        sta b_error
+.6339	8d a6 7a	sta $7aa6	        sta b_page
+.633c	a9 01		lda #$01	        lda #1
+.633e	8d a9 7a	sta $7aa9	        sta b_busy
+.6341	20 13 65	jsr $6513	        jsr b_draw
+.6344					b_scan_page:
+.6344	ad 9d 7a	lda $7a9d	        lda b_owner
+.6347	8d 80 3d	sta $3d80	        sta N_FOWNER
+.634a	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.634d	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.6350	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6353	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.6356	ad a6 7a	lda $7aa6	        lda b_page
+.6359	8d 97 3d	sta $3d97	        sta N_DPAGE
+.635c	20 50 1c	jsr $1c50	        jsr N_DIRPAGE
+.635f	b0 7c		bcs $63dd	        bcs b_scan_failed
+.6361	ad 98 3d	lda $3d98	        lda N_DNEXT
+.6364	8d a7 7a	sta $7aa7	        sta b_next
+.6367	ad 99 3d	lda $3d99	        lda N_DCOUNT
+.636a	f0 7f		beq $63eb	        beq b_scan_done
+.636c	a2 00		ldx #$00	        ldx #0
+.636e					b_page_copy:
+.636e	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.6371	9d d9 7a	sta $7ad9,x	        sta b_page_data,x
+.6374	e8		inx		        inx
+.6375	d0 f7		bne $636e	        bne b_page_copy
+.6377	8e a8 7a	stx $7aa8	        stx b_scan_offset
+.637a					b_scan_record:
+.637a	ae a8 7a	ldx $7aa8	        ldx b_scan_offset
+.637d	bd d9 7a	lda $7ad9,x	        lda b_page_data,x
+.6380	f0 43		beq $63c5	        beq b_scan_next
+.6382	a0 00		ldy #$00	        ldy #0
+.6384					b_record_copy:
+.6384	bd d9 7a	lda $7ad9,x	        lda b_page_data,x
+.6387	99 b9 7a	sta $7ab9,y	        sta b_record,y
+.638a	e8		inx		        inx
+.638b	c8		iny		        iny
+.638c	c0 20		cpy #$20	        cpy #32
+.638e	d0 f4		bne $6384	        bne b_record_copy
+.6390	a9 00		lda #$00	        lda #0
+.6392	8d cd 7a	sta $7acd	        sta b_record+20
+.6395	8d ce 7a	sta $7ace	        sta b_record+21
+.6398	20 cd 64	jsr $64cd	        jsr b_probe_app
+.639b	ad 9e 7a	lda $7a9e	        lda b_total
+.639e	8d a4 7a	sta $7aa4	        sta b_index
+.63a1	ad 9f 7a	lda $7a9f	        lda b_total+1
+.63a4	8d a5 7a	sta $7aa5	        sta b_index+1
+.63a7	20 f3 63	jsr $63f3	        jsr b_cache_select
+.63aa	a2 1f		ldx #$1f	        ldx #31
+.63ac					b_record_store:
+.63ac	bd b9 7a	lda $7ab9,x	        lda b_record,x
+.63af	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.63b2	ca		dex		        dex
+.63b3	10 f7		bpl $63ac	        bpl b_record_store
+.63b5	20 29 1c	jsr $1c29	        jsr N_WRITE
+.63b8	90 03		bcc $63bd	        bcs b_exit_error
+.63ba	4c 20 61	jmp $6120
+.63bd	ee 9e 7a	inc $7a9e	        inc b_total
+.63c0	d0 03		bne $63c5	        bne b_scan_next
+.63c2	ee 9f 7a	inc $7a9f	        inc b_total+1
+.63c5					b_scan_next:
+.63c5	18		clc		        clc
+.63c6	ad a8 7a	lda $7aa8	        lda b_scan_offset
+.63c9	69 20		adc #$20	        adc #32
+.63cb	8d a8 7a	sta $7aa8	        sta b_scan_offset
+.63ce	d0 aa		bne $637a	        bne b_scan_record
+.63d0	ad a7 7a	lda $7aa7	        lda b_next
+.63d3	c9 ff		cmp #$ff	        cmp #$ff
+.63d5	f0 14		beq $63eb	        beq b_scan_done
+.63d7	8d a6 7a	sta $7aa6	        sta b_page
+.63da	4c 44 63	jmp $6344	        jmp b_scan_page
+.63dd					b_scan_failed:
+.63dd	8d aa 7a	sta $7aaa	        sta b_error
+.63e0	ad 81 3d	lda $3d81	        lda N_FHANDLE
+.63e3	f0 06		beq $63eb	        beq b_scan_done
+.63e5	ad aa 7a	lda $7aaa	        lda b_error
+.63e8	4c 20 61	jmp $6120	        jmp b_exit_error         ; uncertain metadata cleanup remains owned
+.63eb					b_scan_done:
+.63eb	a9 00		lda #$00	        lda #0
+.63ed	8d a9 7a	sta $7aa9	        sta b_busy
+.63f0	4c 5c 62	jmp $625c	        jmp b_clamp
+.63f3					b_cache_select:
+.63f3	ad 9d 7a	lda $7a9d	        lda b_owner
+.63f6	8d 00 3d	sta $3d00	        sta N_OWNER
+.63f9	a2 03		ldx #$03	        ldx #3
+.63fb					b_cache_handle:
+.63fb	bd 99 7a	lda $7a99,x	        lda b_cache,x
+.63fe	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.6401	ca		dex		        dex
+.6402	10 f7		bpl $63fb	        bpl b_cache_handle
+.6404	ad a4 7a	lda $7aa4	        lda b_index
+.6407	8d 08 3d	sta $3d08	        sta N_OFFSET
+.640a	ad a5 7a	lda $7aa5	        lda b_index+1
+.640d	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.6410	a2 05		ldx #$05	        ldx #5
+.6412					b_cache_offset:
+.6412	0e 08 3d	asl $3d08	        asl N_OFFSET
+.6415	2e 09 3d	rol $3d09	        rol N_OFFSET+1
+.6418	ca		dex		        dex
+.6419	d0 f7		bne $6412	        bne b_cache_offset
+.641b	a9 20		lda #$20	        lda #32
+.641d	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.6420	a9 00		lda #$00	        lda #0
+.6422	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.6425	60		rts		        rts
+.6426					b_selected_record:
+.6426	ad a0 7a	lda $7aa0	        lda b_selected
+.6429	8d a4 7a	sta $7aa4	        sta b_index
+.642c	ad a1 7a	lda $7aa1	        lda b_selected+1
+.642f	8d a5 7a	sta $7aa5	        sta b_index+1
+.6432					b_read_record:
+.6432	20 f3 63	jsr $63f3	        jsr b_cache_select
+.6435	20 26 1c	jsr $1c26	        jsr N_READ
+.6438	b0 80		bcs $63ba	        bcs b_exit_error
+.643a	a2 1f		ldx #$1f	        ldx #31
+.643c					b_record_loaded:
+.643c	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.643f	9d b9 7a	sta $7ab9,x	        sta b_record,x
+.6442	ca		dex		        dex
+.6443	10 f7		bpl $643c	        bpl b_record_loaded
+.6445	60		rts		        rts
+.6446					b_filename:
+.6446	a2 0f		ldx #$0f	        ldx #15
+.6448					b_filename_byte:
+.6448	bd bb 7a	lda $7abb,x	        lda b_record+2,x
+.644b	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
+.644e	ca		dex		        dex
+.644f	10 f7		bpl $6448	        bpl b_filename_byte
+.6451	a2 10		ldx #$10	        ldx #16
+.6453					b_filename_trim:
+.6453	bd 9f 3d	lda $3d9f,x	        lda N_FNAME-1,x
+.6456	c9 a0		cmp #$a0	        cmp #$a0
+.6458	d0 03		bne $645d	        bne b_filename_done
+.645a	ca		dex		        dex
+.645b	d0 f6		bne $6453	        bne b_filename_trim
+.645d					b_filename_done:
+.645d	8e 86 3d	stx $3d86	        stx N_FNAMELEN
+.6460	60		rts		        rts
+.6461					b_open_record:
+.6461	a9 00		lda #$00	        lda #0
+.6463	8d ac 7a	sta $7aac	        sta b_open
+.6466	8d 81 3d	sta $3d81	        sta N_FHANDLE
+.6469	8d 82 3d	sta $3d82	        sta N_FHANDLE+1
+.646c	8d 83 3d	sta $3d83	        sta N_FHANDLE+2
+.646f	8d 84 3d	sta $3d84	        sta N_FHANDLE+3
+.6472	8d 87 3d	sta $3d87	        sta N_FMODE
+.6475	ad ba 7a	lda $7aba	        lda b_record+1
+.6478	29 80		and #$80	        and #$80
+.647a	f0 39		beq $64b5	        beq b_unclosed
+.647c	ad b9 7a	lda $7ab9	        lda b_record
+.647f	c9 01		cmp #$01	        cmp #1
+.6481	90 36		bcc $64b9	        bcc b_unsupported
+.6483	c9 04		cmp #$04	        cmp #4
+.6485	b0 32		bcs $64b9	        bcs b_unsupported
+.6487	38		sec		        sec
+.6488	e9 01		sbc #$01	        sbc #1
+.648a	8d 88 3d	sta $3d88	        sta N_FTYPE
+.648d	20 46 64	jsr $6446	        jsr b_filename
+.6490	ad 9d 7a	lda $7a9d	        lda b_owner
+.6493	8d 80 3d	sta $3d80	        sta N_FOWNER
+.6496	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6499	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.649c	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.649f	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.64a2	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.64a5	b0 04		bcs $64ab	        bcs b_open_failed
+.64a7	ee ac 7a	inc $7aac	        inc b_open
+.64aa	60		rts		        rts
+.64ab					b_open_failed:
+.64ab	ae 81 3d	ldx $3d81	        ldx N_FHANDLE
+.64ae	f0 03		beq $64b3	        bne b_exit_error
+.64b0	4c 20 61	jmp $6120
+.64b3	38		sec		        sec
+.64b4	60		rts		        rts
+.64b5					b_unclosed:
+.64b5	a9 22		lda #$22	        lda #$22
+.64b7	38		sec		        sec
+.64b8	60		rts		        rts
+.64b9					b_unsupported:
+.64b9	a9 21		lda #$21	        lda #$21
+.64bb	38		sec		        sec
+.64bc	60		rts		        rts
+.64bd					b_close_file:
+.64bd	ad ac 7a	lda $7aac	        lda b_open
+.64c0	f0 0a		beq $64cc	        beq b_file_closed
+.64c2	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.64c5	b0 e9		bcs $64b0	        bcs b_exit_error
+.64c7	a9 00		lda #$00	        lda #0
+.64c9	8d ac 7a	sta $7aac	        sta b_open
+.64cc					b_file_closed:
+.64cc	60		rts		        rts
+.64cd					b_probe_app:
+.64cd	ad b9 7a	lda $7ab9	        lda b_record
+.64d0	c9 02		cmp #$02	        cmp #2
+.64d2	d0 3e		bne $6512	        bne b_probe_done
+.64d4	ad ba 7a	lda $7aba	        lda b_record+1
+.64d7	29 80		and #$80	        and #$80
+.64d9	f0 37		beq $6512	        beq b_probe_done
+.64db	20 61 64	jsr $6461	        jsr b_open_record
+.64de	b0 2f		bcs $650f	        bcs b_probe_error
+.64e0	a9 22		lda #$22	        lda #34
+.64e2	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.64e5	a9 00		lda #$00	        lda #0
+.64e7	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.64ea	20 44 1c	jsr $1c44	        jsr N_FREAD
+.64ed	b0 1a		bcs $6509	        bcs b_probe_read_error
+.64ef	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.64f2	c9 22		cmp #$22	        cmp #34
+.64f4	d0 10		bne $6506	        bne b_probe_close
+.64f6	a2 05		ldx #$05	        ldx #5
+.64f8					b_probe_magic:
+.64f8	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.64fb	dd 93 7a	cmp $7a93,x	        cmp b_app_magic,x
+.64fe	d0 06		bne $6506	        bne b_probe_close
+.6500	ca		dex		        dex
+.6501	10 f5		bpl $64f8	        bpl b_probe_magic
+.6503	ee cd 7a	inc $7acd	        inc b_record+20         ; discovery only: the loader validates full image/CRC
+.6506					b_probe_close:
+.6506	4c bd 64	jmp $64bd	        jmp b_close_file
+.6509					b_probe_read_error:
+.6509	8d ce 7a	sta $7ace	        sta b_record+21
+.650c	4c 06 65	jmp $6506	        jmp b_probe_close
+.650f					b_probe_error:
+.650f	8d ce 7a	sta $7ace	        sta b_record+21
+.6512					b_probe_done:
+.6512	60		rts		        rts
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/browser-ui.inc
+
+.6513					b_draw:
+.6513	a9 00		lda #$00	        lda #0
+.6515	8d 1e 6a	sta $6a1e	        sta b_screen
+.6518					b_draw_screen:
+.6518	a5 d7		lda $d7		        lda $d7
+.651a	2a		rol a		        rol
+.651b	a9 00		lda #$00	        lda #0
+.651d	2a		rol a		        rol
+.651e	cd 1e 6a	cmp $6a1e	        cmp b_screen
+.6521	f0 03		beq $6526	        beq b_screen_selected
+.6523	20 5f ff	jsr $ff5f	        jsr $ff5f
+.6526					b_screen_selected:
+.6526	a9 93		lda #$93	        lda #$93
+.6528	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.652b	ad 15 6c	lda $6c15	        lda b_preview
+.652e	f0 06		beq $6536	        beq b_draw_list
+.6530	20 d3 6a	jsr $6ad3	        jsr b_view_draw
+.6533	4c 39 65	jmp $6539	        jmp b_screen_done
+.6536					b_draw_list:
+.6536	20 44 65	jsr $6544	        jsr b_list_draw
+.6539					b_screen_done:
+.6539	ee 1e 6a	inc $6a1e	        inc b_screen
+.653c	ad 1e 6a	lda $6a1e	        lda b_screen
+.653f	c9 02		cmp #$02	        cmp #2
+.6541	d0 d5		bne $6518	        bne b_draw_screen
+.6543	60		rts		        rts
+.6544					b_list_draw:
+.6544	ad 2a 3d	lda $3d2a	        lda N_BROWSERFMT
+.6547	c9 03		cmp #$03	        cmp #3
+.6549	d0 03		bne $654e	        bne +
+.654b	4c e5 75	jmp $75e5	        jmp bu_draw
+.654e					+
+.654e	a9 68		lda #$68	        lda #<b_title
+.6550	a2 67		ldx #$67	        ldx #>b_title
+.6552	20 d2 66	jsr $66d2	        jsr b_puts
+.6555	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6558	a2 00		ldx #$00	        ldx #0
+.655a	20 04 67	jsr $6704	        jsr b_number
+.655d	a9 89		lda #$89	        lda #<b_format_text
+.655f	a2 67		ldx #$67	        ldx #>b_format_text
+.6561	20 d2 66	jsr $66d2	        jsr b_puts
+.6564	ae 2a 3d	ldx $3d2a	        ldx N_BROWSERFMT
+.6567	bd 86 68	lda $6886,x	        lda b_formats_lo,x
+.656a	48		pha		        pha
+.656b	bd 89 68	lda $6889,x	        lda b_formats_hi,x
+.656e	aa		tax		        tax
+.656f	68		pla		        pla
+.6570	20 d2 66	jsr $66d2	        jsr b_puts
+.6573	a9 95		lda #$95	        lda #<b_count_text
+.6575	a2 67		ldx #$67	        ldx #>b_count_text
+.6577	20 d2 66	jsr $66d2	        jsr b_puts
+.657a	ad 9e 7a	lda $7a9e	        lda b_total
+.657d	ae 9f 7a	ldx $7a9f	        ldx b_total+1
+.6580	20 04 67	jsr $6704	        jsr b_number
+.6583	a9 9e		lda #$9e	        lda #<b_columns
+.6585	a2 67		ldx #$67	        ldx #>b_columns
+.6587	20 d2 66	jsr $66d2	        jsr b_puts
+.658a	ad a9 7a	lda $7aa9	        lda b_busy
+.658d	f0 07		beq $6596	        beq b_list_rows
+.658f	a9 c0		lda #$c0	        lda #<b_loading
+.6591	a2 67		ldx #$67	        ldx #>b_loading
+.6593	4c d2 66	jmp $66d2	        jmp b_puts
+.6596					b_list_rows:
+.6596	ad a0 7a	lda $7aa0	        lda b_selected
+.6599	29 f8		and #$f8	        and #$f8
+.659b	8d a4 7a	sta $7aa4	        sta b_index
+.659e	ad a1 7a	lda $7aa1	        lda b_selected+1
+.65a1	8d a5 7a	sta $7aa5	        sta b_index+1
+.65a4	a9 00		lda #$00	        lda #0
+.65a6	8d 1f 6a	sta $6a1f	        sta b_row
+.65a9					b_list_row:
+.65a9	ad a4 7a	lda $7aa4	        lda b_index
+.65ac	cd 9e 7a	cmp $7a9e	        cmp b_total
+.65af	ad a5 7a	lda $7aa5	        lda b_index+1
+.65b2	ed 9f 7a	sbc $7a9f	        sbc b_total+1
+.65b5	b0 54		bcs $660b	        bcs b_row_empty
+.65b7	20 32 64	jsr $6432	        jsr b_read_record
+.65ba	ad a4 7a	lda $7aa4	        lda b_index
+.65bd	cd a0 7a	cmp $7aa0	        cmp b_selected
+.65c0	d0 0c		bne $65ce	        bne b_row_unselected
+.65c2	ad a5 7a	lda $7aa5	        lda b_index+1
+.65c5	cd a1 7a	cmp $7aa1	        cmp b_selected+1
+.65c8	d0 04		bne $65ce	        bne b_row_unselected
+.65ca	a9 3e		lda #$3e	        lda #$3e
+.65cc	d0 02		bne $65d0	        bne b_row_marker
+.65ce					b_row_unselected:
+.65ce	a9 20		lda #$20	        lda #$20
+.65d0					b_row_marker:
+.65d0	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.65d3	20 59 66	jsr $6659	        jsr b_print_name
+.65d6	a9 20		lda #$20	        lda #$20
+.65d8	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.65db	20 86 66	jsr $6686	        jsr b_print_type
+.65de	a9 20		lda #$20	        lda #$20
+.65e0	ae ba 7a	ldx $7aba	        ldx b_record+1
+.65e3	30 02		bmi $65e7	        bmi b_row_closed
+.65e5	a9 2a		lda #$2a	        lda #$2a
+.65e7					b_row_closed:
+.65e7	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.65ea	ad ba 7a	lda $7aba	        lda b_record+1
+.65ed	29 40		and #$40	        and #$40
+.65ef	f0 04		beq $65f5	        beq b_row_unlocked
+.65f1	a9 3c		lda #$3c	        lda #$3c
+.65f3	d0 02		bne $65f7	        bne b_row_lock
+.65f5					b_row_unlocked:
+.65f5	a9 20		lda #$20	        lda #$20
+.65f7					b_row_lock:
+.65f7	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.65fa	a9 20		lda #$20	        lda #$20
+.65fc	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.65ff	ad cb 7a	lda $7acb	        lda b_record+18
+.6602	ae cc 7a	ldx $7acc	        ldx b_record+19
+.6605	20 04 67	jsr $6704	        jsr b_number
+.6608	4c 1d 66	jmp $661d	        jmp b_row_next
+.660b					b_row_empty:
+.660b	ad 9e 7a	lda $7a9e	        lda b_total
+.660e	0d 9f 7a	ora $7a9f	        ora b_total+1
+.6611	0d 1f 6a	ora $6a1f	        ora b_row
+.6614	d0 07		bne $661d	        bne b_row_next
+.6616	a9 d5		lda #$d5	        lda #<b_empty
+.6618	a2 67		ldx #$67	        ldx #>b_empty
+.661a	20 d2 66	jsr $66d2	        jsr b_puts
+.661d					b_row_next:
+.661d	a9 0d		lda #$0d	        lda #13
+.661f	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6622	ee a4 7a	inc $7aa4	        inc b_index
+.6625	d0 03		bne $662a	        bne b_row_advance
+.6627	ee a5 7a	inc $7aa5	        inc b_index+1
+.662a					b_row_advance:
+.662a	ee 1f 6a	inc $6a1f	        inc b_row
+.662d	ad 1f 6a	lda $6a1f	        lda b_row
+.6630	c9 08		cmp #$08	        cmp #8
+.6632	f0 03		beq $6637	        bne b_list_row
+.6634	4c a9 65	jmp $65a9
+.6637	a9 de		lda #$de	        lda #<b_help
+.6639	a2 67		ldx #$67	        ldx #>b_help
+.663b	20 d2 66	jsr $66d2	        jsr b_puts
+.663e	20 a1 66	jsr $66a1	        jsr b_show_status
+.6641	ad ad 7a	lda $7aad	        lda b_prompt
+.6644	f0 12		beq $6658	        beq b_list_done
+.6646	a9 69		lda #$69	        lda #<b_device_question
+.6648	a2 68		ldx #$68	        ldx #>b_device_question
+.664a	20 d2 66	jsr $66d2	        jsr b_puts
+.664d	20 b6 61	jsr $61b6	        jsr b_device_pointer
+.6650	a9 05		lda #$05	        lda #5
+.6652	8d 38 3d	sta $3d38	        sta N_UIWIDTH
+.6655	20 5c 1c	jsr $1c5c	        jsr N_FDRAW
+.6658					b_list_done:
+.6658	60		rts		        rts
+.6659					b_print_name:
+.6659	a9 00		lda #$00	        lda #0
+.665b	8d 20 6a	sta $6a20	        sta b_char
+.665e					b_name_show:
+.665e	ae 20 6a	ldx $6a20	        ldx b_char
+.6661	bd bb 7a	lda $7abb,x	        lda b_record+2,x
+.6664	c9 a0		cmp #$a0	        cmp #$a0
+.6666	d0 02		bne $666a	        bne b_name_visible
+.6668	a9 20		lda #$20	        lda #$20
+.666a					b_name_visible:
+.666a	20 7b 66	jsr $667b	        jsr b_safe_character
+.666d	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6670	ee 20 6a	inc $6a20	        inc b_char
+.6673	ad 20 6a	lda $6a20	        lda b_char
+.6676	c9 10		cmp #$10	        cmp #16
+.6678	d0 e4		bne $665e	        bne b_name_show
+.667a	60		rts		        rts
+.667b					b_safe_character:
+.667b	c9 20		cmp #$20	        cmp #$20
+.667d	90 04		bcc $6683	        bcc b_character_dot
+.667f	c9 7f		cmp #$7f	        cmp #$7f
+.6681	90 02		bcc $6685	        bcc b_character_ready
+.6683					b_character_dot:
+.6683	a9 2e		lda #$2e	        lda #$2e
+.6685					b_character_ready:
+.6685	60		rts		        rts
+.6686					b_print_type:
+.6686	ad cd 7a	lda $7acd	        lda b_record+20
+.6689	f0 07		beq $6692	        beq b_disk_type
+.668b	a9 a8		lda #$a8	        lda #<b_type_app
+.668d	a2 68		ldx #$68	        ldx #>b_type_app
+.668f	4c d2 66	jmp $66d2	        jmp b_puts
+.6692					b_disk_type:
+.6692	ae b9 7a	ldx $7ab9	        ldx b_record
+.6695	bd ac 68	lda $68ac,x	        lda b_types_lo,x
+.6698	48		pha		        pha
+.6699	bd b4 68	lda $68b4,x	        lda b_types_hi,x
+.669c	aa		tax		        tax
+.669d	68		pla		        pla
+.669e	4c d2 66	jmp $66d2	        jmp b_puts
+.66a1					b_show_status:
+.66a1	ad aa 7a	lda $7aaa	        lda b_error
+.66a4	d0 05		bne $66ab	        bne b_have_status
+.66a6	ad ab 7a	lda $7aab	        lda b_launch_error
+.66a9	f0 26		beq $66d1	        beq b_status_done
+.66ab					b_have_status:
+.66ab	8d 21 6a	sta $6a21	        sta b_status_code
+.66ae	a2 0b		ldx #$0b	        ldx #b_status_end-b_status_codes-1
+.66b0					b_status_find:
+.66b0	dd f0 69	cmp $69f0,x	        cmp b_status_codes,x
+.66b3	f0 10		beq $66c5	        beq b_status_found
+.66b5	ca		dex		        dex
+.66b6	10 f8		bpl $66b0	        bpl b_status_find
+.66b8	a9 e9		lda #$e9	        lda #<b_unknown_error
+.66ba	a2 69		ldx #$69	        ldx #>b_unknown_error
+.66bc	20 d2 66	jsr $66d2	        jsr b_puts
+.66bf	ad 21 6a	lda $6a21	        lda b_status_code
+.66c2	4c ec 66	jmp $66ec	        jmp b_hex
+.66c5					b_status_found:
+.66c5	bd fc 69	lda $69fc,x	        lda b_status_lo,x
+.66c8	48		pha		        pha
+.66c9	bd 08 6a	lda $6a08,x	        lda b_status_hi,x
+.66cc	aa		tax		        tax
+.66cd	68		pla		        pla
+.66ce	4c d2 66	jmp $66d2	        jmp b_puts
+.66d1					b_status_done:
+.66d1	60		rts		        rts
+.66d2					b_puts:
+.66d2	8d d9 66	sta $66d9	        sta b_text_read+1
+.66d5	8e da 66	stx $66da	        stx b_text_read+2
+.66d8					b_text_read:
+.66d8	ad ff ff	lda $ffff	        lda $ffff
+.66db	f0 0e		beq $66eb	        beq b_text_done
+.66dd	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.66e0	ee d9 66	inc $66d9	        inc b_text_read+1
+.66e3	d0 f3		bne $66d8	        bne b_text_read
+.66e5	ee da 66	inc $66da	        inc b_text_read+2
+.66e8	4c d8 66	jmp $66d8	        jmp b_text_read
+.66eb					b_text_done:
+.66eb	60		rts		        rts
+.66ec					b_hex:
+.66ec	48		pha		        pha
+.66ed	4a		lsr a		        lsr
+.66ee	4a		lsr a		        lsr
+.66ef	4a		lsr a		        lsr
+.66f0	4a		lsr a		        lsr
+.66f1	20 f7 66	jsr $66f7	        jsr b_nibble
+.66f4	68		pla		        pla
+.66f5	29 0f		and #$0f	        and #15
+.66f7					b_nibble:
+.66f7	c9 0a		cmp #$0a	        cmp #10
+.66f9	90 03		bcc $66fe	        bcc b_hex_digit
+.66fb	18		clc		        clc
+.66fc	69 07		adc #$07	        adc #7
+.66fe					b_hex_digit:
+.66fe	18		clc		        clc
+.66ff	69 30		adc #$30	        adc #$30
+.6701	4c d2 ff	jmp $ffd2	        jmp $ffd2
+.6704					b_number:
+.6704	8d 22 6a	sta $6a22	        sta b_num
+.6707	8e 23 6a	stx $6a23	        stx b_num+1
+.670a	a9 00		lda #$00	        lda #0
+.670c	8d 24 6a	sta $6a24	        sta b_num_pos
+.670f	8d 25 6a	sta $6a25	        sta b_num_started
+.6712					b_number_digit:
+.6712	a9 00		lda #$00	        lda #0
+.6714	8d 26 6a	sta $6a26	        sta b_digit
+.6717					b_number_subtract:
+.6717	ae 24 6a	ldx $6a24	        ldx b_num_pos
+.671a	ad 22 6a	lda $6a22	        lda b_num
+.671d	dd 14 6a	cmp $6a14,x	        cmp b_powers_lo,x
+.6720	ad 23 6a	lda $6a23	        lda b_num+1
+.6723	fd 19 6a	sbc $6a19,x	        sbc b_powers_hi,x
+.6726	90 18		bcc $6740	        bcc b_number_emit
+.6728	38		sec		        sec
+.6729	ad 22 6a	lda $6a22	        lda b_num
+.672c	fd 14 6a	sbc $6a14,x	        sbc b_powers_lo,x
+.672f	8d 22 6a	sta $6a22	        sta b_num
+.6732	ad 23 6a	lda $6a23	        lda b_num+1
+.6735	fd 19 6a	sbc $6a19,x	        sbc b_powers_hi,x
+.6738	8d 23 6a	sta $6a23	        sta b_num+1
+.673b	ee 26 6a	inc $6a26	        inc b_digit
+.673e	d0 d7		bne $6717	        bne b_number_subtract
+.6740					b_number_emit:
+.6740	ad 26 6a	lda $6a26	        lda b_digit
+.6743	0d 25 6a	ora $6a25	        ora b_num_started
+.6746	d0 07		bne $674f	        bne b_number_nonzero
+.6748	ae 24 6a	ldx $6a24	        ldx b_num_pos
+.674b	e0 04		cpx #$04	        cpx #4
+.674d	d0 0e		bne $675d	        bne b_number_next
+.674f					b_number_nonzero:
+.674f	a9 01		lda #$01	        lda #1
+.6751	8d 25 6a	sta $6a25	        sta b_num_started
+.6754	ad 26 6a	lda $6a26	        lda b_digit
+.6757	18		clc		        clc
+.6758	69 30		adc #$30	        adc #$30
+.675a	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.675d					b_number_next:
+.675d	ee 24 6a	inc $6a24	        inc b_num_pos
+.6760	ad 24 6a	lda $6a24	        lda b_num_pos
+.6763	c9 05		cmp #$05	        cmp #5
+.6765	d0 ab		bne $6712	        bne b_number_digit
+.6767	60		rts		        rts
+.6768					b_title:
+>6768	55 4f 53 20 31 32 38 20		        .text "uos 128 files and apps",13,13,"device: ",0
+>6770	46 49 4c 45 53 20 41 4e 44 20 41 50 50 53 0d 0d
+>6780	44 45 56 49 43 45 3a 20 00
+>6789	20 20 20 46 4f 52 4d 41		b_format_text: .text "   format: ",0
+>6791	54 3a 20 00
+>6795	0d 46 49 4c 45 53 3a 20		b_count_text: .text 13,"files: ",0
+>679d	00
+>679e	0d 20 4e 41 4d 45 20 20		b_columns: .text 13," name             type   blocks",13,0
+>67a6	20 20 20 20 20 20 20 20 20 20 20 54 59 50 45 20
+>67b6	20 20 42 4c 4f 43 4b 53 0d 00
+>67c0	52 45 41 44 49 4e 47 20		b_loading: .text "reading directory...",0
+>67c8	44 49 52 45 43 54 4f 52 59 2e 2e 2e 00
+>67d5	4e 4f 20 46 49 4c 45 53		b_empty: .text "no files",0
+>67dd	00
+.67de					b_help:
+>67de	0d 55 50 2f 44 4f 57 4e		        .text 13,"up/down select  n/b page  a next app",13
+>67e6	20 53 45 4c 45 43 54 20 20 4e 2f 42 20 50 41 47
+>67f6	45 20 20 41 20 4e 45 58 54 20 41 50 50 0d
+>6804	45 4e 54 45 52 20 4f 50		        .text "enter open  i inspect  r refresh",13
+>680c	45 4e 20 20 49 20 49 4e 53 50 45 43 54 20 20 52
+>681c	20 52 45 46 52 45 53 48 0d
+>6825	44 20 44 45 56 49 43 45		        .text "d device  f format  esc workspace",13
+>682d	20 20 46 20 46 4f 52 4d 41 54 20 20 45 53 43 20
+>683d	57 4f 52 4b 53 50 41 43 45 0d
+>6847	2a 20 55 4e 43 4c 4f 53		        .text "* unclosed  < locked  l usb app",13,13,0
+>684f	45 44 20 20 3c 20 4c 4f 43 4b 45 44 20 20 4c 20
+>685f	55 53 42 20 41 50 50 0d 0d 00
+>6869	0d 44 45 56 49 43 45 20		b_device_question: .text 13,"device (8-30): ",0
+>6871	28 38 2d 33 30 29 3a 20 00
+>687a	44 36 34 00			b_format64: .text "d64",0
+>687e	44 37 31 00			b_format71: .text "d71",0
+>6882	44 38 31 00			b_format81: .text "d81",0
+>6886	7a 7e 82			b_formats_lo: .byte <b_format64,<b_format71,<b_format81
+>6889	68 68 68			b_formats_hi: .byte >b_format64,>b_format71,>b_format81
+>688c	44 45 4c 00			b_type_del: .text "del",0
+>6890	53 45 51 00			b_type_seq: .text "seq",0
+>6894	50 52 47 00			b_type_prg: .text "prg",0
+>6898	55 53 52 00			b_type_usr: .text "usr",0
+>689c	52 45 4c 00			b_type_rel: .text "rel",0
+>68a0	43 42 4d 00			b_type_cbm: .text "cbm",0
+>68a4	3f 3f 3f 00			b_type_unknown: .text "???",0
+>68a8	41 50 50 00			b_type_app: .text "app",0
+>68ac	8c 90 94 98 9c a0 a4 a4		b_types_lo: .byte <b_type_del,<b_type_seq,<b_type_prg,<b_type_usr,<b_type_rel,<b_type_cbm,<b_type_unknown,<b_type_unknown
+>68b4	68 68 68 68 68 68 68 68		b_types_hi: .byte >b_type_del,>b_type_seq,>b_type_prg,>b_type_usr,>b_type_rel,>b_type_cbm,>b_type_unknown,>b_type_unknown
+>68bc	49 4e 56 41 4c 49 44 20		b_bad_name: .text "invalid name or device",0
+>68c4	4e 41 4d 45 20 4f 52 20 44 45 56 49 43 45 00
+>68d3	4e 4f 20 46 49 4c 45 20		b_no_handle: .text "no file handle available",0
+>68db	48 41 4e 44 4c 45 20 41 56 41 49 4c 41 42 4c 45
+>68eb	00
+>68ec	49 4e 56 41 4c 49 44 20		b_bad_directory: .text "invalid disk directory",0
+>68f4	44 49 53 4b 20 44 49 52 45 43 54 4f 52 59 00
+>6903	49 4e 56 41 4c 49 44 20		b_bad_image: .text "invalid application image",0
+>690b	41 50 50 4c 49 43 41 54 49 4f 4e 20 49 4d 41 47
+>691b	45 00
+>691d	44 49 53 4b 20 49 2f 4f		b_disk_error: .text "disk i/o error",0
+>6925	20 45 52 52 4f 52 00
+>692c	41 50 50 4c 49 43 41 54		b_short_image: .text "application file is incomplete",0
+>6934	49 4f 4e 20 46 49 4c 45 20 49 53 20 49 4e 43 4f
+>6944	4d 50 4c 45 54 45 00
+>694b	41 50 50 4c 49 43 41 54		b_long_image: .text "application file has extra data",0
+>6953	49 4f 4e 20 46 49 4c 45 20 48 41 53 20 45 58 54
+>6963	52 41 20 44 41 54 41 00
+>696b	41 50 50 4c 49 43 41 54		b_checksum_error: .text "application checksum failed",0
+>6973	49 4f 4e 20 43 48 45 43 4b 53 55 4d 20 46 41 49
+>6983	4c 45 44 00
+>6987	44 49 53 4b 20 43 48 41		b_channels_error: .text "disk channel is in use",0
+>698f	4e 4e 45 4c 20 49 53 20 49 4e 20 55 53 45 00
+>699e	4e 4f 20 4e 41 54 49 56		b_no_apps_text: .text "no native applications found",0
+>69a6	45 20 41 50 50 4c 49 43 41 54 49 4f 4e 53 20 46
+>69b6	4f 55 4e 44 00
+>69bb	46 49 4c 45 20 54 59 50		b_unsupported_text: .text "file type cannot be opened",0
+>69c3	45 20 43 41 4e 4e 4f 54 20 42 45 20 4f 50 45 4e
+>69d3	45 44 00
+>69d6	46 49 4c 45 20 49 53 20		b_unclosed_text: .text "file is not closed",0
+>69de	4e 4f 54 20 43 4c 4f 53 45 44 00
+>69e9	45 52 52 4f 52 20 00		b_unknown_error: .text "error ",0
+>69f0	01 03 09 10 11 12 13 14		b_status_codes: .byte 1,3,9,$10,$11,$12,$13,$14,$15,$20,$21,$22
+>69f8	15 20 21 22
+.69fc					b_status_end:
+>69fc	bc d3 ec 03 1d 2c 4b 6b		b_status_lo: .byte <b_bad_name,<b_no_handle,<b_bad_directory,<b_bad_image,<b_disk_error,<b_short_image,<b_long_image,<b_checksum_error,<b_channels_error,<b_no_apps_text,<b_unsupported_text,<b_unclosed_text
+>6a04	87 9e bb d6
+>6a08	68 68 68 69 69 69 69 69		b_status_hi: .byte >b_bad_name,>b_no_handle,>b_bad_directory,>b_bad_image,>b_disk_error,>b_short_image,>b_long_image,>b_checksum_error,>b_channels_error,>b_no_apps_text,>b_unsupported_text,>b_unclosed_text
+>6a10	69 69 69 69
+>6a14	10 e8 64 0a 01			b_powers_lo: .byte <10000,<1000,<100,<10,<1
+>6a19	27 03 00 00 00			b_powers_hi: .byte >10000,>1000,>100,>10,>1
+>6a1e	00				b_screen: .byte 0
+>6a1f	00				b_row: .byte 0
+>6a20	00				b_char: .byte 0
+>6a21	00				b_status_code: .byte 0
+>6a22	00 00				b_num: .word 0
+>6a24	00				b_num_pos: .byte 0
+>6a25	00				b_num_started: .byte 0
+>6a26	00				b_digit: .byte 0
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/file-browser.inc
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/browser-view.inc
+
+.6a27					b_view_open:
+.6a27	a9 00		lda #$00	        lda #0
+.6a29	8d aa 7a	sta $7aaa	        sta b_error
+.6a2c	8d ab 7a	sta $7aab	        sta b_launch_error
+.6a2f	20 61 64	jsr $6461	        jsr b_open_record
+.6a32	b0 18		bcs $6a4c	        bcs b_view_failed
+.6a34	a9 01		lda #$01	        lda #1
+.6a36	8d 15 6c	sta $6c15	        sta b_preview
+.6a39	a9 00		lda #$00	        lda #0
+.6a3b	8d 16 6c	sta $6c16	        sta b_eof
+.6a3e	a2 03		ldx #$03	        ldx #3
+.6a40					b_view_zero_offset:
+.6a40	9d 1c 6c	sta $6c1c,x	        sta b_next_offset,x
+.6a43	ca		dex		        dex
+.6a44	10 fa		bpl $6a40	        bpl b_view_zero_offset
+.6a46	20 7e 6a	jsr $6a7e	        jsr b_view_read
+.6a49	4c 92 60	jmp $6092	        jmp b_redraw
+.6a4c					b_view_failed:
+.6a4c	8d aa 7a	sta $7aaa	        sta b_error
+.6a4f	4c 92 60	jmp $6092	        jmp b_redraw
+.6a52					b_preview_key:
+.6a52	c9 1b		cmp #$1b	        cmp #27
+.6a54	f0 1d		beq $6a73	        beq b_view_back
+.6a56	c9 0d		cmp #$0d	        cmp #13
+.6a58	f0 09		beq $6a63	        beq b_view_next
+.6a5a	29 df		and #$df	        and #$df
+.6a5c	c9 4e		cmp #$4e	        cmp #$4e
+.6a5e	f0 03		beq $6a63	        bne b_loop
+.6a60	4c 95 60	jmp $6095
+.6a63					b_view_next:
+.6a63	ad 16 6c	lda $6c16	        lda b_eof
+.6a66	d0 f8		bne $6a60	        bne b_loop
+.6a68	ad ac 7a	lda $7aac	        lda b_open
+.6a6b	f0 f3		beq $6a60	        beq b_loop
+.6a6d	20 7e 6a	jsr $6a7e	        jsr b_view_read
+.6a70	4c 92 60	jmp $6092	        jmp b_redraw
+.6a73					b_view_back:
+.6a73	20 bd 64	jsr $64bd	        jsr b_close_file
+.6a76	a9 00		lda #$00	        lda #0
+.6a78	8d 15 6c	sta $6c15	        sta b_preview
+.6a7b	4c 92 60	jmp $6092	        jmp b_redraw
+.6a7e					b_view_read:
+.6a7e	a2 03		ldx #$03	        ldx #3
+.6a80					b_view_copy_offset:
+.6a80	bd 1c 6c	lda $6c1c,x	        lda b_next_offset,x
+.6a83	9d 18 6c	sta $6c18,x	        sta b_offset,x
+.6a86	ca		dex		        dex
+.6a87	10 f7		bpl $6a80	        bpl b_view_copy_offset
+.6a89	a9 80		lda #$80	        lda #128
+.6a8b	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.6a8e	a9 00		lda #$00	        lda #0
+.6a90	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.6a93	20 44 1c	jsr $1c44	        jsr N_FREAD
+.6a96	8d aa 7a	sta $7aaa	        sta b_error
+.6a99	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.6a9c	8d 17 6c	sta $6c17	        sta b_view_count
+.6a9f	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.6aa2	8d 16 6c	sta $6c16	        sta b_eof
+.6aa5	a2 03		ldx #$03	        ldx #3
+.6aa7					b_view_save_offset:
+.6aa7	bd 92 3d	lda $3d92,x	        lda N_FPOSITION,x
+.6aaa	9d 1c 6c	sta $6c1c,x	        sta b_next_offset,x
+.6aad	ca		dex		        dex
+.6aae	10 f7		bpl $6aa7	        bpl b_view_save_offset
+.6ab0	a2 00		ldx #$00	        ldx #0
+.6ab2					b_view_copy:
+.6ab2	ec 17 6c	cpx $6c17	        cpx b_view_count
+.6ab5	f0 09		beq $6ac0	        beq b_view_copied
+.6ab7	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.6aba	9d 23 6c	sta $6c23,x	        sta b_view_data,x
+.6abd	e8		inx		        inx
+.6abe	d0 f2		bne $6ab2	        bne b_view_copy
+.6ac0					b_view_copied:
+.6ac0	ad aa 7a	lda $7aaa	        lda b_error
+.6ac3	f0 05		beq $6aca	        beq b_view_clean
+.6ac5	a9 01		lda #$01	        lda #1
+.6ac7	8d 16 6c	sta $6c16	        sta b_eof
+.6aca					b_view_clean:
+.6aca	ad 16 6c	lda $6c16	        lda b_eof
+.6acd	f0 03		beq $6ad2	        beq b_view_read_done
+.6acf	20 bd 64	jsr $64bd	        jsr b_close_file
+.6ad2					b_view_read_done:
+.6ad2	60		rts		        rts
+.6ad3					b_view_draw:
+.6ad3	a9 ca		lda #$ca	        lda #<b_file_title
+.6ad5	a2 6b		ldx #$6b	        ldx #>b_file_title
+.6ad7	20 d2 66	jsr $66d2	        jsr b_puts
+.6ada	20 59 66	jsr $6659	        jsr b_print_name
+.6add	a9 d1		lda #$d1	        lda #<b_offset_title
+.6adf	a2 6b		ldx #$6b	        ldx #>b_offset_title
+.6ae1	20 d2 66	jsr $66d2	        jsr b_puts
+.6ae4	a9 03		lda #$03	        lda #3
+.6ae6	8d 20 6a	sta $6a20	        sta b_char
+.6ae9					b_view_print_offset:
+.6ae9	ae 20 6a	ldx $6a20	        ldx b_char
+.6aec	bd 18 6c	lda $6c18,x	        lda b_offset,x
+.6aef	20 ec 66	jsr $66ec	        jsr b_hex
+.6af2	ce 20 6a	dec $6a20	        dec b_char
+.6af5	10 f2		bpl $6ae9	        bpl b_view_print_offset
+.6af7	a9 db		lda #$db	        lda #<b_bytes_title
+.6af9	a2 6b		ldx #$6b	        ldx #>b_bytes_title
+.6afb	20 d2 66	jsr $66d2	        jsr b_puts
+.6afe	ad 17 6c	lda $6c17	        lda b_view_count
+.6b01	a2 00		ldx #$00	        ldx #0
+.6b03	20 04 67	jsr $6704	        jsr b_number
+.6b06	a9 0d		lda #$0d	        lda #13
+.6b08	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b0b	a9 0d		lda #$0d	        lda #13
+.6b0d	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b10	a9 00		lda #$00	        lda #0
+.6b12	8d 20 6c	sta $6c20	        sta b_view_line
+.6b15					b_view_draw_line:
+.6b15	ad 20 6c	lda $6c20	        lda b_view_line
+.6b18	cd 17 6c	cmp $6c17	        cmp b_view_count
+.6b1b	b0 7d		bcs $6b9a	        bcs b_view_blank_line
+.6b1d	18		clc		        clc
+.6b1e	6d 18 6c	adc $6c18	        adc b_offset
+.6b21	8d 22 6c	sta $6c22	        sta b_line_offset
+.6b24	ad 19 6c	lda $6c19	        lda b_offset+1
+.6b27	69 00		adc #$00	        adc #0
+.6b29	20 ec 66	jsr $66ec	        jsr b_hex
+.6b2c	ad 22 6c	lda $6c22	        lda b_line_offset
+.6b2f	20 ec 66	jsr $66ec	        jsr b_hex
+.6b32	a9 20		lda #$20	        lda #$20
+.6b34	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b37	a9 00		lda #$00	        lda #0
+.6b39	8d 21 6c	sta $6c21	        sta b_view_column
+.6b3c					b_view_hex_byte:
+.6b3c	18		clc		        clc
+.6b3d	ad 20 6c	lda $6c20	        lda b_view_line
+.6b40	6d 21 6c	adc $6c21	        adc b_view_column
+.6b43	cd 17 6c	cmp $6c17	        cmp b_view_count
+.6b46	b0 0a		bcs $6b52	        bcs b_view_hex_blank
+.6b48	aa		tax		        tax
+.6b49	bd 23 6c	lda $6c23,x	        lda b_view_data,x
+.6b4c	20 ec 66	jsr $66ec	        jsr b_hex
+.6b4f	4c 5c 6b	jmp $6b5c	        jmp b_view_hex_space
+.6b52					b_view_hex_blank:
+.6b52	a9 20		lda #$20	        lda #$20
+.6b54	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b57	a9 20		lda #$20	        lda #$20
+.6b59	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b5c					b_view_hex_space:
+.6b5c	a9 20		lda #$20	        lda #$20
+.6b5e	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b61	ee 21 6c	inc $6c21	        inc b_view_column
+.6b64	ad 21 6c	lda $6c21	        lda b_view_column
+.6b67	c9 08		cmp #$08	        cmp #8
+.6b69	d0 d1		bne $6b3c	        bne b_view_hex_byte
+.6b6b	a9 20		lda #$20	        lda #$20
+.6b6d	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b70	a9 00		lda #$00	        lda #0
+.6b72	8d 21 6c	sta $6c21	        sta b_view_column
+.6b75					b_view_ascii_byte:
+.6b75	18		clc		        clc
+.6b76	ad 20 6c	lda $6c20	        lda b_view_line
+.6b79	6d 21 6c	adc $6c21	        adc b_view_column
+.6b7c	cd 17 6c	cmp $6c17	        cmp b_view_count
+.6b7f	b0 0a		bcs $6b8b	        bcs b_view_ascii_blank
+.6b81	aa		tax		        tax
+.6b82	bd 23 6c	lda $6c23,x	        lda b_view_data,x
+.6b85	20 7b 66	jsr $667b	        jsr b_safe_character
+.6b88	4c 8d 6b	jmp $6b8d	        jmp b_view_ascii_print
+.6b8b					b_view_ascii_blank:
+.6b8b	a9 20		lda #$20	        lda #$20
+.6b8d					b_view_ascii_print:
+.6b8d	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b90	ee 21 6c	inc $6c21	        inc b_view_column
+.6b93	ad 21 6c	lda $6c21	        lda b_view_column
+.6b96	c9 08		cmp #$08	        cmp #8
+.6b98	d0 db		bne $6b75	        bne b_view_ascii_byte
+.6b9a					b_view_blank_line:
+.6b9a	a9 0d		lda #$0d	        lda #13
+.6b9c	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6b9f	18		clc		        clc
+.6ba0	ad 20 6c	lda $6c20	        lda b_view_line
+.6ba3	69 08		adc #$08	        adc #8
+.6ba5	8d 20 6c	sta $6c20	        sta b_view_line
+.6ba8	c9 80		cmp #$80	        cmp #128
+.6baa	f0 03		beq $6baf	        bne b_view_draw_line
+.6bac	4c 15 6b	jmp $6b15
+.6baf	a9 e5		lda #$e5	        lda #<b_view_help
+.6bb1	a2 6b		ldx #$6b	        ldx #>b_view_help
+.6bb3	20 d2 66	jsr $66d2	        jsr b_puts
+.6bb6	ad 16 6c	lda $6c16	        lda b_eof
+.6bb9	f0 0c		beq $6bc7	        beq b_view_status
+.6bbb	ad aa 7a	lda $7aaa	        lda b_error
+.6bbe	d0 07		bne $6bc7	        bne b_view_status
+.6bc0	a9 08		lda #$08	        lda #<b_view_end
+.6bc2	a2 6c		ldx #$6c	        ldx #>b_view_end
+.6bc4	20 d2 66	jsr $66d2	        jsr b_puts
+.6bc7					b_view_status:
+.6bc7	4c a1 66	jmp $66a1	        jmp b_show_status
+>6bca	46 49 4c 45 3a 20 00		b_file_title: .text "file: ",0
+>6bd1	0d 4f 46 46 53 45 54 3a		b_offset_title: .text 13,"offset: ",0
+>6bd9	20 00
+>6bdb	20 20 42 59 54 45 53 3a		b_bytes_title: .text "  bytes: ",0
+>6be3	20 00
+>6be5	0d 45 4e 54 45 52 2f 4e		b_view_help: .text 13,"enter/n next page  esc file list",13,0
+>6bed	20 4e 45 58 54 20 50 41 47 45 20 20 45 53 43 20
+>6bfd	46 49 4c 45 20 4c 49 53 54 0d 00
+>6c08	45 4e 44 20 4f 46 20 46		b_view_end: .text "end of file",13,0
+>6c10	49 4c 45 0d 00
+>6c15	00				b_preview: .byte 0
+>6c16	00				b_eof: .byte 0
+>6c17	00				b_view_count: .byte 0
+>6c18	00 00 00 00			b_offset: .fill 4,0
+>6c1c	00 00 00 00			b_next_offset: .fill 4,0
+>6c20	00				b_view_line: .byte 0
+>6c21	00				b_view_column: .byte 0
+>6c22	00				b_line_offset: .byte 0
+>6c23	00 00 00 00 00 00 00 00		b_view_data: .fill 128,0
+>6c2b	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 6 times (96 bytes)...
+>6c9b	00 00 00 00 00 00 00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/file-browser.inc
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/browser-usb.inc
+
+.6ca3					b_usb_begin:
+.6ca3	a9 02		lda #$02	        lda #2
+.6ca5	8d ad 7a	sta $7aad	        sta b_prompt
+.6ca8	a9 00		lda #$00	        lda #0
+.6caa	8d 74 6e	sta $6e74	        sta b_usb_error
+.6cad	8d 37 3d	sta $3d37	        sta N_UIKEY
+.6cb0	20 f4 6c	jsr $6cf4	        jsr b_usb_edit
+.6cb3	b0 38		bcs $6ced	        bcs b_usb_input_error
+.6cb5	4c e7 6c	jmp $6ce7	        jmp b_usb_refresh
+.6cb8					b_usb_key:
+.6cb8	c9 1b		cmp #$1b	        cmp #27
+.6cba	f0 49		beq $6d05	        beq b_usb_cancel
+.6cbc	c9 0d		cmp #$0d	        cmp #13
+.6cbe	f0 4c		beq $6d0c	        beq b_usb_enter
+.6cc0	c9 09		cmp #$09	        cmp #9
+.6cc2	f0 13		beq $6cd7	        beq b_usb_context
+.6cc4	8d 37 3d	sta $3d37	        sta N_UIKEY
+.6cc7	20 f4 6c	jsr $6cf4	        jsr b_usb_edit
+.6cca	b0 21		bcs $6ced	        bcs b_usb_input_error
+.6ccc	ad 39 3d	lda $3d39	        lda N_UIFLAGS
+.6ccf	d0 03		bne $6cd4	        beq b_loop
+.6cd1	4c 95 60	jmp $6095
+.6cd4	4c e2 6c	jmp $6ce2	        jmp b_usb_changed
+.6cd7					b_usb_context:
+.6cd7	ad 73 6e	lda $6e73	        lda b_usb_device
+.6cda	49 03		eor #$03	        eor #3
+.6cdc	8d 73 6e	sta $6e73	        sta b_usb_device
+.6cdf	4c e2 6c	jmp $6ce2	        jmp b_usb_changed
+.6ce2					b_usb_changed:
+.6ce2	a9 00		lda #$00	        lda #0
+.6ce4	8d 74 6e	sta $6e74	        sta b_usb_error
+.6ce7					b_usb_refresh:
+.6ce7	20 4b 6d	jsr $6d4b	        jsr b_usb_draw
+.6cea	4c 95 60	jmp $6095	        jmp b_loop
+.6ced					b_usb_input_error:
+.6ced	a9 02		lda #$02	        lda #2
+.6cef	8d 74 6e	sta $6e74	        sta b_usb_error
+.6cf2	d0 f3		bne $6ce7	        bne b_usb_refresh
+.6cf4					b_usb_edit:
+.6cf4	20 fa 6c	jsr $6cfa	        jsr b_usb_pointer
+.6cf7	4c 59 1c	jmp $1c59	        jmp N_FEDIT
+.6cfa					b_usb_pointer:
+.6cfa	a9 6b		lda #$6b	        lda #<b_usb_state
+.6cfc	8d 35 3d	sta $3d35	        sta N_UIPTR
+.6cff	a9 6e		lda #$6e	        lda #>b_usb_state
+.6d01	8d 36 3d	sta $3d36	        sta N_UIPTR+1
+.6d04	60		rts		        rts
+.6d05					b_usb_cancel:
+.6d05	a9 00		lda #$00	        lda #0
+.6d07	8d ad 7a	sta $7aad	        sta b_prompt
+.6d0a	f0 db		beq $6ce7	        beq b_usb_refresh
+.6d0c					b_usb_enter:
+.6d0c	ad 6b 6e	lda $6e6b	        lda b_usb_length
+.6d0f	f0 07		beq $6d18	        beq b_usb_invalid
+.6d11	ad 78 6e	lda $6e78	        lda b_usb_path
+.6d14	c9 2f		cmp #$2f	        cmp #$2f
+.6d16	f0 07		beq $6d1f	        beq b_usb_launch
+.6d18					b_usb_invalid:
+.6d18	a9 01		lda #$01	        lda #1
+.6d1a	8d 74 6e	sta $6e74	        sta b_usb_error
+.6d1d	d0 c8		bne $6ce7	        bne b_usb_refresh
+.6d1f					b_usb_launch:
+.6d1f	ad ad 7a	lda $7aad	        lda b_prompt
+.6d22	c9 03		cmp #$03	        cmp #3
+.6d24	d0 03		bne $6d29	        bne +
+.6d26	4c da 71	jmp $71da	        jmp bu_prompt_directory
+.6d29					+
+.6d29	ad 6b 6e	lda $6e6b	        lda b_usb_length
+.6d2c	8d 22 3d	sta $3d22	        sta N_NAMELEN
+.6d2f	ad 73 6e	lda $6e73	        lda b_usb_device
+.6d32	8d 21 3d	sta $3d21	        sta N_DEVICE
+.6d35	a9 03		lda #$03	        lda #3
+.6d37	8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.6d3a	a2 00		ldx #$00	        ldx #0
+.6d3c					b_usb_copy:
+.6d3c	bd 78 6e	lda $6e78,x	        lda b_usb_path,x
+.6d3f	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.6d42	e8		inx		        inx
+.6d43	ec 6b 6e	cpx $6e6b	        cpx b_usb_length
+.6d46	d0 f4		bne $6d3c	        bne b_usb_copy
+.6d48	4c 53 1c	jmp $1c53	        jmp N_REPLACE
+.6d4b					b_usb_draw:
+.6d4b	a9 00		lda #$00	        lda #0
+.6d4d	8d 1e 6a	sta $6a1e	        sta b_screen
+.6d50					b_usb_screen:
+.6d50	a5 d7		lda $d7		        lda $d7
+.6d52	2a		rol a		        rol
+.6d53	a9 00		lda #$00	        lda #0
+.6d55	2a		rol a		        rol
+.6d56	cd 1e 6a	cmp $6a1e	        cmp b_screen
+.6d59	f0 03		beq $6d5e	        beq +
+.6d5b	20 5f ff	jsr $ff5f	        jsr $ff5f
+.6d5e	a9 27		lda #$27	+       lda #39
+.6d60	ae 1e 6a	ldx $6a1e	        ldx b_screen
+.6d63	f0 02		beq $6d67	        beq +
+.6d65	a9 4f		lda #$4f	        lda #79
+.6d67	8d 75 6e	sta $6e75	+       sta b_usb_width
+.6d6a	a9 14		lda #$14	        lda #20
+.6d6c	8d 76 6e	sta $6e76	        sta b_usb_row
+.6d6f					b_usb_clear_row:
+.6d6f	ae 76 6e	ldx $6e76	        ldx b_usb_row
+.6d72	a0 00		ldy #$00	        ldy #0
+.6d74	18		clc		        clc
+.6d75	20 f0 ff	jsr $fff0	        jsr $fff0
+.6d78	ad 75 6e	lda $6e75	        lda b_usb_width
+.6d7b	8d 77 6e	sta $6e77	        sta b_usb_blank
+.6d7e					b_usb_clear:
+.6d7e	a9 20		lda #$20	        lda #32
+.6d80	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6d83	ce 77 6e	dec $6e77	        dec b_usb_blank
+.6d86	d0 f6		bne $6d7e	        bne b_usb_clear
+.6d88	ee 76 6e	inc $6e76	        inc b_usb_row
+.6d8b	ad 76 6e	lda $6e76	        lda b_usb_row
+.6d8e	c9 16		cmp #$16	        cmp #22
+.6d90	d0 dd		bne $6d6f	        bne b_usb_clear_row
+.6d92	ad ad 7a	lda $7aad	        lda b_prompt
+.6d95	f0 62		beq $6df9	        beq b_usb_screen_done
+.6d97	a2 14		ldx #$14	        ldx #20
+.6d99	a0 00		ldy #$00	        ldy #0
+.6d9b	18		clc		        clc
+.6d9c	20 f0 ff	jsr $fff0	        jsr $fff0
+.6d9f	a9 10		lda #$10	        lda #<b_usb_label
+.6da1	a2 6e		ldx #$6e	        ldx #>b_usb_label
+.6da3	20 d2 66	jsr $66d2	        jsr b_puts
+.6da6	ad 73 6e	lda $6e73	        lda b_usb_device
+.6da9	09 30		ora #$30	        ora #$30
+.6dab	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6dae	a9 3a		lda #$3a	        lda #$3a
+.6db0	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6db3	a9 20		lda #$20	        lda #32
+.6db5	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.6db8	ad 75 6e	lda $6e75	        lda b_usb_width
+.6dbb	38		sec		        sec
+.6dbc	e9 07		sbc #$07	        sbc #7                 ; 32 or 72 field cells, including edge markers
+.6dbe	8d 38 3d	sta $3d38	        sta N_UIWIDTH
+.6dc1	20 fa 6c	jsr $6cfa	        jsr b_usb_pointer
+.6dc4	20 5c 1c	jsr $1c5c	        jsr N_FDRAW
+.6dc7	90 05		bcc $6dce	        bcc b_usb_controls
+.6dc9	a9 02		lda #$02	        lda #2
+.6dcb	8d 74 6e	sta $6e74	        sta b_usb_error
+.6dce					b_usb_controls:
+.6dce	a2 15		ldx #$15	        ldx #21
+.6dd0	a0 00		ldy #$00	        ldy #0
+.6dd2	18		clc		        clc
+.6dd3	20 f0 ff	jsr $fff0	        jsr $fff0
+.6dd6	a9 14		lda #$14	        lda #<b_usb_help
+.6dd8	a2 6e		ldx #$6e	        ldx #>b_usb_help
+.6dda	ac ad 7a	ldy $7aad	        ldy b_prompt
+.6ddd	c0 03		cpy #$03	        cpy #3
+.6ddf	d0 04		bne $6de5	        bne +
+.6de1	a9 19		lda #$19	        lda #<bu_path_help
+.6de3	a2 79		ldx #$79	        ldx #>bu_path_help
+.6de5					+
+.6de5	ac 74 6e	ldy $6e74	        ldy b_usb_error
+.6de8	f0 04		beq $6dee	        beq +
+.6dea	a9 35		lda #$35	        lda #<b_usb_bad_path
+.6dec	a2 6e		ldx #$6e	        ldx #>b_usb_bad_path
+.6dee	c0 02		cpy #$02	+       cpy #2
+.6df0	d0 04		bne $6df6	        bne +
+.6df2	a9 4c		lda #$4c	        lda #<b_usb_bad_input
+.6df4	a2 6e		ldx #$6e	        ldx #>b_usb_bad_input
+.6df6	20 d2 66	jsr $66d2	+       jsr b_puts
+.6df9					b_usb_screen_done:
+.6df9	ee 1e 6a	inc $6a1e	        inc b_screen
+.6dfc	ad 1e 6a	lda $6a1e	        lda b_screen
+.6dff	c9 02		cmp #$02	        cmp #2
+.6e01	f0 03		beq $6e06	        bne b_usb_screen
+.6e03	4c 50 6d	jmp $6d50
+.6e06	60		rts		        rts
+.6e07					b_usb_chrout:
+.6e07	48		pha		        pha
+.6e08	a9 00		lda #$00	        lda #0
+.6e0a	85 f4		sta $f4		        sta $f4                ; filenames cannot leave ROM quote mode active
+.6e0c	68		pla		        pla
+.6e0d	4c d2 ff	jmp $ffd2	        jmp $ffd2
+>6e10	55 53 42 00			b_usb_label: .text "usb",0
+>6e14	45 4e 54 45 52 20 52 55		b_usb_help: .text "enter run tab dos ctrl-u clr esc",0
+>6e1c	4e 20 54 41 42 20 44 4f 53 20 43 54 52 4c 2d 55
+>6e2c	20 43 4c 52 20 45 53 43 00
+>6e35	41 42 53 4f 4c 55 54 45		b_usb_bad_path: .text "absolute path required",0
+>6e3d	20 50 41 54 48 20 52 45 51 55 49 52 45 44 00
+>6e4c	49 4e 50 55 54 20 55 4e		b_usb_bad_input: .text "input unavailable; esc returns",0
+>6e54	41 56 41 49 4c 41 42 4c 45 3b 20 45 53 43 20 52
+>6e64	45 54 55 52 4e 53 00
+.6e6b					b_usb_state:
+>6e6b	06				b_usb_length: .byte 6
+>6e6c	06				b_usb_cursor: .byte 6
+>6e6d	ff				        .byte 255
+>6e6e	78 6e				        .word b_usb_path
+>6e70	00 00				b_usb_views: .fill 2,0
+>6e72	00				        .byte 0
+>6e73	01				b_usb_device: .byte 1
+>6e74	00				b_usb_error: .byte 0
+>6e75	00				b_usb_width: .byte 0
+>6e76	00				b_usb_row: .byte 0
+>6e77	00				b_usb_blank: .byte 0
+>6e78	2f 55 73 62 30 2f		b_usb_path: .byte $2f,$55,$73,$62,$30,$2f
+>6e7e	00 00 00 00 00 00 00 00		        .fill 250,0
+>6e86	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>6f76	00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/file-browser.inc
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/browser-ultimate.inc
+
+.6f78					bu_preferences:
+.6f78	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.6f7b	f0 04		beq $6f81	        beq bu_default_context
+.6f7d	c9 03		cmp #$03	        cmp #3
+.6f7f	90 05		bcc $6f86	        bcc bu_preferences_path
+.6f81					bu_default_context:
+.6f81	a9 01		lda #$01	        lda #1
+.6f83	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.6f86					bu_preferences_path:
+.6f86	20 8c 6f	jsr $6f8c	        jsr bu_path_validate
+.6f89	4c 7e 60	jmp $607e	        jmp b_format_valid
+.6f8c					bu_path_validate:
+.6f8c	ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
+.6f8f	f0 15		beq $6fa6	        beq bu_default_path
+.6f91	ad 00 4a	lda $4a00	        lda N_BROWSERPATH
+.6f94	c9 2f		cmp #$2f	        cmp #$2f
+.6f96	d0 0e		bne $6fa6	        bne bu_default_path
+.6f98	a2 00		ldx #$00	        ldx #0
+.6f9a					bu_path_check:
+.6f9a	bd 00 4a	lda $4a00,x	        lda N_BROWSERPATH,x
+.6f9d	f0 07		beq $6fa6	        beq bu_default_path
+.6f9f	e8		inx		        inx
+.6fa0	ec 2e 3d	cpx $3d2e	        cpx N_BROWSERLEN
+.6fa3	d0 f5		bne $6f9a	        bne bu_path_check
+.6fa5	60		rts		        rts
+.6fa6					bu_default_path:
+.6fa6	a9 2f		lda #$2f	        lda #$2f
+.6fa8	8d 00 4a	sta $4a00	        sta N_BROWSERPATH
+.6fab	a9 01		lda #$01	        lda #1
+.6fad	8d 2e 3d	sta $3d2e	        sta N_BROWSERLEN
+.6fb0	a9 00		lda #$00	        lda #0
+.6fb2	8d 34 3d	sta $3d34	        sta N_BROWSERNAME_LEN
+.6fb5	a2 03		ldx #$03	        ldx #3
+.6fb7					bu_default_position:
+.6fb7	9d 30 3d	sta $3d30,x	        sta N_BROWSERPOS,x
+.6fba	ca		dex		        dex
+.6fbb	10 fa		bpl $6fb7	        bpl bu_default_position
+.6fbd	60		rts		        rts
+.6fbe					bu_key:
+.6fbe	c9 1b		cmp #$1b	        cmp #27
+.6fc0	f0 53		beq $7015	        beq bu_workspace
+.6fc2	c9 11		cmp #$11	        cmp #$11
+.6fc4	f0 5a		beq $7020	        beq bu_down
+.6fc6	c9 91		cmp #$91	        cmp #$91
+.6fc8	f0 67		beq $7031	        beq bu_up
+.6fca	c9 09		cmp #$09	        cmp #9
+.6fcc	d0 03		bne $6fd1	        beq bu_context
+.6fce	4c f6 70	jmp $70f6
+.6fd1	c9 0d		cmp #$0d	        cmp #13
+.6fd3	d0 03		bne $6fd8	        beq bu_enter
+.6fd5	4c 07 75	jmp $7507
+.6fd8	29 df		and #$df	        and #$df
+.6fda	c9 4e		cmp #$4e	        cmp #$4e
+.6fdc	d0 03		bne $6fe1	        beq bu_next
+.6fde	4c 07 71	jmp $7107
+.6fe1	c9 42		cmp #$42	        cmp #$42
+.6fe3	d0 03		bne $6fe8	        beq bu_previous
+.6fe5	4c 44 71	jmp $7144
+.6fe8	c9 50		cmp #$50	        cmp #$50
+.6fea	d0 03		bne $6fef	        beq bu_parent
+.6fec	4c 81 71	jmp $7181
+.6fef	c9 52		cmp #$52	        cmp #$52
+.6ff1	d0 03		bne $6ff6	        beq bu_rescan
+.6ff3	4c ed 70	jmp $70ed
+.6ff6	c9 47		cmp #$47	        cmp #$47
+.6ff8	d0 03		bne $6ffd	        beq bu_prompt_path
+.6ffa	4c a8 71	jmp $71a8
+.6ffd	c9 46		cmp #$46	        cmp #$46
+.6fff	d0 03		bne $7004	        beq b_change_format
+.7001	4c 2e 61	jmp $612e
+.7004	c9 4c		cmp #$4c	        cmp #$4c
+.7006	d0 03		bne $700b	        beq b_usb_begin
+.7008	4c a3 6c	jmp $6ca3
+.700b	c9 49		cmp #$49	        cmp #$49
+.700d	d0 03		bne $7012	        beq bu_inspect
+.700f	4c 03 75	jmp $7503
+.7012	4c 95 60	jmp $6095	        jmp b_loop
+.7015					bu_workspace:
+.7015	20 1c 72	jsr $721c	        jsr bu_close_cursor
+.7018	90 03		bcc $701d	        bcs b_redraw
+.701a	4c 92 60	jmp $6092
+.701d	4c 56 1c	jmp $1c56	        jmp N_WORKSPACE
+.7020					bu_down:
+.7020	ad 7a 79	lda $797a	        lda bu_row
+.7023	18		clc		        clc
+.7024	69 01		adc #$01	        adc #1
+.7026	cd 79 79	cmp $7979	        cmp bu_count
+.7029	b0 b3		bcs $6fde	        bcs bu_next
+.702b	8d 7a 79	sta $797a	        sta bu_row
+.702e	4c 39 70	jmp $7039	        jmp bu_selection
+.7031					bu_up:
+.7031	ad 7a 79	lda $797a	        lda bu_row
+.7034	f0 af		beq $6fe5	        beq bu_previous
+.7036	ce 7a 79	dec $797a	        dec bu_row
+.7039					bu_selection:
+.7039	20 3f 70	jsr $703f	        jsr bu_save_selection
+.703c	4c 92 60	jmp $6092	        jmp b_redraw
+.703f					bu_save_selection:
+.703f	18		clc		        clc
+.7040	ad 7a 79	lda $797a	        lda bu_row
+.7043	6d 69 79	adc $7969	        adc bu_base
+.7046	8d 30 3d	sta $3d30	        sta N_BROWSERPOS
+.7049	ad 6a 79	lda $796a	        lda bu_base+1
+.704c	69 00		adc #$00	        adc #0
+.704e	8d 31 3d	sta $3d31	        sta N_BROWSERPOS+1
+.7051	ad 6b 79	lda $796b	        lda bu_base+2
+.7054	69 00		adc #$00	        adc #0
+.7056	8d 32 3d	sta $3d32	        sta N_BROWSERPOS+2
+.7059	ad 6c 79	lda $796c	        lda bu_base+3
+.705c	69 00		adc #$00	        adc #0
+.705e	8d 33 3d	sta $3d33	        sta N_BROWSERPOS+3
+.7061	ad 79 79	lda $7979	        lda bu_count
+.7064	f0 15		beq $707b	        beq bu_save_name_length
+.7066	ad 7a 79	lda $797a	        lda bu_row
+.7069	20 79 74	jsr $7479	        jsr bu_read_record
+.706c	a2 00		ldx #$00	        ldx #0
+.706e					bu_save_name:
+.706e	bd 01 3a	lda $3a01,x	        lda N_BUFFER+1,x
+.7071	9d 00 3e	sta $3e00,x	        sta N_BROWSERNAME,x
+.7074	e8		inx		        inx
+.7075	ec fe 3b	cpx $3bfe	        cpx N_BUFFER+510
+.7078	d0 f4		bne $706e	        bne bu_save_name
+.707a	8a		txa		        txa
+.707b					bu_save_name_length:
+.707b	8d 34 3d	sta $3d34	        sta N_BROWSERNAME_LEN
+.707e	60		rts		        rts
+.707f					bu_candidate_current:
+.707f	ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
+.7082	8d 7d 79	sta $797d	        sta bu_length
+.7085	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.7088	8d 7e 79	sta $797e	        sta bu_device
+.708b	a2 00		ldx #$00	        ldx #0
+.708d					bu_candidate_copy:
+.708d	bd 00 4a	lda $4a00,x	        lda N_BROWSERPATH,x
+.7090	9d 93 79	sta $7993,x	        sta bu_path,x
+.7093	e8		inx		        inx
+.7094	ec 7d 79	cpx $797d	        cpx bu_length
+.7097	d0 f4		bne $708d	        bne bu_candidate_copy
+.7099	a9 00		lda #$00	        lda #0
+.709b	8d 81 79	sta $7981	        sta bu_resume
+.709e	8d 80 79	sta $7980	        sta bu_target_row
+.70a1	8d 82 79	sta $7982	        sta bu_search
+.70a4	8d 83 79	sta $7983	        sta bu_found
+.70a7	60		rts		        rts
+.70a8					bu_refresh_saved:
+.70a8	20 7f 70	jsr $707f	        jsr bu_candidate_current
+.70ab	ad 34 3d	lda $3d34	        lda N_BROWSERNAME_LEN
+.70ae	f0 0b		beq $70bb	        beq bu_initial_ordinal
+.70b0	20 d9 70	jsr $70d9	        jsr bu_zero_target
+.70b3	a9 01		lda #$01	        lda #1
+.70b5	8d 82 79	sta $7982	        sta bu_search
+.70b8	4c 48 72	jmp $7248	        jmp bu_scan
+.70bb					bu_initial_ordinal:
+.70bb	a2 03		ldx #$03	        ldx #3
+.70bd					bu_initial_position:
+.70bd	bd 30 3d	lda $3d30,x	        lda N_BROWSERPOS,x
+.70c0	9d 6d 79	sta $796d,x	        sta bu_target,x
+.70c3	ca		dex		        dex
+.70c4	10 f7		bpl $70bd	        bpl bu_initial_position
+.70c6	ad 6d 79	lda $796d	        lda bu_target
+.70c9	29 07		and #$07	        and #7
+.70cb	8d 80 79	sta $7980	        sta bu_target_row
+.70ce	ad 6d 79	lda $796d	        lda bu_target
+.70d1	29 f8		and #$f8	        and #$f8
+.70d3	8d 6d 79	sta $796d	        sta bu_target
+.70d6	4c 48 72	jmp $7248	        jmp bu_scan
+.70d9					bu_zero_target:
+.70d9	a9 00		lda #$00	        lda #0
+.70db	a2 03		ldx #$03	        ldx #3
+.70dd					bu_target_byte:
+.70dd	9d 6d 79	sta $796d,x	        sta bu_target,x
+.70e0	ca		dex		        dex
+.70e1	10 fa		bpl $70dd	        bpl bu_target_byte
+.70e3	8d 80 79	sta $7980	        sta bu_target_row
+.70e6	8d 82 79	sta $7982	        sta bu_search
+.70e9	8d 83 79	sta $7983	        sta bu_found
+.70ec	60		rts		        rts
+.70ed					bu_rescan:
+.70ed	20 7f 70	jsr $707f	        jsr bu_candidate_current
+.70f0	20 d9 70	jsr $70d9	        jsr bu_zero_target
+.70f3	4c ff 71	jmp $71ff	        jmp bu_scan_key
+.70f6					bu_context:
+.70f6	20 7f 70	jsr $707f	        jsr bu_candidate_current
+.70f9	ad 7e 79	lda $797e	        lda bu_device
+.70fc	49 03		eor #$03	        eor #3
+.70fe	8d 7e 79	sta $797e	        sta bu_device
+.7101	20 d9 70	jsr $70d9	        jsr bu_zero_target
+.7104	4c ff 71	jmp $71ff	        jmp bu_scan_key
+.7107					bu_next:
+.7107	ad 7c 79	lda $797c	        lda bu_more
+.710a	d0 03		bne $710f	        beq b_loop
+.710c	4c 95 60	jmp $6095
+.710f	20 7f 70	jsr $707f	        jsr bu_candidate_current
+.7112	18		clc		        clc
+.7113	ad 69 79	lda $7969	        lda bu_base
+.7116	69 08		adc #$08	        adc #8
+.7118	8d 6d 79	sta $796d	        sta bu_target
+.711b	ad 6a 79	lda $796a	        lda bu_base+1
+.711e	69 00		adc #$00	        adc #0
+.7120	8d 6e 79	sta $796e	        sta bu_target+1
+.7123	ad 6b 79	lda $796b	        lda bu_base+2
+.7126	69 00		adc #$00	        adc #0
+.7128	8d 6f 79	sta $796f	        sta bu_target+2
+.712b	ad 6c 79	lda $796c	        lda bu_base+3
+.712e	69 00		adc #$00	        adc #0
+.7130	8d 70 79	sta $7970	        sta bu_target+3
+.7133	b0 44		bcs $7179	        bcs bu_index_error
+.7135	ad 65 79	lda $7965	        lda bu_cursor
+.7138	d0 03		bne $713d	        beq bu_scan_key
+.713a	4c ff 71	jmp $71ff
+.713d	a9 01		lda #$01	        lda #1
+.713f	8d 81 79	sta $7981	        sta bu_resume
+.7142	d0 f6		bne $713a	        bne bu_scan_key
+.7144					bu_previous:
+.7144	ad 69 79	lda $7969	        lda bu_base
+.7147	0d 6a 79	ora $796a	        ora bu_base+1
+.714a	0d 6b 79	ora $796b	        ora bu_base+2
+.714d	0d 6c 79	ora $796c	        ora bu_base+3
+.7150	f0 ba		beq $710c	        beq b_loop
+.7152	20 7f 70	jsr $707f	        jsr bu_candidate_current
+.7155	38		sec		        sec
+.7156	ad 69 79	lda $7969	        lda bu_base
+.7159	e9 08		sbc #$08	        sbc #8
+.715b	8d 6d 79	sta $796d	        sta bu_target
+.715e	ad 6a 79	lda $796a	        lda bu_base+1
+.7161	e9 00		sbc #$00	        sbc #0
+.7163	8d 6e 79	sta $796e	        sta bu_target+1
+.7166	ad 6b 79	lda $796b	        lda bu_base+2
+.7169	e9 00		sbc #$00	        sbc #0
+.716b	8d 6f 79	sta $796f	        sta bu_target+2
+.716e	ad 6c 79	lda $796c	        lda bu_base+3
+.7171	e9 00		sbc #$00	        sbc #0
+.7173	8d 70 79	sta $7970	        sta bu_target+3
+.7176	4c ff 71	jmp $71ff	        jmp bu_scan_key
+.7179					bu_index_error:
+.7179	a9 06		lda #$06	        lda #N_RANGE
+.717b	8d aa 7a	sta $7aaa	        sta b_error
+.717e	4c 92 60	jmp $6092	        jmp b_redraw
+.7181					bu_parent:
+.7181	20 7f 70	jsr $707f	        jsr bu_candidate_current
+.7184	ae 7d 79	ldx $797d	        ldx bu_length
+.7187	e0 01		cpx #$01	        cpx #1
+.7189	f0 81		beq $710c	        beq b_loop
+.718b	ca		dex		        dex
+.718c	bd 93 79	lda $7993,x	        lda bu_path,x
+.718f	c9 2f		cmp #$2f	        cmp #$2f
+.7191	d0 01		bne $7194	        bne bu_parent_find
+.7193	ca		dex		        dex
+.7194					bu_parent_find:
+.7194	bd 93 79	lda $7993,x	        lda bu_path,x
+.7197	c9 2f		cmp #$2f	        cmp #$2f
+.7199	f0 03		beq $719e	        beq bu_parent_found
+.719b	ca		dex		        dex
+.719c	d0 f6		bne $7194	        bne bu_parent_find
+.719e					bu_parent_found:
+.719e	e8		inx		        inx
+.719f	8e 7d 79	stx $797d	        stx bu_length
+.71a2	20 d9 70	jsr $70d9	        jsr bu_zero_target
+.71a5	4c ff 71	jmp $71ff	        jmp bu_scan_key
+.71a8					bu_prompt_path:
+.71a8	ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
+.71ab	8d 6b 6e	sta $6e6b	        sta b_usb_length
+.71ae	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.71b1	8d 73 6e	sta $6e73	        sta b_usb_device
+.71b4	a2 00		ldx #$00	        ldx #0
+.71b6					bu_prompt_copy:
+.71b6	bd 00 4a	lda $4a00,x	        lda N_BROWSERPATH,x
+.71b9	9d 78 6e	sta $6e78,x	        sta b_usb_path,x
+.71bc	e8		inx		        inx
+.71bd	ec 6b 6e	cpx $6e6b	        cpx b_usb_length
+.71c0	d0 f4		bne $71b6	        bne bu_prompt_copy
+.71c2	a9 03		lda #$03	        lda #3
+.71c4	8d ad 7a	sta $7aad	        sta b_prompt
+.71c7	a9 00		lda #$00	        lda #0
+.71c9	8d 74 6e	sta $6e74	        sta b_usb_error
+.71cc	8d 37 3d	sta $3d37	        sta N_UIKEY
+.71cf	20 f4 6c	jsr $6cf4	        jsr b_usb_edit
+.71d2	90 03		bcc $71d7	        bcs b_usb_input_error
+.71d4	4c ed 6c	jmp $6ced
+.71d7	4c e7 6c	jmp $6ce7	        jmp b_usb_refresh
+.71da					bu_prompt_directory:
+.71da	ad 6b 6e	lda $6e6b	        lda b_usb_length
+.71dd	8d 7d 79	sta $797d	        sta bu_length
+.71e0	ad 73 6e	lda $6e73	        lda b_usb_device
+.71e3	8d 7e 79	sta $797e	        sta bu_device
+.71e6	a2 00		ldx #$00	        ldx #0
+.71e8					bu_prompt_keep:
+.71e8	bd 78 6e	lda $6e78,x	        lda b_usb_path,x
+.71eb	9d 93 79	sta $7993,x	        sta bu_path,x
+.71ee	e8		inx		        inx
+.71ef	ec 7d 79	cpx $797d	        cpx bu_length
+.71f2	d0 f4		bne $71e8	        bne bu_prompt_keep
+.71f4	a9 00		lda #$00	        lda #0
+.71f6	8d ad 7a	sta $7aad	        sta b_prompt
+.71f9	8d 81 79	sta $7981	        sta bu_resume
+.71fc	20 d9 70	jsr $70d9	        jsr bu_zero_target
+.71ff					bu_scan_key:
+.71ff	a9 00		lda #$00	        lda #0
+.7201	8d ab 7a	sta $7aab	        sta b_launch_error
+.7204	20 48 72	jsr $7248	        jsr bu_scan
+.7207	4c 92 60	jmp $6092	        jmp b_redraw
+.720a					bu_select_cursor:
+.720a	ad 9d 7a	lda $7a9d	        lda b_owner
+.720d	8d 80 3d	sta $3d80	        sta N_FOWNER
+.7210	a2 03		ldx #$03	        ldx #3
+.7212					bu_cursor_handle:
+.7212	bd 65 79	lda $7965,x	        lda bu_cursor,x
+.7215	9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
+.7218	ca		dex		        dex
+.7219	10 f7		bpl $7212	        bpl bu_cursor_handle
+.721b	60		rts		        rts
+.721c					bu_close_cursor:
+.721c	ad 65 79	lda $7965	        lda bu_cursor
+.721f	f0 0d		beq $722e	        beq bu_closed
+.7221	20 0a 72	jsr $720a	        jsr bu_select_cursor
+.7224	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.7227	b0 07		bcs $7230	        bcs bu_close_error
+.7229	a9 00		lda #$00	        lda #0
+.722b	8d 65 79	sta $7965	        sta bu_cursor
+.722e					bu_closed:
+.722e	18		clc		        clc
+.722f	60		rts		        rts
+.7230					bu_close_error:
+.7230	8d aa 7a	sta $7aaa	        sta b_error
+.7233	38		sec		        sec
+.7234	60		rts		        rts
+.7235					bu_poll:
+.7235	ad 88 79	lda $7988	        lda bu_pending_key
+.7238	d0 0a		bne $7244	        bne bu_poll_ready
+.723a	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.723d	c9 1b		cmp #$1b	        cmp #27
+.723f	f0 05		beq $7246	        beq bu_poll_cancel
+.7241	8d 88 79	sta $7988	        sta bu_pending_key      ; preserve other input for the normal event loop
+.7244					bu_poll_ready:
+.7244	18		clc		        clc
+.7245	60		rts		        rts
+.7246					bu_poll_cancel:
+.7246	38		sec		        sec
+.7247	60		rts		        rts
+.7248					bu_scan:
+.7248	a9 01		lda #$01	        lda #1
+.724a	8d a9 7a	sta $7aa9	        sta b_busy
+.724d	20 13 65	jsr $6513	        jsr b_draw
+.7250	ad 7b 79	lda $797b	        lda bu_side
+.7253	49 10		eor #$10	        eor #16
+.7255	8d 84 79	sta $7984	        sta bu_new_side
+.7258	a9 00		lda #$00	        lda #0
+.725a	8d 85 79	sta $7985	        sta bu_new_count
+.725d	8d aa 7a	sta $7aaa	        sta b_error
+.7260	ad 81 79	lda $7981	        lda bu_resume
+.7263	f0 03		beq $7268	        bne bu_read_entry
+.7265	4c 32 73	jmp $7332
+.7268					bu_scan_restart:
+.7268	20 1c 72	jsr $721c	        jsr bu_close_cursor
+.726b	90 03		bcc $7270	        bcs bu_scan_end
+.726d	4c 23 74	jmp $7423
+.7270	ad 9d 7a	lda $7a9d	        lda b_owner
+.7273	8d 80 3d	sta $3d80	        sta N_FOWNER
+.7276	a9 00		lda #$00	        lda #0
+.7278	8d 88 3d	sta $3d88	        sta N_FTYPE
+.727b	a2 03		ldx #$03	        ldx #3
+.727d					bu_clear_cursor:
+.727d	9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
+.7280	ca		dex		        dex
+.7281	10 fa		bpl $727d	        bpl bu_clear_cursor
+.7283	ad 7e 79	lda $797e	        lda bu_device
+.7286	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.7289	a9 03		lda #$03	        lda #3
+.728b	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.728e	a9 02		lda #$02	        lda #2
+.7290	8d 87 3d	sta $3d87	        sta N_FMODE
+.7293	ad 7d 79	lda $797d	        lda bu_length
+.7296	8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.7299	a2 00		ldx #$00	        ldx #0
+.729b					bu_open_path:
+.729b	bd 93 79	lda $7993,x	        lda bu_path,x
+.729e	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.72a1	e8		inx		        inx
+.72a2	ec 7d 79	cpx $797d	        cpx bu_length
+.72a5	d0 f4		bne $729b	        bne bu_open_path
+.72a7	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.72aa	08		php		        php
+.72ab	48		pha		        pha
+.72ac	a2 03		ldx #$03	        ldx #3
+.72ae					bu_keep_cursor:
+.72ae	bd 81 3d	lda $3d81,x	        lda N_FHANDLE,x
+.72b1	9d 65 79	sta $7965,x	        sta bu_cursor,x
+.72b4	bd 6d 79	lda $796d,x	        lda bu_target,x
+.72b7	9d 71 79	sta $7971,x	        sta bu_skip,x
+.72ba	ca		dex		        dex
+.72bb	10 f1		bpl $72ae	        bpl bu_keep_cursor
+.72bd	68		pla		        pla
+.72be	28		plp		        plp
+.72bf	90 03		bcc $72c4	        bcs bu_scan_failed
+.72c1	4c 17 74	jmp $7417
+.72c4	ad 86 3d	lda $3d86	        lda N_FNAMELEN
+.72c7	8d 7d 79	sta $797d	        sta bu_length
+.72ca	a2 00		ldx #$00	        ldx #0
+.72cc					bu_canonical_path:
+.72cc	bd 00 4e	lda $4e00,x	        lda N_UPATH,x
+.72cf	9d 93 79	sta $7993,x	        sta bu_path,x
+.72d2	e8		inx		        inx
+.72d3	ec 7d 79	cpx $797d	        cpx bu_length
+.72d6	d0 f4		bne $72cc	        bne bu_canonical_path
+.72d8					bu_skip_entry:
+.72d8	ad 71 79	lda $7971	        lda bu_skip
+.72db	0d 72 79	ora $7972	        ora bu_skip+1
+.72de	0d 73 79	ora $7973	        ora bu_skip+2
+.72e1	0d 74 79	ora $7974	        ora bu_skip+3
+.72e4	f0 4c		beq $7332	        beq bu_read_entry
+.72e6	20 22 73	jsr $7322	        jsr bu_read_cursor
+.72e9	b0 d6		bcs $72c1	        bcs bu_scan_failed
+.72eb	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.72ee	d0 2c		bne $731c	        bne bu_selection_expired
+.72f0	38		sec		        sec
+.72f1	ad 71 79	lda $7971	        lda bu_skip
+.72f4	e9 01		sbc #$01	        sbc #1
+.72f6	8d 71 79	sta $7971	        sta bu_skip
+.72f9	ad 72 79	lda $7972	        lda bu_skip+1
+.72fc	e9 00		sbc #$00	        sbc #0
+.72fe	8d 72 79	sta $7972	        sta bu_skip+1
+.7301	ad 73 79	lda $7973	        lda bu_skip+2
+.7304	e9 00		sbc #$00	        sbc #0
+.7306	8d 73 79	sta $7973	        sta bu_skip+2
+.7309	ad 74 79	lda $7974	        lda bu_skip+3
+.730c	e9 00		sbc #$00	        sbc #0
+.730e	8d 74 79	sta $7974	        sta bu_skip+3
+.7311	20 35 72	jsr $7235	        jsr bu_poll
+.7314	90 03		bcc $7319	        bcs bu_scan_cancelled
+.7316	4c 15 74	jmp $7415
+.7319	4c d8 72	jmp $72d8	        jmp bu_skip_entry
+.731c					bu_selection_expired:
+.731c	20 d9 70	jsr $70d9	        jsr bu_zero_target      ; media changed or the saved selection was stale
+.731f	4c 68 72	jmp $7268	        jmp bu_scan_restart
+.7322					bu_read_cursor:
+.7322	20 0a 72	jsr $720a	        jsr bu_select_cursor
+.7325	a9 00		lda #$00	        lda #0
+.7327	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.732a	a9 02		lda #$02	        lda #2
+.732c	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.732f	4c 44 1c	jmp $1c44	        jmp N_FREAD
+.7332					bu_read_entry:
+.7332	20 35 72	jsr $7235	        jsr bu_poll
+.7335	b0 df		bcs $7316	        bcs bu_scan_cancelled
+.7337	20 22 73	jsr $7322	        jsr bu_read_cursor
+.733a	b0 85		bcs $72c1	        bcs bu_scan_failed
+.733c	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.733f	8d 86 79	sta $7986	        sta bu_end
+.7342	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.7345	0d 8c 3d	ora $3d8c	        ora N_FACTUAL+1
+.7348	f0 64		beq $73ae	        beq bu_scan_complete
+.734a	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.734d	38		sec		        sec
+.734e	e9 01		sbc #$01	        sbc #1
+.7350	8d fe 3b	sta $3bfe	        sta N_BUFFER+510        ; raw name length, 1..255
+.7353	20 2e 74	jsr $742e	        jsr bu_match_saved
+.7356	ad 85 79	lda $7985	        lda bu_new_count
+.7359	0a		asl a		        asl
+.735a	18		clc		        clc
+.735b	6d 84 79	adc $7984	        adc bu_new_side
+.735e	20 57 74	jsr $7457	        jsr bu_cache_select
+.7361	20 29 1c	jsr $1c29	        jsr N_WRITE
+.7364	90 03		bcc $7369	        bcs b_exit_error
+.7366	4c 20 61	jmp $6120
+.7369	ee 85 79	inc $7985	        inc bu_new_count
+.736c	ad 86 79	lda $7986	        lda bu_end
+.736f	d0 3d		bne $73ae	        bne bu_scan_complete
+.7371	ad 85 79	lda $7985	        lda bu_new_count
+.7374	c9 08		cmp #$08	        cmp #8
+.7376	d0 ba		bne $7332	        bne bu_read_entry
+.7378	ad 82 79	lda $7982	        lda bu_search
+.737b	f0 49		beq $73c6	        beq bu_commit
+.737d	ad 83 79	lda $7983	        lda bu_found
+.7380	d0 44		bne $73c6	        bne bu_commit
+.7382	a9 00		lda #$00	        lda #0
+.7384	8d 85 79	sta $7985	        sta bu_new_count
+.7387	18		clc		        clc
+.7388	ad 6d 79	lda $796d	        lda bu_target
+.738b	69 08		adc #$08	        adc #8
+.738d	8d 6d 79	sta $796d	        sta bu_target
+.7390	ad 6e 79	lda $796e	        lda bu_target+1
+.7393	69 00		adc #$00	        adc #0
+.7395	8d 6e 79	sta $796e	        sta bu_target+1
+.7398	ad 6f 79	lda $796f	        lda bu_target+2
+.739b	69 00		adc #$00	        adc #0
+.739d	8d 6f 79	sta $796f	        sta bu_target+2
+.73a0	ad 70 79	lda $7970	        lda bu_target+3
+.73a3	69 00		adc #$00	        adc #0
+.73a5	8d 70 79	sta $7970	        sta bu_target+3
+.73a8	90 88		bcc $7332	        bcc bu_read_entry
+.73aa	a9 06		lda #$06	        lda #N_RANGE
+.73ac	d0 69		bne $7417	        bne bu_scan_failed
+.73ae					bu_scan_complete:
+.73ae	20 1c 72	jsr $721c	        jsr bu_close_cursor
+.73b1	b0 70		bcs $7423	        bcs bu_scan_end
+.73b3	ad 82 79	lda $7982	        lda bu_search
+.73b6	f0 0e		beq $73c6	        beq bu_commit
+.73b8	ad 83 79	lda $7983	        lda bu_found
+.73bb	d0 09		bne $73c6	        bne bu_commit
+.73bd	20 d9 70	jsr $70d9	        jsr bu_zero_target      ; selected name disappeared: show the first page
+.73c0	8d 85 79	sta $7985	        sta bu_new_count
+.73c3	4c 68 72	jmp $7268	        jmp bu_scan_restart
+.73c6					bu_commit:
+.73c6	ad 7d 79	lda $797d	        lda bu_length
+.73c9	8d 2e 3d	sta $3d2e	        sta N_BROWSERLEN
+.73cc	ad 7e 79	lda $797e	        lda bu_device
+.73cf	8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.73d2	8d 73 6e	sta $6e73	        sta b_usb_device
+.73d5	ad 84 79	lda $7984	        lda bu_new_side
+.73d8	8d 7b 79	sta $797b	        sta bu_side
+.73db	ad 85 79	lda $7985	        lda bu_new_count
+.73de	8d 79 79	sta $7979	        sta bu_count
+.73e1	ad 86 79	lda $7986	        lda bu_end
+.73e4	49 01		eor #$01	        eor #1
+.73e6	8d 7c 79	sta $797c	        sta bu_more
+.73e9	ad 80 79	lda $7980	        lda bu_target_row
+.73ec	cd 79 79	cmp $7979	        cmp bu_count
+.73ef	90 02		bcc $73f3	        bcc +
+.73f1	a9 00		lda #$00	        lda #0
+.73f3	8d 7a 79	sta $797a	+       sta bu_row
+.73f6	a2 03		ldx #$03	        ldx #3
+.73f8					bu_commit_position:
+.73f8	bd 6d 79	lda $796d,x	        lda bu_target,x
+.73fb	9d 69 79	sta $7969,x	        sta bu_base,x
+.73fe	ca		dex		        dex
+.73ff	10 f7		bpl $73f8	        bpl bu_commit_position
+.7401	a2 00		ldx #$00	        ldx #0
+.7403					bu_commit_path:
+.7403	bd 93 79	lda $7993,x	        lda bu_path,x
+.7406	9d 00 4a	sta $4a00,x	        sta N_BROWSERPATH,x
+.7409	e8		inx		        inx
+.740a	ec 7d 79	cpx $797d	        cpx bu_length
+.740d	d0 f4		bne $7403	        bne bu_commit_path
+.740f	20 3f 70	jsr $703f	        jsr bu_save_selection
+.7412	4c 23 74	jmp $7423	        jmp bu_scan_end
+.7415					bu_scan_cancelled:
+.7415	a9 24		lda #$24	        lda #$24
+.7417					bu_scan_failed:
+.7417	8d 87 79	sta $7987	        sta bu_failure
+.741a	20 1c 72	jsr $721c	        jsr bu_close_cursor
+.741d	ad 87 79	lda $7987	        lda bu_failure
+.7420	8d aa 7a	sta $7aaa	        sta b_error
+.7423					bu_scan_end:
+.7423	a9 00		lda #$00	        lda #0
+.7425	8d a9 7a	sta $7aa9	        sta b_busy
+.7428	ad aa 7a	lda $7aaa	        lda b_error
+.742b	c9 01		cmp #$01	        cmp #1
+.742d	60		rts		        rts
+.742e					bu_match_saved:
+.742e	ad 82 79	lda $7982	        lda bu_search
+.7431	f0 23		beq $7456	        beq bu_match_done
+.7433	ad fe 3b	lda $3bfe	        lda N_BUFFER+510
+.7436	cd 34 3d	cmp $3d34	        cmp N_BROWSERNAME_LEN
+.7439	d0 1b		bne $7456	        bne bu_match_done
+.743b	a2 00		ldx #$00	        ldx #0
+.743d					bu_match_byte:
+.743d	bd 01 3a	lda $3a01,x	        lda N_BUFFER+1,x
+.7440	dd 00 3e	cmp $3e00,x	        cmp N_BROWSERNAME,x
+.7443	d0 11		bne $7456	        bne bu_match_done
+.7445	e8		inx		        inx
+.7446	ec 34 3d	cpx $3d34	        cpx N_BROWSERNAME_LEN
+.7449	d0 f2		bne $743d	        bne bu_match_byte
+.744b	a9 01		lda #$01	        lda #1
+.744d	8d 83 79	sta $7983	        sta bu_found
+.7450	ad 85 79	lda $7985	        lda bu_new_count
+.7453	8d 80 79	sta $7980	        sta bu_target_row
+.7456					bu_match_done:
+.7456	60		rts		        rts
+.7457					bu_cache_select:
+.7457	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.745a	a9 00		lda #$00	        lda #0
+.745c	8d 08 3d	sta $3d08	        sta N_OFFSET
+.745f	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.7462	a9 02		lda #$02	        lda #2
+.7464	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.7467	ad 9d 7a	lda $7a9d	        lda b_owner
+.746a	8d 00 3d	sta $3d00	        sta N_OWNER
+.746d	a2 03		ldx #$03	        ldx #3
+.746f					bu_cache_handle:
+.746f	bd 99 7a	lda $7a99,x	        lda b_cache,x
+.7472	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.7475	ca		dex		        dex
+.7476	10 f7		bpl $746f	        bpl bu_cache_handle
+.7478	60		rts		        rts
+.7479					bu_read_record:
+.7479	0a		asl a		        asl
+.747a	18		clc		        clc
+.747b	6d 7b 79	adc $797b	        adc bu_side
+.747e	20 57 74	jsr $7457	        jsr bu_cache_select
+.7481	20 26 1c	jsr $1c26	        jsr N_READ
+.7484	90 03		bcc $7489	        bcs b_exit_error
+.7486	4c 20 61	jmp $6120
+.7489	60		rts		        rts
+.748a					bu_fullname:
+.748a	ad 7a 79	lda $797a	        lda bu_row
+.748d	20 79 74	jsr $7479	        jsr bu_read_record
+.7490	ad 00 3a	lda $3a00	        lda N_BUFFER
+.7493	8d 89 79	sta $7989	        sta bu_attribute
+.7496	ad fe 3b	lda $3bfe	        lda N_BUFFER+510
+.7499	8d 8a 79	sta $798a	        sta bu_name_length
+.749c	ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
+.749f	8d 8b 79	sta $798b	        sta bu_full_length
+.74a2	a2 00		ldx #$00	        ldx #0
+.74a4					bu_full_parent:
+.74a4	bd 00 4a	lda $4a00,x	        lda N_BROWSERPATH,x
+.74a7	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.74aa	e8		inx		        inx
+.74ab	ec 2e 3d	cpx $3d2e	        cpx N_BROWSERLEN
+.74ae	d0 f4		bne $74a4	        bne bu_full_parent
+.74b0	bd ff 4d	lda $4dff,x	        lda N_UPATH-1,x
+.74b3	c9 2f		cmp #$2f	        cmp #$2f
+.74b5	f0 0c		beq $74c3	        beq bu_join_name
+.74b7	e0 ff		cpx #$ff	        cpx #255
+.74b9	f0 44		beq $74ff	        beq bu_path_too_long
+.74bb	a9 2f		lda #$2f	        lda #$2f
+.74bd	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.74c0	ee 8b 79	inc $798b	        inc bu_full_length
+.74c3					bu_join_name:
+.74c3	ad 8b 79	lda $798b	        lda bu_full_length
+.74c6	18		clc		        clc
+.74c7	6d 8a 79	adc $798a	        adc bu_name_length
+.74ca	b0 33		bcs $74ff	        bcs bu_path_too_long
+.74cc	8d 8b 79	sta $798b	        sta bu_full_length
+.74cf	ae 2e 3d	ldx $3d2e	        ldx N_BROWSERLEN
+.74d2	bd ff 4d	lda $4dff,x	        lda N_UPATH-1,x
+.74d5	c9 2f		cmp #$2f	        cmp #$2f
+.74d7	f0 01		beq $74da	        beq +
+.74d9	e8		inx		        inx
+.74da	a0 00		ldy #$00	+       ldy #0
+.74dc					bu_full_leaf:
+.74dc	b9 01 3a	lda $3a01,y	        lda N_BUFFER+1,y
+.74df	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.74e2	e8		inx		        inx
+.74e3	c8		iny		        iny
+.74e4	cc 8a 79	cpy $798a	        cpy bu_name_length
+.74e7	d0 f3		bne $74dc	        bne bu_full_leaf
+.74e9	a2 00		ldx #$00	        ldx #0
+.74eb					bu_display_leaf:
+.74eb	a9 a0		lda #$a0	        lda #$a0
+.74ed	ec 8a 79	cpx $798a	        cpx bu_name_length
+.74f0	b0 03		bcs $74f5	        bcs +
+.74f2	bd 01 3a	lda $3a01,x	        lda N_BUFFER+1,x
+.74f5	9d bb 7a	sta $7abb,x	+       sta b_record+2,x
+.74f8	e8		inx		        inx
+.74f9	e0 10		cpx #$10	        cpx #16
+.74fb	d0 ee		bne $74eb	        bne bu_display_leaf
+.74fd	18		clc		        clc
+.74fe	60		rts		        rts
+.74ff					bu_path_too_long:
+.74ff	a9 23		lda #$23	        lda #$23
+.7501	38		sec		        sec
+.7502	60		rts		        rts
+.7503					bu_inspect:
+.7503	a9 01		lda #$01	        lda #1
+.7505	d0 02		bne $7509	        bne bu_open_selected
+.7507					bu_enter:
+.7507	a9 00		lda #$00	        lda #0
+.7509					bu_open_selected:
+.7509	8d 8c 79	sta $798c	        sta bu_inspection
+.750c	ad 79 79	lda $7979	        lda bu_count
+.750f	d0 03		bne $7514	        beq b_loop
+.7511	4c 95 60	jmp $6095
+.7514	20 8a 74	jsr $748a	        jsr bu_fullname
+.7517	90 03		bcc $751c	        bcs bu_open_error
+.7519	4c df 75	jmp $75df
+.751c	ad 89 79	lda $7989	        lda bu_attribute
+.751f	29 10		and #$10	        and #$10
+.7521	d0 0b		bne $752e	        bne bu_child
+.7523	ad 89 79	lda $7989	        lda bu_attribute
+.7526	29 08		and #$08	        and #8
+.7528	f0 29		beq $7553	        beq bu_file
+.752a	a9 21		lda #$21	        lda #$21
+.752c	d0 eb		bne $7519	        bne bu_open_error
+.752e					bu_child:
+.752e	ad 8b 79	lda $798b	        lda bu_full_length
+.7531	8d 7d 79	sta $797d	        sta bu_length
+.7534	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.7537	8d 7e 79	sta $797e	        sta bu_device
+.753a	a2 00		ldx #$00	        ldx #0
+.753c					bu_child_path:
+.753c	bd 00 4e	lda $4e00,x	        lda N_UPATH,x
+.753f	9d 93 79	sta $7993,x	        sta bu_path,x
+.7542	e8		inx		        inx
+.7543	ec 7d 79	cpx $797d	        cpx bu_length
+.7546	d0 f4		bne $753c	        bne bu_child_path
+.7548	a9 00		lda #$00	        lda #0
+.754a	8d 81 79	sta $7981	        sta bu_resume
+.754d	20 d9 70	jsr $70d9	        jsr bu_zero_target
+.7550	4c ff 71	jmp $71ff	        jmp bu_scan_key
+.7553					bu_file:
+.7553	20 1c 72	jsr $721c	        jsr bu_close_cursor
+.7556	90 03		bcc $755b	        bcs b_redraw
+.7558	4c 92 60	jmp $6092
+.755b	ad 9d 7a	lda $7a9d	        lda b_owner
+.755e	8d 80 3d	sta $3d80	        sta N_FOWNER
+.7561	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.7564	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.7567	a9 03		lda #$03	        lda #3
+.7569	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.756c	ad 8b 79	lda $798b	        lda bu_full_length
+.756f	8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.7572	a9 00		lda #$00	        lda #0
+.7574	8d 87 3d	sta $3d87	        sta N_FMODE
+.7577	8d 88 3d	sta $3d88	        sta N_FTYPE
+.757a	a2 03		ldx #$03	        ldx #3
+.757c					bu_file_arguments:
+.757c	9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
+.757f	9d 1c 6c	sta $6c1c,x	        sta b_next_offset,x
+.7582	ca		dex		        dex
+.7583	10 f7		bpl $757c	        bpl bu_file_arguments
+.7585	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.7588	08		php		        php
+.7589	48		pha		        pha
+.758a	ad 81 3d	lda $3d81	        lda N_FHANDLE
+.758d	8d ac 7a	sta $7aac	        sta b_open
+.7590	68		pla		        pla
+.7591	28		plp		        plp
+.7592	b0 46		bcs $75da	        bcs bu_file_failed
+.7594	a9 00		lda #$00	        lda #0
+.7596	8d aa 7a	sta $7aaa	        sta b_error
+.7599	8d ab 7a	sta $7aab	        sta b_launch_error
+.759c	20 7e 6a	jsr $6a7e	        jsr b_view_read
+.759f	ad 8c 79	lda $798c	        lda bu_inspection
+.75a2	0d aa 7a	ora $7aaa	        ora b_error
+.75a5	d0 2b		bne $75d2	        bne bu_show_file
+.75a7	ad 17 6c	lda $6c17	        lda b_view_count
+.75aa	c9 22		cmp #$22	        cmp #34
+.75ac	90 24		bcc $75d2	        bcc bu_show_file
+.75ae	a2 05		ldx #$05	        ldx #5
+.75b0					bu_app_header:
+.75b0	bd 23 6c	lda $6c23,x	        lda b_view_data,x
+.75b3	dd 93 7a	cmp $7a93,x	        cmp b_app_magic,x
+.75b6	d0 1a		bne $75d2	        bne bu_show_file
+.75b8	ca		dex		        dex
+.75b9	10 f5		bpl $75b0	        bpl bu_app_header
+.75bb	20 bd 64	jsr $64bd	        jsr b_close_file
+.75be	ad 8b 79	lda $798b	        lda bu_full_length
+.75c1	8d 22 3d	sta $3d22	        sta N_NAMELEN
+.75c4	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.75c7	8d 21 3d	sta $3d21	        sta N_DEVICE
+.75ca	a9 03		lda #$03	        lda #3
+.75cc	8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.75cf	4c 53 1c	jmp $1c53	        jmp N_REPLACE
+.75d2					bu_show_file:
+.75d2	a9 01		lda #$01	        lda #1
+.75d4	8d 15 6c	sta $6c15	        sta b_preview
+.75d7	4c 92 60	jmp $6092	        jmp b_redraw
+.75da					bu_file_failed:
+.75da	48		pha		        pha
+.75db	20 bd 64	jsr $64bd	        jsr b_close_file
+.75de	68		pla		        pla
+.75df					bu_open_error:
+.75df	8d aa 7a	sta $7aaa	        sta b_error
+.75e2	4c 92 60	jmp $6092	        jmp b_redraw
+.75e5					bu_draw:
+.75e5	a9 b9		lda #$b9	        lda #<bu_title
+.75e7	a2 77		ldx #$77	        ldx #>bu_title
+.75e9	20 d2 66	jsr $66d2	        jsr b_puts
+.75ec	ad 29 3d	lda $3d29	        lda N_BROWSERDEV
+.75ef	a2 00		ldx #$00	        ldx #0
+.75f1	20 04 67	jsr $6704	        jsr b_number
+.75f4	a9 d7		lda #$d7	        lda #<bu_path_title
+.75f6	a2 77		ldx #$77	        ldx #>bu_path_title
+.75f8	20 d2 66	jsr $66d2	        jsr b_puts
+.75fb	a9 21		lda #$21	        lda #33
+.75fd	ae 1e 6a	ldx $6a1e	        ldx b_screen
+.7600	f0 02		beq $7604	        beq +
+.7602	a9 49		lda #$49	        lda #73
+.7604	8d 8d 79	sta $798d	+       sta bu_width
+.7607	ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
+.760a	38		sec		        sec
+.760b	ed 8d 79	sbc $798d	        sbc bu_width
+.760e	90 10		bcc $7620	        bcc bu_path_start
+.7610	f0 0e		beq $7620	        beq bu_path_start
+.7612	18		clc		        clc
+.7613	69 01		adc #$01	        adc #1
+.7615	8d 8e 79	sta $798e	        sta bu_at
+.7618	a9 3c		lda #$3c	        lda #$3c
+.761a	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.761d	4c 25 76	jmp $7625	        jmp bu_path_show
+.7620					bu_path_start:
+.7620	a9 00		lda #$00	        lda #0
+.7622	8d 8e 79	sta $798e	        sta bu_at
+.7625					bu_path_show:
+.7625	ae 8e 79	ldx $798e	        ldx bu_at
+.7628	ec 2e 3d	cpx $3d2e	        cpx N_BROWSERLEN
+.762b	f0 0e		beq $763b	        beq bu_page_title
+.762d	bd 00 4a	lda $4a00,x	        lda N_BROWSERPATH,x
+.7630	20 7b 66	jsr $667b	        jsr b_safe_character
+.7633	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.7636	ee 8e 79	inc $798e	        inc bu_at
+.7639	d0 ea		bne $7625	        bne bu_path_show
+.763b					bu_page_title:
+.763b	a9 ed		lda #$ed	        lda #<bu_page_text
+.763d	a2 77		ldx #$77	        ldx #>bu_page_text
+.763f	20 d2 66	jsr $66d2	        jsr b_puts
+.7642	20 12 77	jsr $7712	        jsr bu_page_number
+.7645	a9 f5		lda #$f5	        lda #<bu_columns
+.7647	a2 77		ldx #$77	        ldx #>bu_columns
+.7649	20 d2 66	jsr $66d2	        jsr b_puts
+.764c	a9 00		lda #$00	        lda #0
+.764e	8d 8f 79	sta $798f	        sta bu_draw_row
+.7651					bu_draw_line:
+.7651	ad a9 7a	lda $7aa9	        lda b_busy
+.7654	d0 69		bne $76bf	        bne bu_draw_blank
+.7656	ad 8f 79	lda $798f	        lda bu_draw_row
+.7659	cd 79 79	cmp $7979	        cmp bu_count
+.765c	b0 61		bcs $76bf	        bcs bu_draw_blank
+.765e	20 79 74	jsr $7479	        jsr bu_read_record
+.7661	a9 20		lda #$20	        lda #32
+.7663	ae 8f 79	ldx $798f	        ldx bu_draw_row
+.7666	ec 7a 79	cpx $797a	        cpx bu_row
+.7669	d0 02		bne $766d	        bne +
+.766b	a9 3e		lda #$3e	        lda #$3e
+.766d	20 07 6e	jsr $6e07	+       jsr b_usb_chrout
+.7670	a9 46		lda #$46	        lda #$46
+.7672	ae 00 3a	ldx $3a00	        ldx N_BUFFER
+.7675	8a		txa		        txa
+.7676	29 10		and #$10	        and #$10
+.7678	f0 04		beq $767e	        beq bu_draw_file
+.767a	a9 44		lda #$44	        lda #$44
+.767c	d0 02		bne $7680	        bne bu_draw_kind
+.767e					bu_draw_file:
+.767e	a9 46		lda #$46	        lda #$46
+.7680					bu_draw_kind:
+.7680	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.7683	a9 20		lda #$20	        lda #32
+.7685	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.7688	ad fe 3b	lda $3bfe	        lda N_BUFFER+510
+.768b	8d 8a 79	sta $798a	        sta bu_name_length
+.768e	38		sec		        sec
+.768f	ed 8d 79	sbc $798d	        sbc bu_width
+.7692	90 10		bcc $76a4	        bcc bu_name_start
+.7694	f0 0e		beq $76a4	        beq bu_name_start
+.7696	18		clc		        clc
+.7697	69 01		adc #$01	        adc #1
+.7699	8d 8e 79	sta $798e	        sta bu_at
+.769c	a9 3c		lda #$3c	        lda #$3c
+.769e	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.76a1	4c a9 76	jmp $76a9	        jmp bu_name_show
+.76a4					bu_name_start:
+.76a4	a9 00		lda #$00	        lda #0
+.76a6	8d 8e 79	sta $798e	        sta bu_at
+.76a9					bu_name_show:
+.76a9	ae 8e 79	ldx $798e	        ldx bu_at
+.76ac	ec 8a 79	cpx $798a	        cpx bu_name_length
+.76af	f0 0e		beq $76bf	        beq bu_draw_blank
+.76b1	bd 01 3a	lda $3a01,x	        lda N_BUFFER+1,x
+.76b4	20 7b 66	jsr $667b	        jsr b_safe_character
+.76b7	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.76ba	ee 8e 79	inc $798e	        inc bu_at
+.76bd	d0 ea		bne $76a9	        bne bu_name_show
+.76bf					bu_draw_blank:
+.76bf	a9 0d		lda #$0d	        lda #13
+.76c1	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.76c4	ee 8f 79	inc $798f	        inc bu_draw_row
+.76c7	ad 8f 79	lda $798f	        lda bu_draw_row
+.76ca	c9 08		cmp #$08	        cmp #8
+.76cc	d0 83		bne $7651	        bne bu_draw_line
+.76ce	a9 03		lda #$03	        lda #<bu_help
+.76d0	a2 78		ldx #$78	        ldx #>bu_help
+.76d2	20 d2 66	jsr $66d2	        jsr b_puts
+.76d5	ad a9 7a	lda $7aa9	        lda b_busy
+.76d8	f0 07		beq $76e1	        beq bu_draw_status
+.76da	a9 7c		lda #$7c	        lda #<bu_scanning
+.76dc	a2 78		ldx #$78	        ldx #>bu_scanning
+.76de	4c d2 66	jmp $66d2	        jmp b_puts
+.76e1					bu_draw_status:
+.76e1	ad aa 7a	lda $7aaa	        lda b_error
+.76e4	c9 23		cmp #$23	        cmp #$23
+.76e6	f0 1c		beq $7704	        beq bu_draw_long
+.76e8	c9 24		cmp #$24	        cmp #$24
+.76ea	f0 1f		beq $770b	        beq bu_draw_cancel
+.76ec	0d ab 7a	ora $7aab	        ora b_launch_error
+.76ef	f0 03		beq $76f4	        bne b_show_status
+.76f1	4c a1 66	jmp $66a1
+.76f4	a9 bc		lda #$bc	        lda #<bu_last_page
+.76f6	a2 78		ldx #$78	        ldx #>bu_last_page
+.76f8	ac 7c 79	ldy $797c	        ldy bu_more
+.76fb	f0 04		beq $7701	        beq +
+.76fd	a9 9d		lda #$9d	        lda #<bu_more_pages
+.76ff	a2 78		ldx #$78	        ldx #>bu_more_pages
+.7701	4c d2 66	jmp $66d2	+       jmp b_puts
+.7704					bu_draw_long:
+.7704	a9 cd		lda #$cd	        lda #<bu_long_path
+.7706	a2 78		ldx #$78	        ldx #>bu_long_path
+.7708	4c d2 66	jmp $66d2	        jmp b_puts
+.770b					bu_draw_cancel:
+.770b	a9 f2		lda #$f2	        lda #<bu_cancelled
+.770d	a2 78		ldx #$78	        ldx #>bu_cancelled
+.770f	4c d2 66	jmp $66d2	        jmp b_puts
+.7712					bu_page_number:
+.7712	a2 03		ldx #$03	        ldx #3
+.7714					bu_page_copy:
+.7714	bd 69 79	lda $7969,x	        lda bu_base,x
+.7717	9d 75 79	sta $7975,x	        sta bu_number,x
+.771a	ca		dex		        dex
+.771b	10 f7		bpl $7714	        bpl bu_page_copy
+.771d	a0 03		ldy #$03	        ldy #3
+.771f					bu_page_shift:
+.771f	4e 78 79	lsr $7978	        lsr bu_number+3
+.7722	6e 77 79	ror $7977	        ror bu_number+2
+.7725	6e 76 79	ror $7976	        ror bu_number+1
+.7728	6e 75 79	ror $7975	        ror bu_number
+.772b	88		dey		        dey
+.772c	d0 f1		bne $771f	        bne bu_page_shift
+.772e	a2 00		ldx #$00	        ldx #0
+.7730					bu_page_increment:
+.7730	fe 75 79	inc $7975,x	        inc bu_number,x
+.7733	d0 05		bne $773a	        bne bu_number_begin
+.7735	e8		inx		        inx
+.7736	e0 04		cpx #$04	        cpx #4
+.7738	d0 f6		bne $7730	        bne bu_page_increment
+.773a					bu_number_begin:
+.773a	a9 00		lda #$00	        lda #0
+.773c	8d 90 79	sta $7990	        sta bu_power
+.773f	8d 91 79	sta $7991	        sta bu_started
+.7742					bu_number_digit:
+.7742	a9 00		lda #$00	        lda #0
+.7744	8d 92 79	sta $7992	        sta bu_digit
+.7747					bu_number_compare:
+.7747	ac 90 79	ldy $7990	        ldy bu_power
+.774a	ad 75 79	lda $7975	        lda bu_number
+.774d	d9 3d 79	cmp $793d,y	        cmp bu_powers,y
+.7750	ad 76 79	lda $7976	        lda bu_number+1
+.7753	f9 3e 79	sbc $793e,y	        sbc bu_powers+1,y
+.7756	ad 77 79	lda $7977	        lda bu_number+2
+.7759	f9 3f 79	sbc $793f,y	        sbc bu_powers+2,y
+.775c	ad 78 79	lda $7978	        lda bu_number+3
+.775f	f9 40 79	sbc $7940,y	        sbc bu_powers+3,y
+.7762	90 2a		bcc $778e	        bcc bu_number_emit
+.7764	38		sec		        sec
+.7765	ad 75 79	lda $7975	        lda bu_number
+.7768	f9 3d 79	sbc $793d,y	        sbc bu_powers,y
+.776b	8d 75 79	sta $7975	        sta bu_number
+.776e	ad 76 79	lda $7976	        lda bu_number+1
+.7771	f9 3e 79	sbc $793e,y	        sbc bu_powers+1,y
+.7774	8d 76 79	sta $7976	        sta bu_number+1
+.7777	ad 77 79	lda $7977	        lda bu_number+2
+.777a	f9 3f 79	sbc $793f,y	        sbc bu_powers+2,y
+.777d	8d 77 79	sta $7977	        sta bu_number+2
+.7780	ad 78 79	lda $7978	        lda bu_number+3
+.7783	f9 40 79	sbc $7940,y	        sbc bu_powers+3,y
+.7786	8d 78 79	sta $7978	        sta bu_number+3
+.7789	ee 92 79	inc $7992	        inc bu_digit
+.778c	d0 b9		bne $7747	        bne bu_number_compare
+.778e					bu_number_emit:
+.778e	ad 92 79	lda $7992	        lda bu_digit
+.7791	0d 91 79	ora $7991	        ora bu_started
+.7794	d0 07		bne $779d	        bne bu_number_print
+.7796	ad 90 79	lda $7990	        lda bu_power
+.7799	c9 24		cmp #$24	        cmp #36
+.779b	d0 0e		bne $77ab	        bne bu_number_next
+.779d					bu_number_print:
+.779d	a9 01		lda #$01	        lda #1
+.779f	8d 91 79	sta $7991	        sta bu_started
+.77a2	ad 92 79	lda $7992	        lda bu_digit
+.77a5	18		clc		        clc
+.77a6	69 30		adc #$30	        adc #$30
+.77a8	20 07 6e	jsr $6e07	        jsr b_usb_chrout
+.77ab					bu_number_next:
+.77ab	18		clc		        clc
+.77ac	ad 90 79	lda $7990	        lda bu_power
+.77af	69 04		adc #$04	        adc #4
+.77b1	8d 90 79	sta $7990	        sta bu_power
+.77b4	c9 28		cmp #$28	        cmp #40
+.77b6	d0 8a		bne $7742	        bne bu_number_digit
+.77b8	60		rts		        rts
+.77b9					bu_title:
+>77b9	55 4f 53 20 31 32 38 20		        .text "uos 128 files and apps",13,13,"dos: ",0
+>77c1	46 49 4c 45 53 20 41 4e 44 20 41 50 50 53 0d 0d
+>77d1	44 4f 53 3a 20 00
+>77d7	20 20 20 46 4f 52 4d 41		bu_path_title: .text "   format: ult",13,"path: ",0
+>77df	54 3a 20 55 4c 54 0d 50 41 54 48 3a 20 00
+>77ed	0d 50 41 47 45 3a 20 00		bu_page_text: .text 13,"page: ",0
+>77f5	0d 20 20 4b 49 4e 44 20		bu_columns: .text 13,"  kind name",13,0
+>77fd	4e 41 4d 45 0d 00
+.7803					bu_help:
+>7803	0d 55 50 2f 44 4f 57 4e		        .text 13,"up/down select  n/b page",13
+>780b	20 53 45 4c 45 43 54 20 20 4e 2f 42 20 50 41 47
+>781b	45 0d
+>781d	45 4e 54 45 52 20 4f 50		        .text "enter open  i inspect  p parent",13
+>7825	45 4e 20 20 49 20 49 4e 53 50 45 43 54 20 20 50
+>7835	20 50 41 52 45 4e 54 0d
+>783d	52 20 52 45 46 52 45 53		        .text "r refresh  g path  tab dos",13
+>7845	48 20 20 47 20 50 41 54 48 20 20 54 41 42 20 44
+>7855	4f 53 0d
+>7858	46 20 46 4f 52 4d 41 54		        .text "f format  esc workspace  l usb app",13,0
+>7860	20 20 45 53 43 20 57 4f 52 4b 53 50 41 43 45 20
+>7870	20 4c 20 55 53 42 20 41 50 50 0d 00
+>787c	52 45 41 44 49 4e 47 20		bu_scanning: .text "reading directory... esc cancels",0
+>7884	44 49 52 45 43 54 4f 52 59 2e 2e 2e 20 45 53 43
+>7894	20 43 41 4e 43 45 4c 53 00
+>789d	4d 4f 52 45 20 45 4e 54		bu_more_pages: .text "more entries - n for next page",0
+>78a5	52 49 45 53 20 2d 20 4e 20 46 4f 52 20 4e 45 58
+>78b5	54 20 50 41 47 45 00
+>78bc	45 4e 44 20 4f 46 20 44		bu_last_page: .text "end of directory",0
+>78c4	49 52 45 43 54 4f 52 59 00
+>78cd	50 41 54 48 20 54 4f 4f		bu_long_path: .text "path too long; cannot open this name",0
+>78d5	20 4c 4f 4e 47 3b 20 43 41 4e 4e 4f 54 20 4f 50
+>78e5	45 4e 20 54 48 49 53 20 4e 41 4d 45 00
+>78f2	53 43 41 4e 20 43 41 4e		bu_cancelled: .text "scan cancelled; previous page retained",0
+>78fa	43 45 4c 4c 45 44 3b 20 50 52 45 56 49 4f 55 53
+>790a	20 50 41 47 45 20 52 45 54 41 49 4e 45 44 00
+>7919	45 4e 54 45 52 20 42 52		bu_path_help: .text "enter browse tab dos ctrl-u clr esc",0
+>7921	4f 57 53 45 20 54 41 42 20 44 4f 53 20 43 54 52
+>7931	4c 2d 55 20 43 4c 52 20 45 53 43 00
+>793d	00 ca 9a 3b 00 e1 f5 05		bu_powers: .dword 1000000000,100000000,10000000,1000000,100000,10000,1000,100,10,1
+>7945	80 96 98 00 40 42 0f 00 a0 86 01 00 10 27 00 00
+>7955	e8 03 00 00 64 00 00 00 0a 00 00 00 01 00 00 00
+>7965	00 00 00 00			bu_cursor: .fill 4,0
+>7969	00 00 00 00			bu_base: .fill 4,0
+>796d	00 00 00 00			bu_target: .fill 4,0
+>7971	00 00 00 00			bu_skip: .fill 4,0
+>7975	00 00 00 00			bu_number: .fill 4,0
+>7979	00				bu_count: .byte 0
+>797a	00				bu_row: .byte 0
+>797b	00				bu_side: .byte 0
+>797c	00				bu_more: .byte 0
+>797d	00				bu_length: .byte 0
+>797e	00				bu_device: .byte 0
+>797f	08				bu_iec_device: .byte 8
+>7980	00				bu_target_row: .byte 0
+>7981	00				bu_resume: .byte 0
+>7982	00				bu_search: .byte 0
+>7983	00				bu_found: .byte 0
+>7984	00				bu_new_side: .byte 0
+>7985	00				bu_new_count: .byte 0
+>7986	00				bu_end: .byte 0
+>7987	00				bu_failure: .byte 0
+>7988	00				bu_pending_key: .byte 0
+>7989	00				bu_attribute: .byte 0
+>798a	00				bu_name_length: .byte 0
+>798b	00				bu_full_length: .byte 0
+>798c	00				bu_inspection: .byte 0
+>798d	00				bu_width: .byte 0
+>798e	00				bu_at: .byte 0
+>798f	00				bu_draw_row: .byte 0
+>7990	00				bu_power: .byte 0
+>7991	00				bu_started: .byte 0
+>7992	00				bu_digit: .byte 0
+>7993	00 00 00 00 00 00 00 00		bu_path: .fill 256,0
+>799b	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>7a8b	00 00 00 00 00 00 00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/file-browser.inc
+
+>7a93	00 60 4e 41 50 50		b_app_magic: .byte 0,$60,$4e,$41,$50,$50
+.7a99					b_cache:
+>7a99	00 00 00 00			        .fill 4,0
+>7a9d	00				b_owner: .byte 0
+>7a9e	00 00				b_total: .word 0
+>7aa0	00 00				b_selected: .word 0
+>7aa2	00 00				b_saved_selection: .word 0
+>7aa4	00 00				b_index: .word 0
+>7aa6	00				b_page: .byte 0
+>7aa7	00				b_next: .byte 0
+>7aa8	00				b_scan_offset: .byte 0
+>7aa9	00				b_busy: .byte 0
+>7aaa	00				b_error: .byte 0
+>7aab	00				b_launch_error: .byte 0
+>7aac	00				b_open: .byte 0
+>7aad	00				b_prompt: .byte 0
+.7aae					b_device_state:
+>7aae	00				b_device_length: .byte 0
+>7aaf	00				b_device_cursor: .byte 0
+>7ab0	02				        .byte 2
+>7ab1	b6 7a				        .word b_device_text
+>7ab3	00 00				b_device_views: .fill 2,0
+>7ab5	01				        .byte 1
+>7ab6	00 00 00			b_device_text: .fill 3,0
+>7ab9	00 00 00 00 00 00 00 00		b_record: .fill 32,0
+>7ac1	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>7ad1	00 00 00 00 00 00 00 00
+>7ad9	00 00 00 00 00 00 00 00		b_page_data: .fill 256,0
+>7ae1	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 14 times (224 bytes)...
+>7bd1	00 00 00 00 00 00 00 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-desktop-clean-integration/src/native/files.asm
+
+=$6095					cloop = b_loop
+.7bd9					b_end:
+
+;******  End of listing

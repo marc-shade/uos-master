@@ -43,6 +43,12 @@ reviews supply the documentary comparison. A Wheels runtime image and recorded
 comparison remain open. This inventory covers the local directory, not the
 user's complete software collection.
 
+The subsequent [GEOS128 boot observations](reference/2026-09-11-geos-boots/README.md)
+record visible desktops in VICE 3.10 after boots with initial 40- and 80-column
+settings and 16 KiB VDC RAM. The original and private working disks remain
+unchanged. These establish a reference boot baseline; input, runtime version,
+application workflows and comparison with uOS remain open.
+
 For each runtime comparison, record the original image hash, private working
 copy, ROMs, display/input and memory configuration, reference version shown
 on screen, steps, screenshots and resulting files. Exercise the same workflow

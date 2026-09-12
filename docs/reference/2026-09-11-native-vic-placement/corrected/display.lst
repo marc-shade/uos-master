@@ -1,0 +1,364 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -I /home/marc/geos128/uos/src/native --labels=/var/tmp/arc-scratch/uos-native-display-prototype/display.sym --list=/var/tmp/arc-scratch/uos-native-display-prototype/display.lst -o /var/tmp/arc-scratch/uos-native-display-prototype/display-unsealed.prg /var/tmp/arc-scratch/uos-native-display-prototype/display.asm
+; Fri Sep 11 17:02:40 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-display-prototype/display.asm
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=7					N_ABI_MINOR = 7
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; checked PRG through owned IEC/Ultimate streams
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; owned read/create stream or Ultimate directory cursor
+=$1c44					N_FREAD         = $1c44          ; up to 512 file bytes, or one complete directory entry
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch with source fields
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$1c59					N_FEDIT         = $1c59          ; edit the active app's bounded field, no input polling
+=$1c5c					N_FDRAW         = $1c5c          ; draw that focused field at the current console position
+=$1c5f					N_MLOAD         = $1c5f          ; checked module from the original app's source folder
+=$1c62					N_MCALL         = $1c62          ; call the current module using its generation token
+=$1c65					N_MCLOSE        = $1c65          ; invalidate module; close/recover only its source stream
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d17					N_MTOKEN        = $3d17          ; LE24: MLOAD output / MCALL input; zero is invalid
+=$3d1a					N_MERROR        = $3d1a          ; gate/loader error; MCALL preserves module's A/carry
+=$3d1b					N_MSTATE        = $3d1b          ; read-only: 0 empty, 1 loading, 2 ready, 3 running, 4 close retained
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device 8..30, or Ultimate DOS context 1/2
+=$3d22					N_NAMELEN       = $3d22          ; IEC launch name 1..16; Ultimate path length 1..255
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; first failed loader stream's nonzero transport status
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
+=$3d2d					N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
+=$3d2e					N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
+=$3d30					N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
+=$3d34					N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
+=$3d35					N_UIPTR         = $3d35          ; word: field-state address
+=$3d37					N_UIKEY         = $3d37
+=$3d38					N_UIWIDTH       = $3d38
+=$3d39					N_UIFLAGS       = $3d39          ; successful edit: bit 0 content, bit 1 caret changed
+=$3d3a					N_UIERROR       = $3d3a
+=$3d3b					N_UIBUSY        = $3d3b
+=0					UI_LENGTH       = 0
+=1					UI_CARET        = 1
+=2					UI_MAXIMUM      = 2
+=3					UI_BUFFER       = 3
+=5					UI_VIEW40       = 5
+=6					UI_VIEW80       = 6
+=7					UI_FILTER       = 7
+=8					UI_STATE_BYTES  = 8
+=$3e00					N_BROWSERNAME   = $3e00          ; 256 bytes; restore selection after directory edits
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d50					N_MHEADER       = $3d50          ; private: independent 16-byte module manifest
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3f00					N_SOURCEPATH    = $3f00          ; private: original Ultimate app parent directory
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30 or Ultimate DOS context 1/2
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; IEC first error; Ultimate most recent numeric status
+=$3d90					N_FSTATUS       = $3d90          ; IEC serial error; Ultimate transport/verification detail
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; LE32 byte position, or directory entries consumed
+=$3d96					N_FFORMAT       = $3d96          ; 0 D64, 1 D71, 2 D81, 3 Ultimate DOS
+=$4e00					N_UPATH         = $4e00          ; 256-byte path mailbox, bank 0, reserved
+=$4a00					N_BROWSERPATH   = $4a00          ; ABI 1.5: persistent browser path, 1..255 raw bytes
+=$4f00					N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes + NUL
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$16					N_MEXHAUSTED    = $16            ; module generation retired until the next kernel boot
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$5000					N_RELOCBASE     = $5000          ; boot-only staging, reusable after relocation
+=$4000					N_SERVICEBASE   = $4000          ; resident Ultimate services and mailboxes
+=$5000					N_SERVICELIMIT  = $5000
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-display-prototype/display.asm
+
+.6000					app_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 07 00			        .byte 1,1,7,0
+>6008	d4 01				        .word app_end-app_image
+>600a	04 00				        .byte 4,0
+>600c	20 00				        .word app_entry-app_image
+>600e	00 00				        .word 0
+>6010	56 49 43 20 50 4c 41 43		        .text "vic placement",0
+>6018	45 4d 45 4e 54 00
+>601e	00 00				        .fill N_APPBASE+32-*,0
+.6020					app_entry:
+.6020	d8		cld		        cld
+.6021	a9 00		lda #$00	        lda #0
+.6023	8d c7 61	sta $61c7	        sta phase
+.6026	8d c8 61	sta $61c8	        sta error
+.6029	8d ca 61	sta $61ca	        sta handle
+.602c	8d c9 61	sta $61c9	        sta active
+.602f	ad 00 ff	lda $ff00	        lda $ff00
+.6032	c9 0e		cmp #$0e	        cmp #$0e
+.6034	f0 03		beq $6039	        beq *+5
+.6036	4c d3 60	jmp $60d3	        jmp platform_error
+.6039	ad 06 d5	lda $d506	        lda $d506
+.603c	29 4f		and #$4f	        and #$4f
+.603e	c9 04		cmp #$04	        cmp #4
+.6040	f0 03		beq $6045	        beq *+5
+.6042	4c d3 60	jmp $60d3	        jmp platform_error
+.6045	a5 d8		lda $d8		        lda $d8
+.6047	f0 03		beq $604c	        beq *+5
+.6049	4c d3 60	jmp $60d3	        jmp platform_error
+.604c	a5 00		lda $00		        lda $00
+.604e	29 06		and #$06	        and #6
+.6050	c9 06		cmp #$06	        cmp #6
+.6052	d0 7f		bne $60d3	        bne platform_error
+.6054	ad 1a d0	lda $d01a	        lda $d01a
+.6057	29 0f		and #$0f	        and #15
+.6059	c9 01		cmp #$01	        cmp #1
+.605b	d0 76		bne $60d3	        bne platform_error
+.605d	ad 11 d0	lda $d011	        lda $d011
+.6060	29 60		and #$60	        and #$60
+.6062	d0 6f		bne $60d3	        bne platform_error
+.6064	ad 16 d0	lda $d016	        lda $d016
+.6067	29 10		and #$10	        and #$10
+.6069	d0 68		bne $60d3	        bne platform_error
+.606b	ad 02 dd	lda $dd02	        lda $dd02
+.606e	29 03		and #$03	        and #3
+.6070	c9 03		cmp #$03	        cmp #3
+.6072	d0 5f		bne $60d3	        bne platform_error
+.6074	ad 20 3d	lda $3d20	        lda N_CURRENT
+.6077	8d 00 3d	sta $3d00	        sta N_OWNER
+.607a	a9 00		lda #$00	        lda #0
+.607c	8d 02 3d	sta $3d02	        sta N_BANK
+.607f	a9 c0		lda #$c0	        lda #$c0
+.6081	8d 03 3d	sta $3d03	        sta N_PAGE
+.6084	a9 24		lda #$24	        lda #36
+.6086	8d 01 3d	sta $3d01	        sta N_PAGES
+.6089	20 35 1c	jsr $1c35	        jsr N_RESERVE
+.608c	b0 47		bcs $60d5	        bcs failed
+.608e	a2 03		ldx #$03	        ldx #3
+.6090					save_handle:
+.6090	bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.6093	9d ca 61	sta $61ca,x	        sta handle,x
+.6096	ca		dex		        dex
+.6097	10 f7		bpl $6090	        bpl save_handle
+.6099	a9 00		lda #$00	        lda #0
+.609b	8d 08 3d	sta $3d08	        sta N_OFFSET
+.609e	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.60a1	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.60a4	a9 02		lda #$02	        lda #2
+.60a6	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.60a9					fill_next:
+.60a9	a9 aa		lda #$aa	        lda #$aa
+.60ab	ae 09 3d	ldx $3d09	        ldx N_OFFSET+1
+.60ae	e0 20		cpx #$20	        cpx #$20
+.60b0	90 02		bcc $60b4	        bcc fill_value
+.60b2	a9 e6		lda #$e6	        lda #$e6
+.60b4					fill_value:
+.60b4	8d 0c 3d	sta $3d0c	        sta N_VALUE
+.60b7	20 2c 1c	jsr $1c2c	        jsr N_FILL
+.60ba	b0 19		bcs $60d5	        bcs failed
+.60bc	ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.60bf	ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.60c2	ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.60c5	c9 24		cmp #$24	        cmp #$24
+.60c7	d0 e0		bne $60a9	        bne fill_next
+.60c9	20 04 61	jsr $6104	        jsr enter_display
+.60cc	a9 02		lda #$02	        lda #2
+.60ce	8d c7 61	sta $61c7	        sta phase
+.60d1	d0 0a		bne $60dd	        bne input_loop
+.60d3					platform_error:
+.60d3	a9 08		lda #$08	        lda #N_PLATFORM
+.60d5					failed:
+.60d5	8d c8 61	sta $61c8	        sta error
+.60d8	a9 01		lda #$01	        lda #1
+.60da	8d c7 61	sta $61c7	        sta phase
+.60dd					input_loop:
+.60dd	a9 01		lda #$01	        lda #1
+.60df	8d 12 3d	sta $3d12	        sta N_READY
+.60e2	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.60e5	f0 f6		beq $60dd	        beq input_loop
+.60e7	a2 00		ldx #$00	        ldx #0
+.60e9	8e 12 3d	stx $3d12	        stx N_READY
+.60ec	c9 0d		cmp #$0d	        cmp #13
+.60ee	f0 0d		beq $60fd	        beq normal_return
+.60f0	c9 1b		cmp #$1b	        cmp #$1b
+.60f2	d0 e9		bne $60dd	        bne input_loop
+.60f4	20 61 61	jsr $6161	        jsr release_display
+.60f7	ad c8 61	lda $61c8	        lda error
+.60fa	4c 3e 1c	jmp $1c3e	        jmp N_EXIT
+.60fd					normal_return:
+.60fd	20 61 61	jsr $6161	        jsr release_display
+.6100	ad c8 61	lda $61c8	        lda error
+.6103	60		rts		        rts
+.6104					enter_display:
+.6104	08		php		        php
+.6105	78		sei		        sei
+.6106	a5 d8		lda $d8		        lda $d8
+.6108	8d ce 61	sta $61ce	        sta saved_d8
+.610b	ad 11 d0	lda $d011	        lda $d011
+.610e	29 7f		and #$7f	        and #$7f
+.6110	8d cf 61	sta $61cf	        sta saved_d011
+.6113	ad 16 d0	lda $d016	        lda $d016
+.6116	8d d0 61	sta $61d0	        sta saved_d016
+.6119	ad 18 d0	lda $d018	        lda $d018
+.611c	8d d1 61	sta $61d1	        sta saved_d018
+.611f	ad 00 dd	lda $dd00	        lda $dd00
+.6122	29 03		and #$03	        and #3
+.6124	8d d2 61	sta $61d2	        sta saved_vic_bank
+.6127	a5 01		lda $01		        lda $01
+.6129	29 06		and #$06	        and #6
+.612b	8d d3 61	sta $61d3	        sta saved_port
+.612e	a9 ff		lda #$ff	        lda #$ff
+.6130	85 d8		sta $d8		        sta $d8                ; current KERNAL skips its split/mode writes
+.6132	8d 12 d0	sta $d012	        sta $d012              ; retain the native text raster compare (255)
+.6135	a5 01		lda $01		        lda $01
+.6137	29 fd		and #$fd	        and #$fd
+.6139	09 04		ora #$04	        ora #4
+.613b	85 01		sta $01		        sta $01                ; same VIC ROM/color-bank selection as C128 bitmap IRQ
+.613d	a9 80		lda #$80	        lda #$80
+.613f	8d 18 d0	sta $d018	        sta $d018              ; matrix $e000, bitmap $c000, VIC bank $c000
+.6142	ad d0 61	lda $61d0	        lda saved_d016
+.6145	29 ef		and #$ef	        and #$ef
+.6147	8d 16 d0	sta $d016	        sta $d016
+.614a	ad cf 61	lda $61cf	        lda saved_d011
+.614d	09 20		ora #$20	        ora #$20
+.614f	8d 11 d0	sta $d011	        sta $d011              ; bit 7 is compare-high on write, not readback
+.6152	ad 00 dd	lda $dd00	        lda $dd00
+.6155	29 fc		and #$fc	        and #$fc
+.6157	8d 00 dd	sta $dd00	        sta $dd00
+.615a	a9 01		lda #$01	        lda #1
+.615c	8d c9 61	sta $61c9	        sta active
+.615f	28		plp		        plp
+.6160	60		rts		        rts
+.6161					release_display:
+.6161	ad c9 61	lda $61c9	        lda active
+.6164	f0 38		beq $619e	        beq free_surface
+.6166	08		php		        php
+.6167	78		sei		        sei
+.6168	ad 00 dd	lda $dd00	        lda $dd00
+.616b	29 fc		and #$fc	        and #$fc
+.616d	0d d2 61	ora $61d2	        ora saved_vic_bank
+.6170	8d 00 dd	sta $dd00	        sta $dd00
+.6173	ad d1 61	lda $61d1	        lda saved_d018
+.6176	8d 18 d0	sta $d018	        sta $d018
+.6179	ad d0 61	lda $61d0	        lda saved_d016
+.617c	8d 16 d0	sta $d016	        sta $d016
+.617f	a9 ff		lda #$ff	        lda #$ff
+.6181	8d 12 d0	sta $d012	        sta $d012
+.6184	ad cf 61	lda $61cf	        lda saved_d011
+.6187	8d 11 d0	sta $d011	        sta $d011
+.618a	a5 01		lda $01		        lda $01
+.618c	29 f9		and #$f9	        and #$f9
+.618e	0d d3 61	ora $61d3	        ora saved_port
+.6191	85 01		sta $01		        sta $01
+.6193	ad ce 61	lda $61ce	        lda saved_d8
+.6196	85 d8		sta $d8		        sta $d8
+.6198	a9 00		lda #$00	        lda #0
+.619a	8d c9 61	sta $61c9	        sta active
+.619d	28		plp		        plp
+.619e					free_surface:
+.619e	ad ca 61	lda $61ca	        lda handle
+.61a1	f0 1e		beq $61c1	        beq released
+.61a3	ad 20 3d	lda $3d20	        lda N_CURRENT
+.61a6	8d 00 3d	sta $3d00	        sta N_OWNER
+.61a9	a2 03		ldx #$03	        ldx #3
+.61ab					restore_handle:
+.61ab	bd ca 61	lda $61ca,x	        lda handle,x
+.61ae	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.61b1	ca		dex		        dex
+.61b2	10 f7		bpl $61ab	        bpl restore_handle
+.61b4	20 23 1c	jsr $1c23	        jsr N_FREE
+.61b7	90 08		bcc $61c1	        bcc released
+.61b9	ae c8 61	ldx $61c8	        ldx error
+.61bc	d0 03		bne $61c1	        bne released
+.61be	8d c8 61	sta $61c8	        sta error
+.61c1					released:
+.61c1	a9 03		lda #$03	        lda #3
+.61c3	8d c7 61	sta $61c7	        sta phase
+.61c6	60		rts		        rts
+>61c7	00				phase:          .byte 0
+>61c8	00				error:          .byte 0
+>61c9	00				active:         .byte 0
+>61ca	00 00 00 00			handle:         .fill 4,0
+>61ce	00				saved_d8:       .byte 0
+>61cf	00				saved_d011:     .byte 0
+>61d0	00				saved_d016:     .byte 0
+>61d1	00				saved_d018:     .byte 0
+>61d2	00				saved_vic_bank: .byte 0
+>61d3	00				saved_port:     .byte 0
+.61d4					app_end:
+
+;******  End of listing
