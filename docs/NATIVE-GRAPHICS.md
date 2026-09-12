@@ -8,6 +8,10 @@ it when the app returns.
 
 Software qualification passes. Physical desktop qualification remains incomplete
 after three restored test interruptions; see the [hardware record](validation/2026-09-11-native-desktop-hardware/README.md).
+The subsequent [focused capture diagnosis](validation/2026-09-12-native-capture-transport/README.md)
+retains another restored failure and a reproducible observer guard defect:
+a nested C128 ROM interrupt can legitimately save MMU `$00`. Earlier captured
+byte differences remain unexplained.
 
 ## Build and controls
 

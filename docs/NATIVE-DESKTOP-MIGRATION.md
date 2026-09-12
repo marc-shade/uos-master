@@ -161,6 +161,15 @@ integration supplies the current source and separate desktop build target.
 Physical qualification remains separately reported; software passes do not
 erase the three retained hardware interruptions.
 
+The [focused capture experiment](validation/2026-09-12-native-capture-transport/README.md)
+adds exact RAM-write receipts and bounded pause/resume batches. Its physical
+run stopped on a saved-MMU guard despite 856 complete write acknowledgements
+and exact borrower restoration. Original deployment and private-file cleanup
+were verified. A CPU model executing the actual ROM demonstrates that a nested
+IRQ can legitimately save MMU `$00`, which this guard rejects. Qualify that
+context before updating the observer; the prior payload/buffer differences
+remain unresolved.
+
 Build the initial native display client against the public heap/file/module
 services. Keep optional graphics executable code in the app allocation or a
 declared module window. Before changing display registers, reserve all required
