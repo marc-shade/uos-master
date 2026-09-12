@@ -77,6 +77,10 @@ The [Claude lifecycle update](docs/validation/2026-09-12-native-claude-lifecycle
 adds acknowledged F8 shutdown with a bounded fallback and starts the Linux
 process only after the C128 handshake. Its software tests and independent
 rebuild pass; native physical serial testing remains open.
+The [shared suite workflow](docs/validation/2026-09-12-native-suite-workflow/README.md)
+checks all five apps and both Claude exit paths together in VICE. Its physical
+attempt stopped before app launch after uncommanded input during a capture;
+the original deployment was restored and private uploads were removed.
 
 ## Storage and loader update (2026-09-08)
 

@@ -254,11 +254,25 @@ F8 both take normal native teardown. The Linux PTY starts only after RESYNC.
 Two frozen VICE workflows verify both exit directions, font/NMI restoration
 and complete desktop return; a separate rebuild matches all 19 images.
 
-Read-only physical discovery found DE00/NMI, port 3000, DTR disconnect and
-incoming RING already enabled. This did not boot or exercise either added app.
-The next physical candidate must be frozen from the updated suite, use the
-connect-only bridge after opening the client, and retain the existing verified
-desktop/disk/settings restoration. VDC observation during a serial session
-requires settled output: the IRQ observer does not preserve an interrupted
-client's selected VDC register and must not be treated as a concurrent drawing
-observer.
+The [shared suite workflow](validation/2026-09-12-native-suite-workflow/README.md)
+adds all five apps and two Claude sessions to the same desktop, display,
+resident-code and allocation checks. Successful Ultimate replies are checked
+against independent query fixtures; VICE exercises the absent-device display.
+Serial checks use a fixed PTY fixture, with no model requests. A foreground VDC
+mirror and settled output avoid observing the terminal during drawing.
+
+Physical preflight found DE00/NMI, port 3000, DTR disconnect and incoming RING
+already enabled, and retained independent device/drive/network/RTC replies.
+The native attempt then stopped during the initial resident capture after
+three consumed inputs, last key cursor down, changed the desktop selection.
+The observer's buffers matched after restoration; changed resident bytes were
+declared drawing state. The input source is unknown. No added app was reached.
+Original deployment, drives, settings, DOS paths and controls were restored;
+both private uploads were fully verified and removed. Separate final GETs
+confirmed unchanged modem settings.
+
+Diagnose the uncommanded input before another full physical attempt. Preserve
+the failed capture and strict comparisons; any new attempt needs fresh frozen
+inputs. The connect-only bridge must start after opening the native client.
+The IRQ observer does not preserve an interrupted client's selected VDC
+register, so serial display checks still require settled output.

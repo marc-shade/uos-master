@@ -110,12 +110,13 @@ compatibility requirement from providing equivalent uOS applications.
 | APP-PUBLISH | Page layout with text/image frames, columns, styles, preview, print/export | Absent | Complete a newsletter and reopen it without layout loss; geoPublish comparison fixtures |
 | APP-ORGANIZE | Calendar, appointments, alarms, contacts, notes and clock accessories | Clock plus editor | Persistent appointments; alarms while another app is active; timezone/date rollover tests |
 | APP-MEDIA | Image/document/text viewers, font browser, photo/text scrap managers, SID/audio player | Shell's short CAT and a paged cartridge hex/ASCII viewer | File association launch, scrolling/zoom, playlist, inter-app scraps, supported format round trips |
-| APP-COMMS | Terminal (PETSCII/ANSI), serial/modem and TCP/Telnet, file transfer; network resource browser | Socket driver and small HTTP GET | Real BBS/LAN session, encoding negotiation, transfer integrity, reconnect and cancel |
+| APP-COMMS | Terminal (PETSCII/ANSI), serial/modem and TCP/Telnet, file transfer; network resource browser | Socket driver, small HTTP GET and native Claude host-PTY client over SwiftLink; general terminal protocols remain open | Real BBS/LAN session, encoding negotiation, transfer integrity, reconnect and cancel |
+| APP-CLAUDE | Include marc-shade/claude-c128 as a native desktop suite app | Built into both suite disks; A launches, Return opens the modem, Linux bridge starts after handshake, F8 or host exit restores desktop/font/NMI state; CPU and VICE checks pass | Native physical serial session and actual authenticated Claude session; usable terminal controls on either display remain part of FR-D1/D2 |
 | APP-PRINT | Printer setup, spooler, preview, job queue and cancel; text/raster/PostScript/PDF where backend supports it | Absent | Print document/picture/table through declared physical and Ultimate printer backends; disk-full/disconnect recovery |
 | APP-ARCHIVE | Archive manager, disk-image tools, backup/restore, format conversion | Absent | Recover a backup after reset; malformed/truncated archive tests; byte-exact image/file verification |
 | APP-DEVELOP | Assembler/editor integration, monitor/debugger, build/run tools, API help | Shell PEEK/POKE only | Build and debug a small native app from uOS; preserve desktop/app state on exit |
 | APP-COMPAT | GEOS sequential/VLIR/Convert formats, document migration, original GEOS app execution or an explicit managed compatibility environment | No compatibility layer | Named applications and documents tested on real C128; preserving GEOS metadata and files is mandatory |
-| APP-SYSTEM | Hardware/resource monitor, disk utility, diagnostics, installer/updater/recovery, online/offline help | Computer dialog and deployment scripts | A user installs, diagnoses, updates and recovers uOS from the desktop without a developer workstation |
+| APP-SYSTEM | Hardware/resource monitor, disk utility, diagnostics, installer/updater/recovery, online/offline help | Computer dialog, deployment scripts and native Ultimate identification/drive/network/RTC panel | A user installs, diagnoses, updates and recovers uOS from the desktop without a developer workstation |
 
 ## Ultimate II+ integration backlog
 
@@ -127,12 +128,12 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
-| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; app-local drive records with bounded reconciliation of the reference cartridge's short reply | Shared capability registry, missing peripheral records, observed completion of native-owned aborts, interrupted operations and per-firmware protocol coverage |
+| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; shared native read-only queries and Ultimate panel; bounded handling of the reference cartridge's partial drive reply | Native panel hardware qualification; shared capability registry, missing peripheral records, observed completion of native-owned aborts, interrupted operations and per-firmware protocol coverage |
 | UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.6 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access, shared picker and focused fields | Shared graphical controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
-| UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client | Download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
-| UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; old frozen-RTC diagnosis came from saved configuration fields | Power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
+| UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client; native panel displays configured interface addresses | Native panel hardware qualification; download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
+| UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; native cartridge-clock panel validates calendar replies and supports refresh | Native panel hardware qualification; power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
 | UCI-AUDIO | SID selection/configuration, audio routing/mixer, playback/record capabilities | Absent | Real output and supported chip/model configuration; unavailable hardware excluded by capability checks |
 | UCI-PRINT | Printer selection, job status, output-file retrieval | Absent | Desktop print job produces a verified readable output file or physical page |
 | UCI-TAPE | Tape image playback/capture and file management | Absent | Start/stop/capture, verify files, preserve desktop before incompatible launches |
@@ -151,7 +152,7 @@ or “has a driver slot” is insufficient to mark a device supported.
 | Memory/acceleration | 1700/1764/1750 REUs; Ultimate/RAD REU emulation; GeoRAM/NeoRAM; RAMLink/RAMDrive; SuperCPU/SuperRAM and compatible accelerators; VDC RAM upgrades | Fixed REU DMA exists; all allocators and model-specific verification open |
 | Storage | 1541/1570/1571/1581; CMD HD/FD/RL partitions; SD2IEC; Pi1541; IDE64; Ultimate drives/SoftIEC; Kung Fu Flash; network IEC devices | Partial KERNAL workflows; no blanket device certification |
 | Input | 1351 and supported adapters, joystick, keyboard pointer; supported paddles/light pen/tablet; serial/Amiga mouse adapters with appropriate drivers | 1351 path exists; electrical/protocol-specific drivers and tests needed |
-| Communications | Ultimate, RR-Net/64NIC+/CS8900A, WiC64, user-port RS-232, SwiftLink/Turbo232 and compatible modems | Ultimate socket driver only |
+| Communications | Ultimate, RR-Net/64NIC+/CS8900A, WiC64, user-port RS-232, SwiftLink/Turbo232 and compatible modems | Ultimate socket driver; native DE00/NMI SwiftLink Claude client qualified in VICE, physical serial qualification pending |
 | Printing/audio | IEC/user-port/parallel printer adapters and compatible printers; Ultimate printer; SID variants, stereo/multi-SID and supported audio/MIDI expansions | No OS printer/audio service yet |
 | Other hosts | C64, C128D/DCR; Ultimate 64 family, supported FPGA/emulated machines, PRD-listed ports | C64 emulator fallback exists; each model requires a separate capability/result entry |
 
@@ -500,6 +501,13 @@ keyboard accounting, serial NMI mapping, custom glyph restoration and desktop
 return. The five-entry launcher also includes the [Ultimate information panel](NATIVE-ULTIMATE-CONTROLS.md).
 These are ABI 1.10 software candidates; the prior ABI 1.9 physical pass does
 not establish native serial or Ultimate-panel hardware qualification.
+The [shared five-app workflow](validation/2026-09-12-native-suite-workflow/README.md)
+exercises every launcher entry, two serial sessions and final memory recovery.
+Its physical attempt stopped during the initial resident capture: three inputs
+were consumed, the last was cursor down, and selection changed from 0 to 3.
+No scripted input or added app launch had occurred. The changed resident bytes
+are declared drawing state; input origin remains unestablished. The original
+deployment was restored and both owned uploads were verified and removed.
 Additional Ultimate controls, persistent preferences, window/pointer services
 and the remaining application/parity roadmap remain open.
 

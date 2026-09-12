@@ -72,7 +72,16 @@ not part of the native launch path.
 Native qualification is tracked separately from upstream hardware claims.
 The earlier uOS ABI 1.9 physical pass does not qualify this ABI 1.10 serial app.
 
-The [software qualification](../../docs/validation/2026-09-12-native-claude-suite/README.md)
-passes 30 native CPU suites, 34 host checks and four VICE workflows. Both F8
-and host-process exit return to the desktop with the original font and NMI
-state restored. Native physical modem qualification remains pending.
+The [initial software qualification](../../docs/validation/2026-09-12-native-claude-suite/README.md)
+passes 30 native CPU suites, 34 host checks and four VICE workflows. The
+[lifecycle update](../../docs/validation/2026-09-12-native-claude-lifecycle/README.md)
+verifies handshake-controlled startup and acknowledged F8 shutdown.
+
+Run `python3 -u tests/ci_native_suite_iec.py` for the shared five-app VICE
+workflow. It uses a fixed PTY fixture and checks two Claude sessions, F8 and
+host exit, font/NMI restoration and complete memory recovery. It requires
+VICE, Xvfb and the bridge dependency, and sends no Claude model requests.
+The [suite record](../../docs/validation/2026-09-12-native-suite-workflow/README.md)
+also retains a physical attempt that stopped before app launch because input
+changed during the initial desktop capture. Native physical modem testing
+and an actual authenticated Claude session remain unverified.
