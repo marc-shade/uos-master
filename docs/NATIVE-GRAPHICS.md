@@ -1,10 +1,11 @@
 # Native graphics and desktop
 
-The ABI 1.8 desktop starts in C128 native mode and launches Calculator, Text
+The ABI 1.9 desktop starts in C128 native mode and launches Calculator, Text
 Editor and Files. It presents a 320×200 VIC bitmap and mirrors its controls in
 the VDC text console. Apps use the existing owner-checked heap, file and module
 services. The dispatcher releases the desktop before loading an app and reloads
-it when the app returns.
+it when the app returns. The desktop keeps its selected app across app and
+workspace returns for the current session.
 
 Software qualification passes. Physical desktop qualification remains incomplete
 after three restored test interruptions; see the [hardware record](validation/2026-09-11-native-desktop-hardware/README.md).
@@ -47,6 +48,16 @@ or the current display configuration is unsupported, the same desktop controls
 remain available as text on both consoles. A missing app reports its load error
 and returns to the desktop. A missing desktop leaves a usable workspace.
 
+Arrow/Tab selection and C/E/F shortcuts update `N_DESKTOPSEL` at `$3d2f`:
+0 Calculator, 1 Editor, 2 Files. A reloaded desktop restores that selection
+in both graphics and text fallback; values outside 0–2 recover to Calculator.
+Native restart clears the selection. This uses an existing mailbox byte and
+keeps the 18-page app plus 36-page surface allocation unchanged. Selection is
+session state; preferences saved across restarts remain roadmap work.
+The [selection checkpoint](validation/2026-09-12-native-desktop-selection/README.md)
+records the ABI 1.9 build, compatibility checks and complete app/workspace
+return workflows.
+
 On a physical C128, mount the desktop disk on device 8 and boot in native mode.
 The Ultimate PRG runner enters C64 mode; use native disk boot for this kernel.
 `python3 -u hw_ultimate_check.py --native-desktop` runs the bounded qualification
@@ -54,7 +65,7 @@ workflow from the existing idle legacy deployment and restores it afterward.
 
 The desktop PRG occupies 18 app pages and reserves 36 surface pages, leaving
 372 of the 426 managed pages free. Both allocations are released before an app
-handoff. There is one foreground app; persistent desktop state, pointer input,
+handoff. There is one foreground app; desktop preferences saved across restarts, pointer input,
 overlapping windows, VDC bitmap presentation and graphical application editing
 remain roadmap work.
 

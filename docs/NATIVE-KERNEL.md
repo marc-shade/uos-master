@@ -22,10 +22,13 @@ pass, including independent readback of all four document-disk files. The
 initiating USB fault remains unexplained. The signed
 [module checkpoint](validation/2026-09-11-native-modules/README.md) is the
 preceding qualified kernel. That follow-up preserves its ABI and heap size.
-The current source adds ABI 1.8 presentation services while keeping all 426
+The current source provides ABI 1.8 presentation services while keeping all 426
 heap pages and existing public entry addresses. Its exact software inputs and
 checks are retained in the [integration record](validation/2026-09-12-native-desktop-integration/README.md);
 physical desktop qualification has a separate [hardware record](validation/2026-09-11-native-desktop-hardware/README.md).
+ABI 1.9 adds `N_DESKTOPSEL` at `$3d2f`, retaining the desktop selection across
+app/workspace returns and clearing it on native restart. The resident intervals,
+public entry addresses and 426-page heap are unchanged.
 
 Use the native CPU observer when a hardware test needs bytes from a specific
 RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM

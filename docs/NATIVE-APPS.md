@@ -75,7 +75,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..8; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8 |
+| 6 | 1 | Required ABI minor: 0..9; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9 |
 | 7 | 1 | Zero for minor 0..6; minor 7 module-window offset low byte |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -201,6 +201,7 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d2c` | N_APPFORMAT: application's source geometry/backend, 0..3 |
 | `$3d2d` | N_BOOTDEVICE: boot IEC device, independent of the current app source |
 | `$3d2e` | N_BROWSERLEN: retained Ultimate path length, 1..255 |
+| `$3d2f` | N_DESKTOPSEL: ABI 1.9 desktop session selection, 0 Calculator / 1 Editor / 2 Files; clear on native restart |
 | `$3d30..$3d33` | N_BROWSERPOS: selected directory ordinal, little-endian 32-bit |
 | `$3d34` | N_BROWSERNAME_LEN: selected raw name length, 0 when empty |
 | `$3e00..$3eff` | N_BROWSERNAME: complete retained raw name |

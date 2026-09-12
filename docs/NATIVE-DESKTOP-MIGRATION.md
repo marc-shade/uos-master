@@ -189,6 +189,13 @@ restored captures and 101,274 payload bytes. Hardware cleanup also runs after
 capture failure, while failed restoration/readback retains recovery resources.
 The kernel, apps, disks and probe binaries are unchanged.
 
+The [ABI 1.9 selection checkpoint](validation/2026-09-12-native-desktop-selection/README.md)
+then adds desktop selection retained across app/workspace reloads, using one
+previously unused mailbox byte. Restart clears it and invalid values recover
+to Calculator. Resident layout and heap capacity are unchanged. All 265 CPU
+cases and six VICE workflows pass, including 2,496,000 rendered pixels and
+the complete shared app sequence. Physical qualification remains open.
+
 Build the initial native display client against the public heap/file/module
 services. Keep optional graphics executable code in the app allocation or a
 declared module window. Before changing display registers, reserve all required

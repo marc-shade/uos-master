@@ -17,7 +17,9 @@ manifests, token reuse, explicit load retry and both native consoles using
 the public native API. Its separate CPU workflows pass; the ABI 1.7 system
 images are still undergoing physical qualification.
 Its `$1c20` jump table and memory map are separate from this
-legacy desktop ABI. Desktop/app migration remains in progress.
+legacy desktop ABI. ABI 1.9 adds the desktop session-selection mailbox at
+`$3d2f`; the current app/module validators accept requirements through 1.9.
+Desktop/app migration remains in progress.
 
 ## Memory map (from `build.sh` output and `src/routines.inc`)
 

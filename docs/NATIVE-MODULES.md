@@ -34,7 +34,7 @@ Offsets exclude the two-byte PRG address.
 | 0 | 4 | `NMOD` bytes `4e 4d 4f 44` |
 | 4 | 1 | Module format 1 |
 | 5 | 1 | ABI major 1 |
-| 6 | 1 | Required module ABI minor 7 or 8; presentation calls require 8 |
+| 6 | 1 | Required module ABI minor 7..9; presentation calls require 8; desktop session selection requires 9 |
 | 7 | 1 | Reserved, zero |
 | 8 | 2 | Complete module extent including this manifest |
 | 10 | 2 | Sealed parent core's CRC16 |
