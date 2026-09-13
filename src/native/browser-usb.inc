@@ -1,5 +1,6 @@
 ; Checked application launch by absolute Ultimate path. This field preserves
 ; the IEC browser's cache/selection; directory navigation is a separate service.
+.if !FD_GUI
 b_usb_begin:
         lda #2
         sta b_prompt
@@ -9,6 +10,7 @@ b_usb_begin:
         jsr b_usb_edit
         bcs b_usb_input_error
         jmp b_usb_refresh
+.endif
 b_usb_key:
         cmp #27
         beq b_usb_cancel
@@ -95,12 +97,18 @@ b_usb_copy:
 ; Only rows 20/21 change while this field is active. Each row leaves its last
 ; column blank, avoiding KERNAL linked-line wrapping on either display.
 b_usb_draw:
+.if FD_GUI
+        jsr pg_draw
+.endif
 .if B_GUI
         jsr fg_browser_draw
 .endif
         lda #0
 .if B_GUI
         ora fg_bitmap
+.endif
+.if FD_GUI
+        ora pg_bitmap
 .endif
         sta b_screen
 b_usb_screen:
@@ -191,6 +199,14 @@ b_usb_screen_done:
 .endif
         rts
 b_usb_chrout:
+.if FD_GUI
+        sta pg_character
+        lda pg_collect
+        beq +
+        lda pg_character
+        jmp pg_emit
++       lda pg_character
+.endif
 .if B_GUI
         php
         pha
@@ -209,11 +225,15 @@ b_usb_chrout:
         jmp $ffd2
 
 b_usb_label: .text "usb",0
+.if FD_GUI
+b_usb_help=bu_path_help
+.else
 b_usb_help:
 .if B_GUI
         .text "enter run f1 dos ctrl-u clr esc",0
 .else
         .text "enter run tab dos ctrl-u clr esc",0
+.endif
 .endif
 b_usb_bad_path: .text "absolute path required",0
 b_usb_bad_input: .text "input unavailable; esc returns",0

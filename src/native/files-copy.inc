@@ -1234,6 +1234,14 @@ fc_copied: .fill 4,0
 fc_verified: .fill 4,0
 fc_source: .fill 256,0
 fc_name: .fill 256,0
-fc_data: .fill 2048,0
+fc_data:
+.if B_GUI
+        .fill 1024,0            ; copy/verify use 512; picker borrows two buffers
+.else
+        .fill 2048,0
+.endif
+.if !B_GUI
 fc_key_codes: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84
 fc_saved_keys: .fill 256,0
+
+.endif

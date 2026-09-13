@@ -1,27 +1,31 @@
 # Native file dialogs
 
-The editor's Open and Save As fields now offer **Tab** to browse files. The
-picker uses the same navigation source as Files and Apps, including D64,
-D71, D81 and Ultimate directories. **Enter** selects a file or enters an
-Ultimate folder; **P** goes to its parent, **N/B** page, **F** changes backend,
-**D** selects an IEC device and **Tab** switches Ultimate DOS contexts.
-In Save As, **S** chooses the current folder/device and keeps the proposed
-basename. Empty folders can be selected this way.
+The native desktop suite's Editor, Files, Paint and Ultimate share the
+[blue graphical file picker](NATIVE-PICKER-GUI.md). Editor's **Browse** button
+and **F7** open it from Open/Save As. The diagnostic text editor retains its
+**Tab** shortcut. The picker handles D64, D71, D81 and Ultimate directories.
+In graphics mode, **Enter** activates the focused control or file row;
+**Choose** returns a file or enters an Ultimate folder. **P** goes to its
+parent, **N/B** page, **F** changes backend and **D** selects an IEC device.
+Graphical **Tab** moves focus and **F1** switches Ultimate DOS contexts;
+the text fallback uses **Tab** for the DOS context.
 
-Selection returns to the editable filename field. Open still asks before
-discarding dirty work, and Save As still creates exclusively and compares
-every byte after reopening. The picker itself does not launch applications
-or write file contents. **Esc** returns to the original field. The document,
-cursor and viewport remain allocated while the picker has focus.
+In Save As, **Use Here** / **S** chooses the current folder/device and keeps
+the proposed basename, including in an empty folder. Selection returns to
+the caller. Open still checks dirty documents, and Save As still creates
+exclusively and compares every byte after reopening. The picker itself does
+not launch applications or write file contents. **Esc** returns to the
+original field. The document, cursor and viewport remain owned by the caller.
 
-Navigation remains a source library shared by two applications. The current
-editor packages its picker as an [ABI 1.7 module](NATIVE-MODULES.md), loaded
+Navigation remains a source library. The diagnostic editor introduced its
+picker as an [ABI 1.7 module](NATIVE-MODULES.md), loaded
 into its existing allocation on first use. All 22 CPU suites, ten emulator
 workflows and complete physical USB/IEC workflows pass in the
 [module checkpoint](validation/2026-09-11-native-modules/README.md). Kernel ABI 1.5
 provides owned directory/file and heap operations, and ABI 1.6
 [shared field controls](NATIVE-FIELDS.md) retain the field caret and display
-viewports on cancellation. The current editor requires minor version 7.
+viewports on cancellation. The diagnostic editor requires minor version 7; the graphical suite uses
+the ABI 1.10 Editor and Files modules.
 Desktop and dialog navigation share `file-browser.inc`, `browser-ui.inc`,
 `browser-usb.inc` and `browser-ultimate.inc`; `FD_EMBEDDED` excludes application
 discovery, launch and binary-preview code from the editor.
@@ -53,30 +57,29 @@ successful selection and retains the handle for a later checked cleanup.
 
 ## Memory
 
-The caller supplies four distinct idle 512-byte buffers through `FD_SCRATCH0`
-through `FD_SCRATCH3`. The editor lends its input, output, second read-page and
-save-verification buffers. These are temporary transfer/cache bytes, separate
-from document chunks. It invalidates both read caches before repainting on
-return. The document contents and line-position state are not reused.
+The caller supplies two, three or four distinct idle 512-byte buffers through
+`FD_SCRATCH0` onward, selected by `FD_DIRECT_PAGES=4`, `6` or `8`. The editor
+lends its input, output and second read-page buffers. These transient bytes
+remain separate from document chunks, and callers invalidate their read
+caches before repainting.
 
-Ultimate records use 256 bytes plus a separate name-length array in the
-picker. Two pages of eight complete entries require 4 KiB. Half uses the
-borrowed buffers; the other half uses eight heap pages. Cache allocations
-are lazy, in blocks of at most four pages, and can use either RAM bank.
-IEC retains its 32-byte records and can require more cache space for a full
-296-entry D81 listing. Allocation failure must return to an intact document.
+Ultimate records use 256 bytes plus a separate name-length array. Two
+transactional pages of eight entries require 4 KiB. Cache allocations are
+lazy, in blocks of at most four pages, and can use either RAM bank.
+The graphical IEC picker packs twelve 20-byte records per page, preserving
+all 296 D81 entries in 25 pages. The text picker retains 32-byte records.
 
-The editor's image is capped at 79 pages. New workspace bank-0 allocations
-use `$df00..$feff`, the top 32 managed pages, leaving the remaining high RAM
-contiguous for document chunks. The total heap remains 426 pages. This layout
-passes the CPU workflow with both 8 KiB workspace blocks, a document over
-64 KiB, directory navigation and a complete verified save. All three editor
-emulator geometries and the physical USB/IEC workflows also pass.
+The graphical Editor occupies 96 app pages and keeps its 36-page surface
+while the picker is active. Its full D81 cache needs nineteen additional
+pages. A seventeen-chunk document occupies 272 pages, for a total of 423
+of the 426 heap pages. The diagnostic editor retains its 79-page allocation.
+Allocation failure must return to an intact caller, and any failed release
+must retain the exact descriptor for later cleanup.
 
 ## Qualification and remaining work
 
 The library uses ABI 1.6 shared fields; embedded callers require at least minor
-6, and the current modular editor requires 7. The preceding
+6, and the diagnostic modular editor requires 7. The preceding
 [field checkpoint](validation/2026-09-10-native-fields/README.md)
 qualifies its caret and viewport retention with twenty CPU suites, ten emulator
 workflows and full physical USB/IEC checks. All five complete document captures
@@ -99,6 +102,7 @@ workflows capture all seventeen document chunks with the picker active.
 The archive retains two interrupted IEC attempts and the host connection fix,
 with eight fault-injection cases proving that sent writes are never replayed.
 D71/D81 results are emulator evidence; the physical IEC run uses Ultimate
-emulated 1541 drives. Shared GUI events, dynamic modules, scheduling and the
+emulated 1541 drives. These counts describe the older text picker. The graphical picker is tracked
+separately in [NATIVE-PICKER-GUI.md](NATIVE-PICKER-GUI.md). Scheduling and the
 full OS roadmap remain open; dynamic module qualification is tracked separately
 in [NATIVE-MODULES.md](NATIVE-MODULES.md).

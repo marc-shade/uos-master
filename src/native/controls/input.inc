@@ -298,9 +298,17 @@ ug_mouse:
 ug_no_mouse:
         lda #0
         rts
+ .if ui_button_count<20
+pm_control_count=20
+ .else
 pm_control_count=ui_button_count
+ .endif
 pm_select_surface=ug_select_view
 pm_find_hit:
+        lda drive_picker.fd_active
+        beq +
+        jmp drive_picker.pg_hit
++
         lda ug_mode
         beq +
         lda #10

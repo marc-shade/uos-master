@@ -139,7 +139,8 @@ def main():
             e.key(0x88);assert e.value('ed_module_kind')==1 and not e.value('eg_bitmap') and e.value('fd_active')
             records=expected(e.io.files,9)
             for record in records:record['app']=False
-            for columns,screen in zip((40,80),e.screens):assert screen==browser_screen(columns,records,0,9,0,picker=True)
+            from native_picker_fixture import Picker
+            Picker(e).check(records,mode=2,device=9)
             assert e.contents()==before and e.number('ed_cursor')==cursor
             e.key(27);e.check(want,cursor,True,mode=2)
             assert bytes(e.ram[e.symbol('ed_field_len'):e.symbol('ed_field_len')+8])==field_state

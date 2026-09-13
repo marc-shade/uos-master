@@ -96,8 +96,9 @@ remains read only and continues rejecting operation numbers 9–255.
 
 The 56-byte command entry occupies existing reserved space after the query
 service. Relocating the 25-byte keyboard-input wrapper into presentation padding
-keeps the resident heap at 426 pages. The app currently occupies 81 pages and
-uses a separate 36-page bitmap, released on return. Source command definitions
+keeps the resident heap at 426 pages. The app currently occupies 89 pages and
+uses a separate 36-page bitmap, released on return. Its [graphical file
+picker](NATIVE-PICKER-GUI.md) shares the display, font and pointer. Source command definitions
 were checked against Ultimate firmware revision
 `a01c04e8267a0d916b7203cb34dcf1127f75981d` in `control_target`,
 `network_target`, and `dos`; the drive type enum is in `c1541.h`.

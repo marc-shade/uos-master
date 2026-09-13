@@ -1717,6 +1717,10 @@ ed_other_page: .fill 512,0
 .endif
 FD_EMBEDDED = 1
 FD_DIRECT_PAGES = 6
+FD_GUI = NATIVE_EDITOR_GRAPHICS
+.if NATIVE_EDITOR_GRAPHICS
+FD_GUI_SURFACE = eg_handle
+.endif
 FD_NAME_BUFFER = ed_field
 FD_SCRATCH0 = d_input
 FD_SCRATCH1 = d_output
@@ -1732,7 +1736,7 @@ editor_module:
         .word 0                ; build seals the independent module CRC
 .include "file-dialog.inc"
 editor_end:
-        .cerror * > N_APPBASE+ED_PAGES*256, "editor must leave RAM for large documents and dialogs"
+        .cerror * > N_APPBASE+ED_PAGES*256, "editor must leave RAM for large documents and dialogs: ", editor_end-editor_module, " available ", N_APPBASE+ED_PAGES*256-editor_module
 
 ; A second on-disk module uses the same reserved window. Both are assembled
 ; here so forward references bind to one exact core. The builder splits these

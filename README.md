@@ -142,7 +142,8 @@ Existing destinations are rejected; cancelled or failed new files are retained.
 while browsing folders. Saves are closed, reopened and compared before success.
 The [native graphical Editor](docs/NATIVE-EDITOR-GUI.md) now combines banked
 documents with IEC/Ultimate selection and the blue desktop controls. The shared
-picker remains text, and broader app and desktop features remain on the roadmap.
+[graphical picker](docs/NATIVE-PICKER-GUI.md) carries those controls through
+Editor, Files, Paint and Ultimate. Broader app and desktop features remain on the roadmap.
 The [file-service validation](docs/validation/2026-09-08-ultimate-files/README.md)
 records exact physical create/copy/readback, viewer restoration and firmware limits.
 The [desktop-copy validation](docs/validation/2026-09-08-desktop-copy/README.md)

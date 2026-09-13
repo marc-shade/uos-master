@@ -822,6 +822,9 @@ ui_selected: .byte 0
 .include "input/pointer.inc"
 drive_picker .block
 FD_EMBEDDED=1
+FD_GUI=1
+FD_GUI_SHARED=1
+FD_GUI_SURFACE=ug_handle
 B_COPY=0
 FD_DIRECT_PAGES=6
 FD_NAME_BUFFER=ud_name

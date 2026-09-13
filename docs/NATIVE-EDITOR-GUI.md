@@ -46,7 +46,7 @@ writing and comparing the saved file. A cancelled save preserves the document's
 name and dirty state and may leave the new partial file; it never deletes or
 replaces another file.
 
-The shared picker remains a text interface. It keeps the entire document
+The [shared graphical picker](NATIVE-PICKER-GUI.md) keeps the entire document
 allocated and returns to the blue dialog with the chosen filename, folder and
 device. Cancel preserves the original field and caret. F7 opens it because
 Tab now navigates graphical controls. Find/Replace also has a visible Case
@@ -57,8 +57,8 @@ button, while Ctrl-N finds the next occurrence of the saved query.
 The suite requires ABI 1.10 and ships with the existing ABI 1.11 kernel. Its
 core contains 13,126 bytes and reserves 96 bank-0 pages (`$6000..$bfff`) for
 code, persistent state and one checked module window at `$9346`.
-`EDPICK.PRG` contains 7,737 bytes; `EDFIND.PRG` contains the search engine and
-graphical renderer in 11,357 bytes. Peak core plus graphics is 24,483 bytes.
+`EDPICK.PRG` contains 11,448 bytes; `EDFIND.PRG` contains the search engine and
+graphical renderer in 11,357 bytes. Peak core plus picker is 24,574 bytes; core plus graphics is 24,483 bytes.
 Both modules bind to this core's checksum and load from the original app's
 source device/context and directory, even after changing the document device.
 For USB, install all three matching files together.

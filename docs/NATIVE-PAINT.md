@@ -89,9 +89,10 @@ An attribute has foreground in the high nibble and paper in the low nibble.
 The host codec is [`native_paint_format.py`](../native_paint_format.py).
 Display controls, sprites, and memory padding are excluded from the file.
 
-Paint uses 88 app pages, two 36-page document allocations, and 36 display pages,
-leaving 230 of the 426 managed pages free while drawing. Open needs another
-36 bank-1 pages temporarily; the picker uses separate transient caches.
+Paint uses 96 app pages, two 36-page document allocations, and 36 display pages,
+leaving 222 of the 426 managed pages free while drawing. Open needs another
+36 bank-1 pages temporarily; the [graphical picker](NATIVE-PICKER-GUI.md)
+shares the display, font and pointer and uses separate transient directory caches.
 
 The [software validation record](validation/2026-09-13-native-paint/README.md)
 records exact images, CPU cases, VICE workflows, and the independent rebuild.
@@ -111,7 +112,7 @@ physical matrix column after release. Other candidates chain to the existing
 native guard. CIA columns are restored; the filter changes no IRQ vector,
 zero-page workspace, or MMU mapping. The prior keyboard callback and all 256
 function-key bytes are restored together before exit. Paint retains that
-ownership while its text picker is open; the other two clients release it
+ownership while its graphical picker is open; the other two clients release it
 when closing their pointer/display controls.
 
 The [pinned Commodore editor source](COMMODORE-SOURCE-REFERENCE.md), especially

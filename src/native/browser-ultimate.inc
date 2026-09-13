@@ -342,6 +342,9 @@ bu_poll:
         lda bu_pending_key
         bne bu_poll_ready
         jsr N_KEYIN
+.if FD_GUI
+        jsr pg_input
+.endif
         cmp #27
         beq bu_poll_cancel
         sta bu_pending_key      ; preserve other input for the normal event loop
@@ -816,6 +819,12 @@ bu_draw:
         ldx #>bu_path_title
         jsr b_puts
         lda #33
+.if FD_GUI
+        ldx pg_collect
+        beq +
+        lda #32
++
+.endif
         ldx b_screen
         beq +
         lda #73
@@ -1033,8 +1042,13 @@ bu_columns: .text 13,"  kind name",13,0
 bu_help:
 .if FD_EMBEDDED
         .text 13,"up/down select  n/b page",13
+.if FD_GUI
+        .text "tab controls  enter activate",13
+        .text "g path  p parent  f1 dos  f format",13
+.else
         .text "enter choose  p parent  r refresh",13
         .text "g path  tab dos  f format",13
+.endif
         .text "s use folder for save as  esc cancel",13,0
 .else
         .text 13,"up/down select  n/b page",13
@@ -1056,7 +1070,7 @@ bu_last_page: .text "end of directory",0
 bu_long_path: .text "path too long; cannot open this name",0
 bu_cancelled: .text "scan cancelled; previous page retained",0
 bu_path_help:
-.if B_GUI
+.if B_GUI || FD_GUI
         .text "enter browse f1 dos ctrl-u clr esc",0
 .else
         .text "enter browse tab dos ctrl-u clr esc",0

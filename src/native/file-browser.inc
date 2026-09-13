@@ -3,7 +3,9 @@
 .weak
 B_COPY = 0
 B_GUI = 0
+FD_GUI = 0
 .endweak
+B_RECORD_BYTES=32-12*FD_GUI
 .if !FD_EMBEDDED
 b_entry:
         cld
@@ -51,6 +53,9 @@ b_format_valid:
 .if B_GUI
         jsr fg_init
 .endif
+.if FD_GUI
+        jsr pg_init
+.endif
         lda N_BROWSERERROR
         sta b_launch_error
         lda #0
@@ -59,6 +64,14 @@ b_format_valid:
         sta b_selected+1
         jsr b_refresh
 b_redraw:
+.if FD_GUI
+        lda b_prompt
+        cmp #2
+        bcc +
+        jsr b_usb_draw
+        jmp b_loop
++
+.endif
         jsr b_draw
 b_loop:
         lda bu_pending_key
@@ -74,11 +87,14 @@ b_get_key:
 .if B_GUI
         jsr fg_input
 .endif
+.if FD_GUI
+        jsr pg_input
+.endif
         beq b_loop
 b_have_key:
         ldx #0
         stx N_READY
-.if B_GUI
+.if B_GUI || FD_GUI
         cmp #14
         beq b_redraw
 .endif
@@ -154,6 +170,9 @@ b_exit_error:
 b_rescan:
 .if B_GUI
         jsr fg_retry
+.endif
+.if FD_GUI
+        jsr pg_retry
 .endif
         lda #0
         sta b_launch_error
@@ -441,11 +460,13 @@ b_record_copy:
         sta b_record,y
         inx
         iny
-        cpy #32
+        cpy #B_RECORD_BYTES
         bne b_record_copy
+.if !FD_GUI
         lda #0
         sta b_record+20
         sta b_record+21
+.endif
 .if !FD_EMBEDDED
         jsr b_probe_app
 .endif
@@ -454,7 +475,7 @@ b_record_copy:
         lda b_total+1
         sta b_index+1
         jsr b_cache_select
-        ldx #31
+        ldx #B_RECORD_BYTES-1
 b_record_store:
         lda b_record,x
         sta N_BUFFER,x
@@ -509,6 +530,38 @@ b_cache_handle:
         dex
         bpl b_cache_handle
 .endif
+.if FD_GUI
+        lda b_index
+        sta N_OFFSET
+        lda b_index+1
+        sta N_OFFSET+1
+        ldx #0
+fd_packed_page:
+        lda N_OFFSET
+        sec
+        sbc #12
+        tay
+        lda N_OFFSET+1
+        sbc #0
+        bcc fd_packed_cell
+        sty N_OFFSET
+        sta N_OFFSET+1
+        inx
+        bne fd_packed_page
+fd_packed_cell:
+        lda N_OFFSET
+        asl
+        asl
+        sta N_COUNT
+        asl
+        asl
+        clc
+        adc N_COUNT
+        sta N_OFFSET
+        stx N_OFFSET+1
+        lda #20
+        sta N_COUNT
+.else
         lda b_index
         sta N_OFFSET
         lda b_index+1
@@ -521,6 +574,7 @@ b_cache_offset:
         bne b_cache_offset
         lda #32
         sta N_COUNT
+.endif
         lda #0
         sta N_COUNT+1
 .if FD_EMBEDDED
@@ -541,7 +595,7 @@ b_read_record:
         jsr N_READ
 .endif
         bcs b_exit_error
-        ldx #31
+        ldx #B_RECORD_BYTES-1
 b_record_loaded:
         lda N_BUFFER,x
         sta b_record,x
@@ -665,7 +719,9 @@ b_probe_done:
 .include "browser-usb.inc"
 .include "browser-ultimate.inc"
 
+.if !FD_GUI
 b_app_magic: .byte 0,$60,$4e,$41,$50,$50
+.endif
 b_cache:
 .if FD_EMBEDDED
         .fill 40,0
@@ -675,7 +731,9 @@ b_cache:
 b_owner: .byte 0
 b_total: .word 0
 b_selected: .word 0
+.if !FD_GUI
 b_saved_selection: .word 0
+.endif
 b_index: .word 0
 b_page: .byte 0
 b_next: .byte 0
@@ -683,7 +741,9 @@ b_scan_offset: .byte 0
 b_busy: .byte 0
 b_error: .byte 0
 b_launch_error: .byte 0
+.if !FD_GUI
 b_open: .byte 0
+.endif
 b_prompt: .byte 0
 b_device_state:
 b_device_length: .byte 0
@@ -693,5 +753,5 @@ b_device_cursor: .byte 0
 b_device_views: .fill 2,0
         .byte 1
 b_device_text: .fill 3,0
-b_record: .fill 32,0
+b_record: .fill B_RECORD_BYTES,0
 b_page_data: .fill 256,0

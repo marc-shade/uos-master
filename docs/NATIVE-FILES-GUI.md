@@ -20,7 +20,7 @@ Long names retain every byte and show clipping markers; display truncation
 never changes the path used for file I/O.
 
 Copy proposes the selected source name. Edit it or press **F7** / Browse to
-choose a destination using the shared text picker. The blue dialog returns
+choose a destination using the [shared graphical picker](NATIVE-PICKER-GUI.md). The blue dialog returns
 with the source and edited destination intact. F1 edits device/DOS, F3 changes
 format and F5 changes the destination IEC type. Copy creates a new file,
 closes and reopens both streams, and compares all bytes before reporting success.
@@ -34,9 +34,9 @@ retries graphics. The text fallback also accepts Tab for the destination picker.
 
 ## Memory and module lifetime
 
-Files declares 93 bank-0 app pages, with a resident core followed by one checked
-module window. `fsview.prg` contains graphics, font, controls and pointer code;
-`fspick.prg` contains the destination picker. The two modules alternate. Both
+Files declares 96 bank-0 app pages, with a resident core followed by one checked
+module window at `$92b6`, following a 12,982-byte core. `fsview.prg` contains graphics, font, controls and pointer code;
+`fspick.prg` contains the 11,446-byte destination picker. The two modules alternate. Both
 are bound to the exact core checksum and loaded from the original app's device,
 format and folder, even after the data destination changes.
 
@@ -60,8 +60,9 @@ app and workspace allocations are released.
 
 The [frozen software qualification](validation/2026-09-13-native-files-gui/README.md) retains the CPU, full
 mouse/keyboard VICE, copy, serial and independent rebuild results. This build
-has not been installed or qualified on the physical C128. The shared picker is still a text interface,
-and the VDC is a text companion. Rename/delete, sorting, multi-selection,
+has not been installed or qualified on the physical C128. The shared picker
+now has a [graphical implementation](NATIVE-PICKER-GUI.md), and the VDC remains
+a text companion. Rename/delete, sorting, multi-selection,
 directory copying, media identity, interrupted-copy recovery, REL/VLIR and
 zero-byte IEC creation remain backend or file-manager work.
 

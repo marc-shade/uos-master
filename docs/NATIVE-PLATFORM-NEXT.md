@@ -12,7 +12,7 @@ before the retained browser path at `$4a00`.
 The [native desktop and drawing library](NATIVE-GRAPHICS.md) keep graphics code
 in the app/module allocation. The ABI 1.5 directory
 cursor shares the owned stream API and supports native folder navigation.
-The [shared file picker](NATIVE-FILE-DIALOGS.md) is now implemented in the
+The diagnostic [shared file picker](NATIVE-FILE-DIALOGS.md) is implemented in the
 editor and passes [CPU, emulator and physical qualification](validation/2026-09-10-native-file-dialogs/README.md).
 The [ABI 1.7 module loader](NATIVE-MODULES.md) now loads that picker into
 the editor's existing allocation. All 22 CPU suites, ten emulator workflows
@@ -256,14 +256,22 @@ physical qualification and broader device settings remain open.
 The [graphical Files app](NATIVE-FILES-GUI.md) extends the blue controls to
 navigation, byte viewing and verified file copy. Graphics and the destination
 picker share a checked module window while the core retains keyboard ownership,
-raw names, preferences and file handles. Its 93-page app and optional 36-page
-surface fit the existing ABI. The [software qualification](validation/2026-09-13-native-files-gui/README.md) passes; graphical
-picker integration, VDC presentation and the remaining roadmap stay open.
+raw names, preferences and file handles. Its current 96-page app and optional
+36-page surface fit the existing ABI. The original 93-page version has a
+[software qualification](validation/2026-09-13-native-files-gui/README.md).
 The [suite Editor](NATIVE-EDITOR-GUI.md) now uses 96 app pages and a 36-page
 surface, with its graphics/search and picker sharing one window. Its desktop
 launch releases workspace allocations before loading the app; it supports a
 17-chunk document above 64 KiB with graphics active. The
 [software qualification](validation/2026-09-13-native-editor-gui/README.md) passes; physical qualification and document backing storage remain open.
+
+The [shared graphical picker](NATIVE-PICKER-GUI.md) carries the same blue controls
+through Editor, Files, Paint and Ultimate. Compact IEC records retain all 296
+D81 entries while a 66,057-byte edited document remains live: 96 app pages,
+36 display pages, 272 document pages and 19 banked cache pages use 423 of the
+426 available pages. Its [software qualification](validation/2026-09-13-native-picker-gui/README.md) passes. Native physical
+qualification, Claude's graphical frame, VDC graphics and backing storage
+remain open.
 
 The [Claude lifecycle checkpoint](validation/2026-09-12-native-claude-lifecycle/README.md)
 addresses the Ultimate's asynchronous relay: the client keeps its NMI handler

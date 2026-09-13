@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -o /home/marc/geos128/uos/target/native/browse.prg -L /home/marc/geos128/uos/target/native/browse.lst /home/marc/geos128/uos/src/native/browser.asm
-; Sun Sep 13 03:29:14 2026
+; Sun Sep 13 07:44:32 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
@@ -187,6 +187,8 @@
 
 =0					B_COPY = 0
 =0					B_GUI = 0
+=0					FD_GUI = 0
+=32					B_RECORD_BYTES=32-12*FD_GUI
 .6020					b_entry:
 .6020	d8		cld		        cld
 .6021	ad 20 3d	lda $3d20	        lda N_CURRENT
@@ -578,7 +580,7 @@
 .6385	99 b7 7a	sta $7ab7,y	        sta b_record,y
 .6388	e8		inx		        inx
 .6389	c8		iny		        iny
-.638a	c0 20		cpy #$20	        cpy #32
+.638a	c0 20		cpy #$20	        cpy #B_RECORD_BYTES
 .638c	d0 f4		bne $6382	        bne b_record_copy
 .638e	a9 00		lda #$00	        lda #0
 .6390	8d cb 7a	sta $7acb	        sta b_record+20
@@ -589,7 +591,7 @@
 .639f	ad 9d 7a	lda $7a9d	        lda b_total+1
 .63a2	8d a3 7a	sta $7aa3	        sta b_index+1
 .63a5	20 f1 63	jsr $63f1	        jsr b_cache_select
-.63a8	a2 1f		ldx #$1f	        ldx #31
+.63a8	a2 1f		ldx #$1f	        ldx #B_RECORD_BYTES-1
 .63aa					b_record_store:
 .63aa	bd b7 7a	lda $7ab7,x	        lda b_record,x
 .63ad	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
@@ -655,7 +657,7 @@
 .6430	20 f1 63	jsr $63f1	        jsr b_cache_select
 .6433	20 26 1c	jsr $1c26	        jsr N_READ
 .6436	b0 80		bcs $63b8	        bcs b_exit_error
-.6438	a2 1f		ldx #$1f	        ldx #31
+.6438	a2 1f		ldx #$1f	        ldx #B_RECORD_BYTES-1
 .643a					b_record_loaded:
 .643a	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
 .643d	9d b7 7a	sta $7ab7,x	        sta b_record,x
@@ -2664,7 +2666,7 @@
 >7ab1	00 00				b_device_views: .fill 2,0
 >7ab3	01				        .byte 1
 >7ab4	00 00 00			b_device_text: .fill 3,0
->7ab7	00 00 00 00 00 00 00 00		b_record: .fill 32,0
+>7ab7	00 00 00 00 00 00 00 00		b_record: .fill B_RECORD_BYTES,0
 >7abf	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >7acf	00 00 00 00 00 00 00 00
 >7ad7	00 00 00 00 00 00 00 00		b_page_data: .fill 256,0

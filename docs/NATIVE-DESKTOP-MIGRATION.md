@@ -260,7 +260,7 @@ physical tests explain the green screens seen during development.
 [Files](NATIVE-FILES-GUI.md), [Editor](NATIVE-EDITOR-GUI.md) and
 [Ultimate](NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap, yellow buttons and
 shared mouse driver. Ultimate adds four tabbed pages, selectable drive rows,
-an image picker and explicit mount/eject confirmation. The app occupies 81
+an image picker and explicit mount/eject confirmation. The app occupies 89
 pages plus its 36-page surface, with lazy picker caches, and retains all
 426 managed pages after exit. Native physical drive qualification remains
 open. Remaining app
@@ -268,7 +268,7 @@ interfaces, menus, windows and a graphical VDC desktop are migration work;
 see [native graphics](NATIVE-GRAPHICS.md).
 
 Files keeps list/copy state and keyboard ownership in a permanent core. The
-graphics and destination picker alternate in checked modules within a 93-page
+graphics and destination picker alternate in checked modules within a 96-page
 app allocation; the graphical view uses a separate 36-page display surface.
 This avoids adding resident services and keeps the 426-page heap unchanged.
 The [graphical Files software record](validation/2026-09-13-native-files-gui/README.md) passes. Physical
@@ -277,6 +277,7 @@ suite qualification remains separate from the earlier ABI 1.9 record.
 The [graphical Editor software checkpoint](validation/2026-09-13-native-editor-gui/README.md) carries the blue
 interface through document editing, file/search dialogs and mouse caret placement.
 Its module and surface lifetimes preserve documents beyond 64 KiB and recover
-the graphical view after picker cleanup. The shared picker remains a text
-interface. Physical qualification, terminal framing and VDC bitmap migration
+the graphical view after picker cleanup. The [shared graphical picker](NATIVE-PICKER-GUI.md)
+now carries the same blue controls into Editor, Files, Paint and Ultimate.
+Physical qualification, terminal framing and VDC bitmap migration
 remain open.

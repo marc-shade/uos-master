@@ -67,6 +67,9 @@ pa_save_scene .block
 .include "input/pointer.inc"
 paint_picker .block
 FD_EMBEDDED=1
+FD_GUI=1
+FD_GUI_SHARED=1
+FD_GUI_SURFACE=pa_handle
 B_COPY=0
 FD_DIRECT_PAGES=6
 FD_NAME_BUFFER=pf_name

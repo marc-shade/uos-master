@@ -1,7 +1,7 @@
 ; File navigator launched from the graphical desktop. GPL v3.
 .include "api.inc"
 * = N_APPBASE
-FILES_PAGES = 93
+FILES_PAGES = 96
 b_image:
         .text "napp"
         .byte 1,1,10,<(files_module-b_image)
@@ -35,11 +35,14 @@ copy_picker .block
 FD_EMBEDDED = 1
 B_COPY = 0
 B_GUI = 0
+FD_GUI = 1
+FD_GUI_SURFACE = fg_surface
+FD_DIRECT_PAGES = 4
 FD_NAME_BUFFER = fc_name
 FD_SCRATCH0 = fc_data
 FD_SCRATCH1 = fc_data+512
-FD_SCRATCH2 = fc_data+1024
-FD_SCRATCH3 = fc_data+1536
+FD_SCRATCH2 = fc_data
+FD_SCRATCH3 = fc_data+512
 FD_SAFE_CHARACTER = fc_safe_character
 .include "file-dialog.inc"
 .bend

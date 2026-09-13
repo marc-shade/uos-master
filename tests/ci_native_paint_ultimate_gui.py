@@ -21,7 +21,9 @@ def main():
         p.ultimate.directories.update({b'/':[b'\x10Usb0'],b'/Usb0':[b'\x10Pictures'],b'/Usb0/Pictures':[]})
         p.m.bus=UltimateBus(p.m.bus,p.ultimate);p.cpu.memory=p.m.bus
         preferences=(bytes(p.ram[0x3d29:0x3d35]),bytes(p.ram[0x4a00:0x4b00]),bytes(p.ram[0x3e00:0x3f00]))
-        p.key(32);p.type('SPICTURE');p.key(9);p.type('FFF');p.key(13);p.key(13);p.type('S');p.check()
+        p.key(32);p.type('SPICTURE');p.key(9);p.type('FFF')
+        p.key(0x11)  # Select the only row and focus Choose after the format change.
+        p.key(13);p.key(13);p.type('S');p.check()
         assert p.value('pf_device')==1 and p.value('pf_format')==3
         assert bytes(p.ram[p.symbol('pf_name'):p.symbol('pf_name')+p.value('pf_length')])==b'/Usb0/Pictures/PICTURE'
         assert preferences==(bytes(p.ram[0x3d29:0x3d35]),bytes(p.ram[0x4a00:0x4b00]),bytes(p.ram[0x3e00:0x3f00]))
@@ -31,7 +33,7 @@ def main():
         p.key(ord('S'));p.key(13);p.check();assert p.value('pa_status') in (4,8)
         assert p.ultimate.files[b'/Usb0/Pictures/PICTURE']==encode(p.document())
         p.key(ord('C'));p.key(ord('O'));p.key(ord('O'));assert p.value('pa_picker_active')
-        p.key(9);p.key(13);p.check();assert p.document()[0]==128 and p.value('pf_device')==2
+        p.key(0x85);p.key(13);p.check();assert p.document()[0]==128 and p.value('pf_device')==2
         p.clean();assert p.ultimate.paths=={1:b'/shell',2:b'/browser'}
         report['cases'].append('exclusive collision leaves saved image intact; context-2 Open restores the full picture')
         name=b'/Usb0/'+b'P'*60+b'/'+b'Q'*60+b'/'+b'R'*60+b'/'+b'S'*61+b'.UPNT'

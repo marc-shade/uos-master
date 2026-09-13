@@ -1,11 +1,17 @@
 ; Shared complete-screen rendering for the VIC and VDC native consoles.
 b_draw:
+.if FD_GUI
+        jsr pg_draw
+.endif
 .if B_GUI
         jsr fg_browser_draw
 .endif
         lda #0
 .if B_GUI
         ora fg_bitmap
+.endif
+.if FD_GUI
+        ora pg_bitmap
 .endif
         sta b_screen
 b_draw_screen:
@@ -158,7 +164,11 @@ b_row_advance:
 .if B_GUI
         jsr fg_field_output
 .else
+ .if FD_GUI
+        jsr pg_field_output
+ .else
         jsr N_FDRAW
+ .endif
 .endif
 b_list_done:
         rts
@@ -265,7 +275,7 @@ b_nibble:
 b_hex_digit:
         clc
         adc #$30
-.if B_GUI
+.if B_GUI || FD_GUI
         jmp b_usb_chrout
 .else
         jmp $ffd2
@@ -330,7 +340,11 @@ b_empty: .text "no files",0
 b_help:
 .if FD_EMBEDDED
         .text 13,"up/down select  n/b page",13
+.if FD_GUI
+b_focus_help: .text "tab controls  enter activate",13
+.else
         .text "enter choose  r refresh",13
+.endif
         .text "d device  f format  esc cancel",13
         .text "s use device for save as",13,13,0
 .else
@@ -357,26 +371,41 @@ b_type_usr: .text "usr",0
 b_type_rel: .text "rel",0
 b_type_cbm: .text "cbm",0
 b_type_unknown: .text "???",0
+.if !FD_GUI
 b_type_app: .text "app",0
+.endif
 b_types_lo: .byte <b_type_del,<b_type_seq,<b_type_prg,<b_type_usr,<b_type_rel,<b_type_cbm,<b_type_unknown,<b_type_unknown
 b_types_hi: .byte >b_type_del,>b_type_seq,>b_type_prg,>b_type_usr,>b_type_rel,>b_type_cbm,>b_type_unknown,>b_type_unknown
 b_bad_name: .text "invalid name or device",0
 b_no_handle: .text "no file handle available",0
 b_bad_directory: .text "invalid disk directory",0
+.if !FD_GUI
 b_bad_image: .text "invalid application image",0
+.endif
 b_disk_error: .text "disk i/o error",0
+.if !FD_GUI
 b_short_image: .text "application file is incomplete",0
 b_long_image: .text "application file has extra data",0
 b_checksum_error: .text "application checksum failed",0
+.endif
 b_channels_error: .text "disk channel is in use",0
+.if !FD_GUI
 b_no_apps_text: .text "no native applications found",0
+.endif
 b_unsupported_text: .text "file type cannot be opened",0
 b_unclosed_text: .text "file is not closed",0
 b_unknown_error: .text "error ",0
+.if FD_GUI
+b_status_codes: .byte 1,3,9,$11,$15,$21,$22,$23
+b_status_end:
+b_status_lo: .byte <b_bad_name,<b_no_handle,<b_bad_directory,<b_disk_error,<b_channels_error,<b_unsupported_text,<b_unclosed_text,<bu_long_path
+b_status_hi: .byte >b_bad_name,>b_no_handle,>b_bad_directory,>b_disk_error,>b_channels_error,>b_unsupported_text,>b_unclosed_text,>bu_long_path
+.else
 b_status_codes: .byte 1,3,9,$10,$11,$12,$13,$14,$15,$20,$21,$22
 b_status_end:
 b_status_lo: .byte <b_bad_name,<b_no_handle,<b_bad_directory,<b_bad_image,<b_disk_error,<b_short_image,<b_long_image,<b_checksum_error,<b_channels_error,<b_no_apps_text,<b_unsupported_text,<b_unclosed_text
 b_status_hi: .byte >b_bad_name,>b_no_handle,>b_bad_directory,>b_bad_image,>b_disk_error,>b_short_image,>b_long_image,>b_checksum_error,>b_channels_error,>b_no_apps_text,>b_unsupported_text,>b_unclosed_text
+.endif
 b_powers_lo: .byte <10000,<1000,<100,<10,<1
 b_powers_hi: .byte >10000,>1000,>100,>10,>1
 b_screen: .byte 0

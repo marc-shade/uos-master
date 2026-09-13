@@ -7,8 +7,9 @@
 ; Desktop browser preferences are borrowed only while the picker has focus.
 .weak
 FD_DIRECT_PAGES = 8
+FD_GUI_SHARED = 0
 .endweak
-        .cerror FD_DIRECT_PAGES != 6 && FD_DIRECT_PAGES != 8, "picker scratch must contain three or four buffers"
+        .cerror FD_DIRECT_PAGES != 4 && FD_DIRECT_PAGES != 6 && FD_DIRECT_PAGES != 8, "picker scratch must contain two, three or four buffers"
 fd_run:
         lda fd_active
         beq +
@@ -173,6 +174,15 @@ fd_banked_cache:
         lda b_cache,x
         bne fd_cache_handle
         lda #4
+.if FD_GUI
+        ; A graphical IEC picker needs only type, flags, name and block count:
+        ; twelve 20-byte records per page, 25 pages for all 296 D81 entries.
+        ; Use that fixed maximum for both formats, so a USB/IEC switch never
+        ; reuses a short USB allocation for a larger IEC block.
+        cpx #(24-FD_DIRECT_PAGES)&$fc
+        bcc +
+        lda #((24-FD_DIRECT_PAGES)&3)+1
+.else
         ldy fd_format
         cpy #3
         beq fd_usb_cache_size
@@ -186,6 +196,7 @@ fd_usb_cache_size:
         cpx #(15-FD_DIRECT_PAGES)&$fc
         bcc +
         lda #((15-FD_DIRECT_PAGES)&3)+1
+.endif
 +       sta N_PAGES
         lda #$ff
         sta N_BANK
@@ -402,6 +413,9 @@ fd_finish:
         txs
         lda #0
         sta N_READY
+.if FD_GUI
+        jsr pg_close
+.endif
         jsr fd_close_cursors
         bcc +
         sta fd_error
@@ -503,7 +517,13 @@ fd_cursors_done:
         rts
 
 .include "file-browser.inc"
-fd_scratch: .word FD_SCRATCH0,FD_SCRATCH1,FD_SCRATCH2,FD_SCRATCH3
+fd_scratch: .word FD_SCRATCH0,FD_SCRATCH1
+.if !FD_GUI || FD_DIRECT_PAGES>4
+        .word FD_SCRATCH2
+.endif
+.if !FD_GUI || FD_DIRECT_PAGES>6
+        .word FD_SCRATCH3
+.endif
 fd_direct: .byte 0
 fd_pointer: .word 0
 fd_left: .word 0
@@ -532,3 +552,20 @@ fd_last_path: .fill 256,0
 fd_preferences: .fill 12,0
 fd_desktop_path: .fill 256,0
 fd_desktop_name: .fill 256,0
+
+.if FD_GUI
+picker_gui .block
+.include "picker/gui.inc"
+.bend
+pg_init=picker_gui.pg_init
+pg_close=picker_gui.pg_close
+pg_retry=picker_gui.pg_retry
+pg_draw=picker_gui.pg_draw
+pg_input=picker_gui.pg_input
+pg_hit=picker_gui.pg_hit
+pg_emit=picker_gui.pg_emit
+pg_bitmap=picker_gui.pg_bitmap
+pg_collect=picker_gui.pg_collect
+pg_character=picker_gui.pg_character
+pg_field_output=picker_gui.pg_field_output
+.endif

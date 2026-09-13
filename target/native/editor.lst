@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -o /home/marc/geos128/uos/target/native/editor.prg -L /home/marc/geos128/uos/target/native/editor.lst /home/marc/geos128/uos/src/native/editor.asm
-; Sun Sep 13 06:09:47 2026
+; Sun Sep 13 07:44:32 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -4087,6 +4087,7 @@
 
 =1						FD_EMBEDDED = 1
 =6						FD_DIRECT_PAGES = 6
+=0						FD_GUI = NATIVE_EDITOR_GRAPHICS
 =$8655						FD_NAME_BUFFER = ed_field
 =$6b02						FD_SCRATCH0 = d_input
 =$6d02						FD_SCRATCH1 = d_output
@@ -4104,6 +4105,7 @@
 ;******  Processing file: /home/marc/geos128/uos/src/native/file-dialog.inc
 
 =8						FD_DIRECT_PAGES = 8
+=0						FD_GUI_SHARED = 0
 .90ab						fd_run:
 .90ab		ad b4 ab	lda $abb4	        lda fd_active
 .90ae		f0 04		beq $90b4	        beq +
@@ -4591,6 +4593,8 @@
 
 =0						B_COPY = 0
 =0						B_GUI = 0
+=0						FD_GUI = 0
+=32						B_RECORD_BYTES=32-12*FD_GUI
 .94ba						b_format_valid:
 .94ba		ad 2b 3d	lda $3d2b	        lda N_BROWSERERROR
 .94bd		8d 68 aa	sta $aa68	        sta b_launch_error
@@ -4878,7 +4882,7 @@
 .972d		99 76 aa	sta $aa76,y	        sta b_record,y
 .9730		e8		inx		        inx
 .9731		c8		iny		        iny
-.9732		c0 20		cpy #$20	        cpy #32
+.9732		c0 20		cpy #$20	        cpy #B_RECORD_BYTES
 .9734		d0 f4		bne $972a	        bne b_record_copy
 .9736		a9 00		lda #$00	        lda #0
 .9738		8d 8a aa	sta $aa8a	        sta b_record+20
@@ -4888,7 +4892,7 @@
 .9744		ad 5c aa	lda $aa5c	        lda b_total+1
 .9747		8d 62 aa	sta $aa62	        sta b_index+1
 .974a		20 a1 97	jsr $97a1	        jsr b_cache_select
-.974d		a2 1f		ldx #$1f	        ldx #31
+.974d		a2 1f		ldx #$1f	        ldx #B_RECORD_BYTES-1
 .974f						b_record_store:
 .974f		bd 76 aa	lda $aa76,x	        lda b_record,x
 .9752		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
@@ -4954,7 +4958,7 @@
 .97da		20 58 92	jsr $9258	        jsr fd_read_cache
 .97dd		90 03		bcc $97e2	        bcs b_exit_error
 .97df		4c 41 95	jmp $9541
-.97e2		a2 1f		ldx #$1f	        ldx #31
+.97e2		a2 1f		ldx #$1f	        ldx #B_RECORD_BYTES-1
 .97e4						b_record_loaded:
 .97e4		bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
 .97e7		9d 76 aa	sta $aa76,x	        sta b_record,x
@@ -6561,7 +6565,7 @@
 >aa70		00 00				b_device_views: .fill 2,0
 >aa72		01				        .byte 1
 >aa73		00 00 00			b_device_text: .fill 3,0
->aa76		00 00 00 00 00 00 00 00		b_record: .fill 32,0
+>aa76		00 00 00 00 00 00 00 00		b_record: .fill B_RECORD_BYTES,0
 >aa7e		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >aa8e		00 00 00 00 00 00 00 00
 >aa96		00 00 00 00 00 00 00 00		b_page_data: .fill 256,0
@@ -6571,7 +6575,9 @@
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/file-dialog.inc
 
->ab96		02 6b 02 6d a7 87 02 6b		fd_scratch: .word FD_SCRATCH0,FD_SCRATCH1,FD_SCRATCH2,FD_SCRATCH3
+>ab96		02 6b 02 6d			fd_scratch: .word FD_SCRATCH0,FD_SCRATCH1
+>ab9a		a7 87				        .word FD_SCRATCH2
+>ab9c		02 6b				        .word FD_SCRATCH3
 >ab9e		00				fd_direct: .byte 0
 >ab9f		00 00				fd_pointer: .word 0
 >aba1		00 00				fd_left: .word 0

@@ -38,6 +38,8 @@ def build():
     write_files(ROOT/'src/native/files')
     from native_editor_scene import write_assembly as write_editor
     write_editor(ROOT/'src/native/editor')
+    from native_picker_scene import write_assembly as write_picker
+    write_picker(ROOT/'src/native/picker')
     native.build()
     native.build(out=OUT, desktop_boot=True)
     module('claude_builder', ROOT/'build-native-claude.py').build(OUT)

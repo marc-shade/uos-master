@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Graphical editor, banked documents and verified saves through real C128 IEC."""
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,8 @@ from hw_native_desktop_check import run_native_workflow
 from native_capture import NativeCapture,wait
 from native_capture_transport import PausedViceMonitor
 from native_editor_scene import surface,console
+from native_picker_scene import surface as picker_surface,console as picker_console
+from native_picker_check import picker_symbol
 from native_browser_check import browser_screen,disk_records
 from native_pointer_check import surface_pixels,check_canvas
 
@@ -35,6 +38,9 @@ def main():
     for name,data in fixtures.items():
         p=work/(name+'.bin');p.write_bytes(data)
         subprocess.run(['c1541','-attach',str(disks[9]),'-write',str(p),name+',s'],check=True,capture_output=True)
+    filler=work/'entry.bin';filler.write_bytes(b'F')
+    for index in range(294):
+        subprocess.run(['c1541','-attach',str(disks[9]),'-write',str(filler),f'entry{index:03},s'],check=True,capture_output=True)
     originals={d:p.read_bytes() for d,p in disks.items()}
     for d,raw in originals.items():(work/f'initial-{d}.d81').write_bytes(raw)
     report=dict(passed=False,physical_hardware_io=False,events=[],desktops=[],screens=[],editor_documents=[],editor_io_frames=[],
@@ -59,8 +65,42 @@ def main():
             except OSError:
                 if time.monotonic()>deadline:raise
                 time.sleep(.1)
-        banks=mon.banks();mon.resume();paused=PausedViceMonitor(mon)
-        capture=NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=paused.paused)
+        banks=mon.banks();mon.resume()
+        class ObserverRAM:
+            # The IRQ probe calls the ROM's banked reader. A monitor poll of
+            # the CPU view can see document RAM instead of the bank-0 status
+            # byte while that reader temporarily selects bank 1. Pin control
+            # traffic; requested document data still comes from the CPU probe.
+            def read_mem(self,start,end,bank=None):
+                raw=mon.read_mem(start,end,bank=banks['ram00'] if bank is None else bank)
+                if start==end==0x3ff2 and bank is None:
+                    logical=mon.read_mem(start,end)
+                    if bytes(logical)!=bytes(raw):
+                        report.setdefault('bank_poll_differences',[]).append(dict(
+                            cpu_view=bytes(logical).hex(),control_ram=bytes(raw).hex()))
+                return raw
+            def write_mem(self,start,data,bank=None):
+                return mon.write_mem(start,data,bank=banks['ram00'] if bank is None else bank)
+            def resume(self):mon.resume()
+        paused=PausedViceMonitor(ObserverRAM())
+        @contextmanager
+        def stable_batch(label):
+            if not label.endswith(('-before','-restore')):
+                with paused.paused(label):yield
+                return
+            deadline=time.monotonic()+30;deferred=0
+            while True:
+                with paused.paused(label):
+                    idle=bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0'
+                    if idle:
+                        report.setdefault('capture_admissions',[]).append(dict(label=label,deferred=deferred))
+                        yield
+                        return
+                deferred+=1
+                assert time.monotonic()<deadline,('idle capture admission',label)
+                time.sleep(.01)
+        report['capture_control_bank']='ram00'
+        capture=NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=stable_batch)
         report['captures']=capture.records;report['paused_capture_batches']=paused.batches
         def app_read(name,count=1):
             at=addresses[name];raw=bytes(paused.read_mem(at,at+count-1,bank=banks['ram00']));paused.resume();return raw
@@ -136,7 +176,33 @@ def main():
             check('save-field',wanted,at+4,name='LARGE',dirty=True,mode=2,field='COPY',field_caret=4,focus=11)
             function_key(0x88);assert app_read('ed_module_kind')==b'\1' and app_read('eg_bitmap')==b'\0'
             entries=disk_records(originals[9],2)
-            screens('large-picker',lambda columns:browser_screen(columns,entries,0,9,2,picker=True))
+            assert len(entries)==296
+            def picker_check(label,selected):
+                pg={n:picker_symbol('editor',n) for n in ('fd_active','pg_bitmap','pg_focus','b_selected','b_cache')}
+                flags={n:capture.capture(label+'-'+n,address=at,count=2 if n=='b_selected' else 1) for n,at in pg.items() if n!='b_cache'}
+                assert flags['fd_active']==flags['pg_bitmap']==b'\1' and int.from_bytes(flags['b_selected'],'little')==selected
+                expected=dict(focus=flags['pg_focus'][0],selected=selected,device=9,fmt=2,mode=2)
+                wanted=picker_surface(entries,**expected)
+                actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+                (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'picker bitmap')
+                vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000);assert vdc==picker_console(entries,selected=selected,device=9,fmt=2)
+                cache=capture.capture(label+'-cache',address=pg['b_cache'],count=40)
+                descriptors=capture.capture(label+'-descriptors',address=0x3c00,count=256)
+                pages=0
+                for at in range(0,40,4):
+                    handle=cache[at:at+4]
+                    if not handle[0]:continue
+                    descriptor=descriptors[(handle[0]-1)*8:handle[0]*8]
+                    assert descriptor[0]==32 and descriptor[4:7]==handle[1:]
+                    pages+=descriptor[3]
+                assert pages==19
+                error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+                (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,0,0,visible=False))
+                report.setdefault('picker_io_frames',[]).append(dict(label=label,expected=expected,entries=296,banked_cache_pages=pages,rectangle=rectangle));save()
+                print('PASS: full D81 graphical picker beside banked document:',label,flush=True)
+            picker_check('large-picker-first',0)
+            for _ in range(36):key(ord('N'))
+            picker_check('large-picker-last',288)
             document('large-document-during-picker',wanted)
             for char in b'D10\rS':key(char)
             check('save-destination',wanted,at+4,name='LARGE',dirty=True,device=10,mode=2,field='COPY',field_caret=4,focus=11)

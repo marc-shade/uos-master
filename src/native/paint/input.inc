@@ -484,9 +484,17 @@ pa_blit_cells_done:
         clc
         rts
 
+ .if ui_button_count<20
+pm_control_count=20
+ .else
 pm_control_count=ui_button_count
+ .endif
 pm_select_surface=pa_select_view
 pm_find_hit:
+        lda paint_picker.fd_active
+        beq +
+        jmp paint_picker.pg_hit
++
         lda pm_x
         sta ui_x
         lda pm_x+1

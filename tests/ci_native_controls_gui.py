@@ -152,7 +152,7 @@ def main():
             p.key(13);p.key(13);assert not p.value('ug_picker_active') and p.value('ug_mode')==1
             p.check();p.clean();assert p.value('ui_selected')==11 and not p.device.mutations
             assert preferences==(bytes(p.ram[0x3d29:0x3d35]),bytes(p.ram[0x4a00:0x4b00]),bytes(p.ram[0x3e00:0x3f00]))
-            p.key(27);p.check();p.key(ord('M'));p.key(9);p.key(13);p.check()
+            p.key(27);p.check();p.key(ord('M'));p.key(0x85);p.key(13);p.check()
             assert p.value('ud_context')==2
             p.device.accept_without_change=True;before=copy.deepcopy(p.device.mounted)
             p.key(9);p.key(13);p.check();assert p.value('ug_notice')==1 and p.device.mounted==before
