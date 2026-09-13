@@ -2,10 +2,16 @@
 ; CIA1 PRA=$7f after scanning, selecting port 1. Sample once per jiffy in
 ; raster lines 80..159. Require another 32 raster lines after noticing the
 ; jiffy: a delayed ROM/observer IRQ may have scanned well after line 255.
-; No IRQ vector, keyboard callback, zero page or CIA direction is replaced.
+; Shared key ownership uses KEYCHK; IRQ vectors, zero page and CIA DDRs stay.
 ; The two pointer sprites use the owned surface's unused bitmap/pointer tail.
 ; Call pm_close before any display close, replacement or workspace return.
+.weak
+PM_KEYS_OWNED=0
+.endweak
 pm_install:
+ .if !PM_KEYS_OWNED
+        jsr nk_install
+ .endif
         ldx #127
 -       lda pm_shape,x
         sta N_BUFFER,x
@@ -100,7 +106,11 @@ pm_close:
         sta $0a04
         plp
 pm_close_return:
+ .if !PM_KEYS_OWNED
+        jmp nk_close
+ .else
         rts
+ .endif
 
 pm_poll:
         lda #0
@@ -366,3 +376,4 @@ pm_registers: .byte $00,$01,$02,$03,$10,$15,$17,$1b,$1c,$1d,$27,$28
 pm_saved: .fill 12,0
 pm_shape:
 .include "../desktop/pointer-shape.inc"
+.include "keys.inc"

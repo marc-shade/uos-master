@@ -22,7 +22,8 @@ A separate [native C128 kernel and memory workspace](docs/NATIVE-KERNEL.md)
 now boots in native mode, manages both RAM banks with owner-checked handles,
 and displays its memory controls on both screens. Build it with
 `python3 build-native.py`; the resulting disk is `target/native/uos128.d64`.
-The graphical desktop and application suite still need migration to this kernel.
+The native desktop suite below builds on this kernel; broader desktop and
+application migration remains in progress.
 Press **C** in the native workspace for the [native calculator](docs/NATIVE-APPS.md),
 loaded through a checked app manifest with automatic resource cleanup. It retains
 32 calculation results in bank 1, exports them to a new SEQ file with **S** and
@@ -56,7 +57,7 @@ the [field checkpoint](docs/validation/2026-09-10-native-fields/README.md) passe
 ABI 1.8 adds a [native graphical desktop and drawing library](docs/NATIVE-GRAPHICS.md).
 Run `python3 -B build-native-desktop.py` to build
 `target/native-desktop/uos128.d64`. The desktop starts in native mode, mirrors
-its controls on the VDC, and launches Calculator, Editor, Files, Ultimate and Claude with
+its controls on the VDC, and launches Calculator, Editor, Files, Ultimate, Claude and Paint with
 keyboard selection or a port-1 1351 mouse on the VIC display. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
 Boot still uses IEC. Shared window/widget input, VDC bitmap presentation, persistent
@@ -64,6 +65,14 @@ desktop state and the broader OS roadmap remain open. Physical desktop
 qualification of ABI 1.9 passed in the [physical record](docs/validation/2026-09-12-native-desktop-abi19-hardware/README.md).
 The current ABI 1.10 app suite has its own software qualification; its new
 Ultimate panel and Claude serial client still require native physical testing.
+
+The blue native desktop is the interface being developed for the unified app
+suite. The older green desktop remains a separate legacy build; restoring that
+installed build after a test does not change the native desktop's direction.
+[Calculator](docs/NATIVE-CALCULATOR.md) and [Paint](docs/NATIVE-PAINT.md) use the
+blue bitmap and yellow controls inside their apps. Paint adds connected mouse
+strokes, a visible keyboard brush, colors, undo, and verified picture files.
+Other app screens and the shared file picker still need graphical migration.
 
 The suite [Files app](docs/NATIVE-BROWSER.md#copying-from-the-suite-files-app)
 copies selected files across IEC drives and Ultimate paths. Press **C** in

@@ -85,7 +85,7 @@ N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser 
 N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
 N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
 N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
-N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude
+N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude / 5 Paint
 N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
 N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
 ; ABI 1.6 field state is eight bytes inside the active app allocation:

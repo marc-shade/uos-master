@@ -29,6 +29,7 @@ from native_pointer_check import check_canvas, surface_pixels
 from hwlib import lst_symbol
 from native_controls_check import panel_screen
 from native_claude_check import landing_screen
+from paint_scene import surface as paint_surface,console as paint_console
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--missing-calc', action='store_true')
@@ -172,6 +173,26 @@ try:
         record['desktops'].append(dict(label=label,selected=selected,error=error,fallback=False,
             bytes=9216,pixels=64000,rectangle=matches[0],missing_canvas_tail_bytes=length-len(pixels)))
         print('PASS: desktop surface, pixels and VDC controls:',label,flush=True)
+    def paint(label,document,*,x=0,dirty=False,mode=0):
+        def paint_value(name):return read(lst_symbol('native-desktop/paint',name))[0]
+        assert paint_value('pa_bitmap')==1 and paint_value('pm_seen')==0
+        assert paint_value('pd_dirty')==int(dirty) and paint_value('pa_mode')==mode
+        selected=25 if mode else 23
+        expected=paint_surface(document,x=x,dirty=dirty,mode=mode,action=1,focus=selected)
+        actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
+        assert actual==expected,(label,'Paint bitmap')
+        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
+        assert vdc==paint_console(80,x=x,dirty=dirty,mode=mode,action=1,focus=selected),(label,'Paint VDC')
+        tag=paint_value('pd_handles');allocation=read(0x3c00+(tag-1)*8,8)
+        assert allocation[:2]==bytes([32,1]) and allocation[3]==36
+        actual_document=read(allocation[2]*256,9216,banks['ram01'])
+        (work/f'{label}-document.bin').write_bytes(actual_document);assert actual_document==document
+        time.sleep(.15)
+        error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+        (work/f'{label}-display-get.bin').write_bytes(raw)
+        rectangle=check_canvas(raw,surface_pixels(expected,8+x,32,visible=not mode))
+        record.setdefault('paint_frames',[]).append(dict(label=label,x=x,dirty=dirty,mode=mode,rectangle=rectangle))
+        print('PASS: Paint without a mouse, visible keyboard brush, complete document, bitmap and VDC:',label,flush=True)
     wait(lambda:read(0x1c13,6)==b'UOS128' and ready(),'native workspace boot',60)
     if args.input_during_capture:
         assert args.desktop_boot
@@ -258,7 +279,7 @@ try:
         key(ord('F'));screens('files-after-missing',lambda columns:browser_screen(columns,records,files_app=True))
         key(27);desktop('desktop-after-files',2)
     else:
-        for index,(value,selected) in enumerate([(0x11,1),(9,2),(0x1d,3),(9,4),(9,0),(0x9d,4),(0x13,0)]):
+        for index,(value,selected) in enumerate([(0x11,1),(9,2),(0x1d,3),(9,4),(9,5),(9,0),(0x9d,5),(0x13,0)]):
             key(value);desktop(f'selection-{index}',selected)
         key(13)
         calculator('calculator-new','0',[])
@@ -291,14 +312,22 @@ try:
         key(ord('A'));screens('claude-launch-page',landing_screen)
         key(0x8c);desktop('desktop-after-claude',4)
         assert read(0x3000,4096,banks['vdc'])==original_font,'Claude font restoration'
+        original_keys=read(0x1000,256,banks['ram00'])
+        key(ord('P'));picture=bytearray(bytes(8192)+b'\x10'*1024);paint('paint-keyboard-open',picture)
+        key(32);picture[0]=128;key(0x1d);key(32);picture[0]=192
+        paint('paint-keyboard-drawing',picture,x=1,dirty=True)
+        key(27);paint('paint-keyboard-confirm',picture,x=1,dirty=True,mode=1)
+        key(27);paint('paint-keyboard-kept',picture,x=1,dirty=True)
+        key(27);key(ord('D'));desktop('desktop-after-paint',5)
+        assert read(0x1000,256,banks['ram00'])==original_keys
 
     key(27);screens('workspace-returned',lambda columns:expected_screen(columns,0))
-    saved_selection=2 if args.missing_calc else 4
+    saved_selection=2 if args.missing_calc else 5
     key(ord('B'));desktop('desktop-after-workspace',saved_selection);key(27)
     if not args.missing_calc:
         key(ord('A'));handle=read(0x3d04,4)
         occupied=read(0xc000,9216,banks['ram00'])
-        key(ord('B'));desktop('occupied-surface-fallback',4,fallback=True)
+        key(ord('B'));desktop('occupied-surface-fallback',5,fallback=True)
         assert read(0xc000,9216,banks['ram00'])==occupied
         key(9);desktop('fallback-selection',0,fallback=True)
         key(27);screens('workspace-owner-retained',lambda columns:expected_screen(columns,0,(143,251),31,handle))

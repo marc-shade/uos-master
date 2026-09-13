@@ -16,7 +16,30 @@ The foreground GETIN wrapper moves into spare service space. It retains
 native input counting and readiness behavior, including the existing ROM
 function-string GETIN behavior of clearing the interrupt-disable flag.
 There is no new app ABI entry or heap reservation; capacity remains 426
-pages. Existing app images, including Claude, are unchanged.
+pages. This resident guard did not change the app images, including Claude.
+
+## Pointer clients
+
+Desktop, graphical Calculator and Paint additionally own the complete ROM
+function-key table while their controls are active. They install ten one-byte
+function definitions and a small shared filter at `$1014` in the unused table
+tail. That code remains visible during the ROM scan and chains the resident
+guard. It does not change an IRQ vector, zero-page workspace or MMU mapping.
+
+The port-1 mouse button shares keyboard row bit 4. A transition during the
+multi-column scan can otherwise decode as an ordinary key. The filter rejects
+ambiguous row-4 candidates while the button is held, and checks the candidate's
+physical matrix column after release. Genuine keys chain with their registers
+and flags preserved. CIA columns are restored. The previous callback and all
+256 table bytes are restored together when the client closes. Paint retains
+this ownership while using its text file picker.
+
+The [Paint and shared-input qualification](validation/2026-09-13-native-paint/README.md)
+covers 768 filter cases in both ROM and app mappings, Calculator and Paint
+mouse workflows, keyboard controls and complete restoration. It does not
+establish the source of the earlier physical Down/Insert events below.
+Simultaneous typing while a button is held and physical mouse/adapter testing
+remain open.
 
 ## Diagnostic state
 

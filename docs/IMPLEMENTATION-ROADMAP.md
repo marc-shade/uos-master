@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-12. This is the current completion checklist. The older
+Updated 2026-09-13. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -104,7 +104,7 @@ compatibility requirement from providing equivalent uOS applications.
 | ID | Deliverable | Existing implementation | Completion gate |
 |---|---|---|---|
 | APP-WRITE | Word processor with fonts/styles, pagination, embedded pictures, search/replace, spelling, printing | Banked plain-text editor; no page layout | Create, save, reopen, edit, preview and print a multipage illustrated document; exchange supported geoWrite formats |
-| APP-PAINT | Bitmap editor, drawing tools, color/patterns, selection, zoom, clipboard, undo | Graphics primitives only | Edit and round-trip a picture on both displays; import/export declared GEOS/Commodore image formats |
+| APP-PAINT | Bitmap editor, drawing tools, color/patterns, selection, zoom, clipboard, undo | [Native Paint](NATIVE-PAINT.md): 320×200 banked picture, VIC viewport, connected pencil/eraser, 16 ink colors, keyboard brush and panning, undo/redo, staged Open and verified exclusive UPNT Save As through IEC/Ultimate picker; VDC text controls | VDC bitmap editing; more tools/patterns, selection, zoom, clipboard, multiple undo, printing; physical round trips; declared GEOS/Commodore image import/export |
 | APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | Absent | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
 | APP-DATA | Database/address book with schema, records, sorting/filtering, forms/reports, import/export | Absent | Maintain and report a record set larger than main RAM; geoFile exchange matrix |
 | APP-PUBLISH | Page layout with text/image frames, columns, styles, preview, print/export | Absent | Complete a newsletter and reopen it without layout loss; geoPublish comparison fixtures |
@@ -562,3 +562,14 @@ The resident kernels and diagnostic Calculator retain their program bytes.
 This qualifies another part of the desktop migration; other applications,
 window management, graphical VDC operation, physical qualification and every
 remaining roadmap row still apply.
+
+The [native Paint checkpoint](validation/2026-09-13-native-paint/README.md)
+adds the sixth desktop icon and carries the blue controls into a 320×200 hires
+picture editor. It includes connected pencil/eraser strokes, a 16-color
+palette, keyboard drawing with viewport scrolling, one-step undo/redo,
+verified exclusive Save As and staged Open through the shared file picker.
+Desktop, Calculator and Paint now share a ROM-visible filter for port-1 mouse
+button transitions, with complete callback/function-key restoration. The
+resident kernels retain their bytes. This is an initial APP-PAINT milestone;
+advanced tools, image interchange, printing, graphical VDC editing, physical
+qualification and the remaining roadmap are still open.

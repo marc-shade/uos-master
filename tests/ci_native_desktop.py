@@ -62,21 +62,21 @@ def done(name, d):
 original_machine = calc.Machine
 try:
     d = Desktop();d.check()
-    for key, selected in [(9,1),(0x11,2),(0x1d,3),(9,4),(9,0),(0x91,4),(0x9d,3),(0x9d,2),(0x13,0),(ord('?'),0)]:
+    for key, selected in [(9,1),(0x11,2),(0x1d,3),(9,4),(9,5),(9,0),(0x91,5),(0x9d,4),(0x9d,3),(0x13,0),(ord('?'),0)]:
         d.key(key);d.check(selected)
     d.key(27, exited=True)
     assert d.ram[0x3d28] == 2 and not d.ram[heap.symbol('v_tag')]
     assert d.m.bus.video[0xd011] == 0x1b and d.ram[1] == 0x73 and d.ram[0xd8] == 0
     done('complete surfaces, navigation wrap, home, ignored input, workspace cleanup', d)
-    for saved in (0,1,2,3,4,5,127,255):
+    for saved in (0,1,2,3,4,5,6,127,255):
         class SelectedMachine(original_machine):
             def __init__(self):
                 super().__init__();self.ram[0x3d2f]=saved
         calc.Machine=SelectedMachine
-        d=Desktop();d.check(saved if saved<5 else 0);d.key(27,exited=True)
+        d=Desktop();d.check(saved if saved<6 else 0);d.key(27,exited=True)
         done('restore or repair saved desktop selection '+str(saved),d)
     calc.Machine=original_machine
-    for selected in (0,1,2,3,4):
+    for selected in range(6):
         d=Desktop()
         for _ in range(selected):d.key(9)
         d.check(selected);d.key(27,exited=True)
@@ -89,12 +89,12 @@ try:
         d.key(27,exited=True)
         done('desktop reload retains selection and releases both allocations '+str(selected),d)
         calc.Machine=original_machine
-    for key, name in [(13,b'CALC'),(ord('c'),b'CALC'),(ord('E'),b'EDITOR'),(ord('f'),b'FILES'),(ord('u'),b'ULTIMATE'),(ord('a'),b'CLAUDE')]:
+    for key, name in [(13,b'CALC'),(ord('c'),b'CALC'),(ord('E'),b'EDITOR'),(ord('f'),b'FILES'),(ord('u'),b'ULTIMATE'),(ord('a'),b'CLAUDE'),(ord('p'),b'PAINT')]:
         d = Desktop();d.key(key, exited=True)
         assert d.ram[0x3d28] == 1 and d.ram[0x3d21:0x3d23] == bytes([8,len(name)])
         assert d.ram[0x3d2c] == 0 and bytes(d.ram[0x3d40:0x3d40+len(name)]) == name
         assert not d.ram[heap.symbol('v_tag')] and d.m.bus.video[0xd011] == 0x1b
-        assert d.ram[0x3d2f] == {b'CALC':0,b'EDITOR':1,b'FILES':2,b'ULTIMATE':3,b'CLAUDE':4}[name]
+        assert d.ram[0x3d2f] == {b'CALC':0,b'EDITOR':1,b'FILES':2,b'ULTIMATE':3,b'CLAUDE':4,b'PAINT':5}[name]
         done('owned app handoff '+name.decode()+' key '+str(key), d)
     class ErrorMachine(original_machine):
         def __init__(self):

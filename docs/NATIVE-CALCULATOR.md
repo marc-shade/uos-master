@@ -25,19 +25,21 @@ the roadmap. The window is fixed; desktop window management is still open.
 
 ## Memory and shared controls
 
-The suite Calculator uses 37 app pages, a two-page history in bank 1 and the
-existing 36-page VIC surface at bank 0 `$c000..$e3ff`, leaving 351 of the 426
+The suite Calculator uses 39 app pages, a two-page history in bank 1 and the
+existing 36-page VIC surface at bank 0 `$c000..$e3ff`, leaving 349 of the 426
 managed pages free. Display and mouse ownership end before app exit or a
 history failure. An occupied surface or unsupported display configuration
 releases any temporary surface and runs the original controls on both text
 consoles. The standalone diagnostic disk retains the original 16-page text
 Calculator; its program bytes are unchanged.
 
-`src/native/input/pointer.inc` is now shared by Desktop and Calculator. The
+`src/native/input/pointer.inc` is shared by Desktop, Calculator and Paint. The
 caller supplies its surface selector, hit-test callback and control count;
 events distinguish focus from activation. Each caller handles its own app or
 dialog actions. The qualified sampling delay, reconnect baseline and exact
-sprite/CIA/BASIC-hook restoration remain in the driver.
+sprite/CIA/BASIC-hook restoration remain in the driver. The shared keyboard
+ownership code also filters port-1 button transitions at the ROM key-check
+callback and restores the prior callback and complete function-key table.
 
 `src/native/graphics/buttons.inc` supplies rectangular hit testing and focus
 colors on the bound surface. Callers provide the selected index and a static
@@ -56,8 +58,11 @@ The [graphical Calculator qualification](validation/2026-09-12-native-calc-gui/R
 records assembled arithmetic, mouse gestures, complete bitmaps, text mirrors,
 save/cancel/failure behavior and cleanup. VICE exercises actual host mouse and
 ROM keyboard input in both boot modes, saves a history file, compares all app
-files on the disk and operates all five suite apps. Physical C128 testing and
-deployment of this revision remain pending.
+files on the disk and operates the five apps present at that checkpoint.
+The [Paint and shared-input qualification](validation/2026-09-13-native-paint/README.md)
+rechecks Calculator and its save dialog with the shared keyboard filter in
+the expanded six-app suite. Physical C128 testing and deployment of this
+revision remain pending.
 
 ```sh
 python3 -B build-native-desktop.py

@@ -1,13 +1,19 @@
 # Native graphics and desktop
 
 The ABI 1.10 desktop starts in C128 native mode and launches Calculator, Text
-Editor, Files, Ultimate and [Claude](../apps/claude/README.md). It presents a 320×200 VIC bitmap and mirrors its controls in
+Editor, Files, Ultimate, [Claude](../apps/claude/README.md), and [Paint](NATIVE-PAINT.md). It presents a 320×200 VIC bitmap and mirrors its controls in
 the VDC text console. Apps use the existing owner-checked heap, file and module
 services. The dispatcher releases the desktop before loading an app and reloads
 it when the app returns. [Calculator](NATIVE-CALCULATOR.md) shares the blue
 bitmap, yellow buttons and mouse controls, including its history and save
 dialog. The desktop keeps its selected app across app and
 workspace returns for the current session.
+
+Paint uses the same blue interface with drawing tools, a color palette, and
+Save As and unsaved-picture dialogs. Its full picture remains in a separate
+banked allocation while the viewport or file picker is shown. The blue native
+suite and older green legacy desktop are separate builds during migration;
+the blue desktop is the intended common interface for the native apps.
 
 The preceding desktop software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
 pass. The C128 run verifies all three app handoffs, retained selection, complete
@@ -46,8 +52,8 @@ The builder retains three distinct boot disks:
 | `target/native/uos128.d64` | Diagnostic workspace | Original Files and Apps browser |
 
 Use arrows or Tab to select an app, Home to select Calculator, and Enter to
-open the selection. C, E, F, U and A open Calculator, Editor, Files, Ultimate
-and Claude directly. A 1351 mouse in control port 1 selects VIC app buttons on
+open the selection. C, E, F, U, A and P open Calculator, Editor, Files, Ultimate,
+Claude and Paint directly. A 1351 mouse in control port 1 selects VIC app buttons on
 movement; press and release the left button on the same button to open it.
 Moving off the button before release cancels the launch. A stationary mouse
 preserves keyboard selection. The VDC text console mirrors the selected app
@@ -57,11 +63,11 @@ or the current display configuration is unsupported, the same desktop controls
 remain available as text on both consoles. A missing app reports its load error
 and returns to the desktop. A missing desktop leaves a usable workspace.
 
-Arrow/Tab selection and C/E/F/U/A shortcuts update `N_DESKTOPSEL` at `$3d2f`:
-0 Calculator, 1 Editor, 2 Files, 3 Ultimate, 4 Claude. A reloaded desktop restores that selection
-in both graphics and text fallback; values outside 0–4 recover to Calculator.
+Arrow/Tab selection and C/E/F/U/A/P shortcuts update `N_DESKTOPSEL` at `$3d2f`:
+0 Calculator, 1 Editor, 2 Files, 3 Ultimate, 4 Claude, 5 Paint. A reloaded desktop restores that selection
+in both graphics and text fallback; values outside 0–5 recover to Calculator.
 Native restart clears the selection. This uses an existing mailbox byte and
-uses 23 app pages plus 36 surface pages. Selection is
+uses 26 app pages plus 36 surface pages. Selection is
 session state; preferences saved across restarts remain roadmap work.
 The [selection checkpoint](validation/2026-09-12-native-desktop-selection/README.md)
 records the ABI 1.9 build, compatibility checks and complete app/workspace
@@ -73,10 +79,10 @@ The physical workflow in `hw_ultimate_check.py --native-desktop` is still
 admitted only for its frozen ABI 1.9 images. A new frozen candidate is required
 before qualifying the added ABI 1.10 apps on the physical machine.
 
-The desktop PRG occupies 23 app pages and reserves 36 surface pages, leaving
-367 of the 426 managed pages free. Both allocations are released before an app
+The desktop PRG occupies 26 app pages and reserves 36 surface pages, leaving
+364 of the 426 managed pages free. Both allocations are released before an app
 handoff. There is one foreground app; desktop preferences saved across restarts, broader widgets and menus,
-overlapping windows, VDC bitmap presentation and graphical document editing
+overlapping windows, VDC bitmap presentation and graphical text-document editing
 remain roadmap work.
 
 ## Presentation lifetime
@@ -193,7 +199,11 @@ interrupt restarts this interval; a late frame is skipped. This allows conversio
 to settle even when the keyboard scan occurred later than its usual line 255.
 The scan restores CIA1 port A to `$7f`. It preserves
 CIA direction registers and briefly releases both keyboard column sets to read
-the left button. There is no added IRQ handler or keyboard callback. Other CIA
+the left button. No IRQ handler is added. A shared ROM key-check callback
+filters ambiguous button transitions using the owned function-key table's
+unused tail; the previous callback and all 256 table bytes are restored at
+pointer close. Paint retains that keyboard ownership across its text picker.
+Other CIA
 configurations and absent/out-of-range POT readings suspend the pointer and
 cancel an armed click. Attachment/reconnection establishes a fresh baseline;
 a button held during attachment cannot launch an app. Two counter units move
@@ -205,9 +215,11 @@ unused screen-matrix padding `$e3f8..$e3f9`, all within the existing owned
 36-page surface. The desktop saves and restores all 12 sprite registers it
 changes and the BASIC sprite-hook flags before app/workspace handoff or a
 graphics failure. It does not add resident kernel services or heap allocations.
-The desktop PRG reserves 23 pages, leaving 367 pages free with its surface.
+The desktop PRG reserves 26 pages, leaving 364 pages free with its surface.
 
-Software evidence is in the [pointer qualification record](validation/2026-09-12-native-pointer/README.md).
+The initial software evidence is in the [pointer qualification record](validation/2026-09-12-native-pointer/README.md).
+The [Paint and shared-input record](validation/2026-09-13-native-paint/README.md)
+rechecks the six-entry desktop and the shared keyboard callback.
 For VICE mouse input, add `-controlport1device 3 -mouse`. Use
 `-soundwarpmode 1` with warp mode so the SID mouse inputs remain emulated.
 Run `tests/ci_native_pointer.py` with the py65 environment for protocol/gesture

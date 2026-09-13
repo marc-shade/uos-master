@@ -1,4 +1,4 @@
-scene_commands_count=37
+scene_commands_count=46
         .sint 16,27,304,28
         .byte 0,1
         .sint 16,32,304,52
@@ -20,6 +20,10 @@ scene_commands_count=37
         .sint 16,128,304,148
         .byte 0,1
         .sint 17,129,303,147
+        .byte 0,0
+        .sint 16,152,304,172
+        .byte 0,1
+        .sint 17,153,303,171
         .byte 0,0
         .sint 24,34,48,50
         .byte 0,1
@@ -73,3 +77,17 @@ scene_commands_count=37
         .byte 0,1
         .sint 35,140,42,141
         .byte 0,1
+        .sint 35,154,41,162
+        .byte 0,1
+        .sint 36,155,40,161
+        .byte 0,0
+        .sint 31,161,45,164
+        .byte 0,1
+        .sint 29,164,45,170
+        .byte 0,1
+        .sint 32,166,33,170
+        .byte 0,0
+        .sint 36,166,37,170
+        .byte 0,0
+        .sint 40,166,41,170
+        .byte 0,0

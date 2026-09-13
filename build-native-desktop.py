@@ -29,10 +29,12 @@ def build():
     write_assembly(ROOT/'src/native/desktop')
     from native_calc_scene import write_assembly as write_calculator
     write_calculator(ROOT/'src/native/calc')
+    from paint_scene import write_assembly as write_paint
+    write_paint(ROOT/'src/native/paint')
     native.build()
     native.build(out=OUT, desktop_boot=True)
     module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
-    for name in ('desktop', 'files', 'controls'):
+    for name in ('desktop', 'files', 'controls', 'paint'):
         subprocess.run(['64tass', '-a', '-B', str(ROOT/f'src/native/{name}.asm'),
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
                         '-L', str(OUT/f'{name}.lst')], check=True)
@@ -46,7 +48,8 @@ def build():
                     '-write', str(OUT/'desktop.prg'), 'browse',
                     '-write', str(OUT/'files.prg'), 'files',
                     '-write', str(OUT/'controls.prg'), 'ultimate',
-                    '-write', str(OUT/'claude.prg'), 'claude'], check=True, capture_output=True)
+                    '-write', str(OUT/'claude.prg'), 'claude',
+                    '-write', str(OUT/'paint.prg'), 'paint'], check=True, capture_output=True)
     desktop = OUT/'uos128.d64'
     shutil.copyfile(workspace, desktop)
     subprocess.run(['c1541', '-attach', str(desktop), '-delete', 'u',
@@ -62,6 +65,7 @@ def build():
                       files=validate((OUT/'files.prg').read_bytes()),
                       controls=validate((OUT/'controls.prg').read_bytes()),
                       claude=validate((OUT/'claude.prg').read_bytes()),
+                      paint=validate((OUT/'paint.prg').read_bytes()),
                       surface_pages=36,
                       free_pages_at_desktop=426-36-validate((OUT/'desktop.prg').read_bytes())['pages'],
                       selection_state_address=0x3d2f, selection_lifetime='until native restart',
@@ -69,7 +73,7 @@ def build():
                                     'files': 'files.prg', 'calc': 'calc.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',
                                     'edfind.prg': 'edfind.prg',
-                                    'ultimate': 'controls.prg', 'claude': 'claude.prg'})
+                                    'ultimate': 'controls.prg', 'claude': 'claude.prg', 'paint': 'paint.prg'})
     (OUT/'deployment.json').write_text(json.dumps(deployment, indent=2)+'\n')
     print(f'Native graphical desktop disk: {desktop}')
     print(f'Native diagnostic workspace disk: {ROOT/"target/native/uos128.d64"}')

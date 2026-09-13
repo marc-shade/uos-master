@@ -2,7 +2,7 @@
 from src.native.graphics.font import font
 
 OPS = [(0, (16, 27, 304, 28), 1)]
-for top in (32, 56, 80, 104, 128):
+for top in (32, 56, 80, 104, 128, 152):
     OPS.extend([(0, (16, top, 304, top+20), 1),
                 (0, (17, top+1, 303, top+19), 0)])
 # Calculator, document, folder, cartridge and terminal silhouettes.
@@ -19,6 +19,11 @@ OPS.extend([(0, (24, 107, 48, 119), 1), (0, (26, 109, 46, 117), 0),
 OPS.extend([(0, (24, 131, 48, 145), 1), (0, (26, 133, 46, 143), 0),
             (0, (28, 135, 30, 137), 1), (0, (30, 137, 32, 139), 1),
             (0, (28, 139, 30, 141), 1), (0, (35, 140, 42, 141), 1)])
+# Paintbrush with a narrow handle and a broad bristle end.
+OPS.extend([(0, (35, 154, 41, 162), 1),(0, (36, 155, 40, 161), 0),
+            (0, (31, 161, 45, 164), 1),(0, (29, 164, 45, 170), 1),
+            (0, (32, 166, 33, 170), 0),(0, (36, 166, 37, 170), 0),
+            (0, (40, 166, 41, 170), 0)])
 TEXT = [(16, 8, 1, b'uOS 128'), (184, 8, 1, b'Desktop')]
 for top, name, description in [
     (32, b'Calculator', b'Numbers and saved history'),
@@ -26,9 +31,10 @@ for top, name, description in [
     (80, b'Files', b'Drives, USB folders, apps'),
     (104, b'Ultimate', b'Drives, network and clock'),
     (128, b'Claude', b'Claude Code terminal'),
+    (152, b'Paint', b'Pictures, colors and undo'),
 ]:
     TEXT.extend([(64, top+2, 1, name), (64, top+11, 1, description)])
-TEXT.extend([(8, 176, 1, b'Mouse clicks open  C/E/F/U/A open'),
+TEXT.extend([(8, 176, 1, b'Mouse opens   C/E/F/U/A/P apps'),
              (8, 188, 1, b'Arrows/Tab/Enter   Esc workspace')])
 
 
@@ -53,7 +59,7 @@ def pointer_shape():
 
 
 def surface(selected=0, error=0):
-    assert 0 <= selected < 5 and 0 <= error <= 255
+    assert 0 <= selected < 6 and 0 <= error <= 255
     data = bytearray(bytes(8192) + b'\x16' * 1024)
     for mode, (x0, y0, x1, y1), value in OPS:
         assert mode == 0 and value in (0, 1)
@@ -63,7 +69,8 @@ def surface(selected=0, error=0):
                 mask = 128 >> (x%8)
                 if value: data[at] |= mask
                 else: data[at] &= mask ^ 255
-    labels = TEXT + ([(8, 164, 1, f'App could not open: {error:02X}'.encode())] if error else [])
+    labels = ([label for label in TEXT if label[1]!=176]+[(8, 176, 1, f'App could not open: {error:02X}'.encode())]
+              if error else TEXT)
     glyphs = font()
     for x0, y0, pen, label in labels:
         assert pen == 1
@@ -73,7 +80,7 @@ def surface(selected=0, error=0):
                     x, y = x0+column*8+dx, y0+dy
                     if 0 <= x < 320 and 0 <= y < 200 and row & (128 >> dx):
                         data[y//8*320+x//8*8+y%8] |= 128 >> (x%8)
-    for index, top in enumerate((4, 7, 10, 13, 16)):
+    for index, top in enumerate((4, 7, 10, 13, 16, 19)):
         for y in range(top, top+3):
             for x in range(2, 38):
                 data[8192+y*40+x] = 0x07 if index == selected else 0x1b
@@ -90,9 +97,10 @@ def console(columns, selected=0, error=0, fallback=False):
         ('F  FILES', 'DRIVES, USB FOLDERS AND APPS'),
         ('U  ULTIMATE', 'DRIVES, NETWORK AND CLOCK'),
         ('A  CLAUDE', 'CLAUDE CODE TERMINAL'),
+        ('P  PAINT', 'PICTURES, COLORS AND UNDO'),
     ]):
-        lines.extend([('>' if selected == index else ' ') + ' ' + name, '    '+description, ''])
-    lines.extend(['ARROWS/TAB SELECT. ENTER OPENS.', 'C/E/F/U/A OPEN APPS. ESC WORKSPACE.', ''])
+        lines.extend([('>' if selected == index else ' ') + ' ' + name, '    '+description])
+    lines.extend(['ARROWS/TAB SELECT. ENTER OPENS.', 'C/E/F/U/A/P APPS. ESC WORKSPACE.', ''])
     # Assembly prints no newline after the error value unless the fallback follows.
     lines.append(f'APP COULD NOT OPEN: {error:02X}' if error else '')
     if fallback:
