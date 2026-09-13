@@ -84,7 +84,7 @@ def build():
         desktop = OUT/f'uos128.{disk_format}'
         shutil.copyfile(workspace, desktop)
         subprocess.run(['c1541', '-attach', str(desktop), '-delete', 'u',
-                        '-write', str((OUT if disk_format == 'd64' else OUT/'d81')/'uos128.prg'), 'u'], check=True, capture_output=True)
+                        '-write', str((OUT if disk_format == 'd64' else OUT/'d81')/'uos128-boot.prg'), 'u'], check=True, capture_output=True)
     images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
@@ -106,7 +106,7 @@ def build():
                       free_pages_at_desktop={str(kib):426-36-pages-validate((OUT/'desktop.prg').read_bytes())['pages']
                                              for kib,pages in ((16,64),(64,72))},
                       selection_state_address=0x3d2f, selection_lifetime='until native restart',
-                      disk_entries={'u': 'uos128.prg', 'browse': 'desktop.prg',
+                      disk_entries={'u': 'uos128-boot.prg', 'browse': 'desktop.prg',
                                     'files': 'files.prg', 'calc': 'calc.prg',
                                     'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',

@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,504 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,507 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -88,7 +88,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher on VIC and 640×200 VDC, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
-| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore | VDC graphics in all apps; shared VDC display services; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
+| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes; native reversible 16/64 KiB detection and 640×200 launcher, with color cards on 64 KiB | Further bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
@@ -97,7 +97,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
 | FR-S4 shell | Commands, CAT, memory monitor, UCI navigation, HTTP socket GET | Shared FS integration, history/completion, scripts/pipes/redirection, jobs, useful errors, document/app launch | Scripted end-to-end workflow with removable media and network failures |
-| FR-S5 editor/calculator | Native blue banked text editor with mouse caret placement, file/search controls, 24-bit positions, transactional Open, verified exclusive Save As, shared picker and literal find/replace module; 768-byte legacy editor; native graphical integer calculator with mouse/keyboard keypad, 32-result banked history and verified SEQ export dialog | Selection/clipboard/undo and document/session recovery; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
+| FR-S5 editor/calculator | Native blue banked text editor with mouse caret placement, file/search controls, 24-bit positions, transactional Open, verified exclusive Save As, shared picker and literal find/replace module; 768-byte legacy editor; native VIC/VDC graphical integer calculator with mouse/keyboard keypad, 32-result banked history and verified SEQ export dialog | Selection/clipboard/undo and document/session recovery; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
 | FR-S6 SDK | Legacy application guide plus native ABI, manifest/image validator/sealer, calculator and [standalone module example](../examples/native-module/README.md); 15 separate module-example CPU workflows reproduce from archived sources | Broader versioned APIs, docs generated from exports, clean-checkout third-party workflow and portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
 | FR-S7 appearance | Shared blue bitmap controls and yellow focus across the launcher, native apps and file picker; basic background colors | Backdrops, font/theme/pointer selection, screen saver, desktop arrangements and persistence | Change/restart/restore; memory budgets and low-RAM fallback |
 
@@ -633,3 +633,12 @@ and live glyphs remain available. The 75-page client and its 36-page surface
 use the existing kernel. The [software qualification](validation/2026-09-13-native-claude-gui/README.md) passes; native
 physical serial, an authenticated session, a VIC-only terminal, VDC bitmap
 presentation and the remaining application roadmap still require work.
+
+The [graphical VDC Calculator](NATIVE-CALCULATOR.md) is the first app using the
+shared VDC lifetime, pointer and incremental surface presenter. Its keypad,
+history and verified-save dialog now follow the blue interface on both displays.
+Mono VDC focus uses reverse ink; color VDC focus uses yellow. The original VDC
+memory remains owned until restoration succeeds, including fatal history errors.
+A bounded, CRC-checked packed kernel boot file makes room on D64 without changing
+resident RAM or app ABI. Applying VDC graphics to Editor, Files, Paint, Ultimate,
+Claude and the picker still requires code-space and backing-store work.

@@ -5,7 +5,8 @@ disk, owned VIC presentation, clipped drawing and a
 [640×200 VDC graphical launcher](NATIVE-VDC-DESKTOP.md) with keyboard/1351 app
 handoff. Calculator, Paint, Ultimate, Files, [Editor](NATIVE-EDITOR-GUI.md)
 and [Claude](NATIVE-CLAUDE-GUI.md) share the blue VIC controls and input.
-Apps retain their VDC text views while their graphical migration continues. The diagnostic
+Calculator now shows its controls graphically on the VDC as well. Other apps
+retain their VDC text views while their graphical migration continues. The diagnostic
 text workspace remains available. This document retains the migration history;
 windows, persistent desktop state, broader cartridge controls and an app
 switcher remain open. The legacy desktop has a separate memory layout and build.

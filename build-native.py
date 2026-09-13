@@ -12,6 +12,7 @@ import subprocess
 from native_image import seal
 from native_module import seal as seal_module
 from native_disk import create_boot_disk
+from native_boot_pack import build as build_boot_file
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT/'target/native'
@@ -46,7 +47,7 @@ def build(*, out=None, desktop_boot=False):
         if disk_format == 'd81':
             build_kernel(kernel_dir, desktop_boot=desktop_boot, boot_format=2)
         create_boot_disk(out/f'uos128.{disk_format}', out/'boot.prg', {
-            'u': kernel_dir/'uos128.prg', 'calc': out/'calc.prg',
+            'u': kernel_dir/'uos128-boot.prg', 'calc': out/'calc.prg',
             'browse': out/'browse.prg', 'editor': out/'editor.prg',
             'edpick.prg': out/'edpick.prg', 'edfind.prg': out/'edfind.prg'})
     report = {p.relative_to(out).as_posix(): dict(bytes=p.stat().st_size,
@@ -107,6 +108,7 @@ def build_kernel(out, *, desktop_boot=False, boot_format=0):
         assert layout[start]<layout[end]<=(layout[next_boundary] if next_boundary else 0x4a00)
     assert (out/'uos128.prg').stat().st_size==layout['load_end']-layout['main_start']+2
     (out/'layout.json').write_text(json.dumps(layout,indent=2)+'\n')
+    build_boot_file(ROOT, out)
 
 
 if __name__ == '__main__':

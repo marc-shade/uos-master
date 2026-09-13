@@ -86,7 +86,7 @@ def main():
                 data = disk.read_bytes()
                 row = inspect(data, fmt, boot)
                 entries = deployment['disk_entries'] if prefix == 'native-desktop' else {
-                    'u': 'uos128.prg', 'browse': 'browse.prg', 'calc': 'calc.prg',
+                    'u': 'uos128-boot.prg', 'browse': 'browse.prg', 'calc': 'calc.prg',
                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg', 'edfind.prg': 'edfind.prg'}
                 expected = {}
                 for name, file in entries.items():

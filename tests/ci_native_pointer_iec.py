@@ -89,12 +89,13 @@ def main():
     parser.add_argument('--vdc64',action='store_true')
     parser.add_argument('--d81',action='store_true')
     parser.add_argument('--boot-frame-only',action='store_true')
+    parser.add_argument('--calc-only',action='store_true')
     parser.add_argument('--paint-only',action='store_true')
     parser.add_argument('--controls-only',action='store_true')
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--editor-only',action='store_true')
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
-    assert sum((args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
+    assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
     print('Native pointer VICE:',work,flush=True)
     shutil.copy2(__file__,work/'run.py')
@@ -239,7 +240,7 @@ def main():
             if label=='claude-returned':
                 subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'desktop.png')],check=True,capture_output=True)
             print('PASS: complete VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
-        def key(name,target):
+        def key(name,target,after_key=None):
             before=int.from_bytes(read(0x3d13,2),'little')
             # A short host press can begin and end between emulated keyboard
             # scans under load. Keep it down until the ROM-fed native counter
@@ -247,11 +248,37 @@ def main():
             with mouse.held_key(name):
                 wait(lambda:int.from_bytes(read(0x3d13,2),'little')!=before,
                     name+' sampled by native keyboard',120)
+            if after_key is not None:after_key()
             wait(lambda:(read(0x3d20)==b'\0' if target=='workspace' else header(target)) and ready() and int.from_bytes(read(0x3d13,2),'little')!=before,
                 name+' reaches '+target,120)
             after=int.from_bytes(read(0x3d13,2),'little')
             assert after==(before+1)&65535,(name,'extra or missing ROM key',before,after)
             report['events'].append(dict(key=name,target=target,keys_before=before,keys_after=after));save()
+        def watch_app_vdc_restore(app,label):
+            snapshot,restore=vdc_snapshot(capture,app_read,work,label,image_prefix='native-desktop/'+app)
+            entry=lst_symbol('native-desktop/'+app,'vd_restore_registers')
+            error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
+            assert not error
+            checkpoint_id=checkpoint[:4];mon.resume()
+            def finish():
+                deadline=time.monotonic()+120
+                while True:
+                    error,checkpoint=mon._recv(mon._send(0x11,checkpoint_id));assert not error
+                    if int.from_bytes(checkpoint[13:17],'little'):break
+                    mon.resume();assert time.monotonic()<deadline,'app VDC restore checkpoint was not reached'
+                    time.sleep(.1)
+                base=restore['base']
+                restored=bytes(mon.read_mem(base,base+len(snapshot)-1,bank=banks['vdc']))
+                (work/(label+'-restored-vram.bin')).write_bytes(restored)
+                (work/(label+'-restore-checkpoint.bin')).write_bytes(checkpoint)
+                assert restored==snapshot,'app VDC RAM was not restored before desktop handoff'
+                assert bytes(mon.read_mem(0x3d20,0x3d20))==b'\x20'
+                restore.update(app=app,checkpoint_address=entry,checkpoint_hex=checkpoint.hex(),
+                    lifetime='app snapshot still owned; VRAM restored before register restoration')
+                report.setdefault('vdc_app_restores',[]).append(restore);save()
+                error,_=mon._recv(mon._send(0x13,checkpoint_id));assert not error
+                mon.resume()
+            return finish
         def screens(label,oracle):
             for mode,columns,address in ((0,40,0x400),(1,80,0)):
                 actual=capture.capture(label+('-vic' if mode==0 else '-vdc'),mode=mode,address=address,count=columns*25)
@@ -281,10 +308,6 @@ def main():
             wanted=calc_surface(**expected)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'calculator bitmap')
-            messages=[None,'HISTORY SAVED AND VERIFIED','DISK ERROR; FILE MAY BE PARTIAL','FILE EXISTS - CHOOSE ANOTHER NAME']
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-            assert vdc==calculator_screen(80,display,history,save_prompt=name if dialog else None,
-                save_status=None if dialog else messages[status],save_caret=cursor,save_view=0),(label,'calculator VDC')
             for _ in range(20):
                 xy=position();time.sleep(.2)
                 if position()==xy:break
@@ -293,9 +316,14 @@ def main():
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
             rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            report['calculator_frames'].append(dict(label=label,expected=expected,position=xy,rectangle=rectangle,mode=mode));save()
+            def vdc_canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            vdc=vdc_capture(capture,app_read,vdc_canvas,work,label,selected,color=args.vdc64,
+                            surface_data=wanted,image_prefix='native-desktop/calc')
+            report['calculator_frames'].append(dict(label=label,expected=expected,position=xy,rectangle=rectangle,mode=mode,vdc=vdc));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
-            print('PASS: graphical calculator bitmap, VDC and 64000 pointer pixels:',label,flush=True)
+            print('PASS: Calculator VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
         def calc_click(index):
             (x0,y0,x1,y1),_,_=BUTTONS[index]
             move_to((x0+x1)//2,(y0+y1)//2)
@@ -529,6 +557,7 @@ def main():
         paint_document=bytearray(bytes(8192)+b'\x10'*1024)
         ran_apps=set()
         for index,name in enumerate(('calc','editor','files','controls','claude','paint')):
+            if args.calc_only and name!='calc':continue
             if args.paint_only and name!='paint':continue
             if args.controls_only and name!='controls':continue
             if args.files_only and name!='files':continue
@@ -734,7 +763,8 @@ def main():
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
-            key('F8' if name=='claude' else 'F9','desktop')
+            after_key=watch_app_vdc_restore('calc','calculator-close') if name=='calc' else None
+            key('F8' if name=='claude' else 'F9','desktop',after_key=after_key)
             pointer_app='desktop'
             desktop(name+'-returned',index)
             assert capture.capture(name+'-keys-restored',address=0x1000,count=256)==saved_keys

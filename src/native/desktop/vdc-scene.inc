@@ -152,5 +152,3 @@ vd_scene:
         .byte $ff,$84,$00,$ff,$84,$00,$4b,$00,$00
 vd_scene_end:
 vd_arrow: .byte $00,$40,$60,$70,$78,$70,$60,$40
-vd_pointer_hi: .byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff,$ff,$ff,$fe,$ef,$cf,$87,$07,$03
-vd_pointer_lo: .byte $00,$00,$00,$00,$00,$00,$00,$00,$80,$c0,$00,$00,$00,$80,$80,$00

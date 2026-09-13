@@ -6,6 +6,9 @@
 ; GLYPH draws gfx_bits[8] at signed gfx_x0/y0. Pen 3 replaces all clipped
 ; glyph pixels; pens 0/1/2 change only ink pixels. It sets x1/y1 internally.
 ; A/carry are the result; D/I preserved. BUFFER and heap arguments clobbered.
+.weak
+gfx_track_dirty=0
+.endweak
 gfx_bind:
         php
         cld
@@ -236,6 +239,9 @@ gfx_nonempty_x:
         cmp gfx_clipped+6
         bcs gfx_empty
         sta gfx_y
+ .if gfx_track_dirty
+        jsr vm_dirty          ; conservatively retain rows even after a partial write
+ .endif
         lda gfx_operation
         cmp #1
         beq gfx_color_rows

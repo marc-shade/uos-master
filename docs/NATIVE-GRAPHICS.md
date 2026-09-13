@@ -24,7 +24,9 @@ graphical copy dialog. Ordinary field edits repaint changed cells and the caret.
 placement, file dialogs and Find/Replace. Its banked document remains allocated
 while the shared picker replaces the graphics module. The
 [shared picker](NATIVE-PICKER-GUI.md) and [Claude frame](NATIVE-CLAUDE-GUI.md)
-now use the same blue VIC controls. VDC graphics inside apps remain migration work.
+now use the same blue VIC controls. Calculator also uses the shared VDC lifetime
+and incremental surface presenter. VDC graphics in the other apps require
+further work within their tighter code and document-memory budgets.
 
 The preceding desktop software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
 pass. The C128 run verifies all three app handoffs, retained selection, complete

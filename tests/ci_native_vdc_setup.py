@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from ci_native_vdc_desktop import Desktop,VDCBus,heap,ROOT
+from ci_native_vdc_calc import Calculator
 
 
 class InterruptedVDC(VDCBus):
@@ -22,23 +23,25 @@ def run():
     previous = heap.Bus
     cases = []
     try:
-        for size in (16,64):
-            for threshold,phase in ((1,1),(5,2)):
-                heap.Bus = type('InterruptedSetup',(InterruptedVDC,),dict(size=size,threshold=threshold))
-                desktop = Desktop()
-                assert desktop.value('vd_fault') == 0x11 and desktop.value('vd_phase') == phase
-                assert bool(desktop.value('vd_handle')) == (phase == 2)
-                assert not desktop.value('vd_live') and desktop.value('gd_bitmap') == 1
-                assert desktop.ram[0x3d20] == 32
-                desktop.key(ord('C'))
-                assert desktop.value('vd_phase') == phase and desktop.value('gd_launch_error') == 0x11
-                desktop.bus.threshold = None
-                desktop.bus.stall = False
-                desktop.key(ord('C'),exited=True)
-                desktop.restored()
-                name=f'{size} KiB setup stall during '+('alias probe' if phase == 1 else 'first bitmap write')
-                cases.append(dict(name=name,interrupted_phase=phase,physical_kib=size,restored=True,instructions=desktop.instructions))
-                print('PASS:',name,'retains recovery state and restores every byte',flush=True)
+        for app,fixture,bitmap,key in [('Desktop',Desktop,'gd_bitmap',ord('C')),
+                                        ('Calculator',Calculator,'cg_bitmap',27)]:
+            for size in (16,64):
+                for threshold,phase in ((1,1),(5,2)):
+                    heap.Bus = type('InterruptedSetup',(InterruptedVDC,),dict(size=size,threshold=threshold))
+                    desktop = fixture()
+                    assert desktop.value('vd_fault') == 0x11 and desktop.value('vd_phase') == phase
+                    assert bool(desktop.value('vd_handle')) == (phase == 2)
+                    assert not desktop.value('vd_live') and desktop.value(bitmap) == 1
+                    assert desktop.ram[0x3d20] == 32
+                    desktop.key(key)
+                    assert desktop.value('vd_phase') == phase and desktop.value('vd_fault') == 0x11
+                    desktop.bus.threshold = None
+                    desktop.bus.stall = False
+                    desktop.key(key,exited=True)
+                    desktop.restored()
+                    name=f'{app}, {size} KiB setup stall during '+('alias probe' if phase == 1 else 'first bitmap write')
+                    cases.append(dict(name=name,interrupted_phase=phase,physical_kib=size,restored=True,instructions=desktop.instructions))
+                    print('PASS:',name,'retains recovery state and restores every byte',flush=True)
     finally:
         heap.Bus = previous
     return cases
@@ -48,7 +51,7 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--report',type=Path,required=True);args=parser.parse_args()
     report=dict(passed=False,physical_hardware_io=False,cases=[],images={
         str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in (ROOT/'target/native/uos128.prg',ROOT/'target/native-desktop/desktop.prg')})
+        for path in (ROOT/'target/native/uos128.prg',ROOT/'target/native-desktop/desktop.prg',ROOT/'target/native-desktop/calc.prg')})
     try:
         report['cases']=run();report['passed']=True
     finally:

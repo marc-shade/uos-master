@@ -49,6 +49,10 @@ calc_keep_handle:
         sta save_status
         jsr save_source
  .if NATIVE_CALC_GRAPHICS
+        tsx
+        stx cg_stack
+        lda #0
+        sta cg_exit_error
         jsr cg_begin
  .endif
         jmp c_clear
@@ -67,6 +71,12 @@ cg_have_key:
         ldx #0
         stx N_READY
  .if NATIVE_CALC_GRAPHICS
+        ldx cg_exit_error
+        beq +
+        cmp #27
+        beq calc_exit
+        jmp cloop
++
         jsr cg_key
         bcs cloop
  .endif
@@ -135,9 +145,18 @@ calc_divide:
         jmp c_op
 calc_exit:
  .if NATIVE_CALC_GRAPHICS
+        jsr vd_close
+        bcc +
+        ldx cg_stack          ; history failures may arrive with nested app frames
+        txs
+        jsr cg_status
+        jmp cloop
++
         jsr pm_close
- .endif
+        lda cg_exit_error
+ .else
         lda #0
+ .endif
         jmp N_EXIT             ; one-way exit drops app frames, releases all owners
 calc_older:
         clc
@@ -211,6 +230,13 @@ calc_redraw:
  .endif
         sta screen
 calc_screen:
+ .if NATIVE_CALC_GRAPHICS
+        lda screen
+        beq +
+        lda vd_phase         ; text output would overwrite active/saved VDC pixels
+        bne calc_screen_done
++
+ .endif
         lda $d7
         rol
         lda #0
@@ -236,6 +262,7 @@ calc_screen_ready:
         lda screen
         cmp #2
         bne calc_screen
+calc_screen_done:
         rts
 
 history_select:
@@ -298,11 +325,11 @@ history_appended:
         rts
 history_failure:
  .if NATIVE_CALC_GRAPHICS
-        pha
-        jsr pm_close
-        pla
- .endif
+        sta cg_exit_error
+        jmp calc_exit
+ .else
         jmp N_EXIT             ; loader preserves error as the app exit code
+ .endif
 history_show:
         jsr history_select
         lda #0

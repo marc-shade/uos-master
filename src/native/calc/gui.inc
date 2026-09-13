@@ -5,6 +5,7 @@ cg_begin:
         sta cg_bitmap
         sta cg_handle
         sta cg_mode
+        sta cg_vdc_attempted
         sta N_BANK
         lda owner
         sta N_OWNER
@@ -47,6 +48,8 @@ cg_begin:
         bcc cg_return
 cg_failed:
         sta cg_error
+        jsr vd_close
+        bcs cg_return         ; retain every owner while VDC restoration is pending
         jsr pm_close
         jsr N_VCLOSE
         lda #0
@@ -95,9 +98,24 @@ cg_mode_focus:
 cg_dynamic:
         jsr cg_contents
         bcs cg_failed
-        rts
+        lda cg_vdc_attempted
+        bne cg_sync
+        inc cg_vdc_attempted
+        jsr vd_open
+        bcc cg_return
+        jsr vd_close          ; partial setup rolls back before any text fallback
+cg_sync:
+        jsr vm_present
+        jsr vd_poll
+        lda vd_phase
+        beq cg_return
+        lda vd_fault
+        beq cg_return
+        jmp cg_status
 
 cg_scene_draw:
+        lda #0
+        sta cg_history_valid
         ldx #0
         jsr cg_clear_region
         bcs cg_draw_done
@@ -156,6 +174,26 @@ cg_contents:
         ldy #48
         jsr cg_text
         bcs cg_draw_done
+        lda cg_history_valid
+        beq cg_history_redraw
+        lda history_count
+        cmp cg_history_count
+        bne cg_history_redraw
+        lda history_head
+        cmp cg_history_head
+        bne cg_history_redraw
+        lda history_view
+        cmp cg_history_view
+        beq cg_status
+cg_history_redraw:
+        lda #1
+        sta cg_history_valid
+        lda history_count
+        sta cg_history_count
+        lda history_head
+        sta cg_history_head
+        lda history_view
+        sta cg_history_view
         ldx #16
         jsr cg_clear_region
         bcs cg_draw_done
@@ -253,6 +291,14 @@ cg_status:
         ldx #24
         jsr cg_clear_region
         bcs cg_draw_done
+        lda vd_phase
+        beq +
+        lda vd_fault
+        beq +
+        lda #<cg_vdc_help
+        ldx #>cg_vdc_help
+        bne cg_status_text
++
         lda #<cg_help
         ldx #>cg_help
         ldy save_mode
@@ -315,10 +361,12 @@ cg_text:
 cg_mouse:
         jsr pm_poll
         lda pm_event
-        beq cg_no_mouse
+        beq cg_mouse_sync
         ldx pm_hit
         jsr ui_focus
         bcs cg_input_failed
+cg_mouse_sync:
+        jsr cg_sync
         lda pm_event
         cmp #2
         bne cg_no_mouse
@@ -380,6 +428,7 @@ cg_dialog_key:
 cg_key_focus:
         jsr ui_focus
         bcs cg_key_failed
+        jsr cg_sync
 cg_key_return:
         lda cg_key_value
         clc
@@ -399,7 +448,10 @@ cg_previous:
 +       dex
 cg_focus_only:
         jsr ui_focus
-        bcc +
+        bcs cg_key_failed
+        jsr cg_sync
+        sec
+        rts
 cg_key_failed:
         jsr cg_failed
         jsr c_show
@@ -425,6 +477,13 @@ cg_saved_focus: .byte 14
 cg_index: .byte 0
 cg_row: .byte 0
 cg_key_value: .byte 0
+cg_vdc_attempted: .byte 0
+cg_exit_error: .byte 0
+cg_stack: .byte 0
+cg_history_valid: .byte 0
+cg_history_count: .byte 0
+cg_history_head: .byte 0
+cg_history_view: .byte 0
 cg_regions:
         .word 0,0,320,200
         .word 24,48,168,56
@@ -434,6 +493,7 @@ cg_regions:
 cg_help: .byte 84,97,98,47,97,114,114,111,119,115,32,109,111,118,101,32,32,83,112,97,99,101,32,112,114,101,115,115,101,115,0
 cg_save_help: .byte 69,110,116,101,114,32,115,97,118,101,115,32,32,32,69,115,99,32,99,97,110,99,101,108,115,0
 cg_empty: .byte 78,111,32,114,101,115,117,108,116,115,0
+cg_vdc_help: .byte 56,48,45,99,111,108,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,116,114,105,101,115,32,114,101,116,117,114,110,0
 
 cg_main .block
 .include "../graphics/scene-rect.inc"
@@ -451,3 +511,5 @@ ui_selected: .byte 14
 .include "../graphics/graphics-core.inc"
 .include "../graphics/text-core.inc"
 .include "../input/pointer.inc"
+vm_select_surface=cg_select_surface
+.include "../graphics/vdc-mirror.inc"

@@ -17,6 +17,7 @@ from hwlib import lst_symbol
 class Calculator:
     instruction_limit=2000000
     allow_busy_poll=False
+    expected_exit_code=0
 
     def __init__(self,image_name='calc',files=None,loader_name=b'CHECK',device=8,fmt=0,
                  *,ultimate_files=None,source_path=None,source_context=1,image_prefix='native'):
@@ -97,7 +98,7 @@ class Calculator:
                     self.observation_done=True
             if cpu.pc==0xb00 and cpu.sp==0xe0:
                 assert exited,'calculator exited unexpectedly'
-                assert self.ram[0x3d20]==0 and self.ram[0x3d23:0x3d25]==bytes(2)
+                assert self.ram[0x3d20]==0 and self.ram[0x3d23:0x3d25]==bytes([0,self.expected_exit_code])
                 assert self.m.stats()==(175,251,32) and not self.io.handles
                 self.instructions+=steps;return
             if cpu.pc==0xffe4 and not self.keys:

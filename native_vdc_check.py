@@ -3,10 +3,11 @@ import hashlib
 from hwlib import lst_symbol
 from native_pointer_check import check_canvas
 from native_vdc_scene import bitmap, attributes, pointer_bitmap, pixels
+from native_vdc_mirror import bitmap as mirror_bitmap, attributes as mirror_attributes, pixels as mirror_pixels
 
 
-def capture_snapshot(capture, read_app, folder, label):
-    symbol = lambda name: lst_symbol('native-desktop/desktop',name)
+def capture_snapshot(capture, read_app, folder, label, *, image_prefix='native-desktop/desktop'):
+    symbol = lambda name: lst_symbol(image_prefix,name)
     state = bytes(read_app(symbol('vd_phase'),7))
     assert state[:2] == b'\2\1' and state[3] == 0
     handle = bytes(read_app(symbol('vd_handle'),4))
@@ -43,8 +44,9 @@ def saved_region(capture, read_app, folder, label, *, address=0x3000, count=4096
     return result, info
 
 
-def capture_frame(capture, read_app, canvas, folder, label, selected, *, color=None, error=0):
-    symbol = lambda name: lst_symbol('native-desktop/desktop', name)
+def capture_frame(capture, read_app, canvas, folder, label, selected, *, color=None, error=0,
+                  surface_data=None, image_prefix='native-desktop/desktop'):
+    symbol = lambda name: lst_symbol(image_prefix, name)
     state = bytes(read_app(symbol('vd_phase'), 7))
     (folder/(label+'-vdc-state.bin')).write_bytes(state)
     assert state[:2] == b'\2\1' and state[3] == 0, ('VDC phase/live/fault', state.hex())
@@ -59,14 +61,20 @@ def capture_frame(capture, read_app, canvas, folder, label, selected, *, color=N
             address=address+offset,count=min(2000,count-offset)) for offset in range(0,count,2000))
         (folder/(label+'-'+name+'.bin')).write_bytes(data)
         return data
-    expected = pointer_bitmap(bitmap(selected,error),x,y,visible)
+    expected = (pointer_bitmap(bitmap(selected,error),x,y,visible) if surface_data is None else
+                mirror_bitmap(surface_data,actual_color,x=x//2,y=y,pointer=visible))
     actual = region('vdc-bitmap',base,16000)
     assert actual == expected, ('VDC bitmap',label,[(i,a,b) for i,(a,b) in enumerate(zip(actual,expected)) if a!=b][:16])
-    if actual_color: assert region('vdc-attributes',0x8000,2000) == attributes(selected)
+    if actual_color:
+        assert region('vdc-attributes',0x8000,2000) == (attributes(selected) if surface_data is None else mirror_attributes(surface_data))
     raw = canvas()
     (folder/(label+'-vdc-canvas.bin')).write_bytes(raw)
-    expected_pixels = pixels(selected,color=actual_color,x=x,y=y,visible=visible,error=error)
-    rectangle = check_canvas(raw,[expected_pixels[at:at+640] for at in range(0,128000,640)])
+    if surface_data is None:
+        expected_pixels = pixels(selected,color=actual_color,x=x,y=y,visible=visible,error=error)
+        rows = [expected_pixels[at:at+640] for at in range(0,128000,640)]
+    else:
+        rows = mirror_pixels(surface_data,actual_color,x=x//2,y=y,pointer=visible)
+    rectangle = check_canvas(raw,rows)
     return dict(label=label,selected=selected,error=error,color=actual_color,position=[x,y],
                 pointer_visible=visible,rectangle=rectangle,bitmap_sha256=hashlib.sha256(expected).hexdigest(),
                 pixels=128000,snapshot_pages=pages)

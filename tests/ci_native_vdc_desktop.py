@@ -17,6 +17,7 @@ class VDCBus(PointerBus):
     addressing = 16
     present = True
     columns = 80
+    height = 7
 
     def __init__(self):
         super().__init__()
@@ -24,7 +25,7 @@ class VDCBus(PointerBus):
         self.reg = bytearray(64)
         self.reg[1], self.reg[6], self.reg[9] = self.columns, 25, 7
         self.reg[10], self.reg[18], self.reg[19] = 0x67, 0x2a, 0x4c
-        self.reg[20], self.reg[22], self.reg[23] = 8, 0x78, 8
+        self.reg[20], self.reg[22], self.reg[23] = 8, 0x78, self.height
         self.reg[25], self.reg[26], self.reg[28] = 0x47, 0xf0, 0x20|(16 if self.addressing == 64 else 0)
         self.reg[32], self.reg[33] = 0x5a, 0x32
         self.selected, self.busy, self.ready = 0, 0, False
@@ -203,7 +204,7 @@ def run(group):
             p.key(ord('C'),exited=True); p.restored()
             done('restore retry reinstates the bitmap addressing mode after a stall partway through register restoration',p)
 
-            for options in (dict(present=False),dict(columns=79)):
+            for options in (dict(present=False),dict(columns=79),dict(height=6)):
                 p = start(**options)
                 assert not p.value('vd_phase') and not p.value('vd_live') and not p.value('vd_handle')
                 assert p.bus.original is None and not p.bus.data_writes

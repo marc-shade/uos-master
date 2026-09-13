@@ -45,6 +45,9 @@ The heap can then reuse all nine staging pages. `$4000..$4fff` remains reserved
 for Ultimate services. The bank-0 workspace block occupies `$df00..$feff`
 beneath ROM and is accessed through the CPU's native bank gateways.
 Further growth must continue accounting for both final and peak boot footprints.
+The [compressed boot wrapper](NATIVE-BOOT-MEDIA.md) temporarily uses `$1300`
+for its decoder and `$6000` for packed input, before this relocation and heap
+initialization. It saves disk blocks without growing either resident region.
 Longer-term modules need their own owner/lifetime records; this small range
 alone is not a memory architecture for the complete OS.
 

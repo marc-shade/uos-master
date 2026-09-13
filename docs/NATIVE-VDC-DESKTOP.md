@@ -16,20 +16,24 @@ The VDC layout uses the extra width for app names and descriptions beside
 each icon. It shares selection and input with the VIC; independent focus and
 extended desktop roles remain future work.
 
-The six apps and the shared file picker already use blue VIC controls. Their
-VDC views remain text, including Claude's full terminal. App launch restores
+The six apps and the shared file picker already use blue VIC controls.
+[Calculator](NATIVE-CALCULATOR.md) now presents those controls graphically on
+the VDC too. The other app views remain text, including Claude's full terminal.
+App launch restores
 the original VDC memory and registers before loading the app, and app return
 reloads the graphical launcher. The older green legacy desktop is a separate
 build; the green native workspace remains a diagnostic view.
 
 ## Memory and display lifetime
 
-The launcher uses the existing ABI 1.11 heap and dispatcher. The resident
-kernel and other application images retain their bytes. The app-local
-[driver](../src/native/desktop/vdc.inc) runs in the foreground with interrupts
+The launcher uses the existing ABI 1.12 heap and dispatcher. The resident
+kernel retains its bytes. The app-local
+[driver](../src/native/desktop/vdc.inc), with its shared lifetime and pointer
+code under `src/native/graphics/`, runs in the foreground with interrupts
 enabled and without borrowed zero-page scratch. Monitor sync timing remains
 unchanged. Its supported entry state is 80×25 text with eight-pixel character
-cells, eight raster lines per cell and no interlace.
+cells, eight raster lines per cell and no interlace. Register 23 must display
+all eight lines: its last-raster value is inclusive, so seven is sufficient.
 
 | Allocation | 16 KiB VDC | 64 KiB VDC |
 |---|---:|---:|
@@ -41,8 +45,9 @@ cells, eight raster lines per cell and no interlace.
 | Attribute address | Disabled | `$8000` |
 | Entire saved address range | `$0000..$3fff` | `$4000..$87ff` |
 
-The desktop image contains 10,885 loaded bytes. Its two suite disks retain all
-twelve shipping files with eight free blocks before user documents. Use a
+The desktop image contains 10,895 loaded bytes. The
+[suite disks](NATIVE-BOOT-MEDIA.md) retain all twelve shipping files, with 11
+free blocks on D64 and 2,507 on D81 before user documents. Use a
 separate data disk or Ultimate storage for larger documents and pictures.
 Qualification saves the small calculator and Editor samples on the system
 disk, and copies the complete search module and Paint picture to device 9.
@@ -103,11 +108,11 @@ setup, drawing and close stalls. Emulator captures check both full bitmaps
 and their displayed pixels, alongside existing app workflows and final heap
 cleanup. This change has not been run on physical hardware.
 
-VDC graphics inside every app need a shared display lifetime and rendering
-service. Copying this launcher driver and snapshot into each app would exceed
+Calculator is the first app using the shared display lifetime and incremental
+VIC-to-VDC presenter. Applying that code and snapshot to every app would exceed
 current budgets: Editor with its large document and D81 picker uses 423 of
 426 pages, its core/picker window has two spare bytes, and resident regions
 are nearly full. Preserve that workload while designing display backing
-storage, overlays and owned cleanup. Shared VDC widgets, app switching,
+storage, overlays and owned cleanup. Remaining VDC app views, app switching,
 independent monitor focus, physical qualification and the remaining
 [OS roadmap](IMPLEMENTATION-ROADMAP.md) remain open.

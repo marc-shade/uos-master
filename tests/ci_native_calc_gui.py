@@ -38,6 +38,8 @@ class GraphicalCalculator(Pointer):
                   'FILE EXISTS - CHOOSE ANOTHER NAME','NO RESULTS TO SAVE',
                   'PATH TOO LONG; SHORTEN NAME','INPUT UNAVAILABLE; ESC RETURNS']
         for bank in ((1,) if bitmap else (0,1)):
+            if bank == 1 and self.value('vd_phase'):
+                continue
             cols=(40,80)[bank]
             want=calculator_screen(cols,self.display(),history,view,name if dialog else None,
                 None if dialog else messages[status],usb=self.ram[0x3d2c]==3,

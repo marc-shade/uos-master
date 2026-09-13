@@ -3,8 +3,10 @@
 The Calculator on both native desktop suite disks uses the desktop's blue
 bitmap, yellow focused buttons and port-1 1351 pointer. It has a numeric
 keypad, arithmetic operators, Delete, Clear, history paging, Save and Close.
-The existing 80-column text view remains usable with the same arithmetic and
-history shortcuts. Returning from Calculator reloads the blue desktop.
+The VDC now shows the same controls at 640×200, with yellow focus on a 64 KiB
+VDC or a bright reverse selection on a 16 KiB VDC. Returning from Calculator
+reloads the blue desktop. The original text view remains the fallback when
+VDC graphics cannot be opened.
 
 Use digits, `+ - * /`, Enter or `=`, Delete and C as before. Tab or arrows
 move button focus; Space presses that button. Mouse movement focuses a button;
@@ -20,15 +22,19 @@ Older/Newer buttons page through the 32 retained results.
 
 This remains an unsigned 16-bit integer calculator with immediate operation
 evaluation, overflow and division-by-zero reporting. Scientific/decimal modes,
-history import, persistent sessions and a graphical VDC interface remain in
-the roadmap. The window is fixed; desktop window management is still open.
+history import and persistent sessions remain in the roadmap. The window is
+fixed; desktop window management is still open.
 
 ## Memory and shared controls
 
-The suite Calculator uses 39 app pages, a two-page history in bank 1 and the
-existing 36-page VIC surface at bank 0 `$c000..$e3ff`, leaving 349 of the 426
-managed pages free. Display and mouse ownership end before app exit or a
-history failure. An occupied surface or unsupported display configuration
+The suite Calculator uses 48 app pages, a two-page history in bank 1 and the
+existing 36-page VIC surface at bank 0 `$c000..$e3ff`. Saving the original VDC
+contents takes another 64 pages on a 16 KiB VDC or 72 on a 64 KiB VDC, leaving
+276 or 268 of the 426 managed pages free. Display and mouse ownership end
+before app exit or a history failure. A stalled VDC restore retains all owners
+and blocks exit; Escape retries it. A fatal history error also retains its
+original exit code and accepts only Escape until recovery succeeds.
+An occupied VIC surface or unsupported display configuration
 releases any temporary surface and runs the original controls on both text
 consoles. The standalone diagnostic disk retains the original 16-page text
 Calculator; its program bytes are unchanged.
@@ -51,6 +57,20 @@ are shared as well; each application retains its own layout tables.
 The builder generates Calculator's scenes and hit rectangles from
 `native_calc_scene.py`, which also contains the independent bitmap oracle.
 Neither resident kernel grows and no persistent desktop allocation is added.
+
+The shared `graphics/vdc-lifetime.inc` and `vdc-pointer.inc` handle the saved
+display, bounded port waits and pointer. `vdc-mirror.inc` reads the owned VIC
+surface through `N_READ`, doubles each horizontal pixel and converts the color
+cells to VDC RGBI attributes. On a 16 KiB VDC, relative foreground/background
+brightness controls monochrome reversal so button focus remains visible.
+The graphics primitives flag changed eight-line rows; presentation clears each
+flag only after that complete row has been written. Pointer movement uploads
+only the old and new pointer footprints. Calculator avoids repainting history
+when its count, head and visible page have not changed. ROM text output is
+suppressed while any VDC recovery phase remains owned.
+
+The [packed boot file](NATIVE-BOOT-MEDIA.md) recovers disk space for this added
+app code while keeping all six applications on D64 and D81.
 
 ## Verification
 

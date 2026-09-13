@@ -134,9 +134,11 @@ def write_assembly(directory):
              for at in range(0, len(packed), 16)]
     rows += ['vd_scene_end:', 'vd_arrow: .byte '+','.join(f'${v:02x}' for v in ARROW)]
     pointer = [sum(1<<(15-x) for x, value in enumerate(row) if value != ' ') for row in POINTER]
-    rows += ['vd_pointer_hi: .byte '+','.join(f'${v>>8:02x}' for v in pointer),
-             'vd_pointer_lo: .byte '+','.join(f'${v&255:02x}' for v in pointer)]
     (directory/'vdc-scene.inc').write_text('\n'.join(rows)+'\n')
+    shape = ['; Generated from the shared launcher pointer.',
+             'vd_pointer_hi: .byte '+','.join(f'${v>>8:02x}' for v in pointer),
+             'vd_pointer_lo: .byte '+','.join(f'${v&255:02x}' for v in pointer)]
+    (directory.parent/'graphics/vdc-pointer-shape.inc').write_text('\n'.join(shape)+'\n')
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 
 `python3 -B build-native-desktop.py` builds the same six native apps for a
 1541/D64 and a 1581/D81. Both cold-boot into the blue graphical launcher.
-The D64 suite has eight free data blocks; the D81 has **2,504** (636,016 bytes
+The D64 suite has 11 free data blocks; the D81 has **2,507** (636,778 bytes
 of sequential-file payload, before any additional directory allocation).
 
 | Image under `target/` | Startup | Files |
@@ -52,3 +52,27 @@ allocation/fill/verify/free controls. `tests/ci_native_pointer_iec.py --d81`
 exercises the suite through a real emulated 1581 and host keyboard/1351 input.
 Software evidence is retained in the [D81 record](validation/2026-09-13-native-d81-suite/README.md).
 Physical 1581 and Ultimate-mounted D81 qualification remain separate work.
+
+## Packed kernel boot file
+
+The disk's `U` entry is now `uos128-boot.prg`. The uncompressed `uos128.prg`
+remains available for loading tools, resident layout checks and debugging.
+Each startup/geometry profile has its own pair. The wrapper retains the same
+BASIC `SYS 7184` entry and expands a deterministic RLE stream, checking input
+and output bounds, exact lengths and CRC16 before entering the kernel.
+Malformed or damaged streams return to BASIC with `UOS BOOT ERROR - RELOAD`.
+
+During cold startup only, the decoder occupies the future low kernel area at
+`$1300` and copies its compressed input into future app RAM at `$6000`. These
+ranges do not overlap the decoded kernel at `$1c01..$58ff`. The normal kernel
+startup then replaces the decoder and initializes the same 426-page heap.
+No new resident allocation, API entry or application memory limit is added.
+The wrapper uses no zero-page scratch, restores the incoming MMU and D/I flags,
+and rejects C64 mode before changing the map. Interrupts are masked during the
+bounded copy/decode step. This is a cold-boot file, not a running-app loader.
+
+`tests/ci_native_boot_pack.py` executes all four wrappers against the exact raw
+kernel images, checks writes stay within the declared startup regions, and
+exercises bit damage, truncation, early termination, output overflow and mode
+refusal. Disk-chain verification checks the packed `U` bytes; runtime layout
+verification continues to compare the reconstructed resident kernel.
