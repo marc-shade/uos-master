@@ -12,6 +12,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT/'target/native-desktop'
 from native_image import seal, validate
+from native_module import seal as seal_module, validate as validate_module
 
 
 def module(name, path):
@@ -33,6 +34,8 @@ def build():
     write_paint(ROOT/'src/native/paint')
     from native_controls_scene import write_assembly as write_controls
     write_controls(ROOT/'src/native/controls')
+    from native_files_scene import write_assembly as write_files
+    write_files(ROOT/'src/native/files')
     native.build()
     native.build(out=OUT, desktop_boot=True)
     module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
@@ -41,6 +44,20 @@ def build():
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
                         '-L', str(OUT/f'{name}.lst')], check=True)
         path = OUT/f'{name}.prg'
+        if name == 'files':
+            combined = path.read_bytes()
+            core_size = int.from_bytes(combined[10:12], 'little')
+            core = seal(combined[:core_size+2])
+            position = core_size+2
+            for part in ('fspick', 'fsview'):
+                size = int.from_bytes(combined[position+8:position+10], 'little')
+                payload = (0x6000+core_size).to_bytes(2, 'little')+combined[position:position+size]
+                sealed = seal_module(payload, core)
+                validate_module(sealed, core)
+                (OUT/f'{part}.prg').write_bytes(sealed)
+                position += size
+            assert position == len(combined), 'unexpected trailing Files module data'
+            path.write_bytes(core)
         path.write_bytes(seal(path.read_bytes()))
         validate(path.read_bytes())
     workspace = OUT/'workspace.d64'
@@ -49,6 +66,8 @@ def build():
                     '-write', str(OUT/'calc.prg'), 'calc',
                     '-write', str(OUT/'desktop.prg'), 'browse',
                     '-write', str(OUT/'files.prg'), 'files',
+                    '-write', str(OUT/'fspick.prg'), 'fspick.prg',
+                    '-write', str(OUT/'fsview.prg'), 'fsview.prg',
                     '-write', str(OUT/'controls.prg'), 'ultimate',
                     '-write', str(OUT/'claude.prg'), 'claude',
                     '-write', str(OUT/'paint.prg'), 'paint'], check=True, capture_output=True)
@@ -73,6 +92,7 @@ def build():
                       selection_state_address=0x3d2f, selection_lifetime='until native restart',
                       disk_entries={'u': 'uos128.prg', 'browse': 'desktop.prg',
                                     'files': 'files.prg', 'calc': 'calc.prg',
+                                    'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',
                                     'edfind.prg': 'edfind.prg',
                                     'ultimate': 'controls.prg', 'claude': 'claude.prg', 'paint': 'paint.prg'})

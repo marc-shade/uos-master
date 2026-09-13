@@ -37,11 +37,14 @@ def ultimate_browser_screen(columns,path,entries,base=0,selected=0,device=1,more
             'G PATH  TAB DOS  F FORMAT' if picker else 'R REFRESH  G PATH  TAB DOS',
             'S USE FOLDER FOR SAVE AS  ESC CANCEL' if picker else 'F FORMAT  ESC WORKSPACE  L USB APP',
             error or ('MORE ENTRIES - N FOR NEXT PAGE' if more else 'END OF DIRECTORY')]
-    if files_app:lines[18]='C COPY  F FORMAT  ESC DESKTOP'
+    if files_app:
+        lines[17]='R REFRESH  G PATH  F1 DOS'
+        lines[18]='C COPY  F FORMAT  ESC DESKTOP'
     if path_prompt is not None:
         lines+=[f'USB{device if prompt_device is None else prompt_device}: '+' '*(columns-8),
                 'INPUT UNAVAILABLE; ESC RETURNS' if path_error==2 else 'ABSOLUTE PATH REQUIRED' if path_error else
                 'ENTER BROWSE TAB DOS CTRL-U CLR ESC' if directory_prompt else 'ENTER RUN TAB DOS CTRL-U CLR ESC']
+        if files_app:lines[-1]=lines[-1].replace('TAB DOS','F1 DOS')
     result=bytearray(screen_bytes(columns,lines))
     if path_prompt is not None:result[20*columns+6:21*columns-2]=field_cells(path_prompt,columns-8,field_caret,field_view)
     return bytes(result)
@@ -68,6 +71,7 @@ def browser_screen(columns,records,selected=0,device=8,fmt=0,error=None,prompt=N
     if usb_prompt is not None:
         limit=columns-8
         lines+=[f'USB{usb_device}: '+' '*limit,'INPUT UNAVAILABLE; ESC RETURNS' if usb_error==2 else 'ABSOLUTE PATH REQUIRED' if usb_error else 'ENTER RUN TAB DOS CTRL-U CLR ESC']
+        if files_app:lines[-1]=lines[-1].replace('TAB DOS','F1 DOS')
     result=bytearray(screen_bytes(columns,lines))
     if prompt is not None:
         at=20*columns+len('DEVICE (8-30): ')

@@ -1,6 +1,12 @@
 ; Shared complete-screen rendering for the VIC and VDC native consoles.
 b_draw:
+.if B_GUI
+        jsr fg_browser_draw
+.endif
         lda #0
+.if B_GUI
+        ora fg_bitmap
+.endif
         sta b_screen
 b_draw_screen:
         lda $d7
@@ -26,6 +32,9 @@ b_screen_done:
         lda b_screen
         cmp #2
         bne b_draw_screen
+.if B_GUI
+        jmp fg_focus_footer
+.endif
         rts
 b_list_draw:
         lda N_BROWSERFMT
@@ -146,7 +155,11 @@ b_row_advance:
         jsr b_device_pointer
         lda #5
         sta N_UIWIDTH
+.if B_GUI
+        jsr fg_field_output
+.else
         jsr N_FDRAW
+.endif
 b_list_done:
         rts
 b_print_name:
@@ -252,7 +265,11 @@ b_nibble:
 b_hex_digit:
         clc
         adc #$30
+.if B_GUI
+        jmp b_usb_chrout
+.else
         jmp $ffd2
+.endif
 b_number:
         sta b_num
         stx b_num+1

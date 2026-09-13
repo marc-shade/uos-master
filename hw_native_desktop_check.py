@@ -20,6 +20,7 @@ from native_browser_check import disk_records,browser_screen
 from native_editor_check import editor_screen
 from launcher_scene import surface,console
 from native_calc_scene import surface as calc_surface
+from native_files_scene import browser_surface as files_surface,browser_console as files_console
 from hwlib import lst_symbol
 
 
@@ -62,6 +63,20 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
         assert registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/calc','pm_seen'))==b'\1' else 0)
         report.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,registers=registers))
         save();print('Verified graphical calculator RAM and VDC:',label,flush=True)
+    def files(label):
+        assert read(lst_symbol('native-desktop/files','fg_bitmap'))==b'\1'
+        entries=disk_records(disk.read_bytes())
+        actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
+            count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+        (work/(label+'-surface.bin')).write_bytes(actual)
+        assert actual==files_surface(entries),(label,'Files bitmap')
+        assert capture.capture(label+'-vdc',mode=1,address=0,count=2000)==files_console(entries),(label,'Files VDC')
+        registers=modes.snapshot(label+'-mode')
+        assert registers['vic_d011']&0x7f==0x3b
+        assert registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/files','pm_seen'))==b'\1' else 0)
+        report.setdefault('files_frames',[]).append(dict(label=label,selected=0,focus=11,registers=registers,
+            surface_sha256=hashlib.sha256(actual).hexdigest()))
+        save();print('Verified graphical Files RAM and VDC:',label,flush=True)
     def desktop(label,selected=0):
         assert read(0x3d2f)==bytes([selected]),'saved native desktop selection differs'
         assert read(0x3d60,32)==(ROOT/'target/native-desktop/desktop.prg').read_bytes()[2:34]
@@ -99,7 +114,7 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
     for value in document:key(value)
     screens('editor-typed',lambda cols:editor_screen(cols,document,4,dirty=True))
     key(27);key(ord('Y'));desktop('desktop-after-editor',1)
-    key(ord('F'));screens('files',lambda cols:browser_screen(cols,disk_records(disk.read_bytes()),files_app=True))
+    key(ord('F'));files('files')
     key(27);desktop('desktop-after-files',2)
     if additional_apps is not None:
         additional_apps(key=key,screens=screens,desktop=desktop,read=read)

@@ -18,15 +18,20 @@ class CopyFiles(Calculator):
     instruction_limit=120000000
     allow_busy_poll=True
 
-    def __init__(self,files=None,device=9,fmt=0,*,usb=None,directories=None):
-        super().__init__('files',files,loader_name=b'FILES',device=device,fmt=fmt,image_prefix='native-desktop')
+    def __init__(self,files=None,device=9,fmt=0,*,usb=None,directories=None,source_path=None,source_context=1):
+        super().__init__('files',files,loader_name=b'FILES',device=device,fmt=fmt,image_prefix='native-desktop',
+            ultimate_files=usb if source_path is not None else None,source_path=source_path,source_context=source_context)
         self.frames=0
-        if usb is not None or directories is not None:
-            self.ultimate=DirectoryDOS(files=usb)
+        if usb is not None or directories is not None or source_path is not None:
+            previous=getattr(self,'ultimate',None)
+            self.loaded_source_commands=list(previous.commands) if previous is not None else []
+            self.ultimate=DirectoryDOS(files=previous.files if previous is not None else usb)
             self.ultimate.fragment=103
             self.ultimate.direct_write_corruption=True
             self.ultimate.directories.update(directories or {})
-            self.m.bus=UltimateBus(self.m.bus,self.ultimate);self.cpu.memory=self.m.bus
+            if isinstance(self.m.bus,UltimateBus):self.m.bus.dos=self.ultimate
+            else:self.m.bus=UltimateBus(self.m.bus,self.ultimate)
+            self.cpu.memory=self.m.bus
 
     def number(self,name,size=4):
         at=self.symbol(name);return int.from_bytes(self.ram[at:at+size],'little')
@@ -56,8 +61,9 @@ class CopyFiles(Calculator):
     def clean(self):
         assert not self.io.handles
         assert self.data('fc_handles',1)==b'\0' and self.data('fc_handles',8)[4]==0
-        assert not self.value('fc_picker_cursor') and not self.value('fc_picker_iec_handle')
-        assert self.data('fc_picker_cache',40)[::4]==bytes(10)
+        if self.value('fg_kind')==2:
+            assert not self.value('fc_picker_cursor') and not self.value('fc_picker_iec_handle')
+            assert self.data('fc_picker_cache',40)[::4]==bytes(10)
         if hasattr(self,'ultimate'):
             assert self.ultimate.handles=={1:None,2:None}
             assert self.ultimate.paths=={1:b'/shell',2:b'/browser'} and self.ultimate.state==0
@@ -124,8 +130,14 @@ def main():
                 assert bytes(b.io.files[10,b'COPY',kind])==raw
                 b.finish();done(f'iec-{fmt}-{kind.decode()}-{length}-cross-drive-picker-exclusive-verified',b)
 
-            b=CopyFiles({(9,b'NAME',b'S'):b'QUOTED\0BINARY\xff'})
-            key_table=bytes((i*31+7)&255 for i in range(256));b.ram[0x1000:0x1100]=key_table
+            # Files now owns the keyboard for its entire app/module lifetime.
+            # Install the foreign table before entry, then verify exact teardown.
+            import ci_native_calc as calc
+            machine=calc.Machine();key_table=bytes((i*31+7)&255 for i in range(256))
+            machine.ram[0x1000:0x1100]=key_table
+            factory=calc.Machine;calc.Machine=lambda:machine
+            try:b=CopyFiles({(9,b'NAME',b'S'):b'QUOTED\0BINARY\xff'})
+            finally:calc.Machine=factory
             b.type('C');assert b.ram[0x1000:0x1014]==bytes([1]*10)+bytes.fromhex('8589868a878b888c8384')
             b.key(9);b.key(27);b.check(b'NAME',b'NAME')
             b.destination(9);b.rename('NAME "COPY"');b.key(13)

@@ -20,11 +20,13 @@ from native_capture import NativeCapture,wait
 from native_capture_transport import PausedViceMonitor
 from native_browser_check import disk_records,browser_screen
 from native_files_copy_check import copy_screen
+from native_files_scene import browser_surface,browser_console,copy_surface,copy_console
 
 
 def main():
     work=Path(tempfile.mkdtemp(prefix='uos-native-files-copy-iec-',dir='/var/tmp/arc-scratch'))
     print('Native Files copy emulator evidence:',work,flush=True)
+    shutil.copy2(__file__,work/'run.py')
     disk=work/'suite.d64';shutil.copyfile(ROOT/'target/native-desktop/uos128.d64',disk)
     disks={device:work/f'data-{device}.d81' for device in (9,10)}
     for device,path in disks.items():
@@ -39,7 +41,8 @@ def main():
     report=dict(passed=False,physical_hardware_io=False,events=[],desktops=[],screens=[],copies=[],
         images=json.loads((ROOT/'target/native-desktop/images.json').read_text()))
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
-    names=('fc_active','fc_status','fc_caret','fc_views','fc_copied','fc_verified','fc_handles','fc_name','fc_length')
+    names=('fc_active','fc_status','fc_caret','fc_views','fc_copied','fc_verified','fc_handles','fc_name','fc_length',
+        'fg_bitmap','fg_kind','ui_selected')
     addresses={name:lst_symbol('native-desktop/files',name) for name in names}
     with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     mon=process=xv=None;log=(work/'vice.log').open('w')
@@ -67,8 +70,19 @@ def main():
         def workflow(*,key,screens,desktop,read):
             key(ord('F'))
             table=capture.capture('files-key-table-before',address=0x1000,count=256)
+            def frame(label,wanted,console_wanted,**expected):
+                assert read(addresses['fg_kind'])==b'\1' and read(addresses['fg_bitmap'])==b'\1'
+                actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
+                    count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+                (work/(label+'-surface.bin')).write_bytes(actual)
+                assert actual==wanted,(label,'Files complete bitmap')
+                assert capture.capture(label+'-vdc',mode=1,address=0,count=2000)==console_wanted,(label,'Files VDC')
+                report.setdefault('files_copy_frames',[]).append(dict(label=label,expected=expected,
+                    surface_sha256=hashlib.sha256(actual).hexdigest()));save()
             for value in b'D9\rFF':key(value)
-            screens('source-d81',lambda cols:browser_screen(cols,disk_records(originals[9],2),device=9,fmt=2,files_app=True))
+            entries=disk_records(originals[9],2)
+            frame('source-d81',browser_surface(entries,device=9,fmt=2),browser_console(entries,device=9,fmt=2),
+                selected=0,focus=11,device=9,fmt=2)
             def function_key(value):
                 codes=bytes.fromhex('8589868a878b888c8384')
                 assert read(0x1000,20)==bytes([1]*10)+codes
@@ -90,9 +104,12 @@ def main():
                 assert int.from_bytes(data('fc_verified',4),'little')==verified
                 assert data('fc_handles',8)[::4]==bytes(2)
                 views=data('fc_views',2)
-                screens(label,lambda cols:copy_screen(cols,source,name,source_format=2,fmt=2,kind=kind,device=device,
-                    copied=copied,verified=verified,status=status,error=error,dos=dos,
-                    caret=data('fc_caret')[0],view=views[int(cols==80)]))
+                focus=read(addresses['ui_selected'])[0]
+                assert focus==25 and data('fc_caret')[0]==len(name)
+                expected=dict(source_format=2,fmt=2,kind=kind,device=device,copied=copied,verified=verified,
+                    status=status,error=error,dos=dos,caret=len(name),focus=25)
+                frame(label,copy_surface(source,name,field_view=views[0],**expected),
+                    copy_console(source,name,field_view=views[1],**expected),source=source.hex(),name=name.hex(),**expected)
             for index,(name,(kind,data)) in enumerate(fixtures.items()):
                 if index:key(0x11)
                 key(ord('C'));source=name.upper().encode();target=b'COPIED '+source
@@ -100,7 +117,7 @@ def main():
                 key(21)
                 for value in target:key(value)
                 if index==0:
-                    key(9)
+                    function_key(0x88)
                     for value in b'D10\rS':key(value)
                 else:
                     function_key(0x85)

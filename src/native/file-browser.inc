@@ -2,6 +2,7 @@
 ; FD_EMBEDDED selects return-to-caller behavior and excludes app launch/viewer.
 .weak
 B_COPY = 0
+B_GUI = 0
 .endweak
 .if !FD_EMBEDDED
 b_entry:
@@ -47,6 +48,9 @@ b_device_valid:
         sta N_BROWSERFMT
 .endif
 b_format_valid:
+.if B_GUI
+        jsr fg_init
+.endif
         lda N_BROWSERERROR
         sta b_launch_error
         lda #0
@@ -67,10 +71,17 @@ b_publish_ready:
         sta N_READY
 b_get_key:
         jsr N_KEYIN
+.if B_GUI
+        jsr fg_input
+.endif
         beq b_loop
 b_have_key:
         ldx #0
         stx N_READY
+.if B_GUI
+        cmp #14
+        beq b_redraw
+.endif
         ldx b_prompt
         bne b_prompt_key
 .if !FD_EMBEDDED
@@ -116,6 +127,9 @@ b_have_key:
 .endif
         jmp b_loop
 b_workspace:
+.if B_GUI
+        jsr fg_exit
+.endif
 .if FD_EMBEDDED
         jmp fd_cancel
 .else
@@ -127,12 +141,20 @@ b_workspace:
 .endif
 .endif
 b_exit_error:
+.if B_GUI
+        pha
+        jsr fg_exit
+        pla
+.endif
 .if FD_EMBEDDED
         jmp fd_failure
 .else
         jmp N_EXIT
 .endif
 b_rescan:
+.if B_GUI
+        jsr fg_retry
+.endif
         lda #0
         sta b_launch_error
         jsr b_refresh
@@ -352,6 +374,9 @@ b_launch_name:
         sta N_DEVICE
         lda N_BROWSERFMT
         sta N_APPFORMAT
+.if B_GUI
+        jsr fg_exit
+.endif
         jmp N_REPLACE
 b_inspect:
         lda b_total

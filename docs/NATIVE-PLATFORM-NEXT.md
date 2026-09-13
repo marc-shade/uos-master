@@ -253,6 +253,13 @@ each mutating request. Accepted requests are not presented as verified media
 changes. The [frozen software qualification](validation/2026-09-13-native-ultimate-drives/README.md) passes; native
 physical qualification and broader device settings remain open.
 
+The [graphical Files app](NATIVE-FILES-GUI.md) extends the blue controls to
+navigation, byte viewing and verified file copy. Graphics and the destination
+picker share a checked module window while the core retains keyboard ownership,
+raw names, preferences and file handles. Its 93-page app and optional 36-page
+surface fit the existing ABI. The [software qualification](validation/2026-09-13-native-files-gui/README.md) passes; graphical
+editor/picker integration, VDC presentation and the remaining roadmap stay open.
+
 The [Claude lifecycle checkpoint](validation/2026-09-12-native-claude-lifecycle/README.md)
 addresses the Ultimate's asynchronous relay: the client keeps its NMI handler
 and receive credits active until the host acknowledges F8. Timeout and a second

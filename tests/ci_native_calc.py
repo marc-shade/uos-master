@@ -27,6 +27,9 @@ class Calculator:
         if image_name=='editor':
             self.io.files[8,b'EDPICK.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edpick.prg').read_bytes()
             self.io.files[8,b'EDFIND.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edfind.prg').read_bytes()
+        if image_name=='files':
+            for name in ('fspick','fsview'):
+                self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
         self.io.formats[device]=fmt
         self.ram[0x3d21:0x3d23]=bytes([8,len(loader_name)])
         self.ram[0x3d40:0x3d40+len(loader_name)]=loader_name
@@ -40,6 +43,9 @@ class Calculator:
             if source_path is not None and image_name=='editor':
                 data[source_path.rsplit(b'/',1)[0]+b'/EDPICK.PRG']=(ROOT/'target'/self.image_prefix/'edpick.prg').read_bytes()
                 data[source_path.rsplit(b'/',1)[0]+b'/EDFIND.PRG']=(ROOT/'target'/self.image_prefix/'edfind.prg').read_bytes()
+            if source_path is not None and image_name=='files':
+                for name in ('fspick','fsview'):
+                    data[source_path.rsplit(b'/',1)[0]+b'/'+name.upper().encode()+b'.PRG']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
             self.ultimate=DOSFiles(data);self.ultimate.fragment=103
             self.ultimate.direct_write_corruption=True
             self.m.bus=UltimateBus(self.m.bus,self.ultimate)

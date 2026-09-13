@@ -106,9 +106,16 @@ fc_loop:
         sta N_READY
 fc_get_key:
         jsr N_KEYIN
+.if B_GUI
+        jsr fg_input
+.endif
         beq fc_loop
         ldx #0
         stx N_READY
+.if B_GUI
+        cmp #14
+        beq fc_redraw
+.endif
         ldx fc_prompt
         bne fc_device_key
         cmp #27
@@ -116,6 +123,8 @@ fc_get_key:
         cmp #13
         beq fc_start
         cmp #9
+        beq fc_browse
+        cmp #$88
         beq fc_browse
         cmp #$85
         beq fc_device_prompt
@@ -296,6 +305,17 @@ fc_field_pointer:
 fc_browse:
         jsr fc_cleanup
         bcs fc_close_error
+.if B_GUI
+        jsr fg_picker_load
+        bcs fc_picker_failed
+        lda fc_status
+        cmp #9
+        bcc +
+        cmp #11
+        bcs +
+        jsr fc_reset_result
++
+.endif
         lda #2
         sta copy_picker.fd_mode
         lda fc_device
@@ -304,7 +324,12 @@ fc_browse:
         sta copy_picker.fd_format
         lda fc_length
         sta copy_picker.fd_length
+.if B_GUI
+        jsr N_MCALL
+        jsr fg_picker_done
+.else
         jsr copy_picker.fd_run
+.endif
         bcs fc_picker_failed
         lda copy_picker.fd_device
         sta fc_device
@@ -329,6 +354,13 @@ fc_picker_failed:
 fc_reset_result:
         lda fc_handles
         ora fc_handles+4
+.if B_GUI
+        bne fc_result_retained
+        lda fg_kind
+        cmp #2
+        bne fc_result_clear
+        lda #0
+.endif
         ora copy_picker.bu_cursor
         ora copy_picker.fd_iec_handle
         bne fc_result_retained
@@ -340,6 +372,7 @@ fc_reset_result:
         dex
         dex
         bpl -
+fc_result_clear:
         lda #0
         sta fc_status
         sta fc_attempted
@@ -366,8 +399,16 @@ fc_leave:
 ; This also makes a cancelled/failed picker recoverable before copying or
 ; returning to a browser that needs the same file channels.
 fc_cleanup:
+.if B_GUI
+        jsr fg_loader_clean
+        bcs fc_cleanup_done
+.endif
         jsr bu_close_cursor
         bcs fc_cleanup_done
+.if B_GUI
+        jsr fg_picker_clean
+        bcs fc_cleanup_done
+.else
         jsr copy_picker.fd_close_cursors
         bcs fc_cleanup_done
         lda #36
@@ -396,6 +437,7 @@ fc_cleanup_next:
         dec fc_cache_at
         dec fc_cache_at
         bpl fc_cleanup_cache
+.endif
 fc_close_streams:
         ; Close destination first so its result is checked before verification.
         lda #4
@@ -813,6 +855,9 @@ fc_advance:
         rts
 fc_cancel:
         jsr N_KEYIN
+.if B_GUI
+        jsr fg_input
+.endif
         cmp #27
         beq +
         clc
@@ -835,9 +880,22 @@ fc_progress:
 +       rts
 
 fc_draw:
+.if B_GUI
+        jsr fg_copy_draw
+.endif
         lda #0
+.if B_GUI
+        ldx fg_collect
+        bne +
+        ora fg_bitmap
++
+.endif
         sta b_screen
 fc_draw_screen:
+.if B_GUI
+        lda fg_collect
+        bne fc_screen_selected
+.endif
         lda $d7
         rol
         lda #0
@@ -845,7 +903,9 @@ fc_draw_screen:
         cmp b_screen
         beq +
         jsr $ff5f
-+       lda #$93
++
+fc_screen_selected:
+        lda #$93
         jsr b_usb_chrout
         lda #<fc_title
         ldx #>fc_title
@@ -862,6 +922,12 @@ fc_draw_screen:
         jsr b_usb_chrout
         ; The exact source is retained; long read-only names show their tail.
         lda #39
+.if B_GUI
+        ldx fg_collect
+        beq +
+        lda #38
++
+.endif
         ldx b_screen
         beq +
         lda #79
@@ -919,9 +985,23 @@ fc_draw_destination:
         sec
         sbc #6
         sta N_UIWIDTH
+.if B_GUI
+        jsr fg_field_output
+.else
         jsr N_FDRAW
+.endif
         lda #<fc_help
         ldx #>fc_help
+.if B_GUI
+        ldy fg_bitmap
+        bne fc_gui_help
+        ldy fg_collect
+        beq fc_help_ready
+fc_gui_help:
+        lda #<fc_graphical_help
+        ldx #>fc_graphical_help
+fc_help_ready:
+.endif
         jsr b_puts
         lda fc_prompt
         beq fc_draw_progress
@@ -931,12 +1011,27 @@ fc_draw_destination:
         jsr fc_device_pointer
         lda #5
         sta N_UIWIDTH
+.if B_GUI
+        jsr fg_field_output
+.else
         jsr N_FDRAW
+.endif
 fc_draw_progress:
+.if B_GUI
+        lda fg_collect
+        beq +
+        lda #14
+        sta fv_row
+        lda #0
+        sta fv_column
+        beq fc_progress_positioned
++
+.endif
         ldx #14
         ldy #0
         clc
         jsr $fff0
+fc_progress_positioned:
         lda #<fc_copied_title
         ldx #>fc_copied_title
         jsr b_puts
@@ -997,10 +1092,18 @@ fc_draw_busy:
         ldx #>fc_cancel_help
         jsr b_puts
 fc_screen_done:
+.if B_GUI
+        lda fg_collect
+        bne fc_screen_return
+.endif
         inc b_screen
         lda b_screen
         cmp #2
         bne fc_draw_screen
+.if B_GUI
+        jsr fg_focus_footer
+.endif
+fc_screen_return:
         rts
 fc_print_format:
         cpx #3
@@ -1019,6 +1122,11 @@ fc_print_format:
 ; copy dialog (including its picker) is active, and restore it before any
 ; browser rescan, app launch or desktop return can take place.
 fc_keys_install:
+.if B_GUI
+        rts
+fc_keys_restore:
+        rts
+.else
         php
         sei
         ldx #0
@@ -1051,6 +1159,7 @@ fc_keys_restore:
         sta $d2
         plp
         rts
+.endif
 fc_title: .text "uos 128 copy a file",13,13,"from: ",0
 fc_to: .text 13,13,"to: ",0
 fc_type_title: .text "  type: ",0
@@ -1058,6 +1167,11 @@ fc_name_title: .text 13,13,"name: ",0
 fc_help: .text 13,13,"enter copy  tab browse  esc file list",13
         .text "f1 device/dos  f3 format  f5 file type",13
         .text "ctrl-u clear name",13,0
+.if B_GUI
+fc_graphical_help: .text 13,13,"f7 browse  esc file list",13
+        .text "f1 device/dos  f3 format  f5 file type",13
+        .text "ctrl-u clear name",13,0
+.endif
 fc_device_question: .text "device/dos: ",0
 fc_ult: .text "ult",0
 fc_copied_title: .text "copied: ",0
@@ -1071,8 +1185,8 @@ fc_bad_text: .text "invalid name, type or device",0
 fc_unsupported_text: .text "file type cannot be copied",0
 fc_mismatch_text: .text "reopened files do not match",0
 fc_context_text: .text "use the other dos context (f1)",0
-fc_close_text: .text "close failed; enter/tab/esc retry close",0
-fc_picker_text: .text "destination picker failed; tab retries",0
+fc_close_text: .text "close failed; retry copy/browse/back",0
+fc_picker_text: .text "destination picker failed; f7 retries",0
 fc_copy_text: .text "copying to a new file...",0
 fc_verify_text: .text "reopening and comparing every byte...",0
 fc_empty_text: .text "zero-byte iec create is unsupported",0

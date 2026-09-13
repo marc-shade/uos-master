@@ -25,6 +25,7 @@ from native_editor_check import editor_screen
 from native_browser_check import disk_records, browser_screen
 from launcher_scene import surface, console
 from native_calc_scene import surface as calc_surface
+from native_files_scene import browser_surface as files_surface,browser_console as files_console
 from native_pointer_check import check_canvas, surface_pixels
 from hwlib import lst_symbol
 from native_controls_check import panel_screen,absent_body
@@ -53,7 +54,7 @@ if args.missing_calc:
     subprocess.run(['c1541','-attach',str(disk),'-delete','calc'],check=True,capture_output=True)
 if args.missing_desktop:
     subprocess.run(['c1541','-attach',str(disk),'-delete','browse'],check=True,capture_output=True)
-for name in ('desktop.prg','desktop.lst','desktop.sym','files.prg','files.lst'):
+for name in ('desktop.prg','desktop.lst','desktop.sym','files.prg','files.lst','fsview.prg','fspick.prg'):
     shutil.copyfile(ROOT/'target/native-desktop'/name,work/name)
 shutil.copyfile(__file__,work/'run.py')
 shutil.copyfile(ROOT/'launcher_scene.py',work/'launcher_scene.py')
@@ -128,6 +129,23 @@ try:
         rectangle=check_canvas(raw,surface_pixels(expected,0,0,visible=False))
         record.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,rectangle=rectangle))
         print('PASS: graphical calculator surface, VIC pixels and VDC:',label,flush=True)
+    def files(label):
+        assert read(lst_symbol('native-desktop/files','fg_bitmap'))==b'\1'
+        wanted=files_surface(records)
+        actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
+        assert actual==wanted,(label,'Files surface')
+        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
+        assert vdc==files_console(records),(label,'Files VDC')
+        assert read(ksyms['v_tag'])!=b'\0'
+        handle=read(lst_symbol('native-desktop/files','fg_surface'),4)
+        assert read(0x38c0,36)==handle[:1]*36
+        assert read(0x3c00+(handle[0]-1)*8,7)==bytes([32,0,0xc0,36])+handle[1:]
+        time.sleep(.15)
+        error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+        (work/f'{label}-display-get.bin').write_bytes(raw)
+        rectangle=check_canvas(raw,surface_pixels(wanted,0,0,visible=False))
+        record.setdefault('files_frames',[]).append(dict(label=label,selected=0,focus=11,rectangle=rectangle))
+        print('PASS: graphical Files surface, VIC pixels and VDC:',label,flush=True)
     def desktop(label,selected=0,error=0,fallback=False):
         state=read(syms['gd_selected'],8)
         assert state[:4]==bytes([selected,int(not fallback),2 if fallback else 0,error]),(label,state.hex())
@@ -293,7 +311,7 @@ try:
     before=read(0xa0,3);time.sleep(.2);assert read(0xa0,3)!=before
     if args.missing_calc:
         key(ord('C'));desktop('missing-app-recovered',error=0x11)
-        key(ord('F'));screens('files-after-missing',lambda columns:browser_screen(columns,records,files_app=True))
+        key(ord('F'));files('files-after-missing')
         key(27);desktop('desktop-after-files',2)
     else:
         for index,(value,selected) in enumerate([(0x11,1),(9,2),(0x1d,3),(9,4),(9,5),(9,0),(0x9d,5),(0x13,0)]):
@@ -310,7 +328,7 @@ try:
         key(27);screens('editor-discard-prompt',lambda columns:editor_screen(columns,document,len(document),dirty=True,mode=5))
         key(ord('N'));screens('editor-kept',lambda columns:editor_screen(columns,document,len(document),dirty=True))
         key(27);key(ord('Y'));desktop('desktop-after-editor',1)
-        key(ord('F'));screens('files',lambda columns:browser_screen(columns,records,files_app=True))
+        key(ord('F'));files('files')
         key(27);desktop('desktop-after-files',2)
         key(ord('U'))
         controls('ultimate-absent-info',0)

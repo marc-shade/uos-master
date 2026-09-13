@@ -85,11 +85,12 @@ class ViceBridge:
 def main():
     work = Path(tempfile.mkdtemp(prefix='uos-native-suite-iec-',dir='/var/tmp/arc-scratch'))
     print('Native suite CPU workflow:',work,flush=True)
+    shutil.copy2(__file__,work/'run.py')
     disk = work/'suite.d64'
     shutil.copyfile(ROOT/'target/native-desktop/uos128.d64',disk)
     report = dict(passed=False,physical_hardware_io=False,events=[],desktops=[],screens=[],
-        suite_reference=absent_reference(),images={name:hashlib.sha256((ROOT/'target/native-desktop'/name).read_bytes()).hexdigest()
-             for name in ('uos128.prg','uos128.d64','desktop.prg','controls.prg','claude.prg')})
+        suite_reference=absent_reference(),images={path.name:hashlib.sha256(path.read_bytes()).hexdigest()
+             for path in (ROOT/'target/native-desktop').iterdir() if path.suffix in ('.prg','.d64')})
     def save(): (work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     save()
     linkport, monport = free_port(), free_port()

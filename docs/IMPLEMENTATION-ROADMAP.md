@@ -81,12 +81,12 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Memory and FR-M1 | Native 426-page allocator with owner/generation checks, bounded transfers and 4 KiB resident Ultimate services; legacy fixed REU snapshot banks | REU/expansion size detection and allocation, larger app heaps, RAM disks, persistence, no-REU desktop fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher with VDC text controls, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
-| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer, rectangle focus/hit testing and scene interpreters used by graphical Calculator | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
+| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate and Files | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
 | FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and VDC text controls | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
-| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages, ABI 1.5 owned Ultimate cursors/folder navigation and byte viewer; qualified shared picker; suite Files cross-backend copy with reopened comparison, progress/cancel and destination picker | Native registry and media identity; faster IEC enumeration; zero-byte IEC create, rename/delete and append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
+| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages, ABI 1.5 owned Ultimate cursors/folder navigation and byte viewer; qualified shared picker; blue suite Files list, byte viewer, focused paths and cross-backend copy with reopened comparison, progress/cancel and destination picker | Native registry and media identity; faster IEC enumeration; zero-byte IEC create, rename/delete and append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
 | FR-F2 devices | Legacy manual 8–11 selection; native browser 8–30 with explicit D64/D71/D81 geometry; system-app source restored after data-device app launch | Inventory, type/capability handshake, hot presence, broader physical qualification | Real and emulated drives; absent device returns to UI; last-used device never changes system-app source accidentally |
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
@@ -539,7 +539,8 @@ it does not become support by changing the wording of the roadmap.
 The native suite Files copy dialog now streams IEC and Ultimate files through
 the owned file API, with an editable destination/picker, exclusive creation,
 32-bit progress, cancellation, complete reopened comparison and retained close
-retry. Both suite disks include its inline picker. The source remains read-only.
+retry. Both suite disks now include its checked graphics and destination-picker
+modules. The source remains read-only.
 Zero-byte output to IEC is rejected before create: standard Commodore DOS
 closes an unwritten file with a CR byte, and the native backend has no truncate
 operation. Zero-byte output to Ultimate is supported. Rename/delete, directory
@@ -585,3 +586,15 @@ a timeout nor Refresh silently replays an operation. The command and keyboard
 entries fit existing reserved memory and retain the 426-page heap. This
 [software checkpoint](validation/2026-09-13-native-ultimate-drives/README.md) passes; physical drive operations,
 media identity, settings, image creation and the remaining roadmap stay open.
+
+
+The [graphical Files migration](NATIVE-FILES-GUI.md) carries the shared blue
+bitmap and yellow focus into lists, byte viewing, device/path fields and copy.
+Its core retains data and keyboard ownership while checked graphics and picker
+modules alternate in one window. Failed picker aborts or module-source closes
+retain ownership and prevent further file work until explicit cleanup succeeds.
+Fields repaint changed cells, and mouse Cancel is polled during both copying
+and verification. The app uses 93 pages plus its optional 36-page surface,
+without changing the kernel or 426-page heap. The [software record](validation/2026-09-13-native-files-gui/README.md)
+passes; physical testing, graphical editor/picker/VDC work and every other
+remaining roadmap item still apply.

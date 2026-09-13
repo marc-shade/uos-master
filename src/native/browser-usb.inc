@@ -16,6 +16,10 @@ b_usb_key:
         beq b_usb_enter
         cmp #9
         beq b_usb_context
+.if B_GUI
+        cmp #$85
+        beq b_usb_context
+.endif
         sta N_UIKEY
         jsr b_usb_edit
         bcs b_usb_input_error
@@ -80,6 +84,9 @@ b_usb_copy:
         inx
         cpx b_usb_length
         bne b_usb_copy
+.if B_GUI
+        jsr fg_exit
+.endif
         jmp N_REPLACE
 .else
         jmp b_loop
@@ -88,7 +95,13 @@ b_usb_copy:
 ; Only rows 20/21 change while this field is active. Each row leaves its last
 ; column blank, avoiding KERNAL linked-line wrapping on either display.
 b_usb_draw:
+.if B_GUI
+        jsr fg_browser_draw
+.endif
         lda #0
+.if B_GUI
+        ora fg_bitmap
+.endif
         sta b_screen
 b_usb_screen:
         lda $d7
@@ -173,8 +186,22 @@ b_usb_screen_done:
         lda b_screen
         cmp #2
         bne b_usb_screen
+.if B_GUI
+        jmp fg_focus_footer
+.endif
         rts
 b_usb_chrout:
+.if B_GUI
+        php
+        pha
+        lda fg_collect
+        beq +
+        pla
+        plp
+        jmp fv_emit
++       pla
+        plp
+.endif
         pha
         lda #0
         sta $f4                ; filenames cannot leave ROM quote mode active
@@ -182,7 +209,12 @@ b_usb_chrout:
         jmp $ffd2
 
 b_usb_label: .text "usb",0
-b_usb_help: .text "enter run tab dos ctrl-u clr esc",0
+b_usb_help:
+.if B_GUI
+        .text "enter run f1 dos ctrl-u clr esc",0
+.else
+        .text "enter run tab dos ctrl-u clr esc",0
+.endif
 b_usb_bad_path: .text "absolute path required",0
 b_usb_bad_input: .text "input unavailable; esc returns",0
 b_usb_state:

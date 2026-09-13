@@ -51,6 +51,10 @@ bu_key:
         beq bu_up
         cmp #9
         beq bu_context
+.if B_GUI
+        cmp #$85
+        beq bu_context
+.endif
         cmp #13
         beq bu_enter
         and #$df
@@ -784,6 +788,9 @@ bu_app_header:
         sta N_DEVICE
         lda #3
         sta N_APPFORMAT
+.if B_GUI
+        jsr fg_exit
+.endif
         jmp N_REPLACE
 bu_show_file:
         lda #1
@@ -1032,7 +1039,11 @@ bu_help:
 .else
         .text 13,"up/down select  n/b page",13
         .text "enter open  i inspect  p parent",13
+.if B_GUI
+        .text "r refresh  g path  f1 dos",13
+.else
         .text "r refresh  g path  tab dos",13
+.endif
 .if B_COPY
         .text "c copy  f format  esc desktop",13,0
 .else
@@ -1044,7 +1055,12 @@ bu_more_pages: .text "more entries - n for next page",0
 bu_last_page: .text "end of directory",0
 bu_long_path: .text "path too long; cannot open this name",0
 bu_cancelled: .text "scan cancelled; previous page retained",0
-bu_path_help: .text "enter browse tab dos ctrl-u clr esc",0
+bu_path_help:
+.if B_GUI
+        .text "enter browse f1 dos ctrl-u clr esc",0
+.else
+        .text "enter browse tab dos ctrl-u clr esc",0
+.endif
 bu_powers: .dword 1000000000,100000000,10000000,1000000,100000,10000,1000,100,10,1
 bu_cursor: .fill 4,0
 bu_base: .fill 4,0

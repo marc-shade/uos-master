@@ -70,15 +70,20 @@ still requires native physical qualification.
 The blue native desktop is the interface being developed for the unified app
 suite. The older green desktop remains a separate legacy build; restoring that
 installed build after a test does not change the native desktop's direction.
-[Calculator](docs/NATIVE-CALCULATOR.md), [Paint](docs/NATIVE-PAINT.md) and
+[Calculator](docs/NATIVE-CALCULATOR.md), [Paint](docs/NATIVE-PAINT.md),
+[Files](docs/NATIVE-FILES-GUI.md) and
 [Ultimate](docs/NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap and yellow
 controls inside their apps. Paint adds connected mouse
 strokes, a visible keyboard brush, colors, undo, and verified picture files.
-Other app screens and the shared file picker still need graphical migration.
+Files adds graphical lists, byte viewing, editable paths and verified copy
+controls. The text editor, terminal framing, shared file picker and VDC bitmap
+presentation still need graphical migration.
 
 The suite [Files app](docs/NATIVE-BROWSER.md#copying-from-the-suite-files-app)
 copies selected files across IEC drives and Ultimate paths. Press **C** in
-Files, choose/edit the destination, then Enter. New files are closed, reopened
+Files, choose/edit the destination, then Enter. Tab moves between controls;
+F7 opens the destination picker and returns to the blue copy dialog.
+New files are closed, reopened
 and compared byte for byte; Esc cancels. Zero-byte IEC output remains unsupported
 and is rejected before creating a destination.
 

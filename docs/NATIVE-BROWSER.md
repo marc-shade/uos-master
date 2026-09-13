@@ -2,6 +2,9 @@
 
 Press **F** on the native suite desktop to open Files. Its **C** command copies
 the selected file, and **Esc** returns to the desktop on both IEC and Ultimate.
+The [suite interface](NATIVE-FILES-GUI.md) uses a blue VIC bitmap with yellow
+mouse/keyboard focus, plus the VDC text view. Tab cycles its enabled controls
+and Enter activates the focused control; clicking a row selects it.
 The standalone diagnostic disk retains its read-only browser:
 press **B** in the native memory workspace to browse files and launch native
 applications. The same file list and byte viewer appear on the complete
@@ -21,7 +24,7 @@ applications. The same file list and byte viewer appear on the complete
 | D | Enter an IEC device number, 8–30; Enter accepts, Del edits, Esc cancels |
 | F | Cycle D64 / D71 / D81 / ULT |
 | G / P | On ULT, enter an absolute directory path / navigate to the parent |
-| Tab | On ULT, switch DOS context 1 / 2 |
+| F1 / Tab | On ULT, switch DOS context 1 / 2 with F1 in suite Files, or Tab in the diagnostic browser |
 | L | Enter an absolute Ultimate app path |
 | C | In the suite Files app, copy the selected file |
 | Esc | Return to the suite desktop, or to the standalone diagnostic workspace |
@@ -36,8 +39,9 @@ syntax. Other stored names remain visible, but opening them reports an error.
 Only trailing shifted-space padding is removed; an embedded shifted-space
 must never select a different file with a shorter name.
 
-**L** opens a USB app path field, initially `/Usb0/`. **Tab** selects DOS
-context 1 or 2, **Ctrl-U** clears the field, **Del** deletes one byte,
+**L** opens a USB app path field, initially `/Usb0/`. **F1** in suite Files
+(**Tab** in the diagnostic browser) selects DOS context 1 or 2.
+**Ctrl-U** clears the field, **Del** deletes one byte,
 **Enter** launches and **Esc** cancels. Up to 255 printable bytes are retained;
 long paths keep the caret visible with `<` and `>` clipping markers.
 [Shared field keys](NATIVE-FIELDS.md) also provide Left/Right, Home/Ctrl-E,
@@ -74,8 +78,8 @@ viewer is forward-only; seek, previous-page navigation and editing remain open.
 
 Select a closed SEQ, PRG or USR file, or an Ultimate file, and press **C**.
 The dialog retains the exact source name/path and proposes it as the destination.
-Use **Ctrl-U** to clear the name and the shared field keys to edit it. **Tab**
-opens the destination picker. Select a device/folder with **S**, or choose a
+Use **Ctrl-U** to clear the name and the shared field keys to edit it. **F7**
+opens the destination picker; **Tab** cycles graphical controls. Select a device/folder with **S**, or choose a
 listed name and edit it after returning. Browser source preferences and the
 source selection survive the picker. **F1** edits the destination device or DOS
 context, **F3** selects D64/D71/D81/ULT, and **F5** selects the destination IEC
@@ -89,12 +93,14 @@ that comparison and both final closes succeed. Copied and verified byte counts
 use 32 bits. **Esc** cancels at a transfer boundary. Failed/cancelled new files
 are retained and may be incomplete; the app does not replay uncertain writes
 or delete their output. Changing a destination clears its previous result.
-Failed closes retain their descriptors for Enter/Tab/Esc cleanup retry.
+Failed closes retain their descriptors for Copy, Browse or Back cleanup retry.
+The text fallback also accepts Tab to open the picker.
 
 Ultimate-to-Ultimate copies require different DOS contexts: each supports one
 open file. The dialog initially selects the other context. It closes directory
-cursors before starting streams. The picker and copy dialog temporarily own
-the ROM function-key table and restore all 256 original bytes on return.
+cursors before starting streams. The permanent Files core owns the ROM keyboard
+callback and function-key table across graphics/picker replacement, and restores
+the callback and all 256 original table bytes on app exit.
 
 **Zero-byte files can be copied to Ultimate storage.** Zero-byte IEC output is
 rejected before destination creation. The standard 1541/1571/1581 DOS close
@@ -104,10 +110,13 @@ VICE exposed this difference from the original CPU model, and the full reopen
 comparison detected it. Native zero-byte IEC creation remains a backend gap.
 
 Build with `python3 -B build-native-desktop.py`. Both suite disks contain the
-complete Files app and its inline destination picker. It reserves 82 bank-0
-pages (including four temporary picker buffers) plus the usual 37-page browser
-cache in bank 1. It can retain both 8 KiB workspace allocations. Copy size is
-not limited by those buffers. No new kernel service or module file is required.
+Files core, `fsview.prg` graphics module and `fspick.prg` destination picker.
+Files reserves 93 bank-0 app pages plus its 36-page graphical surface and the
+usual 37-page IEC browser cache in bank 1. The modules share one checked window
+and load from the original app source folder, independently of the selected
+data device or DOS context. Both 8 KiB workspace allocations can be retained;
+an occupied bitmap range leaves usable text controls. Copy size is not limited
+by the transfer buffers. No new kernel service is required.
 The [copy checkpoint](validation/2026-09-12-native-files-copy/README.md) retains
 the exact build, CPU/VICE checks, exported files and the discovered DOS limit.
 

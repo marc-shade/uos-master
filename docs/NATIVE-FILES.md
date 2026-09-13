@@ -21,15 +21,16 @@ history into a later calculator session.
 
 The [native browser](NATIVE-BROWSER.md) uses directory pages to list files,
 discover applications and inspect byte streams. This is a foreground IEC backend.
-Native file pickers, seek/append/replacement, REL and GEOS/VLIR formats,
-removable-media identity and the driver registry remain open.
-The existing graphical desktop still uses the separate legacy APIs.
+The [shared file picker](NATIVE-FILE-DIALOGS.md) and [graphical suite Files app](NATIVE-FILES-GUI.md)
+use these owned services. Seek/append/replacement, REL and GEOS/VLIR formats,
+removable-media identity and the driver registry remain open. The older C64-mode
+desktop retains separate legacy APIs during migration.
 
 ## Calls and mailbox
 
 Include [`api.inc`](../src/native/api.inc) and declare required ABI minor **1**
 for streams or **2** for directory pages in the application manifest.
-The current kernel accepts required minors 0 through 5.
+The current ABI 1.11 kernel accepts required minors 0 through 11.
 Use the active `N_CURRENT` owner for file and memory allocations. File arguments
 use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 

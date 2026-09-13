@@ -15,6 +15,13 @@ banked allocation while the viewport or file picker is shown. The blue native
 suite and older green legacy desktop are separate builds during migration;
 the blue desktop is the intended common interface for the native apps.
 
+[Files](NATIVE-FILES-GUI.md) now shares the blue bitmap, yellow focus and 1351
+controls for its list, byte viewer, device/path fields and verified copy dialog.
+Its permanent core owns the keyboard and file state while checked graphics and
+picker modules alternate in one window. Returning from the picker reloads the
+graphical copy dialog. Ordinary field edits repaint changed cells and the caret.
+The editor, terminal framing, shared picker and VDC graphics remain migration work.
+
 The preceding desktop software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
 pass. The C128 run verifies all three app handoffs, retained selection, complete
 display RAM, mode restoration and cleanup. Physical video pixels remain a

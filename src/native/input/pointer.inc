@@ -7,6 +7,7 @@
 ; Call pm_close before any display close, replacement or workspace return.
 .weak
 PM_KEYS_OWNED=0
+PM_KEYS_EXTERNAL=0
 .endweak
 pm_install:
  .if !PM_KEYS_OWNED
@@ -376,4 +377,6 @@ pm_registers: .byte $00,$01,$02,$03,$10,$15,$17,$1b,$1c,$1d,$27,$28
 pm_saved: .fill 12,0
 pm_shape:
 .include "../desktop/pointer-shape.inc"
+.if !PM_KEYS_EXTERNAL
 .include "keys.inc"
+.endif
