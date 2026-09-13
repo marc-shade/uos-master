@@ -6,22 +6,36 @@ from native_vdc_scene import bitmap, attributes, pointer_bitmap, pixels
 from native_vdc_mirror import bitmap as mirror_bitmap, attributes as mirror_attributes, pixels as mirror_pixels
 
 
-def capture_snapshot(capture, read_app, folder, label, *, image_prefix='native-desktop/desktop'):
+def capture_snapshot(capture, read_app, folder, label, *, image_prefix='native-desktop/desktop', reu_snapshot=None):
     symbol = lambda name: lst_symbol(image_prefix,name)
     state = bytes(read_app(symbol('vd_phase'),7))
     assert state[:2] == b'\2\1' and state[3] == 0
     handle = bytes(read_app(symbol('vd_handle'),4))
     assert 1 <= handle[0] <= 32
-    record = bytes(read_app(0x3c00+(handle[0]-1)*8,8))
-    assert record[0] == 32 and record[1] in (0,1) and record[3] == state[6] and record[4:7] == handle[1:]
-    address, count = record[2]*256, record[3]*256
-    raw = b''.join(capture.capture(label+f'-snapshot-{offset:04x}',bank=record[1],
-        address=address+offset,count=min(2000,count-offset)) for offset in range(0,count,2000))
+    extra = {}
+    if image_prefix.endswith('/calc') and bytes(read_app(symbol('vs_reu'),1)) == b'\1':
+        assert reu_snapshot is not None, 'REU backup requires an independent emulator snapshot'
+        token = bytes(read_app(symbol('vs_token'),8))
+        record = bytes(read_app(symbol('ru_records')+(handle[0]-1)*8,8))
+        assert token[:4] == handle and record[0] == 32 and record[5:] == handle[1:]
+        assert token[4:] == bytes(read_app(symbol('ru_cookie'),4))
+        assert int.from_bytes(record[3:5],'little') == (state[6]+15)//16
+        memory, info = reu_snapshot(label)
+        address, count = int.from_bytes(record[1:3],'little')*4096, state[6]*256
+        assert address+count <= len(memory)
+        raw = memory[address:address+count]
+        extra = dict(storage='reu',token=token.hex(),reu_snapshot=info,reu_address=address)
+    else:
+        record = bytes(read_app(0x3c00+(handle[0]-1)*8,8))
+        assert record[0] == 32 and record[1] in (0,1) and record[3] == state[6] and record[4:7] == handle[1:]
+        address, count = record[2]*256, record[3]*256
+        raw = b''.join(capture.capture(label+f'-snapshot-{offset:04x}',bank=record[1],
+            address=address+offset,count=min(2000,count-offset)) for offset in range(0,count,2000))
     (folder/(label+'-snapshot.bin')).write_bytes(raw)
     saved = bytes(read_app(symbol('vd_saved'),14))
     (folder/(label+'-saved-registers.bin')).write_bytes(saved)
     return raw, dict(label=label,handle=handle.hex(),record=record.hex(),base=state[5]*256,
-        pages=state[6],color=bool(state[2]),saved_registers=saved.hex(),sha256=hashlib.sha256(raw).hexdigest())
+        pages=state[6],color=bool(state[2]),saved_registers=saved.hex(),sha256=hashlib.sha256(raw).hexdigest(),**extra)
 
 
 def saved_region(capture, read_app, folder, label, *, address=0x3000, count=4096):

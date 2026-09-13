@@ -2,7 +2,7 @@
 
 `python3 -B build-native-desktop.py` builds the same six native apps for a
 1541/D64 and a 1581/D81. Both cold-boot into the blue graphical launcher.
-The D64 suite has 11 free data blocks; the D81 has **2,507** (636,778 bytes
+The D64 suite has 2 free data blocks; the D81 has **2,498** (634,492 bytes
 of sequential-file payload, before any additional directory allocation).
 
 | Image under `target/` | Startup | Files |

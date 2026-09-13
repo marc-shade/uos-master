@@ -21,6 +21,7 @@ class Calculator:
 
     def __init__(self,image_name='calc',files=None,loader_name=b'CHECK',device=8,fmt=0,
                  *,ultimate_files=None,source_path=None,source_context=1,image_prefix='native'):
+        self._symbol_cache={}
         self.m=Machine();self.ram=self.m.ram
         self.image_name=image_name;self.image_prefix=image_prefix
         self.image=(ROOT/'target'/self.image_prefix/f'{image_name}.prg').read_bytes()
@@ -64,7 +65,10 @@ class Calculator:
         assert self.ram[0x3d20]==32 and self.ram[0x3d23]==2
         assert not self.io.handles
 
-    def symbol(self,name):return lst_symbol(self.image_prefix+'/'+self.image_name,name)
+    def symbol(self,name):
+        if name not in self._symbol_cache:
+            self._symbol_cache[name]=lst_symbol(self.image_prefix+'/'+self.image_name,name)
+        return self._symbol_cache[name]
     def value(self,name):return self.ram[self.symbol(name)]
     def display(self):return bytes(self.ram[self.symbol('dispbuf'):self.symbol('dispbuf')+8]).split(b'\0')[0].decode()
 

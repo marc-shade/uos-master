@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -D NATIVE_CALC_GRAPHICS=1 -B -o /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/target/native-desktop/calc.prg -L /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/target/native-desktop/calc.lst /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc.asm
-; Sun Sep 13 13:27:49 2026
+; 64tass -a -D NATIVE_CALC_GRAPHICS=1 -B -o /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/target/native-desktop/calc.prg -L /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/target/native-desktop/calc.lst /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc.asm
+; Sun Sep 13 14:37:19 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -9,10 +9,10 @@
 
 =1						NATIVE_CALC_GRAPHICS=1
 
-;******  Processing input file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc.asm
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/api.inc
 
 =1						N_ABI_MAJOR = 1
 =12						N_ABI_MINOR = 12
@@ -173,14 +173,14 @@
 =$50						N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
 =$04						N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc.asm
 
 =0						NATIVE_CALC_GRAPHICS=0
 .6000						app_image:
 >6000		4e 41 50 50			        .text "napp"
 >6004		01 01 08 00			        .byte 1,1,8,0          ; owned bitmap presentation
->6008		43 2f				        .word calc_end-app_image
->600a		30 00				        .byte (calc_end-app_image+255)/256,0
+>6008		21 38				        .word calc_end-app_image
+>600a		39 00				        .byte (calc_end-app_image+255)/256,0
 >600c		20 00				        .word calc_entry-app_image
 >600e		00 00				        .word 0                ; build-native.py seals CRC16 over the image
 >6010		43 41 4c 43 55 4c 41 54		        .text "calculator",0
@@ -305,7 +305,7 @@
 .6117		a9 04		lda #$04	        lda #4
 .6119		4c 2e 62	jmp $622e	        jmp c_op
 .611c						calc_exit:
-.611c		20 88 8b	jsr $8b88	        jsr vd_close
+.611c		20 61 94	jsr $9461	        jsr vd_close
 .611f		90 0a		bcc $612b	        bcc +
 .6121		ae 68 70	ldx $7068	        ldx cg_stack          ; history failures may arrive with nested app frames
 .6124		9a		txs		        txs
@@ -335,7 +335,7 @@
 .6159		20 90 64	jsr $6490	        jsr c_show
 .615c		4c 6b 60	jmp $606b	        jmp cloop
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc-engine.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc-engine.inc
 
 .615f						c_clear:
 .615f		a9 00		lda #$00	        lda #$00
@@ -687,7 +687,7 @@
 .648d		d0 da		bne $6469	        bne _d1l
 .648f		60		rts		        rts
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc.asm
 
 .6490						c_show:
 .6490		ad ce 66	lda $66ce	        lda c_elen
@@ -737,7 +737,7 @@
 .64ee						calc_screen:
 .64ee		ad be 66	lda $66be	        lda screen
 .64f1		f0 05		beq $64f8	        beq +
-.64f3		ad ce 8e	lda $8ece	        lda vd_phase         ; text output would overwrite active/saved VDC pixels
+.64f3		ad ac 97	lda $97ac	        lda vd_phase         ; text output would overwrite active/saved VDC pixels
 .64f6		d0 38		bne $6530	        bne calc_screen_done
 .64f8						+
 .64f8		a5 d7		lda $d7		        lda $d7
@@ -923,7 +923,7 @@
 >66d9		00				c_opkey: .byte 0
 >66da		00 00 00 00 00 00 00 00		dispbuf: .fill 8,0
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc-save.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc-save.inc
 
 .66e2						save_begin:
 .66e2		20 12 69	jsr $6912	        jsr save_close_file
@@ -1282,10 +1282,10 @@
 ;		...repeated 14 times (224 bytes)...
 >6c60		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 .6c68						cg_begin:
 .6c68		a9 00		lda #$00	        lda #0
@@ -1335,7 +1335,7 @@
 .6cdb		90 25		bcc $6d02	        bcc cg_return
 .6cdd						cg_failed:
 .6cdd		8d 60 70	sta $7060	        sta cg_error
-.6ce0		20 88 8b	jsr $8b88	        jsr vd_close
+.6ce0		20 61 94	jsr $9461	        jsr vd_close
 .6ce3		b0 1d		bcs $6d02	        bcs cg_return         ; retain every owner while VDC restoration is pending
 .6ce5		20 a1 82	jsr $82a1	        jsr pm_close
 .6ce8		20 6b 1c	jsr $1c6b	        jsr N_VCLOSE
@@ -1386,15 +1386,15 @@
 .6d49		ad 66 70	lda $7066	        lda cg_vdc_attempted
 .6d4c		d0 0b		bne $6d59	        bne cg_sync
 .6d4e		ee 66 70	inc $7066	        inc cg_vdc_attempted
-.6d51		20 f8 89	jsr $89f8	        jsr vd_open
+.6d51		20 d1 92	jsr $92d1	        jsr vd_open
 .6d54		90 ac		bcc $6d02	        bcc cg_return
-.6d56		20 88 8b	jsr $8b88	        jsr vd_close          ; partial setup rolls back before any text fallback
+.6d56		20 61 94	jsr $9461	        jsr vd_close          ; partial setup rolls back before any text fallback
 .6d59						cg_sync:
-.6d59		20 e1 87	jsr $87e1	        jsr vm_present
-.6d5c		20 93 8d	jsr $8d93	        jsr vd_poll
-.6d5f		ad ce 8e	lda $8ece	        lda vd_phase
+.6d59		20 ba 90	jsr $90ba	        jsr vm_present
+.6d5c		20 71 96	jsr $9671	        jsr vd_poll
+.6d5f		ad ac 97	lda $97ac	        lda vd_phase
 .6d62		f0 9e		beq $6d02	        beq cg_return
-.6d64		ad d1 8e	lda $8ed1	        lda vd_fault
+.6d64		ad af 97	lda $97af	        lda vd_fault
 .6d67		f0 99		beq $6d02	        beq cg_return
 .6d69		4c ff 6e	jmp $6eff	        jmp cg_status
 .6d6c						cg_scene_draw:
@@ -1578,9 +1578,9 @@
 .6eff		a2 18		ldx #$18	        ldx #24
 .6f01		20 3b 6f	jsr $6f3b	        jsr cg_clear_region
 .6f04		b0 9e		bcs $6ea4	        bcs cg_draw_done
-.6f06		ad ce 8e	lda $8ece	        lda vd_phase
+.6f06		ad ac 97	lda $97ac	        lda vd_phase
 .6f09		f0 0b		beq $6f16	        beq +
-.6f0b		ad d1 8e	lda $8ed1	        lda vd_fault
+.6f0b		ad af 97	lda $97af	        lda vd_fault
 .6f0e		f0 06		beq $6f16	        beq +
 .6f10		a9 d9		lda #$d9	        lda #<cg_vdc_help
 .6f12		a2 70		ldx #$70	        ldx #>cg_vdc_help
@@ -1781,7 +1781,7 @@
 >70f1		65 73 20 72 65 74 75 72 6e 00
 .70fb						cg_main
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/scene-rect.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/scene-rect.inc
 
 .70fb						draw_scene:
 .70fb		20 68 77	jsr $7768	        jsr gfx_bind
@@ -1835,10 +1835,10 @@
 .715e		60		rts		        rts
 >715f		00				scene_remaining:.byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/scene-text.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/scene-text.inc
 
 .7160						draw_text_scene:
 .7160		a9 8f		lda #$8f	        lda #<text_commands
@@ -1892,10 +1892,10 @@
 .71c1		60		rts		        rts
 >71c2		00				text_remaining: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/main-scene.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/main-scene.inc
 
 =46						scene_commands_count=46
 .71c3						scene_commands:
@@ -2068,11 +2068,11 @@
 >7461		01 01				        .byte 1,1
 >7463		58				        .byte 88
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 .7464						cg_save
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/scene-rect.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/scene-rect.inc
 
 .7464						draw_scene:
 .7464		20 68 77	jsr $7768	        jsr gfx_bind
@@ -2126,10 +2126,10 @@
 .74c7		60		rts		        rts
 >74c8		00				scene_remaining:.byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/scene-text.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/scene-text.inc
 
 .74c9						draw_text_scene:
 .74c9		a9 7c		lda #$7c	        lda #<text_commands
@@ -2183,10 +2183,10 @@
 .752a		60		rts		        rts
 >752b		00				text_remaining: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/save-scene.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/save-scene.inc
 
 =8						scene_commands_count=8
 .752c						scene_commands:
@@ -2232,10 +2232,10 @@
 >75f0		01 06				        .byte 1,6
 >75f2		43 61 6e 63 65 6c		        .byte 67,97,110,99,101,108
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/buttons.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/buttons.inc
 
 =23						ui_button_count=23
 .75f8						ui_rects:
@@ -2266,10 +2266,10 @@
 >76b0		37 38 39 2f 34 35 36 2a		        .byte 55,56,57,47,52,53,54,42,49,50,51,45,67,48,61,43,20,83,78,66,27,13,27
 >76b8		31 32 33 2d 43 30 3d 2b 14 53 4e 42 1b 0d 1b
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/buttons.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/buttons.inc
 
 .76c7						ui_hit:
 .76c7		ae 65 77	ldx $7765	        ldx ui_first
@@ -2359,11 +2359,11 @@
 >7765		00				ui_first: .byte 0
 >7766		00				ui_limit: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 >7767		0e				ui_selected: .byte 14
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/graphics-core.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/graphics-core.inc
 
 =0						gfx_track_dirty=0
 .7768						gfx_bind:
@@ -2594,7 +2594,7 @@
 .7915		cd 89 7d	cmp $7d89	        cmp gfx_clipped+6
 .7918		b0 2e		bcs $7948	        bcs gfx_empty
 .791a		8d 8c 7d	sta $7d8c	        sta gfx_y
-.791d		20 9e 87	jsr $879e	        jsr vm_dirty          ; conservatively retain rows even after a partial write
+.791d		20 77 90	jsr $9077	        jsr vm_dirty          ; conservatively retain rows even after a partial write
 .7920		ad 8b 7d	lda $7d8b	        lda gfx_operation
 .7923		c9 01		cmp #$01	        cmp #1
 .7925		f0 6b		beq $7992	        beq gfx_color_rows
@@ -3147,10 +3147,10 @@
 >7e03		00 19 40 1a 80 1b c0 1c 00 1e
 .7e0d						gfx_end:
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/text-core.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/text-core.inc
 
 .7e0d						gfx_text:
 .7e0d		08		php		        php
@@ -3290,10 +3290,10 @@
 >81d8		20 10 10 08 10 10 20 00 00 00 24 58 00 00 00 00
 .81e8						gfx_text_end:
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/pointer.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/pointer.inc
 
 =0						PM_KEYS_OWNED=0
 =0						PM_KEYS_EXTERNAL=0
@@ -3654,7 +3654,7 @@
 >84ec		00 00 00 00
 .84f0						pm_shape:
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/../desktop/pointer-shape.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/../desktop/pointer-shape.inc
 
 >84f0		00 00 00 00 00 00 40 00		        .byte $00,$00,$00,$00,$00,$00,$40,$00,$00,$60,$00,$00,$70,$00,$00,$78
 >84f8		00 60 00 00 70 00 00 78
@@ -3673,10 +3673,10 @@
 >8560		00 00 00 00 00 00 00 00		        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
 >8568		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/pointer.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/pointer.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/keys.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/keys.inc
 
 .8570						nk_install:
 .8570		ad f3 85	lda $85f3	        lda nk_active
@@ -3749,7 +3749,7 @@
 >86f6		00 00 00 00 00 00 00 00
 >86fe		00 00				nk_saved_callback: .word 0
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/key-filter.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/key-filter.inc
 
 =0						NK_LOCAL_HELP=0
 .8700						nk_filter_image:
@@ -3839,861 +3839,1798 @@
 >879b	10af	fe fd fb
 .879e	10b2					pk_end:
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/keys.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/keys.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../input/pointer.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../input/pointer.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
 =$6d03						vm_select_surface=cg_select_surface
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-mirror.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-reu.inc
 
-=$87d1						vd_initial_bitmap=vm_initial
-=$8b78						vd_initial_attributes=vd_success
+=$879e						vd_storage_alloc=vs_alloc
+=$87f5						vd_storage_read=vs_read
+=$8803						vd_storage_write=vs_write
+=$8811						vd_storage_free=vs_free
+=$8847						vd_storage_close=vs_close
+.879e						vs_alloc:
+.879e		a9 01		lda #$01	        lda #1
+.87a0		8d 58 88	sta $8858	        sta vs_reu
+.87a3		20 61 88	jsr $8861	        jsr ru_open
+.87a6		90 0b		bcc $87b3	        bcc vs_reu_alloc
+.87a8		ae 6f 8f	ldx $8f6f	        ldx ru_probe_live
+.87ab		f0 03		beq $87b0	        bne vs_return
+.87ad		4c 57 88	jmp $8857
+.87b0		4c ed 87	jmp $87ed	        jmp vs_ram
+.87b3						vs_reu_alloc:
+.87b3		ad 20 3d	lda $3d20	        lda N_CURRENT
+.87b6		8d 32 8f	sta $8f32	        sta ru_owner
+.87b9		a9 00		lda #$00	        lda #0
+.87bb		8d 34 8f	sta $8f34	        sta ru_pages+1
+.87be		ad b2 97	lda $97b2	        lda vd_pages
+.87c1		18		clc		        clc
+.87c2		69 0f		adc #$0f	        adc #15
+.87c4		4a		lsr a		        lsr
+.87c5		4a		lsr a		        lsr
+.87c6		4a		lsr a		        lsr
+.87c7		4a		lsr a		        lsr
+.87c8		8d 33 8f	sta $8f33	        sta ru_pages
+.87cb		20 9f 89	jsr $899f	        jsr ru_alloc
+.87ce		b0 18		bcs $87e8	        bcs vs_ram_close
+.87d0		a2 07		ldx #$07	        ldx #7
+.87d2		bd 37 8f	lda $8f37,x	-       lda ru_handle,x
+.87d5		9d 59 88	sta $8859,x	        sta vs_token,x
+.87d8		ca		dex		        dex
+.87d9		10 f7		bpl $87d2	        bpl -
+.87db		a2 03		ldx #$03	        ldx #3
+.87dd		bd 37 8f	lda $8f37,x	-       lda ru_handle,x
+.87e0		9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.87e3		ca		dex		        dex
+.87e4		10 f7		bpl $87dd	        bpl -
+.87e6		18		clc		        clc
+.87e7		60		rts		        rts
+.87e8						vs_ram_close:
+.87e8		20 a9 88	jsr $88a9	        jsr ru_close
+.87eb		b0 6a		bcs $8857	        bcs vs_return
+.87ed						vs_ram:
+.87ed		a9 00		lda #$00	        lda #0
+.87ef		8d 58 88	sta $8858	        sta vs_reu
+.87f2		4c 20 1c	jmp $1c20	        jmp N_ALLOC
+.87f5						vs_read:
+.87f5		ad 58 88	lda $8858	        lda vs_reu
+.87f8		f0 06		beq $8800	        beq +
+.87fa		20 1f 88	jsr $881f	        jsr vs_select
+.87fd		4c ae 8b	jmp $8bae	        jmp ru_read
+.8800		4c 26 1c	jmp $1c26	+       jmp N_READ
+.8803						vs_write:
+.8803		ad 58 88	lda $8858	        lda vs_reu
+.8806		f0 06		beq $880e	        beq +
+.8808		20 1f 88	jsr $881f	        jsr vs_select
+.880b		4c aa 8b	jmp $8baa	        jmp ru_write
+.880e		4c 29 1c	jmp $1c29	+       jmp N_WRITE
+.8811						vs_free:
+.8811		ad 58 88	lda $8858	        lda vs_reu
+.8814		f0 06		beq $881c	        beq +
+.8816		20 1f 88	jsr $881f	        jsr vs_select
+.8819		4c 1c 8b	jmp $8b1c	        jmp ru_free
+.881c		4c 23 1c	jmp $1c23	+       jmp N_FREE
+.881f						vs_select:
+.881f		ad 20 3d	lda $3d20	        lda N_CURRENT
+.8822		8d 32 8f	sta $8f32	        sta ru_owner
+.8825		a9 00		lda #$00	        lda #0
+.8827		8d 41 8f	sta $8f41	        sta ru_offset+2
+.882a		a2 01		ldx #$01	        ldx #1
+.882c		bd 08 3d	lda $3d08,x	-       lda N_OFFSET,x
+.882f		9d 3f 8f	sta $8f3f,x	        sta ru_offset,x
+.8832		bd 0a 3d	lda $3d0a,x	        lda N_COUNT,x
+.8835		9d 42 8f	sta $8f42,x	        sta ru_count,x
+.8838		ca		dex		        dex
+.8839		10 f1		bpl $882c	        bpl -
+.883b		a2 07		ldx #$07	        ldx #7
+.883d		bd 59 88	lda $8859,x	-       lda vs_token,x
+.8840		9d 37 8f	sta $8f37,x	        sta ru_handle,x
+.8843		ca		dex		        dex
+.8844		10 f7		bpl $883d	        bpl -
+.8846		60		rts		        rts
+.8847						vs_close:
+.8847		ad 58 88	lda $8858	        lda vs_reu
+.884a		f0 0a		beq $8856	        beq +
+.884c		20 a9 88	jsr $88a9	        jsr ru_close
+.884f		b0 06		bcs $8857	        bcs vs_return
+.8851		a9 00		lda #$00	        lda #0
+.8853		8d 58 88	sta $8858	        sta vs_reu
+.8856		18		clc		+       clc
+.8857						vs_return:
+.8857		60		rts		        rts
+>8858		00				vs_reu: .byte 0
+>8859		00 00 00 00 00 00 00 00		vs_token: .fill 8,0
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/../reu.inc
+
+.8861						ru_open:
+.8861		08		php		        php
+.8862		20 d0 88	jsr $88d0	        jsr ru_enter
+.8865		90 03		bcc $886a	        bcs ru_enter_failed
+.8867		4c 4a 89	jmp $894a
+.886a		ad 4e 8f	lda $8f4e	        lda ru_cookie
+.886d		d0 0b		bne $887a	        bne +
+.886f		a2 03		ldx #$03	        ldx #3
+.8871		bd 52 8f	lda $8f52,x	-       lda ru_current,x
+.8874		9d 4e 8f	sta $8f4e,x	        sta ru_cookie,x
+.8877		ca		dex		        dex
+.8878		10 f7		bpl $8871	        bpl -
+.887a		20 51 89	jsr $8951	+       jsr ru_context
+.887d		90 03		bcc $8882	        bcs ru_finish
+.887f		4c 7f 89	jmp $897f
+.8882		ad 4c 8f	lda $8f4c	        lda ru_active
+.8885		f0 03		beq $888a	        bne ru_success
+.8887		4c 7d 89	jmp $897d
+.888a		20 f1 8e	jsr $8ef1	        jsr ru_probe_restore
+.888d		b0 f0		bcs $887f	        bcs ru_finish
+.888f		20 bb 8d	jsr $8dbb	        jsr ru_probe
+.8892		90 0d		bcc $88a1	        bcc +
+.8894		48		pha		        pha
+.8895		20 f1 8e	jsr $8ef1	        jsr ru_probe_restore
+.8898		68		pla		        pla
+.8899		90 03		bcc $889e	        bcs ru_ioerror
+.889b		4c 90 89	jmp $8990
+.889e		4c 7f 89	jmp $897f	        jmp ru_finish
+.88a1		a9 01		lda #$01	+       lda #1
+.88a3		8d 4c 8f	sta $8f4c	        sta ru_active
+.88a6		4c 7d 89	jmp $897d	        jmp ru_success
+.88a9						ru_close:
+.88a9		08		php		        php
+.88aa		20 d0 88	jsr $88d0	        jsr ru_enter
+.88ad		b0 b8		bcs $8867	        bcs ru_enter_failed
+.88af		20 51 89	jsr $8951	        jsr ru_context
+.88b2		b0 cb		bcs $887f	        bcs ru_finish
+.88b4		20 f1 8e	jsr $8ef1	        jsr ru_probe_restore
+.88b7		b0 c6		bcs $887f	        bcs ru_finish
+.88b9		a2 00		ldx #$00	        ldx #0
+.88bb		bd 77 8f	lda $8f77,x	-       lda ru_records,x
+.88be		f0 03		beq $88c3	        bne ru_argument
+.88c0		4c 8b 89	jmp $898b
+.88c3		8a		txa		        txa
+.88c4		18		clc		        clc
+.88c5		69 08		adc #$08	        adc #8
+.88c7		aa		tax		        tax
+.88c8		d0 f1		bne $88bb	        bne -
+.88ca		8d 4c 8f	sta $8f4c	        sta ru_active
+.88cd		4c 7d 89	jmp $897d	        jmp ru_success
+.88d0						ru_enter:
+.88d0		ad 4d 8f	lda $8f4d	        lda ru_busy
+.88d3		0d 11 3d	ora $3d11	        ora N_BUSY
+.88d6		0d 91 3d	ora $3d91	        ora N_FBUSY
+.88d9		0d 3b 3d	ora $3d3b	        ora N_UIBUSY
+.88dc		d0 68		bne $8946	        bne ru_nested
+.88de		ee 4d 8f	inc $8f4d	        inc ru_busy
+.88e1		d8		cld		        cld
+.88e2		ad 00 ff	lda $ff00	        lda $ff00
+.88e5		c9 0e		cmp #$0e	        cmp #$0e
+.88e7		d0 59		bne $8942	        bne ru_platform_error
+.88e9		ad 05 d5	lda $d505	        lda $d505
+.88ec		29 40		and #$40	        and #$40
+.88ee		d0 52		bne $8942	        bne ru_platform_error
+.88f0		ad 06 d5	lda $d506	        lda $d506
+.88f3		29 0f		and #$0f	        and #15
+.88f5		c9 04		cmp #$04	        cmp #4
+.88f7		d0 49		bne $8942	        bne ru_platform_error
+.88f9		ad 20 3d	lda $3d20	        lda N_CURRENT
+.88fc		c9 20		cmp #$20	        cmp #N_APPOWNER
+.88fe		d0 42		bne $8942	        bne ru_platform_error
+.8900		ad 23 3d	lda $3d23	        lda N_APPSTATE
+.8903		c9 02		cmp #$02	        cmp #2
+.8905		d0 3b		bne $8942	        bne ru_platform_error
+.8907		ad 60 38	lda $3860	        lda NPAGES0+$60
+.890a		f0 36		beq $8942	        beq ru_platform_error
+.890c		c9 21		cmp #$21	        cmp #NSLOTS+1
+.890e		b0 32		bcs $8942	        bcs ru_platform_error
+.8910		8d 52 8f	sta $8f52	        sta ru_current
+.8913		38		sec		        sec
+.8914		e9 01		sbc #$01	        sbc #1
+.8916		0a		asl a		        asl
+.8917		0a		asl a		        asl
+.8918		0a		asl a		        asl
+.8919		aa		tax		        tax
+.891a		bd 00 3c	lda $3c00,x	        lda NHANDLES,x
+.891d		cd 20 3d	cmp $3d20	        cmp N_CURRENT
+.8920		d0 20		bne $8942	        bne ru_platform_error
+.8922		bd 01 3c	lda $3c01,x	        lda NHANDLES+1,x
+.8925		d0 1b		bne $8942	        bne ru_platform_error
+.8927		bd 02 3c	lda $3c02,x	        lda NHANDLES+2,x
+.892a		c9 60		cmp #$60	        cmp #$60
+.892c		d0 14		bne $8942	        bne ru_platform_error
+.892e		bd 04 3c	lda $3c04,x	        lda NHANDLES+4,x
+.8931		8d 53 8f	sta $8f53	        sta ru_current+1
+.8934		bd 05 3c	lda $3c05,x	        lda NHANDLES+5,x
+.8937		8d 54 8f	sta $8f54	        sta ru_current+2
+.893a		bd 06 3c	lda $3c06,x	        lda NHANDLES+6,x
+.893d		8d 55 8f	sta $8f55	        sta ru_current+3
+.8940		18		clc		        clc
+.8941		60		rts		        rts
+.8942						ru_platform_error:
+.8942		a9 08		lda #$08	        lda #N_PLATFORM
+.8944		38		sec		        sec
+.8945		60		rts		        rts
+.8946						ru_nested:
+.8946		a9 07		lda #$07	        lda #N_REENTRANT
+.8948		38		sec		        sec
+.8949		60		rts		        rts
+.894a						ru_enter_failed:
+.894a		c9 07		cmp #$07	        cmp #N_REENTRANT
+.894c		d0 31		bne $897f	        bne ru_finish
+.894e		28		plp		        plp
+.894f		38		sec		        sec
+.8950		60		rts		        rts
+.8951						ru_context:
+.8951		a2 03		ldx #$03	        ldx #3
+.8953		bd 4e 8f	lda $8f4e,x	-       lda ru_cookie,x
+.8956		dd 52 8f	cmp $8f52,x	        cmp ru_current,x
+.8959		d0 1e		bne $8979	        bne ru_bad_token
+.895b		ca		dex		        dex
+.895c		10 f5		bpl $8953	        bpl -
+.895e		18		clc		        clc
+.895f		60		rts		        rts
+.8960						ru_ready:
+.8960		20 51 89	jsr $8951	        jsr ru_context
+.8963		b0 0f		bcs $8974	        bcs +
+.8965		ad 4c 8f	lda $8f4c	        lda ru_active
+.8968		f0 d8		beq $8942	        beq ru_platform_error
+.896a		ad 32 8f	lda $8f32	        lda ru_owner
+.896d		f0 06		beq $8975	        beq ru_bad_argument
+.896f		c9 ff		cmp #$ff	        cmp #255
+.8971		f0 02		beq $8975	        beq ru_bad_argument
+.8973		18		clc		        clc
+.8974		60		rts		+       rts
+.8975						ru_bad_argument:
+.8975		a9 01		lda #$01	        lda #N_BADARG
+.8977		38		sec		        sec
+.8978		60		rts		        rts
+.8979						ru_bad_token:
+.8979		a9 04		lda #$04	        lda #N_BADHANDLE
+.897b		38		sec		        sec
+.897c		60		rts		        rts
+.897d						ru_success:
+.897d		a9 00		lda #$00	        lda #0
+.897f						ru_finish:
+.897f		8d 46 8f	sta $8f46	        sta ru_error
+.8982		a2 00		ldx #$00	        ldx #0
+.8984		8e 4d 8f	stx $8f4d	        stx ru_busy
+.8987		28		plp		        plp
+.8988		c9 01		cmp #$01	        cmp #1
+.898a		60		rts		        rts
+.898b						ru_argument:
+.898b		a9 01		lda #$01	        lda #N_BADARG
+.898d		4c 7f 89	jmp $897f	        jmp ru_finish
+.8990						ru_ioerror:
+.8990		a9 11		lda #$11	        lda #N_IOERROR
+.8992		4c 7f 89	jmp $897f	        jmp ru_finish
+.8995						ru_range:
+.8995		a9 06		lda #$06	        lda #N_RANGE
+.8997		4c 7f 89	jmp $897f	        jmp ru_finish
+.899a						ru_nomem:
+.899a		a9 02		lda #$02	        lda #N_NOMEM
+.899c		4c 7f 89	jmp $897f	        jmp ru_finish
+.899f						ru_alloc:
+.899f		a0 00		ldy #$00	        ldy #0
+.89a1		f0 02		beq $89a5	        beq ru_allocate
+.89a3						ru_reserve:
+.89a3		a0 01		ldy #$01	        ldy #1
+.89a5						ru_allocate:
+.89a5		08		php		        php
+.89a6		20 d0 88	jsr $88d0	        jsr ru_enter
+.89a9		b0 9f		bcs $894a	        bcs ru_enter_failed
+.89ab		8c 56 8f	sty $8f56	        sty ru_fixed
+.89ae		20 60 89	jsr $8960	        jsr ru_ready
+.89b1		b0 cc		bcs $897f	        bcs ru_finish
+.89b3		ad 33 8f	lda $8f33	        lda ru_pages
+.89b6		0d 34 8f	ora $8f34	        ora ru_pages+1
+.89b9		f0 d0		beq $898b	        beq ru_argument
+.89bb		a2 00		ldx #$00	        ldx #0
+.89bd						ru_slot_scan:
+.89bd		bd 77 8f	lda $8f77,x	        lda ru_records,x
+.89c0		d0 0d		bne $89cf	        bne +
+.89c2		bd 7c 8f	lda $8f7c,x	        lda ru_records+5,x
+.89c5		3d 7d 8f	and $8f7d,x	        and ru_records+6,x
+.89c8		3d 7e 8f	and $8f7e,x	        and ru_records+7,x
+.89cb		c9 ff		cmp #$ff	        cmp #255
+.89cd		d0 0c		bne $89db	        bne ru_slot_found
+.89cf		8a		txa		+       txa
+.89d0		18		clc		        clc
+.89d1		69 08		adc #$08	        adc #8
+.89d3		aa		tax		        tax
+.89d4		d0 e7		bne $89bd	        bne ru_slot_scan
+.89d6		a9 03		lda #$03	        lda #N_NOSLOT
+.89d8		4c 7f 89	jmp $897f	        jmp ru_finish
+.89db						ru_slot_found:
+.89db		8e 57 8f	stx $8f57	        stx ru_slot
+.89de		a9 00		lda #$00	        lda #0
+.89e0		8d 58 8f	sta $8f58	        sta ru_first
+.89e3		8d 59 8f	sta $8f59	        sta ru_first+1
+.89e6		ad 56 8f	lda $8f56	        lda ru_fixed
+.89e9		f0 0c		beq $89f7	        beq ru_scan_again
+.89eb		ad 35 8f	lda $8f35	        lda ru_page
+.89ee		8d 58 8f	sta $8f58	        sta ru_first
+.89f1		ad 36 8f	lda $8f36	        lda ru_page+1
+.89f4		8d 59 8f	sta $8f59	        sta ru_first+1
+.89f7						ru_scan_again:
+.89f7		18		clc		        clc
+.89f8		ad 58 8f	lda $8f58	        lda ru_first
+.89fb		6d 33 8f	adc $8f33	        adc ru_pages
+.89fe		8d 5a 8f	sta $8f5a	        sta ru_limit
+.8a01		ad 59 8f	lda $8f59	        lda ru_first+1
+.8a04		6d 34 8f	adc $8f34	        adc ru_pages+1
+.8a07		8d 5b 8f	sta $8f5b	        sta ru_limit+1
+.8a0a		b0 8e		bcs $899a	        bcs ru_nomem
+.8a0c		ad 47 8f	lda $8f47	        lda ru_total
+.8a0f		cd 5a 8f	cmp $8f5a	        cmp ru_limit
+.8a12		ad 48 8f	lda $8f48	        lda ru_total+1
+.8a15		ed 5b 8f	sbc $8f5b	        sbc ru_limit+1
+.8a18		90 80		bcc $899a	        bcc ru_nomem
+.8a1a		a2 00		ldx #$00	        ldx #0
+.8a1c						ru_interval:
+.8a1c		bd 77 8f	lda $8f77,x	        lda ru_records,x
+.8a1f		f0 46		beq $8a67	        beq ru_next_interval
+.8a21		bd 78 8f	lda $8f78,x	        lda ru_records+1,x
+.8a24		cd 5a 8f	cmp $8f5a	        cmp ru_limit
+.8a27		bd 79 8f	lda $8f79,x	        lda ru_records+2,x
+.8a2a		ed 5b 8f	sbc $8f5b	        sbc ru_limit+1
+.8a2d		b0 38		bcs $8a67	        bcs ru_next_interval
+.8a2f		18		clc		        clc
+.8a30		bd 78 8f	lda $8f78,x	        lda ru_records+1,x
+.8a33		7d 7a 8f	adc $8f7a,x	        adc ru_records+3,x
+.8a36		8d 5c 8f	sta $8f5c	        sta ru_last
+.8a39		bd 79 8f	lda $8f79,x	        lda ru_records+2,x
+.8a3c		7d 7b 8f	adc $8f7b,x	        adc ru_records+4,x
+.8a3f		8d 5d 8f	sta $8f5d	        sta ru_last+1
+.8a42		ad 58 8f	lda $8f58	        lda ru_first
+.8a45		cd 5c 8f	cmp $8f5c	        cmp ru_last
+.8a48		ad 59 8f	lda $8f59	        lda ru_first+1
+.8a4b		ed 5d 8f	sbc $8f5d	        sbc ru_last+1
+.8a4e		b0 17		bcs $8a67	        bcs ru_next_interval
+.8a50		ad 56 8f	lda $8f56	        lda ru_fixed
+.8a53		f0 03		beq $8a58	        bne ru_nomem
+.8a55		4c 9a 89	jmp $899a
+.8a58		ad 5c 8f	lda $8f5c	        lda ru_last
+.8a5b		8d 58 8f	sta $8f58	        sta ru_first
+.8a5e		ad 5d 8f	lda $8f5d	        lda ru_last+1
+.8a61		8d 59 8f	sta $8f59	        sta ru_first+1
+.8a64		4c f7 89	jmp $89f7	        jmp ru_scan_again
+.8a67						ru_next_interval:
+.8a67		8a		txa		        txa
+.8a68		18		clc		        clc
+.8a69		69 08		adc #$08	        adc #8
+.8a6b		aa		tax		        tax
+.8a6c		d0 ae		bne $8a1c	        bne ru_interval
+.8a6e		ae 57 8f	ldx $8f57	        ldx ru_slot
+.8a71		fe 7c 8f	inc $8f7c,x	        inc ru_records+5,x
+.8a74		d0 08		bne $8a7e	        bne +
+.8a76		fe 7d 8f	inc $8f7d,x	        inc ru_records+6,x
+.8a79		d0 03		bne $8a7e	        bne +
+.8a7b		fe 7e 8f	inc $8f7e,x	        inc ru_records+7,x
+.8a7e		ad 32 8f	lda $8f32	+       lda ru_owner
+.8a81		9d 77 8f	sta $8f77,x	        sta ru_records,x
+.8a84		ad 58 8f	lda $8f58	        lda ru_first
+.8a87		9d 78 8f	sta $8f78,x	        sta ru_records+1,x
+.8a8a		8d 35 8f	sta $8f35	        sta ru_page
+.8a8d		ad 59 8f	lda $8f59	        lda ru_first+1
+.8a90		9d 79 8f	sta $8f79,x	        sta ru_records+2,x
+.8a93		8d 36 8f	sta $8f36	        sta ru_page+1
+.8a96		ad 33 8f	lda $8f33	        lda ru_pages
+.8a99		9d 7a 8f	sta $8f7a,x	        sta ru_records+3,x
+.8a9c		ad 34 8f	lda $8f34	        lda ru_pages+1
+.8a9f		9d 7b 8f	sta $8f7b,x	        sta ru_records+4,x
+.8aa2		8a		txa		        txa
+.8aa3		4a		lsr a		        lsr
+.8aa4		4a		lsr a		        lsr
+.8aa5		4a		lsr a		        lsr
+.8aa6		18		clc		        clc
+.8aa7		69 01		adc #$01	        adc #1
+.8aa9		8d 37 8f	sta $8f37	        sta ru_handle
+.8aac		bd 7c 8f	lda $8f7c,x	        lda ru_records+5,x
+.8aaf		8d 38 8f	sta $8f38	        sta ru_handle+1
+.8ab2		bd 7d 8f	lda $8f7d,x	        lda ru_records+6,x
+.8ab5		8d 39 8f	sta $8f39	        sta ru_handle+2
+.8ab8		bd 7e 8f	lda $8f7e,x	        lda ru_records+7,x
+.8abb		8d 3a 8f	sta $8f3a	        sta ru_handle+3
+.8abe		a2 03		ldx #$03	        ldx #3
+.8ac0		bd 4e 8f	lda $8f4e,x	-       lda ru_cookie,x
+.8ac3		9d 3b 8f	sta $8f3b,x	        sta ru_handle+4,x
+.8ac6		ca		dex		        dex
+.8ac7		10 f7		bpl $8ac0	        bpl -
+.8ac9		4c 7d 89	jmp $897d	        jmp ru_success
+.8acc						ru_validate:
+.8acc		20 60 89	jsr $8960	        jsr ru_ready
+.8acf		b0 46		bcs $8b17	        bcs +
+.8ad1		a2 03		ldx #$03	        ldx #3
+.8ad3		bd 3b 8f	lda $8f3b,x	-       lda ru_handle+4,x
+.8ad6		dd 4e 8f	cmp $8f4e,x	        cmp ru_cookie,x
+.8ad9		f0 03		beq $8ade	        bne ru_bad_token
+.8adb		4c 79 89	jmp $8979
+.8ade		ca		dex		        dex
+.8adf		10 f2		bpl $8ad3	        bpl -
+.8ae1		ad 37 8f	lda $8f37	        lda ru_handle
+.8ae4		f0 f5		beq $8adb	        beq ru_bad_token
+.8ae6		c9 21		cmp #$21	        cmp #33
+.8ae8		b0 f1		bcs $8adb	        bcs ru_bad_token
+.8aea		38		sec		        sec
+.8aeb		e9 01		sbc #$01	        sbc #1
+.8aed		0a		asl a		        asl
+.8aee		0a		asl a		        asl
+.8aef		0a		asl a		        asl
+.8af0		aa		tax		        tax
+.8af1		bd 77 8f	lda $8f77,x	        lda ru_records,x
+.8af4		f0 e5		beq $8adb	        beq ru_bad_token
+.8af6		ad 38 8f	lda $8f38	        lda ru_handle+1
+.8af9		dd 7c 8f	cmp $8f7c,x	        cmp ru_records+5,x
+.8afc		d0 dd		bne $8adb	        bne ru_bad_token
+.8afe		ad 39 8f	lda $8f39	        lda ru_handle+2
+.8b01		dd 7d 8f	cmp $8f7d,x	        cmp ru_records+6,x
+.8b04		d0 d5		bne $8adb	        bne ru_bad_token
+.8b06		ad 3a 8f	lda $8f3a	        lda ru_handle+3
+.8b09		dd 7e 8f	cmp $8f7e,x	        cmp ru_records+7,x
+.8b0c		d0 cd		bne $8adb	        bne ru_bad_token
+.8b0e		bd 77 8f	lda $8f77,x	        lda ru_records,x
+.8b11		cd 32 8f	cmp $8f32	        cmp ru_owner
+.8b14		d0 02		bne $8b18	        bne ru_other_owner
+.8b16		18		clc		        clc
+.8b17		60		rts		+       rts
+.8b18						ru_other_owner:
+.8b18		a9 05		lda #$05	        lda #N_WRONGOWNER
+.8b1a		38		sec		        sec
+.8b1b		60		rts		        rts
+.8b1c						ru_free:
+.8b1c		08		php		        php
+.8b1d		20 d0 88	jsr $88d0	        jsr ru_enter
+.8b20		90 03		bcc $8b25	        bcs ru_enter_failed
+.8b22		4c 4a 89	jmp $894a
+.8b25		20 cc 8a	jsr $8acc	        jsr ru_validate
+.8b28		90 03		bcc $8b2d	        bcs ru_finish
+.8b2a		4c 7f 89	jmp $897f
+.8b2d		a9 00		lda #$00	        lda #0
+.8b2f		9d 77 8f	sta $8f77,x	        sta ru_records,x
+.8b32		4c 7f 89	jmp $897f	        jmp ru_finish
+.8b35						ru_release:
+.8b35		08		php		        php
+.8b36		20 d0 88	jsr $88d0	        jsr ru_enter
+.8b39		b0 e7		bcs $8b22	        bcs ru_enter_failed
+.8b3b		20 60 89	jsr $8960	        jsr ru_ready
+.8b3e		b0 ea		bcs $8b2a	        bcs ru_finish
+.8b40		a2 00		ldx #$00	        ldx #0
+.8b42		bd 77 8f	lda $8f77,x	-       lda ru_records,x
+.8b45		cd 32 8f	cmp $8f32	        cmp ru_owner
+.8b48		d0 05		bne $8b4f	        bne +
+.8b4a		a9 00		lda #$00	        lda #0
+.8b4c		9d 77 8f	sta $8f77,x	        sta ru_records,x
+.8b4f		8a		txa		+       txa
+.8b50		18		clc		        clc
+.8b51		69 08		adc #$08	        adc #8
+.8b53		aa		tax		        tax
+.8b54		d0 ec		bne $8b42	        bne -
+.8b56		4c 7d 89	jmp $897d	        jmp ru_success
+.8b59						ru_stats:
+.8b59		08		php		        php
+.8b5a		20 d0 88	jsr $88d0	        jsr ru_enter
+.8b5d		b0 c3		bcs $8b22	        bcs ru_enter_failed
+.8b5f		20 60 89	jsr $8960	        jsr ru_ready
+.8b62		b0 c6		bcs $8b2a	        bcs ru_finish
+.8b64		ad 47 8f	lda $8f47	        lda ru_total
+.8b67		8d 49 8f	sta $8f49	        sta ru_available
+.8b6a		ad 48 8f	lda $8f48	        lda ru_total+1
+.8b6d		8d 4a 8f	sta $8f4a	        sta ru_available+1
+.8b70		a2 00		ldx #$00	        ldx #0
+.8b72		8e 4b 8f	stx $8f4b	        stx ru_slots
+.8b75		bd 77 8f	lda $8f77,x	-       lda ru_records,x
+.8b78		f0 16		beq $8b90	        beq +
+.8b7a		38		sec		        sec
+.8b7b		ad 49 8f	lda $8f49	        lda ru_available
+.8b7e		fd 7a 8f	sbc $8f7a,x	        sbc ru_records+3,x
+.8b81		8d 49 8f	sta $8f49	        sta ru_available
+.8b84		ad 4a 8f	lda $8f4a	        lda ru_available+1
+.8b87		fd 7b 8f	sbc $8f7b,x	        sbc ru_records+4,x
+.8b8a		8d 4a 8f	sta $8f4a	        sta ru_available+1
+.8b8d		4c a0 8b	jmp $8ba0	        jmp ++
+.8b90		bd 7c 8f	lda $8f7c,x	+       lda ru_records+5,x
+.8b93		3d 7d 8f	and $8f7d,x	        and ru_records+6,x
+.8b96		3d 7e 8f	and $8f7e,x	        and ru_records+7,x
+.8b99		c9 ff		cmp #$ff	        cmp #255
+.8b9b		f0 03		beq $8ba0	        beq +
+.8b9d		ee 4b 8f	inc $8f4b	        inc ru_slots
+.8ba0		8a		txa		+       txa
+.8ba1		18		clc		        clc
+.8ba2		69 08		adc #$08	        adc #8
+.8ba4		aa		tax		        tax
+.8ba5		d0 ce		bne $8b75	        bne -
+.8ba7		4c 7d 89	jmp $897d	        jmp ru_success
+.8baa						ru_write:
+.8baa		a0 90		ldy #$90	        ldy #$90
+.8bac		d0 02		bne $8bb0	        bne ru_transfer
+.8bae						ru_read:
+.8bae		a0 91		ldy #$91	        ldy #$91
+.8bb0						ru_transfer:
+.8bb0		08		php		        php
+.8bb1		20 d0 88	jsr $88d0	        jsr ru_enter
+.8bb4		90 03		bcc $8bb9	        bcs ru_transfer_failed
+.8bb6		4c 0d 8d	jmp $8d0d
+.8bb9		8c 6e 8f	sty $8f6e	        sty ru_command
+.8bbc		a9 00		lda #$00	        lda #0
+.8bbe		8d 44 8f	sta $8f44	        sta ru_actual
+.8bc1		8d 45 8f	sta $8f45	        sta ru_actual+1
+.8bc4		20 cc 8a	jsr $8acc	        jsr ru_validate
+.8bc7		90 03		bcc $8bcc	        bcs ru_finish
+.8bc9		4c 7f 89	jmp $897f
+.8bcc		ad 42 8f	lda $8f42	        lda ru_count
+.8bcf		0d 43 8f	ora $8f43	        ora ru_count+1
+.8bd2		d0 03		bne $8bd7	        beq ru_range
+.8bd4		4c 95 89	jmp $8995
+.8bd7		ad 43 8f	lda $8f43	        lda ru_count+1
+.8bda		c9 02		cmp #$02	        cmp #2
+.8bdc		90 07		bcc $8be5	        bcc +
+.8bde		d0 f4		bne $8bd4	        bne ru_range
+.8be0		ad 42 8f	lda $8f42	        lda ru_count
+.8be3		d0 ef		bne $8bd4	        bne ru_range
+.8be5		bd 7a 8f	lda $8f7a,x	+       lda ru_records+3,x
+.8be8		8d 5f 8f	sta $8f5f	        sta ru_bound+1
+.8beb		bd 7b 8f	lda $8f7b,x	        lda ru_records+4,x
+.8bee		8d 60 8f	sta $8f60	        sta ru_bound+2
+.8bf1		a9 00		lda #$00	        lda #0
+.8bf3		8d 5e 8f	sta $8f5e	        sta ru_bound
+.8bf6		a0 04		ldy #$04	        ldy #4
+.8bf8		0e 5f 8f	asl $8f5f	-       asl ru_bound+1
+.8bfb		2e 60 8f	rol $8f60	        rol ru_bound+2
+.8bfe		88		dey		        dey
+.8bff		d0 f7		bne $8bf8	        bne -
+.8c01		a9 00		lda #$00	        lda #0
+.8c03		2a		rol a		        rol
+.8c04		8d 64 8f	sta $8f64	        sta ru_full
+.8c07		18		clc		        clc
+.8c08		ad 3f 8f	lda $8f3f	        lda ru_offset
+.8c0b		6d 42 8f	adc $8f42	        adc ru_count
+.8c0e		8d 61 8f	sta $8f61	        sta ru_end
+.8c11		ad 40 8f	lda $8f40	        lda ru_offset+1
+.8c14		6d 43 8f	adc $8f43	        adc ru_count+1
+.8c17		8d 62 8f	sta $8f62	        sta ru_end+1
+.8c1a		ad 41 8f	lda $8f41	        lda ru_offset+2
+.8c1d		69 00		adc #$00	        adc #0
+.8c1f		8d 63 8f	sta $8f63	        sta ru_end+2
+.8c22		a9 00		lda #$00	        lda #0
+.8c24		2a		rol a		        rol
+.8c25		cd 64 8f	cmp $8f64	        cmp ru_full
+.8c28		90 16		bcc $8c40	        bcc ru_offset_valid
+.8c2a		d0 a8		bne $8bd4	        bne ru_range
+.8c2c		ad 5e 8f	lda $8f5e	        lda ru_bound
+.8c2f		cd 61 8f	cmp $8f61	        cmp ru_end
+.8c32		ad 5f 8f	lda $8f5f	        lda ru_bound+1
+.8c35		ed 62 8f	sbc $8f62	        sbc ru_end+1
+.8c38		ad 60 8f	lda $8f60	        lda ru_bound+2
+.8c3b		ed 63 8f	sbc $8f63	        sbc ru_end+2
+.8c3e		90 94		bcc $8bd4	        bcc ru_range
+.8c40						ru_offset_valid:
+.8c40		a9 00		lda #$00	        lda #0
+.8c42		8d 65 8f	sta $8f65	        sta ru_address
+.8c45		bd 78 8f	lda $8f78,x	        lda ru_records+1,x
+.8c48		8d 66 8f	sta $8f66	        sta ru_address+1
+.8c4b		bd 79 8f	lda $8f79,x	        lda ru_records+2,x
+.8c4e		8d 67 8f	sta $8f67	        sta ru_address+2
+.8c51		a0 04		ldy #$04	        ldy #4
+.8c53		0e 66 8f	asl $8f66	-       asl ru_address+1
+.8c56		2e 67 8f	rol $8f67	        rol ru_address+2
+.8c59		88		dey		        dey
+.8c5a		d0 f7		bne $8c53	        bne -
+.8c5c		18		clc		        clc
+.8c5d		ad 3f 8f	lda $8f3f	        lda ru_offset
+.8c60		8d 65 8f	sta $8f65	        sta ru_address
+.8c63		ad 40 8f	lda $8f40	        lda ru_offset+1
+.8c66		6d 66 8f	adc $8f66	        adc ru_address+1
+.8c69		8d 66 8f	sta $8f66	        sta ru_address+1
+.8c6c		ad 41 8f	lda $8f41	        lda ru_offset+2
+.8c6f		6d 67 8f	adc $8f67	        adc ru_address+2
+.8c72		8d 67 8f	sta $8f67	        sta ru_address+2
+.8c75		ad 42 8f	lda $8f42	        lda ru_count
+.8c78		8d 6c 8f	sta $8f6c	        sta ru_remaining
+.8c7b		ad 43 8f	lda $8f43	        lda ru_count+1
+.8c7e		8d 6d 8f	sta $8f6d	        sta ru_remaining+1
+.8c81						ru_chunk:
+.8c81		ad 6c 8f	lda $8f6c	        lda ru_remaining
+.8c84		8d 6a 8f	sta $8f6a	        sta ru_length
+.8c87		ad 6d 8f	lda $8f6d	        lda ru_remaining+1
+.8c8a		8d 6b 8f	sta $8f6b	        sta ru_length+1
+.8c8d		18		clc		        clc
+.8c8e		ad 65 8f	lda $8f65	        lda ru_address
+.8c91		6d 6a 8f	adc $8f6a	        adc ru_length
+.8c94		ad 66 8f	lda $8f66	        lda ru_address+1
+.8c97		6d 6b 8f	adc $8f6b	        adc ru_length+1
+.8c9a		90 11		bcc $8cad	        bcc +
+.8c9c		38		sec		        sec
+.8c9d		a9 00		lda #$00	        lda #0
+.8c9f		ed 65 8f	sbc $8f65	        sbc ru_address
+.8ca2		8d 6a 8f	sta $8f6a	        sta ru_length
+.8ca5		a9 00		lda #$00	        lda #0
+.8ca7		ed 66 8f	sbc $8f66	        sbc ru_address+1
+.8caa		8d 6b 8f	sta $8f6b	        sta ru_length+1
+.8cad		ad 44 8f	lda $8f44	+       lda ru_actual
+.8cb0		8d 68 8f	sta $8f68	        sta ru_host
+.8cb3		18		clc		        clc
+.8cb4		ad 45 8f	lda $8f45	        lda ru_actual+1
+.8cb7		69 3a		adc #$3a	        adc #>N_BUFFER
+.8cb9		8d 69 8f	sta $8f69	        sta ru_host+1
+.8cbc		20 48 8d	jsr $8d48	        jsr ru_dma
+.8cbf		90 03		bcc $8cc4	        bcs ru_finish
+.8cc1		4c 7f 89	jmp $897f
+.8cc4		18		clc		        clc
+.8cc5		ad 44 8f	lda $8f44	        lda ru_actual
+.8cc8		6d 6a 8f	adc $8f6a	        adc ru_length
+.8ccb		8d 44 8f	sta $8f44	        sta ru_actual
+.8cce		ad 45 8f	lda $8f45	        lda ru_actual+1
+.8cd1		6d 6b 8f	adc $8f6b	        adc ru_length+1
+.8cd4		8d 45 8f	sta $8f45	        sta ru_actual+1
+.8cd7		18		clc		        clc
+.8cd8		ad 65 8f	lda $8f65	        lda ru_address
+.8cdb		6d 6a 8f	adc $8f6a	        adc ru_length
+.8cde		8d 65 8f	sta $8f65	        sta ru_address
+.8ce1		ad 66 8f	lda $8f66	        lda ru_address+1
+.8ce4		6d 6b 8f	adc $8f6b	        adc ru_length+1
+.8ce7		8d 66 8f	sta $8f66	        sta ru_address+1
+.8cea		90 03		bcc $8cef	        bcc +
+.8cec		ee 67 8f	inc $8f67	        inc ru_address+2
+.8cef		38		sec		+       sec
+.8cf0		ad 6c 8f	lda $8f6c	        lda ru_remaining
+.8cf3		ed 6a 8f	sbc $8f6a	        sbc ru_length
+.8cf6		8d 6c 8f	sta $8f6c	        sta ru_remaining
+.8cf9		ad 6d 8f	lda $8f6d	        lda ru_remaining+1
+.8cfc		ed 6b 8f	sbc $8f6b	        sbc ru_length+1
+.8cff		8d 6d 8f	sta $8f6d	        sta ru_remaining+1
+.8d02		0d 6c 8f	ora $8f6c	        ora ru_remaining
+.8d05		f0 03		beq $8d0a	        bne ru_chunk
+.8d07		4c 81 8c	jmp $8c81
+.8d0a		4c 7d 89	jmp $897d	        jmp ru_success
+.8d0d						ru_transfer_failed:
+.8d0d		c9 07		cmp #$07	        cmp #N_REENTRANT
+.8d0f		d0 03		bne $8d14	        beq ru_enter_failed
+.8d11		4c 4a 89	jmp $894a
+.8d14		48		pha		        pha
+.8d15		a9 00		lda #$00	        lda #0
+.8d17		8d 44 8f	sta $8f44	        sta ru_actual
+.8d1a		8d 45 8f	sta $8f45	        sta ru_actual+1
+.8d1d		68		pla		        pla
+.8d1e		4c 7f 89	jmp $897f	        jmp ru_finish
+.8d21						ru_hw_check:
+.8d21		ad 01 df	lda $df01	        lda $df01
+.8d24		30 1e		bmi $8d44	        bmi ru_hw_busy
+.8d26		ad 09 df	lda $df09	        lda $df09
+.8d29		29 e0		and #$e0	        and #$e0
+.8d2b		d0 17		bne $8d44	        bne ru_hw_busy
+.8d2d		ad 09 df	lda $df09	        lda $df09
+.8d30		29 1f		and #$1f	        and #31
+.8d32		c9 1f		cmp #$1f	        cmp #31
+.8d34		f0 03		beq $8d39	        bne ru_platform_error
+.8d36		4c 42 89	jmp $8942
+.8d39		ad 0a df	lda $df0a	        lda $df0a
+.8d3c		29 3f		and #$3f	        and #63
+.8d3e		c9 3f		cmp #$3f	        cmp #63
+.8d40		d0 f4		bne $8d36	        bne ru_platform_error
+.8d42		18		clc		        clc
+.8d43		60		rts		        rts
+.8d44						ru_hw_busy:
+.8d44		a9 15		lda #$15	        lda #N_CHANNELS
+.8d46		38		sec		        sec
+.8d47		60		rts		        rts
+.8d48						ru_dma:
+.8d48		08		php		        php
+.8d49		78		sei		        sei
+.8d4a		20 21 8d	jsr $8d21	        jsr ru_hw_check
+.8d4d		b0 68		bcs $8db7	        bcs ru_dma_return
+.8d4f		ad 06 d5	lda $d506	        lda $d506
+.8d52		48		pha		        pha
+.8d53		29 bf		and #$bf	        and #$bf              ; DMA sees physical bank 0; no MMU/ROM changes
+.8d55		8d 06 d5	sta $d506	        sta $d506
+.8d58		ad 30 d0	lda $d030	        lda $d030
+.8d5b		48		pha		        pha
+.8d5c		29 fe		and #$fe	        and #$fe
+.8d5e		8d 30 d0	sta $d030	        sta $d030
+.8d61		a9 00		lda #$00	        lda #0
+.8d63		8d 09 df	sta $df09	        sta $df09
+.8d66		8d 0a df	sta $df0a	        sta $df0a
+.8d69		ad 68 8f	lda $8f68	        lda ru_host
+.8d6c		8d 02 df	sta $df02	        sta $df02
+.8d6f		ad 69 8f	lda $8f69	        lda ru_host+1
+.8d72		8d 03 df	sta $df03	        sta $df03
+.8d75		a2 02		ldx #$02	        ldx #2
+.8d77		bd 65 8f	lda $8f65,x	-       lda ru_address,x
+.8d7a		9d 04 df	sta $df04,x	        sta $df04,x
+.8d7d		ca		dex		        dex
+.8d7e		10 f7		bpl $8d77	        bpl -
+.8d80		ad 6a 8f	lda $8f6a	        lda ru_length
+.8d83		8d 07 df	sta $df07	        sta $df07
+.8d86		ad 6b 8f	lda $8f6b	        lda ru_length+1
+.8d89		8d 08 df	sta $df08	        sta $df08
+.8d8c		ad 00 df	lda $df00	        lda $df00             ; acknowledge this arena's old completion
+.8d8f		ad 6e 8f	lda $8f6e	        lda ru_command
+.8d92		8d 01 df	sta $df01	        sta $df01             ; immediate, <=512 bytes; CPU resumes after DMA
+.8d95		ad 00 df	lda $df00	        lda $df00
+.8d98		29 60		and #$60	        and #$60
+.8d9a		c9 40		cmp #$40	        cmp #$40
+.8d9c		08		php		        php
+.8d9d		a9 00		lda #$00	        lda #0
+.8d9f		8d 06 df	sta $df06	        sta $df06
+.8da2		a9 10		lda #$10	        lda #$10
+.8da4		8d 01 df	sta $df01	        sta $df01             ; disarm FF00 decode before any native bank call
+.8da7		a2 00		ldx #$00	        ldx #0
+.8da9		28		plp		        plp
+.8daa		f0 02		beq $8dae	        beq +
+.8dac		a2 11		ldx #$11	        ldx #N_IOERROR
+.8dae		68		pla		+       pla
+.8daf		8d 30 d0	sta $d030	        sta $d030
+.8db2		68		pla		        pla
+.8db3		8d 06 d5	sta $d506	        sta $d506
+.8db6		8a		txa		        txa
+.8db7						ru_dma_return:
+.8db7		28		plp		        plp
+.8db8		c9 01		cmp #$01	        cmp #1
+.8dba		60		rts		        rts
+.8dbb						ru_probe:
+.8dbb		20 21 8d	jsr $8d21	        jsr ru_hw_check
+.8dbe		90 03		bcc $8dc3	        bcs ru_probe_return
+.8dc0		4c bb 8e	jmp $8ebb
+.8dc3		a9 00		lda #$00	        lda #0
+.8dc5		8d 65 8f	sta $8f65	        sta ru_address
+.8dc8		8d 66 8f	sta $8f66	        sta ru_address+1
+.8dcb		8d 67 8f	sta $8f67	        sta ru_address+2
+.8dce		a9 02		lda #$02	        lda #2
+.8dd0		8d 6a 8f	sta $8f6a	        sta ru_length
+.8dd3		a9 00		lda #$00	        lda #0
+.8dd5		8d 6b 8f	sta $8f6b	        sta ru_length+1
+.8dd8		a9 75		lda #$75	        lda #<ru_probe_data
+.8dda		8d 68 8f	sta $8f68	        sta ru_host
+.8ddd		a9 8f		lda #$8f	        lda #>ru_probe_data
+.8ddf		8d 69 8f	sta $8f69	        sta ru_host+1
+.8de2		20 c0 8e	jsr $8ec0	        jsr ru_probe_read
+.8de5		b0 d9		bcs $8dc0	        bcs ru_probe_return
+.8de7		ad 75 8f	lda $8f75	        lda ru_probe_data
+.8dea		8d 71 8f	sta $8f71	        sta ru_probe_zero
+.8ded		ad 76 8f	lda $8f76	        lda ru_probe_data+1
+.8df0		8d 72 8f	sta $8f72	        sta ru_probe_zero+1
+.8df3		a9 01		lda #$01	        lda #1
+.8df5		8d 6f 8f	sta $8f6f	        sta ru_probe_live
+.8df8		a9 55		lda #$55	        lda #$55
+.8dfa		8d 75 8f	sta $8f75	        sta ru_probe_data
+.8dfd		a9 aa		lda #$aa	        lda #$aa
+.8dff		8d 76 8f	sta $8f76	        sta ru_probe_data+1
+.8e02		20 c4 8e	jsr $8ec4	        jsr ru_probe_write
+.8e05		b0 b9		bcs $8dc0	        bcs ru_probe_return
+.8e07		20 c0 8e	jsr $8ec0	        jsr ru_probe_read
+.8e0a		b0 b4		bcs $8dc0	        bcs ru_probe_return
+.8e0c		ad 75 8f	lda $8f75	        lda ru_probe_data
+.8e0f		c9 55		cmp #$55	        cmp #$55
+.8e11		f0 03		beq $8e16	        bne ru_probe_error
+.8e13		4c bc 8e	jmp $8ebc
+.8e16		ad 76 8f	lda $8f76	        lda ru_probe_data+1
+.8e19		c9 aa		cmp #$aa	        cmp #$aa
+.8e1b		d0 f6		bne $8e13	        bne ru_probe_error
+.8e1d		a9 01		lda #$01	        lda #1
+.8e1f		8d 70 8f	sta $8f70	        sta ru_probe_bank
+.8e22						ru_probe_bank_next:
+.8e22		ad 70 8f	lda $8f70	        lda ru_probe_bank
+.8e25		8d 67 8f	sta $8f67	        sta ru_address+2
+.8e28		20 c0 8e	jsr $8ec0	        jsr ru_probe_read
+.8e2b		b0 93		bcs $8dc0	        bcs ru_probe_return
+.8e2d		ad 75 8f	lda $8f75	        lda ru_probe_data
+.8e30		8d 73 8f	sta $8f73	        sta ru_probe_other
+.8e33		ad 76 8f	lda $8f76	        lda ru_probe_data+1
+.8e36		8d 74 8f	sta $8f74	        sta ru_probe_other+1
+.8e39		a9 03		lda #$03	        lda #3
+.8e3b		8d 6f 8f	sta $8f6f	        sta ru_probe_live
+.8e3e		a9 a5		lda #$a5	        lda #$a5
+.8e40		8d 75 8f	sta $8f75	        sta ru_probe_data
+.8e43		a9 5a		lda #$5a	        lda #$5a
+.8e45		8d 76 8f	sta $8f76	        sta ru_probe_data+1
+.8e48		20 c4 8e	jsr $8ec4	        jsr ru_probe_write
+.8e4b		b0 6e		bcs $8ebb	        bcs ru_probe_return
+.8e4d		20 c0 8e	jsr $8ec0	        jsr ru_probe_read
+.8e50		b0 69		bcs $8ebb	        bcs ru_probe_return
+.8e52		ad 75 8f	lda $8f75	        lda ru_probe_data
+.8e55		c9 a5		cmp #$a5	        cmp #$a5
+.8e57		d0 35		bne $8e8e	        bne ru_probe_limit
+.8e59		ad 76 8f	lda $8f76	        lda ru_probe_data+1
+.8e5c		c9 5a		cmp #$5a	        cmp #$5a
+.8e5e		d0 2e		bne $8e8e	        bne ru_probe_limit
+.8e60		a9 00		lda #$00	        lda #0
+.8e62		8d 67 8f	sta $8f67	        sta ru_address+2
+.8e65		20 c0 8e	jsr $8ec0	        jsr ru_probe_read
+.8e68		b0 51		bcs $8ebb	        bcs ru_probe_return
+.8e6a		ad 75 8f	lda $8f75	        lda ru_probe_data
+.8e6d		c9 55		cmp #$55	        cmp #$55
+.8e6f		d0 1d		bne $8e8e	        bne ru_probe_limit
+.8e71		ad 76 8f	lda $8f76	        lda ru_probe_data+1
+.8e74		c9 aa		cmp #$aa	        cmp #$aa
+.8e76		d0 16		bne $8e8e	        bne ru_probe_limit
+.8e78		20 cc 8e	jsr $8ecc	        jsr ru_probe_restore_other
+.8e7b		b0 3e		bcs $8ebb	        bcs ru_probe_return
+.8e7d		0e 70 8f	asl $8f70	        asl ru_probe_bank
+.8e80		d0 a0		bne $8e22	        bne ru_probe_bank_next
+.8e82		a9 00		lda #$00	        lda #0
+.8e84		8d 47 8f	sta $8f47	        sta ru_total
+.8e87		a9 10		lda #$10	        lda #16
+.8e89		8d 48 8f	sta $8f48	        sta ru_total+1        ; all 256 banks: 16 MiB = 4096 pages
+.8e8c		d0 16		bne $8ea4	        bne ru_probe_done
+.8e8e						ru_probe_limit:
+.8e8e		ad 70 8f	lda $8f70	        lda ru_probe_bank
+.8e91		8d 47 8f	sta $8f47	        sta ru_total
+.8e94		a9 00		lda #$00	        lda #0
+.8e96		8d 48 8f	sta $8f48	        sta ru_total+1
+.8e99		a2 04		ldx #$04	        ldx #4
+.8e9b		0e 47 8f	asl $8f47	-       asl ru_total
+.8e9e		2e 48 8f	rol $8f48	        rol ru_total+1
+.8ea1		ca		dex		        dex
+.8ea2		d0 f7		bne $8e9b	        bne -
+.8ea4						ru_probe_done:
+.8ea4		20 f1 8e	jsr $8ef1	        jsr ru_probe_restore
+.8ea7		b0 12		bcs $8ebb	        bcs ru_probe_return
+.8ea9		ad 48 8f	lda $8f48	        lda ru_total+1
+.8eac		d0 0a		bne $8eb8	        bne +
+.8eae		ad 47 8f	lda $8f47	        lda ru_total
+.8eb1		c9 20		cmp #$20	        cmp #32
+.8eb3		b0 03		bcs $8eb8	        bcc ru_platform_error
+.8eb5		4c 42 89	jmp $8942
+.8eb8		a9 00		lda #$00	+       lda #0
+.8eba		18		clc		        clc
+.8ebb						ru_probe_return:
+.8ebb		60		rts		        rts
+.8ebc						ru_probe_error:
+.8ebc		a9 11		lda #$11	        lda #N_IOERROR
+.8ebe		38		sec		        sec
+.8ebf		60		rts		        rts
+.8ec0						ru_probe_read:
+.8ec0		a9 91		lda #$91	        lda #$91
+.8ec2		d0 02		bne $8ec6	        bne +
+.8ec4						ru_probe_write:
+.8ec4		a9 90		lda #$90	        lda #$90
+.8ec6		8d 6e 8f	sta $8f6e	+       sta ru_command
+.8ec9		4c 48 8d	jmp $8d48	        jmp ru_dma
+.8ecc						ru_probe_restore_other:
+.8ecc		ad 6f 8f	lda $8f6f	        lda ru_probe_live
+.8ecf		29 02		and #$02	        and #2
+.8ed1		f0 1c		beq $8eef	        beq +
+.8ed3		ad 70 8f	lda $8f70	        lda ru_probe_bank
+.8ed6		8d 67 8f	sta $8f67	        sta ru_address+2
+.8ed9		ad 73 8f	lda $8f73	        lda ru_probe_other
+.8edc		8d 75 8f	sta $8f75	        sta ru_probe_data
+.8edf		ad 74 8f	lda $8f74	        lda ru_probe_other+1
+.8ee2		8d 76 8f	sta $8f76	        sta ru_probe_data+1
+.8ee5		20 c4 8e	jsr $8ec4	        jsr ru_probe_write
+.8ee8		b0 d1		bcs $8ebb	        bcs ru_probe_return
+.8eea		a9 01		lda #$01	        lda #1
+.8eec		8d 6f 8f	sta $8f6f	        sta ru_probe_live
+.8eef		18		clc		+       clc
+.8ef0		60		rts		        rts
+.8ef1						ru_probe_restore:
+.8ef1		ad 6f 8f	lda $8f6f	        lda ru_probe_live
+.8ef4		f0 3a		beq $8f30	        beq +
+.8ef6		a9 00		lda #$00	        lda #0
+.8ef8		8d 65 8f	sta $8f65	        sta ru_address
+.8efb		8d 66 8f	sta $8f66	        sta ru_address+1
+.8efe		8d 6b 8f	sta $8f6b	        sta ru_length+1
+.8f01		a9 02		lda #$02	        lda #2
+.8f03		8d 6a 8f	sta $8f6a	        sta ru_length
+.8f06		a9 75		lda #$75	        lda #<ru_probe_data
+.8f08		8d 68 8f	sta $8f68	        sta ru_host
+.8f0b		a9 8f		lda #$8f	        lda #>ru_probe_data
+.8f0d		8d 69 8f	sta $8f69	        sta ru_host+1
+.8f10		20 cc 8e	jsr $8ecc	        jsr ru_probe_restore_other
+.8f13		b0 a6		bcs $8ebb	        bcs ru_probe_return
+.8f15		a9 00		lda #$00	        lda #0
+.8f17		8d 67 8f	sta $8f67	        sta ru_address+2
+.8f1a		ad 71 8f	lda $8f71	        lda ru_probe_zero
+.8f1d		8d 75 8f	sta $8f75	        sta ru_probe_data
+.8f20		ad 72 8f	lda $8f72	        lda ru_probe_zero+1
+.8f23		8d 76 8f	sta $8f76	        sta ru_probe_data+1
+.8f26		20 c4 8e	jsr $8ec4	        jsr ru_probe_write
+.8f29		b0 90		bcs $8ebb	        bcs ru_probe_return
+.8f2b		a9 00		lda #$00	        lda #0
+.8f2d		8d 6f 8f	sta $8f6f	        sta ru_probe_live
+.8f30		18		clc		+       clc
+.8f31		60		rts		        rts
+>8f32		00				ru_owner: .byte 0
+>8f33		00 00				ru_pages: .word 0             ; request, 4 KiB pages
+>8f35		00 00				ru_page: .word 0              ; reserve input / allocation start output
+>8f37		00 00 00 00 00 00 00 00		ru_handle: .fill 8,0
+>8f3f		00 00 00			ru_offset: .fill 3,0          ; allocation-relative byte offset, LE24
+>8f42		00 00				ru_count: .word 0             ; 1..512 bytes through N_BUFFER
+>8f44		00 00				ru_actual: .word 0            ; completed prefix; zero before validation
+>8f46		00				ru_error: .byte 0
+>8f47		00 00				ru_total: .word 0             ; detected 4 KiB pages
+>8f49		00 00				ru_available: .word 0
+>8f4b		00				ru_slots: .byte 0
+>8f4c		00				ru_active: .byte 0
+>8f4d		00				ru_busy: .byte 0
+>8f4e		00 00 00 00			ru_cookie: .fill 4,0
+>8f52		00 00 00 00			ru_current: .fill 4,0
+>8f56		00				ru_fixed: .byte 0
+>8f57		00				ru_slot: .byte 0
+>8f58		00 00				ru_first: .word 0
+>8f5a		00 00				ru_limit: .word 0
+>8f5c		00 00				ru_last: .word 0
+>8f5e		00 00 00			ru_bound: .fill 3,0
+>8f61		00 00 00			ru_end: .fill 3,0
+>8f64		00				ru_full: .byte 0
+>8f65		00 00 00			ru_address: .fill 3,0
+>8f68		00 00				ru_host: .word 0
+>8f6a		00 00				ru_length: .word 0
+>8f6c		00 00				ru_remaining: .word 0
+>8f6e		00				ru_command: .byte 0
+>8f6f		00				ru_probe_live: .byte 0
+>8f70		00				ru_probe_bank: .byte 0
+>8f71		00 00				ru_probe_zero: .word 0
+>8f73		00 00				ru_probe_other: .word 0
+>8f75		00 00				ru_probe_data: .word 0
+>8f77		00 00 00 00 00 00 00 00		ru_records: .fill 256,0       ; owner, start LE16, count LE16, generation LE24
+>8f7f		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;		...repeated 14 times (224 bytes)...
+>906f		00 00 00 00 00 00 00 00
+.9077						ru_end_library:
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-reu.inc
+
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-mirror.inc
+
+=$90aa						vd_initial_bitmap=vm_initial
+=$9451						vd_initial_attributes=vd_success
 =1						gfx_track_dirty=1
-.879e						vm_dirty:
-.879e		ad 89 7d	lda $7d89	        lda gfx_clipped+6
-.87a1		38		sec		        sec
-.87a2		e9 01		sbc #$01	        sbc #1
-.87a4		ae 8b 7d	ldx $7d8b	        ldx gfx_operation
-.87a7		e0 01		cpx #$01	        cpx #1
-.87a9		f0 03		beq $87ae	        beq +
-.87ab		4a		lsr a		        lsr
-.87ac		4a		lsr a		        lsr
-.87ad		4a		lsr a		        lsr
-.87ae		aa		tax		+       tax
-.87af		ad 85 7d	lda $7d85	        lda gfx_clipped+2
-.87b2		ac 8b 7d	ldy $7d8b	        ldy gfx_operation
-.87b5		c0 01		cpy #$01	        cpy #1
-.87b7		f0 03		beq $87bc	        beq +
-.87b9		4a		lsr a		        lsr
-.87ba		4a		lsr a		        lsr
-.87bb		4a		lsr a		        lsr
-.87bc		8d a1 89	sta $89a1	+       sta vm_first
-.87bf		a9 01		lda #$01	        lda #1
-.87c1		8d a0 89	sta $89a0	        sta vm_pending
-.87c4		9d 87 89	sta $8987,x	-       sta vm_rows,x
-.87c7		ec a1 89	cpx $89a1	        cpx vm_first
-.87ca		f0 04		beq $87d0	        beq +
-.87cc		ca		dex		        dex
-.87cd		4c c4 87	jmp $87c4	        jmp -
-.87d0						+
-.87d0		60		rts		        rts
-.87d1						vm_initial:
-.87d1		a9 01		lda #$01	        lda #1
-.87d3		8d a0 89	sta $89a0	        sta vm_pending
-.87d6		a2 18		ldx #$18	        ldx #24
-.87d8		9d 87 89	sta $8987,x	-       sta vm_rows,x
-.87db		ca		dex		        dex
-.87dc		10 fa		bpl $87d8	        bpl -
-.87de		4c f6 87	jmp $87f6	        jmp vm_flush
-.87e1						vm_present:
-.87e1		ad d1 8e	lda $8ed1	        lda vd_fault
-.87e4		d0 39		bne $881f	        bne vm_failed
-.87e6		ad cf 8e	lda $8ecf	        lda vd_live
-.87e9		f0 32		beq $881d	        beq vm_done
-.87eb		ad a0 89	lda $89a0	        lda vm_pending
-.87ee		f0 2d		beq $881d	        beq vm_done
-.87f0		20 7c 8b	jsr $8b7c	        jsr vd_gate
-.87f3		20 3d 8e	jsr $8e3d	        jsr vd_hide_pointer
-.87f6						vm_flush:
-.87f6		a9 00		lda #$00	        lda #0
-.87f8		8d a2 89	sta $89a2	        sta vm_row
-.87fb						vm_row_next:
-.87fb		ae a2 89	ldx $89a2	        ldx vm_row
-.87fe		bd 87 89	lda $8987,x	        lda vm_rows,x
-.8801		f0 0b		beq $880e	        beq vm_row_done
-.8803		20 21 88	jsr $8821	        jsr vm_draw_row
-.8806		ae a2 89	ldx $89a2	        ldx vm_row
-.8809		a9 00		lda #$00	        lda #0
-.880b		9d 87 89	sta $8987,x	        sta vm_rows,x         ; commit only after the complete row and attributes
-.880e						vm_row_done:
-.880e		ee a2 89	inc $89a2	        inc vm_row
-.8811		ad a2 89	lda $89a2	        lda vm_row
-.8814		c9 19		cmp #$19	        cmp #25
-.8816		d0 e3		bne $87fb	        bne vm_row_next
-.8818		a9 00		lda #$00	        lda #0
-.881a		8d a0 89	sta $89a0	        sta vm_pending
-.881d						vm_done:
-.881d		18		clc		        clc
-.881e		60		rts		        rts
-.881f						vm_failed:
-.881f		38		sec		        sec
-.8820		60		rts		        rts
-.8821						vm_draw_row:
-.8821		20 03 6d	jsr $6d03	        jsr vm_select_surface
-.8824		ad a2 89	lda $89a2	        lda vm_row
-.8827		0a		asl a		        asl
-.8828		aa		tax		        tax
-.8829		bd db 7d	lda $7ddb,x	        lda gfx_rows,x
-.882c		8d 08 3d	sta $3d08	        sta N_OFFSET
-.882f		bd dc 7d	lda $7ddc,x	        lda gfx_rows+1,x
-.8832		8d 09 3d	sta $3d09	        sta N_OFFSET+1
-.8835		a2 03		ldx #$03	        ldx #3
-.8837		4e 09 3d	lsr $3d09	-       lsr N_OFFSET+1
-.883a		6e 08 3d	ror $3d08	        ror N_OFFSET
-.883d		ca		dex		        dex
-.883e		d0 f7		bne $8837	        bne -
-.8840		ad 09 3d	lda $3d09	        lda N_OFFSET+1
-.8843		09 20		ora #$20	        ora #$20
-.8845		8d 09 3d	sta $3d09	        sta N_OFFSET+1
-.8848		a9 28		lda #$28	        lda #40
-.884a		8d 0a 3d	sta $3d0a	        sta N_COUNT
-.884d		a9 00		lda #$00	        lda #0
-.884f		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
-.8852		20 26 1c	jsr $1c26	        jsr N_READ
-.8855		b0 6c		bcs $88c3	        bcs vm_read_failed
-.8857		a0 27		ldy #$27	        ldy #39
-.8859						vm_color_next:
-.8859		b9 00 3a	lda $3a00,y	        lda N_BUFFER,y
-.885c		29 0f		and #$0f	        and #15
-.885e		aa		tax		        tax
-.885f		bd 57 89	lda $8957,x	        lda vm_palette,x
-.8862		8d a5 89	sta $89a5	        sta vm_background
-.8865		bd 67 89	lda $8967,x	        lda vm_light,x
-.8868		8d a7 89	sta $89a7	        sta vm_brightness
-.886b		b9 00 3a	lda $3a00,y	        lda N_BUFFER,y
-.886e		4a		lsr a		        lsr
-.886f		4a		lsr a		        lsr
-.8870		4a		lsr a		        lsr
-.8871		4a		lsr a		        lsr
-.8872		aa		tax		        tax
-.8873		bd 57 89	lda $8957,x	        lda vm_palette,x
-.8876		8d a6 89	sta $89a6	        sta vm_foreground
-.8879		a9 00		lda #$00	        lda #0
-.887b		99 d0 89	sta $89d0,y	        sta vm_reverse,y
-.887e		ad d0 8e	lda $8ed0	        lda vd_color
-.8881		f0 10		beq $8893	        beq vm_mono
-.8883		ad a5 89	lda $89a5	        lda vm_background
-.8886		0a		asl a		        asl
-.8887		0a		asl a		        asl
-.8888		0a		asl a		        asl
-.8889		0a		asl a		        asl
-.888a		0d a6 89	ora $89a6	        ora vm_foreground
-.888d		99 a8 89	sta $89a8,y	        sta vm_colors,y
-.8890		4c a0 88	jmp $88a0	        jmp vm_color_done
-.8893						vm_mono:
-.8893		bd 67 89	lda $8967,x	        lda vm_light,x
-.8896		cd a7 89	cmp $89a7	        cmp vm_brightness
-.8899		b0 05		bcs $88a0	        bcs vm_color_done
-.889b		a9 ff		lda #$ff	        lda #$ff
-.889d		99 d0 89	sta $89d0,y	        sta vm_reverse,y
-.88a0						vm_color_done:
-.88a0		88		dey		        dey
-.88a1		10 b6		bpl $8859	        bpl vm_color_next
-.88a3		ad a2 89	lda $89a2	        lda vm_row
-.88a6		0a		asl a		        asl
-.88a7		aa		tax		        tax
-.88a8		bd db 7d	lda $7ddb,x	        lda gfx_rows,x
-.88ab		8d 08 3d	sta $3d08	        sta N_OFFSET
-.88ae		bd dc 7d	lda $7ddc,x	        lda gfx_rows+1,x
-.88b1		8d 09 3d	sta $3d09	        sta N_OFFSET+1
-.88b4		a9 40		lda #$40	        lda #64
-.88b6		8d 0a 3d	sta $3d0a	        sta N_COUNT
-.88b9		a9 01		lda #$01	        lda #1
-.88bb		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
-.88be		20 26 1c	jsr $1c26	        jsr N_READ
-.88c1		90 03		bcc $88c6	        bcc +
-.88c3						vm_read_failed:
-.88c3		4c 6f 8b	jmp $8b6f	        jmp vd_fail
-.88c6		ad a2 89	lda $89a2	+       lda vm_row
-.88c9		0a		asl a		        asl
-.88ca		0a		asl a		        asl
-.88cb		0a		asl a		        asl
-.88cc		a2 00		ldx #$00	        ldx #0
-.88ce		20 37 8d	jsr $8d37	        jsr vd_xy
-.88d1		a9 00		lda #$00	        lda #0
-.88d3		8d a3 89	sta $89a3	        sta vm_line
-.88d6						vm_line_next:
-.88d6		20 d6 8c	jsr $8cd6	        jsr vd_seek
-.88d9		a9 3a		lda #$3a	        lda #>N_BUFFER
-.88db		8d eb 88	sta $88eb	        sta vm_read+2
-.88de		a9 00		lda #$00	        lda #0
-.88e0		8d a4 89	sta $89a4	        sta vm_column
-.88e3		ac a3 89	ldy $89a3	        ldy vm_line
-.88e6						vm_byte_next:
-.88e6		ae a4 89	ldx $89a4	        ldx vm_column
-.88e9						vm_read:
-.88e9		b9 00 3a	lda $3a00,y	        lda N_BUFFER,y
-.88ec		5d d0 89	eor $89d0,x	        eor vm_reverse,x
-.88ef		48		pha		        pha
-.88f0		4a		lsr a		        lsr
-.88f1		4a		lsr a		        lsr
-.88f2		4a		lsr a		        lsr
-.88f3		4a		lsr a		        lsr
-.88f4		aa		tax		        tax
-.88f5		bd 77 89	lda $8977,x	        lda vm_expand,x
-.88f8		20 fe 8c	jsr $8cfe	        jsr vd_putbyte
-.88fb		68		pla		        pla
-.88fc		29 0f		and #$0f	        and #15
-.88fe		aa		tax		        tax
-.88ff		bd 77 89	lda $8977,x	        lda vm_expand,x
-.8902		20 fe 8c	jsr $8cfe	        jsr vd_putbyte
-.8905		98		tya		        tya
-.8906		18		clc		        clc
-.8907		69 08		adc #$08	        adc #8
-.8909		a8		tay		        tay
-.890a		90 03		bcc $890f	        bcc +
-.890c		ee eb 88	inc $88eb	        inc vm_read+2
-.890f		ee a4 89	inc $89a4	+       inc vm_column
-.8912		ad a4 89	lda $89a4	        lda vm_column
-.8915		c9 28		cmp #$28	        cmp #40
-.8917		d0 cd		bne $88e6	        bne vm_byte_next
-.8919		20 84 8d	jsr $8d84	        jsr vd_next_row
-.891c		ee a3 89	inc $89a3	        inc vm_line
-.891f		ad a3 89	lda $89a3	        lda vm_line
-.8922		c9 08		cmp #$08	        cmp #8
-.8924		d0 b0		bne $88d6	        bne vm_line_next
-.8926		ad d0 8e	lda $8ed0	        lda vd_color
-.8929		d0 03		bne $892e	        beq vm_done
-.892b		4c 1d 88	jmp $881d
-.892e		ad d3 8e	lda $8ed3	        lda vd_base
-.8931		48		pha		        pha
-.8932		a9 80		lda #$80	        lda #$80
-.8934		8d d3 8e	sta $8ed3	        sta vd_base
-.8937		ad a2 89	lda $89a2	        lda vm_row
-.893a		a2 00		ldx #$00	        ldx #0
-.893c		20 37 8d	jsr $8d37	        jsr vd_xy
-.893f		68		pla		        pla
-.8940		8d d3 8e	sta $8ed3	        sta vd_base
-.8943		20 d6 8c	jsr $8cd6	        jsr vd_seek
-.8946		a0 00		ldy #$00	        ldy #0
-.8948		b9 a8 89	lda $89a8,y	-       lda vm_colors,y
-.894b		20 fe 8c	jsr $8cfe	        jsr vd_putbyte
-.894e		20 fe 8c	jsr $8cfe	        jsr vd_putbyte
-.8951		c8		iny		        iny
-.8952		c0 28		cpy #$28	        cpy #40
-.8954		d0 f2		bne $8948	        bne -
-.8956		60		rts		        rts
->8957		00 0f 08 07 0a 04 02 0d		vm_palette: .byte 0,15,8,7,10,4,2,13,12,12,9,1,14,5,3,14
->895f		0c 0c 09 01 0e 05 03 0e
->8967		00 ff 33 cc 46 64 13 ec		vm_light: .byte 0,255,51,204,70,100,19,236,101,101,136,85,170,185,104,170
->896f		65 65 88 55 aa b9 68 aa
->8977		00 03 0c 0f 30 33 3c 3f		vm_expand: .byte $00,$03,$0c,$0f,$30,$33,$3c,$3f,$c0,$c3,$cc,$cf,$f0,$f3,$fc,$ff
->897f		c0 c3 cc cf f0 f3 fc ff
->8987		00 00 00 00 00 00 00 00		vm_rows: .fill 25,0
->898f		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->899f		00
->89a0		00				vm_pending: .byte 0
->89a1		00				vm_first: .byte 0
->89a2		00				vm_row: .byte 0
->89a3		00				vm_line: .byte 0
->89a4		00				vm_column: .byte 0
->89a5		00				vm_background: .byte 0
->89a6		00				vm_foreground: .byte 0
->89a7		00				vm_brightness: .byte 0
->89a8		00 00 00 00 00 00 00 00		vm_colors: .fill 40,0
->89b0		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->89c0		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->89d0		00 00 00 00 00 00 00 00		vm_reverse: .fill 40,0
->89d8		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->89e8		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+.9077						vm_dirty:
+.9077		ad 89 7d	lda $7d89	        lda gfx_clipped+6
+.907a		38		sec		        sec
+.907b		e9 01		sbc #$01	        sbc #1
+.907d		ae 8b 7d	ldx $7d8b	        ldx gfx_operation
+.9080		e0 01		cpx #$01	        cpx #1
+.9082		f0 03		beq $9087	        beq +
+.9084		4a		lsr a		        lsr
+.9085		4a		lsr a		        lsr
+.9086		4a		lsr a		        lsr
+.9087		aa		tax		+       tax
+.9088		ad 85 7d	lda $7d85	        lda gfx_clipped+2
+.908b		ac 8b 7d	ldy $7d8b	        ldy gfx_operation
+.908e		c0 01		cpy #$01	        cpy #1
+.9090		f0 03		beq $9095	        beq +
+.9092		4a		lsr a		        lsr
+.9093		4a		lsr a		        lsr
+.9094		4a		lsr a		        lsr
+.9095		8d 7a 92	sta $927a	+       sta vm_first
+.9098		a9 01		lda #$01	        lda #1
+.909a		8d 79 92	sta $9279	        sta vm_pending
+.909d		9d 60 92	sta $9260,x	-       sta vm_rows,x
+.90a0		ec 7a 92	cpx $927a	        cpx vm_first
+.90a3		f0 04		beq $90a9	        beq +
+.90a5		ca		dex		        dex
+.90a6		4c 9d 90	jmp $909d	        jmp -
+.90a9						+
+.90a9		60		rts		        rts
+.90aa						vm_initial:
+.90aa		a9 01		lda #$01	        lda #1
+.90ac		8d 79 92	sta $9279	        sta vm_pending
+.90af		a2 18		ldx #$18	        ldx #24
+.90b1		9d 60 92	sta $9260,x	-       sta vm_rows,x
+.90b4		ca		dex		        dex
+.90b5		10 fa		bpl $90b1	        bpl -
+.90b7		4c cf 90	jmp $90cf	        jmp vm_flush
+.90ba						vm_present:
+.90ba		ad af 97	lda $97af	        lda vd_fault
+.90bd		d0 39		bne $90f8	        bne vm_failed
+.90bf		ad ad 97	lda $97ad	        lda vd_live
+.90c2		f0 32		beq $90f6	        beq vm_done
+.90c4		ad 79 92	lda $9279	        lda vm_pending
+.90c7		f0 2d		beq $90f6	        beq vm_done
+.90c9		20 55 94	jsr $9455	        jsr vd_gate
+.90cc		20 1b 97	jsr $971b	        jsr vd_hide_pointer
+.90cf						vm_flush:
+.90cf		a9 00		lda #$00	        lda #0
+.90d1		8d 7b 92	sta $927b	        sta vm_row
+.90d4						vm_row_next:
+.90d4		ae 7b 92	ldx $927b	        ldx vm_row
+.90d7		bd 60 92	lda $9260,x	        lda vm_rows,x
+.90da		f0 0b		beq $90e7	        beq vm_row_done
+.90dc		20 fa 90	jsr $90fa	        jsr vm_draw_row
+.90df		ae 7b 92	ldx $927b	        ldx vm_row
+.90e2		a9 00		lda #$00	        lda #0
+.90e4		9d 60 92	sta $9260,x	        sta vm_rows,x         ; commit only after the complete row and attributes
+.90e7						vm_row_done:
+.90e7		ee 7b 92	inc $927b	        inc vm_row
+.90ea		ad 7b 92	lda $927b	        lda vm_row
+.90ed		c9 19		cmp #$19	        cmp #25
+.90ef		d0 e3		bne $90d4	        bne vm_row_next
+.90f1		a9 00		lda #$00	        lda #0
+.90f3		8d 79 92	sta $9279	        sta vm_pending
+.90f6						vm_done:
+.90f6		18		clc		        clc
+.90f7		60		rts		        rts
+.90f8						vm_failed:
+.90f8		38		sec		        sec
+.90f9		60		rts		        rts
+.90fa						vm_draw_row:
+.90fa		20 03 6d	jsr $6d03	        jsr vm_select_surface
+.90fd		ad 7b 92	lda $927b	        lda vm_row
+.9100		0a		asl a		        asl
+.9101		aa		tax		        tax
+.9102		bd db 7d	lda $7ddb,x	        lda gfx_rows,x
+.9105		8d 08 3d	sta $3d08	        sta N_OFFSET
+.9108		bd dc 7d	lda $7ddc,x	        lda gfx_rows+1,x
+.910b		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.910e		a2 03		ldx #$03	        ldx #3
+.9110		4e 09 3d	lsr $3d09	-       lsr N_OFFSET+1
+.9113		6e 08 3d	ror $3d08	        ror N_OFFSET
+.9116		ca		dex		        dex
+.9117		d0 f7		bne $9110	        bne -
+.9119		ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.911c		09 20		ora #$20	        ora #$20
+.911e		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.9121		a9 28		lda #$28	        lda #40
+.9123		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.9126		a9 00		lda #$00	        lda #0
+.9128		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.912b		20 26 1c	jsr $1c26	        jsr N_READ
+.912e		b0 6c		bcs $919c	        bcs vm_read_failed
+.9130		a0 27		ldy #$27	        ldy #39
+.9132						vm_color_next:
+.9132		b9 00 3a	lda $3a00,y	        lda N_BUFFER,y
+.9135		29 0f		and #$0f	        and #15
+.9137		aa		tax		        tax
+.9138		bd 30 92	lda $9230,x	        lda vm_palette,x
+.913b		8d 7e 92	sta $927e	        sta vm_background
+.913e		bd 40 92	lda $9240,x	        lda vm_light,x
+.9141		8d 80 92	sta $9280	        sta vm_brightness
+.9144		b9 00 3a	lda $3a00,y	        lda N_BUFFER,y
+.9147		4a		lsr a		        lsr
+.9148		4a		lsr a		        lsr
+.9149		4a		lsr a		        lsr
+.914a		4a		lsr a		        lsr
+.914b		aa		tax		        tax
+.914c		bd 30 92	lda $9230,x	        lda vm_palette,x
+.914f		8d 7f 92	sta $927f	        sta vm_foreground
+.9152		a9 00		lda #$00	        lda #0
+.9154		99 a9 92	sta $92a9,y	        sta vm_reverse,y
+.9157		ad ae 97	lda $97ae	        lda vd_color
+.915a		f0 10		beq $916c	        beq vm_mono
+.915c		ad 7e 92	lda $927e	        lda vm_background
+.915f		0a		asl a		        asl
+.9160		0a		asl a		        asl
+.9161		0a		asl a		        asl
+.9162		0a		asl a		        asl
+.9163		0d 7f 92	ora $927f	        ora vm_foreground
+.9166		99 81 92	sta $9281,y	        sta vm_colors,y
+.9169		4c 79 91	jmp $9179	        jmp vm_color_done
+.916c						vm_mono:
+.916c		bd 40 92	lda $9240,x	        lda vm_light,x
+.916f		cd 80 92	cmp $9280	        cmp vm_brightness
+.9172		b0 05		bcs $9179	        bcs vm_color_done
+.9174		a9 ff		lda #$ff	        lda #$ff
+.9176		99 a9 92	sta $92a9,y	        sta vm_reverse,y
+.9179						vm_color_done:
+.9179		88		dey		        dey
+.917a		10 b6		bpl $9132	        bpl vm_color_next
+.917c		ad 7b 92	lda $927b	        lda vm_row
+.917f		0a		asl a		        asl
+.9180		aa		tax		        tax
+.9181		bd db 7d	lda $7ddb,x	        lda gfx_rows,x
+.9184		8d 08 3d	sta $3d08	        sta N_OFFSET
+.9187		bd dc 7d	lda $7ddc,x	        lda gfx_rows+1,x
+.918a		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.918d		a9 40		lda #$40	        lda #64
+.918f		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.9192		a9 01		lda #$01	        lda #1
+.9194		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.9197		20 26 1c	jsr $1c26	        jsr N_READ
+.919a		90 03		bcc $919f	        bcc +
+.919c						vm_read_failed:
+.919c		4c 48 94	jmp $9448	        jmp vd_fail
+.919f		ad 7b 92	lda $927b	+       lda vm_row
+.91a2		0a		asl a		        asl
+.91a3		0a		asl a		        asl
+.91a4		0a		asl a		        asl
+.91a5		a2 00		ldx #$00	        ldx #0
+.91a7		20 15 96	jsr $9615	        jsr vd_xy
+.91aa		a9 00		lda #$00	        lda #0
+.91ac		8d 7c 92	sta $927c	        sta vm_line
+.91af						vm_line_next:
+.91af		20 b4 95	jsr $95b4	        jsr vd_seek
+.91b2		a9 3a		lda #$3a	        lda #>N_BUFFER
+.91b4		8d c4 91	sta $91c4	        sta vm_read+2
+.91b7		a9 00		lda #$00	        lda #0
+.91b9		8d 7d 92	sta $927d	        sta vm_column
+.91bc		ac 7c 92	ldy $927c	        ldy vm_line
+.91bf						vm_byte_next:
+.91bf		ae 7d 92	ldx $927d	        ldx vm_column
+.91c2						vm_read:
+.91c2		b9 00 3a	lda $3a00,y	        lda N_BUFFER,y
+.91c5		5d a9 92	eor $92a9,x	        eor vm_reverse,x
+.91c8		48		pha		        pha
+.91c9		4a		lsr a		        lsr
+.91ca		4a		lsr a		        lsr
+.91cb		4a		lsr a		        lsr
+.91cc		4a		lsr a		        lsr
+.91cd		aa		tax		        tax
+.91ce		bd 50 92	lda $9250,x	        lda vm_expand,x
+.91d1		20 dc 95	jsr $95dc	        jsr vd_putbyte
+.91d4		68		pla		        pla
+.91d5		29 0f		and #$0f	        and #15
+.91d7		aa		tax		        tax
+.91d8		bd 50 92	lda $9250,x	        lda vm_expand,x
+.91db		20 dc 95	jsr $95dc	        jsr vd_putbyte
+.91de		98		tya		        tya
+.91df		18		clc		        clc
+.91e0		69 08		adc #$08	        adc #8
+.91e2		a8		tay		        tay
+.91e3		90 03		bcc $91e8	        bcc +
+.91e5		ee c4 91	inc $91c4	        inc vm_read+2
+.91e8		ee 7d 92	inc $927d	+       inc vm_column
+.91eb		ad 7d 92	lda $927d	        lda vm_column
+.91ee		c9 28		cmp #$28	        cmp #40
+.91f0		d0 cd		bne $91bf	        bne vm_byte_next
+.91f2		20 62 96	jsr $9662	        jsr vd_next_row
+.91f5		ee 7c 92	inc $927c	        inc vm_line
+.91f8		ad 7c 92	lda $927c	        lda vm_line
+.91fb		c9 08		cmp #$08	        cmp #8
+.91fd		d0 b0		bne $91af	        bne vm_line_next
+.91ff		ad ae 97	lda $97ae	        lda vd_color
+.9202		d0 03		bne $9207	        beq vm_done
+.9204		4c f6 90	jmp $90f6
+.9207		ad b1 97	lda $97b1	        lda vd_base
+.920a		48		pha		        pha
+.920b		a9 80		lda #$80	        lda #$80
+.920d		8d b1 97	sta $97b1	        sta vd_base
+.9210		ad 7b 92	lda $927b	        lda vm_row
+.9213		a2 00		ldx #$00	        ldx #0
+.9215		20 15 96	jsr $9615	        jsr vd_xy
+.9218		68		pla		        pla
+.9219		8d b1 97	sta $97b1	        sta vd_base
+.921c		20 b4 95	jsr $95b4	        jsr vd_seek
+.921f		a0 00		ldy #$00	        ldy #0
+.9221		b9 81 92	lda $9281,y	-       lda vm_colors,y
+.9224		20 dc 95	jsr $95dc	        jsr vd_putbyte
+.9227		20 dc 95	jsr $95dc	        jsr vd_putbyte
+.922a		c8		iny		        iny
+.922b		c0 28		cpy #$28	        cpy #40
+.922d		d0 f2		bne $9221	        bne -
+.922f		60		rts		        rts
+>9230		00 0f 08 07 0a 04 02 0d		vm_palette: .byte 0,15,8,7,10,4,2,13,12,12,9,1,14,5,3,14
+>9238		0c 0c 09 01 0e 05 03 0e
+>9240		00 ff 33 cc 46 64 13 ec		vm_light: .byte 0,255,51,204,70,100,19,236,101,101,136,85,170,185,104,170
+>9248		65 65 88 55 aa b9 68 aa
+>9250		00 03 0c 0f 30 33 3c 3f		vm_expand: .byte $00,$03,$0c,$0f,$30,$33,$3c,$3f,$c0,$c3,$cc,$cf,$f0,$f3,$fc,$ff
+>9258		c0 c3 cc cf f0 f3 fc ff
+>9260		00 00 00 00 00 00 00 00		vm_rows: .fill 25,0
+>9268		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>9278		00
+>9279		00				vm_pending: .byte 0
+>927a		00				vm_first: .byte 0
+>927b		00				vm_row: .byte 0
+>927c		00				vm_line: .byte 0
+>927d		00				vm_column: .byte 0
+>927e		00				vm_background: .byte 0
+>927f		00				vm_foreground: .byte 0
+>9280		00				vm_brightness: .byte 0
+>9281		00 00 00 00 00 00 00 00		vm_colors: .fill 40,0
+>9289		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>9299		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>92a9		00 00 00 00 00 00 00 00		vm_reverse: .fill 40,0
+>92b1		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>92c1		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-lifetime.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-lifetime.inc
 
-.89f8						vd_open:
-.89f8		20 7c 8b	jsr $8b7c	        jsr vd_gate
-.89fb		a9 00		lda #$00	        lda #0
-.89fd		8d d1 8e	sta $8ed1	        sta vd_fault
-.8a00		8d ce 8e	sta $8ece	        sta vd_phase
-.8a03		8d cf 8e	sta $8ecf	        sta vd_live
-.8a06		8d e5 8e	sta $8ee5	        sta vd_probe_live
-.8a09		8d e8 8e	sta $8ee8	        sta vd_pointer_visible
-.8a0c		8d ca 8e	sta $8eca	        sta vd_handle
-.8a0f		a2 01		ldx #$01	        ldx #1
-.8a11		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a14		c9 50		cmp #$50	        cmp #80
-.8a16		f0 03		beq $8a1b	        bne vd_platform
-.8a18		4c 6d 8b	jmp $8b6d
-.8a1b		a2 06		ldx #$06	        ldx #6
-.8a1d		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a20		c9 19		cmp #$19	        cmp #25
-.8a22		d0 f4		bne $8a18	        bne vd_platform
-.8a24		a2 09		ldx #$09	        ldx #9
-.8a26		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a29		29 1f		and #$1f	        and #31
-.8a2b		c9 07		cmp #$07	        cmp #7
-.8a2d		d0 e9		bne $8a18	        bne vd_platform
-.8a2f		a2 08		ldx #$08	        ldx #8
-.8a31		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a34		29 03		and #$03	        and #3
-.8a36		d0 e0		bne $8a18	        bne vd_platform
-.8a38		a2 16		ldx #$16	        ldx #22
-.8a3a		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a3d		c9 78		cmp #$78	        cmp #$78
-.8a3f		d0 d7		bne $8a18	        bne vd_platform
-.8a41		a2 17		ldx #$17	        ldx #23
-.8a43		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a46		c9 07		cmp #$07	        cmp #7               ; last displayed raster, inclusive; all eight must show
-.8a48		90 ce		bcc $8a18	        bcc vd_platform
-.8a4a		a2 19		ldx #$19	        ldx #25
-.8a4c		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a4f		30 c7		bmi $8a18	        bmi vd_platform
-.8a51		a9 00		lda #$00	        lda #0
-.8a53		8d d6 8e	sta $8ed6	        sta vd_index
-.8a56						vd_save_registers:
-.8a56		ac d6 8e	ldy $8ed6	        ldy vd_index
-.8a59		be ae 8e	ldx $8eae,y	        ldx vd_registers,y
-.8a5c		20 c2 8c	jsr $8cc2	        jsr vd_getreg
-.8a5f		99 bc 8e	sta $8ebc,y	        sta vd_saved,y
-.8a62		ee d6 8e	inc $8ed6	        inc vd_index
-.8a65		ad d6 8e	lda $8ed6	        lda vd_index
-.8a68		c9 0e		cmp #$0e	        cmp #vd_register_count
-.8a6a		d0 ea		bne $8a56	        bne vd_save_registers
-.8a6c		ee ce 8e	inc $8ece	        inc vd_phase           ; saved registers precede the first mutation
-.8a6f		20 27 8c	jsr $8c27	        jsr vd_blank
-.8a72		ad c7 8e	lda $8ec7	        lda vd_saved+11        ; R28: select linear 64K addressing for the probe
-.8a75		09 10		ora #$10	        ora #$10
-.8a77		a2 1c		ldx #$1c	        ldx #28
-.8a79		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8a7c		a9 00		lda #$00	        lda #0
-.8a7e		8d d9 8e	sta $8ed9	        sta vd_addr
-.8a81		8d da 8e	sta $8eda	        sta vd_addr+1
-.8a84		20 05 8d	jsr $8d05	        jsr vd_peek
-.8a87		8d e6 8e	sta $8ee6	        sta vd_probe_low
-.8a8a		ee da 8e	inc $8eda	        inc vd_addr+1
-.8a8d		20 05 8d	jsr $8d05	        jsr vd_peek
-.8a90		8d e7 8e	sta $8ee7	        sta vd_probe_high
-.8a93		ee e5 8e	inc $8ee5	        inc vd_probe_live
-.8a96		a9 aa		lda #$aa	        lda #$aa
-.8a98		20 0b 8d	jsr $8d0b	        jsr vd_poke
-.8a9b		ce da 8e	dec $8eda	        dec vd_addr+1
-.8a9e		a9 55		lda #$55	        lda #$55
-.8aa0		20 0b 8d	jsr $8d0b	        jsr vd_poke
-.8aa3		ee da 8e	inc $8eda	        inc vd_addr+1
-.8aa6		20 05 8d	jsr $8d05	        jsr vd_peek
-.8aa9		c9 aa		cmp #$aa	        cmp #$aa
-.8aab		f0 0b		beq $8ab8	        beq +
-.8aad		c9 55		cmp #$55	        cmp #$55
-.8aaf		f0 03		beq $8ab4	        bne vd_platform
-.8ab1		4c 6d 8b	jmp $8b6d
-.8ab4		a9 00		lda #$00	        lda #0
-.8ab6		f0 02		beq $8aba	        beq ++
-.8ab8		a9 01		lda #$01	+       lda #1
-.8aba		8d d0 8e	sta $8ed0	+       sta vd_color          ; 16K chips alias bit 8 in 64K addressing
-.8abd		20 35 8c	jsr $8c35	        jsr vd_restore_probe
-.8ac0		a9 40		lda #$40	        lda #$40
-.8ac2		8d d4 8e	sta $8ed4	        sta vd_pages
-.8ac5		a9 00		lda #$00	        lda #0
-.8ac7		8d d3 8e	sta $8ed3	        sta vd_base
-.8aca		ad c7 8e	lda $8ec7	        lda vd_saved+11
-.8acd		29 ef		and #$ef	        and #$ef
-.8acf		ae d0 8e	ldx $8ed0	        ldx vd_color
-.8ad2		f0 0c		beq $8ae0	        beq +
-.8ad4		09 10		ora #$10	        ora #$10
-.8ad6		a2 48		ldx #$48	        ldx #$48
-.8ad8		8e d4 8e	stx $8ed4	        stx vd_pages
-.8adb		a2 40		ldx #$40	        ldx #$40
-.8add		8e d3 8e	stx $8ed3	        stx vd_base
-.8ae0		a2 1c		ldx #$1c	+       ldx #28
-.8ae2		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8ae5		ad 20 3d	lda $3d20	        lda N_CURRENT
-.8ae8		8d 00 3d	sta $3d00	        sta N_OWNER
-.8aeb		a9 ff		lda #$ff	        lda #$ff
-.8aed		8d 02 3d	sta $3d02	        sta N_BANK
-.8af0		ad d4 8e	lda $8ed4	        lda vd_pages
-.8af3		8d 01 3d	sta $3d01	        sta N_PAGES
-.8af6		20 20 1c	jsr $1c20	        jsr N_ALLOC
-.8af9		b0 74		bcs $8b6f	        bcs vd_fail
-.8afb		a2 03		ldx #$03	        ldx #3
-.8afd		bd 04 3d	lda $3d04,x	-       lda N_HANDLE,x
-.8b00		9d ca 8e	sta $8eca,x	        sta vd_handle,x
-.8b03		ca		dex		        dex
-.8b04		10 f7		bpl $8afd	        bpl -
-.8b06		20 75 8c	jsr $8c75	        jsr vd_transfer_start
-.8b09						vd_snapshot:
-.8b09		a9 00		lda #$00	        lda #0                ; zero byte count means one complete 256-byte page
-.8b0b		8d e1 8e	sta $8ee1	        sta vd_count
-.8b0e		20 13 8d	jsr $8d13	        jsr vd_read_block
-.8b11		20 29 1c	jsr $1c29	        jsr N_WRITE
-.8b14		b0 59		bcs $8b6f	        bcs vd_fail
-.8b16		20 98 8c	jsr $8c98	        jsr vd_transfer_next
-.8b19		d0 ee		bne $8b09	        bne vd_snapshot
-.8b1b		ee ce 8e	inc $8ece	        inc vd_phase          ; all bytes saved before the first bitmap write
-.8b1e		20 d1 87	jsr $87d1	        jsr vd_initial_bitmap
-.8b21		a9 20		lda #$20	        lda #$20
-.8b23		a2 0a		ldx #$0a	        ldx #10
-.8b25		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b28		ad d3 8e	lda $8ed3	        lda vd_base
-.8b2b		a2 0c		ldx #$0c	        ldx #12
-.8b2d		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b30		a9 00		lda #$00	        lda #0
-.8b32		a2 0d		ldx #$0d	        ldx #13
-.8b34		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b37		a2 15		ldx #$15	        ldx #21
-.8b39		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b3c		a2 18		ldx #$18	        ldx #24
-.8b3e		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b41		a2 1b		ldx #$1b	        ldx #27
-.8b43		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b46		a9 80		lda #$80	        lda #$80
-.8b48		a2 14		ldx #$14	        ldx #20
-.8b4a		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b4d		20 78 8b	jsr $8b78	        jsr vd_initial_attributes
-.8b50		a9 f2		lda #$f2	        lda #$f2
-.8b52		a2 1a		ldx #$1a	        ldx #26
-.8b54		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b57		a9 87		lda #$87	        lda #$87
-.8b59		ae d0 8e	ldx $8ed0	        ldx vd_color
-.8b5c		f0 02		beq $8b60	        beq +
-.8b5e		09 40		ora #$40	        ora #$40
-.8b60		a2 19		ldx #$19	+       ldx #25
-.8b62		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8b65		a9 01		lda #$01	        lda #1
-.8b67		8d cf 8e	sta $8ecf	        sta vd_live
-.8b6a		4c 78 8b	jmp $8b78	        jmp vd_success
-.8b6d						vd_platform:
-.8b6d		a9 08		lda #$08	        lda #N_PLATFORM
-.8b6f						vd_fail:
-.8b6f		8d d1 8e	sta $8ed1	        sta vd_fault
-.8b72		ae d2 8e	ldx $8ed2	        ldx vd_stack
-.8b75		9a		txs		        txs
-.8b76		38		sec		        sec
-.8b77		60		rts		        rts
-.8b78						vd_success:
-.8b78		a9 00		lda #$00	        lda #0
-.8b7a		18		clc		        clc
-.8b7b		60		rts		        rts
-.8b7c						vd_gate:
-.8b7c		ba		tsx		        tsx
-.8b7d		e8		inx		        inx
-.8b7e		e8		inx		        inx                   ; remove this helper's own return address
-.8b7f		8e d2 8e	stx $8ed2	        stx vd_stack
-.8b82		a9 00		lda #$00	        lda #0
-.8b84		8d 12 3d	sta $3d12	        sta N_READY
-.8b87		60		rts		        rts
-.8b88						vd_close:
-.8b88		20 7c 8b	jsr $8b7c	        jsr vd_gate
-.8b8b		a9 00		lda #$00	        lda #0
-.8b8d		8d d1 8e	sta $8ed1	        sta vd_fault          ; retry the complete restore after a prior stall
-.8b90		ad ce 8e	lda $8ece	        lda vd_phase
-.8b93		f0 e3		beq $8b78	        beq vd_success
-.8b95		20 27 8c	jsr $8c27	        jsr vd_blank
-.8b98		20 35 8c	jsr $8c35	        jsr vd_restore_probe
-.8b9b		ad ce 8e	lda $8ece	        lda vd_phase
-.8b9e		c9 02		cmp #$02	        cmp #2
-.8ba0		90 26		bcc $8bc8	        bcc vd_restore_registers
-.8ba2		ad c7 8e	lda $8ec7	        lda vd_saved+11
-.8ba5		29 ef		and #$ef	        and #$ef
-.8ba7		ae d0 8e	ldx $8ed0	        ldx vd_color
-.8baa		f0 02		beq $8bae	        beq +
-.8bac		09 10		ora #$10	        ora #$10
-.8bae		a2 1c		ldx #$1c	+       ldx #28
-.8bb0		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8bb3		20 75 8c	jsr $8c75	        jsr vd_transfer_start
-.8bb6						vd_restore_memory:
-.8bb6		20 26 1c	jsr $1c26	        jsr N_READ
-.8bb9		b0 b4		bcs $8b6f	        bcs vd_fail
-.8bbb		a9 00		lda #$00	        lda #0
-.8bbd		8d e1 8e	sta $8ee1	        sta vd_count
-.8bc0		20 25 8d	jsr $8d25	        jsr vd_write_block
-.8bc3		20 98 8c	jsr $8c98	        jsr vd_transfer_next
-.8bc6		d0 ee		bne $8bb6	        bne vd_restore_memory
-.8bc8						vd_restore_registers:
-.8bc8		a9 0d		lda #$0d	        lda #vd_register_count-1
-.8bca		8d d6 8e	sta $8ed6	        sta vd_index
-.8bcd		ac d6 8e	ldy $8ed6	-       ldy vd_index
-.8bd0		c0 03		cpy #$03	        cpy #3
-.8bd2		f0 11		beq $8be5	        beq +
-.8bd4		c0 04		cpy #$04	        cpy #4
-.8bd6		f0 0d		beq $8be5	        beq +
-.8bd8		c0 08		cpy #$08	        cpy #8
-.8bda		f0 09		beq $8be5	        beq +
-.8bdc		b9 bc 8e	lda $8ebc,y	        lda vd_saved,y
-.8bdf		be ae 8e	ldx $8eae,y	        ldx vd_registers,y
-.8be2		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8be5		ce d6 8e	dec $8ed6	+       dec vd_index
-.8be8		10 e3		bpl $8bcd	        bpl -
-.8bea		ad c4 8e	lda $8ec4	        lda vd_saved+8
-.8bed		a2 19		ldx #$19	        ldx #25
-.8bef		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8bf2		ad bf 8e	lda $8ebf	        lda vd_saved+3
-.8bf5		a2 12		ldx #$12	        ldx #18
-.8bf7		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8bfa		ad c0 8e	lda $8ec0	        lda vd_saved+4
-.8bfd		a2 13		ldx #$13	        ldx #19
-.8bff		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8c02		a9 00		lda #$00	        lda #0
-.8c04		8d cf 8e	sta $8ecf	        sta vd_live
-.8c07		8d e8 8e	sta $8ee8	        sta vd_pointer_visible
-.8c0a		ad ca 8e	lda $8eca	        lda vd_handle
-.8c0d		f0 10		beq $8c1f	        beq +
-.8c0f		20 63 8c	jsr $8c63	        jsr vd_select_handle
-.8c12		20 23 1c	jsr $1c23	        jsr N_FREE
-.8c15		90 03		bcc $8c1a	        bcs vd_fail
-.8c17		4c 6f 8b	jmp $8b6f
-.8c1a		a9 00		lda #$00	        lda #0
-.8c1c		8d ca 8e	sta $8eca	        sta vd_handle
-.8c1f		a9 00		lda #$00	+       lda #0
-.8c21		8d ce 8e	sta $8ece	        sta vd_phase
-.8c24		4c 78 8b	jmp $8b78	        jmp vd_success
-.8c27						vd_blank:
-.8c27		a9 22		lda #$22	        lda #$22              ; same foreground/background; no attribute reads
-.8c29		a2 1a		ldx #$1a	        ldx #26
-.8c2b		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8c2e		a9 07		lda #$07	        lda #7
-.8c30		a2 19		ldx #$19	        ldx #25
-.8c32		4c cc 8c	jmp $8ccc	        jmp vd_setreg
-.8c35						vd_restore_probe:
-.8c35		ad e5 8e	lda $8ee5	        lda vd_probe_live
-.8c38		f0 28		beq $8c62	        beq +
-.8c3a		ad c7 8e	lda $8ec7	        lda vd_saved+11
-.8c3d		09 10		ora #$10	        ora #$10
-.8c3f		a2 1c		ldx #$1c	        ldx #28
-.8c41		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8c44		a9 00		lda #$00	        lda #0
-.8c46		8d d9 8e	sta $8ed9	        sta vd_addr
-.8c49		a9 01		lda #$01	        lda #1
-.8c4b		8d da 8e	sta $8eda	        sta vd_addr+1
-.8c4e		ad e7 8e	lda $8ee7	        lda vd_probe_high
-.8c51		20 0b 8d	jsr $8d0b	        jsr vd_poke
-.8c54		ce da 8e	dec $8eda	        dec vd_addr+1
-.8c57		ad e6 8e	lda $8ee6	        lda vd_probe_low
-.8c5a		20 0b 8d	jsr $8d0b	        jsr vd_poke
-.8c5d		a9 00		lda #$00	        lda #0
-.8c5f		8d e5 8e	sta $8ee5	        sta vd_probe_live
-.8c62		60		rts		+       rts
-.8c63						vd_select_handle:
-.8c63		ad 20 3d	lda $3d20	        lda N_CURRENT
-.8c66		8d 00 3d	sta $3d00	        sta N_OWNER
-.8c69		a2 03		ldx #$03	        ldx #3
-.8c6b		bd ca 8e	lda $8eca,x	-       lda vd_handle,x
-.8c6e		9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
-.8c71		ca		dex		        dex
-.8c72		10 f7		bpl $8c6b	        bpl -
-.8c74		60		rts		        rts
-.8c75						vd_transfer_start:
-.8c75		20 63 8c	jsr $8c63	        jsr vd_select_handle
-.8c78		a9 00		lda #$00	        lda #0
-.8c7a		8d 08 3d	sta $3d08	        sta N_OFFSET
-.8c7d		8d 09 3d	sta $3d09	        sta N_OFFSET+1
-.8c80		8d 0a 3d	sta $3d0a	        sta N_COUNT
-.8c83		8d d9 8e	sta $8ed9	        sta vd_addr
-.8c86		a9 01		lda #$01	        lda #1
-.8c88		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
-.8c8b		ad d3 8e	lda $8ed3	        lda vd_base
-.8c8e		8d da 8e	sta $8eda	        sta vd_addr+1
-.8c91		ad d4 8e	lda $8ed4	        lda vd_pages
-.8c94		8d d5 8e	sta $8ed5	        sta vd_left
-.8c97		60		rts		        rts
-.8c98						vd_transfer_next:
-.8c98		ee 09 3d	inc $3d09	        inc N_OFFSET+1
-.8c9b		ee da 8e	inc $8eda	        inc vd_addr+1
-.8c9e		ce d5 8e	dec $8ed5	        dec vd_left
-.8ca1		60		rts		        rts
-.8ca2						vd_wait:
-.8ca2		48		pha		        pha
-.8ca3		a9 00		lda #$00	        lda #0
-.8ca5		8d e3 8e	sta $8ee3	        sta vd_wait_low
-.8ca8		8d e4 8e	sta $8ee4	        sta vd_wait_high
-.8cab		2c 00 d6	bit $d600	-       bit $d600
-.8cae		30 10		bmi $8cc0	        bmi +
-.8cb0		ee e3 8e	inc $8ee3	        inc vd_wait_low
-.8cb3		d0 f6		bne $8cab	        bne -
-.8cb5		ee e4 8e	inc $8ee4	        inc vd_wait_high
-.8cb8		d0 f1		bne $8cab	        bne -
-.8cba		68		pla		        pla
-.8cbb		a9 11		lda #$11	        lda #N_IOERROR
-.8cbd		4c 6f 8b	jmp $8b6f	        jmp vd_fail
-.8cc0		68		pla		+       pla
-.8cc1		60		rts		        rts
-.8cc2						vd_getreg:
-.8cc2		8e 00 d6	stx $d600	        stx $d600
-.8cc5		20 a2 8c	jsr $8ca2	        jsr vd_wait
-.8cc8		ad 01 d6	lda $d601	        lda $d601
-.8ccb		60		rts		        rts
-.8ccc						vd_setreg:
-.8ccc		8e 00 d6	stx $d600	        stx $d600
-.8ccf		20 a2 8c	jsr $8ca2	        jsr vd_wait
-.8cd2		8d 01 d6	sta $d601	        sta $d601
-.8cd5		60		rts		        rts
-.8cd6						vd_seek:
-.8cd6		ad da 8e	lda $8eda	        lda vd_addr+1
-.8cd9		a2 12		ldx #$12	        ldx #18
-.8cdb		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8cde		ad d9 8e	lda $8ed9	        lda vd_addr
-.8ce1		a2 13		ldx #$13	        ldx #19
-.8ce3		20 cc 8c	jsr $8ccc	        jsr vd_setreg
-.8ce6		a2 1f		ldx #$1f	        ldx #31
-.8ce8		8e 00 d6	stx $d600	        stx $d600
-.8ceb		4c a2 8c	jmp $8ca2	        jmp vd_wait
-.8cee						vd_read_seek:
-.8cee		20 d6 8c	jsr $8cd6	        jsr vd_seek
-.8cf1		20 f7 8c	jsr $8cf7	        jsr vd_getbyte         ; prime the real VDC read latch, then re-address
-.8cf4		4c d6 8c	jmp $8cd6	        jmp vd_seek
-.8cf7						vd_getbyte:
-.8cf7		20 a2 8c	jsr $8ca2	        jsr vd_wait
-.8cfa		ad 01 d6	lda $d601	        lda $d601
-.8cfd		60		rts		        rts
-.8cfe						vd_putbyte:
-.8cfe		20 a2 8c	jsr $8ca2	        jsr vd_wait
-.8d01		8d 01 d6	sta $d601	        sta $d601
-.8d04		60		rts		        rts
-.8d05						vd_peek:
-.8d05		20 ee 8c	jsr $8cee	        jsr vd_read_seek
-.8d08		4c f7 8c	jmp $8cf7	        jmp vd_getbyte
-.8d0b						vd_poke:
-.8d0b		48		pha		        pha
-.8d0c		20 d6 8c	jsr $8cd6	        jsr vd_seek
-.8d0f		68		pla		        pla
-.8d10		4c fe 8c	jmp $8cfe	        jmp vd_putbyte
-.8d13						vd_read_block:
-.8d13		20 ee 8c	jsr $8cee	        jsr vd_read_seek
-.8d16		a0 00		ldy #$00	        ldy #0
-.8d18		20 f7 8c	jsr $8cf7	-       jsr vd_getbyte
-.8d1b		99 00 3a	sta $3a00,y	        sta N_BUFFER,y
-.8d1e		c8		iny		        iny
-.8d1f		cc e1 8e	cpy $8ee1	        cpy vd_count
-.8d22		d0 f4		bne $8d18	        bne -
-.8d24		60		rts		        rts
-.8d25						vd_write_block:
-.8d25		20 d6 8c	jsr $8cd6	        jsr vd_seek
-.8d28		a0 00		ldy #$00	        ldy #0
-.8d2a		b9 00 3a	lda $3a00,y	-       lda N_BUFFER,y
-.8d2d		20 fe 8c	jsr $8cfe	        jsr vd_putbyte
-.8d30		c8		iny		        iny
-.8d31		cc e1 8e	cpy $8ee1	        cpy vd_count
-.8d34		d0 f4		bne $8d2a	        bne -
-.8d36		60		rts		        rts
+=$1c20						vd_storage_alloc=N_ALLOC
+=$1c26						vd_storage_read=N_READ
+=$1c29						vd_storage_write=N_WRITE
+=$1c23						vd_storage_free=N_FREE
+=$9451						vd_storage_close=vd_success
+.92d1						vd_open:
+.92d1		20 55 94	jsr $9455	        jsr vd_gate
+.92d4		a9 00		lda #$00	        lda #0
+.92d6		8d af 97	sta $97af	        sta vd_fault
+.92d9		8d ac 97	sta $97ac	        sta vd_phase
+.92dc		8d ad 97	sta $97ad	        sta vd_live
+.92df		8d c3 97	sta $97c3	        sta vd_probe_live
+.92e2		8d c6 97	sta $97c6	        sta vd_pointer_visible
+.92e5		8d a8 97	sta $97a8	        sta vd_handle
+.92e8		a2 01		ldx #$01	        ldx #1
+.92ea		20 a0 95	jsr $95a0	        jsr vd_getreg
+.92ed		c9 50		cmp #$50	        cmp #80
+.92ef		f0 03		beq $92f4	        bne vd_platform
+.92f1		4c 46 94	jmp $9446
+.92f4		a2 06		ldx #$06	        ldx #6
+.92f6		20 a0 95	jsr $95a0	        jsr vd_getreg
+.92f9		c9 19		cmp #$19	        cmp #25
+.92fb		d0 f4		bne $92f1	        bne vd_platform
+.92fd		a2 09		ldx #$09	        ldx #9
+.92ff		20 a0 95	jsr $95a0	        jsr vd_getreg
+.9302		29 1f		and #$1f	        and #31
+.9304		c9 07		cmp #$07	        cmp #7
+.9306		d0 e9		bne $92f1	        bne vd_platform
+.9308		a2 08		ldx #$08	        ldx #8
+.930a		20 a0 95	jsr $95a0	        jsr vd_getreg
+.930d		29 03		and #$03	        and #3
+.930f		d0 e0		bne $92f1	        bne vd_platform
+.9311		a2 16		ldx #$16	        ldx #22
+.9313		20 a0 95	jsr $95a0	        jsr vd_getreg
+.9316		c9 78		cmp #$78	        cmp #$78
+.9318		d0 d7		bne $92f1	        bne vd_platform
+.931a		a2 17		ldx #$17	        ldx #23
+.931c		20 a0 95	jsr $95a0	        jsr vd_getreg
+.931f		c9 07		cmp #$07	        cmp #7               ; last displayed raster, inclusive; all eight must show
+.9321		90 ce		bcc $92f1	        bcc vd_platform
+.9323		a2 19		ldx #$19	        ldx #25
+.9325		20 a0 95	jsr $95a0	        jsr vd_getreg
+.9328		30 c7		bmi $92f1	        bmi vd_platform
+.932a		a9 00		lda #$00	        lda #0
+.932c		8d b4 97	sta $97b4	        sta vd_index
+.932f						vd_save_registers:
+.932f		ac b4 97	ldy $97b4	        ldy vd_index
+.9332		be 8c 97	ldx $978c,y	        ldx vd_registers,y
+.9335		20 a0 95	jsr $95a0	        jsr vd_getreg
+.9338		99 9a 97	sta $979a,y	        sta vd_saved,y
+.933b		ee b4 97	inc $97b4	        inc vd_index
+.933e		ad b4 97	lda $97b4	        lda vd_index
+.9341		c9 0e		cmp #$0e	        cmp #vd_register_count
+.9343		d0 ea		bne $932f	        bne vd_save_registers
+.9345		ee ac 97	inc $97ac	        inc vd_phase           ; saved registers precede the first mutation
+.9348		20 05 95	jsr $9505	        jsr vd_blank
+.934b		ad a5 97	lda $97a5	        lda vd_saved+11        ; R28: select linear 64K addressing for the probe
+.934e		09 10		ora #$10	        ora #$10
+.9350		a2 1c		ldx #$1c	        ldx #28
+.9352		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9355		a9 00		lda #$00	        lda #0
+.9357		8d b7 97	sta $97b7	        sta vd_addr
+.935a		8d b8 97	sta $97b8	        sta vd_addr+1
+.935d		20 e3 95	jsr $95e3	        jsr vd_peek
+.9360		8d c4 97	sta $97c4	        sta vd_probe_low
+.9363		ee b8 97	inc $97b8	        inc vd_addr+1
+.9366		20 e3 95	jsr $95e3	        jsr vd_peek
+.9369		8d c5 97	sta $97c5	        sta vd_probe_high
+.936c		ee c3 97	inc $97c3	        inc vd_probe_live
+.936f		a9 aa		lda #$aa	        lda #$aa
+.9371		20 e9 95	jsr $95e9	        jsr vd_poke
+.9374		ce b8 97	dec $97b8	        dec vd_addr+1
+.9377		a9 55		lda #$55	        lda #$55
+.9379		20 e9 95	jsr $95e9	        jsr vd_poke
+.937c		ee b8 97	inc $97b8	        inc vd_addr+1
+.937f		20 e3 95	jsr $95e3	        jsr vd_peek
+.9382		c9 aa		cmp #$aa	        cmp #$aa
+.9384		f0 0b		beq $9391	        beq +
+.9386		c9 55		cmp #$55	        cmp #$55
+.9388		f0 03		beq $938d	        bne vd_platform
+.938a		4c 46 94	jmp $9446
+.938d		a9 00		lda #$00	        lda #0
+.938f		f0 02		beq $9393	        beq ++
+.9391		a9 01		lda #$01	+       lda #1
+.9393		8d ae 97	sta $97ae	+       sta vd_color          ; 16K chips alias bit 8 in 64K addressing
+.9396		20 13 95	jsr $9513	        jsr vd_restore_probe
+.9399		a9 40		lda #$40	        lda #$40
+.939b		8d b2 97	sta $97b2	        sta vd_pages
+.939e		a9 00		lda #$00	        lda #0
+.93a0		8d b1 97	sta $97b1	        sta vd_base
+.93a3		ad a5 97	lda $97a5	        lda vd_saved+11
+.93a6		29 ef		and #$ef	        and #$ef
+.93a8		ae ae 97	ldx $97ae	        ldx vd_color
+.93ab		f0 0c		beq $93b9	        beq +
+.93ad		09 10		ora #$10	        ora #$10
+.93af		a2 48		ldx #$48	        ldx #$48
+.93b1		8e b2 97	stx $97b2	        stx vd_pages
+.93b4		a2 40		ldx #$40	        ldx #$40
+.93b6		8e b1 97	stx $97b1	        stx vd_base
+.93b9		a2 1c		ldx #$1c	+       ldx #28
+.93bb		20 aa 95	jsr $95aa	        jsr vd_setreg
+.93be		ad 20 3d	lda $3d20	        lda N_CURRENT
+.93c1		8d 00 3d	sta $3d00	        sta N_OWNER
+.93c4		a9 ff		lda #$ff	        lda #$ff
+.93c6		8d 02 3d	sta $3d02	        sta N_BANK
+.93c9		ad b2 97	lda $97b2	        lda vd_pages
+.93cc		8d 01 3d	sta $3d01	        sta N_PAGES
+.93cf		20 9e 87	jsr $879e	        jsr vd_storage_alloc
+.93d2		b0 74		bcs $9448	        bcs vd_fail
+.93d4		a2 03		ldx #$03	        ldx #3
+.93d6		bd 04 3d	lda $3d04,x	-       lda N_HANDLE,x
+.93d9		9d a8 97	sta $97a8,x	        sta vd_handle,x
+.93dc		ca		dex		        dex
+.93dd		10 f7		bpl $93d6	        bpl -
+.93df		20 53 95	jsr $9553	        jsr vd_transfer_start
+.93e2						vd_snapshot:
+.93e2		a9 00		lda #$00	        lda #0                ; zero byte count means one complete 256-byte page
+.93e4		8d bf 97	sta $97bf	        sta vd_count
+.93e7		20 f1 95	jsr $95f1	        jsr vd_read_block
+.93ea		20 03 88	jsr $8803	        jsr vd_storage_write
+.93ed		b0 59		bcs $9448	        bcs vd_fail
+.93ef		20 76 95	jsr $9576	        jsr vd_transfer_next
+.93f2		d0 ee		bne $93e2	        bne vd_snapshot
+.93f4		ee ac 97	inc $97ac	        inc vd_phase          ; all bytes saved before the first bitmap write
+.93f7		20 aa 90	jsr $90aa	        jsr vd_initial_bitmap
+.93fa		a9 20		lda #$20	        lda #$20
+.93fc		a2 0a		ldx #$0a	        ldx #10
+.93fe		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9401		ad b1 97	lda $97b1	        lda vd_base
+.9404		a2 0c		ldx #$0c	        ldx #12
+.9406		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9409		a9 00		lda #$00	        lda #0
+.940b		a2 0d		ldx #$0d	        ldx #13
+.940d		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9410		a2 15		ldx #$15	        ldx #21
+.9412		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9415		a2 18		ldx #$18	        ldx #24
+.9417		20 aa 95	jsr $95aa	        jsr vd_setreg
+.941a		a2 1b		ldx #$1b	        ldx #27
+.941c		20 aa 95	jsr $95aa	        jsr vd_setreg
+.941f		a9 80		lda #$80	        lda #$80
+.9421		a2 14		ldx #$14	        ldx #20
+.9423		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9426		20 51 94	jsr $9451	        jsr vd_initial_attributes
+.9429		a9 f2		lda #$f2	        lda #$f2
+.942b		a2 1a		ldx #$1a	        ldx #26
+.942d		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9430		a9 87		lda #$87	        lda #$87
+.9432		ae ae 97	ldx $97ae	        ldx vd_color
+.9435		f0 02		beq $9439	        beq +
+.9437		09 40		ora #$40	        ora #$40
+.9439		a2 19		ldx #$19	+       ldx #25
+.943b		20 aa 95	jsr $95aa	        jsr vd_setreg
+.943e		a9 01		lda #$01	        lda #1
+.9440		8d ad 97	sta $97ad	        sta vd_live
+.9443		4c 51 94	jmp $9451	        jmp vd_success
+.9446						vd_platform:
+.9446		a9 08		lda #$08	        lda #N_PLATFORM
+.9448						vd_fail:
+.9448		8d af 97	sta $97af	        sta vd_fault
+.944b		ae b0 97	ldx $97b0	        ldx vd_stack
+.944e		9a		txs		        txs
+.944f		38		sec		        sec
+.9450		60		rts		        rts
+.9451						vd_success:
+.9451		a9 00		lda #$00	        lda #0
+.9453		18		clc		        clc
+.9454		60		rts		        rts
+.9455						vd_gate:
+.9455		ba		tsx		        tsx
+.9456		e8		inx		        inx
+.9457		e8		inx		        inx                   ; remove this helper's own return address
+.9458		8e b0 97	stx $97b0	        stx vd_stack
+.945b		a9 00		lda #$00	        lda #0
+.945d		8d 12 3d	sta $3d12	        sta N_READY
+.9460		60		rts		        rts
+.9461						vd_close:
+.9461		20 55 94	jsr $9455	        jsr vd_gate
+.9464		a9 00		lda #$00	        lda #0
+.9466		8d af 97	sta $97af	        sta vd_fault          ; retry the complete restore after a prior stall
+.9469		ad ac 97	lda $97ac	        lda vd_phase
+.946c		f0 e3		beq $9451	        beq vd_success
+.946e		20 05 95	jsr $9505	        jsr vd_blank
+.9471		20 13 95	jsr $9513	        jsr vd_restore_probe
+.9474		ad ac 97	lda $97ac	        lda vd_phase
+.9477		c9 02		cmp #$02	        cmp #2
+.9479		90 26		bcc $94a1	        bcc vd_restore_registers
+.947b		ad a5 97	lda $97a5	        lda vd_saved+11
+.947e		29 ef		and #$ef	        and #$ef
+.9480		ae ae 97	ldx $97ae	        ldx vd_color
+.9483		f0 02		beq $9487	        beq +
+.9485		09 10		ora #$10	        ora #$10
+.9487		a2 1c		ldx #$1c	+       ldx #28
+.9489		20 aa 95	jsr $95aa	        jsr vd_setreg
+.948c		20 53 95	jsr $9553	        jsr vd_transfer_start
+.948f						vd_restore_memory:
+.948f		20 f5 87	jsr $87f5	        jsr vd_storage_read
+.9492		b0 b4		bcs $9448	        bcs vd_fail
+.9494		a9 00		lda #$00	        lda #0
+.9496		8d bf 97	sta $97bf	        sta vd_count
+.9499		20 03 96	jsr $9603	        jsr vd_write_block
+.949c		20 76 95	jsr $9576	        jsr vd_transfer_next
+.949f		d0 ee		bne $948f	        bne vd_restore_memory
+.94a1						vd_restore_registers:
+.94a1		a9 0d		lda #$0d	        lda #vd_register_count-1
+.94a3		8d b4 97	sta $97b4	        sta vd_index
+.94a6		ac b4 97	ldy $97b4	-       ldy vd_index
+.94a9		c0 03		cpy #$03	        cpy #3
+.94ab		f0 11		beq $94be	        beq +
+.94ad		c0 04		cpy #$04	        cpy #4
+.94af		f0 0d		beq $94be	        beq +
+.94b1		c0 08		cpy #$08	        cpy #8
+.94b3		f0 09		beq $94be	        beq +
+.94b5		b9 9a 97	lda $979a,y	        lda vd_saved,y
+.94b8		be 8c 97	ldx $978c,y	        ldx vd_registers,y
+.94bb		20 aa 95	jsr $95aa	        jsr vd_setreg
+.94be		ce b4 97	dec $97b4	+       dec vd_index
+.94c1		10 e3		bpl $94a6	        bpl -
+.94c3		ad a2 97	lda $97a2	        lda vd_saved+8
+.94c6		a2 19		ldx #$19	        ldx #25
+.94c8		20 aa 95	jsr $95aa	        jsr vd_setreg
+.94cb		ad 9d 97	lda $979d	        lda vd_saved+3
+.94ce		a2 12		ldx #$12	        ldx #18
+.94d0		20 aa 95	jsr $95aa	        jsr vd_setreg
+.94d3		ad 9e 97	lda $979e	        lda vd_saved+4
+.94d6		a2 13		ldx #$13	        ldx #19
+.94d8		20 aa 95	jsr $95aa	        jsr vd_setreg
+.94db		a9 00		lda #$00	        lda #0
+.94dd		8d ad 97	sta $97ad	        sta vd_live
+.94e0		8d c6 97	sta $97c6	        sta vd_pointer_visible
+.94e3		ad a8 97	lda $97a8	        lda vd_handle
+.94e6		f0 10		beq $94f8	        beq +
+.94e8		20 41 95	jsr $9541	        jsr vd_select_handle
+.94eb		20 11 88	jsr $8811	        jsr vd_storage_free
+.94ee		90 03		bcc $94f3	        bcs vd_fail
+.94f0		4c 48 94	jmp $9448
+.94f3		a9 00		lda #$00	        lda #0
+.94f5		8d a8 97	sta $97a8	        sta vd_handle
+.94f8						+
+.94f8		20 47 88	jsr $8847	        jsr vd_storage_close
+.94fb		b0 f3		bcs $94f0	        bcs vd_fail
+.94fd		a9 00		lda #$00	        lda #0
+.94ff		8d ac 97	sta $97ac	        sta vd_phase
+.9502		4c 51 94	jmp $9451	        jmp vd_success
+.9505						vd_blank:
+.9505		a9 22		lda #$22	        lda #$22              ; same foreground/background; no attribute reads
+.9507		a2 1a		ldx #$1a	        ldx #26
+.9509		20 aa 95	jsr $95aa	        jsr vd_setreg
+.950c		a9 07		lda #$07	        lda #7
+.950e		a2 19		ldx #$19	        ldx #25
+.9510		4c aa 95	jmp $95aa	        jmp vd_setreg
+.9513						vd_restore_probe:
+.9513		ad c3 97	lda $97c3	        lda vd_probe_live
+.9516		f0 28		beq $9540	        beq +
+.9518		ad a5 97	lda $97a5	        lda vd_saved+11
+.951b		09 10		ora #$10	        ora #$10
+.951d		a2 1c		ldx #$1c	        ldx #28
+.951f		20 aa 95	jsr $95aa	        jsr vd_setreg
+.9522		a9 00		lda #$00	        lda #0
+.9524		8d b7 97	sta $97b7	        sta vd_addr
+.9527		a9 01		lda #$01	        lda #1
+.9529		8d b8 97	sta $97b8	        sta vd_addr+1
+.952c		ad c5 97	lda $97c5	        lda vd_probe_high
+.952f		20 e9 95	jsr $95e9	        jsr vd_poke
+.9532		ce b8 97	dec $97b8	        dec vd_addr+1
+.9535		ad c4 97	lda $97c4	        lda vd_probe_low
+.9538		20 e9 95	jsr $95e9	        jsr vd_poke
+.953b		a9 00		lda #$00	        lda #0
+.953d		8d c3 97	sta $97c3	        sta vd_probe_live
+.9540		60		rts		+       rts
+.9541						vd_select_handle:
+.9541		ad 20 3d	lda $3d20	        lda N_CURRENT
+.9544		8d 00 3d	sta $3d00	        sta N_OWNER
+.9547		a2 03		ldx #$03	        ldx #3
+.9549		bd a8 97	lda $97a8,x	-       lda vd_handle,x
+.954c		9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.954f		ca		dex		        dex
+.9550		10 f7		bpl $9549	        bpl -
+.9552		60		rts		        rts
+.9553						vd_transfer_start:
+.9553		20 41 95	jsr $9541	        jsr vd_select_handle
+.9556		a9 00		lda #$00	        lda #0
+.9558		8d 08 3d	sta $3d08	        sta N_OFFSET
+.955b		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.955e		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.9561		8d b7 97	sta $97b7	        sta vd_addr
+.9564		a9 01		lda #$01	        lda #1
+.9566		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.9569		ad b1 97	lda $97b1	        lda vd_base
+.956c		8d b8 97	sta $97b8	        sta vd_addr+1
+.956f		ad b2 97	lda $97b2	        lda vd_pages
+.9572		8d b3 97	sta $97b3	        sta vd_left
+.9575		60		rts		        rts
+.9576						vd_transfer_next:
+.9576		ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.9579		ee b8 97	inc $97b8	        inc vd_addr+1
+.957c		ce b3 97	dec $97b3	        dec vd_left
+.957f		60		rts		        rts
+.9580						vd_wait:
+.9580		48		pha		        pha
+.9581		a9 00		lda #$00	        lda #0
+.9583		8d c1 97	sta $97c1	        sta vd_wait_low
+.9586		8d c2 97	sta $97c2	        sta vd_wait_high
+.9589		2c 00 d6	bit $d600	-       bit $d600
+.958c		30 10		bmi $959e	        bmi +
+.958e		ee c1 97	inc $97c1	        inc vd_wait_low
+.9591		d0 f6		bne $9589	        bne -
+.9593		ee c2 97	inc $97c2	        inc vd_wait_high
+.9596		d0 f1		bne $9589	        bne -
+.9598		68		pla		        pla
+.9599		a9 11		lda #$11	        lda #N_IOERROR
+.959b		4c 48 94	jmp $9448	        jmp vd_fail
+.959e		68		pla		+       pla
+.959f		60		rts		        rts
+.95a0						vd_getreg:
+.95a0		8e 00 d6	stx $d600	        stx $d600
+.95a3		20 80 95	jsr $9580	        jsr vd_wait
+.95a6		ad 01 d6	lda $d601	        lda $d601
+.95a9		60		rts		        rts
+.95aa						vd_setreg:
+.95aa		8e 00 d6	stx $d600	        stx $d600
+.95ad		20 80 95	jsr $9580	        jsr vd_wait
+.95b0		8d 01 d6	sta $d601	        sta $d601
+.95b3		60		rts		        rts
+.95b4						vd_seek:
+.95b4		ad b8 97	lda $97b8	        lda vd_addr+1
+.95b7		a2 12		ldx #$12	        ldx #18
+.95b9		20 aa 95	jsr $95aa	        jsr vd_setreg
+.95bc		ad b7 97	lda $97b7	        lda vd_addr
+.95bf		a2 13		ldx #$13	        ldx #19
+.95c1		20 aa 95	jsr $95aa	        jsr vd_setreg
+.95c4		a2 1f		ldx #$1f	        ldx #31
+.95c6		8e 00 d6	stx $d600	        stx $d600
+.95c9		4c 80 95	jmp $9580	        jmp vd_wait
+.95cc						vd_read_seek:
+.95cc		20 b4 95	jsr $95b4	        jsr vd_seek
+.95cf		20 d5 95	jsr $95d5	        jsr vd_getbyte         ; prime the real VDC read latch, then re-address
+.95d2		4c b4 95	jmp $95b4	        jmp vd_seek
+.95d5						vd_getbyte:
+.95d5		20 80 95	jsr $9580	        jsr vd_wait
+.95d8		ad 01 d6	lda $d601	        lda $d601
+.95db		60		rts		        rts
+.95dc						vd_putbyte:
+.95dc		20 80 95	jsr $9580	        jsr vd_wait
+.95df		8d 01 d6	sta $d601	        sta $d601
+.95e2		60		rts		        rts
+.95e3						vd_peek:
+.95e3		20 cc 95	jsr $95cc	        jsr vd_read_seek
+.95e6		4c d5 95	jmp $95d5	        jmp vd_getbyte
+.95e9						vd_poke:
+.95e9		48		pha		        pha
+.95ea		20 b4 95	jsr $95b4	        jsr vd_seek
+.95ed		68		pla		        pla
+.95ee		4c dc 95	jmp $95dc	        jmp vd_putbyte
+.95f1						vd_read_block:
+.95f1		20 cc 95	jsr $95cc	        jsr vd_read_seek
+.95f4		a0 00		ldy #$00	        ldy #0
+.95f6		20 d5 95	jsr $95d5	-       jsr vd_getbyte
+.95f9		99 00 3a	sta $3a00,y	        sta N_BUFFER,y
+.95fc		c8		iny		        iny
+.95fd		cc bf 97	cpy $97bf	        cpy vd_count
+.9600		d0 f4		bne $95f6	        bne -
+.9602		60		rts		        rts
+.9603						vd_write_block:
+.9603		20 b4 95	jsr $95b4	        jsr vd_seek
+.9606		a0 00		ldy #$00	        ldy #0
+.9608		b9 00 3a	lda $3a00,y	-       lda N_BUFFER,y
+.960b		20 dc 95	jsr $95dc	        jsr vd_putbyte
+.960e		c8		iny		        iny
+.960f		cc bf 97	cpy $97bf	        cpy vd_count
+.9612		d0 f4		bne $9608	        bne -
+.9614		60		rts		        rts
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-mirror.inc
-
-
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-pointer.inc
-
-.8d37						vd_xy:
-.8d37		8e d8 8e	stx $8ed8	        stx vd_column
-.8d3a		a2 00		ldx #$00	        ldx #0
-.8d3c		8e da 8e	stx $8eda	        stx vd_addr+1
-.8d3f		0a		asl a		        asl
-.8d40		2e da 8e	rol $8eda	        rol vd_addr+1
-.8d43		0a		asl a		        asl
-.8d44		2e da 8e	rol $8eda	        rol vd_addr+1
-.8d47		0a		asl a		        asl
-.8d48		2e da 8e	rol $8eda	        rol vd_addr+1
-.8d4b		0a		asl a		        asl
-.8d4c		2e da 8e	rol $8eda	        rol vd_addr+1
-.8d4f		8d db 8e	sta $8edb	        sta vd_math
-.8d52		ae da 8e	ldx $8eda	        ldx vd_addr+1
-.8d55		8e dc 8e	stx $8edc	        stx vd_math+1
-.8d58		0a		asl a		        asl
-.8d59		2e da 8e	rol $8eda	        rol vd_addr+1
-.8d5c		0a		asl a		        asl
-.8d5d		2e da 8e	rol $8eda	        rol vd_addr+1
-.8d60		18		clc		        clc
-.8d61		6d db 8e	adc $8edb	        adc vd_math
-.8d64		8d d9 8e	sta $8ed9	        sta vd_addr
-.8d67		ad da 8e	lda $8eda	        lda vd_addr+1
-.8d6a		6d dc 8e	adc $8edc	        adc vd_math+1
-.8d6d		18		clc		        clc
-.8d6e		6d d3 8e	adc $8ed3	        adc vd_base
-.8d71		8d da 8e	sta $8eda	        sta vd_addr+1
-.8d74		ad d9 8e	lda $8ed9	        lda vd_addr
-.8d77		18		clc		        clc
-.8d78		6d d8 8e	adc $8ed8	        adc vd_column
-.8d7b		8d d9 8e	sta $8ed9	        sta vd_addr
-.8d7e		90 03		bcc $8d83	        bcc +
-.8d80		ee da 8e	inc $8eda	        inc vd_addr+1
-.8d83		60		rts		+       rts
-.8d84						vd_next_row:
-.8d84		ad d9 8e	lda $8ed9	        lda vd_addr
-.8d87		18		clc		        clc
-.8d88		69 50		adc #$50	        adc #80
-.8d8a		8d d9 8e	sta $8ed9	        sta vd_addr
-.8d8d		90 03		bcc $8d92	        bcc +
-.8d8f		ee da 8e	inc $8eda	        inc vd_addr+1
-.8d92		60		rts		+       rts
-.8d93						vd_poll:
-.8d93		ad cf 8e	lda $8ecf	        lda vd_live
-.8d96		d0 03		bne $8d9b	        beq vd_poll_done
-.8d98		4c 3b 8e	jmp $8e3b
-.8d9b		ad d1 8e	lda $8ed1	        lda vd_fault
-.8d9e		d0 f8		bne $8d98	        bne vd_poll_done
-.8da0		ad c0 84	lda $84c0	        lda pm_seen
-.8da3		cd e8 8e	cmp $8ee8	        cmp vd_pointer_visible
-.8da6		d0 1d		bne $8dc5	        bne vd_pointer_change
-.8da8		ad c0 84	lda $84c0	        lda pm_seen
-.8dab		f0 eb		beq $8d98	        beq vd_poll_done
-.8dad		ad c4 84	lda $84c4	        lda pm_x
-.8db0		cd e9 8e	cmp $8ee9	        cmp vd_pointer_x
-.8db3		d0 10		bne $8dc5	        bne vd_pointer_change
-.8db5		ad c5 84	lda $84c5	        lda pm_x+1
-.8db8		cd ea 8e	cmp $8eea	        cmp vd_pointer_x+1
-.8dbb		d0 08		bne $8dc5	        bne vd_pointer_change
-.8dbd		ad c6 84	lda $84c6	        lda pm_y
-.8dc0		cd eb 8e	cmp $8eeb	        cmp vd_pointer_y
-.8dc3		f0 76		beq $8e3b	        beq vd_poll_done
-.8dc5						vd_pointer_change:
-.8dc5		20 7c 8b	jsr $8b7c	        jsr vd_gate
-.8dc8		20 3d 8e	jsr $8e3d	        jsr vd_hide_pointer
-.8dcb		ad c0 84	lda $84c0	        lda pm_seen
-.8dce		f0 6b		beq $8e3b	        beq vd_poll_done
-.8dd0		ad c4 84	lda $84c4	        lda pm_x
-.8dd3		8d e9 8e	sta $8ee9	        sta vd_pointer_x
-.8dd6		ad c5 84	lda $84c5	        lda pm_x+1
-.8dd9		8d ea 8e	sta $8eea	        sta vd_pointer_x+1
-.8ddc		ad c6 84	lda $84c6	        lda pm_y
-.8ddf		8d eb 8e	sta $8eeb	        sta vd_pointer_y
-.8de2		20 6b 8e	jsr $8e6b	        jsr vd_pointer_geometry
-.8de5						vd_pointer_draw_row:
-.8de5		20 13 8d	jsr $8d13	        jsr vd_read_block
-.8de8		ae ee 8e	ldx $8eee	        ldx vd_pointer_line
-.8deb		bd 23 8f	lda $8f23,x	        lda vd_pointer_hi,x
-.8dee		8d f0 8e	sta $8ef0	        sta vd_mask
-.8df1		bd 33 8f	lda $8f33,x	        lda vd_pointer_lo,x
-.8df4		8d f1 8e	sta $8ef1	        sta vd_mask+1
-.8df7		a9 00		lda #$00	        lda #0
-.8df9		8d f2 8e	sta $8ef2	        sta vd_mask+2
-.8dfc		ae ec 8e	ldx $8eec	        ldx vd_pointer_shift
-.8dff		f0 0c		beq $8e0d	        beq +
-.8e01		4e f0 8e	lsr $8ef0	-       lsr vd_mask
-.8e04		6e f1 8e	ror $8ef1	        ror vd_mask+1
-.8e07		6e f2 8e	ror $8ef2	        ror vd_mask+2
-.8e0a		ca		dex		        dex
-.8e0b		d0 f4		bne $8e01	        bne -
-.8e0d		a0 00		ldy #$00	+       ldy #0
-.8e0f		ae ef 8e	ldx $8eef	        ldx vd_pointer_at
-.8e12		b9 00 3a	lda $3a00,y	-       lda N_BUFFER,y
-.8e15		9d f3 8e	sta $8ef3,x	        sta vd_under,x
-.8e18		59 f0 8e	eor $8ef0,y	        eor vd_mask,y
-.8e1b		99 00 3a	sta $3a00,y	        sta N_BUFFER,y
-.8e1e		e8		inx		        inx
-.8e1f		c8		iny		        iny
-.8e20		cc e1 8e	cpy $8ee1	        cpy vd_count
-.8e23		d0 ed		bne $8e12	        bne -
-.8e25		8e ef 8e	stx $8eef	        stx vd_pointer_at
-.8e28		20 25 8d	jsr $8d25	        jsr vd_write_block
-.8e2b		20 84 8d	jsr $8d84	        jsr vd_next_row
-.8e2e		ee ee 8e	inc $8eee	        inc vd_pointer_line
-.8e31		ce ed 8e	dec $8eed	        dec vd_pointer_rows
-.8e34		d0 af		bne $8de5	        bne vd_pointer_draw_row
-.8e36		a9 01		lda #$01	        lda #1
-.8e38		8d e8 8e	sta $8ee8	        sta vd_pointer_visible
-.8e3b						vd_poll_done:
-.8e3b		18		clc		        clc
-.8e3c		60		rts		        rts
-.8e3d						vd_hide_pointer:
-.8e3d		ad e8 8e	lda $8ee8	        lda vd_pointer_visible
-.8e40		f0 f9		beq $8e3b	        beq vd_poll_done
-.8e42		20 6b 8e	jsr $8e6b	        jsr vd_pointer_geometry
-.8e45						vd_pointer_restore_row:
-.8e45		a0 00		ldy #$00	        ldy #0
-.8e47		ae ef 8e	ldx $8eef	        ldx vd_pointer_at
-.8e4a		bd f3 8e	lda $8ef3,x	-       lda vd_under,x
-.8e4d		99 00 3a	sta $3a00,y	        sta N_BUFFER,y
-.8e50		e8		inx		        inx
-.8e51		c8		iny		        iny
-.8e52		cc e1 8e	cpy $8ee1	        cpy vd_count
-.8e55		d0 f3		bne $8e4a	        bne -
-.8e57		8e ef 8e	stx $8eef	        stx vd_pointer_at
-.8e5a		20 25 8d	jsr $8d25	        jsr vd_write_block
-.8e5d		20 84 8d	jsr $8d84	        jsr vd_next_row
-.8e60		ce ed 8e	dec $8eed	        dec vd_pointer_rows
-.8e63		d0 e0		bne $8e45	        bne vd_pointer_restore_row
-.8e65		a9 00		lda #$00	        lda #0
-.8e67		8d e8 8e	sta $8ee8	        sta vd_pointer_visible
-.8e6a		60		rts		        rts
-.8e6b						vd_pointer_geometry:
-.8e6b		ad e9 8e	lda $8ee9	        lda vd_pointer_x
-.8e6e		0a		asl a		        asl
-.8e6f		29 07		and #$07	        and #7
-.8e71		8d ec 8e	sta $8eec	        sta vd_pointer_shift
-.8e74		ad ea 8e	lda $8eea	        lda vd_pointer_x+1
-.8e77		4a		lsr a		        lsr
-.8e78		ad e9 8e	lda $8ee9	        lda vd_pointer_x
-.8e7b		6a		ror a		        ror
-.8e7c		4a		lsr a		        lsr                   ; logical x*2/8 = x/4, full 640-pixel address range
-.8e7d		aa		tax		        tax
-.8e7e		a9 50		lda #$50	        lda #80
-.8e80		8e d8 8e	stx $8ed8	        stx vd_column
-.8e83		38		sec		        sec
-.8e84		ed d8 8e	sbc $8ed8	        sbc vd_column
-.8e87		c9 03		cmp #$03	        cmp #3
-.8e89		90 02		bcc $8e8d	        bcc +
-.8e8b		a9 03		lda #$03	        lda #3
-.8e8d		8d e1 8e	sta $8ee1	+       sta vd_count
-.8e90		a9 c8		lda #$c8	        lda #200
-.8e92		38		sec		        sec
-.8e93		ed eb 8e	sbc $8eeb	        sbc vd_pointer_y
-.8e96		c9 10		cmp #$10	        cmp #16
-.8e98		90 02		bcc $8e9c	        bcc +
-.8e9a		a9 10		lda #$10	        lda #16
-.8e9c		8d ed 8e	sta $8eed	+       sta vd_pointer_rows
-.8e9f		ad eb 8e	lda $8eeb	        lda vd_pointer_y
-.8ea2		20 37 8d	jsr $8d37	        jsr vd_xy
-.8ea5		a9 00		lda #$00	        lda #0
-.8ea7		8d ee 8e	sta $8eee	        sta vd_pointer_line
-.8eaa		8d ef 8e	sta $8eef	        sta vd_pointer_at
-.8ead		60		rts		        rts
-
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-mirror.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-mirror.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-state.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-pointer.inc
 
->8eae		0a 0c 0d 12 13 14 15 18		vd_registers: .byte 10,12,13,18,19,20,21,24,25,26,27,28,32,33
->8eb6		19 1a 1b 1c 20 21
+.9615						vd_xy:
+.9615		8e b6 97	stx $97b6	        stx vd_column
+.9618		a2 00		ldx #$00	        ldx #0
+.961a		8e b8 97	stx $97b8	        stx vd_addr+1
+.961d		0a		asl a		        asl
+.961e		2e b8 97	rol $97b8	        rol vd_addr+1
+.9621		0a		asl a		        asl
+.9622		2e b8 97	rol $97b8	        rol vd_addr+1
+.9625		0a		asl a		        asl
+.9626		2e b8 97	rol $97b8	        rol vd_addr+1
+.9629		0a		asl a		        asl
+.962a		2e b8 97	rol $97b8	        rol vd_addr+1
+.962d		8d b9 97	sta $97b9	        sta vd_math
+.9630		ae b8 97	ldx $97b8	        ldx vd_addr+1
+.9633		8e ba 97	stx $97ba	        stx vd_math+1
+.9636		0a		asl a		        asl
+.9637		2e b8 97	rol $97b8	        rol vd_addr+1
+.963a		0a		asl a		        asl
+.963b		2e b8 97	rol $97b8	        rol vd_addr+1
+.963e		18		clc		        clc
+.963f		6d b9 97	adc $97b9	        adc vd_math
+.9642		8d b7 97	sta $97b7	        sta vd_addr
+.9645		ad b8 97	lda $97b8	        lda vd_addr+1
+.9648		6d ba 97	adc $97ba	        adc vd_math+1
+.964b		18		clc		        clc
+.964c		6d b1 97	adc $97b1	        adc vd_base
+.964f		8d b8 97	sta $97b8	        sta vd_addr+1
+.9652		ad b7 97	lda $97b7	        lda vd_addr
+.9655		18		clc		        clc
+.9656		6d b6 97	adc $97b6	        adc vd_column
+.9659		8d b7 97	sta $97b7	        sta vd_addr
+.965c		90 03		bcc $9661	        bcc +
+.965e		ee b8 97	inc $97b8	        inc vd_addr+1
+.9661		60		rts		+       rts
+.9662						vd_next_row:
+.9662		ad b7 97	lda $97b7	        lda vd_addr
+.9665		18		clc		        clc
+.9666		69 50		adc #$50	        adc #80
+.9668		8d b7 97	sta $97b7	        sta vd_addr
+.966b		90 03		bcc $9670	        bcc +
+.966d		ee b8 97	inc $97b8	        inc vd_addr+1
+.9670		60		rts		+       rts
+.9671						vd_poll:
+.9671		ad ad 97	lda $97ad	        lda vd_live
+.9674		d0 03		bne $9679	        beq vd_poll_done
+.9676		4c 19 97	jmp $9719
+.9679		ad af 97	lda $97af	        lda vd_fault
+.967c		d0 f8		bne $9676	        bne vd_poll_done
+.967e		ad c0 84	lda $84c0	        lda pm_seen
+.9681		cd c6 97	cmp $97c6	        cmp vd_pointer_visible
+.9684		d0 1d		bne $96a3	        bne vd_pointer_change
+.9686		ad c0 84	lda $84c0	        lda pm_seen
+.9689		f0 eb		beq $9676	        beq vd_poll_done
+.968b		ad c4 84	lda $84c4	        lda pm_x
+.968e		cd c7 97	cmp $97c7	        cmp vd_pointer_x
+.9691		d0 10		bne $96a3	        bne vd_pointer_change
+.9693		ad c5 84	lda $84c5	        lda pm_x+1
+.9696		cd c8 97	cmp $97c8	        cmp vd_pointer_x+1
+.9699		d0 08		bne $96a3	        bne vd_pointer_change
+.969b		ad c6 84	lda $84c6	        lda pm_y
+.969e		cd c9 97	cmp $97c9	        cmp vd_pointer_y
+.96a1		f0 76		beq $9719	        beq vd_poll_done
+.96a3						vd_pointer_change:
+.96a3		20 55 94	jsr $9455	        jsr vd_gate
+.96a6		20 1b 97	jsr $971b	        jsr vd_hide_pointer
+.96a9		ad c0 84	lda $84c0	        lda pm_seen
+.96ac		f0 6b		beq $9719	        beq vd_poll_done
+.96ae		ad c4 84	lda $84c4	        lda pm_x
+.96b1		8d c7 97	sta $97c7	        sta vd_pointer_x
+.96b4		ad c5 84	lda $84c5	        lda pm_x+1
+.96b7		8d c8 97	sta $97c8	        sta vd_pointer_x+1
+.96ba		ad c6 84	lda $84c6	        lda pm_y
+.96bd		8d c9 97	sta $97c9	        sta vd_pointer_y
+.96c0		20 49 97	jsr $9749	        jsr vd_pointer_geometry
+.96c3						vd_pointer_draw_row:
+.96c3		20 f1 95	jsr $95f1	        jsr vd_read_block
+.96c6		ae cc 97	ldx $97cc	        ldx vd_pointer_line
+.96c9		bd 01 98	lda $9801,x	        lda vd_pointer_hi,x
+.96cc		8d ce 97	sta $97ce	        sta vd_mask
+.96cf		bd 11 98	lda $9811,x	        lda vd_pointer_lo,x
+.96d2		8d cf 97	sta $97cf	        sta vd_mask+1
+.96d5		a9 00		lda #$00	        lda #0
+.96d7		8d d0 97	sta $97d0	        sta vd_mask+2
+.96da		ae ca 97	ldx $97ca	        ldx vd_pointer_shift
+.96dd		f0 0c		beq $96eb	        beq +
+.96df		4e ce 97	lsr $97ce	-       lsr vd_mask
+.96e2		6e cf 97	ror $97cf	        ror vd_mask+1
+.96e5		6e d0 97	ror $97d0	        ror vd_mask+2
+.96e8		ca		dex		        dex
+.96e9		d0 f4		bne $96df	        bne -
+.96eb		a0 00		ldy #$00	+       ldy #0
+.96ed		ae cd 97	ldx $97cd	        ldx vd_pointer_at
+.96f0		b9 00 3a	lda $3a00,y	-       lda N_BUFFER,y
+.96f3		9d d1 97	sta $97d1,x	        sta vd_under,x
+.96f6		59 ce 97	eor $97ce,y	        eor vd_mask,y
+.96f9		99 00 3a	sta $3a00,y	        sta N_BUFFER,y
+.96fc		e8		inx		        inx
+.96fd		c8		iny		        iny
+.96fe		cc bf 97	cpy $97bf	        cpy vd_count
+.9701		d0 ed		bne $96f0	        bne -
+.9703		8e cd 97	stx $97cd	        stx vd_pointer_at
+.9706		20 03 96	jsr $9603	        jsr vd_write_block
+.9709		20 62 96	jsr $9662	        jsr vd_next_row
+.970c		ee cc 97	inc $97cc	        inc vd_pointer_line
+.970f		ce cb 97	dec $97cb	        dec vd_pointer_rows
+.9712		d0 af		bne $96c3	        bne vd_pointer_draw_row
+.9714		a9 01		lda #$01	        lda #1
+.9716		8d c6 97	sta $97c6	        sta vd_pointer_visible
+.9719						vd_poll_done:
+.9719		18		clc		        clc
+.971a		60		rts		        rts
+.971b						vd_hide_pointer:
+.971b		ad c6 97	lda $97c6	        lda vd_pointer_visible
+.971e		f0 f9		beq $9719	        beq vd_poll_done
+.9720		20 49 97	jsr $9749	        jsr vd_pointer_geometry
+.9723						vd_pointer_restore_row:
+.9723		a0 00		ldy #$00	        ldy #0
+.9725		ae cd 97	ldx $97cd	        ldx vd_pointer_at
+.9728		bd d1 97	lda $97d1,x	-       lda vd_under,x
+.972b		99 00 3a	sta $3a00,y	        sta N_BUFFER,y
+.972e		e8		inx		        inx
+.972f		c8		iny		        iny
+.9730		cc bf 97	cpy $97bf	        cpy vd_count
+.9733		d0 f3		bne $9728	        bne -
+.9735		8e cd 97	stx $97cd	        stx vd_pointer_at
+.9738		20 03 96	jsr $9603	        jsr vd_write_block
+.973b		20 62 96	jsr $9662	        jsr vd_next_row
+.973e		ce cb 97	dec $97cb	        dec vd_pointer_rows
+.9741		d0 e0		bne $9723	        bne vd_pointer_restore_row
+.9743		a9 00		lda #$00	        lda #0
+.9745		8d c6 97	sta $97c6	        sta vd_pointer_visible
+.9748		60		rts		        rts
+.9749						vd_pointer_geometry:
+.9749		ad c7 97	lda $97c7	        lda vd_pointer_x
+.974c		0a		asl a		        asl
+.974d		29 07		and #$07	        and #7
+.974f		8d ca 97	sta $97ca	        sta vd_pointer_shift
+.9752		ad c8 97	lda $97c8	        lda vd_pointer_x+1
+.9755		4a		lsr a		        lsr
+.9756		ad c7 97	lda $97c7	        lda vd_pointer_x
+.9759		6a		ror a		        ror
+.975a		4a		lsr a		        lsr                   ; logical x*2/8 = x/4, full 640-pixel address range
+.975b		aa		tax		        tax
+.975c		a9 50		lda #$50	        lda #80
+.975e		8e b6 97	stx $97b6	        stx vd_column
+.9761		38		sec		        sec
+.9762		ed b6 97	sbc $97b6	        sbc vd_column
+.9765		c9 03		cmp #$03	        cmp #3
+.9767		90 02		bcc $976b	        bcc +
+.9769		a9 03		lda #$03	        lda #3
+.976b		8d bf 97	sta $97bf	+       sta vd_count
+.976e		a9 c8		lda #$c8	        lda #200
+.9770		38		sec		        sec
+.9771		ed c9 97	sbc $97c9	        sbc vd_pointer_y
+.9774		c9 10		cmp #$10	        cmp #16
+.9776		90 02		bcc $977a	        bcc +
+.9778		a9 10		lda #$10	        lda #16
+.977a		8d cb 97	sta $97cb	+       sta vd_pointer_rows
+.977d		ad c9 97	lda $97c9	        lda vd_pointer_y
+.9780		20 15 96	jsr $9615	        jsr vd_xy
+.9783		a9 00		lda #$00	        lda #0
+.9785		8d cc 97	sta $97cc	        sta vd_pointer_line
+.9788		8d cd 97	sta $97cd	        sta vd_pointer_at
+.978b		60		rts		        rts
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-mirror.inc
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-state.inc
+
+>978c		0a 0c 0d 12 13 14 15 18		vd_registers: .byte 10,12,13,18,19,20,21,24,25,26,27,28,32,33
+>9794		19 1a 1b 1c 20 21
 =14						vd_register_count=*-vd_registers
->8ebc		00 00 00 00 00 00 00 00		vd_saved: .fill vd_register_count,0
->8ec4		00 00 00 00 00 00
->8eca		00 00 00 00			vd_handle: .fill 4,0
->8ece		00				vd_phase: .byte 0              ; 0 untouched, 1 registers/probe, 2 full snapshot
->8ecf		00				vd_live: .byte 0
->8ed0		00				vd_color: .byte 0
->8ed1		00				vd_fault: .byte 0
->8ed2		00				vd_stack: .byte 0
->8ed3		00				vd_base: .byte 0
->8ed4		00				vd_pages: .byte 0
->8ed5		00				vd_left: .byte 0
->8ed6		00				vd_index: .byte 0
->8ed7		00				vd_row: .byte 0
->8ed8		00				vd_column: .byte 0
->8ed9		00 00				vd_addr: .word 0
->8edb		00 00				vd_math: .word 0
->8edd		00 00				vd_distance: .word 0
->8edf		00				vd_font_low: .byte 0
->8ee0		00				vd_font_high: .byte 0
->8ee1		00				vd_count: .byte 0
->8ee2		00				vd_length: .byte 0
->8ee3		00				vd_wait_low: .byte 0
->8ee4		00				vd_wait_high: .byte 0
->8ee5		00				vd_probe_live: .byte 0
->8ee6		00				vd_probe_low: .byte 0
->8ee7		00				vd_probe_high: .byte 0
->8ee8		00				vd_pointer_visible: .byte 0
->8ee9		00 00				vd_pointer_x: .word 0
->8eeb		00				vd_pointer_y: .byte 0
->8eec		00				vd_pointer_shift: .byte 0
->8eed		00				vd_pointer_rows: .byte 0
->8eee		00				vd_pointer_line: .byte 0
->8eef		00				vd_pointer_at: .byte 0
->8ef0		00 00 00			vd_mask: .fill 3,0
->8ef3		00 00 00 00 00 00 00 00		vd_under: .fill 48,0
->8efb		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->8f0b		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
->8f1b		00 00 00 00 00 00 00 00
+>979a		00 00 00 00 00 00 00 00		vd_saved: .fill vd_register_count,0
+>97a2		00 00 00 00 00 00
+>97a8		00 00 00 00			vd_handle: .fill 4,0
+>97ac		00				vd_phase: .byte 0              ; 0 untouched, 1 registers/probe, 2 full snapshot
+>97ad		00				vd_live: .byte 0
+>97ae		00				vd_color: .byte 0
+>97af		00				vd_fault: .byte 0
+>97b0		00				vd_stack: .byte 0
+>97b1		00				vd_base: .byte 0
+>97b2		00				vd_pages: .byte 0
+>97b3		00				vd_left: .byte 0
+>97b4		00				vd_index: .byte 0
+>97b5		00				vd_row: .byte 0
+>97b6		00				vd_column: .byte 0
+>97b7		00 00				vd_addr: .word 0
+>97b9		00 00				vd_math: .word 0
+>97bb		00 00				vd_distance: .word 0
+>97bd		00				vd_font_low: .byte 0
+>97be		00				vd_font_high: .byte 0
+>97bf		00				vd_count: .byte 0
+>97c0		00				vd_length: .byte 0
+>97c1		00				vd_wait_low: .byte 0
+>97c2		00				vd_wait_high: .byte 0
+>97c3		00				vd_probe_live: .byte 0
+>97c4		00				vd_probe_low: .byte 0
+>97c5		00				vd_probe_high: .byte 0
+>97c6		00				vd_pointer_visible: .byte 0
+>97c7		00 00				vd_pointer_x: .word 0
+>97c9		00				vd_pointer_y: .byte 0
+>97ca		00				vd_pointer_shift: .byte 0
+>97cb		00				vd_pointer_rows: .byte 0
+>97cc		00				vd_pointer_line: .byte 0
+>97cd		00				vd_pointer_at: .byte 0
+>97ce		00 00 00			vd_mask: .fill 3,0
+>97d1		00 00 00 00 00 00 00 00		vd_under: .fill 48,0
+>97d9		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>97e9		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>97f9		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-mirror.inc
-
-
-;******  Processing file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-pointer-shape.inc
-
->8f23		80 c0 e0 f0 f8 fc fe ff		vd_pointer_hi: .byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff,$ff,$ff,$fe,$ef,$cf,$87,$07,$03
->8f2b		ff ff fe ef cf 87 07 03
->8f33		00 00 00 00 00 00 00 00		vd_pointer_lo: .byte $00,$00,$00,$00,$00,$00,$00,$00,$80,$c0,$00,$00,$00,$80,$80,$00
->8f3b		80 c0 00 00 00 80 80 00
-
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/../graphics/vdc-mirror.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-mirror.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc/gui.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-pointer-shape.inc
+
+>9801		80 c0 e0 f0 f8 fc fe ff		vd_pointer_hi: .byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff,$ff,$ff,$fe,$ef,$cf,$87,$07,$03
+>9809		ff ff fe ef cf 87 07 03
+>9811		00 00 00 00 00 00 00 00		vd_pointer_lo: .byte $00,$00,$00,$00,$00,$00,$00,$00,$80,$c0,$00,$00,$00,$80,$80,$00
+>9819		80 c0 00 00 00 80 80 00
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/../graphics/vdc-mirror.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-native-vdc-apps-efcoxz1p/src/native/calc.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc/gui.inc
 
-.8f43						calc_end:
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-reu-vfzhotyh/src/native/calc.asm
+
+.9821						calc_end:
 
 ;******  End of listing

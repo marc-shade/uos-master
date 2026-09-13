@@ -83,7 +83,12 @@ module loads, stale entry tokens, allocation ownership and both displays.
 The completed emulator checks retain ROM/IRQ behavior and the full document
 and source lifecycle. Complete physical USB/IEC workflows also pass on the
 same frozen images, including independent saved-file readback.
-REU-backed caching and banked execution remain additional work; a module
+The [native REU arena](NATIVE-REU.md) now backs Calculator's VDC snapshot,
+with 4 KiB allocations, app-generation tokens and bounded DMA. It retains its
+code and descriptors in the app core and does not reserve more resident RAM.
+The Calculator leaves 331 main-RAM pages free with an REU. Integrating that
+backing into documents, caches and the larger graphical apps still needs code
+placement and lifetime work. REU-backed caching and banked execution remain additional work; a module
 window alone does not implement app suspension or background scheduling.
 
 Bo Zimmerman's [geoModules project](https://www.zimmers.net/geos/geomods.html)

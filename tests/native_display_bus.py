@@ -12,6 +12,8 @@ class DisplayBus(BaseBus):
     def __getitem__(self,address):
         if not self.config&1 and address==0xd600:
             return 0            # This VIC-only model has no ready VDC.
+        if not self.config&1 and 0xdf00<=address<=0xdf0a:
+            return 255          # No REU; expansion fixtures override these ports.
         if not self.config&1 and address in self.video:
             return self.video[address]|self.raster_high if address==0xd011 else self.video[address]
         return super().__getitem__(address)

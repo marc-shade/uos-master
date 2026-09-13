@@ -88,6 +88,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--80col',dest='eighty',action='store_true')
     parser.add_argument('--vdc64',action='store_true')
     parser.add_argument('--d81',action='store_true')
+    parser.add_argument('--reu-kib',type=int,choices=(128,256,512,1024,2048,4096,8192,16384))
     parser.add_argument('--boot-frame-only',action='store_true')
     parser.add_argument('--calc-only',action='store_true')
     parser.add_argument('--paint-only',action='store_true')
@@ -130,6 +131,11 @@ def main():
             '-9',str(data_disk),'-drive9true','-drive9type','1541',
             '-VDC64KB' if args.vdc64 else '-VDC16KB','-sounddev','dummy','-soundwarpmode','1','-jamaction','0','-warp','-controlport1device','3',
             '-controlport2device','0','+mouse','-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{port}']
+        if args.reu_kib:
+            from native_reu_check import initial_memory,snapshot as reu_dump
+            reu_initial=initial_memory(args.reu_kib)
+            (work/'initial.reu').write_bytes(reu_initial)
+            command.extend(['-reu','-reusize',str(args.reu_kib),'-reuimage',str(work/'initial.reu'),'+reuimagerw'])
         report['command']=command;save()
         emu=subprocess.Popen(command,env=dict(os.environ,DISPLAY=xv.display,
             __EGL_VENDOR_LIBRARY_FILENAMES=ci.cbm.MESA_EGL),stdout=log,stderr=subprocess.STDOUT)
@@ -255,7 +261,13 @@ def main():
             assert after==(before+1)&65535,(name,'extra or missing ROM key',before,after)
             report['events'].append(dict(key=name,target=target,keys_before=before,keys_after=after));save()
         def watch_app_vdc_restore(app,label):
-            snapshot,restore=vdc_snapshot(capture,app_read,work,label,image_prefix='native-desktop/'+app)
+            def reu_snapshot(label):
+                with paused.paused(label+'-reu'):
+                    memory,info=reu_dump(mon,work/(label+'-reu.vsf'))
+                assert memory[72*256:]==reu_initial[72*256:], 'REU bytes outside Calculator backup'
+                return memory,info
+            snapshot,restore=vdc_snapshot(capture,app_read,work,label,image_prefix='native-desktop/'+app,
+                reu_snapshot=reu_snapshot if args.reu_kib else None)
             entry=lst_symbol('native-desktop/'+app,'vd_restore_registers')
             error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
             assert not error

@@ -46,8 +46,8 @@ all eight lines: its last-raster value is inclusive, so seven is sufficient.
 | Entire saved address range | `$0000..$3fff` | `$4000..$87ff` |
 
 The desktop image contains 10,895 loaded bytes. The
-[suite disks](NATIVE-BOOT-MEDIA.md) retain all twelve shipping files, with 11
-free blocks on D64 and 2,507 on D81 before user documents. Use a
+[suite disks](NATIVE-BOOT-MEDIA.md) retain all twelve shipping files, with 2
+free blocks on D64 and 2,498 on D81 before user documents. Use a
 separate data disk or Ultimate storage for larger documents and pictures.
 Qualification saves the small calculator and Editor samples on the system
 disk, and copies the complete search module and Paint picture to device 9.

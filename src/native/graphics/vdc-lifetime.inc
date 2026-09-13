@@ -1,4 +1,11 @@
 ; Owned 16/64 KiB VDC bitmap lifetime. App supplies initial bitmap/attribute callbacks.
+.weak
+vd_storage_alloc=N_ALLOC
+vd_storage_read=N_READ
+vd_storage_write=N_WRITE
+vd_storage_free=N_FREE
+vd_storage_close=vd_success
+.endweak
 vd_open:
         jsr vd_gate
         lda #0
@@ -99,7 +106,7 @@ vd_save_registers:
         sta N_BANK
         lda vd_pages
         sta N_PAGES
-        jsr N_ALLOC
+        jsr vd_storage_alloc
         bcs vd_fail
         ldx #3
 -       lda N_HANDLE,x
@@ -111,7 +118,7 @@ vd_snapshot:
         lda #0                ; zero byte count means one complete 256-byte page
         sta vd_count
         jsr vd_read_block
-        jsr N_WRITE
+        jsr vd_storage_write
         bcs vd_fail
         jsr vd_transfer_next
         bne vd_snapshot
@@ -189,7 +196,7 @@ vd_close:
         jsr vd_setreg
         jsr vd_transfer_start
 vd_restore_memory:
-        jsr N_READ
+        jsr vd_storage_read
         bcs vd_fail
         lda #0
         sta vd_count
@@ -228,11 +235,16 @@ vd_restore_registers:
         lda vd_handle
         beq +
         jsr vd_select_handle
-        jsr N_FREE
+        jsr vd_storage_free
         bcs vd_fail
         lda #0
         sta vd_handle
-+       lda #0
++
+ .if vd_storage_close != vd_success
+        jsr vd_storage_close
+        bcs vd_fail
+ .endif
+        lda #0
         sta vd_phase
         jmp vd_success
 vd_blank:
