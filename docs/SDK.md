@@ -18,8 +18,14 @@ the public native API. Its separate CPU workflows pass; the ABI 1.7 system
 images are still undergoing physical qualification.
 Its `$1c20` jump table and memory map are separate from this
 legacy desktop ABI. ABI 1.9 adds the desktop session-selection mailbox at
-`$3d2f`; the current app/module validators accept requirements through 1.9.
+`$3d2f`; the current app/module validators accept requirements through 1.12.
 Desktop/app migration remains in progress.
+
+The [banked native SDK example](../examples/native-banked/README.md) adds a
+separate bank-1 executable component and runs the REU arena there. Its
+[checked loader and callback bridge](NATIVE-BANKED.md) use the existing native
+heap/file APIs without growing the resident kernel. This is an experimental
+app-linked facility; larger app and document migrations remain in progress.
 
 ## Memory map (from `build.sh` output and `src/routines.inc`)
 

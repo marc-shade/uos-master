@@ -16,6 +16,12 @@ heap bank or grow the resident kernel. Other apps do not yet use REU storage.
 Documents, clipboard, caches, suspended apps and a shared scheduled driver
 remain separate roadmap work.
 
+The [banked SDK example](../examples/native-banked/README.md) also runs this
+arena in a retained bank-1 component. Set `RU_BANKED = 1` only under the
+[banked executor](NATIVE-BANKED.md): it selects physical bank 1 for the private
+probe buffer and bank 0 for `N_BUFFER`. The shipped Calculator continues to
+use the default bank-0 build. This does not yet move Editor documents to REU.
+
 ## Ownership and calls
 
 Call from the running bank-0 app with the native MMU/common-RAM configuration,

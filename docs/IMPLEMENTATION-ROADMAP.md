@@ -642,3 +642,13 @@ memory remains owned until restoration succeeds, including fatal history errors.
 A bounded, CRC-checked packed kernel boot file makes room on D64 without changing
 resident RAM or app ABI. Applying VDC graphics to Editor, Files, Paint, Ultimate,
 Claude and the picker still requires code-space and backing-store work.
+
+The [bank-1 executable component SDK](NATIVE-BANKED.md) addresses part of that
+code-space limit. A checked stream loader loads a separate component into
+owned bank-1 `$6000..$bfff`, and a returning bridge restores the standard map
+around native calls. The example runs the REU arena there while preserving
+low bank-1 document data, borrowed system registers and failed-probe recovery.
+The resident kernel, shipped suite images and 426-page heap are unchanged.
+Moving Editor/Files/Paint/VDC services into these components, backing documents
+with REU, shared scheduled driver ownership and physical qualification remain
+the next steps; this SDK milestone does not complete those app migrations.

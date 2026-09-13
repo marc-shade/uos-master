@@ -4,6 +4,9 @@
 ; Public arguments/results are ru_owner/pages/page/handle/offset/count/actual.
 ; The eight-byte token is slot+generation LE24 + native app handle.
 ; Modules call this retained copy; they must not instantiate another arena.
+.weak
+RU_BANKED = 0                 ; banked.inc owns the temporary common-RAM map
+.endweak
 
 ru_open:
         php
@@ -62,14 +65,22 @@ ru_enter:
         inc ru_busy
         cld
         lda $ff00
+.if RU_BANKED
+        cmp #$4e
+.else
         cmp #$0e
+.endif
         bne ru_platform_error
         lda $d505
         and #$40
         bne ru_platform_error
         lda $d506
         and #15
+.if RU_BANKED
+        cmp #7
+.else
         cmp #4
+.endif
         bne ru_platform_error
         lda N_CURRENT
         cmp #N_APPOWNER
@@ -578,6 +589,13 @@ ru_dma:
         lda $d506
         pha
         and #$bf              ; DMA sees physical bank 0; no MMU/ROM changes
+.if RU_BANKED
+        ldx ru_host+1         ; the private probe pair resides in bank 1
+        cpx #$40              ; N_BUFFER remains physical bank 0
+        bcc +
+        ora #$40
++
+.endif
         sta $d506
         lda $d030
         pha

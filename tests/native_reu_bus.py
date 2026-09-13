@@ -4,6 +4,7 @@
 class REUBusMixin:
     reu_kib = 512
     reu_present = True
+    reu_configs = (0x0e,)
 
     def __init__(self):
         super().__init__()
@@ -19,6 +20,7 @@ class REUBusMixin:
         self.reu_fault_prefix = 0
         self.reu_after_dma = None
         self.reu_hosts = [(0x3a00,0x3c00)]
+        self.reu_bank1_hosts = []
         self.reu_speed = 0xa1
 
     def __getitem__(self, address):
@@ -71,11 +73,13 @@ class REUBusMixin:
         address = int.from_bytes(r[4:7],'little')
         length = int.from_bytes(r[7:9],'little') or 65536
         assert 1 <= length <= 512, length
-        assert any(a <= host < host+length <= b for a,b in self.reu_hosts), (hex(host),length)
-        assert not self.mmu[6]&64 and not self.reu_speed&1
+        bank = (self.mmu[6] >> 6)&1
+        hosts = self.reu_bank1_hosts if bank else self.reu_hosts
+        assert any(a <= host < host+length <= b for a,b in hosts), (bank,hex(host),length)
+        assert not self.reu_speed&1
         assert r[9] == 31 and r[10] == 63
-        assert self.config == 0x0e
-        row = dict(host=host,address=address,count=length,command=r[1])
+        assert self.config in self.reu_configs
+        row = dict(host=host,address=address,count=length,command=r[1],host_bank=bank)
         self.reu_transactions.append(row)
         fault = (len(self.reu_transactions) in self.reu_faults or
                  self.reu_fault_from is not None and len(self.reu_transactions) >= self.reu_fault_from)
@@ -83,9 +87,9 @@ class REUBusMixin:
         for _ in range(count):
             if r[1]&1:
                 self.reu_float = self.reu_get(address)
-                self.ram[0][host] = self.reu_float
+                self.ram[bank][host] = self.reu_float
             else:
-                self.reu_float = self.ram[0][host]
+                self.reu_float = self.ram[bank][host]
                 at = self.reu_physical(address)
                 if at is not None: self.reu_ram[at] = self.reu_float
             host = (host+1)&65535
