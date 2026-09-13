@@ -68,6 +68,12 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,504 free disk blocks
+while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
+format independently of browser preferences. Automatic media detection,
+D71 boot distribution, partitions, installer/recovery and dynamic system-volume
+replacement remain work items; a larger disk does not provide more app RAM.
+
 ## Kernel, desktop, and application gaps
 
 “Partial” means implementation exists but the complete row still needs work.

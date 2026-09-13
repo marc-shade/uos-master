@@ -8,8 +8,8 @@ In the browser, **L** opens an absolute USB app path field.
 or launches the selected native app through the checked loader.
 Applications run in native C128 mode, use the kernel's owned RAM services and
 return with the workspace's existing allocations intact.
-The graphical desktop and remaining Ultimate/productivity apps still need
-migration. This lifecycle supports one foreground application; scheduling and
+The [blue native desktop](NATIVE-GRAPHICS.md) launches the current six-app
+suite. Further Ultimate/productivity apps remain on the roadmap. This lifecycle supports one foreground application; scheduling and
 preserving suspended applications remain open.
 
 ## Calculator
@@ -75,7 +75,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..9; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9 |
+| 6 | 1 | Required ABI minor: 0..12; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9; Ultimate queries/NMI bridge require 10; Ultimate commands require 11; boot-format field requires 12 |
 | 7 | 1 | Zero for minor 0..6; minor 7 module-window offset low byte |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -170,7 +170,10 @@ the browser's code/cache. A target's normal return reloads BROWSE from the
 boot device, preserving the selected data device/format. A target load failure
 with completed cleanup reopens BROWSE with the error. Browser-load failures
 or retained resources return an error to the workspace. The C shortcut always
-selects CALC on the boot D64, independently of the browser's data device.
+selects CALC on the boot volume, independently of the browser's data device.
+ABI 1.12 pairs `N_BOOTDEVICE` with read-only `N_BOOTFORMAT` at `$3de4`:
+0 D64, 1 D71, 2 D81. The launcher requires minor 12 and restores this pair
+when launching a system app; the browser retains the chosen data format.
 ABI 1.4 exposes that boot IEC device in `N_BOOTDEVICE`; `N_DEVICE` may now be
 an Ultimate context. Apps that use their source for subsequent I/O must inspect
 `N_APPFORMAT`, even if they require an older ABI minor. The image validator
@@ -200,6 +203,7 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d2b` | N_BROWSERERROR: pending dispatcher error shown by BROWSE |
 | `$3d2c` | N_APPFORMAT: application's source geometry/backend, 0..3 |
 | `$3d2d` | N_BOOTDEVICE: boot IEC device, independent of the current app source |
+| `$3de4` | N_BOOTFORMAT: ABI 1.12 boot geometry, 0 D64 / 1 D71 / 2 D81; read-only for apps |
 | `$3d2e` | N_BROWSERLEN: retained Ultimate path length, 1..255 |
 | `$3d2f` | N_DESKTOPSEL: ABI 1.9 desktop session selection, 0 Calculator / 1 Editor / 2 Files; clear on native restart |
 | `$3d30..$3d33` | N_BROWSERPOS: selected directory ordinal, little-endian 32-bit |

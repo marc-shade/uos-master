@@ -1,6 +1,6 @@
 # Native C128 kernel and banked memory
 
-The separate `target/native/uos128.d64` boots through the C128 KERNAL into
+The separate `target/native/uos128.d64` or `.d81` boots through the C128 KERNAL into
 BASIC 7 and enters the native kernel. It never enters C64 mode. The native
 image provides a memory workspace, application-facing allocator and a
 [disk-loaded native calculator](NATIVE-APPS.md) with verified history export
@@ -8,8 +8,8 @@ through [owned IEC and Ultimate files](NATIVE-FILES.md), plus a
 [file/app browser and byte viewer](NATIVE-BROWSER.md) and
 [banked text editor](NATIVE-EDITOR.md) with [native Ultimate files](NATIVE-ULTIMATE.md).
 The [native graphical desktop](NATIVE-GRAPHICS.md) is built separately as
-`target/native-desktop/uos128.d64`. It adds owned VIC presentation, clipped
-drawing and keyboard app selection with VDC text controls. Remaining desktop
+`target/native-desktop/uos128.d64` and `.d81`. It adds owned VIC and VDC
+graphical launchers, clipped drawing and keyboard/1351 app selection. Remaining desktop
 services and the rest of the application suite still require migration.
 ABI 1.10 adds the read-only [Ultimate panel](NATIVE-ULTIMATE-CONTROLS.md)
 and the native [Claude terminal](../apps/claude/README.md) to the desktop disks.
@@ -46,6 +46,12 @@ its callback before exit. Callbacks cannot invoke foreground APIs and unwind
 through ROM `$ff33`. The Claude client follows this contract and saves its
 cc65 zero page, software stack and VDC font within its app allocation.
 
+ABI 1.12 adds `N_BOOTFORMAT` at `$3de4`. Startup sets it from the disk build
+profile (0 D64, 1 D71, 2 D81) and initializes browser/application formats to
+match. System shortcuts and launcher handoffs use this saved format with
+`N_BOOTDEVICE`; data-disk preferences stay independent. Apps must treat these
+two session fields as read-only. See [boot media](NATIVE-BOOT-MEDIA.md).
+
 Use the native CPU observer when a hardware test needs bytes from a specific
 RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM
 address; the [editor checkpoint](validation/2026-09-09-native-editor/README.md)
@@ -59,8 +65,9 @@ x128 -default -8 target/native/uos128.d64 -drive8true -drive8type 1541
 ```
 
 The build requires Python 3, 64tass and VICE's c1541. It creates the native
-kernel, boot-sector, three app PRGs and the picker module, D64 and image hash
-manifest in `target/native/`.
+kernel, boot-sector, three app PRGs, two Editor modules, D64/D81 disks and
+image hash manifest in `target/native/`. The D81 kernel and its symbols/layout
+are in `target/native/d81/`; app PRGs are shared between both formats.
 `layout.json` records resident, metadata and boot-staging bounds; `uos128.sym`
 exports the assembled runtime addresses. The kernel PRG remains loaded at `$1c01`.
 Track 1/sector 0 is reserved in the BAM before adding file `U`; ordinary file
@@ -78,8 +85,8 @@ with a bank-specific pattern, **V** to compare every byte and **F** to release
 it. Both allocations may remain live together. Free-page and handle counts
 are hexadecimal. A result of `00` means success, `04` means no valid selected
 handle and `0A` means the workspace found different data. The remaining error
-codes are listed below. To return to the graphical desktop, mount
-`target/ultos.d64` and use its existing C64-mode boot path.
+codes are listed below. On the suite workspace disk, **B** opens the blue
+native desktop. The standalone diagnostic disk provides the text browser.
 Press **C** to launch the native calculator and **Esc** there to return while
 retaining the workspace's allocations. Its app lifecycle and additional ABI
 entries are documented in the [native app guide](NATIVE-APPS.md).
@@ -118,9 +125,9 @@ The two pools provide **426 pages / 109,056 bytes (106.5 KiB)** from stock
 tries bank 1 first, preserving bank-0 executable space. Fixed graphics or DMA
 regions must be reserved before general allocations can use them. There is no
 REU allocation, size probe, RAM disk or expansion-memory support in this ABI yet.
-The current workspace kernel ends at `$37f6` exclusive, leaving 10 bytes before
-page tables; the direct-desktop variant ends at `$37f8`, leaving eight bytes.
-The low region ends at `$1bf0`, leaving 16 bytes, and the service region ends
+The current workspace kernel ends at `$37fa` exclusive, leaving six bytes before
+page tables; the direct-desktop variant ends at `$37fc`, leaving four bytes.
+The low region ends at `$1bf8`, leaving eight bytes, and the service region ends
 at `$4ff9`, leaving seven bytes. Further resident growth needs a new interval
 budget. The graphical library remains app/module code.
 Public entries and the app load address remain stable. ABI 1.6 adds

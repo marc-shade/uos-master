@@ -36,6 +36,7 @@ class Calculator:
         self.ram[0x3d29:0x3d2b]=bytes([device,fmt])
         # A separate data device does not change the boot app's D64 geometry.
         self.ram[0x3d2c]=fmt if device==8 else 0;self.ram[0x3d2d]=8
+        self.ram[0x3de4]=fmt if device==8 else 0
         if ultimate_files is not None or source_path is not None:
             from ci_native_ultimate import UltimateBus,DOSFiles
             data=dict(ultimate_files or {})

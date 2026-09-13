@@ -10,17 +10,19 @@ from native_capture import ROOT, wait
 from native_image import seal
 
 
-def exact_d64_files(image):
+def exact_disk_files(image,fmt=0):
     """Independent host extraction from linked sectors, including zero bytes."""
-    assert len(image)==174848
-    sizes=[21]*17+[19]*7+[18]*6+[17]*5
+    assert fmt in (0,1,2)
+    sizes=([21]*17+[19]*7+[18]*6+[17]*5)*(2 if fmt==1 else 1) if fmt!=2 else [40]*80
+    assert len(image)==sum(sizes)*256
+    directory_track=40 if fmt==2 else 18
     def sector(track,number):
-        assert 1<=track<=35 and 0<=number<sizes[track-1]
+        assert 1<=track<=len(sizes) and 0<=number<sizes[track-1]
         start=(sum(sizes[:track-1])+number)*256
         return image[start:start+256]
-    files={};directory=(18,1);seen_directory=set()
+    files={};directory=(40,3) if fmt==2 else (18,1);seen_directory=set()
     while directory[0]:
-        assert directory not in seen_directory and directory[0]==18
+        assert directory not in seen_directory and directory[0]==directory_track
         seen_directory.add(directory);block=sector(*directory)
         for offset in range(0,256,32):
             kind=block[offset+2]
@@ -28,7 +30,7 @@ def exact_d64_files(image):
             name=block[offset+5:offset+21].rstrip(b'\xa0')
             link=tuple(block[offset+3:offset+5]);chain=set();data=bytearray()
             while link[0]:
-                assert link not in chain and link[0]!=18
+                assert link not in chain and link[0]!=directory_track
                 chain.add(link);part=sector(*link)
                 assert part[0] or part[1]>=1
                 data+=part[2:] if part[0] else part[2:part[1]+1]
@@ -38,6 +40,10 @@ def exact_d64_files(image):
             files[name]=(kind&7,bytes(data))
         directory=tuple(block[:2])
     return files
+
+
+def exact_d64_files(image):
+    return exact_disk_files(image)
 
 
 def prepare(work,size=66053,fmt=0):

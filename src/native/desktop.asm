@@ -5,7 +5,7 @@ GD_APP_COUNT=6
 * = N_APPBASE
 gd_image:
         .text "napp"
-        .byte 1,1,10,0
+        .byte 1,1,12,0
         .word gd_end-gd_image
         .byte (gd_end-gd_image+255)/256,0
         .word gd_entry-gd_image
@@ -213,7 +213,7 @@ gd_launch:
         jsr vd_close
         bcs gd_vdc_blocked
         jsr pm_close
-        lda #0
+        lda N_BOOTFORMAT
         sta N_APPFORMAT
         lda N_BOOTDEVICE
         sta N_DEVICE

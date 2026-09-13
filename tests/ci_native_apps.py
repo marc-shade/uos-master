@@ -179,6 +179,9 @@ def main():
         abi9=bytearray(fixture());abi9[8]=9
         m,iec,cases['abi-1.9-accepted']=run_case(seal(abi9))
         assert m.ram[0x3d24]==42
+        abi12=bytearray(fixture());abi12[8]=12
+        m,iec,cases['abi-1.12-accepted']=run_case(seal(abi12))
+        assert m.ram[0x3d24]==42
         for name,length,pages in [('one-page',256,1),('full-slot',24576,96)]:
             code=b'\xa9\x2a\x60'+bytes((i*29+17)&255 for i in range(length-35))
             m,iec,cases[name]=run_case(fixture(code,pages))
@@ -199,7 +202,7 @@ def main():
         code=bytes.fromhex('a9028d013da9018d023dad203d8d003d20201ca92b60')
         m,iec,cases['owned-allocation']=run_case(fixture(code))
         assert m.stats()==(175,249,31) and m.ram[0x3d24]==43
-        mutations=[('origin',0,1),('magic',2,0),('format',6,2),('abi',7,2),('minor',8,12),
+        mutations=[('origin',0,1),('magic',2,0),('format',6,2),('abi',7,2),('minor',8,13),
                    ('flags',9,1),('pages-zero',12,0),('pages-too-large',12,97),
                    ('reserved',13,1),('entry-header',14,31),('entry-past-end',14,40),
                    ('entry-high',15,1),('title-control',18,13),('size-small',10,32),('size-high',11,17)]

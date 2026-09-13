@@ -61,6 +61,10 @@ blue graphical launchers on both displays: 320×200 VIC and
 [640×200 VDC](docs/NATIVE-VDC-DESKTOP.md). It launches Calculator, Editor,
 Files, Ultimate, Claude and Paint with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
+The same build also creates `target/native-desktop/uos128.d81` for a 1581,
+with 2,504 free blocks for documents and future apps. ABI 1.12 remembers the
+system volume's format across app launches and data-disk browsing. Use the
+matching D64 or D81 image; see [native boot media](docs/NATIVE-BOOT-MEDIA.md).
 Boot still uses IEC. Shared window/widget input, VDC graphics inside apps,
 persistent desktop state and the broader OS roadmap remain open. Physical desktop
 qualification of ABI 1.9 passed in the [physical record](docs/validation/2026-09-12-native-desktop-abi19-hardware/README.md).

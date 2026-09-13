@@ -66,30 +66,36 @@ def build():
             path.write_bytes(core)
         path.write_bytes(seal(path.read_bytes()))
         validate(path.read_bytes())
-    workspace = OUT/'workspace.d64'
-    shutil.copyfile(ROOT/'target/native/uos128.d64', workspace)
-    subprocess.run(['c1541', '-attach', str(workspace), '-delete', 'browse', 'calc', 'editor', 'edpick.prg', 'edfind.prg',
-                    '-write', str(OUT/'calc.prg'), 'calc',
-                    '-write', str(OUT/'desktop.prg'), 'browse',
-                    '-write', str(OUT/'editor.prg'), 'editor',
-                    '-write', str(OUT/'edpick.prg'), 'edpick.prg',
-                    '-write', str(OUT/'edfind.prg'), 'edfind.prg',
-                    '-write', str(OUT/'files.prg'), 'files',
-                    '-write', str(OUT/'fspick.prg'), 'fspick.prg',
-                    '-write', str(OUT/'fsview.prg'), 'fsview.prg',
-                    '-write', str(OUT/'controls.prg'), 'ultimate',
-                    '-write', str(OUT/'claude.prg'), 'claude',
-                    '-write', str(OUT/'paint.prg'), 'paint'], check=True, capture_output=True)
-    desktop = OUT/'uos128.d64'
-    shutil.copyfile(workspace, desktop)
-    subprocess.run(['c1541', '-attach', str(desktop), '-delete', 'u',
-                    '-write', str(OUT/'uos128.prg'), 'u'], check=True, capture_output=True)
-    images = {p.name: dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
-              for p in sorted(OUT.iterdir()) if p.suffix in ('.prg', '.d64')}
+    for disk_format in ('d64', 'd81'):
+        workspace = OUT/f'workspace.{disk_format}'
+        shutil.copyfile(ROOT/f'target/native/uos128.{disk_format}', workspace)
+        subprocess.run(['c1541', '-attach', str(workspace), '-delete', 'browse', 'calc', 'editor', 'edpick.prg', 'edfind.prg',
+                        '-write', str(OUT/'calc.prg'), 'calc',
+                        '-write', str(OUT/'desktop.prg'), 'browse',
+                        '-write', str(OUT/'editor.prg'), 'editor',
+                        '-write', str(OUT/'edpick.prg'), 'edpick.prg',
+                        '-write', str(OUT/'edfind.prg'), 'edfind.prg',
+                        '-write', str(OUT/'files.prg'), 'files',
+                        '-write', str(OUT/'fspick.prg'), 'fspick.prg',
+                        '-write', str(OUT/'fsview.prg'), 'fsview.prg',
+                        '-write', str(OUT/'controls.prg'), 'ultimate',
+                        '-write', str(OUT/'claude.prg'), 'claude',
+                        '-write', str(OUT/'paint.prg'), 'paint'], check=True, capture_output=True)
+        desktop = OUT/f'uos128.{disk_format}'
+        shutil.copyfile(workspace, desktop)
+        subprocess.run(['c1541', '-attach', str(desktop), '-delete', 'u',
+                        '-write', str((OUT if disk_format == 'd64' else OUT/'d81')/'uos128.prg'), 'u'], check=True, capture_output=True)
+    images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
+              for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
-    deployment = dict(abi='1.11', direct_desktop_disk='uos128.d64',
+    deployment = dict(abi='1.12', direct_desktop_disk='uos128.d64',
                       workspace_with_desktop_disk='workspace.d64',
                       standalone_diagnostic_disk='../native/uos128.d64',
+                      d81=dict(direct_desktop_disk='uos128.d81',
+                               workspace_with_desktop_disk='workspace.d81',
+                               standalone_diagnostic_disk='../native/uos128.d81',
+                               kernel='d81/uos128.prg', boot_format=2),
+                      boot_format=0, boot_format_address=0x3de4,
                       desktop=validate((OUT/'desktop.prg').read_bytes()),
                       calculator=validate((OUT/'calc.prg').read_bytes()),
                       files=validate((OUT/'files.prg').read_bytes()),
@@ -97,7 +103,8 @@ def build():
                       claude=validate((OUT/'claude.prg').read_bytes()),
                       paint=validate((OUT/'paint.prg').read_bytes()),
                       surface_pages=36,
-                      free_pages_at_desktop=426-36-validate((OUT/'desktop.prg').read_bytes())['pages'],
+                      free_pages_at_desktop={str(kib):426-36-pages-validate((OUT/'desktop.prg').read_bytes())['pages']
+                                             for kib,pages in ((16,64),(64,72))},
                       selection_state_address=0x3d2f, selection_lifetime='until native restart',
                       disk_entries={'u': 'uos128.prg', 'browse': 'desktop.prg',
                                     'files': 'files.prg', 'calc': 'calc.prg',

@@ -4,8 +4,8 @@ The browser checkpoint left 139 bytes before the page tables at `$3800`.
 The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
 moved the allocator to `$1300`. The native Ultimate backend now reserves an
 additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
-entry addresses and the `$6000` app slot remain stable. The ABI 1.11 workspace
-main region has four free bytes (two in the direct-desktop variant), the low
+entry addresses and the `$6000` app slot remain stable. The ABI 1.12 workspace
+main region has six free bytes (four in the direct-desktop variant), the low
 region has eight, and resident services end seven bytes before `$5000`.
 Presentation setup and the relocated keyboard-input wrapper leave three bytes
 before the retained browser path at `$4a00`.

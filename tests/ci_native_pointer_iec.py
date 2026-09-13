@@ -28,7 +28,7 @@ from native_running_layout import verify_running_layout
 from launcher_scene import surface,console
 from native_pointer_check import pixels,surface_pixels,check_canvas
 from native_calc_scene import surface as calc_surface, BUTTONS
-from native_files_check import exact_d64_files
+from native_files_check import exact_d64_files,exact_disk_files
 from native_editor_scene import surface as editor_surface,console as editor_console,RECTS as EDITOR_RECTS
 from native_picker_scene import surface as picker_surface,console as picker_console,RECTS as PICKER_RECTS
 from native_picker_check import picker_symbol
@@ -87,6 +87,7 @@ class Mouse(Keyboard):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--80col',dest='eighty',action='store_true')
     parser.add_argument('--vdc64',action='store_true')
+    parser.add_argument('--d81',action='store_true')
     parser.add_argument('--boot-frame-only',action='store_true')
     parser.add_argument('--paint-only',action='store_true')
     parser.add_argument('--controls-only',action='store_true')
@@ -97,13 +98,18 @@ def main():
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
     print('Native pointer VICE:',work,flush=True)
     shutil.copy2(__file__,work/'run.py')
-    disk=work/'suite.d64';shutil.copy2(ROOT/'target/native-desktop/uos128.d64',disk)
+    boot_format=2 if args.d81 else 0
+    disk_name='uos128.d81' if args.d81 else 'uos128.d64'
+    kernel_prefix='native-desktop/d81' if args.d81 else 'native-desktop'
+    disk=work/('suite.d81' if args.d81 else 'suite.d64')
+    shutil.copy2(ROOT/'target/native-desktop'/disk_name,disk)
     data_disk=work/'data-9.d64'
     subprocess.run(['c1541','-format','picker data,09','d64',str(data_disk)],check=True,capture_output=True)
     shutil.copy2(data_disk,work/'initial-data-9.d64')
     image=ROOT/'target/native-desktop'
     report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],calculator_frames=[],paint_frames=[],controls_frames=[],files_frames=[],editor_frames=[],
-        images={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in image.iterdir() if p.suffix in ('.prg','.d64')})
+        kernel_prefix=kernel_prefix,boot_format=boot_format,
+        images={p.relative_to(image).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in image.rglob('*') if p.suffix in ('.prg','.d64','.d81')})
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     pointer_app='desktop'
     claude_labels={m[2]:int(m[1],16) for m in re.finditer(r'^al ([0-9A-Fa-f]+) \.(\S+)',(image/'claude.lbl').read_text(),re.M)}
@@ -119,7 +125,7 @@ def main():
     report['private_x_display']=xv.display
     report['private_x_geometry']='1920x1200x24'
     try:
-        command=['x128','-default','-80col' if args.eighty else '-40col','-8',str(disk),'-drive8true','-drive8type','1541',
+        command=['x128','-default','-80col' if args.eighty else '-40col','-8',str(disk),'-drive8true','-drive8type','1581' if args.d81 else '1541',
             '-9',str(data_disk),'-drive9true','-drive9type','1541',
             '-VDC64KB' if args.vdc64 else '-VDC16KB','-sounddev','dummy','-soundwarpmode','1','-jamaction','0','-warp','-controlport1device','3',
             '-controlport2device','0','+mouse','-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{port}']
@@ -167,11 +173,12 @@ def main():
                 assert time.monotonic()<deadline,('idle capture admission',label)
                 time.sleep(.01)
         wait(lambda:read(0x1c13,6)==b'UOS128' and header('desktop') and ready(),'desktop boot',90)
+        assert read(0x3de4)==bytes([boot_format]) and read(0x3d2c,2)==bytes([boot_format,8])
         report['initial_pointer_state']=app_read(symbol('pm_active'),40).hex();save()
-        capture=NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=stable_batch)
-        modes=NativeModeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=stable_batch)
+        capture=NativeCapture(paused,work,quiet=.05,kernel_prefix=kernel_prefix,batch=stable_batch)
+        modes=NativeModeCapture(paused,work,quiet=.05,kernel_prefix=kernel_prefix,batch=stable_batch)
         report.update(captures=capture.records,mode_captures=modes.records,paused_capture_batches=paused.batches)
-        report['resident_boot']=verify_running_layout(capture,ROOT,'resident-boot',image_dir=image);save()
+        report['resident_boot']=verify_running_layout(capture,ROOT,'resident-boot',image_dir=ROOT/'target'/kernel_prefix);save()
         saved_registers=app_read(symbol('pm_saved'),12);saved_init=app_read(symbol('pm_init_saved'))
         saved_keys=capture.capture('keys-before',address=0x1000,count=256)
         saved_callback=read(0x033c,2);report['saved_keycheck']=saved_callback.hex()
@@ -209,6 +216,8 @@ def main():
             raise AssertionError(('host mouse failed to reach target',position(),(tx,ty)))
         def desktop(label,selected):
             wait(lambda:header('desktop') and ready() and value('gd_selected')==selected,label,90)
+            assert read(0x3de4)==bytes([boot_format]) and read(0x3d2c,2)==bytes([boot_format,8])
+            assert read(0x3d21)==b'\x08'
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==surface(selected)
             mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3 and not mode['cpu_speed']&1
@@ -238,7 +247,7 @@ def main():
             with mouse.held_key(name):
                 wait(lambda:int.from_bytes(read(0x3d13,2),'little')!=before,
                     name+' sampled by native keyboard',120)
-            wait(lambda:header(target) and ready() and int.from_bytes(read(0x3d13,2),'little')!=before,
+            wait(lambda:(read(0x3d20)==b'\0' if target=='workspace' else header(target)) and ready() and int.from_bytes(read(0x3d13,2),'little')!=before,
                 name+' reaches '+target,120)
             after=int.from_bytes(read(0x3d13,2),'little')
             assert after==(before+1)&65535,(name,'extra or missing ROM key',before,after)
@@ -337,7 +346,7 @@ def main():
             report.setdefault('editor_states',[]).append(dict(label=label,**state));save()
             assert state['cursor']==cursor,(label,state,cursor)
             assert state['ed_mode']==expected.get('mode',0) and state['ed_status']==expected.get('status',0),(label,state)
-            kwargs=dict(focus=focus,**expected)
+            kwargs=dict(focus=focus,fmt=boot_format,**expected)
             wanted=editor_surface(data,cursor,**kwargs)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
@@ -413,12 +422,13 @@ def main():
                 (work/(label+'-unexpected-vdc.bin')).write_bytes(read(0,2000,bank=banks['vdc']))
                 raise AssertionError((label,'Files focus',state,focus))
             if source is None:
-                entries=disk_records(disk.read_bytes())
-                expected=dict(selected=selected,focus=focus,**kwargs)
+                entries=disk_records(disk.read_bytes(),boot_format)
+                expected=dict(selected=selected,focus=focus,fmt=boot_format,**kwargs)
                 wanted=files_surface(entries,**expected);console_wanted=files_console(entries,**expected)
                 expected['records']=[dict(e,name=e['name'].hex()) for e in entries]
             else:
-                expected=dict(source_device=8,device=8,kind=1,focus=focus);expected.update(kwargs)
+                expected=dict(source_device=8,source_format=boot_format,device=8,fmt=boot_format,kind=1,focus=focus);expected.update(kwargs)
+                if expected['device']==9:expected['fmt']=0
                 wanted=files_copy_surface(source,name,**expected);console_wanted=files_copy_console(source,name,**expected)
                 assert value('fc_source_device')==expected['source_device'] and value('fc_device')==expected['device']
                 assert value('fc_length')==len(name) and app_read(symbol('fc_name'),len(name))==name
@@ -552,6 +562,7 @@ def main():
             mon.resume()
             wait(lambda:header(name) and ready(),'click opens '+name,120)
             assert int.from_bytes(read(0x3d13,2),'little')==before,'mouse generated a keyboard shortcut'
+            assert read(0x3d2c,2)==bytes([boot_format,8]) and read(0x3de4)==bytes([boot_format])
             if name=='editor':
                 pointer_app='editor'
                 assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
@@ -567,9 +578,9 @@ def main():
                 editor_view('editor-save-dialog',document,3,focus=11,**field)
                 editor_click(14)
                 assert value('ed_module_kind')==1 and value('fd_active')==1 and not value('eg_bitmap')
-                entries=disk_records(disk.read_bytes())
+                entries=disk_records(disk.read_bytes(),boot_format)
                 for entry in entries:entry['app']=False
-                picker_view('editor-destination-picker',entries,mode=2)
+                picker_view('editor-destination-picker',entries,mode=2,fmt=boot_format)
                 picker_click(18);wait(lambda:value('pm_seen')==1,'editor pointer after picker',15)
                 editor_view('editor-picker-return',document,3,focus=11,**field)
                 editor_click(12);editor_view('editor-saved',document,3,name='GUINOTE',status=1)
@@ -603,7 +614,7 @@ def main():
                 move_to(310,180);key('Home','files');files_view('files-open')
                 files_click(7);files_view('files-next-page',selected=8,focus=7)
                 files_click(6);files_view('files-previous-page',focus=6)
-                entries=disk_records(disk.read_bytes());source=b'EDFIND.PRG'
+                entries=disk_records(disk.read_bytes(),boot_format);source=b'EDFIND.PRG'
                 chosen=next(i for i,e in enumerate(entries) if e['name'].rstrip(b'\xa0')==source)
                 assert chosen<8
                 files_click(11+chosen);files_view('files-selected',selected=chosen,focus=11+chosen)
@@ -613,7 +624,7 @@ def main():
                 files_view('files-copy-name',source=source,name=b'FSCOPY',focus=25)
                 files_click(22)
                 assert value('fg_kind')==2 and value('fc_picker_active') and not value('fg_bitmap')
-                picker_view('files-copy-picker',entries,mode=2)
+                picker_view('files-copy-picker',entries,mode=2,fmt=boot_format)
                 picker_click(18);move_to(310,180)
                 for _ in range(28):
                     if value('ui_selected')==25:break
@@ -623,7 +634,10 @@ def main():
                 # Keep a separate data disk: the complete suite plus history,
                 # an Editor file, this module copy and a Paint image exceed a
                 # single D64. Exercise mouse Device and Use Here in the picker.
-                files_click(22);picker_click(1)
+                files_click(22)
+                if args.d81:
+                    picker_click(2);picker_click(2)  # D81 -> Ultimate -> D64
+                picker_click(1)
                 key('9','files');key('Return','files')
                 picker_view('files-data-picker',[],mode=2,device=9)
                 picker_click(17);move_to(310,180)
@@ -633,7 +647,7 @@ def main():
                 else:raise AssertionError('Files field focus unavailable after destination selection')
                 files_view('files-data-destination',source=source,name=b'FSCOPY',focus=25,device=9)
                 files_click(23)
-                copied_source=exact_d64_files((image/'uos128.d64').read_bytes())[source]
+                copied_source=exact_disk_files((image/disk_name).read_bytes(),boot_format)[source]
                 assert copied_source[0]==2
                 files_view('files-copy-verified',source=source,name=b'FSCOPY',focus=23,device=9,
                     copied=len(copied_source[1]),verified=len(copied_source[1]),status=1)
@@ -687,9 +701,14 @@ def main():
                 paint_click(2);paint_view('paint-redo',paint_document,dirty=1)
                 paint_click(4)
                 for char in 'paintpic':key(char,'paint')
-                key('F10','paint');picker_click(1)
-                key('9','paint');key('Return','paint')
-                picker_view('paint-save-destination',disk_records(data_disk.read_bytes()),mode=2,device=9)
+                key('F10','paint')
+                paint_device,paint_format,paint_disk=(8,2,disk) if args.d81 else (9,0,data_disk)
+                # Files retained data-drive preferences. Select this volume explicitly.
+                if args.d81:
+                    for _ in range((paint_format-read(0x3d2a)[0])%4):picker_click(2)
+                picker_click(1)
+                key(str(paint_device),'paint');key('Return','paint')
+                picker_view('paint-save-destination',disk_records(paint_disk.read_bytes(),paint_format),mode=2,device=paint_device,fmt=paint_format)
                 picker_click(17)
                 paint_view('paint-save-dialog',paint_document,dirty=1,mode=2)
                 paint_click(24);wait(lambda:value('pa_status')==1,'Paint save verified',120)
@@ -702,12 +721,12 @@ def main():
                 paint_click(3);assert value('pd_dirty')==1
                 paint_click(5);paint_view('paint-open-confirm',bytes(8192)+b'\x10'*1024,dirty=1,mode=1)
                 paint_click(24);assert value('pa_picker_active')==1 and not value('pa_bitmap')
-                entries=disk_records(data_disk.read_bytes())
+                entries=disk_records(paint_disk.read_bytes(),paint_format)
                 for entry in entries:entry['app']=False
                 chosen=next(i for i,entry in enumerate(entries) if entry['name'].rstrip(b'\xa0')==b'PAINTPIC')
                 key('Home','paint')
                 for _ in range(chosen):key('Down','paint')
-                picker_view('paint-file-picker',entries,selected=chosen,device=9)
+                picker_view('paint-file-picker',entries,selected=chosen,device=paint_device,fmt=paint_format)
                 picker_click(16);paint_view('paint-loaded',paint_document,dirty=0,status=2)
                 report['paint_filtered_line_samples']=int.from_bytes(app_read(symbol('pk_rejects'),2),'little');save()
             else:
@@ -724,6 +743,14 @@ def main():
         before=int.from_bytes(read(0x3d13,2),'little');mouse.press('F9')
         wait(lambda:read(0x3d20)==b'\0' and ready(),'workspace exit',60)
         assert int.from_bytes(read(0x3d13,2),'little')==before+1
+        if args.d81:
+            key('c','calc')
+            assert read(0x3d21)==b'\x08' and read(0x3d2c,2)==bytes([2,8])
+            key('F9','workspace')
+            key('b','desktop');pointer_app='desktop'
+            desktop('workspace-shortcut-return',value('gd_selected'))
+            key('F9','workspace')
+            report['workspace_system_shortcuts']=True
         with paused.paused('restore-repeat'):paused.write_mem(0xa22,repeat)
         assert read(0xa22)==repeat
         screens('workspace',lambda cols:expected_screen(cols,0))
@@ -732,20 +759,20 @@ def main():
         records=capture.capture('final-records',address=0x3c00,count=0x100)
         assert heap[0x50:0xff]==bytes(175) and heap[0x104:0x1ff]==bytes(251)
         assert all(records[i*8]==0 for i in range(32))
-        report['resident_return']=verify_running_layout(capture,ROOT,'resident-return',image_dir=image)
+        report['resident_return']=verify_running_layout(capture,ROOT,'resident-return',image_dir=ROOT/'target'/kernel_prefix)
         # Independently export each created file and preserve every shipped file.
-        contents=exact_d64_files(disk.read_bytes())
-        before_files=exact_d64_files((image/'uos128.d64').read_bytes())
+        contents=exact_disk_files(disk.read_bytes(),boot_format)
+        before_files=exact_disk_files((image/disk_name).read_bytes(),boot_format)
         if 'editor' in ran_apps:assert contents.pop(b'GUINOTE')==(1,bytes.fromhex(report['editor_saved_hex']))
         if 'calc' in ran_apps:assert contents.pop(b'GUIHIST')==(1,b'42\r')
         data_contents=exact_d64_files(data_disk.read_bytes())
-        if 'paint' in ran_apps:assert data_contents.pop(b'PAINTPIC')==(1,paint_encode(paint_document))
+        if 'paint' in ran_apps:assert (contents if args.d81 else data_contents).pop(b'PAINTPIC')==(1,paint_encode(paint_document))
         assert exact_d64_files((work/'initial-data-9.d64').read_bytes())=={}
         assert data_contents==({b'FSCOPY':copied_source} if 'files' in ran_apps else {})
         assert contents==before_files
         if 'paint' in ran_apps:
             report['paint_file_sha256']=hashlib.sha256(paint_encode(paint_document)).hexdigest()
-            report['paint_destination_device']=9
+            report['paint_destination_device']=paint_device
         if 'calc' in ran_apps:report['calculator_history_export_hex']=b'42\r'.hex()
         if 'files' in ran_apps:
             report['files_copy_sha256']=hashlib.sha256(copied_source[1]).hexdigest()
@@ -786,7 +813,7 @@ def main():
             except subprocess.TimeoutExpired:emu.terminate();emu.wait(timeout=5)
         xv.stop();log.close()
         report['all_host_processes_terminal']=emu is None or emu.poll() is not None
-        report['system_disk_unchanged']=disk.read_bytes()==(image/'uos128.d64').read_bytes()
+        report['system_disk_unchanged']=disk.read_bytes()==(image/disk_name).read_bytes()
         save()
 
 

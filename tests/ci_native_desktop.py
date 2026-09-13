@@ -11,10 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 parser = argparse.ArgumentParser()
 parser.add_argument('--desktop-boot', action='store_true')
+parser.add_argument('--d81', action='store_true')
 parser.add_argument('--report', type=Path, default=ROOT/'target/native-desktop/cpu-report.json')
 args = parser.parse_args()
 import ci_native_heap as heap
-heap.IMAGE = ROOT/('target/native-desktop/uos128.prg' if args.desktop_boot else 'target/native/uos128.prg')
+heap.IMAGE = ROOT/'target'/('native-desktop' if args.desktop_boot else 'native')/('d81/uos128.prg' if args.d81 else 'uos128.prg')
 from native_display_bus import DisplayBus
 heap.Bus = DisplayBus
 import ci_native_calc as calc
@@ -27,7 +28,7 @@ class Desktop(calc.Calculator):
     instruction_limit = 12000000
 
     def __init__(self):
-        super().__init__('desktop', loader_name=b'BROWSE', image_prefix='native-desktop')
+        super().__init__('desktop', loader_name=b'BROWSE', image_prefix='native-desktop', fmt=2 if args.d81 else 0)
 
     def heap_call(self, method, *args, **kwargs):
         saved=bytes(self.ram[0x100:0x200])
@@ -92,7 +93,7 @@ try:
     for key, name in [(13,b'CALC'),(ord('c'),b'CALC'),(ord('E'),b'EDITOR'),(ord('f'),b'FILES'),(ord('u'),b'ULTIMATE'),(ord('a'),b'CLAUDE'),(ord('p'),b'PAINT')]:
         d = Desktop();d.key(key, exited=True)
         assert d.ram[0x3d28] == 1 and d.ram[0x3d21:0x3d23] == bytes([8,len(name)])
-        assert d.ram[0x3d2c] == 0 and bytes(d.ram[0x3d40:0x3d40+len(name)]) == name
+        assert d.ram[0x3d2c] == (2 if args.d81 else 0) and bytes(d.ram[0x3d40:0x3d40+len(name)]) == name
         assert not d.ram[heap.symbol('v_tag')] and d.m.bus.video[0xd011] == 0x1b
         assert d.ram[0x3d2f] == {b'CALC':0,b'EDITOR':1,b'FILES':2,b'ULTIMATE':3,b'CLAUDE':4,b'PAINT':5}[name]
         done('owned app handoff '+name.decode()+' key '+str(key), d)

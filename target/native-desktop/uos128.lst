@@ -1,13 +1,14 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -D NATIVE_DESKTOP_BOOT=1 -B -l /home/marc/geos128/uos/target/native-desktop/uos128.sym -o /home/marc/geos128/uos/target/native-desktop/uos128.prg -L /home/marc/geos128/uos/target/native-desktop/uos128.lst /home/marc/geos128/uos/src/native/uos128.asm
-; Sun Sep 13 01:22:26 2026
+; 64tass -a -B -D NATIVE_DESKTOP_BOOT=1 -D NATIVE_BOOT_FORMAT=0 -o /home/marc/geos128/uos/target/native-desktop/uos128.prg -l /home/marc/geos128/uos/target/native-desktop/uos128.sym -L /home/marc/geos128/uos/target/native-desktop/uos128.lst /home/marc/geos128/uos/src/native/uos128.asm
+; Sun Sep 13 12:10:22 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
 ;******  Command line definitions
 
 =1						NATIVE_DESKTOP_BOOT=1
+=0						NATIVE_BOOT_FORMAT=0
 
 ;******  Processing input file: /home/marc/geos128/uos/src/native/uos128.asm
 
@@ -15,7 +16,7 @@
 ;******  Processing file: /home/marc/geos128/uos/src/native/api.inc
 
 =1						N_ABI_MAJOR = 1
-=11						N_ABI_MINOR = 11
+=12						N_ABI_MINOR = 12
 =$1c20						N_ALLOC         = $1c20
 =$1c23						N_FREE          = $1c23
 =$1c26						N_READ          = $1c26
@@ -80,6 +81,7 @@
 =$3d2b						N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
 =$3d2c						N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
 =$3d2d						N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
+=$3de4						N_BOOTFORMAT    = $3de4          ; ABI 1.12: boot geometry, 0 D64 / 1 D71 / 2 D81
 =$3d2e						N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
 =$3d2f						N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude / 5 Paint
 =$3d30						N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
@@ -175,6 +177,7 @@
 ;******  Return to file: /home/marc/geos128/uos/src/native/uos128.asm
 
 =0						NATIVE_DESKTOP_BOOT = 0
+=0						NATIVE_BOOT_FORMAT = 0
 >1c01		0c 1c				        .word basic_end
 >1c03		0a 00				        .word 10
 >1c05		9e				        .byte $9e
@@ -193,23 +196,23 @@
 .1c2f		4c 32 16	jmp $1632	        jmp heap_stats
 .1c32		4c e2 15	jmp $15e2	        jmp heap_release
 .1c35		4c ec 13	jmp $13ec	        jmp heap_reserve
-.1c38		4c dd 1f	jmp $1fdd	        jmp app_launch
+.1c38		4c de 1f	jmp $1fde	        jmp app_launch
 .1c3b		4c e4 49	jmp $49e4	        jmp native_keyin
-.1c3e		4c 3c 22	jmp $223c	        jmp app_exit
+.1c3e		4c 3d 22	jmp $223d	        jmp app_exit
 .1c41		4c 06 27	jmp $2706	        jmp fs_open
 .1c44		4c 1f 29	jmp $291f	        jmp fs_read
 .1c47		4c 2c 29	jmp $292c	        jmp fs_write
 .1c4a		4c 2b 2b	jmp $2b2b	        jmp fs_close
 .1c4d		4c 42 2b	jmp $2b42	        jmp fs_release
 .1c50		4c eb 26	jmp $26eb	        jmp fs_dirpage
-.1c53		4c 47 22	jmp $2247	        jmp app_replace
-.1c56		4c 4b 22	jmp $224b	        jmp app_workspace
+.1c53		4c 48 22	jmp $2248	        jmp app_replace
+.1c56		4c 4c 22	jmp $224c	        jmp app_workspace
 .1c59		4c ec 18	jmp $18ec	        jmp field_edit
 .1c5c		4c 58 35	jmp $3558	        jmp field_draw
 .1c5f		4c 87 46	jmp $4687	        jmp module_load
 .1c62		4c 02 1b	jmp $1b02	        jmp module_call
 .1c65		4c 71 48	jmp $4871	        jmp module_close
-.1c68		4c bd 37	jmp $37bd	        jmp display_show
+.1c68		4c b9 37	jmp $37b9	        jmp display_show
 .1c6b		4c cc 1b	jmp $1bcc	        jmp display_close
 .1c6e		4c 00 4b	jmp $4b00	        jmp ultimate_query
 .1c71		4c 93 4b	jmp $4b93	        jmp ultimate_command
@@ -221,120 +224,120 @@
 .1c7b						native_mode:
 .1c7b		a9 0e		lda #$0e	        lda #$0e                ; bank 0 RAM below $c000, system ROM and I/O
 .1c7d		8d 00 ff	sta $ff00	        sta $ff00
-.1c80		20 b9 1f	jsr $1fb9	        jsr native_relocate
+.1c80		20 ba 1f	jsr $1fba	        jsr native_relocate
 .1c83		20 cb 4b	jsr $4bcb	        jsr native_keyboard_init
 .1c86		a9 00		lda #$00	        lda #0
 .1c88		8d 30 d0	sta $d030	        sta $d030               ; both displays: remain at 1 MHz
 .1c8b		8d 12 3d	sta $3d12	        sta N_READY
 .1c8e		8d 13 3d	sta $3d13	        sta N_KEYS
 .1c91		8d 14 3d	sta $3d14	        sta N_KEYS+1
-.1c94		8d b5 37	sta $37b5	        sta ui_bank
+.1c94		8d b1 37	sta $37b1	        sta ui_bank
 .1c97		8d 16 3d	sta $3d16	        sta ui_status
 .1c9a		8d 20 3d	sta $3d20	        sta N_CURRENT
 .1c9d		8d 23 3d	sta $3d23	        sta N_APPSTATE
 .1ca0		8d 24 3d	sta $3d24	        sta N_EXITCODE
 .1ca3		8d 27 3d	sta $3d27	        sta N_APPERROR
 .1ca6		8d 3b 3d	sta $3d3b	        sta N_UIBUSY
-.1ca9		8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
-.1cac		8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
-.1caf		8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
-.1cb2		8d 34 3d	sta $3d34	        sta N_BROWSERNAME_LEN
-.1cb5		a2 04		ldx #$04	        ldx #4
-.1cb7						native_browser_position:
-.1cb7		9d 2f 3d	sta $3d2f,x	        sta N_DESKTOPSEL,x       ; reset selection and four-byte browser position
-.1cba		ca		dex		        dex
-.1cbb		10 fa		bpl $1cb7	        bpl native_browser_position
-.1cbd		a9 01		lda #$01	        lda #1
-.1cbf		8d 2e 3d	sta $3d2e	        sta N_BROWSERLEN
-.1cc2		a9 2f		lda #$2f	        lda #$2f
-.1cc4		8d 00 4a	sta $4a00	        sta N_BROWSERPATH
-.1cc7		a5 ba		lda $ba		        lda $ba
-.1cc9		8d 21 3d	sta $3d21	        sta N_DEVICE
-.1ccc		8d b6 37	sta $37b6	        sta ui_system_device
-.1ccf		8d 2d 3d	sta $3d2d	        sta N_BOOTDEVICE
-.1cd2		8d 29 3d	sta $3d29	        sta N_BROWSERDEV
-.1cd5		a9 00		lda #$00	        lda #0
-.1cd7		a2 07		ldx #$07	        ldx #7
-.1cd9						native_handles:
-.1cd9		9d ad 37	sta $37ad,x	        sta ui_handles,x
-.1cdc		ca		dex		        dex
-.1cdd		10 fa		bpl $1cd9	        bpl native_handles
-.1cdf		20 00 13	jsr $1300	        jsr heap_init
-.1ce2		20 32 16	jsr $1632	        jsr heap_stats
-.1ce5		b0 03		bcs $1cea	        bcs native_fail
-.1ce7		4c 9e 1e	jmp $1e9e	        jmp native_browser
-.1cea						native_fail:
-.1cea		8d 16 3d	sta $3d16	        sta ui_status
-.1ced						native_draw:
-.1ced		20 f8 1e	jsr $1ef8	        jsr ui_redraw
-.1cf0						native_loop:
-.1cf0		a9 01		lda #$01	        lda #1
-.1cf2		8d 12 3d	sta $3d12	        sta N_READY
-.1cf5		20 e4 49	jsr $49e4	        jsr native_keyin        ; native KERNAL GETIN ($034a/$d0 buffer)
-.1cf8		f0 f6		beq $1cf0	        beq native_loop
-.1cfa						native_key_counted:
-.1cfa		a2 00		ldx #$00	        ldx #0
-.1cfc		8e 12 3d	stx $3d12	        stx N_READY
-.1cff		29 7f		and #$7f	        and #$7f
-.1d01		29 df		and #$df	        and #$df
-.1d03		c9 11		cmp #$11	        cmp #$11                ; '1' with bit 5 removed
-.1d05		f0 54		beq $1d5b	        beq native_bank_zero
-.1d07		c9 12		cmp #$12	        cmp #$12                ; '2'
-.1d09		f0 54		beq $1d5f	        beq native_bank_one
-.1d0b		c9 41		cmp #$41	        cmp #$41
-.1d0d		f0 58		beq $1d67	        beq native_allocate
-.1d0f		c9 46		cmp #$46	        cmp #$46
-.1d11		d0 03		bne $1d16	        beq native_free
-.1d13		4c a2 1d	jmp $1da2
-.1d16		c9 57		cmp #$57	        cmp #$57
-.1d18		d0 03		bne $1d1d	        bne *+5
-.1d1a		4c c6 1d	jmp $1dc6	        jmp native_write
-.1d1d		c9 56		cmp #$56	        cmp #$56
-.1d1f		d0 03		bne $1d24	        bne *+5
-.1d21		4c d4 1d	jmp $1dd4	        jmp native_verify
-.1d24		c9 43		cmp #$43	        cmp #$43
-.1d26		f0 0a		beq $1d32	        beq native_calculator
-.1d28		c9 42		cmp #$42	        cmp #$42
-.1d2a		d0 03		bne $1d2f	        bne *+5
-.1d2c		4c 9e 1e	jmp $1e9e	        jmp native_browser
-.1d2f		4c ed 1c	jmp $1ced	        jmp native_draw
-.1d32						native_calculator:
-.1d32		a9 00		lda #$00	        lda #0
-.1d34		8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
-.1d37		ad b6 37	lda $37b6	        lda ui_system_device
-.1d3a		8d 21 3d	sta $3d21	        sta N_DEVICE
-.1d3d		a2 03		ldx #$03	        ldx #3
-.1d3f						native_calc_name:
-.1d3f		bd 6f 36	lda $366f,x	        lda ui_calc_name,x
-.1d42		9d 40 3d	sta $3d40,x	        sta N_APPNAME,x
-.1d45		ca		dex		        dex
-.1d46		10 f7		bpl $1d3f	        bpl native_calc_name
-.1d48		a9 04		lda #$04	        lda #4
-.1d4a		8d 22 3d	sta $3d22	        sta N_NAMELEN
-.1d4d		20 dd 1f	jsr $1fdd	        jsr app_launch
-.1d50		b0 03		bcs $1d55	        bcs native_calc_result
-.1d52		ad 24 3d	lda $3d24	        lda N_EXITCODE
-.1d55						native_calc_result:
-.1d55		8d 16 3d	sta $3d16	        sta ui_status
-.1d58		4c ed 1c	jmp $1ced	        jmp native_draw
-.1d5b						native_bank_zero:
-.1d5b		a9 00		lda #$00	        lda #0
-.1d5d		f0 02		beq $1d61	        beq native_bank
-.1d5f						native_bank_one:
-.1d5f		a9 01		lda #$01	        lda #1
+.1ca9		8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
+.1cac		8d 34 3d	sta $3d34	        sta N_BROWSERNAME_LEN
+.1caf		a2 04		ldx #$04	        ldx #4
+.1cb1						native_browser_position:
+.1cb1		9d 2f 3d	sta $3d2f,x	        sta N_DESKTOPSEL,x       ; reset selection and four-byte browser position
+.1cb4		ca		dex		        dex
+.1cb5		10 fa		bpl $1cb1	        bpl native_browser_position
+.1cb7		a9 00		lda #$00	        lda #NATIVE_BOOT_FORMAT
+.1cb9		8d e4 3d	sta $3de4	        sta N_BOOTFORMAT
+.1cbc		8d 2a 3d	sta $3d2a	        sta N_BROWSERFMT
+.1cbf		8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.1cc2		a9 01		lda #$01	        lda #1
+.1cc4		8d 2e 3d	sta $3d2e	        sta N_BROWSERLEN
+.1cc7		a9 2f		lda #$2f	        lda #$2f
+.1cc9		8d 00 4a	sta $4a00	        sta N_BROWSERPATH
+.1ccc		a5 ba		lda $ba		        lda $ba
+.1cce		8d 21 3d	sta $3d21	        sta N_DEVICE
+.1cd1		8d b2 37	sta $37b2	        sta ui_system_device
+.1cd4		8d 2d 3d	sta $3d2d	        sta N_BOOTDEVICE
+.1cd7		8d 29 3d	sta $3d29	        sta N_BROWSERDEV
+.1cda		a9 00		lda #$00	        lda #0
+.1cdc		a2 07		ldx #$07	        ldx #7
+.1cde						native_handles:
+.1cde		9d a9 37	sta $37a9,x	        sta ui_handles,x
+.1ce1		ca		dex		        dex
+.1ce2		10 fa		bpl $1cde	        bpl native_handles
+.1ce4		20 00 13	jsr $1300	        jsr heap_init
+.1ce7		20 32 16	jsr $1632	        jsr heap_stats
+.1cea		b0 03		bcs $1cef	        bcs native_fail
+.1cec		4c 9e 1e	jmp $1e9e	        jmp native_browser
+.1cef						native_fail:
+.1cef		8d 16 3d	sta $3d16	        sta ui_status
+.1cf2						native_draw:
+.1cf2		20 f9 1e	jsr $1ef9	        jsr ui_redraw
+.1cf5						native_loop:
+.1cf5		a9 01		lda #$01	        lda #1
+.1cf7		8d 12 3d	sta $3d12	        sta N_READY
+.1cfa		20 e4 49	jsr $49e4	        jsr native_keyin        ; native KERNAL GETIN ($034a/$d0 buffer)
+.1cfd		f0 f6		beq $1cf5	        beq native_loop
+.1cff						native_key_counted:
+.1cff		a2 00		ldx #$00	        ldx #0
+.1d01		8e 12 3d	stx $3d12	        stx N_READY
+.1d04		29 7f		and #$7f	        and #$7f
+.1d06		29 df		and #$df	        and #$df
+.1d08		c9 11		cmp #$11	        cmp #$11                ; '1' with bit 5 removed
+.1d0a		f0 55		beq $1d61	        beq native_bank_zero
+.1d0c		c9 12		cmp #$12	        cmp #$12                ; '2'
+.1d0e		f0 51		beq $1d61	        beq native_bank_one
+.1d10		c9 41		cmp #$41	        cmp #$41
+.1d12		f0 56		beq $1d6a	        beq native_allocate
+.1d14		c9 46		cmp #$46	        cmp #$46
+.1d16		d0 03		bne $1d1b	        beq native_free
+.1d18		4c a2 1d	jmp $1da2
+.1d1b		c9 57		cmp #$57	        cmp #$57
+.1d1d		d0 03		bne $1d22	        bne *+5
+.1d1f		4c c6 1d	jmp $1dc6	        jmp native_write
+.1d22		c9 56		cmp #$56	        cmp #$56
+.1d24		d0 03		bne $1d29	        bne *+5
+.1d26		4c d4 1d	jmp $1dd4	        jmp native_verify
+.1d29		c9 43		cmp #$43	        cmp #$43
+.1d2b		f0 0a		beq $1d37	        beq native_calculator
+.1d2d		c9 42		cmp #$42	        cmp #$42
+.1d2f		d0 03		bne $1d34	        bne *+5
+.1d31		4c 9e 1e	jmp $1e9e	        jmp native_browser
+.1d34		4c f2 1c	jmp $1cf2	        jmp native_draw
+.1d37						native_calculator:
+.1d37		ad e4 3d	lda $3de4	        lda N_BOOTFORMAT
+.1d3a		8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.1d3d		ad b2 37	lda $37b2	        lda ui_system_device
+.1d40		8d 21 3d	sta $3d21	        sta N_DEVICE
+.1d43		a2 03		ldx #$03	        ldx #3
+.1d45						native_calc_name:
+.1d45		bd 40 37	lda $3740,x	        lda ui_calc_name,x
+.1d48		9d 40 3d	sta $3d40,x	        sta N_APPNAME,x
+.1d4b		ca		dex		        dex
+.1d4c		10 f7		bpl $1d45	        bpl native_calc_name
+.1d4e		a9 04		lda #$04	        lda #4
+.1d50		8d 22 3d	sta $3d22	        sta N_NAMELEN
+.1d53		20 de 1f	jsr $1fde	        jsr app_launch
+.1d56		b0 03		bcs $1d5b	        bcs native_calc_result
+.1d58		ad 24 3d	lda $3d24	        lda N_EXITCODE
+.1d5b						native_calc_result:
+.1d5b		8d 16 3d	sta $3d16	        sta ui_status
+.1d5e		4c f2 1c	jmp $1cf2	        jmp native_draw
+.1d61						native_bank_zero:
+.1d61						native_bank_one:
 .1d61						native_bank:
-.1d61		8d b5 37	sta $37b5	        sta ui_bank
-.1d64		4c ed 1c	jmp $1ced	        jmp native_draw
-.1d67						native_allocate:
-.1d67		20 e2 1d	jsr $1de2	        jsr ui_get_handle
-.1d6a		ad 04 3d	lda $3d04	        lda N_HANDLE
-.1d6d		f0 03		beq $1d72	        bne native_draw
-.1d6f		4c ed 1c	jmp $1ced
+.1d61		38		sec		        sec
+.1d62		e9 11		sbc #$11	        sbc #$11                ; masked '1'/'2' -> bank 0/1
+.1d64		8d b1 37	sta $37b1	        sta ui_bank
+.1d67		4c f2 1c	jmp $1cf2	        jmp native_draw
+.1d6a						native_allocate:
+.1d6a		20 e2 1d	jsr $1de2	        jsr ui_get_handle
+.1d6d		ad 04 3d	lda $3d04	        lda N_HANDLE
+.1d70		d0 80		bne $1cf2	        bne native_draw
 .1d72		a9 10		lda #$10	        lda #16
 .1d74		8d 00 3d	sta $3d00	        sta N_OWNER
 .1d77		a9 20		lda #$20	        lda #32
 .1d79		8d 01 3d	sta $3d01	        sta N_PAGES
-.1d7c		ad b5 37	lda $37b5	        lda ui_bank
+.1d7c		ad b1 37	lda $37b1	        lda ui_bank
 .1d7f		8d 02 3d	sta $3d02	        sta N_BANK
 .1d82		d0 0b		bne $1d8f	        bne native_allocate_auto
 .1d84		a9 df		lda #$df	        lda #$df                ; top 32 managed pages keep document RAM contiguous
@@ -345,16 +348,16 @@
 .1d8f		20 9f 13	jsr $139f	        jsr heap_alloc
 .1d92						native_allocate_done:
 .1d92		90 03		bcc $1d97	        bcc *+5
-.1d94		4c ea 1c	jmp $1cea	        jmp native_fail
+.1d94		4c ef 1c	jmp $1cef	        jmp native_fail
 .1d97		20 fc 1d	jsr $1dfc	        jsr ui_keep_handle
 .1d9a		a9 00		lda #$00	        lda #0
 .1d9c		8d 16 3d	sta $3d16	        sta ui_status
-.1d9f		4c ed 1c	jmp $1ced	        jmp native_draw
+.1d9f		4c f2 1c	jmp $1cf2	        jmp native_draw
 .1da2						native_free:
 .1da2		20 e2 1d	jsr $1de2	        jsr ui_get_handle
 .1da5		20 a4 15	jsr $15a4	        jsr heap_free
 .1da8		90 03		bcc $1dad	        bcc *+5
-.1daa		4c ea 1c	jmp $1cea	        jmp native_fail
+.1daa		4c ef 1c	jmp $1cef	        jmp native_fail
 .1dad		a9 00		lda #$00	        lda #0
 .1daf		8d 04 3d	sta $3d04	        sta N_HANDLE
 .1db2		8d 05 3d	sta $3d05	        sta N_HANDLE+1
@@ -363,29 +366,29 @@
 .1dbb		20 fc 1d	jsr $1dfc	        jsr ui_keep_handle
 .1dbe		a9 00		lda #$00	        lda #0
 .1dc0		8d 16 3d	sta $3d16	        sta ui_status
-.1dc3		4c ed 1c	jmp $1ced	        jmp native_draw
+.1dc3		4c f2 1c	jmp $1cf2	        jmp native_draw
 .1dc6						native_write:
 .1dc6		a9 01		lda #$01	        lda #1
-.1dc8		8d ba 37	sta $37ba	        sta ui_test_operation
+.1dc8		8d b6 37	sta $37b6	        sta ui_test_operation
 .1dcb		20 11 1e	jsr $1e11	        jsr ui_pattern_test
 .1dce		8d 16 3d	sta $3d16	        sta ui_status
-.1dd1		4c ed 1c	jmp $1ced	        jmp native_draw
+.1dd1		4c f2 1c	jmp $1cf2	        jmp native_draw
 .1dd4						native_verify:
 .1dd4		a9 00		lda #$00	        lda #0
-.1dd6		8d ba 37	sta $37ba	        sta ui_test_operation
+.1dd6		8d b6 37	sta $37b6	        sta ui_test_operation
 .1dd9		20 11 1e	jsr $1e11	        jsr ui_pattern_test
 .1ddc		8d 16 3d	sta $3d16	        sta ui_status
-.1ddf		4c ed 1c	jmp $1ced	        jmp native_draw
+.1ddf		4c f2 1c	jmp $1cf2	        jmp native_draw
 .1de2						ui_get_handle:
 .1de2		a9 10		lda #$10	        lda #16
 .1de4		8d 00 3d	sta $3d00	        sta N_OWNER
-.1de7		ad b5 37	lda $37b5	        lda ui_bank
+.1de7		ad b1 37	lda $37b1	        lda ui_bank
 .1dea		0a		asl a		        asl
 .1deb		0a		asl a		        asl
 .1dec		aa		tax		        tax
 .1ded		a0 00		ldy #$00	        ldy #0
 .1def						ui_get_handle_loop:
-.1def		bd ad 37	lda $37ad,x	        lda ui_handles,x
+.1def		bd a9 37	lda $37a9,x	        lda ui_handles,x
 .1df2		99 04 3d	sta $3d04,y	        sta N_HANDLE,y
 .1df5		e8		inx		        inx
 .1df6		c8		iny		        iny
@@ -393,14 +396,14 @@
 .1df9		d0 f4		bne $1def	        bne ui_get_handle_loop
 .1dfb		60		rts		        rts
 .1dfc						ui_keep_handle:
-.1dfc		ad b5 37	lda $37b5	        lda ui_bank
+.1dfc		ad b1 37	lda $37b1	        lda ui_bank
 .1dff		0a		asl a		        asl
 .1e00		0a		asl a		        asl
 .1e01		aa		tax		        tax
 .1e02		a0 00		ldy #$00	        ldy #0
 .1e04						ui_keep_handle_loop:
 .1e04		b9 04 3d	lda $3d04,y	        lda N_HANDLE,y
-.1e07		9d ad 37	sta $37ad,x	        sta ui_handles,x
+.1e07		9d a9 37	sta $37a9,x	        sta ui_handles,x
 .1e0a		e8		inx		        inx
 .1e0b		c8		iny		        iny
 .1e0c		c0 04		cpy #$04	        cpy #4
@@ -415,14 +418,14 @@
 .1e1f		a9 02		lda #$02	        lda #2
 .1e21		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
 .1e24						ui_pattern_block:
-.1e24		ad ba 37	lda $37ba	        lda ui_test_operation
+.1e24		ad b6 37	lda $37b6	        lda ui_test_operation
 .1e27		d0 05		bne $1e2e	        bne ui_prepare_pattern
 .1e29		20 7a 16	jsr $167a	        jsr heap_read
 .1e2c		b0 6c		bcs $1e9a	        bcs ui_pattern_done
 .1e2e						ui_prepare_pattern:
 .1e2e		a9 00		lda #$00	        lda #0
-.1e30		8d bb 37	sta $37bb	        sta ui_index
-.1e33		8d bc 37	sta $37bc	        sta ui_index+1
+.1e30		8d b7 37	sta $37b7	        sta ui_index
+.1e33		8d b8 37	sta $37b8	        sta ui_index+1
 .1e36		a9 00		lda #$00	        lda #<N_BUFFER
 .1e38		8d 5c 1e	sta $1e5c	        sta ui_pattern_store+1
 .1e3b		8d 62 1e	sta $1e62	        sta ui_pattern_compare+1
@@ -430,14 +433,14 @@
 .1e40		8d 5d 1e	sta $1e5d	        sta ui_pattern_store+2
 .1e43		8d 63 1e	sta $1e63	        sta ui_pattern_compare+2
 .1e46						ui_pattern_byte:
-.1e46		ad bb 37	lda $37bb	        lda ui_index
+.1e46		ad b7 37	lda $37b7	        lda ui_index
 .1e49		4d 09 3d	eor $3d09	        eor N_OFFSET+1
-.1e4c		4d bc 37	eor $37bc	        eor ui_index+1
-.1e4f		ae b5 37	ldx $37b5	        ldx ui_bank
+.1e4c		4d b8 37	eor $37b8	        eor ui_index+1
+.1e4f		ae b1 37	ldx $37b1	        ldx ui_bank
 .1e52		f0 02		beq $1e56	        beq ui_pattern_zero
 .1e54		49 a5		eor #$a5	        eor #$a5
 .1e56						ui_pattern_zero:
-.1e56		ae ba 37	ldx $37ba	        ldx ui_test_operation
+.1e56		ae b6 37	ldx $37b6	        ldx ui_test_operation
 .1e59		f0 06		beq $1e61	        beq ui_compare_pattern
 .1e5b						ui_pattern_store:
 .1e5b		8d 00 3a	sta $3a00	        sta N_BUFFER
@@ -449,15 +452,15 @@
 .1e66						ui_pattern_next:
 .1e66		ee 5c 1e	inc $1e5c	        inc ui_pattern_store+1
 .1e69		ee 62 1e	inc $1e62	        inc ui_pattern_compare+1
-.1e6c		ee bb 37	inc $37bb	        inc ui_index
+.1e6c		ee b7 37	inc $37b7	        inc ui_index
 .1e6f		d0 d5		bne $1e46	        bne ui_pattern_byte
 .1e71		ee 5d 1e	inc $1e5d	        inc ui_pattern_store+2
 .1e74		ee 63 1e	inc $1e63	        inc ui_pattern_compare+2
-.1e77		ee bc 37	inc $37bc	        inc ui_index+1
-.1e7a		ad bc 37	lda $37bc	        lda ui_index+1
+.1e77		ee b8 37	inc $37b8	        inc ui_index+1
+.1e7a		ad b8 37	lda $37b8	        lda ui_index+1
 .1e7d		c9 02		cmp #$02	        cmp #2
 .1e7f		d0 c5		bne $1e46	        bne ui_pattern_byte
-.1e81		ad ba 37	lda $37ba	        lda ui_test_operation
+.1e81		ad b6 37	lda $37b6	        lda ui_test_operation
 .1e84		f0 05		beq $1e8b	        beq ui_pattern_advance
 .1e86		20 7f 16	jsr $167f	        jsr heap_write
 .1e89		b0 0f		bcs $1e9a	        bcs ui_pattern_done
@@ -474,714 +477,713 @@
 .1e9b		a9 0a		lda #$0a	        lda #$0a
 .1e9d		60		rts		        rts
 .1e9e						native_browser:
-.1e9e		a9 00		lda #$00	        lda #0
-.1ea0		8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
-.1ea3		ad b6 37	lda $37b6	        lda ui_system_device
-.1ea6		8d 21 3d	sta $3d21	        sta N_DEVICE
-.1ea9		a2 05		ldx #$05	        ldx #5
-.1eab						native_browser_name:
-.1eab		bd 73 36	lda $3673,x	        lda ui_browser_name,x
-.1eae		9d 40 3d	sta $3d40,x	        sta N_APPNAME,x
-.1eb1		ca		dex		        dex
-.1eb2		10 f7		bpl $1eab	        bpl native_browser_name
-.1eb4		a9 06		lda #$06	        lda #6
-.1eb6		8d 22 3d	sta $3d22	        sta N_NAMELEN
-.1eb9		a9 01		lda #$01	        lda #1
-.1ebb		8d b7 37	sta $37b7	        sta ui_browser_stage
-.1ebe						native_dispatch:
-.1ebe		20 dd 1f	jsr $1fdd	        jsr app_launch
-.1ec1		90 0f		bcc $1ed2	        bcc native_dispatch_return
-.1ec3		8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
-.1ec6		ae b7 37	ldx $37b7	        ldx ui_browser_stage
-.1ec9		d0 2a		bne $1ef5	        bne native_browser_result
-.1ecb		ae 23 3d	ldx $3d23	        ldx N_APPSTATE
-.1ece		d0 25		bne $1ef5	        bne native_browser_result
-.1ed0		f0 cc		beq $1e9e	        beq native_browser
-.1ed2						native_dispatch_return:
-.1ed2		ad 28 3d	lda $3d28	        lda N_ACTION
-.1ed5		c9 01		cmp #$01	        cmp #1
-.1ed7		f0 11		beq $1eea	        beq native_dispatch_next
-.1ed9		c9 02		cmp #$02	        cmp #2
-.1edb		f0 14		beq $1ef1	        beq native_dispatch_done
-.1edd		ad 24 3d	lda $3d24	        lda N_EXITCODE
-.1ee0		8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
-.1ee3		ae b7 37	ldx $37b7	        ldx ui_browser_stage
-.1ee6		f0 b6		beq $1e9e	        beq native_browser
-.1ee8		d0 0b		bne $1ef5	        bne native_browser_result
-.1eea						native_dispatch_next:
-.1eea		a9 00		lda #$00	        lda #0
-.1eec		8d b7 37	sta $37b7	        sta ui_browser_stage
-.1eef		f0 cd		beq $1ebe	        beq native_dispatch
-.1ef1						native_dispatch_done:
-.1ef1		a9 00		lda #$00	        lda #0
-.1ef3		f0 00		beq $1ef5	        beq native_browser_result
-.1ef5						native_browser_result:
-.1ef5		4c 55 1d	jmp $1d55	        jmp native_calc_result
-.1ef8						ui_redraw:
-.1ef8		20 32 16	jsr $1632	        jsr heap_stats
-.1efb		a9 00		lda #$00	        lda #0
-.1efd		8d b8 37	sta $37b8	        sta ui_screen
-.1f00						ui_screen_loop:
-.1f00		a5 d7		lda $d7		        lda $d7
-.1f02		2a		rol a		        rol
-.1f03		a9 00		lda #$00	        lda #0
-.1f05		2a		rol a		        rol
-.1f06		cd b8 37	cmp $37b8	        cmp ui_screen
-.1f09		f0 03		beq $1f0e	        beq ui_selected_screen
-.1f0b		20 5f ff	jsr $ff5f	        jsr $ff5f
-.1f0e						ui_selected_screen:
-.1f0e		a9 93		lda #$93	        lda #$93
-.1f10		20 d2 ff	jsr $ffd2	        jsr $ffd2
-.1f13		a9 79		lda #$79	        lda #<ui_title
-.1f15		a2 36		ldx #$36	        ldx #>ui_title
-.1f17		20 87 1f	jsr $1f87	        jsr ui_puts
-.1f1a		ad b5 37	lda $37b5	        lda ui_bank
-.1f1d		18		clc		        clc
-.1f1e		69 30		adc #$30	        adc #$30
-.1f20		20 d2 ff	jsr $ffd2	        jsr $ffd2
-.1f23		a9 ac		lda #$ac	        lda #<ui_free_title
-.1f25		a2 36		ldx #$36	        ldx #>ui_free_title
-.1f27		20 87 1f	jsr $1f87	        jsr ui_puts
-.1f2a		ad 0e 3d	lda $3d0e	        lda N_FREE0
-.1f2d		20 a1 1f	jsr $1fa1	        jsr ui_hex
-.1f30		a9 2f		lda #$2f	        lda #$2f
-.1f32		20 d2 ff	jsr $ffd2	        jsr $ffd2
-.1f35		ad 0f 3d	lda $3d0f	        lda N_FREE1
-.1f38		20 a1 1f	jsr $1fa1	        jsr ui_hex
-.1f3b		a9 cd		lda #$cd	        lda #<ui_slots_title
-.1f3d		a2 36		ldx #$36	        ldx #>ui_slots_title
-.1f3f		20 87 1f	jsr $1f87	        jsr ui_puts
-.1f42		ad 10 3d	lda $3d10	        lda N_SLOTS
-.1f45		20 a1 1f	jsr $1fa1	        jsr ui_hex
-.1f48		a9 e3		lda #$e3	        lda #<ui_handle_title
-.1f4a		a2 36		ldx #$36	        ldx #>ui_handle_title
-.1f4c		20 87 1f	jsr $1f87	        jsr ui_puts
-.1f4f		20 e2 1d	jsr $1de2	        jsr ui_get_handle
-.1f52		a2 03		ldx #$03	        ldx #3
-.1f54		8e b9 37	stx $37b9	        stx ui_digit
-.1f57						ui_show_handle:
-.1f57		ae b9 37	ldx $37b9	        ldx ui_digit
-.1f5a		bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
-.1f5d		20 a1 1f	jsr $1fa1	        jsr ui_hex
-.1f60		ce b9 37	dec $37b9	        dec ui_digit
-.1f63		10 f2		bpl $1f57	        bpl ui_show_handle
-.1f65		a9 f6		lda #$f6	        lda #<ui_result_title
-.1f67		a2 36		ldx #$36	        ldx #>ui_result_title
-.1f69		20 87 1f	jsr $1f87	        jsr ui_puts
-.1f6c		ad 16 3d	lda $3d16	        lda ui_status
-.1f6f		20 a1 1f	jsr $1fa1	        jsr ui_hex
-.1f72		a9 05		lda #$05	        lda #<ui_help
-.1f74		a2 37		ldx #$37	        ldx #>ui_help
-.1f76		20 87 1f	jsr $1f87	        jsr ui_puts
-.1f79		ee b8 37	inc $37b8	        inc ui_screen
-.1f7c		ad b8 37	lda $37b8	        lda ui_screen
-.1f7f		c9 02		cmp #$02	        cmp #2
-.1f81		f0 03		beq $1f86	        beq ui_screens_done
-.1f83		4c 00 1f	jmp $1f00	        jmp ui_screen_loop
-.1f86						ui_screens_done:
-.1f86		60		rts		        rts
-.1f87						ui_puts:
-.1f87		8d 8e 1f	sta $1f8e	        sta ui_text_byte+1
-.1f8a		8e 8f 1f	stx $1f8f	        stx ui_text_byte+2
-.1f8d						ui_text_byte:
-.1f8d		ad ff ff	lda $ffff	        lda $ffff
-.1f90		f0 0e		beq $1fa0	        beq ui_text_done
-.1f92		20 d2 ff	jsr $ffd2	        jsr $ffd2
-.1f95		ee 8e 1f	inc $1f8e	        inc ui_text_byte+1
-.1f98		d0 f3		bne $1f8d	        bne ui_text_byte
-.1f9a		ee 8f 1f	inc $1f8f	        inc ui_text_byte+2
-.1f9d		4c 8d 1f	jmp $1f8d	        jmp ui_text_byte
-.1fa0						ui_text_done:
-.1fa0		60		rts		        rts
-.1fa1						ui_hex:
-.1fa1		48		pha		        pha
-.1fa2		4a		lsr a		        lsr
+.1e9e		ad e4 3d	lda $3de4	        lda N_BOOTFORMAT
+.1ea1		8d 2c 3d	sta $3d2c	        sta N_APPFORMAT
+.1ea4		ad b2 37	lda $37b2	        lda ui_system_device
+.1ea7		8d 21 3d	sta $3d21	        sta N_DEVICE
+.1eaa		a2 05		ldx #$05	        ldx #5
+.1eac						native_browser_name:
+.1eac		bd 6f 36	lda $366f,x	        lda ui_browser_name,x
+.1eaf		9d 40 3d	sta $3d40,x	        sta N_APPNAME,x
+.1eb2		ca		dex		        dex
+.1eb3		10 f7		bpl $1eac	        bpl native_browser_name
+.1eb5		a9 06		lda #$06	        lda #6
+.1eb7		8d 22 3d	sta $3d22	        sta N_NAMELEN
+.1eba		a9 01		lda #$01	        lda #1
+.1ebc		8d b3 37	sta $37b3	        sta ui_browser_stage
+.1ebf						native_dispatch:
+.1ebf		20 de 1f	jsr $1fde	        jsr app_launch
+.1ec2		90 0f		bcc $1ed3	        bcc native_dispatch_return
+.1ec4		8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
+.1ec7		ae b3 37	ldx $37b3	        ldx ui_browser_stage
+.1eca		d0 2a		bne $1ef6	        bne native_browser_result
+.1ecc		ae 23 3d	ldx $3d23	        ldx N_APPSTATE
+.1ecf		d0 25		bne $1ef6	        bne native_browser_result
+.1ed1		f0 cb		beq $1e9e	        beq native_browser
+.1ed3						native_dispatch_return:
+.1ed3		ad 28 3d	lda $3d28	        lda N_ACTION
+.1ed6		c9 01		cmp #$01	        cmp #1
+.1ed8		f0 11		beq $1eeb	        beq native_dispatch_next
+.1eda		c9 02		cmp #$02	        cmp #2
+.1edc		f0 14		beq $1ef2	        beq native_dispatch_done
+.1ede		ad 24 3d	lda $3d24	        lda N_EXITCODE
+.1ee1		8d 2b 3d	sta $3d2b	        sta N_BROWSERERROR
+.1ee4		ae b3 37	ldx $37b3	        ldx ui_browser_stage
+.1ee7		f0 b5		beq $1e9e	        beq native_browser
+.1ee9		d0 0b		bne $1ef6	        bne native_browser_result
+.1eeb						native_dispatch_next:
+.1eeb		a9 00		lda #$00	        lda #0
+.1eed		8d b3 37	sta $37b3	        sta ui_browser_stage
+.1ef0		f0 cd		beq $1ebf	        beq native_dispatch
+.1ef2						native_dispatch_done:
+.1ef2		a9 00		lda #$00	        lda #0
+.1ef4		f0 00		beq $1ef6	        beq native_browser_result
+.1ef6						native_browser_result:
+.1ef6		4c 5b 1d	jmp $1d5b	        jmp native_calc_result
+.1ef9						ui_redraw:
+.1ef9		20 32 16	jsr $1632	        jsr heap_stats
+.1efc		a9 00		lda #$00	        lda #0
+.1efe		8d b4 37	sta $37b4	        sta ui_screen
+.1f01						ui_screen_loop:
+.1f01		a5 d7		lda $d7		        lda $d7
+.1f03		2a		rol a		        rol
+.1f04		a9 00		lda #$00	        lda #0
+.1f06		2a		rol a		        rol
+.1f07		cd b4 37	cmp $37b4	        cmp ui_screen
+.1f0a		f0 03		beq $1f0f	        beq ui_selected_screen
+.1f0c		20 5f ff	jsr $ff5f	        jsr $ff5f
+.1f0f						ui_selected_screen:
+.1f0f		a9 93		lda #$93	        lda #$93
+.1f11		20 d2 ff	jsr $ffd2	        jsr $ffd2
+.1f14		a9 75		lda #$75	        lda #<ui_title
+.1f16		a2 36		ldx #$36	        ldx #>ui_title
+.1f18		20 88 1f	jsr $1f88	        jsr ui_puts
+.1f1b		ad b1 37	lda $37b1	        lda ui_bank
+.1f1e		18		clc		        clc
+.1f1f		69 30		adc #$30	        adc #$30
+.1f21		20 d2 ff	jsr $ffd2	        jsr $ffd2
+.1f24		a9 a8		lda #$a8	        lda #<ui_free_title
+.1f26		a2 36		ldx #$36	        ldx #>ui_free_title
+.1f28		20 88 1f	jsr $1f88	        jsr ui_puts
+.1f2b		ad 0e 3d	lda $3d0e	        lda N_FREE0
+.1f2e		20 a2 1f	jsr $1fa2	        jsr ui_hex
+.1f31		a9 2f		lda #$2f	        lda #$2f
+.1f33		20 d2 ff	jsr $ffd2	        jsr $ffd2
+.1f36		ad 0f 3d	lda $3d0f	        lda N_FREE1
+.1f39		20 a2 1f	jsr $1fa2	        jsr ui_hex
+.1f3c		a9 c9		lda #$c9	        lda #<ui_slots_title
+.1f3e		a2 36		ldx #$36	        ldx #>ui_slots_title
+.1f40		20 88 1f	jsr $1f88	        jsr ui_puts
+.1f43		ad 10 3d	lda $3d10	        lda N_SLOTS
+.1f46		20 a2 1f	jsr $1fa2	        jsr ui_hex
+.1f49		a9 df		lda #$df	        lda #<ui_handle_title
+.1f4b		a2 36		ldx #$36	        ldx #>ui_handle_title
+.1f4d		20 88 1f	jsr $1f88	        jsr ui_puts
+.1f50		20 e2 1d	jsr $1de2	        jsr ui_get_handle
+.1f53		a2 03		ldx #$03	        ldx #3
+.1f55		8e b5 37	stx $37b5	        stx ui_digit
+.1f58						ui_show_handle:
+.1f58		ae b5 37	ldx $37b5	        ldx ui_digit
+.1f5b		bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.1f5e		20 a2 1f	jsr $1fa2	        jsr ui_hex
+.1f61		ce b5 37	dec $37b5	        dec ui_digit
+.1f64		10 f2		bpl $1f58	        bpl ui_show_handle
+.1f66		a9 f2		lda #$f2	        lda #<ui_result_title
+.1f68		a2 36		ldx #$36	        ldx #>ui_result_title
+.1f6a		20 88 1f	jsr $1f88	        jsr ui_puts
+.1f6d		ad 16 3d	lda $3d16	        lda ui_status
+.1f70		20 a2 1f	jsr $1fa2	        jsr ui_hex
+.1f73		a9 01		lda #$01	        lda #<ui_help
+.1f75		a2 37		ldx #$37	        ldx #>ui_help
+.1f77		20 88 1f	jsr $1f88	        jsr ui_puts
+.1f7a		ee b4 37	inc $37b4	        inc ui_screen
+.1f7d		ad b4 37	lda $37b4	        lda ui_screen
+.1f80		c9 02		cmp #$02	        cmp #2
+.1f82		f0 03		beq $1f87	        beq ui_screens_done
+.1f84		4c 01 1f	jmp $1f01	        jmp ui_screen_loop
+.1f87						ui_screens_done:
+.1f87		60		rts		        rts
+.1f88						ui_puts:
+.1f88		8d 8f 1f	sta $1f8f	        sta ui_text_byte+1
+.1f8b		8e 90 1f	stx $1f90	        stx ui_text_byte+2
+.1f8e						ui_text_byte:
+.1f8e		ad ff ff	lda $ffff	        lda $ffff
+.1f91		f0 0e		beq $1fa1	        beq ui_text_done
+.1f93		20 d2 ff	jsr $ffd2	        jsr $ffd2
+.1f96		ee 8f 1f	inc $1f8f	        inc ui_text_byte+1
+.1f99		d0 f3		bne $1f8e	        bne ui_text_byte
+.1f9b		ee 90 1f	inc $1f90	        inc ui_text_byte+2
+.1f9e		4c 8e 1f	jmp $1f8e	        jmp ui_text_byte
+.1fa1						ui_text_done:
+.1fa1		60		rts		        rts
+.1fa2						ui_hex:
+.1fa2		48		pha		        pha
 .1fa3		4a		lsr a		        lsr
 .1fa4		4a		lsr a		        lsr
 .1fa5		4a		lsr a		        lsr
-.1fa6		20 ac 1f	jsr $1fac	        jsr ui_nibble
-.1fa9		68		pla		        pla
-.1faa		29 0f		and #$0f	        and #15
-.1fac						ui_nibble:
-.1fac		c9 0a		cmp #$0a	        cmp #10
-.1fae		90 03		bcc $1fb3	        bcc ui_decimal
-.1fb0		18		clc		        clc
-.1fb1		69 07		adc #$07	        adc #7
-.1fb3						ui_decimal:
-.1fb3		18		clc		        clc
-.1fb4		69 30		adc #$30	        adc #$30
-.1fb6		4c d2 ff	jmp $ffd2	        jmp $ffd2
-.1fb9						native_relocate:
-.1fb9		08		php		        php
-.1fba		d8		cld		        cld
-.1fbb		a2 00		ldx #$00	        ldx #0
-.1fbd		a0 09		ldy #$09	        ldy #native_low_pages
-.1fbf						native_relocate_byte:
-.1fbf		bd 00 50	lda $5000,x	        lda N_RELOCBASE,x
-.1fc2						native_relocate_store:
-.1fc2		9d 00 13	sta $1300,x	        sta N_LOWBASE,x
-.1fc5		e8		inx		        inx
-.1fc6		d0 f7		bne $1fbf	        bne native_relocate_byte
-.1fc8		ee c1 1f	inc $1fc1	        inc native_relocate_byte+2
-.1fcb		ee c4 1f	inc $1fc4	        inc native_relocate_store+2
-.1fce		88		dey		        dey
-.1fcf		d0 ee		bne $1fbf	        bne native_relocate_byte
-.1fd1		a9 50		lda #$50	        lda #>N_RELOCBASE
-.1fd3		8d c1 1f	sta $1fc1	        sta native_relocate_byte+2
-.1fd6		a9 13		lda #$13	        lda #>N_LOWBASE
-.1fd8		8d c4 1f	sta $1fc4	        sta native_relocate_store+2
-.1fdb		28		plp		        plp
-.1fdc		60		rts		        rts
+.1fa6		4a		lsr a		        lsr
+.1fa7		20 ad 1f	jsr $1fad	        jsr ui_nibble
+.1faa		68		pla		        pla
+.1fab		29 0f		and #$0f	        and #15
+.1fad						ui_nibble:
+.1fad		c9 0a		cmp #$0a	        cmp #10
+.1faf		90 03		bcc $1fb4	        bcc ui_decimal
+.1fb1		18		clc		        clc
+.1fb2		69 07		adc #$07	        adc #7
+.1fb4						ui_decimal:
+.1fb4		18		clc		        clc
+.1fb5		69 30		adc #$30	        adc #$30
+.1fb7		4c d2 ff	jmp $ffd2	        jmp $ffd2
+.1fba						native_relocate:
+.1fba		08		php		        php
+.1fbb		d8		cld		        cld
+.1fbc		a2 00		ldx #$00	        ldx #0
+.1fbe		a0 09		ldy #$09	        ldy #native_low_pages
+.1fc0						native_relocate_byte:
+.1fc0		bd 00 50	lda $5000,x	        lda N_RELOCBASE,x
+.1fc3						native_relocate_store:
+.1fc3		9d 00 13	sta $1300,x	        sta N_LOWBASE,x
+.1fc6		e8		inx		        inx
+.1fc7		d0 f7		bne $1fc0	        bne native_relocate_byte
+.1fc9		ee c2 1f	inc $1fc2	        inc native_relocate_byte+2
+.1fcc		ee c5 1f	inc $1fc5	        inc native_relocate_store+2
+.1fcf		88		dey		        dey
+.1fd0		d0 ee		bne $1fc0	        bne native_relocate_byte
+.1fd2		a9 50		lda #$50	        lda #>N_RELOCBASE
+.1fd4		8d c2 1f	sta $1fc2	        sta native_relocate_byte+2
+.1fd7		a9 13		lda #$13	        lda #>N_LOWBASE
+.1fd9		8d c5 1f	sta $1fc5	        sta native_relocate_store+2
+.1fdc		28		plp		        plp
+.1fdd		60		rts		        rts
 
 ;******  Processing file: /home/marc/geos128/uos/src/native/apps.inc
 
-.1fdd						app_launch:
-.1fdd		08		php		        php
-.1fde		ad 23 3d	lda $3d23	        lda N_APPSTATE
-.1fe1		0d 20 3d	ora $3d20	        ora N_CURRENT
-.1fe4		0d 11 3d	ora $3d11	        ora N_BUSY
-.1fe7		0d 91 3d	ora $3d91	        ora N_FBUSY
-.1fea		f0 05		beq $1ff1	        beq app_available
-.1fec						app_nested:
-.1fec		a9 07		lda #$07	        lda #N_REENTRANT
-.1fee		28		plp		        plp
-.1fef		38		sec		        sec
-.1ff0		60		rts		        rts
-.1ff1						app_available:
-.1ff1		ba		tsx		        tsx
-.1ff2		bd 01 01	lda $0101,x	        lda $0101,x
-.1ff5		29 04		and #$04	        and #4
-.1ff7		f0 05		beq $1ffe	        beq app_interrupts
-.1ff9		a9 08		lda #$08	        lda #N_PLATFORM
-.1ffb		4c 61 20	jmp $2061	        jmp app_before
-.1ffe						app_interrupts:
-.1ffe		d8		cld		        cld
-.1fff		20 32 16	jsr $1632	        jsr heap_stats
-.2002		90 03		bcc $2007	        bcc *+5
-.2004		4c 61 20	jmp $2061	        jmp app_before
-.2007		ad c0 3d	lda $3dc0	        lda NFILES
-.200a		c9 20		cmp #$20	        cmp #N_APPOWNER
-.200c		f0 de		beq $1fec	        beq app_nested
-.200e		ad d0 3d	lda $3dd0	        lda NFILES+16
-.2011		c9 20		cmp #$20	        cmp #N_APPOWNER
-.2013		f0 d7		beq $1fec	        beq app_nested
-.2015		a2 00		ldx #$00	        ldx #0
-.2017						app_owner_scan:
-.2017		bd 00 3c	lda $3c00,x	        lda NHANDLES,x
-.201a		c9 20		cmp #$20	        cmp #N_APPOWNER
-.201c		f0 ce		beq $1fec	        beq app_nested
-.201e		8a		txa		        txa
-.201f		18		clc		        clc
-.2020		69 08		adc #$08	        adc #8
-.2022		aa		tax		        tax
-.2023		d0 f2		bne $2017	        bne app_owner_scan
-.2025		ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
-.2028		c9 04		cmp #$04	        cmp #4
-.202a		b0 33		bcs $205f	        bcs app_argument
-.202c		c9 03		cmp #$03	        cmp #3
-.202e		f0 17		beq $2047	        beq app_ultimate_source
-.2030		ad 21 3d	lda $3d21	        lda N_DEVICE
-.2033		c9 08		cmp #$08	        cmp #8
-.2035		90 28		bcc $205f	        bcc app_argument
-.2037		c9 1f		cmp #$1f	        cmp #31
-.2039		b0 24		bcs $205f	        bcs app_argument
-.203b		ad 22 3d	lda $3d22	        lda N_NAMELEN
-.203e		f0 1f		beq $205f	        beq app_argument
-.2040		c9 11		cmp #$11	        cmp #17
-.2042		b0 1b		bcs $205f	        bcs app_argument
-.2044		4c 68 20	jmp $2068	        jmp app_channels
-.2047						app_ultimate_source:
-.2047		ad 21 3d	lda $3d21	        lda N_DEVICE
-.204a		f0 13		beq $205f	        beq app_argument
-.204c		c9 03		cmp #$03	        cmp #3
-.204e		b0 0f		bcs $205f	        bcs app_argument
-.2050		ad 22 3d	lda $3d22	        lda N_NAMELEN
-.2053		f0 0a		beq $205f	        beq app_argument
-.2055		ad 00 4e	lda $4e00	        lda N_UPATH
-.2058		c9 2f		cmp #$2f	        cmp #$2f
-.205a		d0 03		bne $205f	        bne app_argument
-.205c		4c 68 20	jmp $2068	        jmp app_channels
-.205f						app_argument:
-.205f		a9 01		lda #$01	        lda #N_BADARG
-.2061						app_before:
-.2061		8d 27 3d	sta $3d27	        sta N_APPERROR
-.2064		28		plp		        plp
-.2065		c9 01		cmp #$01	        cmp #1
-.2067		60		rts		        rts
-.2068						app_channels:
-.2068		a5 99		lda $99		        lda $99
-.206a		d0 06		bne $2072	        bne app_channel_busy
-.206c		a5 9a		lda $9a		        lda $9a
-.206e		c9 03		cmp #$03	        cmp #3
-.2070		f0 05		beq $2077	        beq app_begin
-.2072						app_channel_busy:
-.2072		a9 15		lda #$15	        lda #N_CHANNELS
-.2074		4c 61 20	jmp $2061	        jmp app_before
-.2077						app_begin:
-.2077		a9 01		lda #$01	        lda #1
-.2079		8d 23 3d	sta $3d23	        sta N_APPSTATE
-.207c		a9 20		lda #$20	        lda #N_APPOWNER
-.207e		8d 20 3d	sta $3d20	        sta N_CURRENT
-.2081		8d 80 3d	sta $3d80	        sta N_FOWNER
-.2084		a9 00		lda #$00	        lda #0
-.2086		8d 12 3d	sta $3d12	        sta N_READY
-.2089		8d 24 3d	sta $3d24	        sta N_EXITCODE
-.208c		8d 25 3d	sta $3d25	        sta N_DOSCODE
-.208f		8d 26 3d	sta $3d26	        sta N_IOSTATUS
-.2092		8d 27 3d	sta $3d27	        sta N_APPERROR
-.2095		8d 28 3d	sta $3d28	        sta N_ACTION
-.2098		8d 3e 24	sta $243e	        sta l_result
-.209b		8d 3d 24	sta $243d	        sta l_open
-.209e		8d 40 24	sta $2440	        sta l_eof
-.20a1		8d 3a 24	sta $243a	        sta l_available
-.20a4		8d 3b 24	sta $243b	        sta l_available+1
-.20a7		8d 87 3d	sta $3d87	        sta N_FMODE
-.20aa		a2 03		ldx #$03	        ldx #3
-.20ac						app_clear_file_handle:
-.20ac		9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
-.20af		ca		dex		        dex
-.20b0		10 fa		bpl $20ac	        bpl app_clear_file_handle
-.20b2		20 20 4f	jsr $4f20	        jsr module_source
-.20b5		a9 01		lda #$01	        lda #1                 ; raw PRG bytes include their load address
-.20b7		8d 88 3d	sta $3d88	        sta N_FTYPE
-.20ba		ad 21 3d	lda $3d21	        lda N_DEVICE
-.20bd		8d 85 3d	sta $3d85	        sta N_FDEVICE
-.20c0		ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
-.20c3		8d 96 3d	sta $3d96	        sta N_FFORMAT
-.20c6		ad 22 3d	lda $3d22	        lda N_NAMELEN
-.20c9		8d 86 3d	sta $3d86	        sta N_FNAMELEN
-.20cc		a2 0f		ldx #$0f	        ldx #15
-.20ce						app_copy_name:
-.20ce		bd 40 3d	lda $3d40,x	        lda N_APPNAME,x
-.20d1		9d a0 3d	sta $3da0,x	        sta N_FNAME,x
-.20d4		ca		dex		        dex
-.20d5		10 f7		bpl $20ce	        bpl app_copy_name
-.20d7		20 06 27	jsr $2706	        jsr fs_open
-.20da		20 ce 23	jsr $23ce	        jsr app_record_io
-.20dd		08		php		        php
-.20de		48		pha		        pha
-.20df		a2 03		ldx #$03	        ldx #3
-.20e1						app_keep_file_handle:
-.20e1		bd 81 3d	lda $3d81,x	        lda N_FHANDLE,x
-.20e4		9d 32 24	sta $2432,x	        sta l_handle,x
-.20e7		ca		dex		        dex
-.20e8		10 f7		bpl $20e1	        bpl app_keep_file_handle
-.20ea		ad 81 3d	lda $3d81	        lda N_FHANDLE
-.20ed		8d 3d 24	sta $243d	        sta l_open
-.20f0		68		pla		        pla
-.20f1		28		plp		        plp
-.20f2		90 03		bcc $20f7	        bcc *+5
-.20f4		4c 68 22	jmp $2268	        jmp app_failure
-.20f7		20 4e 23	jsr $234e	        jsr app_byte
-.20fa		90 03		bcc $20ff	        bcc *+5
-.20fc		4c 68 22	jmp $2268	        jmp app_failure
-.20ff		c9 00		cmp #$00	        cmp #<N_APPBASE
-.2101		f0 03		beq $2106	        beq *+5
-.2103		4c 64 22	jmp $2264	        jmp app_bad_image
-.2106		20 4e 23	jsr $234e	        jsr app_byte
-.2109		90 03		bcc $210e	        bcc *+5
-.210b		4c 68 22	jmp $2268	        jmp app_failure
-.210e		c9 60		cmp #$60	        cmp #>N_APPBASE
-.2110		f0 03		beq $2115	        beq *+5
-.2112		4c 64 22	jmp $2264	        jmp app_bad_image
-.2115		a9 00		lda #$00	        lda #0
-.2117		8d 3f 24	sta $243f	        sta l_index
-.211a						app_read_header:
-.211a		20 4e 23	jsr $234e	        jsr app_byte
-.211d		90 03		bcc $2122	        bcc *+5
-.211f		4c 68 22	jmp $2268	        jmp app_failure
-.2122		ae 3f 24	ldx $243f	        ldx l_index
-.2125		9d 60 3d	sta $3d60,x	        sta N_APPHEADER,x
-.2128		ee 3f 24	inc $243f	        inc l_index
-.212b		ad 3f 24	lda $243f	        lda l_index
-.212e		c9 20		cmp #$20	        cmp #32
-.2130		d0 e8		bne $211a	        bne app_read_header
-.2132		20 b9 22	jsr $22b9	        jsr app_validate
-.2135		90 03		bcc $213a	        bcc *+5
-.2137		4c 68 22	jmp $2268	        jmp app_failure
-.213a		a9 20		lda #$20	        lda #N_APPOWNER
-.213c		8d 00 3d	sta $3d00	        sta N_OWNER
-.213f		ad 6a 3d	lda $3d6a	        lda N_APPHEADER+10
-.2142		8d 01 3d	sta $3d01	        sta N_PAGES
-.2145		a9 00		lda #$00	        lda #0
-.2147		8d 02 3d	sta $3d02	        sta N_BANK
-.214a		a9 60		lda #$60	        lda #>N_APPBASE
-.214c		8d 03 3d	sta $3d03	        sta N_PAGE
-.214f		20 ec 13	jsr $13ec	        jsr heap_reserve
-.2152		90 03		bcc $2157	        bcc *+5
-.2154		4c 68 22	jmp $2268	        jmp app_failure
-.2157		a2 03		ldx #$03	        ldx #3
-.2159						app_keep_allocation:
-.2159		bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
-.215c		9d 36 24	sta $2436,x	        sta l_app_handle,x
-.215f		ca		dex		        dex
-.2160		10 f7		bpl $2159	        bpl app_keep_allocation
-.2162		ad 6a 3d	lda $3d6a	        lda N_APPHEADER+10
-.2165		8d 41 24	sta $2441	        sta l_zero_pages
-.2168		a9 60		lda #$60	        lda #>N_APPBASE
-.216a		8d 73 21	sta $2173	        sta app_zero+2
-.216d		a9 00		lda #$00	        lda #0
-.216f		a2 00		ldx #$00	        ldx #0
-.2171						app_zero:
-.2171		9d 00 60	sta $6000,x	        sta N_APPBASE,x
-.2174		e8		inx		        inx
-.2175		d0 fa		bne $2171	        bne app_zero
-.2177		ee 73 21	inc $2173	        inc app_zero+2
-.217a		ce 41 24	dec $2441	        dec l_zero_pages
-.217d		d0 f2		bne $2171	        bne app_zero
-.217f		a9 ff		lda #$ff	        lda #$ff
-.2181		8d 43 24	sta $2443	        sta l_crc
-.2184		8d 44 24	sta $2444	        sta l_crc+1
-.2187		a9 00		lda #$00	        lda #0
-.2189		8d 3f 24	sta $243f	        sta l_index
-.218c						app_header_copy:
-.218c		ae 3f 24	ldx $243f	        ldx l_index
-.218f		bd 60 3d	lda $3d60,x	        lda N_APPHEADER,x
-.2192		9d 00 60	sta $6000,x	        sta N_APPBASE,x
-.2195		e0 0e		cpx #$0e	        cpx #14
-.2197		f0 04		beq $219d	        beq app_crc_zero
-.2199		e0 0f		cpx #$0f	        cpx #15
-.219b		d0 02		bne $219f	        bne app_header_crc
-.219d						app_crc_zero:
-.219d		a9 00		lda #$00	        lda #0
-.219f						app_header_crc:
-.219f		20 eb 23	jsr $23eb	        jsr app_crc_byte
-.21a2		ee 3f 24	inc $243f	        inc l_index
-.21a5		ad 3f 24	lda $243f	        lda l_index
-.21a8		c9 20		cmp #$20	        cmp #32
-.21aa		d0 e0		bne $218c	        bne app_header_copy
-.21ac		a9 20		lda #$20	        lda #<(N_APPBASE+32)
-.21ae		8d d0 21	sta $21d0	        sta app_image_store+1
-.21b1		a9 60		lda #$60	        lda #>(N_APPBASE+32)
-.21b3		8d d1 21	sta $21d1	        sta app_image_store+2
-.21b6		38		sec		        sec
-.21b7		ad 68 3d	lda $3d68	        lda N_APPHEADER+8
-.21ba		e9 20		sbc #$20	        sbc #32
-.21bc		8d 45 24	sta $2445	        sta l_left
-.21bf		ad 69 3d	lda $3d69	        lda N_APPHEADER+9
-.21c2		e9 00		sbc #$00	        sbc #0
-.21c4		8d 46 24	sta $2446	        sta l_left+1
-.21c7						app_image_loop:
-.21c7		20 4e 23	jsr $234e	        jsr app_byte
-.21ca		90 03		bcc $21cf	        bcc *+5
-.21cc		4c 68 22	jmp $2268	        jmp app_failure
-.21cf						app_image_store:
-.21cf		8d 20 60	sta $6020	        sta N_APPBASE+32
-.21d2		20 eb 23	jsr $23eb	        jsr app_crc_byte
-.21d5		ee d0 21	inc $21d0	        inc app_image_store+1
-.21d8		d0 03		bne $21dd	        bne app_image_next
-.21da		ee d1 21	inc $21d1	        inc app_image_store+2
-.21dd						app_image_next:
-.21dd		ad 45 24	lda $2445	        lda l_left
-.21e0		d0 03		bne $21e5	        bne app_image_low
-.21e2		ce 46 24	dec $2446	        dec l_left+1
-.21e5						app_image_low:
-.21e5		ce 45 24	dec $2445	        dec l_left
-.21e8		ad 45 24	lda $2445	        lda l_left
-.21eb		0d 46 24	ora $2446	        ora l_left+1
-.21ee		d0 d7		bne $21c7	        bne app_image_loop
-.21f0		ad 40 24	lda $2440	        lda l_eof
-.21f3		d0 04		bne $21f9	        bne app_image_eof
-.21f5		a9 13		lda #$13	        lda #N_LONGIMAGE
-.21f7		d0 6f		bne $2268	        bne app_failure
-.21f9						app_image_eof:
-.21f9		ad 43 24	lda $2443	        lda l_crc
-.21fc		cd 6e 3d	cmp $3d6e	        cmp N_APPHEADER+14
-.21ff		d0 5f		bne $2260	        bne app_bad_crc
-.2201		ad 44 24	lda $2444	        lda l_crc+1
-.2204		cd 6f 3d	cmp $3d6f	        cmp N_APPHEADER+15
-.2207		d0 57		bne $2260	        bne app_bad_crc
-.2209		20 0f 24	jsr $240f	        jsr app_close
-.220c		ad 3e 24	lda $243e	        lda l_result
-.220f		d0 5d		bne $226e	        bne app_cleanup
-.2211		a9 02		lda #$02	        lda #2
-.2213		8d 23 3d	sta $3d23	        sta N_APPSTATE
-.2216		a9 20		lda #$20	        lda #N_APPOWNER
-.2218		8d 00 3d	sta $3d00	        sta N_OWNER
-.221b		ba		tsx		        tsx
-.221c		8e 42 24	stx $2442	        stx l_app_sp
-.221f		a9 00		lda #$00	        lda #0
-.2221		20 39 22	jsr $2239	        jsr app_jump
-.2224						app_return:
-.2224		8d 24 3d	sta $3d24	        sta N_EXITCODE
-.2227		20 85 48	jsr $4885	        jsr module_invalidate
-.222a		d8		cld		        cld
-.222b		a9 0e		lda #$0e	        lda #$0e
-.222d		8d 00 ff	sta $ff00	        sta $ff00
-.2230		58		cli		        cli
-.2231		a9 00		lda #$00	        lda #0
-.2233		8d 12 3d	sta $3d12	        sta N_READY
-.2236		4c 6e 22	jmp $226e	        jmp app_cleanup
-.2239						app_jump:
-.2239		6c 48 24	jmp ($2448)	        jmp (l_entry)
-.223c						app_exit:
-.223c		ae 23 3d	ldx $3d23	        ldx N_APPSTATE
-.223f		e0 02		cpx #$02	        cpx #2
-.2241		f0 16		beq $2259	        beq app_exit_active
-.2243						app_exit_invalid:
-.2243		a9 01		lda #$01	        lda #N_BADARG
-.2245		38		sec		        sec
-.2246		60		rts		        rts
-.2247						app_replace:
-.2247		a9 01		lda #$01	        lda #1
-.2249		d0 02		bne $224d	        bne app_request
-.224b						app_workspace:
-.224b		a9 02		lda #$02	        lda #2
-.224d						app_request:
-.224d		ae 23 3d	ldx $3d23	        ldx N_APPSTATE
-.2250		e0 02		cpx #$02	        cpx #2
-.2252		d0 ef		bne $2243	        bne app_exit_invalid
-.2254		8d 28 3d	sta $3d28	        sta N_ACTION
-.2257		a9 00		lda #$00	        lda #0
-.2259						app_exit_active:
-.2259		ae 42 24	ldx $2442	        ldx l_app_sp
-.225c		9a		txs		        txs
-.225d		4c 24 22	jmp $2224	        jmp app_return
-.2260						app_bad_crc:
-.2260		a9 14		lda #$14	        lda #N_CHECKSUM
-.2262		d0 04		bne $2268	        bne app_failure
-.2264						app_bad_image:
-.2264		a9 10		lda #$10	        lda #N_BADIMAGE
-.2266		d0 00		bne $2268	        bne app_failure
-.2268						app_failure:
-.2268		8d 3e 24	sta $243e	        sta l_result
-.226b		20 0f 24	jsr $240f	        jsr app_close
-.226e						app_cleanup:
-.226e		20 b8 4f	jsr $4fb8	        jsr display_restore   ; includes retained file/heap cleanup errors
-.2271		a9 03		lda #$03	        lda #3
-.2273		8d 23 3d	sta $3d23	        sta N_APPSTATE
-.2276		ad c0 3d	lda $3dc0	        lda NFILES
-.2279		c9 20		cmp #$20	        cmp #N_APPOWNER
-.227b		f0 07		beq $2284	        beq app_close_files
-.227d		ad d0 3d	lda $3dd0	        lda NFILES+16
-.2280		c9 20		cmp #$20	        cmp #N_APPOWNER
-.2282		d0 0a		bne $228e	        bne app_release_memory
-.2284						app_close_files:
-.2284		a9 20		lda #$20	        lda #N_APPOWNER
-.2286		8d 80 3d	sta $3d80	        sta N_FOWNER
-.2289		20 42 2b	jsr $2b42	        jsr fs_release
-.228c		b0 0a		bcs $2298	        bcs app_retain_resources
-.228e						app_release_memory:
-.228e		a9 20		lda #$20	        lda #N_APPOWNER
-.2290		8d 00 3d	sta $3d00	        sta N_OWNER
-.2293		20 e2 15	jsr $15e2	        jsr heap_release
-.2296		90 0f		bcc $22a7	        bcc app_released
-.2298						app_retain_resources:
-.2298		ae 3e 24	ldx $243e	        ldx l_result
-.229b		d0 03		bne $22a0	        bne +
-.229d		8d 3e 24	sta $243e	        sta l_result
-.22a0						+
-.22a0		a9 04		lda #$04	        lda #4                 ; corrupt ownership stays reserved, not reused
-.22a2		8d 23 3d	sta $3d23	        sta N_APPSTATE
-.22a5		d0 08		bne $22af	        bne app_finish
-.22a7						app_released:
-.22a7		a9 00		lda #$00	        lda #0
-.22a9		8d 20 3d	sta $3d20	        sta N_CURRENT
-.22ac		8d 23 3d	sta $3d23	        sta N_APPSTATE
-.22af						app_finish:
-.22af		ad 3e 24	lda $243e	        lda l_result
-.22b2		8d 27 3d	sta $3d27	        sta N_APPERROR
-.22b5		28		plp		        plp
-.22b6		c9 01		cmp #$01	        cmp #1
-.22b8		60		rts		        rts
-.22b9						app_validate:
-.22b9		a2 03		ldx #$03	        ldx #3
-.22bb						app_magic_loop:
-.22bb		bd 60 3d	lda $3d60,x	        lda N_APPHEADER,x
-.22be		dd 2e 24	cmp $242e,x	        cmp l_magic,x
-.22c1		f0 03		beq $22c6	        beq *+5
-.22c3		4c 4a 23	jmp $234a	        jmp app_invalid
-.22c6		ca		dex		        dex
-.22c7		10 f2		bpl $22bb	        bpl app_magic_loop
-.22c9		ad 64 3d	lda $3d64	        lda N_APPHEADER+4
-.22cc		c9 01		cmp #$01	        cmp #1
-.22ce		d0 7a		bne $234a	        bne app_invalid
-.22d0		ad 65 3d	lda $3d65	        lda N_APPHEADER+5
-.22d3		c9 01		cmp #$01	        cmp #1
-.22d5		d0 73		bne $234a	        bne app_invalid
-.22d7		ad 66 3d	lda $3d66	        lda N_APPHEADER+6
-.22da		c9 0c		cmp #$0c	        cmp #N_ABI_MINOR+1
-.22dc		b0 6c		bcs $234a	        bcs app_invalid
-.22de		20 92 1b	jsr $1b92	        jsr module_window
-.22e1		b0 67		bcs $234a	        bcs app_invalid
-.22e3		ad 6a 3d	lda $3d6a	        lda N_APPHEADER+10
-.22e6		f0 62		beq $234a	        beq app_invalid
-.22e8		c9 61		cmp #$61	        cmp #((N_APPLIMIT-N_APPBASE)/256)+1
-.22ea		b0 5e		bcs $234a	        bcs app_invalid
-.22ec		ad 69 3d	lda $3d69	        lda N_APPHEADER+9
-.22ef		cd 6a 3d	cmp $3d6a	        cmp N_APPHEADER+10
-.22f2		90 07		bcc $22fb	        bcc app_size_fits
-.22f4		d0 54		bne $234a	        bne app_invalid
-.22f6		ad 68 3d	lda $3d68	        lda N_APPHEADER+8
-.22f9		d0 4f		bne $234a	        bne app_invalid
-.22fb						app_size_fits:
-.22fb		ad 69 3d	lda $3d69	        lda N_APPHEADER+9
-.22fe		d0 07		bne $2307	        bne app_image_large
-.2300		ad 68 3d	lda $3d68	        lda N_APPHEADER+8
-.2303		c9 21		cmp #$21	        cmp #33
-.2305		90 43		bcc $234a	        bcc app_invalid
-.2307						app_image_large:
-.2307		ad 6d 3d	lda $3d6d	        lda N_APPHEADER+13
-.230a		d0 07		bne $2313	        bne app_entry_large
-.230c		ad 6c 3d	lda $3d6c	        lda N_APPHEADER+12
-.230f		c9 20		cmp #$20	        cmp #32
-.2311		90 37		bcc $234a	        bcc app_invalid
-.2313						app_entry_large:
-.2313		ad 6d 3d	lda $3d6d	        lda N_APPHEADER+13
-.2316		cd 69 3d	cmp $3d69	        cmp N_APPHEADER+9
-.2319		90 0a		bcc $2325	        bcc app_entry_fits
-.231b		d0 2d		bne $234a	        bne app_invalid
-.231d		ad 6c 3d	lda $3d6c	        lda N_APPHEADER+12
-.2320		cd 68 3d	cmp $3d68	        cmp N_APPHEADER+8
-.2323		b0 25		bcs $234a	        bcs app_invalid
-.2325						app_entry_fits:
-.2325		ad 6c 3d	lda $3d6c	        lda N_APPHEADER+12
-.2328		8d 48 24	sta $2448	        sta l_entry
-.232b		18		clc		        clc
-.232c		ad 6d 3d	lda $3d6d	        lda N_APPHEADER+13
-.232f		69 60		adc #$60	        adc #>N_APPBASE
-.2331		8d 49 24	sta $2449	        sta l_entry+1
-.2334		a2 10		ldx #$10	        ldx #16
-.2336						app_title_loop:
-.2336		bd 60 3d	lda $3d60,x	        lda N_APPHEADER,x
-.2339		f0 08		beq $2343	        beq app_title_next
-.233b		c9 20		cmp #$20	        cmp #$20
-.233d		90 0b		bcc $234a	        bcc app_invalid
-.233f		c9 7f		cmp #$7f	        cmp #$7f
-.2341		b0 07		bcs $234a	        bcs app_invalid
-.2343						app_title_next:
-.2343		e8		inx		        inx
-.2344		e0 20		cpx #$20	        cpx #32
-.2346		d0 ee		bne $2336	        bne app_title_loop
-.2348		18		clc		        clc
-.2349		60		rts		        rts
-.234a						app_invalid:
-.234a		a9 10		lda #$10	        lda #N_BADIMAGE
-.234c		38		sec		        sec
-.234d		60		rts		        rts
-.234e						app_byte:
-.234e		ad 40 24	lda $2440	        lda l_eof
-.2351		d0 66		bne $23b9	        bne app_short_image
-.2353		ad 3a 24	lda $243a	        lda l_available
-.2356		0d 3b 24	ora $243b	        ora l_available+1
-.2359		d0 36		bne $2391	        bne app_buffer_read
-.235b		20 bd 23	jsr $23bd	        jsr app_select_file
-.235e		a9 00		lda #$00	        lda #0
-.2360		8d 89 3d	sta $3d89	        sta N_FCOUNT
-.2363		a9 02		lda #$02	        lda #2
-.2365		8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
-.2368		20 1f 29	jsr $291f	        jsr fs_read
-.236b		20 ce 23	jsr $23ce	        jsr app_record_io
-.236e		b0 48		bcs $23b8	        bcs app_byte_done
-.2370		ad 8b 3d	lda $3d8b	        lda N_FACTUAL
-.2373		8d 3a 24	sta $243a	        sta l_available
-.2376		ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
-.2379		8d 3b 24	sta $243b	        sta l_available+1
-.237c		0d 3a 24	ora $243a	        ora l_available
-.237f		f0 38		beq $23b9	        beq app_short_image
-.2381		ad 8d 3d	lda $3d8d	        lda N_FEOF
-.2384		8d 3c 24	sta $243c	        sta l_file_eof
-.2387		a9 00		lda #$00	        lda #<N_BUFFER
-.2389		8d 92 23	sta $2392	        sta app_buffer_read+1
-.238c		a9 3a		lda #$3a	        lda #>N_BUFFER
-.238e		8d 93 23	sta $2393	        sta app_buffer_read+2
-.2391						app_buffer_read:
-.2391		ad 00 3a	lda $3a00	        lda N_BUFFER
-.2394		48		pha		        pha
-.2395		ee 92 23	inc $2392	        inc app_buffer_read+1
-.2398		d0 03		bne $239d	        bne +
-.239a		ee 93 23	inc $2393	        inc app_buffer_read+2
-.239d		ad 3a 24	lda $243a	+       lda l_available
-.23a0		d0 03		bne $23a5	        bne +
-.23a2		ce 3b 24	dec $243b	        dec l_available+1
-.23a5		ce 3a 24	dec $243a	+       dec l_available
-.23a8		ad 3a 24	lda $243a	        lda l_available
-.23ab		0d 3b 24	ora $243b	        ora l_available+1
-.23ae		d0 06		bne $23b6	        bne +
-.23b0		ad 3c 24	lda $243c	        lda l_file_eof
-.23b3		8d 40 24	sta $2440	        sta l_eof
-.23b6		68		pla		+       pla
-.23b7		18		clc		        clc
-.23b8						app_byte_done:
-.23b8		60		rts		        rts
-.23b9						app_short_image:
-.23b9		a9 12		lda #$12	        lda #N_SHORTIMAGE
-.23bb		38		sec		        sec
-.23bc		60		rts		        rts
-.23bd						app_select_file:
-.23bd		a9 20		lda #$20	        lda #N_APPOWNER
-.23bf		8d 80 3d	sta $3d80	        sta N_FOWNER
-.23c2		a2 03		ldx #$03	        ldx #3
-.23c4						app_select_handle:
-.23c4		bd 32 24	lda $2432,x	        lda l_handle,x
-.23c7		9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
-.23ca		ca		dex		        dex
-.23cb		10 f7		bpl $23c4	        bpl app_select_handle
-.23cd		60		rts		        rts
-.23ce						app_record_io:
-.23ce		08		php		        php
-.23cf		48		pha		        pha
-.23d0		90 16		bcc $23e8	        bcc app_record_done
-.23d2		ad 25 3d	lda $3d25	        lda N_DOSCODE
-.23d5		d0 06		bne $23dd	        bne +
-.23d7		ad 8f 3d	lda $3d8f	        lda N_FDOS
-.23da		8d 25 3d	sta $3d25	        sta N_DOSCODE
-.23dd		ad 26 3d	lda $3d26	+       lda N_IOSTATUS
-.23e0		d0 06		bne $23e8	        bne app_record_done
-.23e2		ad 90 3d	lda $3d90	        lda N_FSTATUS
-.23e5		8d 26 3d	sta $3d26	        sta N_IOSTATUS
-.23e8						app_record_done:
-.23e8		68		pla		        pla
-.23e9		28		plp		        plp
-.23ea		60		rts		        rts
-.23eb						app_crc_byte:
-.23eb		4d 44 24	eor $2444	        eor l_crc+1
-.23ee		8d 44 24	sta $2444	        sta l_crc+1
-.23f1		a2 08		ldx #$08	        ldx #8
-.23f3						app_crc_bit:
-.23f3		0e 43 24	asl $2443	        asl l_crc
-.23f6		2e 44 24	rol $2444	        rol l_crc+1
-.23f9		90 10		bcc $240b	        bcc app_crc_next
-.23fb		ad 43 24	lda $2443	        lda l_crc
-.23fe		49 21		eor #$21	        eor #$21
-.2400		8d 43 24	sta $2443	        sta l_crc
-.2403		ad 44 24	lda $2444	        lda l_crc+1
-.2406		49 10		eor #$10	        eor #$10
-.2408		8d 44 24	sta $2444	        sta l_crc+1
-.240b						app_crc_next:
-.240b		ca		dex		        dex
-.240c		d0 e5		bne $23f3	        bne app_crc_bit
-.240e		60		rts		        rts
-.240f						app_close:
-.240f		ad 3d 24	lda $243d	        lda l_open
-.2412		f0 10		beq $2424	        beq app_close_done
-.2414		20 bd 23	jsr $23bd	        jsr app_select_file
-.2417		20 2b 2b	jsr $2b2b	        jsr fs_close
-.241a		20 ce 23	jsr $23ce	        jsr app_record_io
-.241d		b0 06		bcs $2425	        bcs app_close_failed
-.241f		a9 00		lda #$00	        lda #0
-.2421		8d 3d 24	sta $243d	        sta l_open
-.2424						app_close_done:
-.2424		60		rts		        rts
-.2425						app_close_failed:
-.2425		ae 3e 24	ldx $243e	        ldx l_result
-.2428		d0 fa		bne $2424	        bne app_close_done
-.242a		8d 3e 24	sta $243e	        sta l_result
-.242d		60		rts		        rts
->242e		4e 41 50 50			l_magic: .text "napp"
->2432		00 00 00 00			l_handle: .fill 4,0
->2436		00 00 00 00			l_app_handle: .fill 4,0
->243a		00 00				l_available: .word 0
->243c		00				l_file_eof: .byte 0
->243d		00				l_open: .byte 0
->243e		00				l_result: .byte 0
->243f		00				l_index: .byte 0
->2440		00				l_eof: .byte 0
->2441		00				l_zero_pages: .byte 0
->2442		00				l_app_sp: .byte 0
->2443		00 00				l_crc: .word 0
->2445		00 00				l_left: .word 0
->2447						        .align 2
+.1fde						app_launch:
+.1fde		08		php		        php
+.1fdf		ad 23 3d	lda $3d23	        lda N_APPSTATE
+.1fe2		0d 20 3d	ora $3d20	        ora N_CURRENT
+.1fe5		0d 11 3d	ora $3d11	        ora N_BUSY
+.1fe8		0d 91 3d	ora $3d91	        ora N_FBUSY
+.1feb		f0 05		beq $1ff2	        beq app_available
+.1fed						app_nested:
+.1fed		a9 07		lda #$07	        lda #N_REENTRANT
+.1fef		28		plp		        plp
+.1ff0		38		sec		        sec
+.1ff1		60		rts		        rts
+.1ff2						app_available:
+.1ff2		ba		tsx		        tsx
+.1ff3		bd 01 01	lda $0101,x	        lda $0101,x
+.1ff6		29 04		and #$04	        and #4
+.1ff8		f0 05		beq $1fff	        beq app_interrupts
+.1ffa		a9 08		lda #$08	        lda #N_PLATFORM
+.1ffc		4c 62 20	jmp $2062	        jmp app_before
+.1fff						app_interrupts:
+.1fff		d8		cld		        cld
+.2000		20 32 16	jsr $1632	        jsr heap_stats
+.2003		90 03		bcc $2008	        bcc *+5
+.2005		4c 62 20	jmp $2062	        jmp app_before
+.2008		ad c0 3d	lda $3dc0	        lda NFILES
+.200b		c9 20		cmp #$20	        cmp #N_APPOWNER
+.200d		f0 de		beq $1fed	        beq app_nested
+.200f		ad d0 3d	lda $3dd0	        lda NFILES+16
+.2012		c9 20		cmp #$20	        cmp #N_APPOWNER
+.2014		f0 d7		beq $1fed	        beq app_nested
+.2016		a2 00		ldx #$00	        ldx #0
+.2018						app_owner_scan:
+.2018		bd 00 3c	lda $3c00,x	        lda NHANDLES,x
+.201b		c9 20		cmp #$20	        cmp #N_APPOWNER
+.201d		f0 ce		beq $1fed	        beq app_nested
+.201f		8a		txa		        txa
+.2020		18		clc		        clc
+.2021		69 08		adc #$08	        adc #8
+.2023		aa		tax		        tax
+.2024		d0 f2		bne $2018	        bne app_owner_scan
+.2026		ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.2029		c9 04		cmp #$04	        cmp #4
+.202b		b0 33		bcs $2060	        bcs app_argument
+.202d		c9 03		cmp #$03	        cmp #3
+.202f		f0 17		beq $2048	        beq app_ultimate_source
+.2031		ad 21 3d	lda $3d21	        lda N_DEVICE
+.2034		c9 08		cmp #$08	        cmp #8
+.2036		90 28		bcc $2060	        bcc app_argument
+.2038		c9 1f		cmp #$1f	        cmp #31
+.203a		b0 24		bcs $2060	        bcs app_argument
+.203c		ad 22 3d	lda $3d22	        lda N_NAMELEN
+.203f		f0 1f		beq $2060	        beq app_argument
+.2041		c9 11		cmp #$11	        cmp #17
+.2043		b0 1b		bcs $2060	        bcs app_argument
+.2045		4c 69 20	jmp $2069	        jmp app_channels
+.2048						app_ultimate_source:
+.2048		ad 21 3d	lda $3d21	        lda N_DEVICE
+.204b		f0 13		beq $2060	        beq app_argument
+.204d		c9 03		cmp #$03	        cmp #3
+.204f		b0 0f		bcs $2060	        bcs app_argument
+.2051		ad 22 3d	lda $3d22	        lda N_NAMELEN
+.2054		f0 0a		beq $2060	        beq app_argument
+.2056		ad 00 4e	lda $4e00	        lda N_UPATH
+.2059		c9 2f		cmp #$2f	        cmp #$2f
+.205b		d0 03		bne $2060	        bne app_argument
+.205d		4c 69 20	jmp $2069	        jmp app_channels
+.2060						app_argument:
+.2060		a9 01		lda #$01	        lda #N_BADARG
+.2062						app_before:
+.2062		8d 27 3d	sta $3d27	        sta N_APPERROR
+.2065		28		plp		        plp
+.2066		c9 01		cmp #$01	        cmp #1
+.2068		60		rts		        rts
+.2069						app_channels:
+.2069		a5 99		lda $99		        lda $99
+.206b		d0 06		bne $2073	        bne app_channel_busy
+.206d		a5 9a		lda $9a		        lda $9a
+.206f		c9 03		cmp #$03	        cmp #3
+.2071		f0 05		beq $2078	        beq app_begin
+.2073						app_channel_busy:
+.2073		a9 15		lda #$15	        lda #N_CHANNELS
+.2075		4c 62 20	jmp $2062	        jmp app_before
+.2078						app_begin:
+.2078		a9 01		lda #$01	        lda #1
+.207a		8d 23 3d	sta $3d23	        sta N_APPSTATE
+.207d		a9 20		lda #$20	        lda #N_APPOWNER
+.207f		8d 20 3d	sta $3d20	        sta N_CURRENT
+.2082		8d 80 3d	sta $3d80	        sta N_FOWNER
+.2085		a9 00		lda #$00	        lda #0
+.2087		8d 12 3d	sta $3d12	        sta N_READY
+.208a		8d 24 3d	sta $3d24	        sta N_EXITCODE
+.208d		8d 25 3d	sta $3d25	        sta N_DOSCODE
+.2090		8d 26 3d	sta $3d26	        sta N_IOSTATUS
+.2093		8d 27 3d	sta $3d27	        sta N_APPERROR
+.2096		8d 28 3d	sta $3d28	        sta N_ACTION
+.2099		8d 3f 24	sta $243f	        sta l_result
+.209c		8d 3e 24	sta $243e	        sta l_open
+.209f		8d 41 24	sta $2441	        sta l_eof
+.20a2		8d 3b 24	sta $243b	        sta l_available
+.20a5		8d 3c 24	sta $243c	        sta l_available+1
+.20a8		8d 87 3d	sta $3d87	        sta N_FMODE
+.20ab		a2 03		ldx #$03	        ldx #3
+.20ad						app_clear_file_handle:
+.20ad		9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
+.20b0		ca		dex		        dex
+.20b1		10 fa		bpl $20ad	        bpl app_clear_file_handle
+.20b3		20 20 4f	jsr $4f20	        jsr module_source
+.20b6		a9 01		lda #$01	        lda #1                 ; raw PRG bytes include their load address
+.20b8		8d 88 3d	sta $3d88	        sta N_FTYPE
+.20bb		ad 21 3d	lda $3d21	        lda N_DEVICE
+.20be		8d 85 3d	sta $3d85	        sta N_FDEVICE
+.20c1		ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.20c4		8d 96 3d	sta $3d96	        sta N_FFORMAT
+.20c7		ad 22 3d	lda $3d22	        lda N_NAMELEN
+.20ca		8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.20cd		a2 0f		ldx #$0f	        ldx #15
+.20cf						app_copy_name:
+.20cf		bd 40 3d	lda $3d40,x	        lda N_APPNAME,x
+.20d2		9d a0 3d	sta $3da0,x	        sta N_FNAME,x
+.20d5		ca		dex		        dex
+.20d6		10 f7		bpl $20cf	        bpl app_copy_name
+.20d8		20 06 27	jsr $2706	        jsr fs_open
+.20db		20 cf 23	jsr $23cf	        jsr app_record_io
+.20de		08		php		        php
+.20df		48		pha		        pha
+.20e0		a2 03		ldx #$03	        ldx #3
+.20e2						app_keep_file_handle:
+.20e2		bd 81 3d	lda $3d81,x	        lda N_FHANDLE,x
+.20e5		9d 33 24	sta $2433,x	        sta l_handle,x
+.20e8		ca		dex		        dex
+.20e9		10 f7		bpl $20e2	        bpl app_keep_file_handle
+.20eb		ad 81 3d	lda $3d81	        lda N_FHANDLE
+.20ee		8d 3e 24	sta $243e	        sta l_open
+.20f1		68		pla		        pla
+.20f2		28		plp		        plp
+.20f3		90 03		bcc $20f8	        bcc *+5
+.20f5		4c 69 22	jmp $2269	        jmp app_failure
+.20f8		20 4f 23	jsr $234f	        jsr app_byte
+.20fb		90 03		bcc $2100	        bcc *+5
+.20fd		4c 69 22	jmp $2269	        jmp app_failure
+.2100		c9 00		cmp #$00	        cmp #<N_APPBASE
+.2102		f0 03		beq $2107	        beq *+5
+.2104		4c 65 22	jmp $2265	        jmp app_bad_image
+.2107		20 4f 23	jsr $234f	        jsr app_byte
+.210a		90 03		bcc $210f	        bcc *+5
+.210c		4c 69 22	jmp $2269	        jmp app_failure
+.210f		c9 60		cmp #$60	        cmp #>N_APPBASE
+.2111		f0 03		beq $2116	        beq *+5
+.2113		4c 65 22	jmp $2265	        jmp app_bad_image
+.2116		a9 00		lda #$00	        lda #0
+.2118		8d 40 24	sta $2440	        sta l_index
+.211b						app_read_header:
+.211b		20 4f 23	jsr $234f	        jsr app_byte
+.211e		90 03		bcc $2123	        bcc *+5
+.2120		4c 69 22	jmp $2269	        jmp app_failure
+.2123		ae 40 24	ldx $2440	        ldx l_index
+.2126		9d 60 3d	sta $3d60,x	        sta N_APPHEADER,x
+.2129		ee 40 24	inc $2440	        inc l_index
+.212c		ad 40 24	lda $2440	        lda l_index
+.212f		c9 20		cmp #$20	        cmp #32
+.2131		d0 e8		bne $211b	        bne app_read_header
+.2133		20 ba 22	jsr $22ba	        jsr app_validate
+.2136		90 03		bcc $213b	        bcc *+5
+.2138		4c 69 22	jmp $2269	        jmp app_failure
+.213b		a9 20		lda #$20	        lda #N_APPOWNER
+.213d		8d 00 3d	sta $3d00	        sta N_OWNER
+.2140		ad 6a 3d	lda $3d6a	        lda N_APPHEADER+10
+.2143		8d 01 3d	sta $3d01	        sta N_PAGES
+.2146		a9 00		lda #$00	        lda #0
+.2148		8d 02 3d	sta $3d02	        sta N_BANK
+.214b		a9 60		lda #$60	        lda #>N_APPBASE
+.214d		8d 03 3d	sta $3d03	        sta N_PAGE
+.2150		20 ec 13	jsr $13ec	        jsr heap_reserve
+.2153		90 03		bcc $2158	        bcc *+5
+.2155		4c 69 22	jmp $2269	        jmp app_failure
+.2158		a2 03		ldx #$03	        ldx #3
+.215a						app_keep_allocation:
+.215a		bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.215d		9d 37 24	sta $2437,x	        sta l_app_handle,x
+.2160		ca		dex		        dex
+.2161		10 f7		bpl $215a	        bpl app_keep_allocation
+.2163		ad 6a 3d	lda $3d6a	        lda N_APPHEADER+10
+.2166		8d 42 24	sta $2442	        sta l_zero_pages
+.2169		a9 60		lda #$60	        lda #>N_APPBASE
+.216b		8d 74 21	sta $2174	        sta app_zero+2
+.216e		a9 00		lda #$00	        lda #0
+.2170		a2 00		ldx #$00	        ldx #0
+.2172						app_zero:
+.2172		9d 00 60	sta $6000,x	        sta N_APPBASE,x
+.2175		e8		inx		        inx
+.2176		d0 fa		bne $2172	        bne app_zero
+.2178		ee 74 21	inc $2174	        inc app_zero+2
+.217b		ce 42 24	dec $2442	        dec l_zero_pages
+.217e		d0 f2		bne $2172	        bne app_zero
+.2180		a9 ff		lda #$ff	        lda #$ff
+.2182		8d 44 24	sta $2444	        sta l_crc
+.2185		8d 45 24	sta $2445	        sta l_crc+1
+.2188		a9 00		lda #$00	        lda #0
+.218a		8d 40 24	sta $2440	        sta l_index
+.218d						app_header_copy:
+.218d		ae 40 24	ldx $2440	        ldx l_index
+.2190		bd 60 3d	lda $3d60,x	        lda N_APPHEADER,x
+.2193		9d 00 60	sta $6000,x	        sta N_APPBASE,x
+.2196		e0 0e		cpx #$0e	        cpx #14
+.2198		f0 04		beq $219e	        beq app_crc_zero
+.219a		e0 0f		cpx #$0f	        cpx #15
+.219c		d0 02		bne $21a0	        bne app_header_crc
+.219e						app_crc_zero:
+.219e		a9 00		lda #$00	        lda #0
+.21a0						app_header_crc:
+.21a0		20 ec 23	jsr $23ec	        jsr app_crc_byte
+.21a3		ee 40 24	inc $2440	        inc l_index
+.21a6		ad 40 24	lda $2440	        lda l_index
+.21a9		c9 20		cmp #$20	        cmp #32
+.21ab		d0 e0		bne $218d	        bne app_header_copy
+.21ad		a9 20		lda #$20	        lda #<(N_APPBASE+32)
+.21af		8d d1 21	sta $21d1	        sta app_image_store+1
+.21b2		a9 60		lda #$60	        lda #>(N_APPBASE+32)
+.21b4		8d d2 21	sta $21d2	        sta app_image_store+2
+.21b7		38		sec		        sec
+.21b8		ad 68 3d	lda $3d68	        lda N_APPHEADER+8
+.21bb		e9 20		sbc #$20	        sbc #32
+.21bd		8d 46 24	sta $2446	        sta l_left
+.21c0		ad 69 3d	lda $3d69	        lda N_APPHEADER+9
+.21c3		e9 00		sbc #$00	        sbc #0
+.21c5		8d 47 24	sta $2447	        sta l_left+1
+.21c8						app_image_loop:
+.21c8		20 4f 23	jsr $234f	        jsr app_byte
+.21cb		90 03		bcc $21d0	        bcc *+5
+.21cd		4c 69 22	jmp $2269	        jmp app_failure
+.21d0						app_image_store:
+.21d0		8d 20 60	sta $6020	        sta N_APPBASE+32
+.21d3		20 ec 23	jsr $23ec	        jsr app_crc_byte
+.21d6		ee d1 21	inc $21d1	        inc app_image_store+1
+.21d9		d0 03		bne $21de	        bne app_image_next
+.21db		ee d2 21	inc $21d2	        inc app_image_store+2
+.21de						app_image_next:
+.21de		ad 46 24	lda $2446	        lda l_left
+.21e1		d0 03		bne $21e6	        bne app_image_low
+.21e3		ce 47 24	dec $2447	        dec l_left+1
+.21e6						app_image_low:
+.21e6		ce 46 24	dec $2446	        dec l_left
+.21e9		ad 46 24	lda $2446	        lda l_left
+.21ec		0d 47 24	ora $2447	        ora l_left+1
+.21ef		d0 d7		bne $21c8	        bne app_image_loop
+.21f1		ad 41 24	lda $2441	        lda l_eof
+.21f4		d0 04		bne $21fa	        bne app_image_eof
+.21f6		a9 13		lda #$13	        lda #N_LONGIMAGE
+.21f8		d0 6f		bne $2269	        bne app_failure
+.21fa						app_image_eof:
+.21fa		ad 44 24	lda $2444	        lda l_crc
+.21fd		cd 6e 3d	cmp $3d6e	        cmp N_APPHEADER+14
+.2200		d0 5f		bne $2261	        bne app_bad_crc
+.2202		ad 45 24	lda $2445	        lda l_crc+1
+.2205		cd 6f 3d	cmp $3d6f	        cmp N_APPHEADER+15
+.2208		d0 57		bne $2261	        bne app_bad_crc
+.220a		20 10 24	jsr $2410	        jsr app_close
+.220d		ad 3f 24	lda $243f	        lda l_result
+.2210		d0 5d		bne $226f	        bne app_cleanup
+.2212		a9 02		lda #$02	        lda #2
+.2214		8d 23 3d	sta $3d23	        sta N_APPSTATE
+.2217		a9 20		lda #$20	        lda #N_APPOWNER
+.2219		8d 00 3d	sta $3d00	        sta N_OWNER
+.221c		ba		tsx		        tsx
+.221d		8e 43 24	stx $2443	        stx l_app_sp
+.2220		a9 00		lda #$00	        lda #0
+.2222		20 3a 22	jsr $223a	        jsr app_jump
+.2225						app_return:
+.2225		8d 24 3d	sta $3d24	        sta N_EXITCODE
+.2228		20 85 48	jsr $4885	        jsr module_invalidate
+.222b		d8		cld		        cld
+.222c		a9 0e		lda #$0e	        lda #$0e
+.222e		8d 00 ff	sta $ff00	        sta $ff00
+.2231		58		cli		        cli
+.2232		a9 00		lda #$00	        lda #0
+.2234		8d 12 3d	sta $3d12	        sta N_READY
+.2237		4c 6f 22	jmp $226f	        jmp app_cleanup
+.223a						app_jump:
+.223a		6c 48 24	jmp ($2448)	        jmp (l_entry)
+.223d						app_exit:
+.223d		ae 23 3d	ldx $3d23	        ldx N_APPSTATE
+.2240		e0 02		cpx #$02	        cpx #2
+.2242		f0 16		beq $225a	        beq app_exit_active
+.2244						app_exit_invalid:
+.2244		a9 01		lda #$01	        lda #N_BADARG
+.2246		38		sec		        sec
+.2247		60		rts		        rts
+.2248						app_replace:
+.2248		a9 01		lda #$01	        lda #1
+.224a		d0 02		bne $224e	        bne app_request
+.224c						app_workspace:
+.224c		a9 02		lda #$02	        lda #2
+.224e						app_request:
+.224e		ae 23 3d	ldx $3d23	        ldx N_APPSTATE
+.2251		e0 02		cpx #$02	        cpx #2
+.2253		d0 ef		bne $2244	        bne app_exit_invalid
+.2255		8d 28 3d	sta $3d28	        sta N_ACTION
+.2258		a9 00		lda #$00	        lda #0
+.225a						app_exit_active:
+.225a		ae 43 24	ldx $2443	        ldx l_app_sp
+.225d		9a		txs		        txs
+.225e		4c 25 22	jmp $2225	        jmp app_return
+.2261						app_bad_crc:
+.2261		a9 14		lda #$14	        lda #N_CHECKSUM
+.2263		d0 04		bne $2269	        bne app_failure
+.2265						app_bad_image:
+.2265		a9 10		lda #$10	        lda #N_BADIMAGE
+.2267		d0 00		bne $2269	        bne app_failure
+.2269						app_failure:
+.2269		8d 3f 24	sta $243f	        sta l_result
+.226c		20 10 24	jsr $2410	        jsr app_close
+.226f						app_cleanup:
+.226f		20 b8 4f	jsr $4fb8	        jsr display_restore   ; includes retained file/heap cleanup errors
+.2272		a9 03		lda #$03	        lda #3
+.2274		8d 23 3d	sta $3d23	        sta N_APPSTATE
+.2277		ad c0 3d	lda $3dc0	        lda NFILES
+.227a		c9 20		cmp #$20	        cmp #N_APPOWNER
+.227c		f0 07		beq $2285	        beq app_close_files
+.227e		ad d0 3d	lda $3dd0	        lda NFILES+16
+.2281		c9 20		cmp #$20	        cmp #N_APPOWNER
+.2283		d0 0a		bne $228f	        bne app_release_memory
+.2285						app_close_files:
+.2285		a9 20		lda #$20	        lda #N_APPOWNER
+.2287		8d 80 3d	sta $3d80	        sta N_FOWNER
+.228a		20 42 2b	jsr $2b42	        jsr fs_release
+.228d		b0 0a		bcs $2299	        bcs app_retain_resources
+.228f						app_release_memory:
+.228f		a9 20		lda #$20	        lda #N_APPOWNER
+.2291		8d 00 3d	sta $3d00	        sta N_OWNER
+.2294		20 e2 15	jsr $15e2	        jsr heap_release
+.2297		90 0f		bcc $22a8	        bcc app_released
+.2299						app_retain_resources:
+.2299		ae 3f 24	ldx $243f	        ldx l_result
+.229c		d0 03		bne $22a1	        bne +
+.229e		8d 3f 24	sta $243f	        sta l_result
+.22a1						+
+.22a1		a9 04		lda #$04	        lda #4                 ; corrupt ownership stays reserved, not reused
+.22a3		8d 23 3d	sta $3d23	        sta N_APPSTATE
+.22a6		d0 08		bne $22b0	        bne app_finish
+.22a8						app_released:
+.22a8		a9 00		lda #$00	        lda #0
+.22aa		8d 20 3d	sta $3d20	        sta N_CURRENT
+.22ad		8d 23 3d	sta $3d23	        sta N_APPSTATE
+.22b0						app_finish:
+.22b0		ad 3f 24	lda $243f	        lda l_result
+.22b3		8d 27 3d	sta $3d27	        sta N_APPERROR
+.22b6		28		plp		        plp
+.22b7		c9 01		cmp #$01	        cmp #1
+.22b9		60		rts		        rts
+.22ba						app_validate:
+.22ba		a2 03		ldx #$03	        ldx #3
+.22bc						app_magic_loop:
+.22bc		bd 60 3d	lda $3d60,x	        lda N_APPHEADER,x
+.22bf		dd 2f 24	cmp $242f,x	        cmp l_magic,x
+.22c2		f0 03		beq $22c7	        beq *+5
+.22c4		4c 4b 23	jmp $234b	        jmp app_invalid
+.22c7		ca		dex		        dex
+.22c8		10 f2		bpl $22bc	        bpl app_magic_loop
+.22ca		ad 64 3d	lda $3d64	        lda N_APPHEADER+4
+.22cd		c9 01		cmp #$01	        cmp #1
+.22cf		d0 7a		bne $234b	        bne app_invalid
+.22d1		ad 65 3d	lda $3d65	        lda N_APPHEADER+5
+.22d4		c9 01		cmp #$01	        cmp #1
+.22d6		d0 73		bne $234b	        bne app_invalid
+.22d8		ad 66 3d	lda $3d66	        lda N_APPHEADER+6
+.22db		c9 0d		cmp #$0d	        cmp #N_ABI_MINOR+1
+.22dd		b0 6c		bcs $234b	        bcs app_invalid
+.22df		20 92 1b	jsr $1b92	        jsr module_window
+.22e2		b0 67		bcs $234b	        bcs app_invalid
+.22e4		ad 6a 3d	lda $3d6a	        lda N_APPHEADER+10
+.22e7		f0 62		beq $234b	        beq app_invalid
+.22e9		c9 61		cmp #$61	        cmp #((N_APPLIMIT-N_APPBASE)/256)+1
+.22eb		b0 5e		bcs $234b	        bcs app_invalid
+.22ed		ad 69 3d	lda $3d69	        lda N_APPHEADER+9
+.22f0		cd 6a 3d	cmp $3d6a	        cmp N_APPHEADER+10
+.22f3		90 07		bcc $22fc	        bcc app_size_fits
+.22f5		d0 54		bne $234b	        bne app_invalid
+.22f7		ad 68 3d	lda $3d68	        lda N_APPHEADER+8
+.22fa		d0 4f		bne $234b	        bne app_invalid
+.22fc						app_size_fits:
+.22fc		ad 69 3d	lda $3d69	        lda N_APPHEADER+9
+.22ff		d0 07		bne $2308	        bne app_image_large
+.2301		ad 68 3d	lda $3d68	        lda N_APPHEADER+8
+.2304		c9 21		cmp #$21	        cmp #33
+.2306		90 43		bcc $234b	        bcc app_invalid
+.2308						app_image_large:
+.2308		ad 6d 3d	lda $3d6d	        lda N_APPHEADER+13
+.230b		d0 07		bne $2314	        bne app_entry_large
+.230d		ad 6c 3d	lda $3d6c	        lda N_APPHEADER+12
+.2310		c9 20		cmp #$20	        cmp #32
+.2312		90 37		bcc $234b	        bcc app_invalid
+.2314						app_entry_large:
+.2314		ad 6d 3d	lda $3d6d	        lda N_APPHEADER+13
+.2317		cd 69 3d	cmp $3d69	        cmp N_APPHEADER+9
+.231a		90 0a		bcc $2326	        bcc app_entry_fits
+.231c		d0 2d		bne $234b	        bne app_invalid
+.231e		ad 6c 3d	lda $3d6c	        lda N_APPHEADER+12
+.2321		cd 68 3d	cmp $3d68	        cmp N_APPHEADER+8
+.2324		b0 25		bcs $234b	        bcs app_invalid
+.2326						app_entry_fits:
+.2326		ad 6c 3d	lda $3d6c	        lda N_APPHEADER+12
+.2329		8d 48 24	sta $2448	        sta l_entry
+.232c		18		clc		        clc
+.232d		ad 6d 3d	lda $3d6d	        lda N_APPHEADER+13
+.2330		69 60		adc #$60	        adc #>N_APPBASE
+.2332		8d 49 24	sta $2449	        sta l_entry+1
+.2335		a2 10		ldx #$10	        ldx #16
+.2337						app_title_loop:
+.2337		bd 60 3d	lda $3d60,x	        lda N_APPHEADER,x
+.233a		f0 08		beq $2344	        beq app_title_next
+.233c		c9 20		cmp #$20	        cmp #$20
+.233e		90 0b		bcc $234b	        bcc app_invalid
+.2340		c9 7f		cmp #$7f	        cmp #$7f
+.2342		b0 07		bcs $234b	        bcs app_invalid
+.2344						app_title_next:
+.2344		e8		inx		        inx
+.2345		e0 20		cpx #$20	        cpx #32
+.2347		d0 ee		bne $2337	        bne app_title_loop
+.2349		18		clc		        clc
+.234a		60		rts		        rts
+.234b						app_invalid:
+.234b		a9 10		lda #$10	        lda #N_BADIMAGE
+.234d		38		sec		        sec
+.234e		60		rts		        rts
+.234f						app_byte:
+.234f		ad 41 24	lda $2441	        lda l_eof
+.2352		d0 66		bne $23ba	        bne app_short_image
+.2354		ad 3b 24	lda $243b	        lda l_available
+.2357		0d 3c 24	ora $243c	        ora l_available+1
+.235a		d0 36		bne $2392	        bne app_buffer_read
+.235c		20 be 23	jsr $23be	        jsr app_select_file
+.235f		a9 00		lda #$00	        lda #0
+.2361		8d 89 3d	sta $3d89	        sta N_FCOUNT
+.2364		a9 02		lda #$02	        lda #2
+.2366		8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.2369		20 1f 29	jsr $291f	        jsr fs_read
+.236c		20 cf 23	jsr $23cf	        jsr app_record_io
+.236f		b0 48		bcs $23b9	        bcs app_byte_done
+.2371		ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.2374		8d 3b 24	sta $243b	        sta l_available
+.2377		ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
+.237a		8d 3c 24	sta $243c	        sta l_available+1
+.237d		0d 3b 24	ora $243b	        ora l_available
+.2380		f0 38		beq $23ba	        beq app_short_image
+.2382		ad 8d 3d	lda $3d8d	        lda N_FEOF
+.2385		8d 3d 24	sta $243d	        sta l_file_eof
+.2388		a9 00		lda #$00	        lda #<N_BUFFER
+.238a		8d 93 23	sta $2393	        sta app_buffer_read+1
+.238d		a9 3a		lda #$3a	        lda #>N_BUFFER
+.238f		8d 94 23	sta $2394	        sta app_buffer_read+2
+.2392						app_buffer_read:
+.2392		ad 00 3a	lda $3a00	        lda N_BUFFER
+.2395		48		pha		        pha
+.2396		ee 93 23	inc $2393	        inc app_buffer_read+1
+.2399		d0 03		bne $239e	        bne +
+.239b		ee 94 23	inc $2394	        inc app_buffer_read+2
+.239e		ad 3b 24	lda $243b	+       lda l_available
+.23a1		d0 03		bne $23a6	        bne +
+.23a3		ce 3c 24	dec $243c	        dec l_available+1
+.23a6		ce 3b 24	dec $243b	+       dec l_available
+.23a9		ad 3b 24	lda $243b	        lda l_available
+.23ac		0d 3c 24	ora $243c	        ora l_available+1
+.23af		d0 06		bne $23b7	        bne +
+.23b1		ad 3d 24	lda $243d	        lda l_file_eof
+.23b4		8d 41 24	sta $2441	        sta l_eof
+.23b7		68		pla		+       pla
+.23b8		18		clc		        clc
+.23b9						app_byte_done:
+.23b9		60		rts		        rts
+.23ba						app_short_image:
+.23ba		a9 12		lda #$12	        lda #N_SHORTIMAGE
+.23bc		38		sec		        sec
+.23bd		60		rts		        rts
+.23be						app_select_file:
+.23be		a9 20		lda #$20	        lda #N_APPOWNER
+.23c0		8d 80 3d	sta $3d80	        sta N_FOWNER
+.23c3		a2 03		ldx #$03	        ldx #3
+.23c5						app_select_handle:
+.23c5		bd 33 24	lda $2433,x	        lda l_handle,x
+.23c8		9d 81 3d	sta $3d81,x	        sta N_FHANDLE,x
+.23cb		ca		dex		        dex
+.23cc		10 f7		bpl $23c5	        bpl app_select_handle
+.23ce		60		rts		        rts
+.23cf						app_record_io:
+.23cf		08		php		        php
+.23d0		48		pha		        pha
+.23d1		90 16		bcc $23e9	        bcc app_record_done
+.23d3		ad 25 3d	lda $3d25	        lda N_DOSCODE
+.23d6		d0 06		bne $23de	        bne +
+.23d8		ad 8f 3d	lda $3d8f	        lda N_FDOS
+.23db		8d 25 3d	sta $3d25	        sta N_DOSCODE
+.23de		ad 26 3d	lda $3d26	+       lda N_IOSTATUS
+.23e1		d0 06		bne $23e9	        bne app_record_done
+.23e3		ad 90 3d	lda $3d90	        lda N_FSTATUS
+.23e6		8d 26 3d	sta $3d26	        sta N_IOSTATUS
+.23e9						app_record_done:
+.23e9		68		pla		        pla
+.23ea		28		plp		        plp
+.23eb		60		rts		        rts
+.23ec						app_crc_byte:
+.23ec		4d 45 24	eor $2445	        eor l_crc+1
+.23ef		8d 45 24	sta $2445	        sta l_crc+1
+.23f2		a2 08		ldx #$08	        ldx #8
+.23f4						app_crc_bit:
+.23f4		0e 44 24	asl $2444	        asl l_crc
+.23f7		2e 45 24	rol $2445	        rol l_crc+1
+.23fa		90 10		bcc $240c	        bcc app_crc_next
+.23fc		ad 44 24	lda $2444	        lda l_crc
+.23ff		49 21		eor #$21	        eor #$21
+.2401		8d 44 24	sta $2444	        sta l_crc
+.2404		ad 45 24	lda $2445	        lda l_crc+1
+.2407		49 10		eor #$10	        eor #$10
+.2409		8d 45 24	sta $2445	        sta l_crc+1
+.240c						app_crc_next:
+.240c		ca		dex		        dex
+.240d		d0 e5		bne $23f4	        bne app_crc_bit
+.240f		60		rts		        rts
+.2410						app_close:
+.2410		ad 3e 24	lda $243e	        lda l_open
+.2413		f0 10		beq $2425	        beq app_close_done
+.2415		20 be 23	jsr $23be	        jsr app_select_file
+.2418		20 2b 2b	jsr $2b2b	        jsr fs_close
+.241b		20 cf 23	jsr $23cf	        jsr app_record_io
+.241e		b0 06		bcs $2426	        bcs app_close_failed
+.2420		a9 00		lda #$00	        lda #0
+.2422		8d 3e 24	sta $243e	        sta l_open
+.2425						app_close_done:
+.2425		60		rts		        rts
+.2426						app_close_failed:
+.2426		ae 3f 24	ldx $243f	        ldx l_result
+.2429		d0 fa		bne $2425	        bne app_close_done
+.242b		8d 3f 24	sta $243f	        sta l_result
+.242e		60		rts		        rts
+>242f		4e 41 50 50			l_magic: .text "napp"
+>2433		00 00 00 00			l_handle: .fill 4,0
+>2437		00 00 00 00			l_app_handle: .fill 4,0
+>243b		00 00				l_available: .word 0
+>243d		00				l_file_eof: .byte 0
+>243e		00				l_open: .byte 0
+>243f		00				l_result: .byte 0
+>2440		00				l_index: .byte 0
+>2441		00				l_eof: .byte 0
+>2442		00				l_zero_pages: .byte 0
+>2443		00				l_app_sp: .byte 0
+>2444		00 00				l_crc: .word 0
+>2446		00 00				l_left: .word 0
 >2448		00 00				l_entry: .word 0
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/uos128.asm
@@ -3293,84 +3295,84 @@
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/uos128.asm
 
->366f		43 41 4c 43			ui_calc_name: .text "calc"
->3673		42 52 4f 57 53 45		ui_browser_name: .text "browse"
->3679		55 4f 53 20 31 32 38 20		ui_title: .text "uos 128 - native memory workspace",13,13,"selected bank: ",0
->3681		2d 20 4e 41 54 49 56 45 20 4d 45 4d 4f 52 59 20
->3691		57 4f 52 4b 53 50 41 43 45 0d 0d 53 45 4c 45 43
->36a1		54 45 44 20 42 41 4e 4b 3a 20 00
->36ac		0d 46 52 45 45 20 32 35		ui_free_title: .text 13,"free 256-byte pages (hex) 0/1: ",0
->36b4		36 2d 42 59 54 45 20 50 41 47 45 53 20 28 48 45
->36c4		58 29 20 30 2f 31 3a 20 00
->36cd		0d 46 52 45 45 20 48 41		ui_slots_title: .text 13,"free handles (hex): ",0
->36d5		4e 44 4c 45 53 20 28 48 45 58 29 3a 20 00
->36e3		0d 53 45 4c 45 43 54 45		ui_handle_title: .text 13,"selected handle: ",0
->36eb		44 20 48 41 4e 44 4c 45 3a 20 00
->36f6		0d 4c 41 53 54 20 52 45		ui_result_title: .text 13,"last result: ",0
->36fe		53 55 4c 54 3a 20 00
->3705		0d 0d 31 2f 32 20 53 45		ui_help: .text 13,13,"1/2 select bank  a allocate 8k",13
->370d		4c 45 43 54 20 42 41 4e 4b 20 20 41 20 41 4c 4c
->371d		4f 43 41 54 45 20 38 4b 0d
->3726		57 20 46 49 4c 4c 20 20		         .text "w fill  v verify  f release",13
->372e		56 20 56 45 52 49 46 59 20 20 46 20 52 45 4c 45
->373e		41 53 45 0d
->3742		43 20 43 41 4c 43 55 4c		         .text "c calculator  b files and apps",13
->374a		41 54 4f 52 20 20 42 20 46 49 4c 45 53 20 41 4e
->375a		44 20 41 50 50 53 0d
->3761		30 30 20 4f 4b 20 20 30		         .text "00 ok  04 invalid handle  0a mismatch",13,13
->3769		34 20 49 4e 56 41 4c 49 44 20 48 41 4e 44 4c 45
->3779		20 20 30 41 20 4d 49 53 4d 41 54 43 48 0d 0d
->3788		4e 41 54 49 56 45 20 44		         .text "native desktop migration in progress",0
->3790		45 53 4b 54 4f 50 20 4d 49 47 52 41 54 49 4f 4e
->37a0		20 49 4e 20 50 52 4f 47 52 45 53 53 00
->37ad		00 00 00 00 00 00 00 00		ui_handles: .fill 8,0
->37b5		00				ui_bank: .byte 0
->37b6		00				ui_system_device: .byte 0
->37b7		00				ui_browser_stage: .byte 0
->37b8		00				ui_screen: .byte 0
+=$3740						ui_calc_name = ui_help_calc+2   ; first four bytes of "calculator"
+>366f		42 52 4f 57 53 45		ui_browser_name: .text "browse"
+>3675		55 4f 53 20 31 32 38 20		ui_title: .text "uos 128 - native memory workspace",13,13,"selected bank: ",0
+>367d		2d 20 4e 41 54 49 56 45 20 4d 45 4d 4f 52 59 20
+>368d		57 4f 52 4b 53 50 41 43 45 0d 0d 53 45 4c 45 43
+>369d		54 45 44 20 42 41 4e 4b 3a 20 00
+>36a8		0d 46 52 45 45 20 32 35		ui_free_title: .text 13,"free 256-byte pages (hex) 0/1: ",0
+>36b0		36 2d 42 59 54 45 20 50 41 47 45 53 20 28 48 45
+>36c0		58 29 20 30 2f 31 3a 20 00
+>36c9		0d 46 52 45 45 20 48 41		ui_slots_title: .text 13,"free handles (hex): ",0
+>36d1		4e 44 4c 45 53 20 28 48 45 58 29 3a 20 00
+>36df		0d 53 45 4c 45 43 54 45		ui_handle_title: .text 13,"selected handle: ",0
+>36e7		44 20 48 41 4e 44 4c 45 3a 20 00
+>36f2		0d 4c 41 53 54 20 52 45		ui_result_title: .text 13,"last result: ",0
+>36fa		53 55 4c 54 3a 20 00
+>3701		0d 0d 31 2f 32 20 53 45		ui_help: .text 13,13,"1/2 select bank  a allocate 8k",13
+>3709		4c 45 43 54 20 42 41 4e 4b 20 20 41 20 41 4c 4c
+>3719		4f 43 41 54 45 20 38 4b 0d
+>3722		57 20 46 49 4c 4c 20 20		         .text "w fill  v verify  f release",13
+>372a		56 20 56 45 52 49 46 59 20 20 46 20 52 45 4c 45
+>373a		41 53 45 0d
+>373e		43 20 43 41 4c 43 55 4c		ui_help_calc: .text "c calculator  b files and apps",13
+>3746		41 54 4f 52 20 20 42 20 46 49 4c 45 53 20 41 4e
+>3756		44 20 41 50 50 53 0d
+>375d		30 30 20 4f 4b 20 20 30		         .text "00 ok  04 invalid handle  0a mismatch",13,13
+>3765		34 20 49 4e 56 41 4c 49 44 20 48 41 4e 44 4c 45
+>3775		20 20 30 41 20 4d 49 53 4d 41 54 43 48 0d 0d
+>3784		4e 41 54 49 56 45 20 44		         .text "native desktop migration in progress",0
+>378c		45 53 4b 54 4f 50 20 4d 49 47 52 41 54 49 4f 4e
+>379c		20 49 4e 20 50 52 4f 47 52 45 53 53 00
+>37a9		00 00 00 00 00 00 00 00		ui_handles: .fill 8,0
+>37b1		00				ui_bank: .byte 0
+>37b2		00				ui_system_device: .byte 0
+>37b3		00				ui_browser_stage: .byte 0
+>37b4		00				ui_screen: .byte 0
 =$3d16						ui_status = N_RESULT
->37b9		00				ui_digit: .byte 0
->37ba		00				ui_test_operation: .byte 0
->37bb		00 00				ui_index: .word 0
+>37b5		00				ui_digit: .byte 0
+>37b6		00				ui_test_operation: .byte 0
+>37b7		00 00				ui_index: .word 0
 
 ;******  Processing file: /home/marc/geos128/uos/src/native/display-gate.inc
 
-.37bd						display_show:
-.37bd		08		php		        php
-.37be		20 32 13	jsr $1332	        jsr heap_enter
-.37c1		90 03		bcc $37c6	        bcc *+5
-.37c3		4c 7f 13	jmp $137f	        jmp heap_enter_failed
-.37c6		ad 91 3d	lda $3d91	        lda N_FBUSY
-.37c9		0d 3b 3d	ora $3d3b	        ora N_UIBUSY
-.37cc		0d f3 4f	ora $4ff3	        ora v_tag
-.37cf		f0 04		beq $37d5	        beq +
-.37d1		a9 07		lda #$07	        lda #N_REENTRANT
-.37d3		d0 28		bne $37fd	        bne display_error
-.37d5		ba		tsx		+       tsx
-.37d6		bd 01 01	lda $0101,x	        lda $0101,x
-.37d9		29 04		and #$04	        and #4
-.37db		d0 1e		bne $37fb	        bne display_platform
-.37dd		20 58 4f	jsr $4f58	        jsr app_owned
-.37e0		b0 1b		bcs $37fd	        bcs display_error
-.37e2		ad 00 3d	lda $3d00	        lda N_OWNER
-.37e5		cd 20 3d	cmp $3d20	        cmp N_CURRENT
-.37e8		f0 04		beq $37ee	        beq +
-.37ea		a9 05		lda #$05	        lda #N_WRONGOWNER
-.37ec		d0 0f		bne $37fd	        bne display_error
-.37ee		20 15 15	jsr $1515	+       jsr heap_handle
-.37f1		b0 0a		bcs $37fd	        bcs display_error
-.37f3		20 63 15	jsr $1563	        jsr heap_check_record
-.37f6		b0 05		bcs $37fd	        bcs display_error
-.37f8		4c 29 49	jmp $4929	        jmp display_prepare
-.37fb						display_platform:
-.37fb		a9 08		lda #$08	        lda #N_PLATFORM
-.37fd						display_error:
-.37fd		4c 70 13	jmp $1370	        jmp heap_finish
-.3800						native_display_gate_end:
+.37b9						display_show:
+.37b9		08		php		        php
+.37ba		20 32 13	jsr $1332	        jsr heap_enter
+.37bd		90 03		bcc $37c2	        bcc *+5
+.37bf		4c 7f 13	jmp $137f	        jmp heap_enter_failed
+.37c2		ad 91 3d	lda $3d91	        lda N_FBUSY
+.37c5		0d 3b 3d	ora $3d3b	        ora N_UIBUSY
+.37c8		0d f3 4f	ora $4ff3	        ora v_tag
+.37cb		f0 04		beq $37d1	        beq +
+.37cd		a9 07		lda #$07	        lda #N_REENTRANT
+.37cf		d0 28		bne $37f9	        bne display_error
+.37d1		ba		tsx		+       tsx
+.37d2		bd 01 01	lda $0101,x	        lda $0101,x
+.37d5		29 04		and #$04	        and #4
+.37d7		d0 1e		bne $37f7	        bne display_platform
+.37d9		20 58 4f	jsr $4f58	        jsr app_owned
+.37dc		b0 1b		bcs $37f9	        bcs display_error
+.37de		ad 00 3d	lda $3d00	        lda N_OWNER
+.37e1		cd 20 3d	cmp $3d20	        cmp N_CURRENT
+.37e4		f0 04		beq $37ea	        beq +
+.37e6		a9 05		lda #$05	        lda #N_WRONGOWNER
+.37e8		d0 0f		bne $37f9	        bne display_error
+.37ea		20 15 15	jsr $1515	+       jsr heap_handle
+.37ed		b0 0a		bcs $37f9	        bcs display_error
+.37ef		20 63 15	jsr $1563	        jsr heap_check_record
+.37f2		b0 05		bcs $37f9	        bcs display_error
+.37f4		4c 29 49	jmp $4929	        jmp display_prepare
+.37f7						display_platform:
+.37f7		a9 08		lda #$08	        lda #N_PLATFORM
+.37f9						display_error:
+.37f9		4c 70 13	jmp $1370	        jmp heap_finish
+.37fc						native_display_gate_end:
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/uos128.asm
 
-.3800						native_code_end:
+.37fc						native_code_end:
 >3800		00 00 00 00 00 00 00 00		        .fill 512,0
 >3808		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;		...repeated 30 times (480 bytes)...
@@ -3383,10 +3385,10 @@
 >3c08		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;		...repeated 14 times (224 bytes)...
 >3cf8		00 00 00 00 00 00 00 00
->3d00		00 00 00 00 00 00 00 00		        .fill $e4,0
+>3d00		00 00 00 00 00 00 00 00		        .fill $e5,0
 >3d08		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;		...repeated 12 times (192 bytes)...
->3dd8		00 00 00 00 00 00 00 00 00 00 00 00
+>3dd8		00 00 00 00 00 00 00 00 00 00 00 00 00
 >3e00		00 00 00 00 00 00 00 00		        .fill 256,0
 >3e08		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;		...repeated 14 times (224 bytes)...
@@ -4182,7 +4184,7 @@
 .4688		20 86 1a	jsr $1a86	        jsr module_start
 .468b		90 03		bcc $4690	        bcs module_early
 .468d		4c 56 48	jmp $4856
-.4690		ad 3d 24	lda $243d	        lda l_open
+.4690		ad 3e 24	lda $243e	        lda l_open
 .4693		f0 03		beq $4698	        bne module_busy
 .4695		4c 5d 48	jmp $485d
 .4698		ad b0 3d	lda $3db0	        lda m_generation
@@ -4249,37 +4251,37 @@
 .4721		8d 88 3d	sta $3d88	        sta N_FTYPE
 .4724		a9 00		lda #$00	        lda #0
 .4726		8d 87 3d	sta $3d87	        sta N_FMODE
-.4729		8d 3e 24	sta $243e	        sta l_result
-.472c		8d 3a 24	sta $243a	        sta l_available
-.472f		8d 3b 24	sta $243b	        sta l_available+1
-.4732		8d 3c 24	sta $243c	        sta l_file_eof
-.4735		8d 40 24	sta $2440	        sta l_eof
+.4729		8d 3f 24	sta $243f	        sta l_result
+.472c		8d 3b 24	sta $243b	        sta l_available
+.472f		8d 3c 24	sta $243c	        sta l_available+1
+.4732		8d 3d 24	sta $243d	        sta l_file_eof
+.4735		8d 41 24	sta $2441	        sta l_eof
 .4738		8d 25 3d	sta $3d25	        sta N_DOSCODE
 .473b		8d 26 3d	sta $3d26	        sta N_IOSTATUS
 .473e		a9 20		lda #$20	        lda #N_APPOWNER
 .4740		8d 80 3d	sta $3d80	        sta N_FOWNER
 .4743		20 06 27	jsr $2706	        jsr fs_open
-.4746		20 ce 23	jsr $23ce	        jsr app_record_io
+.4746		20 cf 23	jsr $23cf	        jsr app_record_io
 .4749		08		php		        php
 .474a		48		pha		        pha
 .474b		a2 03		ldx #$03	        ldx #3
 .474d						module_save_handle:
 .474d		bd 81 3d	lda $3d81,x	        lda N_FHANDLE,x
-.4750		9d 32 24	sta $2432,x	        sta l_handle,x
+.4750		9d 33 24	sta $2433,x	        sta l_handle,x
 .4753		ca		dex		        dex
 .4754		10 f7		bpl $474d	        bpl module_save_handle
-.4756		ad 32 24	lda $2432	        lda l_handle
-.4759		8d 3d 24	sta $243d	        sta l_open
+.4756		ad 33 24	lda $2433	        lda l_handle
+.4759		8d 3e 24	sta $243e	        sta l_open
 .475c		68		pla		        pla
 .475d		28		plp		        plp
 .475e		90 03		bcc $4763	        bcs module_failure
 .4760		4c 39 48	jmp $4839
 .4763		a2 00		ldx #$00	        ldx #0
 .4765						module_origin:
-.4765		8e 3f 24	stx $243f	        stx l_index
-.4768		20 4e 23	jsr $234e	        jsr app_byte
+.4765		8e 40 24	stx $2440	        stx l_index
+.4768		20 4f 23	jsr $234f	        jsr app_byte
 .476b		b0 f3		bcs $4760	        bcs module_failure
-.476d		ae 3f 24	ldx $243f	        ldx l_index
+.476d		ae 40 24	ldx $2440	        ldx l_index
 .4770		dd b3 3d	cmp $3db3,x	        cmp m_base,x
 .4773		f0 03		beq $4778	        bne module_bad_image
 .4775		4c 37 48	jmp $4837
@@ -4288,10 +4290,10 @@
 .477b		d0 e8		bne $4765	        bne module_origin
 .477d		a2 00		ldx #$00	        ldx #0
 .477f						module_header:
-.477f		8e 3f 24	stx $243f	        stx l_index
-.4782		20 4e 23	jsr $234e	        jsr app_byte
+.477f		8e 40 24	stx $2440	        stx l_index
+.4782		20 4f 23	jsr $234f	        jsr app_byte
 .4785		b0 d9		bcs $4760	        bcs module_failure
-.4787		ae 3f 24	ldx $243f	        ldx l_index
+.4787		ae 40 24	ldx $2440	        ldx l_index
 .478a		9d 50 3d	sta $3d50,x	        sta N_MHEADER,x
 .478d		e8		inx		        inx
 .478e		e0 10		cpx #$10	        cpx #16
@@ -4303,57 +4305,57 @@
 .479d		ad b4 3d	lda $3db4	        lda m_base+1
 .47a0		8d 67 48	sta $4867	        sta module_store+2
 .47a3		a9 ff		lda #$ff	        lda #$ff
-.47a5		8d 43 24	sta $2443	        sta l_crc
-.47a8		8d 44 24	sta $2444	        sta l_crc+1
+.47a5		8d 44 24	sta $2444	        sta l_crc
+.47a8		8d 45 24	sta $2445	        sta l_crc+1
 .47ab		a2 00		ldx #$00	        ldx #0
 .47ad						module_copy_header:
-.47ad		8e 3f 24	stx $243f	        stx l_index
+.47ad		8e 40 24	stx $2440	        stx l_index
 .47b0		bd 50 3d	lda $3d50,x	        lda N_MHEADER,x
 .47b3		e0 0e		cpx #$0e	        cpx #14
 .47b5		90 02		bcc $47b9	        bcc +
 .47b7		a9 00		lda #$00	        lda #0
-.47b9		20 eb 23	jsr $23eb	+       jsr app_crc_byte
-.47bc		ae 3f 24	ldx $243f	        ldx l_index
+.47b9		20 ec 23	jsr $23ec	+       jsr app_crc_byte
+.47bc		ae 40 24	ldx $2440	        ldx l_index
 .47bf		bd 50 3d	lda $3d50,x	        lda N_MHEADER,x
 .47c2		20 65 48	jsr $4865	        jsr module_put
-.47c5		ae 3f 24	ldx $243f	        ldx l_index
+.47c5		ae 40 24	ldx $2440	        ldx l_index
 .47c8		e8		inx		        inx
 .47c9		e0 10		cpx #$10	        cpx #16
 .47cb		d0 e0		bne $47ad	        bne module_copy_header
 .47cd		ad 58 3d	lda $3d58	        lda N_MHEADER+8
 .47d0		38		sec		        sec
 .47d1		e9 10		sbc #$10	        sbc #16
-.47d3		8d 45 24	sta $2445	        sta l_left
+.47d3		8d 46 24	sta $2446	        sta l_left
 .47d6		ad 59 3d	lda $3d59	        lda N_MHEADER+9
 .47d9		e9 00		sbc #$00	        sbc #0
-.47db		8d 46 24	sta $2446	        sta l_left+1
+.47db		8d 47 24	sta $2447	        sta l_left+1
 .47de						module_copy:
-.47de		20 4e 23	jsr $234e	        jsr app_byte
+.47de		20 4f 23	jsr $234f	        jsr app_byte
 .47e1		b0 56		bcs $4839	        bcs module_failure
 .47e3		48		pha		        pha
-.47e4		20 eb 23	jsr $23eb	        jsr app_crc_byte
+.47e4		20 ec 23	jsr $23ec	        jsr app_crc_byte
 .47e7		68		pla		        pla
 .47e8		20 65 48	jsr $4865	        jsr module_put
-.47eb		ad 45 24	lda $2445	        lda l_left
+.47eb		ad 46 24	lda $2446	        lda l_left
 .47ee		d0 03		bne $47f3	        bne +
-.47f0		ce 46 24	dec $2446	        dec l_left+1
-.47f3		ce 45 24	dec $2445	+       dec l_left
-.47f6		ad 45 24	lda $2445	        lda l_left
-.47f9		0d 46 24	ora $2446	        ora l_left+1
+.47f0		ce 47 24	dec $2447	        dec l_left+1
+.47f3		ce 46 24	dec $2446	+       dec l_left
+.47f6		ad 46 24	lda $2446	        lda l_left
+.47f9		0d 47 24	ora $2447	        ora l_left+1
 .47fc		d0 e0		bne $47de	        bne module_copy
-.47fe		ad 40 24	lda $2440	        lda l_eof
+.47fe		ad 41 24	lda $2441	        lda l_eof
 .4801		d0 04		bne $4807	        bne module_eof
 .4803		a9 13		lda #$13	        lda #N_LONGIMAGE
 .4805		d0 32		bne $4839	        bne module_failure
 .4807						module_eof:
-.4807		ad 43 24	lda $2443	        lda l_crc
+.4807		ad 44 24	lda $2444	        lda l_crc
 .480a		cd 5e 3d	cmp $3d5e	        cmp N_MHEADER+14
 .480d		d0 24		bne $4833	        bne module_bad_crc
-.480f		ad 44 24	lda $2444	        lda l_crc+1
+.480f		ad 45 24	lda $2445	        lda l_crc+1
 .4812		cd 5f 3d	cmp $3d5f	        cmp N_MHEADER+15
 .4815		d0 1c		bne $4833	        bne module_bad_crc
-.4817		20 0f 24	jsr $240f	        jsr app_close
-.481a		ad 3e 24	lda $243e	        lda l_result
+.4817		20 10 24	jsr $2410	        jsr app_close
+.481a		ad 3f 24	lda $243f	        lda l_result
 .481d		d0 20		bne $483f	        bne module_finish
 .481f		a9 02		lda #$02	        lda #2
 .4821		8d 1b 3d	sta $3d1b	        sta N_MSTATE
@@ -4371,18 +4373,18 @@
 .4837						module_bad_image:
 .4837		a9 10		lda #$10	        lda #N_BADIMAGE
 .4839						module_failure:
-.4839		8d 3e 24	sta $243e	        sta l_result
-.483c		20 0f 24	jsr $240f	        jsr app_close
+.4839		8d 3f 24	sta $243f	        sta l_result
+.483c		20 10 24	jsr $2410	        jsr app_close
 .483f						module_finish:
 .483f		a9 00		lda #$00	        lda #0
 .4841		8d 1b 3d	sta $3d1b	        sta N_MSTATE
-.4844		ad 3d 24	lda $243d	        lda l_open
+.4844		ad 3e 24	lda $243e	        lda l_open
 .4847		f0 05		beq $484e	        beq +
 .4849		a9 04		lda #$04	        lda #4
 .484b		8d 1b 3d	sta $3d1b	        sta N_MSTATE
-.484e		ad 3e 24	lda $243e	+       lda l_result
+.484e		ad 3f 24	lda $243f	+       lda l_result
 .4851		a2 00		ldx #$00	        ldx #0
-.4853		8e 3e 24	stx $243e	        stx l_result           ; a module failure is not an app launch failure
+.4853		8e 3f 24	stx $243f	        stx l_result           ; a module failure is not an app launch failure
 .4856						module_early:
 .4856		8d 1a 3d	sta $3d1a	        sta N_MERROR
 .4859		28		plp		        plp
@@ -4407,8 +4409,8 @@
 .4875		b0 df		bcs $4856	        bcs module_early
 .4877		20 85 48	jsr $4885	        jsr module_invalidate
 .487a		a9 00		lda #$00	        lda #0
-.487c		8d 3e 24	sta $243e	        sta l_result
-.487f		20 0f 24	jsr $240f	        jsr app_close
+.487c		8d 3f 24	sta $243f	        sta l_result
+.487f		20 10 24	jsr $2410	        jsr app_close
 .4882		4c 3f 48	jmp $483f	        jmp module_finish
 .4885						module_invalidate:
 .4885		a9 00		lda #$00	        lda #0
@@ -4436,7 +4438,7 @@
 .48a6		ad 56 3d	lda $3d56	        lda N_MHEADER+6
 .48a9		c9 07		cmp #$07	        cmp #7
 .48ab		90 70		bcc $491d	        bcc module_invalid
-.48ad		c9 0c		cmp #$0c	        cmp #N_ABI_MINOR+1
+.48ad		c9 0d		cmp #$0d	        cmp #N_ABI_MINOR+1
 .48af		b0 6c		bcs $491d	        bcs module_invalid
 .48b1		ad 5a 3d	lda $3d5a	        lda N_MHEADER+10
 .48b4		cd 6e 3d	cmp $3d6e	        cmp N_APPHEADER+14
@@ -4498,7 +4500,7 @@
 .4929		a2 60		ldx #$60	        ldx #>N_APPBASE
 .492b						display_app_pages:
 .492b		bd 00 38	lda $3800,x	        lda NPAGES0,x
-.492e		cd 36 24	cmp $2436	        cmp l_app_handle
+.492e		cd 37 24	cmp $2437	        cmp l_app_handle
 .4931		f0 05		beq $4938	        beq +
 .4933		a9 04		lda #$04	        lda #N_BADHANDLE
 .4935		4c 70 13	jmp $1370	        jmp heap_finish
@@ -4789,7 +4791,7 @@
 .4f5f		ad 23 3d	lda $3d23	        lda N_APPSTATE
 .4f62		c9 02		cmp #$02	        cmp #2
 .4f64		d0 4a		bne $4fb0	        bne app_owned_wrong
-.4f66		ad 36 24	lda $2436	        lda l_app_handle
+.4f66		ad 37 24	lda $2437	        lda l_app_handle
 .4f69		f0 49		beq $4fb4	        beq app_owned_bad
 .4f6b		c9 21		cmp #$21	        cmp #NSLOTS+1
 .4f6d		b0 45		bcs $4fb4	        bcs app_owned_bad
@@ -4810,7 +4812,7 @@
 .4f8a		a0 01		ldy #$01	        ldy #1
 .4f8c						app_owned_generation:
 .4f8c		bd 04 3c	lda $3c04,x	        lda NHANDLES+4,x
-.4f8f		d9 36 24	cmp $2436,y	        cmp l_app_handle,y
+.4f8f		d9 37 24	cmp $2437,y	        cmp l_app_handle,y
 .4f92		d0 20		bne $4fb4	        bne app_owned_bad
 .4f94		e8		inx		        inx
 .4f95		c8		iny		        iny
@@ -5652,7 +5654,7 @@
 .55d0	18d0	90 16		bcc $18e8	        bcc field_range
 .55d2	18d2					field_page:
 .55d2	18d2	bd 00 38	lda $3800,x	        lda NPAGES0,x
-.55d5	18d5	cd 36 24	cmp $2436	        cmp l_app_handle
+.55d5	18d5	cd 37 24	cmp $2437	        cmp l_app_handle
 .55d8	18d8	d0 0a		bne $18e4	        bne field_span_handle
 .55da	18da	ec 7e 1a	cpx $1a7e	        cpx field_last+1
 .55dd	18dd	f0 03		beq $18e2	        beq +
@@ -5926,7 +5928,7 @@
 .57df	1adf	a2 60		ldx #$60	        ldx #>N_APPBASE
 .57e1	1ae1					module_pages:
 .57e1	1ae1	bd 00 38	lda $3800,x	        lda NPAGES0,x
-.57e4	1ae4	cd 36 24	cmp $2436	        cmp l_app_handle
+.57e4	1ae4	cd 37 24	cmp $2437	        cmp l_app_handle
 .57e7	1ae7	d0 11		bne $1afa	        bne module_start_handle
 .57e9	1ae9	e8		inx		        inx
 .57ea	1aea	ec 7f 1a	cpx $1a7f	        cpx field_app_end

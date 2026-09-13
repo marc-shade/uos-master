@@ -3,7 +3,9 @@
 .include "api.inc"
 .weak
 NATIVE_DESKTOP_BOOT = 0
+NATIVE_BOOT_FORMAT = 0
 .endweak
+        .cerror NATIVE_BOOT_FORMAT < 0 || NATIVE_BOOT_FORMAT > 2, "invalid native boot geometry"
 * = $1c01
         .word basic_end
         .word 10
@@ -67,15 +69,17 @@ native_mode:
         sta N_EXITCODE
         sta N_APPERROR
         sta N_UIBUSY
-        sta N_BROWSERFMT
         sta N_BROWSERERROR
-        sta N_APPFORMAT
         sta N_BROWSERNAME_LEN
         ldx #4
 native_browser_position:
         sta N_DESKTOPSEL,x       ; reset selection and four-byte browser position
         dex
         bpl native_browser_position
+        lda #NATIVE_BOOT_FORMAT
+        sta N_BOOTFORMAT
+        sta N_BROWSERFMT
+        sta N_APPFORMAT
         lda #1
         sta N_BROWSERLEN
         lda #$2f
@@ -134,7 +138,7 @@ native_key_counted:
         jmp native_browser
         jmp native_draw
 native_calculator:
-        lda #0
+        lda N_BOOTFORMAT
         sta N_APPFORMAT
         lda ui_system_device
         sta N_DEVICE
@@ -153,11 +157,10 @@ native_calc_result:
         sta ui_status
         jmp native_draw
 native_bank_zero:
-        lda #0
-        beq native_bank
 native_bank_one:
-        lda #1
 native_bank:
+        sec
+        sbc #$11                ; masked '1'/'2' -> bank 0/1
         sta ui_bank
         jmp native_draw
 native_allocate:
@@ -313,7 +316,7 @@ ui_pattern_mismatch:
         rts
 
 native_browser:
-        lda #0
+        lda N_BOOTFORMAT
         sta N_APPFORMAT
         lda ui_system_device
         sta N_DEVICE
@@ -502,7 +505,7 @@ native_keycheck_valid:
         jmp (native_keycheck_saved)
 native_keycheck_end:
 .include "field-view.inc"
-ui_calc_name: .text "calc"
+ui_calc_name = ui_help_calc+2   ; first four bytes of "calculator"
 ui_browser_name: .text "browse"
 ui_title: .text "uos 128 - native memory workspace",13,13,"selected bank: ",0
 ui_free_title: .text 13,"free 256-byte pages (hex) 0/1: ",0
@@ -511,7 +514,7 @@ ui_handle_title: .text 13,"selected handle: ",0
 ui_result_title: .text 13,"last result: ",0
 ui_help: .text 13,13,"1/2 select bank  a allocate 8k",13
          .text "w fill  v verify  f release",13
-         .text "c calculator  b files and apps",13
+ui_help_calc: .text "c calculator  b files and apps",13
          .text "00 ok  04 invalid handle  0a mismatch",13,13
          .text "native desktop migration in progress",0
 ui_handles: .fill 8,0
@@ -533,7 +536,7 @@ native_code_end:
 * = NHANDLES
         .fill 256,0
 * = N_OWNER
-        .fill $e4,0
+        .fill $e5,0
 * = N_BROWSERNAME
         .fill 256,0
 * = N_SOURCEPATH
