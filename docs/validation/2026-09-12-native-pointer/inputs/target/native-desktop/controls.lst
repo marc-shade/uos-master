@@ -1,0 +1,993 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/target/native-desktop/controls.prg -l /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/target/native-desktop/controls.sym -L /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/target/native-desktop/controls.lst /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/src/native/controls.asm
+; Sat Sep 12 15:19:18 2026
+
+;Offset	;Hex		;Monitor	;Source
+
+;******  Processing input file: /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/src/native/controls.asm
+
+
+;******  Processing file: /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/src/native/api.inc
+
+=1					N_ABI_MAJOR = 1
+=10					N_ABI_MINOR = 10
+=$1c20					N_ALLOC         = $1c20
+=$1c23					N_FREE          = $1c23
+=$1c26					N_READ          = $1c26
+=$1c29					N_WRITE         = $1c29
+=$1c2c					N_FILL          = $1c2c
+=$1c2f					N_STATS         = $1c2f
+=$1c32					N_RELEASE       = $1c32
+=$1c35					N_RESERVE       = $1c35
+=$1c38					N_LAUNCH        = $1c38          ; checked PRG through owned IEC/Ultimate streams
+=$1c3b					N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e					N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41					N_FOPEN         = $1c41          ; owned read/create stream or Ultimate directory cursor
+=$1c44					N_FREAD         = $1c44          ; up to 512 file bytes, or one complete directory entry
+=$1c47					N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a					N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d					N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50					N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53					N_REPLACE       = $1c53          ; leave app, request dispatcher launch with source fields
+=$1c56					N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$1c59					N_FEDIT         = $1c59          ; edit the active app's bounded field, no input polling
+=$1c5c					N_FDRAW         = $1c5c          ; draw that focused field at the current console position
+=$1c5f					N_MLOAD         = $1c5f          ; checked module from the original app's source folder
+=$1c62					N_MCALL         = $1c62          ; call the current module using its generation token
+=$1c65					N_MCLOSE        = $1c65          ; invalidate module; close/recover only its source stream
+=$1c68					N_VSHOW         = $1c68          ; experimental: present owned bank-0 $c000..$e3ff
+=$1c6b					N_VCLOSE        = $1c6b          ; experimental: restore text; keep surface allocation
+=$1c6e					N_UQUERY        = $1c6e          ; checked, read-only Ultimate query; shared file lock
+=$1bf0					N_NMIGATE       = $1bf0
+=$3d3e					N_NMIPTR        = $3d3e
+=$3d00					N_OWNER         = $3d00
+=$3d01					N_PAGES         = $3d01
+=$3d02					N_BANK          = $3d02
+=$3d03					N_PAGE          = $3d03
+=$3d04					N_HANDLE        = $3d04          ; four bytes
+=$3d08					N_OFFSET        = $3d08          ; word
+=$3d0a					N_COUNT         = $3d0a          ; word
+=$3d0c					N_VALUE         = $3d0c
+=$3d0d					N_ERROR         = $3d0d
+=$3d0e					N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f					N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10					N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11					N_BUSY          = $3d11
+=$3d12					N_READY         = $3d12
+=$3d13					N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15					N_LASTKEY       = $3d15
+=$3d16					N_RESULT        = $3d16          ; workspace's last command result
+=$3d17					N_MTOKEN        = $3d17          ; LE24: MLOAD output / MCALL input; zero is invalid
+=$3d1a					N_MERROR        = $3d1a          ; gate/loader error; MCALL preserves module's A/carry
+=$3d1b					N_MSTATE        = $3d1b          ; read-only: 0 empty, 1 loading, 2 ready, 3 running, 4 close retained
+=$3d20					N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21					N_DEVICE        = $3d21          ; launch IEC device 8..30, or Ultimate DOS context 1/2
+=$3d22					N_NAMELEN       = $3d22          ; IEC launch name 1..16; Ultimate path length 1..255
+=$3d23					N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24					N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25					N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26					N_IOSTATUS      = $3d26          ; first failed loader stream's nonzero transport status
+=$3d27					N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28					N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29					N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a					N_BROWSERFMT    = $3d2a
+=$3d2b					N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c					N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
+=$3d2d					N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
+=$3d2e					N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
+=$3d2f					N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude
+=$3d30					N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
+=$3d34					N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
+=$3d35					N_UIPTR         = $3d35          ; word: field-state address
+=$3d37					N_UIKEY         = $3d37
+=$3d38					N_UIWIDTH       = $3d38
+=$3d39					N_UIFLAGS       = $3d39          ; successful edit: bit 0 content, bit 1 caret changed
+=$3d3a					N_UIERROR       = $3d3a
+=$3d3b					N_UIBUSY        = $3d3b
+=$3d3c					N_UOP           = $3d3c
+=$3d3d					N_UARG          = $3d3d
+=0					N_U_IDENTIFY    = 0             ; UARG target 1..15; interface identification
+=1					N_U_HARDWARE    = 1             ; control hardware model, selector 0
+=2					N_U_DRIVES      = 2             ; control inventory, effective IEC addresses
+=3					N_U_POWER_A     = 3
+=4					N_U_POWER_B     = 4
+=5					N_U_INTERFACES  = 5             ; network interface count
+=6					N_U_MAC         = 6             ; UARG interface index
+=7					N_U_IP          = 7             ; UARG interface index; IP/mask/gateway
+=8					N_U_TIME        = 8             ; DOS GET_TIME; running cartridge RTC
+=9					N_U_QUERY_COUNT = 9
+=0					UI_LENGTH       = 0
+=1					UI_CARET        = 1
+=2					UI_MAXIMUM      = 2
+=3					UI_BUFFER       = 3
+=5					UI_VIEW40       = 5
+=6					UI_VIEW80       = 6
+=7					UI_FILTER       = 7
+=8					UI_STATE_BYTES  = 8
+=$3e00					N_BROWSERNAME   = $3e00          ; 256 bytes; restore selection after directory edits
+=$3d40					N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d50					N_MHEADER       = $3d50          ; private: independent 16-byte module manifest
+=$3d60					N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3f00					N_SOURCEPATH    = $3f00          ; private: original Ultimate app parent directory
+=$3a00					N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80					N_FOWNER        = $3d80
+=$3d81					N_FHANDLE       = $3d81          ; four bytes
+=$3d85					N_FDEVICE       = $3d85          ; IEC 8..30 or Ultimate DOS context 1/2
+=$3d86					N_FNAMELEN      = $3d86
+=$3d87					N_FMODE         = $3d87
+=$3d88					N_FTYPE         = $3d88
+=$3d89					N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b					N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d					N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e					N_FERROR        = $3d8e
+=$3d8f					N_FDOS          = $3d8f          ; IEC first error; Ultimate most recent numeric status
+=$3d90					N_FSTATUS       = $3d90          ; IEC serial error; Ultimate transport/verification detail
+=$3d91					N_FBUSY         = $3d91
+=$3d92					N_FPOSITION     = $3d92          ; LE32 byte position, or directory entries consumed
+=$3d96					N_FFORMAT       = $3d96          ; 0 D64, 1 D71, 2 D81, 3 Ultimate DOS
+=$4e00					N_UPATH         = $4e00          ; 256-byte path mailbox, bank 0, reserved
+=$4a00					N_BROWSERPATH   = $4a00          ; ABI 1.5: persistent browser path, 1..255 raw bytes
+=$4f00					N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes + NUL
+=$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0					N_FNAME         = $3da0          ; 16 bytes
+=$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0					N_OK            = 0
+=1					N_BADARG        = 1
+=2					N_NOMEM         = 2
+=3					N_NOSLOT        = 3
+=4					N_BADHANDLE     = 4
+=5					N_WRONGOWNER    = 5
+=6					N_RANGE         = 6
+=7					N_REENTRANT     = 7
+=8					N_PLATFORM      = 8
+=9					N_CORRUPT       = 9
+=$10					N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11					N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12					N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13					N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14					N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15					N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$16					N_MEXHAUSTED    = $16            ; module generation retired until the next kernel boot
+=$6000					N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000					N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32					N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300					N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00					N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$5000					N_RELOCBASE     = $5000          ; boot-only staging, reusable after relocation
+=$4000					N_SERVICEBASE   = $4000          ; resident Ultimate services and mailboxes
+=$5000					N_SERVICELIMIT  = $5000
+=$3800					NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900					NPAGES1         = $3900
+=$3c00					NHANDLES        = $3c00          ; 32 records of eight bytes
+=32					NSLOTS          = 32
+=$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
+=$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /var/tmp/arc-scratch/uos-native-pointer-settled-n7fvgstw/src/native/controls.asm
+
+.6000					uc_image:
+>6000	4e 41 50 50			        .text "napp"
+>6004	01 01 0a 00			        .byte 1,1,10,0
+>6008	fd 0a				        .word uc_end-uc_image
+>600a	0b 00				        .byte (uc_end-uc_image+255)/256,0
+>600c	20 00				        .word uc_entry-uc_image
+>600e	00 00				        .word 0
+>6010	55 4c 54 49 4d 41 54 45		        .text "ultimate",0
+>6018	00
+>6019	00 00 00 00 00 00 00		        .fill N_APPBASE+32-*,0
+.6020					uc_entry:
+.6020	d8		cld		        cld
+.6021	a9 00		lda #$00	        lda #0
+.6023	8d 83 68	sta $6883	        sta uc_page
+.6026	8d 85 68	sta $6885	        sta uc_interface
+.6029	a9 04		lda #$04	        lda #4
+.602b	8d 84 68	sta $6884	        sta uc_target
+.602e					uc_refresh:
+.602e	a9 00		lda #$00	        lda #0
+.6030	8d 12 3d	sta $3d12	        sta N_READY
+.6033	8d 86 68	sta $6886	        sta uc_valid
+.6036	8d 89 68	sta $6889	        sta uc_error
+.6039	8d 88 68	sta $6888	        sta uc_count
+.603c	ad 83 68	lda $6883	        lda uc_page
+.603f	f0 0b		beq $604c	        beq uc_info
+.6041	c9 01		cmp #$01	        cmp #1
+.6043	f0 39		beq $607e	        beq uc_drives
+.6045	c9 02		cmp #$02	        cmp #2
+.6047	f0 42		beq $608b	        beq uc_network
+.6049	4c d2 60	jmp $60d2	        jmp uc_clock
+.604c					uc_info:
+.604c	a9 01		lda #$01	        lda #N_U_HARDWARE
+.604e	20 99 61	jsr $6199	        jsr uc_query
+.6051	8d 8e 68	sta $688e	        sta uc_model_error
+.6054	ad 8d 68	lda $688d	        lda uc_length+1
+.6057	d0 07		bne $6060	        bne uc_model_long
+.6059	ad 8c 68	lda $688c	        lda uc_length
+.605c	c9 41		cmp #$41	        cmp #65
+.605e	90 02		bcc $6062	        bcc +
+.6060					uc_model_long:
+.6060	a9 40		lda #$40	        lda #64
+.6062	8d 8f 68	sta $688f	+       sta uc_model_length
+.6065	a2 3f		ldx #$3f	        ldx #63
+.6067	bd fd 68	lda $68fd,x	-       lda uc_data,x
+.606a	9d 9d 68	sta $689d,x	        sta uc_model,x
+.606d	ca		dex		        dex
+.606e	10 f7		bpl $6067	        bpl -
+.6070	ad 84 68	lda $6884	        lda uc_target
+.6073	8d 3d 3d	sta $3d3d	        sta N_UARG
+.6076	a9 00		lda #$00	        lda #N_U_IDENTIFY
+.6078	20 99 61	jsr $6199	        jsr uc_query
+.607b	4c e4 60	jmp $60e4	        jmp uc_render
+.607e					uc_drives:
+.607e	a9 02		lda #$02	        lda #N_U_DRIVES
+.6080	20 99 61	jsr $6199	        jsr uc_query
+.6083	b0 5f		bcs $60e4	        bcs uc_render
+.6085	20 e2 61	jsr $61e2	        jsr uc_parse_drives
+.6088	4c e4 60	jmp $60e4	        jmp uc_render
+.608b					uc_network:
+.608b	a9 05		lda #$05	        lda #N_U_INTERFACES
+.608d	20 99 61	jsr $6199	        jsr uc_query
+.6090	b0 52		bcs $60e4	        bcs uc_render
+.6092	ad 8d 68	lda $688d	        lda uc_length+1
+.6095	d0 48		bne $60df	        bne uc_bad_reply
+.6097	ad 8c 68	lda $688c	        lda uc_length
+.609a	c9 01		cmp #$01	        cmp #1
+.609c	d0 41		bne $60df	        bne uc_bad_reply
+.609e	ad fd 68	lda $68fd	        lda uc_data
+.60a1	8d 88 68	sta $6888	        sta uc_count
+.60a4	f0 3e		beq $60e4	        beq uc_render
+.60a6	cd 85 68	cmp $6885	        cmp uc_interface
+.60a9	90 02		bcc $60ad	        bcc uc_interface_reset
+.60ab	d0 05		bne $60b2	        bne +
+.60ad					uc_interface_reset:
+.60ad	a9 00		lda #$00	        lda #0
+.60af	8d 85 68	sta $6885	        sta uc_interface
+.60b2	ad 85 68	lda $6885	+       lda uc_interface
+.60b5	8d 3d 3d	sta $3d3d	        sta N_UARG
+.60b8	a9 07		lda #$07	        lda #N_U_IP
+.60ba	20 99 61	jsr $6199	        jsr uc_query
+.60bd	b0 25		bcs $60e4	        bcs uc_render
+.60bf	ad 8d 68	lda $688d	        lda uc_length+1
+.60c2	d0 1b		bne $60df	        bne uc_bad_reply
+.60c4	ad 8c 68	lda $688c	        lda uc_length
+.60c7	c9 0c		cmp #$0c	        cmp #12
+.60c9	d0 14		bne $60df	        bne uc_bad_reply
+.60cb	a9 01		lda #$01	        lda #1
+.60cd	8d 86 68	sta $6886	        sta uc_valid
+.60d0	d0 12		bne $60e4	        bne uc_render
+.60d2					uc_clock:
+.60d2	a9 08		lda #$08	        lda #N_U_TIME
+.60d4	20 99 61	jsr $6199	        jsr uc_query
+.60d7	b0 0b		bcs $60e4	        bcs uc_render
+.60d9	20 48 62	jsr $6248	        jsr uc_parse_time
+.60dc	4c e4 60	jmp $60e4	        jmp uc_render
+.60df					uc_bad_reply:
+.60df	a9 09		lda #$09	        lda #N_CORRUPT
+.60e1	8d 89 68	sta $6889	        sta uc_error
+.60e4					uc_render:
+.60e4	20 f4 62	jsr $62f4	        jsr uc_draw_both
+.60e7					cloop:
+.60e7	a9 01		lda #$01	        lda #1
+.60e9	8d 12 3d	sta $3d12	        sta N_READY
+.60ec					uc_get_key:
+.60ec	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.60ef	f0 f6		beq $60e7	        beq cloop
+.60f1	a2 00		ldx #$00	        ldx #0
+.60f3	8e 12 3d	stx $3d12	        stx N_READY
+.60f6	c9 1b		cmp #$1b	        cmp #27
+.60f8	f0 35		beq $612f	        beq uc_exit
+.60fa	c9 9d		cmp #$9d	        cmp #$9d
+.60fc	f0 36		beq $6134	        beq uc_previous
+.60fe	c9 1d		cmp #$1d	        cmp #$1d
+.6100	f0 5e		beq $6160	        beq uc_next
+.6102	29 df		and #$df	        and #$df
+.6104	c9 52		cmp #$52	        cmp #$52
+.6106	d0 03		bne $610b	        beq uc_refresh
+.6108	4c 2e 60	jmp $602e
+.610b	c9 49		cmp #$49	        cmp #$49
+.610d	f0 10		beq $611f	        beq uc_info_key
+.610f	c9 44		cmp #$44	        cmp #$44
+.6111	f0 10		beq $6123	        beq uc_drives_key
+.6113	c9 4e		cmp #$4e	        cmp #$4e
+.6115	f0 10		beq $6127	        beq uc_network_key
+.6117	c9 54		cmp #$54	        cmp #$54
+.6119	d0 cc		bne $60e7	        bne cloop
+.611b	a9 03		lda #$03	        lda #3
+.611d	d0 0a		bne $6129	        bne uc_page_key
+.611f					uc_info_key:
+.611f	a9 00		lda #$00	        lda #0
+.6121	f0 06		beq $6129	        beq uc_page_key
+.6123					uc_drives_key:
+.6123	a9 01		lda #$01	        lda #1
+.6125	d0 02		bne $6129	        bne uc_page_key
+.6127					uc_network_key:
+.6127	a9 02		lda #$02	        lda #2
+.6129					uc_page_key:
+.6129	8d 83 68	sta $6883	        sta uc_page
+.612c	4c 2e 60	jmp $602e	        jmp uc_refresh
+.612f					uc_exit:
+.612f	a9 00		lda #$00	        lda #0
+.6131	4c 3e 1c	jmp $1c3e	        jmp N_EXIT
+.6134					uc_previous:
+.6134	ad 83 68	lda $6883	        lda uc_page
+.6137	f0 1a		beq $6153	        beq uc_target_previous
+.6139	c9 02		cmp #$02	        cmp #2
+.613b	d0 aa		bne $60e7	        bne cloop
+.613d	ad 88 68	lda $6888	        lda uc_count
+.6140	f0 a5		beq $60e7	        beq cloop
+.6142	ad 85 68	lda $6885	        lda uc_interface
+.6145	d0 03		bne $614a	        bne +
+.6147	ad 88 68	lda $6888	        lda uc_count
+.614a	38		sec		+       sec
+.614b	e9 01		sbc #$01	        sbc #1
+.614d	8d 85 68	sta $6885	        sta uc_interface
+.6150	4c 2e 60	jmp $602e	        jmp uc_refresh
+.6153					uc_target_previous:
+.6153	ce 84 68	dec $6884	        dec uc_target
+.6156	d0 b0		bne $6108	        bne uc_refresh
+.6158	a9 0f		lda #$0f	        lda #15
+.615a	8d 84 68	sta $6884	        sta uc_target
+.615d	4c 2e 60	jmp $602e	        jmp uc_refresh
+.6160					uc_next:
+.6160	ad 83 68	lda $6883	        lda uc_page
+.6163	f0 1f		beq $6184	        beq uc_target_next
+.6165	c9 02		cmp #$02	        cmp #2
+.6167	f0 03		beq $616c	        bne cloop
+.6169	4c e7 60	jmp $60e7
+.616c	ad 88 68	lda $6888	        lda uc_count
+.616f	f0 f8		beq $6169	        beq cloop
+.6171	ad 85 68	lda $6885	        lda uc_interface
+.6174	18		clc		        clc
+.6175	69 01		adc #$01	        adc #1
+.6177	cd 88 68	cmp $6888	        cmp uc_count
+.617a	90 02		bcc $617e	        bcc +
+.617c	a9 00		lda #$00	        lda #0
+.617e	8d 85 68	sta $6885	+       sta uc_interface
+.6181	4c 2e 60	jmp $602e	        jmp uc_refresh
+.6184					uc_target_next:
+.6184	ee 84 68	inc $6884	        inc uc_target
+.6187	ad 84 68	lda $6884	        lda uc_target
+.618a	c9 10		cmp #$10	        cmp #16
+.618c	b0 03		bcs $6191	        bcc uc_refresh
+.618e	4c 2e 60	jmp $602e
+.6191	a9 01		lda #$01	        lda #1
+.6193	8d 84 68	sta $6884	        sta uc_target
+.6196	4c 2e 60	jmp $602e	        jmp uc_refresh
+.6199					uc_query:
+.6199	8d 3c 3d	sta $3d3c	        sta N_UOP
+.619c	ad 20 3d	lda $3d20	        lda N_CURRENT
+.619f	8d 80 3d	sta $3d80	        sta N_FOWNER
+.61a2	20 6e 1c	jsr $1c6e	        jsr N_UQUERY
+.61a5	8d 89 68	sta $6889	        sta uc_error
+.61a8	ad 8f 3d	lda $3d8f	        lda N_FDOS
+.61ab	8d 8a 68	sta $688a	        sta uc_dos
+.61ae	ad 90 3d	lda $3d90	        lda N_FSTATUS
+.61b1	8d 8b 68	sta $688b	        sta uc_transport
+.61b4	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.61b7	8d 8c 68	sta $688c	        sta uc_length
+.61ba	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
+.61bd	8d 8d 68	sta $688d	        sta uc_length+1
+.61c0	a2 00		ldx #$00	        ldx #0
+.61c2	bd 00 3a	lda $3a00,x	-       lda N_BUFFER,x
+.61c5	9d fd 68	sta $68fd,x	        sta uc_data,x
+.61c8	bd 00 3b	lda $3b00,x	        lda N_BUFFER+256,x
+.61cb	9d fd 69	sta $69fd,x	        sta uc_data+256,x
+.61ce	e8		inx		        inx
+.61cf	d0 f1		bne $61c2	        bne -
+.61d1	a2 1f		ldx #$1f	        ldx #31
+.61d3	bd 00 4f	lda $4f00,x	-       lda N_USTATUS,x
+.61d6	9d dd 68	sta $68dd,x	        sta uc_status,x
+.61d9	ca		dex		        dex
+.61da	10 f7		bpl $61d3	        bpl -
+.61dc	ad 89 68	lda $6889	        lda uc_error
+.61df	c9 01		cmp #$01	        cmp #1
+.61e1	60		rts		        rts
+.61e2					uc_parse_drives:
+.61e2	a9 00		lda #$00	        lda #0
+.61e4	8d 87 68	sta $6887	        sta uc_partial
+.61e7	ad 8d 68	lda $688d	        lda uc_length+1
+.61ea	d0 56		bne $6242	        bne uc_parse_bad
+.61ec	ad 8c 68	lda $688c	        lda uc_length
+.61ef	f0 51		beq $6242	        beq uc_parse_bad
+.61f1	ad fd 68	lda $68fd	        lda uc_data
+.61f4	c9 05		cmp #$05	        cmp #5
+.61f6	b0 4a		bcs $6242	        bcs uc_parse_bad
+.61f8	8d 88 68	sta $6888	        sta uc_count
+.61fb	0a		asl a		        asl
+.61fc	18		clc		        clc
+.61fd	6d 88 68	adc $6888	        adc uc_count
+.6200	69 01		adc #$01	        adc #1
+.6202	cd 8c 68	cmp $688c	        cmp uc_length
+.6205	f0 18		beq $621f	        beq uc_drive_records
+.6207	ad 88 68	lda $6888	        lda uc_count
+.620a	c9 04		cmp #$04	        cmp #4
+.620c	d0 34		bne $6242	        bne uc_parse_bad
+.620e	ad 8c 68	lda $688c	        lda uc_length
+.6211	c9 07		cmp #$07	        cmp #7
+.6213	d0 2d		bne $6242	        bne uc_parse_bad
+.6215	a9 01		lda #$01	        lda #1
+.6217	8d 87 68	sta $6887	        sta uc_partial
+.621a	a9 02		lda #$02	        lda #2
+.621c	8d 88 68	sta $6888	        sta uc_count
+.621f					uc_drive_records:
+.621f	a2 00		ldx #$00	        ldx #0
+.6221	a0 00		ldy #$00	        ldy #0
+.6223	ec 88 68	cpx $6888	-       cpx uc_count
+.6226	f0 14		beq $623c	        beq uc_parse_valid
+.6228	b9 ff 68	lda $68ff,y	        lda uc_data+2,y
+.622b	c9 1f		cmp #$1f	        cmp #31
+.622d	b0 13		bcs $6242	        bcs uc_parse_bad
+.622f	b9 00 69	lda $6900,y	        lda uc_data+3,y
+.6232	c9 02		cmp #$02	        cmp #2
+.6234	b0 0c		bcs $6242	        bcs uc_parse_bad
+.6236	c8		iny		        iny
+.6237	c8		iny		        iny
+.6238	c8		iny		        iny
+.6239	e8		inx		        inx
+.623a	d0 e7		bne $6223	        bne -
+.623c					uc_parse_valid:
+.623c	a9 01		lda #$01	        lda #1
+.623e	8d 86 68	sta $6886	        sta uc_valid
+.6241	60		rts		        rts
+.6242					uc_parse_bad:
+.6242	a9 09		lda #$09	        lda #N_CORRUPT
+.6244	8d 89 68	sta $6889	        sta uc_error
+.6247	60		rts		        rts
+.6248					uc_parse_time:
+.6248	ad 8d 68	lda $688d	        lda uc_length+1
+.624b	d0 f5		bne $6242	        bne uc_parse_bad
+.624d	ad 8c 68	lda $688c	        lda uc_length
+.6250	c9 13		cmp #$13	        cmp #19
+.6252	d0 ee		bne $6242	        bne uc_parse_bad
+.6254	a2 12		ldx #$12	        ldx #18
+.6256	bd 64 68	lda $6864,x	-       lda uc_time_pattern,x
+.6259	f0 07		beq $6262	        beq uc_time_digit
+.625b	dd fd 68	cmp $68fd,x	        cmp uc_data,x
+.625e	d0 e2		bne $6242	        bne uc_parse_bad
+.6260	f0 0b		beq $626d	        beq uc_time_next
+.6262					uc_time_digit:
+.6262	bd fd 68	lda $68fd,x	        lda uc_data,x
+.6265	c9 30		cmp #$30	        cmp #$30
+.6267	90 d9		bcc $6242	        bcc uc_parse_bad
+.6269	c9 3a		cmp #$3a	        cmp #$3a
+.626b	b0 d5		bcs $6242	        bcs uc_parse_bad
+.626d					uc_time_next:
+.626d	ca		dex		        dex
+.626e	10 e6		bpl $6256	        bpl -
+.6270	a2 05		ldx #$05	        ldx #5
+.6272	20 d8 62	jsr $62d8	        jsr uc_pair
+.6275	f0 cb		beq $6242	        beq uc_parse_bad
+.6277	c9 0d		cmp #$0d	        cmp #13
+.6279	b0 c7		bcs $6242	        bcs uc_parse_bad
+.627b	aa		tax		        tax
+.627c	bd 76 68	lda $6876,x	        lda uc_month_days-1,x
+.627f	8d 97 68	sta $6897	        sta uc_days
+.6282	e0 02		cpx #$02	        cpx #2
+.6284	d0 23		bne $62a9	        bne uc_time_day
+.6286	a2 02		ldx #$02	        ldx #2
+.6288	20 d8 62	jsr $62d8	        jsr uc_pair
+.628b	29 03		and #$03	        and #3
+.628d	d0 1a		bne $62a9	        bne uc_time_day
+.628f	ad ff 68	lda $68ff	        lda uc_data+2
+.6292	c9 30		cmp #$30	        cmp #$30
+.6294	d0 10		bne $62a6	        bne uc_leap_day
+.6296	ad 00 69	lda $6900	        lda uc_data+3
+.6299	c9 30		cmp #$30	        cmp #$30
+.629b	d0 09		bne $62a6	        bne uc_leap_day
+.629d	a2 00		ldx #$00	        ldx #0
+.629f	20 d8 62	jsr $62d8	        jsr uc_pair
+.62a2	29 03		and #$03	        and #3
+.62a4	d0 03		bne $62a9	        bne uc_time_day
+.62a6					uc_leap_day:
+.62a6	ee 97 68	inc $6897	        inc uc_days
+.62a9					uc_time_day:
+.62a9	a2 08		ldx #$08	        ldx #8
+.62ab	20 d8 62	jsr $62d8	        jsr uc_pair
+.62ae	f0 92		beq $6242	        beq uc_parse_bad
+.62b0	cd 97 68	cmp $6897	        cmp uc_days
+.62b3	90 02		bcc $62b7	        bcc +
+.62b5	d0 8b		bne $6242	        bne uc_parse_bad
+.62b7	a2 0b		ldx #$0b	+       ldx #11
+.62b9	20 d8 62	jsr $62d8	        jsr uc_pair
+.62bc	c9 18		cmp #$18	        cmp #24
+.62be	b0 82		bcs $6242	        bcs uc_parse_bad
+.62c0	a2 0e		ldx #$0e	        ldx #14
+.62c2	20 d8 62	jsr $62d8	        jsr uc_pair
+.62c5	c9 3c		cmp #$3c	        cmp #60
+.62c7	90 03		bcc $62cc	        bcs uc_parse_bad
+.62c9	4c 42 62	jmp $6242
+.62cc	a2 11		ldx #$11	        ldx #17
+.62ce	20 d8 62	jsr $62d8	        jsr uc_pair
+.62d1	c9 3c		cmp #$3c	        cmp #60
+.62d3	b0 f4		bcs $62c9	        bcs uc_parse_bad
+.62d5	4c 3c 62	jmp $623c	        jmp uc_parse_valid
+.62d8					uc_pair:
+.62d8	bd fd 68	lda $68fd,x	        lda uc_data,x
+.62db	29 0f		and #$0f	        and #15
+.62dd	0a		asl a		        asl
+.62de	8d 93 68	sta $6893	        sta uc_number
+.62e1	0a		asl a		        asl
+.62e2	0a		asl a		        asl
+.62e3	18		clc		        clc
+.62e4	6d 93 68	adc $6893	        adc uc_number
+.62e7	8d 93 68	sta $6893	        sta uc_number
+.62ea	bd fe 68	lda $68fe,x	        lda uc_data+1,x
+.62ed	29 0f		and #$0f	        and #15
+.62ef	18		clc		        clc
+.62f0	6d 93 68	adc $6893	        adc uc_number
+.62f3	60		rts		        rts
+.62f4					uc_draw_both:
+.62f4	a9 00		lda #$00	        lda #0
+.62f6	8d 90 68	sta $6890	        sta uc_screen
+.62f9	a5 d7		lda $d7		-       lda $d7
+.62fb	2a		rol a		        rol
+.62fc	a9 00		lda #$00	        lda #0
+.62fe	2a		rol a		        rol
+.62ff	cd 90 68	cmp $6890	        cmp uc_screen
+.6302	f0 03		beq $6307	        beq +
+.6304	20 5f ff	jsr $ff5f	        jsr $ff5f
+.6307	20 15 63	jsr $6315	+       jsr uc_draw
+.630a	ee 90 68	inc $6890	        inc uc_screen
+.630d	ad 90 68	lda $6890	        lda uc_screen
+.6310	c9 02		cmp #$02	        cmp #2
+.6312	d0 e5		bne $62f9	        bne -
+.6314	60		rts		        rts
+.6315					uc_draw:
+.6315	a9 93		lda #$93	        lda #$93
+.6317	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.631a	a9 10		lda #$10	        lda #<uc_title
+.631c	a2 66		ldx #$66	        ldx #>uc_title
+.631e	20 92 65	jsr $6592	        jsr uc_puts
+.6321	ad 83 68	lda $6883	        lda uc_page
+.6324	d0 06		bne $632c	        bne uc_draw_not_info
+.6326	20 63 63	jsr $6363	        jsr uc_draw_info
+.6329	4c 56 63	jmp $6356	        jmp uc_draw_end
+.632c					uc_draw_not_info:
+.632c	c9 01		cmp #$01	        cmp #1
+.632e	d0 06		bne $6336	        bne uc_draw_not_drives
+.6330	20 a9 63	jsr $63a9	        jsr uc_draw_drives
+.6333	4c 56 63	jmp $6356	        jmp uc_draw_end
+.6336					uc_draw_not_drives:
+.6336	c9 02		cmp #$02	        cmp #2
+.6338	d0 06		bne $6340	        bne uc_draw_clock
+.633a	20 39 64	jsr $6439	        jsr uc_draw_network
+.633d	4c 56 63	jmp $6356	        jmp uc_draw_end
+.6340					uc_draw_clock:
+.6340	a9 da		lda #$da	        lda #<uc_clock_title
+.6342	a2 67		ldx #$67	        ldx #>uc_clock_title
+.6344	20 92 65	jsr $6592	        jsr uc_puts
+.6347	ad 89 68	lda $6889	        lda uc_error
+.634a	d0 11		bne $635d	        bne uc_draw_failed
+.634c	20 fd 64	jsr $64fd	        jsr uc_data_text
+.634f	a9 ea		lda #$ea	        lda #<uc_clock_hint
+.6351	a2 67		ldx #$67	        ldx #>uc_clock_hint
+.6353	20 92 65	jsr $6592	        jsr uc_puts
+.6356					uc_draw_end:
+.6356	a9 45		lda #$45	        lda #<uc_footer
+.6358	a2 66		ldx #$66	        ldx #>uc_footer
+.635a	4c 92 65	jmp $6592	        jmp uc_puts
+.635d					uc_draw_failed:
+.635d	20 b3 64	jsr $64b3	        jsr uc_show_error
+.6360	4c 56 63	jmp $6356	        jmp uc_draw_end
+.6363					uc_draw_info:
+.6363	a9 7f		lda #$7f	        lda #<uc_hardware_title
+.6365	a2 66		ldx #$66	        ldx #>uc_hardware_title
+.6367	20 92 65	jsr $6592	        jsr uc_puts
+.636a	ad 8e 68	lda $688e	        lda uc_model_error
+.636d	f0 0a		beq $6379	        beq +
+.636f	a9 89		lda #$89	        lda #<uc_unavailable
+.6371	a2 66		ldx #$66	        ldx #>uc_unavailable
+.6373	20 92 65	jsr $6592	        jsr uc_puts
+.6376	4c 8e 63	jmp $638e	        jmp uc_draw_identity
+.6379	a9 9d		lda #$9d	+       lda #<uc_model
+.637b	a2 68		ldx #$68	        ldx #>uc_model
+.637d	20 1b 65	jsr $651b	        jsr uc_text_source
+.6380	ad 8f 68	lda $688f	        lda uc_model_length
+.6383	8d 9a 68	sta $689a	        sta uc_text_left
+.6386	a9 24		lda #$24	        lda #36
+.6388	8d 9b 68	sta $689b	        sta uc_text_limit
+.638b	20 22 65	jsr $6522	        jsr uc_text
+.638e					uc_draw_identity:
+.638e	a9 96		lda #$96	        lda #<uc_target_title
+.6390	a2 66		ldx #$66	        ldx #>uc_target_title
+.6392	20 92 65	jsr $6592	        jsr uc_puts
+.6395	ad 84 68	lda $6884	        lda uc_target
+.6398	20 c6 65	jsr $65c6	        jsr uc_decimal
+.639b	20 ab 65	jsr $65ab	        jsr uc_newline
+.639e	ad 89 68	lda $6889	        lda uc_error
+.63a1	f0 03		beq $63a6	        bne uc_show_error
+.63a3	4c b3 64	jmp $64b3
+.63a6	4c fd 64	jmp $64fd	        jmp uc_data_text
+.63a9					uc_draw_drives:
+.63a9	a9 9f		lda #$9f	        lda #<uc_drives_title
+.63ab	a2 66		ldx #$66	        ldx #>uc_drives_title
+.63ad	20 92 65	jsr $6592	        jsr uc_puts
+.63b0	ad 89 68	lda $6889	        lda uc_error
+.63b3	d0 ee		bne $63a3	        bne uc_show_error
+.63b5	ad 88 68	lda $6888	        lda uc_count
+.63b8	d0 07		bne $63c1	        bne +
+.63ba	a9 da		lda #$da	        lda #<uc_no_drives
+.63bc	a2 66		ldx #$66	        ldx #>uc_no_drives
+.63be	4c 92 65	jmp $6592	        jmp uc_puts
+.63c1	ad 87 68	lda $6887	+       lda uc_partial
+.63c4	f0 07		beq $63cd	        beq +
+.63c6	a9 ba		lda #$ba	        lda #<uc_partial_title
+.63c8	a2 66		ldx #$66	        ldx #>uc_partial_title
+.63ca	20 92 65	jsr $6592	        jsr uc_puts
+.63cd	a9 00		lda #$00	+       lda #0
+.63cf	8d 91 68	sta $6891	        sta uc_index
+.63d2	8d 92 68	sta $6892	        sta uc_record
+.63d5					uc_draw_drive:
+.63d5	a9 ec		lda #$ec	        lda #<uc_slot_title
+.63d7	a2 66		ldx #$66	        ldx #>uc_slot_title
+.63d9	20 92 65	jsr $6592	        jsr uc_puts
+.63dc	ad 91 68	lda $6891	        lda uc_index
+.63df	18		clc		        clc
+.63e0	69 01		adc #$01	        adc #1
+.63e2	20 c6 65	jsr $65c6	        jsr uc_decimal
+.63e5	a9 f2		lda #$f2	        lda #<uc_type_title
+.63e7	a2 66		ldx #$66	        ldx #>uc_type_title
+.63e9	20 92 65	jsr $6592	        jsr uc_puts
+.63ec	ae 92 68	ldx $6892	        ldx uc_record
+.63ef	bd fe 68	lda $68fe,x	        lda uc_data+1,x
+.63f2	20 b0 65	jsr $65b0	        jsr uc_hex
+.63f5	a9 fa		lda #$fa	        lda #<uc_iec_title
+.63f7	a2 66		ldx #$66	        ldx #>uc_iec_title
+.63f9	20 92 65	jsr $6592	        jsr uc_puts
+.63fc	ae 92 68	ldx $6892	        ldx uc_record
+.63ff	bd ff 68	lda $68ff,x	        lda uc_data+2,x
+.6402	20 c6 65	jsr $65c6	        jsr uc_decimal
+.6405	a9 07		lda #$07	        lda #<uc_off
+.6407	a2 67		ldx #$67	        ldx #>uc_off
+.6409	ac 92 68	ldy $6892	        ldy uc_record
+.640c	48		pha		        pha
+.640d	b9 00 69	lda $6900,y	        lda uc_data+3,y
+.6410	d0 04		bne $6416	        bne +
+.6412	68		pla		        pla
+.6413	4c 1b 64	jmp $641b	        jmp uc_draw_power
+.6416	68		pla		+       pla
+.6417	a9 01		lda #$01	        lda #<uc_on
+.6419	a2 67		ldx #$67	        ldx #>uc_on
+.641b					uc_draw_power:
+.641b	20 92 65	jsr $6592	        jsr uc_puts
+.641e	ee 91 68	inc $6891	        inc uc_index
+.6421	ad 92 68	lda $6892	        lda uc_record
+.6424	18		clc		        clc
+.6425	69 03		adc #$03	        adc #3
+.6427	8d 92 68	sta $6892	        sta uc_record
+.642a	ad 91 68	lda $6891	        lda uc_index
+.642d	cd 88 68	cmp $6888	        cmp uc_count
+.6430	d0 a3		bne $63d5	        bne uc_draw_drive
+.6432	a9 0e		lda #$0e	        lda #<uc_drive_types
+.6434	a2 67		ldx #$67	        ldx #>uc_drive_types
+.6436	4c 92 65	jmp $6592	        jmp uc_puts
+.6439					uc_draw_network:
+.6439	a9 53		lda #$53	        lda #<uc_network_title
+.643b	a2 67		ldx #$67	        ldx #>uc_network_title
+.643d	20 92 65	jsr $6592	        jsr uc_puts
+.6440	ad 88 68	lda $6888	        lda uc_count
+.6443	20 c6 65	jsr $65c6	        jsr uc_decimal
+.6446	20 ab 65	jsr $65ab	        jsr uc_newline
+.6449	ad 89 68	lda $6889	        lda uc_error
+.644c	d0 65		bne $64b3	        bne uc_show_error
+.644e	ad 88 68	lda $6888	        lda uc_count
+.6451	d0 07		bne $645a	        bne +
+.6453	a9 73		lda #$73	        lda #<uc_no_interfaces
+.6455	a2 67		ldx #$67	        ldx #>uc_no_interfaces
+.6457	4c 92 65	jmp $6592	        jmp uc_puts
+.645a	a9 68		lda #$68	+       lda #<uc_interface_title
+.645c	a2 67		ldx #$67	        ldx #>uc_interface_title
+.645e	20 92 65	jsr $6592	        jsr uc_puts
+.6461	ad 85 68	lda $6885	        lda uc_interface
+.6464	20 c6 65	jsr $65c6	        jsr uc_decimal
+.6467	20 ab 65	jsr $65ab	        jsr uc_newline
+.646a	a9 00		lda #$00	        lda #0
+.646c	8d 91 68	sta $6891	        sta uc_index
+.646f	8d 92 68	sta $6892	        sta uc_record
+.6472					uc_draw_address:
+.6472	ae 92 68	ldx $6892	        ldx uc_record
+.6475	bd ab 67	lda $67ab,x	        lda uc_address_lo,x
+.6478	48		pha		        pha
+.6479	bd ae 67	lda $67ae,x	        lda uc_address_hi,x
+.647c	aa		tax		        tax
+.647d	68		pla		        pla
+.647e	20 92 65	jsr $6592	        jsr uc_puts
+.6481	a9 04		lda #$04	        lda #4
+.6483	8d 98 68	sta $6898	        sta uc_octets
+.6486	ae 91 68	ldx $6891	-       ldx uc_index
+.6489	bd fd 68	lda $68fd,x	        lda uc_data,x
+.648c	20 c6 65	jsr $65c6	        jsr uc_decimal
+.648f	ee 91 68	inc $6891	        inc uc_index
+.6492	ce 98 68	dec $6898	        dec uc_octets
+.6495	f0 08		beq $649f	        beq +
+.6497	a9 2e		lda #$2e	        lda #$2e
+.6499	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.649c	4c 86 64	jmp $6486	        jmp -
+.649f	20 ab 65	jsr $65ab	+       jsr uc_newline
+.64a2	ee 92 68	inc $6892	        inc uc_record
+.64a5	ad 92 68	lda $6892	        lda uc_record
+.64a8	c9 03		cmp #$03	        cmp #3
+.64aa	d0 c6		bne $6472	        bne uc_draw_address
+.64ac	a9 b1		lda #$b1	        lda #<uc_network_hint
+.64ae	a2 67		ldx #$67	        ldx #>uc_network_hint
+.64b0	4c 92 65	jmp $6592	        jmp uc_puts
+.64b3					uc_show_error:
+.64b3	a9 0b		lda #$0b	        lda #<uc_failed
+.64b5	a2 68		ldx #$68	        ldx #>uc_failed
+.64b7	20 92 65	jsr $6592	        jsr uc_puts
+.64ba	ad 89 68	lda $6889	        lda uc_error
+.64bd	20 b0 65	jsr $65b0	        jsr uc_hex
+.64c0	a9 19		lda #$19	        lda #<uc_dos_title
+.64c2	a2 68		ldx #$68	        ldx #>uc_dos_title
+.64c4	20 92 65	jsr $6592	        jsr uc_puts
+.64c7	ad 8a 68	lda $688a	        lda uc_dos
+.64ca	20 b0 65	jsr $65b0	        jsr uc_hex
+.64cd	a9 20		lda #$20	        lda #<uc_transport_title
+.64cf	a2 68		ldx #$68	        ldx #>uc_transport_title
+.64d1	20 92 65	jsr $6592	        jsr uc_puts
+.64d4	ad 8b 68	lda $688b	        lda uc_transport
+.64d7	20 b0 65	jsr $65b0	        jsr uc_hex
+.64da	20 ab 65	jsr $65ab	        jsr uc_newline
+.64dd	ad 89 68	lda $6889	        lda uc_error
+.64e0	c9 09		cmp #$09	        cmp #N_CORRUPT
+.64e2	d0 07		bne $64eb	        bne +
+.64e4	a9 28		lda #$28	        lda #<uc_malformed
+.64e6	a2 68		ldx #$68	        ldx #>uc_malformed
+.64e8	4c 92 65	jmp $6592	        jmp uc_puts
+.64eb	a9 dd		lda #$dd	+       lda #<uc_status
+.64ed	a2 68		ldx #$68	        ldx #>uc_status
+.64ef	20 1b 65	jsr $651b	        jsr uc_text_source
+.64f2	a9 1f		lda #$1f	        lda #31
+.64f4	8d 9a 68	sta $689a	        sta uc_text_left
+.64f7	8d 9b 68	sta $689b	        sta uc_text_limit
+.64fa	4c 22 65	jmp $6522	        jmp uc_text
+.64fd					uc_data_text:
+.64fd	a9 fd		lda #$fd	        lda #<uc_data
+.64ff	a2 68		ldx #$68	        ldx #>uc_data
+.6501	20 1b 65	jsr $651b	        jsr uc_text_source
+.6504	ad 8d 68	lda $688d	        lda uc_length+1
+.6507	f0 04		beq $650d	        beq +
+.6509	a9 ff		lda #$ff	        lda #255
+.650b	d0 03		bne $6510	        bne uc_data_length
+.650d	ad 8c 68	lda $688c	+       lda uc_length
+.6510					uc_data_length:
+.6510	8d 9a 68	sta $689a	        sta uc_text_left
+.6513	a9 90		lda #$90	        lda #144
+.6515	8d 9b 68	sta $689b	        sta uc_text_limit
+.6518	4c 22 65	jmp $6522	        jmp uc_text
+.651b					uc_text_source:
+.651b	8d 30 65	sta $6530	        sta uc_text_read+1
+.651e	8e 31 65	stx $6531	        stx uc_text_read+2
+.6521	60		rts		        rts
+.6522					uc_text:
+.6522	a9 00		lda #$00	        lda #0
+.6524	8d 99 68	sta $6899	        sta uc_text_any
+.6527	8d 9c 68	sta $689c	        sta uc_column
+.652a					uc_text_next:
+.652a	ad 9a 68	lda $689a	        lda uc_text_left
+.652d	f0 3e		beq $656d	        beq uc_text_end
+.652f					uc_text_read:
+.652f	ad ff ff	lda $ffff	        lda $ffff
+.6532	f0 39		beq $656d	        beq uc_text_end
+.6534	ae 9b 68	ldx $689b	        ldx uc_text_limit
+.6537	f0 2a		beq $6563	        beq uc_text_clipped
+.6539	20 78 65	jsr $6578	        jsr uc_ascii
+.653c	a9 01		lda #$01	        lda #1
+.653e	8d 99 68	sta $6899	        sta uc_text_any
+.6541	ee 30 65	inc $6530	        inc uc_text_read+1
+.6544	d0 03		bne $6549	        bne +
+.6546	ee 31 65	inc $6531	        inc uc_text_read+2
+.6549	ce 9a 68	dec $689a	+       dec uc_text_left
+.654c	ce 9b 68	dec $689b	        dec uc_text_limit
+.654f	ee 9c 68	inc $689c	        inc uc_column
+.6552	ad 9c 68	lda $689c	        lda uc_column
+.6555	c9 24		cmp #$24	        cmp #36
+.6557	d0 d1		bne $652a	        bne uc_text_next
+.6559	20 ab 65	jsr $65ab	        jsr uc_newline
+.655c	a9 00		lda #$00	        lda #0
+.655e	8d 9c 68	sta $689c	        sta uc_column
+.6561	f0 c7		beq $652a	        beq uc_text_next
+.6563					uc_text_clipped:
+.6563	a9 4d		lda #$4d	        lda #<uc_clipped
+.6565	a2 68		ldx #$68	        ldx #>uc_clipped
+.6567	20 92 65	jsr $6592	        jsr uc_puts
+.656a	4c ab 65	jmp $65ab	        jmp uc_newline
+.656d					uc_text_end:
+.656d	ad 9c 68	lda $689c	        lda uc_column
+.6570	d0 39		bne $65ab	        bne uc_newline
+.6572	ad 99 68	lda $6899	        lda uc_text_any
+.6575	f0 34		beq $65ab	        beq uc_newline
+.6577	60		rts		        rts
+.6578					uc_ascii:
+.6578	c9 20		cmp #$20	        cmp #32
+.657a	90 11		bcc $658d	        bcc uc_ascii_bad
+.657c	c9 7f		cmp #$7f	        cmp #127
+.657e	b0 0d		bcs $658d	        bcs uc_ascii_bad
+.6580	c9 61		cmp #$61	        cmp #$61
+.6582	90 06		bcc $658a	        bcc +
+.6584	c9 7b		cmp #$7b	        cmp #$7b
+.6586	b0 02		bcs $658a	        bcs +
+.6588	29 df		and #$df	        and #$df
+.658a	4c d2 ff	jmp $ffd2	+       jmp $ffd2
+.658d					uc_ascii_bad:
+.658d	a9 2e		lda #$2e	        lda #$2e
+.658f	4c d2 ff	jmp $ffd2	        jmp $ffd2
+.6592					uc_puts:
+.6592	8d 99 65	sta $6599	        sta uc_put_byte+1
+.6595	8e 9a 65	stx $659a	        stx uc_put_byte+2
+.6598					uc_put_byte:
+.6598	ad ff ff	lda $ffff	        lda $ffff
+.659b	f0 0d		beq $65aa	        beq uc_put_done
+.659d	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.65a0	ee 99 65	inc $6599	        inc uc_put_byte+1
+.65a3	d0 f3		bne $6598	        bne uc_put_byte
+.65a5	ee 9a 65	inc $659a	        inc uc_put_byte+2
+.65a8	d0 ee		bne $6598	        bne uc_put_byte
+.65aa					uc_put_done:
+.65aa	60		rts		        rts
+.65ab					uc_newline:
+.65ab	a9 0d		lda #$0d	        lda #13
+.65ad	4c d2 ff	jmp $ffd2	        jmp $ffd2
+.65b0					uc_hex:
+.65b0	48		pha		        pha
+.65b1	4a		lsr a		        lsr
+.65b2	4a		lsr a		        lsr
+.65b3	4a		lsr a		        lsr
+.65b4	4a		lsr a		        lsr
+.65b5	aa		tax		        tax
+.65b6	bd 51 68	lda $6851,x	        lda uc_hex_digits,x
+.65b9	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.65bc	68		pla		        pla
+.65bd	29 0f		and #$0f	        and #15
+.65bf	aa		tax		        tax
+.65c0	bd 51 68	lda $6851,x	        lda uc_hex_digits,x
+.65c3	4c d2 ff	jmp $ffd2	        jmp $ffd2
+.65c6					uc_decimal:
+.65c6	8d 93 68	sta $6893	        sta uc_number
+.65c9	a9 00		lda #$00	        lda #0
+.65cb	8d 94 68	sta $6894	        sta uc_leading
+.65ce	a2 00		ldx #$00	        ldx #0
+.65d0					uc_decimal_next:
+.65d0	a9 30		lda #$30	        lda #$30
+.65d2	8d 95 68	sta $6895	        sta uc_digit
+.65d5	ad 93 68	lda $6893	-       lda uc_number
+.65d8	dd 61 68	cmp $6861,x	        cmp uc_powers,x
+.65db	90 0c		bcc $65e9	        bcc +
+.65dd	38		sec		        sec
+.65de	fd 61 68	sbc $6861,x	        sbc uc_powers,x
+.65e1	8d 93 68	sta $6893	        sta uc_number
+.65e4	ee 95 68	inc $6895	        inc uc_digit
+.65e7	d0 ec		bne $65d5	        bne -
+.65e9	8e 96 68	stx $6896	+       stx uc_decimal_index
+.65ec	ad 95 68	lda $6895	        lda uc_digit
+.65ef	c9 30		cmp #$30	        cmp #$30
+.65f1	d0 09		bne $65fc	        bne uc_decimal_print
+.65f3	ad 94 68	lda $6894	        lda uc_leading
+.65f6	d0 04		bne $65fc	        bne uc_decimal_print
+.65f8	e0 02		cpx #$02	        cpx #2
+.65fa	d0 0b		bne $6607	        bne uc_decimal_skip
+.65fc					uc_decimal_print:
+.65fc	a9 01		lda #$01	        lda #1
+.65fe	8d 94 68	sta $6894	        sta uc_leading
+.6601	ad 95 68	lda $6895	        lda uc_digit
+.6604	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.6607					uc_decimal_skip:
+.6607	ae 96 68	ldx $6896	        ldx uc_decimal_index
+.660a	e8		inx		        inx
+.660b	e0 03		cpx #$03	        cpx #3
+.660d	d0 c1		bne $65d0	        bne uc_decimal_next
+.660f	60		rts		        rts
+>6610	55 4f 53 20 55 4c 54 49		uc_title: .text "uos ultimate",13,13,"i info  d drives  n network  t clock",13,13,0
+>6618	4d 41 54 45 0d 0d 49 20 49 4e 46 4f 20 20 44 20
+>6628	44 52 49 56 45 53 20 20 4e 20 4e 45 54 57 4f 52
+>6638	4b 20 20 54 20 43 4c 4f 43 4b 0d 0d 00
+>6645	0d 52 20 52 45 46 52 45		uc_footer: .text 13,"r refresh   esc desktop",13,"left/right: target or interface",13,0
+>664d	53 48 20 20 20 45 53 43 20 44 45 53 4b 54 4f 50
+>665d	0d 4c 45 46 54 2f 52 49 47 48 54 3a 20 54 41 52
+>666d	47 45 54 20 4f 52 20 49 4e 54 45 52 46 41 43 45
+>667d	0d 00
+>667f	48 41 52 44 57 41 52 45		uc_hardware_title: .text "hardware",13,0
+>6687	0d 00
+>6689	55 4e 41 56 41 49 4c 41		uc_unavailable: .text "unavailable",13,0
+>6691	42 4c 45 0d 00
+>6696	0d 54 41 52 47 45 54 20		uc_target_title: .text 13,"target ",0
+>669e	00
+>669f	55 4c 54 49 4d 41 54 45		uc_drives_title: .text "ultimate drive inventory",13,13,0
+>66a7	20 44 52 49 56 45 20 49 4e 56 45 4e 54 4f 52 59
+>66b7	0d 0d 00
+>66ba	50 41 52 54 49 41 4c 20		uc_partial_title: .text "partial reply: 2 of 4 records",13,13,0
+>66c2	52 45 50 4c 59 3a 20 32 20 4f 46 20 34 20 52 45
+>66d2	43 4f 52 44 53 0d 0d 00
+>66da	4e 4f 20 44 52 49 56 45		uc_no_drives: .text "no drive records",13,0
+>66e2	20 52 45 43 4f 52 44 53 0d 00
+>66ec	53 4c 4f 54 20 00		uc_slot_title: .text "slot ",0
+>66f2	20 20 54 59 50 45 20 00		uc_type_title: .text "  type ",0
+>66fa	20 20 49 45 43 20 00		uc_iec_title: .text "  iec ",0
+>6701	20 20 4f 4e 0d 00		uc_on: .text "  on",13,0
+>6707	20 20 4f 46 46 0d 00		uc_off: .text "  off",13,0
+>670e	0d 54 59 50 45 53 3a 20		uc_drive_types: .text 13,"types: 00=1541 01=1571 02=1581",13,"other type codes shown as reported.",13,0
+>6716	30 30 3d 31 35 34 31 20 30 31 3d 31 35 37 31 20
+>6726	30 32 3d 31 35 38 31 0d 4f 54 48 45 52 20 54 59
+>6736	50 45 20 43 4f 44 45 53 20 53 48 4f 57 4e 20 41
+>6746	53 20 52 45 50 4f 52 54 45 44 2e 0d 00
+>6753	4e 45 54 57 4f 52 4b 20		uc_network_title: .text "network interfaces: ",0
+>675b	49 4e 54 45 52 46 41 43 45 53 3a 20 00
+>6768	49 4e 54 45 52 46 41 43		uc_interface_title: .text "interface ",0
+>6770	45 20 00
+>6773	4e 4f 20 49 4e 54 45 52		uc_no_interfaces: .text "no interfaces available",13,0
+>677b	46 41 43 45 53 20 41 56 41 49 4c 41 42 4c 45 0d
+>678b	00
+>678c	0d 49 50 3a 20 20 20 20		uc_ip_title: .text 13,"ip:      ",0
+>6794	20 20 00
+>6797	4d 41 53 4b 3a 20 20 20		uc_mask_title: .text "mask:    ",0
+>679f	20 00
+>67a1	47 41 54 45 57 41 59 3a		uc_gateway_title: .text "gateway: ",0
+>67a9	20 00
+>67ab	8c 97 a1			uc_address_lo: .byte <uc_ip_title,<uc_mask_title,<uc_gateway_title
+>67ae	67 67 67			uc_address_hi: .byte >uc_ip_title,>uc_mask_title,>uc_gateway_title
+>67b1	0d 43 4f 4e 46 49 47 55		uc_network_hint: .text 13,"configured addresses; link not tested.",13,0
+>67b9	52 45 44 20 41 44 44 52 45 53 53 45 53 3b 20 4c
+>67c9	49 4e 4b 20 4e 4f 54 20 54 45 53 54 45 44 2e 0d
+>67d9	00
+>67da	43 41 52 54 52 49 44 47		uc_clock_title: .text "cartridge rtc",13,13,0
+>67e2	45 20 52 54 43 0d 0d 00
+>67ea	52 20 52 45 46 52 45 53		uc_clock_hint: .text "r refreshes this clock reading.",13,0
+>67f2	48 45 53 20 54 48 49 53 20 43 4c 4f 43 4b 20 52
+>6802	45 41 44 49 4e 47 2e 0d 00
+>680b	55 4e 41 56 41 49 4c 41		uc_failed: .text "unavailable: ",0
+>6813	42 4c 45 3a 20 00
+>6819	20 20 44 4f 53 20 00		uc_dos_title: .text "  dos ",0
+>6820	20 20 4c 49 4e 4b 20 00		uc_transport_title: .text "  link ",0
+>6828	49 4e 56 41 4c 49 44 20		uc_malformed: .text "invalid reply; r retries the query.",13,0
+>6830	52 45 50 4c 59 3b 20 52 20 52 45 54 52 49 45 53
+>6840	20 54 48 45 20 51 55 45 52 59 2e 0d 00
+>684d	2e 2e 2e 00			uc_clipped: .text "...",0
+>6851	30 31 32 33 34 35 36 37		uc_hex_digits: .text "0123456789abcdef"
+>6859	38 39 41 42 43 44 45 46
+>6861	64 0a 01			uc_powers: .byte 100,10,1
+>6864	00 00 00 00 2f 00 00 2f		uc_time_pattern: .byte 0,0,0,0,$2f,0,0,$2f,0,0,$20,0,0,$3a,0,0,$3a,0,0
+>686c	00 00 20 00 00 3a 00 00 3a 00 00
+>6877	1f 1c 1f 1e 1f 1e 1f 1f		uc_month_days: .byte 31,28,31,30,31,30,31,31,30,31,30,31
+>687f	1e 1f 1e 1f
+>6883	00				uc_page: .byte 0
+>6884	00				uc_target: .byte 0
+>6885	00				uc_interface: .byte 0
+>6886	00				uc_valid: .byte 0
+>6887	00				uc_partial: .byte 0
+>6888	00				uc_count: .byte 0
+>6889	00				uc_error: .byte 0
+>688a	00				uc_dos: .byte 0
+>688b	00				uc_transport: .byte 0
+>688c	00 00				uc_length: .word 0
+>688e	00				uc_model_error: .byte 0
+>688f	00				uc_model_length: .byte 0
+>6890	00				uc_screen: .byte 0
+>6891	00				uc_index: .byte 0
+>6892	00				uc_record: .byte 0
+>6893	00				uc_number: .byte 0
+>6894	00				uc_leading: .byte 0
+>6895	00				uc_digit: .byte 0
+>6896	00				uc_decimal_index: .byte 0
+>6897	00				uc_days: .byte 0
+>6898	00				uc_octets: .byte 0
+>6899	00				uc_text_any: .byte 0
+>689a	00				uc_text_left: .byte 0
+>689b	00				uc_text_limit: .byte 0
+>689c	00				uc_column: .byte 0
+>689d	00 00 00 00 00 00 00 00		uc_model: .fill 64,0
+>68a5	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 2 times (32 bytes)...
+>68d5	00 00 00 00 00 00 00 00
+>68dd	00 00 00 00 00 00 00 00		uc_status: .fill 32,0
+>68e5	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>68f5	00 00 00 00 00 00 00 00
+>68fd	00 00 00 00 00 00 00 00		uc_data: .fill 512,0
+>6905	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 30 times (480 bytes)...
+>6af5	00 00 00 00 00 00 00 00
+.6afd					uc_end:
+
+;******  End of listing
