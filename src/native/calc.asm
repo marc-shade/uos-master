@@ -1,11 +1,22 @@
 ; Native uOS calculator with an owner-managed bank-1 history, GPL v3.
 .include "api.inc"
+.weak
+NATIVE_CALC_GRAPHICS=0
+.endweak
 * = N_APPBASE
 app_image:
         .text "napp"
+ .if NATIVE_CALC_GRAPHICS
+        .byte 1,1,8,0          ; owned bitmap presentation
+ .else
         .byte 1,1,6,0          ; shared focused fields use ABI 1.6
+ .endif
         .word calc_end-app_image
+ .if NATIVE_CALC_GRAPHICS
+        .byte (calc_end-app_image+255)/256,0
+ .else
         .byte 16,0             ; 4 KiB code/data, zero-filled before loading
+ .endif
         .word calc_entry-app_image
         .word 0                ; build-native.py seals CRC16 over the image
         .text "calculator",0
@@ -37,14 +48,28 @@ calc_keep_handle:
         sta save_mode
         sta save_status
         jsr save_source
+ .if NATIVE_CALC_GRAPHICS
+        jsr cg_begin
+ .endif
         jmp c_clear
 cloop:
         lda #1
         sta N_READY
         jsr N_KEYIN
+ .if NATIVE_CALC_GRAPHICS
+        bne cg_have_key
+        jsr cg_mouse
         beq cloop
+cg_have_key:
+ .else
+        beq cloop
+ .endif
         ldx #0
         stx N_READY
+ .if NATIVE_CALC_GRAPHICS
+        jsr cg_key
+        bcs cloop
+ .endif
         ldx save_mode
         beq *+5
         jmp save_key
@@ -109,6 +134,9 @@ calc_divide:
         lda #4
         jmp c_op
 calc_exit:
+ .if NATIVE_CALC_GRAPHICS
+        jsr pm_close
+ .endif
         lda #0
         jmp N_EXIT             ; one-way exit drops app frames, releases all owners
 calc_older:
@@ -175,7 +203,12 @@ calc_formatted:
         beq calc_redraw
         jsr history_append
 calc_redraw:
+ .if NATIVE_CALC_GRAPHICS
+        jsr cg_redraw
+        lda cg_bitmap
+ .else
         lda #0
+ .endif
         sta screen
 calc_screen:
         lda $d7
@@ -264,6 +297,11 @@ history_text_done:
 history_appended:
         rts
 history_failure:
+ .if NATIVE_CALC_GRAPHICS
+        pha
+        jsr pm_close
+        pla
+ .endif
         jmp N_EXIT             ; loader preserves error as the app exit code
 history_show:
         jsr history_select
@@ -352,5 +390,12 @@ c_rem: .word 0
 c_opkey: .byte 0
 dispbuf: .fill 8,0
 .include "calc-save.inc"
+ .if NATIVE_CALC_GRAPHICS
+.include "calc/gui.inc"
+ .endif
 calc_end:
+ .if NATIVE_CALC_GRAPHICS
+        .cerror * > N_APPBASE+$6000, "graphical calculator exceeds app slot"
+ .else
         .cerror * > N_APPBASE+$1000, "calculator exceeds declared allocation"
+ .endif

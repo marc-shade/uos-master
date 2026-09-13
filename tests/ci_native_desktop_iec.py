@@ -24,6 +24,9 @@ from native_running_layout import verify_running_layout
 from native_editor_check import editor_screen
 from native_browser_check import disk_records, browser_screen
 from launcher_scene import surface, console
+from native_calc_scene import surface as calc_surface
+from native_pointer_check import check_canvas, surface_pixels
+from hwlib import lst_symbol
 from native_controls_check import panel_screen
 from native_claude_check import landing_screen
 
@@ -106,6 +109,23 @@ try:
             assert data==oracle(columns),(label,columns,'complete screen mismatch')
         record['screens'].append(label)
         print('PASS: both text screens:',label,flush=True)
+    def calculator(label,result,history):
+        assert read(lst_symbol('native-desktop/calc','cg_bitmap'))==b'\1'
+        expected=calc_surface(result,history)
+        actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
+        assert actual==expected,(label,'calculator surface')
+        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
+        assert vdc==calculator_screen(80,result,history),(label,'calculator VDC')
+        assert read(ksyms['v_tag'])!=b'\0'
+        handle=read(lst_symbol('native-desktop/calc','cg_handle'),4)
+        assert read(0x38c0,36)==handle[:1]*36
+        assert read(0x3c00+(handle[0]-1)*8,7)==bytes([32,0,0xc0,36])+handle[1:]
+        time.sleep(.15)
+        error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+        (work/f'{label}-display-get.bin').write_bytes(raw)
+        rectangle=check_canvas(raw,surface_pixels(expected,0,0,visible=False))
+        record.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,rectangle=rectangle))
+        print('PASS: graphical calculator surface, VIC pixels and VDC:',label,flush=True)
     def desktop(label,selected=0,error=0,fallback=False):
         state=read(syms['gd_selected'],8)
         assert state[:4]==bytes([selected,int(not fallback),2 if fallback else 0,error]),(label,state.hex())
@@ -191,7 +211,7 @@ try:
         sys.exit(0)
     if args.missing_desktop:
         screens('missing-desktop-workspace',lambda columns:expected_screen(columns,0,result=0x11))
-        key(ord('C'));screens('fallback-calculator',lambda columns:calculator_screen(columns,'0',[]))
+        key(ord('C'));calculator('fallback-calculator','0',[])
         key(27);screens('fallback-calculator-return',lambda columns:expected_screen(columns,0))
         final=observation('final')
         assert final['display_tag']=='00' and final['port']=='2f73'
@@ -235,16 +255,15 @@ try:
     before=read(0xa0,3);time.sleep(.2);assert read(0xa0,3)!=before
     if args.missing_calc:
         key(ord('C'));desktop('missing-app-recovered',error=0x11)
-        key(ord('F'));screens('files-after-missing',lambda columns:browser_screen(columns,records))
+        key(ord('F'));screens('files-after-missing',lambda columns:browser_screen(columns,records,files_app=True))
         key(27);desktop('desktop-after-files',2)
     else:
         for index,(value,selected) in enumerate([(0x11,1),(9,2),(0x1d,3),(9,4),(9,0),(0x9d,4),(0x13,0)]):
             key(value);desktop(f'selection-{index}',selected)
         key(13)
-        assert read(ksyms['v_tag'])==b'\0' and read(0x38c0,36)==bytes(36)
-        screens('calculator-new',lambda columns:calculator_screen(columns,'0',[]))
+        calculator('calculator-new','0',[])
         for value in b'12+30=':key(value)
-        screens('calculator-result',lambda columns:calculator_screen(columns,'42',['42']))
+        calculator('calculator-result','42',['42'])
         key(27);desktop('desktop-after-calculator')
         key(ord('E'));screens('editor-new',lambda columns:editor_screen(columns,b'',0))
         document=b'Native desktop'
@@ -253,7 +272,7 @@ try:
         key(27);screens('editor-discard-prompt',lambda columns:editor_screen(columns,document,len(document),dirty=True,mode=5))
         key(ord('N'));screens('editor-kept',lambda columns:editor_screen(columns,document,len(document),dirty=True))
         key(27);key(ord('Y'));desktop('desktop-after-editor',1)
-        key(ord('F'));screens('files',lambda columns:browser_screen(columns,records))
+        key(ord('F'));screens('files',lambda columns:browser_screen(columns,records,files_app=True))
         key(27);desktop('desktop-after-files',2)
         key(ord('U'))
         screens('ultimate-absent-info',lambda columns:panel_screen(columns,

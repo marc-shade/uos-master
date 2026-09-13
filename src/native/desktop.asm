@@ -134,8 +134,12 @@ gd_idle:
         lda pm_event
         beq gd_loop
         cmp #2
-        beq gd_launch
+        bne +
         lda pm_hit
+        sta gd_selected
+        sta N_DESKTOPSEL
+        jmp gd_launch
++       lda pm_hit
         jmp gd_select
 gd_calc:
         lda #0

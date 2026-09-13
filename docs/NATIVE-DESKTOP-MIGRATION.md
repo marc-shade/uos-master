@@ -1,11 +1,12 @@
 # Native desktop migration and remaining gaps
 
 The [native graphical desktop](NATIVE-GRAPHICS.md) now has a separate direct-boot
-disk, owned VIC presentation, clipped drawing, VDC text controls and keyboard
-app handoff. The diagnostic text workspace remains available. This document
-retains the migration analysis and qualification history; pointer/window
-events, persistent desktop state, native cartridge panels and an app switcher
-remain open. The legacy desktop has a separate memory layout and build.
+disk, owned VIC presentation, clipped drawing, VDC text controls and keyboard/
+1351 app handoff. Calculator now shares its graphical controls and input; the
+Ultimate information panel and Claude terminal are included. The diagnostic
+text workspace remains available. This document retains the migration history;
+windows, persistent desktop state, broader cartridge controls and an app
+switcher remain open. The legacy desktop has a separate memory layout and build.
 
 ## Existing code cannot keep its legacy memory layout
 
@@ -240,7 +241,7 @@ remain separate rows in the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 ## Added suite apps
 
 ABI 1.10 adds **Claude** and **Ultimate** to both native desktop suite disks.
-The launcher has five entries, retains selection 0–4, occupies 19 pages and
+The launcher has five entries, retains selection 0–4, occupies 23 pages and
 releases its 36-page bitmap before launching an app. Claude is a relocated
 native port of Marc Shade's MIT client, with its Linux bridge packaged under
 `apps/claude`. Its 80-column terminal, 40-column panel, cc65 workspace and NMI
@@ -253,6 +254,8 @@ The blue native desktop is the primary visual direction. Its five icon buttons
 now accept port-1 1351 mouse hover and left-button press/release, with keyboard
 selection retained while the mouse is stationary. Native apps return to this
 shell. Diagnostic Escape paths and restoring an older deployed desktop during
-physical tests explain the green screens seen during development. Shared app
-widgets, menus, windows and a graphical VDC desktop remain migration work;
+physical tests explain the green screens seen during development.
+[Calculator](NATIVE-CALCULATOR.md) now uses the blue bitmap, yellow buttons and
+shared mouse driver, including its history and save dialog. Remaining app
+interfaces, menus, windows and a graphical VDC desktop are migration work;
 see [native graphics](NATIVE-GRAPHICS.md).

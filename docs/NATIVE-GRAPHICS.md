@@ -4,7 +4,9 @@ The ABI 1.10 desktop starts in C128 native mode and launches Calculator, Text
 Editor, Files, Ultimate and [Claude](../apps/claude/README.md). It presents a 320×200 VIC bitmap and mirrors its controls in
 the VDC text console. Apps use the existing owner-checked heap, file and module
 services. The dispatcher releases the desktop before loading an app and reloads
-it when the app returns. The desktop keeps its selected app across app and
+it when the app returns. [Calculator](NATIVE-CALCULATOR.md) shares the blue
+bitmap, yellow buttons and mouse controls, including its history and save
+dialog. The desktop keeps its selected app across app and
 workspace returns for the current session.
 
 The preceding desktop software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
@@ -73,8 +75,8 @@ before qualifying the added ABI 1.10 apps on the physical machine.
 
 The desktop PRG occupies 23 app pages and reserves 36 surface pages, leaving
 367 of the 426 managed pages free. Both allocations are released before an app
-handoff. There is one foreground app; desktop preferences saved across restarts, shared widget input,
-overlapping windows, VDC bitmap presentation and graphical application editing
+handoff. There is one foreground app; desktop preferences saved across restarts, broader widgets and menus,
+overlapping windows, VDC bitmap presentation and graphical document editing
 remain roadmap work.
 
 ## Presentation lifetime

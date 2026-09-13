@@ -23,12 +23,14 @@ def module(name, path):
 
 def build():
     native = module('native_builder', ROOT/'build-native.py')
-    native.build()
-    native.build(out=OUT, desktop_boot=True)
     font = module('native_font', ROOT/'src/native/graphics/font.py')
     (ROOT/'src/native/graphics/font8.bin').write_bytes(font.font())
     from launcher_scene import write_assembly
     write_assembly(ROOT/'src/native/desktop')
+    from native_calc_scene import write_assembly as write_calculator
+    write_calculator(ROOT/'src/native/calc')
+    native.build()
+    native.build(out=OUT, desktop_boot=True)
     module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
     for name in ('desktop', 'files', 'controls'):
         subprocess.run(['64tass', '-a', '-B', str(ROOT/f'src/native/{name}.asm'),
@@ -39,7 +41,8 @@ def build():
         validate(path.read_bytes())
     workspace = OUT/'workspace.d64'
     shutil.copyfile(ROOT/'target/native/uos128.d64', workspace)
-    subprocess.run(['c1541', '-attach', str(workspace), '-delete', 'browse',
+    subprocess.run(['c1541', '-attach', str(workspace), '-delete', 'browse', 'calc',
+                    '-write', str(OUT/'calc.prg'), 'calc',
                     '-write', str(OUT/'desktop.prg'), 'browse',
                     '-write', str(OUT/'files.prg'), 'files',
                     '-write', str(OUT/'controls.prg'), 'ultimate',
@@ -55,6 +58,7 @@ def build():
                       workspace_with_desktop_disk='workspace.d64',
                       standalone_diagnostic_disk='../native/uos128.d64',
                       desktop=validate((OUT/'desktop.prg').read_bytes()),
+                      calculator=validate((OUT/'calc.prg').read_bytes()),
                       files=validate((OUT/'files.prg').read_bytes()),
                       controls=validate((OUT/'controls.prg').read_bytes()),
                       claude=validate((OUT/'claude.prg').read_bytes()),

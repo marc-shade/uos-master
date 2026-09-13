@@ -1,9 +1,13 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -o /home/marc/geos128/uos/target/native-desktop/calc.prg -L /home/marc/geos128/uos/target/native-desktop/calc.lst /home/marc/geos128/uos/src/native/calc.asm
-; Sat Sep 12 15:19:18 2026
+; 64tass -a -D NATIVE_CALC_GRAPHICS=1 -B -o /home/marc/geos128/uos/target/native-desktop/calc.prg -L /home/marc/geos128/uos/target/native-desktop/calc.lst /home/marc/geos128/uos/src/native/calc.asm
+; Sat Sep 12 21:58:02 2026
 
 ;Offset	;Hex		;Monitor	;Source
+
+;******  Command line definitions
+
+=1					NATIVE_CALC_GRAPHICS=1
 
 ;******  Processing input file: /home/marc/geos128/uos/src/native/calc.asm
 
@@ -169,11 +173,12 @@
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
 
+=0					NATIVE_CALC_GRAPHICS=0
 .6000					app_image:
 >6000	4e 41 50 50			        .text "napp"
->6004	01 01 06 00			        .byte 1,1,6,0          ; shared focused fields use ABI 1.6
->6008	16 0c				        .word calc_end-app_image
->600a	10 00				        .byte 16,0             ; 4 KiB code/data, zero-filled before loading
+>6004	01 01 08 00			        .byte 1,1,8,0          ; owned bitmap presentation
+>6008	88 24				        .word calc_end-app_image
+>600a	25 00				        .byte (calc_end-app_image+255)/256,0
 >600c	20 00				        .word calc_entry-app_image
 >600e	00 00				        .word 0                ; build-native.py seals CRC16 over the image
 >6010	43 41 4c 43 55 4c 41 54		        .text "calculator",0
@@ -182,7 +187,7 @@
 .6020					calc_entry:
 .6020	d8		cld		        cld
 .6021	ad 20 3d	lda $3d20	        lda N_CURRENT
-.6024	8d 6b 66	sta $666b	        sta owner
+.6024	8d 84 66	sta $6684	        sta owner
 .6027	8d 00 3d	sta $3d00	        sta N_OWNER
 .602a	a9 02		lda #$02	        lda #2
 .602c	8d 01 3d	sta $3d01	        sta N_PAGES
@@ -195,1052 +200,3393 @@
 .603a	a2 03		ldx #$03	        ldx #3
 .603c					calc_keep_handle:
 .603c	bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
-.603f	9d 6e 66	sta $666e,x	        sta history_handle,x
+.603f	9d 87 66	sta $6687,x	        sta history_handle,x
 .6042	ca		dex		        dex
 .6043	10 f7		bpl $603c	        bpl calc_keep_handle
 .6045	a9 00		lda #$00	        lda #0
-.6047	8d 72 66	sta $6672	        sta history_count
-.604a	8d 73 66	sta $6673	        sta history_head
-.604d	8d 74 66	sta $6674	        sta history_view
-.6050	8d 75 66	sta $6675	        sta history_pending
-.6053	8d 37 6a	sta $6a37	        sta save_mode
-.6056	8d 38 6a	sta $6a38	        sta save_status
-.6059	20 87 68	jsr $6887	        jsr save_source
-.605c	4c 1e 61	jmp $611e	        jmp c_clear
-.605f					cloop:
-.605f	a9 01		lda #$01	        lda #1
-.6061	8d 12 3d	sta $3d12	        sta N_READY
-.6064	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
-.6067	f0 f6		beq $605f	        beq cloop
-.6069	a2 00		ldx #$00	        ldx #0
-.606b	8e 12 3d	stx $3d12	        stx N_READY
-.606e	ae 37 6a	ldx $6a37	        ldx save_mode
-.6071	f0 03		beq $6076	        beq *+5
-.6073	4c c3 66	jmp $66c3	        jmp save_key
-.6076	c9 1b		cmp #$1b	        cmp #$1b
-.6078	f0 74		beq $60ee	        beq calc_exit
-.607a	c9 43		cmp #$43	        cmp #$43
-.607c	f0 51		beq $60cf	        beq calc_clear
-.607e	c9 63		cmp #$63	        cmp #$63
-.6080	f0 4d		beq $60cf	        beq calc_clear
-.6082	c9 4e		cmp #$4e	        cmp #$4e
-.6084	f0 6d		beq $60f3	        beq calc_older
-.6086	c9 6e		cmp #$6e	        cmp #$6e
-.6088	f0 69		beq $60f3	        beq calc_older
-.608a	c9 42		cmp #$42	        cmp #$42
-.608c	f0 7c		beq $610a	        beq calc_newer
-.608e	c9 62		cmp #$62	        cmp #$62
-.6090	f0 78		beq $610a	        beq calc_newer
-.6092	c9 53		cmp #$53	        cmp #$53
-.6094	d0 03		bne $6099	        bne *+5
-.6096	4c 90 66	jmp $6690	        jmp save_begin
-.6099	c9 73		cmp #$73	        cmp #$73
-.609b	d0 03		bne $60a0	        bne *+5
-.609d	4c 90 66	jmp $6690	        jmp save_begin
-.60a0	ae 7f 66	ldx $667f	        ldx c_err
-.60a3	d0 ba		bne $605f	        bne cloop              ; ESC and history remain available during errors
-.60a5	c9 14		cmp #$14	        cmp #$14
-.60a7	d0 03		bne $60ac	        bne *+5
-.60a9	4c dc 61	jmp $61dc	        jmp c_del
-.60ac	c9 0d		cmp #$0d	        cmp #13
-.60ae	f0 22		beq $60d2	        beq calc_equal
-.60b0	c9 3d		cmp #$3d	        cmp #$3d
-.60b2	f0 1e		beq $60d2	        beq calc_equal
-.60b4	c9 2b		cmp #$2b	        cmp #$2b
-.60b6	f0 22		beq $60da	        beq calc_plus
-.60b8	c9 2d		cmp #$2d	        cmp #$2d
-.60ba	f0 23		beq $60df	        beq calc_minus
-.60bc	c9 2a		cmp #$2a	        cmp #$2a
-.60be	f0 24		beq $60e4	        beq calc_times
-.60c0	c9 2f		cmp #$2f	        cmp #$2f
-.60c2	f0 25		beq $60e9	        beq calc_divide
-.60c4	c9 30		cmp #$30	        cmp #$30
-.60c6	90 97		bcc $605f	        bcc cloop
-.60c8	c9 3a		cmp #$3a	        cmp #$3a
-.60ca	b0 93		bcs $605f	        bcs cloop
-.60cc	4c 40 61	jmp $6140	        jmp c_dig
-.60cf					calc_clear:
-.60cf	4c 1e 61	jmp $611e	        jmp c_clear
-.60d2					calc_equal:
-.60d2	a9 01		lda #$01	        lda #1
-.60d4	8d 75 66	sta $6675	        sta history_pending
-.60d7	4c 43 62	jmp $6243	        jmp c_eq
-.60da					calc_plus:
-.60da	a9 01		lda #$01	        lda #1
-.60dc	4c ed 61	jmp $61ed	        jmp c_op
-.60df					calc_minus:
-.60df	a9 02		lda #$02	        lda #2
-.60e1	4c ed 61	jmp $61ed	        jmp c_op
-.60e4					calc_times:
-.60e4	a9 03		lda #$03	        lda #3
-.60e6	4c ed 61	jmp $61ed	        jmp c_op
-.60e9					calc_divide:
-.60e9	a9 04		lda #$04	        lda #4
-.60eb	4c ed 61	jmp $61ed	        jmp c_op
-.60ee					calc_exit:
-.60ee	a9 00		lda #$00	        lda #0
-.60f0	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; one-way exit drops app frames, releases all owners
-.60f3					calc_older:
-.60f3	18		clc		        clc
-.60f4	ad 74 66	lda $6674	        lda history_view
-.60f7	69 08		adc #$08	        adc #8
-.60f9	cd 72 66	cmp $6672	        cmp history_count
-.60fc	90 03		bcc $6101	        bcc *+5
-.60fe	4c 5f 60	jmp $605f	        jmp cloop
-.6101	8d 74 66	sta $6674	        sta history_view
-.6104	20 4f 64	jsr $644f	        jsr c_show
-.6107	4c 5f 60	jmp $605f	        jmp cloop
-.610a					calc_newer:
-.610a	ad 74 66	lda $6674	        lda history_view
-.610d	d0 03		bne $6112	        bne *+5
-.610f	4c 5f 60	jmp $605f	        jmp cloop
-.6112	38		sec		        sec
-.6113	e9 08		sbc #$08	        sbc #8
-.6115	8d 74 66	sta $6674	        sta history_view
-.6118	20 4f 64	jsr $644f	        jsr c_show
-.611b	4c 5f 60	jmp $605f	        jmp cloop
+.6047	8d 8b 66	sta $668b	        sta history_count
+.604a	8d 8c 66	sta $668c	        sta history_head
+.604d	8d 8d 66	sta $668d	        sta history_view
+.6050	8d 8e 66	sta $668e	        sta history_pending
+.6053	8d 50 6a	sta $6a50	        sta save_mode
+.6056	8d 51 6a	sta $6a51	        sta save_status
+.6059	20 a0 68	jsr $68a0	        jsr save_source
+.605c	20 2f 6c	jsr $6c2f	        jsr cg_begin
+.605f	4c 2e 61	jmp $612e	        jmp c_clear
+.6062					cloop:
+.6062	a9 01		lda #$01	        lda #1
+.6064	8d 12 3d	sta $3d12	        sta N_READY
+.6067	20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.606a	d0 05		bne $6071	        bne cg_have_key
+.606c	20 db 6e	jsr $6edb	        jsr cg_mouse
+.606f	f0 f1		beq $6062	        beq cloop
+.6071					cg_have_key:
+.6071	a2 00		ldx #$00	        ldx #0
+.6073	8e 12 3d	stx $3d12	        stx N_READY
+.6076	20 02 6f	jsr $6f02	        jsr cg_key
+.6079	b0 e7		bcs $6062	        bcs cloop
+.607b	ae 50 6a	ldx $6a50	        ldx save_mode
+.607e	f0 03		beq $6083	        beq *+5
+.6080	4c dc 66	jmp $66dc	        jmp save_key
+.6083	c9 1b		cmp #$1b	        cmp #$1b
+.6085	f0 74		beq $60fb	        beq calc_exit
+.6087	c9 43		cmp #$43	        cmp #$43
+.6089	f0 51		beq $60dc	        beq calc_clear
+.608b	c9 63		cmp #$63	        cmp #$63
+.608d	f0 4d		beq $60dc	        beq calc_clear
+.608f	c9 4e		cmp #$4e	        cmp #$4e
+.6091	f0 70		beq $6103	        beq calc_older
+.6093	c9 6e		cmp #$6e	        cmp #$6e
+.6095	f0 6c		beq $6103	        beq calc_older
+.6097	c9 42		cmp #$42	        cmp #$42
+.6099	f0 7f		beq $611a	        beq calc_newer
+.609b	c9 62		cmp #$62	        cmp #$62
+.609d	f0 7b		beq $611a	        beq calc_newer
+.609f	c9 53		cmp #$53	        cmp #$53
+.60a1	d0 03		bne $60a6	        bne *+5
+.60a3	4c a9 66	jmp $66a9	        jmp save_begin
+.60a6	c9 73		cmp #$73	        cmp #$73
+.60a8	d0 03		bne $60ad	        bne *+5
+.60aa	4c a9 66	jmp $66a9	        jmp save_begin
+.60ad	ae 98 66	ldx $6698	        ldx c_err
+.60b0	d0 b0		bne $6062	        bne cloop              ; ESC and history remain available during errors
+.60b2	c9 14		cmp #$14	        cmp #$14
+.60b4	d0 03		bne $60b9	        bne *+5
+.60b6	4c ec 61	jmp $61ec	        jmp c_del
+.60b9	c9 0d		cmp #$0d	        cmp #13
+.60bb	f0 22		beq $60df	        beq calc_equal
+.60bd	c9 3d		cmp #$3d	        cmp #$3d
+.60bf	f0 1e		beq $60df	        beq calc_equal
+.60c1	c9 2b		cmp #$2b	        cmp #$2b
+.60c3	f0 22		beq $60e7	        beq calc_plus
+.60c5	c9 2d		cmp #$2d	        cmp #$2d
+.60c7	f0 23		beq $60ec	        beq calc_minus
+.60c9	c9 2a		cmp #$2a	        cmp #$2a
+.60cb	f0 24		beq $60f1	        beq calc_times
+.60cd	c9 2f		cmp #$2f	        cmp #$2f
+.60cf	f0 25		beq $60f6	        beq calc_divide
+.60d1	c9 30		cmp #$30	        cmp #$30
+.60d3	90 8d		bcc $6062	        bcc cloop
+.60d5	c9 3a		cmp #$3a	        cmp #$3a
+.60d7	b0 89		bcs $6062	        bcs cloop
+.60d9	4c 50 61	jmp $6150	        jmp c_dig
+.60dc					calc_clear:
+.60dc	4c 2e 61	jmp $612e	        jmp c_clear
+.60df					calc_equal:
+.60df	a9 01		lda #$01	        lda #1
+.60e1	8d 8e 66	sta $668e	        sta history_pending
+.60e4	4c 53 62	jmp $6253	        jmp c_eq
+.60e7					calc_plus:
+.60e7	a9 01		lda #$01	        lda #1
+.60e9	4c fd 61	jmp $61fd	        jmp c_op
+.60ec					calc_minus:
+.60ec	a9 02		lda #$02	        lda #2
+.60ee	4c fd 61	jmp $61fd	        jmp c_op
+.60f1					calc_times:
+.60f1	a9 03		lda #$03	        lda #3
+.60f3	4c fd 61	jmp $61fd	        jmp c_op
+.60f6					calc_divide:
+.60f6	a9 04		lda #$04	        lda #4
+.60f8	4c fd 61	jmp $61fd	        jmp c_op
+.60fb					calc_exit:
+.60fb	20 bb 81	jsr $81bb	        jsr pm_close
+.60fe	a9 00		lda #$00	        lda #0
+.6100	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; one-way exit drops app frames, releases all owners
+.6103					calc_older:
+.6103	18		clc		        clc
+.6104	ad 8d 66	lda $668d	        lda history_view
+.6107	69 08		adc #$08	        adc #8
+.6109	cd 8b 66	cmp $668b	        cmp history_count
+.610c	90 03		bcc $6111	        bcc *+5
+.610e	4c 62 60	jmp $6062	        jmp cloop
+.6111	8d 8d 66	sta $668d	        sta history_view
+.6114	20 5f 64	jsr $645f	        jsr c_show
+.6117	4c 62 60	jmp $6062	        jmp cloop
+.611a					calc_newer:
+.611a	ad 8d 66	lda $668d	        lda history_view
+.611d	d0 03		bne $6122	        bne *+5
+.611f	4c 62 60	jmp $6062	        jmp cloop
+.6122	38		sec		        sec
+.6123	e9 08		sbc #$08	        sbc #8
+.6125	8d 8d 66	sta $668d	        sta history_view
+.6128	20 5f 64	jsr $645f	        jsr c_show
+.612b	4c 62 60	jmp $6062	        jmp cloop
 
 ;******  Processing file: /home/marc/geos128/uos/src/native/calc-engine.inc
 
-.611e					c_clear:
-.611e	a9 00		lda #$00	        lda #$00
-.6120	8d 78 66	sta $6678	        sta c_acc
-.6123	8d 79 66	sta $6679	        sta c_acc+1
-.6126	8d 7a 66	sta $667a	        sta c_ent
-.6129	8d 7b 66	sta $667b	        sta c_ent+1
-.612c	8d 7c 66	sta $667c	        sta c_elen
-.612f	8d 7d 66	sta $667d	        sta c_pen
-.6132	8d 7f 66	sta $667f	        sta c_err
-.6135	a9 01		lda #$01	        lda #$01
-.6137	8d 7e 66	sta $667e	        sta c_fresh
-.613a	20 4f 64	jsr $644f	        jsr c_show
-.613d	4c 5f 60	jmp $605f	        jmp cloop
-.6140					c_dig:
-.6140	8d 82 66	sta $6682	        sta c_tmp2                      ; save the digit char before A is used
-.6143	ad 7e 66	lda $667e	        lda c_fresh
-.6146	f0 0e		beq $6156	        beq _dg_cont
-.6148	a9 00		lda #$00	        lda #$00
-.614a	8d 7a 66	sta $667a	        sta c_ent
-.614d	8d 7b 66	sta $667b	        sta c_ent+1
-.6150	8d 7c 66	sta $667c	        sta c_elen
-.6153	8d 7e 66	sta $667e	        sta c_fresh
-.6156					_dg_cont:
-.6156	ad 7c 66	lda $667c	        lda c_elen
-.6159	c9 08		cmp #$08	        cmp #$08
-.615b	b0 22		bcs $617f	        bcs _dg_rej                     ; entry cap: ignore the key
-.615d	ad 82 66	lda $6682	        lda c_tmp2
-.6160	38		sec		        sec
-.6161	e9 30		sbc #$30	        sbc #$30
-.6163	8d 82 66	sta $6682	        sta c_tmp2                      ; digit 0-9
-.6166	ad 7b 66	lda $667b	        lda c_ent+1
-.6169	c9 19		cmp #$19	        cmp #$19                        ; high byte of 6553 ($1999)
-.616b	90 15		bcc $6182	        bcc _dg_ok
-.616d	d0 10		bne $617f	        bne _dg_rej
-.616f	ad 7a 66	lda $667a	        lda c_ent
-.6172	c9 99		cmp #$99	        cmp #$99
-.6174	90 0c		bcc $6182	        bcc _dg_ok
-.6176	d0 07		bne $617f	        bne _dg_rej
-.6178	ad 82 66	lda $6682	        lda c_tmp2
-.617b	c9 06		cmp #$06	        cmp #$06
-.617d	90 03		bcc $6182	        bcc _dg_ok
-.617f					_dg_rej:
-.617f	4c 5f 60	jmp $605f	        jmp cloop
-.6182					_dg_ok:
-.6182	ad 7a 66	lda $667a	        lda c_ent
-.6185	8d 80 66	sta $6680	        sta c_tmp
-.6188	ad 7b 66	lda $667b	        lda c_ent+1
-.618b	8d 81 66	sta $6681	        sta c_tmp+1
-.618e	0e 80 66	asl $6680	        asl c_tmp
-.6191	2e 81 66	rol $6681	        rol c_tmp+1                     ; *2
-.6194	0e 80 66	asl $6680	        asl c_tmp
-.6197	2e 81 66	rol $6681	        rol c_tmp+1                     ; *4
-.619a	0e 80 66	asl $6680	        asl c_tmp
-.619d	2e 81 66	rol $6681	        rol c_tmp+1                     ; *8
-.61a0	ad 7a 66	lda $667a	        lda c_ent
-.61a3	0a		asl a		        asl a
-.61a4	8d 85 66	sta $6685	        sta c_rem
-.61a7	ad 7b 66	lda $667b	        lda c_ent+1
-.61aa	2a		rol a		        rol a
-.61ab	8d 86 66	sta $6686	        sta c_rem+1                     ; ent*2
-.61ae	ad 80 66	lda $6680	        lda c_tmp
-.61b1	18		clc		        clc
-.61b2	6d 85 66	adc $6685	        adc c_rem
-.61b5	8d 80 66	sta $6680	        sta c_tmp
-.61b8	ad 81 66	lda $6681	        lda c_tmp+1
-.61bb	6d 86 66	adc $6686	        adc c_rem+1
-.61be	8d 81 66	sta $6681	        sta c_tmp+1
-.61c1	ad 80 66	lda $6680	        lda c_tmp
-.61c4	18		clc		        clc
-.61c5	6d 82 66	adc $6682	        adc c_tmp2
-.61c8	8d 7a 66	sta $667a	        sta c_ent
-.61cb	ad 81 66	lda $6681	        lda c_tmp+1
-.61ce	69 00		adc #$00	        adc #$00
-.61d0	8d 7b 66	sta $667b	        sta c_ent+1
-.61d3	ee 7c 66	inc $667c	        inc c_elen
-.61d6	20 4f 64	jsr $644f	        jsr c_show
-.61d9	4c 5f 60	jmp $605f	        jmp cloop
-.61dc					c_del:
-.61dc	ad 7c 66	lda $667c	        lda c_elen
-.61df	f0 09		beq $61ea	        beq _cd_x
-.61e1	20 6b 63	jsr $636b	        jsr c_div10
-.61e4	ce 7c 66	dec $667c	        dec c_elen
-.61e7	20 4f 64	jsr $644f	        jsr c_show
-.61ea	4c 5f 60	jmp $605f	_cd_x:  jmp cloop
-.61ed					c_op:
-.61ed	8d 87 66	sta $6687	        sta c_opkey
-.61f0	ad 7c 66	lda $667c	        lda c_elen
-.61f3	f0 19		beq $620e	        beq _cop_ent                    ; no entry: keep acc, just pend
-.61f5	ad 7d 66	lda $667d	        lda c_pen
-.61f8	f0 08		beq $6202	        beq _cop_take
-.61fa	20 85 62	jsr $6285	        jsr c_fold
-.61fd	b0 2b		bcs $622a	        bcs _cop_err
-.61ff	4c 0e 62	jmp $620e	        jmp _cop_ent
-.6202					_cop_take:
-.6202	ad 7a 66	lda $667a	        lda c_ent
-.6205	8d 78 66	sta $6678	        sta c_acc
-.6208	ad 7b 66	lda $667b	        lda c_ent+1
-.620b	8d 79 66	sta $6679	        sta c_acc+1
-.620e					_cop_ent:
-.620e	ad 87 66	lda $6687	        lda c_opkey
-.6211	8d 7d 66	sta $667d	        sta c_pen
-.6214	a9 00		lda #$00	        lda #$00
-.6216	8d 7a 66	sta $667a	        sta c_ent
-.6219	8d 7b 66	sta $667b	        sta c_ent+1
-.621c	8d 7c 66	sta $667c	        sta c_elen
-.621f	a9 01		lda #$01	        lda #$01
-.6221	8d 7e 66	sta $667e	        sta c_fresh
-.6224	20 4f 64	jsr $644f	        jsr c_show
-.6227	4c 5f 60	jmp $605f	        jmp cloop
-.622a					_cop_err:
-.622a	a9 00		lda #$00	        lda #$00
-.622c	8d 7d 66	sta $667d	        sta c_pen
-.622f	8d 7c 66	sta $667c	        sta c_elen
-.6232	8d 7a 66	sta $667a	        sta c_ent
-.6235	8d 7b 66	sta $667b	        sta c_ent+1
-.6238	a9 01		lda #$01	        lda #$01
-.623a	8d 7e 66	sta $667e	        sta c_fresh
-.623d	20 4f 64	jsr $644f	        jsr c_show
-.6240	4c 5f 60	jmp $605f	        jmp cloop
-.6243					c_eq:
-.6243	ad 7d 66	lda $667d	        lda c_pen
-.6246	f0 37		beq $627f	        beq _ce_show                    ; nothing pending: just show
-.6248	20 85 62	jsr $6285	        jsr c_fold
-.624b	b0 19		bcs $6266	        bcs _ce_err
-.624d	a9 00		lda #$00	        lda #$00
-.624f	8d 7d 66	sta $667d	        sta c_pen
-.6252	8d 7c 66	sta $667c	        sta c_elen
-.6255	8d 7a 66	sta $667a	        sta c_ent
-.6258	8d 7b 66	sta $667b	        sta c_ent+1
-.625b	a9 01		lda #$01	        lda #$01
-.625d	8d 7e 66	sta $667e	        sta c_fresh
-.6260	20 4f 64	jsr $644f	        jsr c_show
-.6263	4c 5f 60	jmp $605f	        jmp cloop
-.6266					_ce_err:
-.6266	a9 00		lda #$00	        lda #$00
-.6268	8d 7d 66	sta $667d	        sta c_pen
-.626b	8d 7c 66	sta $667c	        sta c_elen
-.626e	8d 7a 66	sta $667a	        sta c_ent
-.6271	8d 7b 66	sta $667b	        sta c_ent+1
-.6274	a9 01		lda #$01	        lda #$01
-.6276	8d 7e 66	sta $667e	        sta c_fresh
-.6279	20 4f 64	jsr $644f	        jsr c_show
-.627c	4c 5f 60	jmp $605f	        jmp cloop
-.627f					_ce_show:
-.627f	20 4f 64	jsr $644f	        jsr c_show
-.6282	4c 5f 60	jmp $605f	        jmp cloop
-.6285					c_fold:
-.6285	ad 7d 66	lda $667d	        lda c_pen
-.6288	c9 01		cmp #$01	        cmp #$01
-.628a	f0 0e		beq $629a	        beq _f_add
-.628c	c9 02		cmp #$02	        cmp #$02
-.628e	f0 22		beq $62b2	        beq _f_sub
-.6290	c9 03		cmp #$03	        cmp #$03
-.6292	f0 3c		beq $62d0	        beq _f_mul
-.6294	c9 04		cmp #$04	        cmp #$04
-.6296	f0 58		beq $62f0	        beq _f_div
-.6298	18		clc		        clc
-.6299	60		rts		        rts
-.629a					_f_add:
-.629a	ad 78 66	lda $6678	        lda c_acc
-.629d	18		clc		        clc
-.629e	6d 7a 66	adc $667a	        adc c_ent
-.62a1	8d 78 66	sta $6678	        sta c_acc
-.62a4	ad 79 66	lda $6679	        lda c_acc+1
-.62a7	6d 7b 66	adc $667b	        adc c_ent+1
-.62aa	8d 79 66	sta $6679	        sta c_acc+1
-.62ad	90 1f		bcc $62ce	        bcc _native_arithmetic_ok
-.62af	4c c7 62	jmp $62c7	        jmp _native_arithmetic_overflow
-.62b2					_f_sub:
-.62b2	ad 78 66	lda $6678	        lda c_acc
-.62b5	38		sec		        sec
-.62b6	ed 7a 66	sbc $667a	        sbc c_ent
-.62b9	8d 78 66	sta $6678	        sta c_acc
-.62bc	ad 79 66	lda $6679	        lda c_acc+1
-.62bf	ed 7b 66	sbc $667b	        sbc c_ent+1
-.62c2	8d 79 66	sta $6679	        sta c_acc+1
-.62c5	b0 07		bcs $62ce	        bcs _native_arithmetic_ok
-.62c7					_native_arithmetic_overflow:
-.62c7	a9 02		lda #$02	        lda #2
-.62c9	8d 7f 66	sta $667f	        sta c_err
-.62cc	38		sec		        sec
-.62cd	60		rts		        rts
-.62ce					_native_arithmetic_ok:
-.62ce	18		clc		        clc
-.62cf	60		rts		        rts
-.62d0					_f_mul:
-.62d0	20 91 63	jsr $6391	        jsr umul32                      ; 32-bit product: low c_tmp, high c_rem
-.62d3	ad 80 66	lda $6680	        lda c_tmp
-.62d6	8d 78 66	sta $6678	        sta c_acc
-.62d9	ad 81 66	lda $6681	        lda c_tmp+1
-.62dc	8d 79 66	sta $6679	        sta c_acc+1
-.62df	ad 85 66	lda $6685	        lda c_rem
-.62e2	0d 86 66	ora $6686	        ora c_rem+1
-.62e5	f0 07		beq $62ee	        beq _fm_ok
-.62e7	a9 02		lda #$02	        lda #$02                        ; OVF
-.62e9	8d 7f 66	sta $667f	        sta c_err
-.62ec	38		sec		        sec
-.62ed	60		rts		        rts
-.62ee	18		clc		_fm_ok: clc
-.62ef	60		rts		        rts
-.62f0					_f_div:
-.62f0	ad 7a 66	lda $667a	        lda c_ent
-.62f3	0d 7b 66	ora $667b	        ora c_ent+1
-.62f6	d0 07		bne $62ff	        bne _fd_go
-.62f8	a9 01		lda #$01	        lda #$01                        ; DIV/0
-.62fa	8d 7f 66	sta $667f	        sta c_err
-.62fd	38		sec		        sec
-.62fe	60		rts		        rts
-.62ff	ad 78 66	lda $6678	_fd_go: lda c_acc
-.6302	8d 80 66	sta $6680	        sta c_tmp
-.6305	ad 79 66	lda $6679	        lda c_acc+1
-.6308	8d 81 66	sta $6681	        sta c_tmp+1
-.630b	20 1c 63	jsr $631c	        jsr udiv                        ; c_tmp / c_ent -> c_divs, c_rem
-.630e	ad 83 66	lda $6683	        lda c_divs
-.6311	8d 78 66	sta $6678	        sta c_acc
-.6314	ad 84 66	lda $6684	        lda c_divs+1
-.6317	8d 79 66	sta $6679	        sta c_acc+1
-.631a	18		clc		        clc
-.631b	60		rts		        rts
-.631c					udiv:
-.631c	a9 00		lda #$00	        lda #$00
-.631e	8d 83 66	sta $6683	        sta c_divs
-.6321	8d 84 66	sta $6684	        sta c_divs+1
-.6324	8d 85 66	sta $6685	        sta c_rem
-.6327	8d 86 66	sta $6686	        sta c_rem+1
-.632a	a2 10		ldx #$10	        ldx #$10
-.632c	0e 83 66	asl $6683	_ud_l:  asl c_divs
-.632f	2e 84 66	rol $6684	        rol c_divs+1
-.6332	0e 80 66	asl $6680	        asl c_tmp
-.6335	2e 81 66	rol $6681	        rol c_tmp+1                     ; shift the FULL 16-bit dividend
-.6338	2e 85 66	rol $6685	        rol c_rem
-.633b	2e 86 66	rol $6686	        rol c_rem+1
-.633e	b0 10		bcs $6350	        bcs _ud_do                      ; 17th bit set: rem > any 16-bit divisor
-.6340	ad 85 66	lda $6685	        lda c_rem
-.6343	38		sec		        sec
-.6344	ed 7a 66	sbc $667a	        sbc c_ent
-.6347	a8		tay		        tay
-.6348	ad 86 66	lda $6686	        lda c_rem+1
-.634b	ed 7b 66	sbc $667b	        sbc c_ent+1
-.634e	90 17		bcc $6367	        bcc _ud_n
-.6350	ad 85 66	lda $6685	_ud_do: lda c_rem
+.612e					c_clear:
+.612e	a9 00		lda #$00	        lda #$00
+.6130	8d 91 66	sta $6691	        sta c_acc
+.6133	8d 92 66	sta $6692	        sta c_acc+1
+.6136	8d 93 66	sta $6693	        sta c_ent
+.6139	8d 94 66	sta $6694	        sta c_ent+1
+.613c	8d 95 66	sta $6695	        sta c_elen
+.613f	8d 96 66	sta $6696	        sta c_pen
+.6142	8d 98 66	sta $6698	        sta c_err
+.6145	a9 01		lda #$01	        lda #$01
+.6147	8d 97 66	sta $6697	        sta c_fresh
+.614a	20 5f 64	jsr $645f	        jsr c_show
+.614d	4c 62 60	jmp $6062	        jmp cloop
+.6150					c_dig:
+.6150	8d 9b 66	sta $669b	        sta c_tmp2                      ; save the digit char before A is used
+.6153	ad 97 66	lda $6697	        lda c_fresh
+.6156	f0 0e		beq $6166	        beq _dg_cont
+.6158	a9 00		lda #$00	        lda #$00
+.615a	8d 93 66	sta $6693	        sta c_ent
+.615d	8d 94 66	sta $6694	        sta c_ent+1
+.6160	8d 95 66	sta $6695	        sta c_elen
+.6163	8d 97 66	sta $6697	        sta c_fresh
+.6166					_dg_cont:
+.6166	ad 95 66	lda $6695	        lda c_elen
+.6169	c9 08		cmp #$08	        cmp #$08
+.616b	b0 22		bcs $618f	        bcs _dg_rej                     ; entry cap: ignore the key
+.616d	ad 9b 66	lda $669b	        lda c_tmp2
+.6170	38		sec		        sec
+.6171	e9 30		sbc #$30	        sbc #$30
+.6173	8d 9b 66	sta $669b	        sta c_tmp2                      ; digit 0-9
+.6176	ad 94 66	lda $6694	        lda c_ent+1
+.6179	c9 19		cmp #$19	        cmp #$19                        ; high byte of 6553 ($1999)
+.617b	90 15		bcc $6192	        bcc _dg_ok
+.617d	d0 10		bne $618f	        bne _dg_rej
+.617f	ad 93 66	lda $6693	        lda c_ent
+.6182	c9 99		cmp #$99	        cmp #$99
+.6184	90 0c		bcc $6192	        bcc _dg_ok
+.6186	d0 07		bne $618f	        bne _dg_rej
+.6188	ad 9b 66	lda $669b	        lda c_tmp2
+.618b	c9 06		cmp #$06	        cmp #$06
+.618d	90 03		bcc $6192	        bcc _dg_ok
+.618f					_dg_rej:
+.618f	4c 62 60	jmp $6062	        jmp cloop
+.6192					_dg_ok:
+.6192	ad 93 66	lda $6693	        lda c_ent
+.6195	8d 99 66	sta $6699	        sta c_tmp
+.6198	ad 94 66	lda $6694	        lda c_ent+1
+.619b	8d 9a 66	sta $669a	        sta c_tmp+1
+.619e	0e 99 66	asl $6699	        asl c_tmp
+.61a1	2e 9a 66	rol $669a	        rol c_tmp+1                     ; *2
+.61a4	0e 99 66	asl $6699	        asl c_tmp
+.61a7	2e 9a 66	rol $669a	        rol c_tmp+1                     ; *4
+.61aa	0e 99 66	asl $6699	        asl c_tmp
+.61ad	2e 9a 66	rol $669a	        rol c_tmp+1                     ; *8
+.61b0	ad 93 66	lda $6693	        lda c_ent
+.61b3	0a		asl a		        asl a
+.61b4	8d 9e 66	sta $669e	        sta c_rem
+.61b7	ad 94 66	lda $6694	        lda c_ent+1
+.61ba	2a		rol a		        rol a
+.61bb	8d 9f 66	sta $669f	        sta c_rem+1                     ; ent*2
+.61be	ad 99 66	lda $6699	        lda c_tmp
+.61c1	18		clc		        clc
+.61c2	6d 9e 66	adc $669e	        adc c_rem
+.61c5	8d 99 66	sta $6699	        sta c_tmp
+.61c8	ad 9a 66	lda $669a	        lda c_tmp+1
+.61cb	6d 9f 66	adc $669f	        adc c_rem+1
+.61ce	8d 9a 66	sta $669a	        sta c_tmp+1
+.61d1	ad 99 66	lda $6699	        lda c_tmp
+.61d4	18		clc		        clc
+.61d5	6d 9b 66	adc $669b	        adc c_tmp2
+.61d8	8d 93 66	sta $6693	        sta c_ent
+.61db	ad 9a 66	lda $669a	        lda c_tmp+1
+.61de	69 00		adc #$00	        adc #$00
+.61e0	8d 94 66	sta $6694	        sta c_ent+1
+.61e3	ee 95 66	inc $6695	        inc c_elen
+.61e6	20 5f 64	jsr $645f	        jsr c_show
+.61e9	4c 62 60	jmp $6062	        jmp cloop
+.61ec					c_del:
+.61ec	ad 95 66	lda $6695	        lda c_elen
+.61ef	f0 09		beq $61fa	        beq _cd_x
+.61f1	20 7b 63	jsr $637b	        jsr c_div10
+.61f4	ce 95 66	dec $6695	        dec c_elen
+.61f7	20 5f 64	jsr $645f	        jsr c_show
+.61fa	4c 62 60	jmp $6062	_cd_x:  jmp cloop
+.61fd					c_op:
+.61fd	8d a0 66	sta $66a0	        sta c_opkey
+.6200	ad 95 66	lda $6695	        lda c_elen
+.6203	f0 19		beq $621e	        beq _cop_ent                    ; no entry: keep acc, just pend
+.6205	ad 96 66	lda $6696	        lda c_pen
+.6208	f0 08		beq $6212	        beq _cop_take
+.620a	20 95 62	jsr $6295	        jsr c_fold
+.620d	b0 2b		bcs $623a	        bcs _cop_err
+.620f	4c 1e 62	jmp $621e	        jmp _cop_ent
+.6212					_cop_take:
+.6212	ad 93 66	lda $6693	        lda c_ent
+.6215	8d 91 66	sta $6691	        sta c_acc
+.6218	ad 94 66	lda $6694	        lda c_ent+1
+.621b	8d 92 66	sta $6692	        sta c_acc+1
+.621e					_cop_ent:
+.621e	ad a0 66	lda $66a0	        lda c_opkey
+.6221	8d 96 66	sta $6696	        sta c_pen
+.6224	a9 00		lda #$00	        lda #$00
+.6226	8d 93 66	sta $6693	        sta c_ent
+.6229	8d 94 66	sta $6694	        sta c_ent+1
+.622c	8d 95 66	sta $6695	        sta c_elen
+.622f	a9 01		lda #$01	        lda #$01
+.6231	8d 97 66	sta $6697	        sta c_fresh
+.6234	20 5f 64	jsr $645f	        jsr c_show
+.6237	4c 62 60	jmp $6062	        jmp cloop
+.623a					_cop_err:
+.623a	a9 00		lda #$00	        lda #$00
+.623c	8d 96 66	sta $6696	        sta c_pen
+.623f	8d 95 66	sta $6695	        sta c_elen
+.6242	8d 93 66	sta $6693	        sta c_ent
+.6245	8d 94 66	sta $6694	        sta c_ent+1
+.6248	a9 01		lda #$01	        lda #$01
+.624a	8d 97 66	sta $6697	        sta c_fresh
+.624d	20 5f 64	jsr $645f	        jsr c_show
+.6250	4c 62 60	jmp $6062	        jmp cloop
+.6253					c_eq:
+.6253	ad 96 66	lda $6696	        lda c_pen
+.6256	f0 37		beq $628f	        beq _ce_show                    ; nothing pending: just show
+.6258	20 95 62	jsr $6295	        jsr c_fold
+.625b	b0 19		bcs $6276	        bcs _ce_err
+.625d	a9 00		lda #$00	        lda #$00
+.625f	8d 96 66	sta $6696	        sta c_pen
+.6262	8d 95 66	sta $6695	        sta c_elen
+.6265	8d 93 66	sta $6693	        sta c_ent
+.6268	8d 94 66	sta $6694	        sta c_ent+1
+.626b	a9 01		lda #$01	        lda #$01
+.626d	8d 97 66	sta $6697	        sta c_fresh
+.6270	20 5f 64	jsr $645f	        jsr c_show
+.6273	4c 62 60	jmp $6062	        jmp cloop
+.6276					_ce_err:
+.6276	a9 00		lda #$00	        lda #$00
+.6278	8d 96 66	sta $6696	        sta c_pen
+.627b	8d 95 66	sta $6695	        sta c_elen
+.627e	8d 93 66	sta $6693	        sta c_ent
+.6281	8d 94 66	sta $6694	        sta c_ent+1
+.6284	a9 01		lda #$01	        lda #$01
+.6286	8d 97 66	sta $6697	        sta c_fresh
+.6289	20 5f 64	jsr $645f	        jsr c_show
+.628c	4c 62 60	jmp $6062	        jmp cloop
+.628f					_ce_show:
+.628f	20 5f 64	jsr $645f	        jsr c_show
+.6292	4c 62 60	jmp $6062	        jmp cloop
+.6295					c_fold:
+.6295	ad 96 66	lda $6696	        lda c_pen
+.6298	c9 01		cmp #$01	        cmp #$01
+.629a	f0 0e		beq $62aa	        beq _f_add
+.629c	c9 02		cmp #$02	        cmp #$02
+.629e	f0 22		beq $62c2	        beq _f_sub
+.62a0	c9 03		cmp #$03	        cmp #$03
+.62a2	f0 3c		beq $62e0	        beq _f_mul
+.62a4	c9 04		cmp #$04	        cmp #$04
+.62a6	f0 58		beq $6300	        beq _f_div
+.62a8	18		clc		        clc
+.62a9	60		rts		        rts
+.62aa					_f_add:
+.62aa	ad 91 66	lda $6691	        lda c_acc
+.62ad	18		clc		        clc
+.62ae	6d 93 66	adc $6693	        adc c_ent
+.62b1	8d 91 66	sta $6691	        sta c_acc
+.62b4	ad 92 66	lda $6692	        lda c_acc+1
+.62b7	6d 94 66	adc $6694	        adc c_ent+1
+.62ba	8d 92 66	sta $6692	        sta c_acc+1
+.62bd	90 1f		bcc $62de	        bcc _native_arithmetic_ok
+.62bf	4c d7 62	jmp $62d7	        jmp _native_arithmetic_overflow
+.62c2					_f_sub:
+.62c2	ad 91 66	lda $6691	        lda c_acc
+.62c5	38		sec		        sec
+.62c6	ed 93 66	sbc $6693	        sbc c_ent
+.62c9	8d 91 66	sta $6691	        sta c_acc
+.62cc	ad 92 66	lda $6692	        lda c_acc+1
+.62cf	ed 94 66	sbc $6694	        sbc c_ent+1
+.62d2	8d 92 66	sta $6692	        sta c_acc+1
+.62d5	b0 07		bcs $62de	        bcs _native_arithmetic_ok
+.62d7					_native_arithmetic_overflow:
+.62d7	a9 02		lda #$02	        lda #2
+.62d9	8d 98 66	sta $6698	        sta c_err
+.62dc	38		sec		        sec
+.62dd	60		rts		        rts
+.62de					_native_arithmetic_ok:
+.62de	18		clc		        clc
+.62df	60		rts		        rts
+.62e0					_f_mul:
+.62e0	20 a1 63	jsr $63a1	        jsr umul32                      ; 32-bit product: low c_tmp, high c_rem
+.62e3	ad 99 66	lda $6699	        lda c_tmp
+.62e6	8d 91 66	sta $6691	        sta c_acc
+.62e9	ad 9a 66	lda $669a	        lda c_tmp+1
+.62ec	8d 92 66	sta $6692	        sta c_acc+1
+.62ef	ad 9e 66	lda $669e	        lda c_rem
+.62f2	0d 9f 66	ora $669f	        ora c_rem+1
+.62f5	f0 07		beq $62fe	        beq _fm_ok
+.62f7	a9 02		lda #$02	        lda #$02                        ; OVF
+.62f9	8d 98 66	sta $6698	        sta c_err
+.62fc	38		sec		        sec
+.62fd	60		rts		        rts
+.62fe	18		clc		_fm_ok: clc
+.62ff	60		rts		        rts
+.6300					_f_div:
+.6300	ad 93 66	lda $6693	        lda c_ent
+.6303	0d 94 66	ora $6694	        ora c_ent+1
+.6306	d0 07		bne $630f	        bne _fd_go
+.6308	a9 01		lda #$01	        lda #$01                        ; DIV/0
+.630a	8d 98 66	sta $6698	        sta c_err
+.630d	38		sec		        sec
+.630e	60		rts		        rts
+.630f	ad 91 66	lda $6691	_fd_go: lda c_acc
+.6312	8d 99 66	sta $6699	        sta c_tmp
+.6315	ad 92 66	lda $6692	        lda c_acc+1
+.6318	8d 9a 66	sta $669a	        sta c_tmp+1
+.631b	20 2c 63	jsr $632c	        jsr udiv                        ; c_tmp / c_ent -> c_divs, c_rem
+.631e	ad 9c 66	lda $669c	        lda c_divs
+.6321	8d 91 66	sta $6691	        sta c_acc
+.6324	ad 9d 66	lda $669d	        lda c_divs+1
+.6327	8d 92 66	sta $6692	        sta c_acc+1
+.632a	18		clc		        clc
+.632b	60		rts		        rts
+.632c					udiv:
+.632c	a9 00		lda #$00	        lda #$00
+.632e	8d 9c 66	sta $669c	        sta c_divs
+.6331	8d 9d 66	sta $669d	        sta c_divs+1
+.6334	8d 9e 66	sta $669e	        sta c_rem
+.6337	8d 9f 66	sta $669f	        sta c_rem+1
+.633a	a2 10		ldx #$10	        ldx #$10
+.633c	0e 9c 66	asl $669c	_ud_l:  asl c_divs
+.633f	2e 9d 66	rol $669d	        rol c_divs+1
+.6342	0e 99 66	asl $6699	        asl c_tmp
+.6345	2e 9a 66	rol $669a	        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.6348	2e 9e 66	rol $669e	        rol c_rem
+.634b	2e 9f 66	rol $669f	        rol c_rem+1
+.634e	b0 10		bcs $6360	        bcs _ud_do                      ; 17th bit set: rem > any 16-bit divisor
+.6350	ad 9e 66	lda $669e	        lda c_rem
 .6353	38		sec		        sec
-.6354	ed 7a 66	sbc $667a	        sbc c_ent
+.6354	ed 93 66	sbc $6693	        sbc c_ent
 .6357	a8		tay		        tay
-.6358	ad 86 66	lda $6686	        lda c_rem+1
-.635b	ed 7b 66	sbc $667b	        sbc c_ent+1
-.635e	8d 86 66	sta $6686	        sta c_rem+1
-.6361	8c 85 66	sty $6685	        sty c_rem
-.6364	ee 83 66	inc $6683	        inc c_divs
-.6367	ca		dex		_ud_n:  dex
-.6368	d0 c2		bne $632c	        bne _ud_l
-.636a	60		rts		        rts
-.636b					c_div10:
-.636b	ad 7a 66	lda $667a	        lda c_ent
-.636e	8d 80 66	sta $6680	        sta c_tmp
-.6371	ad 7b 66	lda $667b	        lda c_ent+1
-.6374	8d 81 66	sta $6681	        sta c_tmp+1
-.6377	a9 0a		lda #$0a	        lda #$0a
-.6379	8d 7a 66	sta $667a	        sta c_ent
-.637c	a9 00		lda #$00	        lda #$00
-.637e	8d 7b 66	sta $667b	        sta c_ent+1
-.6381	20 1c 63	jsr $631c	        jsr udiv
-.6384	ad 83 66	lda $6683	        lda c_divs
-.6387	8d 7a 66	sta $667a	        sta c_ent
-.638a	ad 84 66	lda $6684	        lda c_divs+1
-.638d	8d 7b 66	sta $667b	        sta c_ent+1
-.6390	60		rts		        rts
-.6391					umul32:
-.6391	a9 00		lda #$00	        lda #$00
-.6393	8d 80 66	sta $6680	        sta c_tmp
-.6396	8d 81 66	sta $6681	        sta c_tmp+1
-.6399	8d 85 66	sta $6685	        sta c_rem
-.639c	8d 86 66	sta $6686	        sta c_rem+1
-.639f	a2 10		ldx #$10	        ldx #$10
-.63a1	0e 80 66	asl $6680	_um_l:  asl c_tmp                       ; product <<= 1 (32-bit)
-.63a4	2e 81 66	rol $6681	        rol c_tmp+1
-.63a7	2e 85 66	rol $6685	        rol c_rem
-.63aa	2e 86 66	rol $6686	        rol c_rem+1
-.63ad	ad 7b 66	lda $667b	        lda c_ent+1                     ; test the multiplier's current bit15
-.63b0	10 23		bpl $63d5	        bpl _um_s
-.63b2	ad 80 66	lda $6680	        lda c_tmp                       ; product += acc
-.63b5	18		clc		        clc
-.63b6	6d 78 66	adc $6678	        adc c_acc
-.63b9	8d 80 66	sta $6680	        sta c_tmp
-.63bc	ad 81 66	lda $6681	        lda c_tmp+1
-.63bf	6d 79 66	adc $6679	        adc c_acc+1
-.63c2	8d 81 66	sta $6681	        sta c_tmp+1
-.63c5	ad 85 66	lda $6685	        lda c_rem
-.63c8	69 00		adc #$00	        adc #$00
-.63ca	8d 85 66	sta $6685	        sta c_rem
-.63cd	ad 86 66	lda $6686	        lda c_rem+1
-.63d0	69 00		adc #$00	        adc #$00
-.63d2	8d 86 66	sta $6686	        sta c_rem+1
-.63d5	0e 7a 66	asl $667a	_um_s:  asl c_ent                       ; multiplier <<= 1
-.63d8	2e 7b 66	rol $667b	        rol c_ent+1
-.63db	ca		dex		        dex
-.63dc	d0 c3		bne $63a1	        bne _um_l
-.63de	60		rts		        rts
-.63df					fmt_dec:
-.63df	ad 80 66	lda $6680	        lda c_tmp
-.63e2	0d 81 66	ora $6681	        ora c_tmp+1
-.63e5	d0 0b		bne $63f2	        bne _fd_nz
-.63e7	a9 30		lda #$30	        lda #$30
-.63e9	8d 88 66	sta $6688	        sta dispbuf
-.63ec	a9 00		lda #$00	        lda #$00
-.63ee	8d 89 66	sta $6689	        sta dispbuf+1
-.63f1	60		rts		        rts
-.63f2	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
-.63f4	8d 82 66	sta $6682	        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
-.63f7	20 1e 64	jsr $641e	_fd_l:  jsr d10tmp
-.63fa	ad 85 66	lda $6685	        lda c_rem
-.63fd	18		clc		        clc
-.63fe	69 30		adc #$30	        adc #$30
-.6400	48		pha		        pha                             ; digits pushed least-significant first
-.6401	ee 82 66	inc $6682	        inc c_tmp2
-.6404	ad 80 66	lda $6680	        lda c_tmp
-.6407	0d 81 66	ora $6681	        ora c_tmp+1
-.640a	d0 eb		bne $63f7	        bne _fd_l
-.640c	a0 00		ldy #$00	        ldy #$00
-.640e	68		pla		_fd_c:  pla
-.640f	99 88 66	sta $6688,y	        sta dispbuf,y
-.6412	c8		iny		        iny
-.6413	ce 82 66	dec $6682	        dec c_tmp2
-.6416	d0 f6		bne $640e	        bne _fd_c
-.6418	a9 00		lda #$00	        lda #$00
-.641a	99 88 66	sta $6688,y	        sta dispbuf,y
-.641d	60		rts		        rts
-.641e					d10tmp:
-.641e	a9 00		lda #$00	        lda #$00
-.6420	8d 85 66	sta $6685	        sta c_rem
-.6423	8d 86 66	sta $6686	        sta c_rem+1
-.6426	a2 10		ldx #$10	        ldx #$10
-.6428	0e 80 66	asl $6680	_d1l:   asl c_tmp
-.642b	2e 81 66	rol $6681	        rol c_tmp+1                     ; shift the FULL 16-bit dividend
-.642e	2e 85 66	rol $6685	        rol c_rem
-.6431	2e 86 66	rol $6686	        rol c_rem+1
-.6434	ad 85 66	lda $6685	        lda c_rem
-.6437	38		sec		        sec
-.6438	e9 0a		sbc #$0a	        sbc #$0a
-.643a	a8		tay		        tay
-.643b	ad 86 66	lda $6686	        lda c_rem+1
-.643e	e9 00		sbc #$00	        sbc #$00
-.6440	90 09		bcc $644b	        bcc _d1n
-.6442	8d 86 66	sta $6686	        sta c_rem+1
-.6445	8c 85 66	sty $6685	        sty c_rem
-.6448	ee 80 66	inc $6680	        inc c_tmp
-.644b	ca		dex		_d1n:   dex
-.644c	d0 da		bne $6428	        bne _d1l
-.644e	60		rts		        rts
+.6358	ad 9f 66	lda $669f	        lda c_rem+1
+.635b	ed 94 66	sbc $6694	        sbc c_ent+1
+.635e	90 17		bcc $6377	        bcc _ud_n
+.6360	ad 9e 66	lda $669e	_ud_do: lda c_rem
+.6363	38		sec		        sec
+.6364	ed 93 66	sbc $6693	        sbc c_ent
+.6367	a8		tay		        tay
+.6368	ad 9f 66	lda $669f	        lda c_rem+1
+.636b	ed 94 66	sbc $6694	        sbc c_ent+1
+.636e	8d 9f 66	sta $669f	        sta c_rem+1
+.6371	8c 9e 66	sty $669e	        sty c_rem
+.6374	ee 9c 66	inc $669c	        inc c_divs
+.6377	ca		dex		_ud_n:  dex
+.6378	d0 c2		bne $633c	        bne _ud_l
+.637a	60		rts		        rts
+.637b					c_div10:
+.637b	ad 93 66	lda $6693	        lda c_ent
+.637e	8d 99 66	sta $6699	        sta c_tmp
+.6381	ad 94 66	lda $6694	        lda c_ent+1
+.6384	8d 9a 66	sta $669a	        sta c_tmp+1
+.6387	a9 0a		lda #$0a	        lda #$0a
+.6389	8d 93 66	sta $6693	        sta c_ent
+.638c	a9 00		lda #$00	        lda #$00
+.638e	8d 94 66	sta $6694	        sta c_ent+1
+.6391	20 2c 63	jsr $632c	        jsr udiv
+.6394	ad 9c 66	lda $669c	        lda c_divs
+.6397	8d 93 66	sta $6693	        sta c_ent
+.639a	ad 9d 66	lda $669d	        lda c_divs+1
+.639d	8d 94 66	sta $6694	        sta c_ent+1
+.63a0	60		rts		        rts
+.63a1					umul32:
+.63a1	a9 00		lda #$00	        lda #$00
+.63a3	8d 99 66	sta $6699	        sta c_tmp
+.63a6	8d 9a 66	sta $669a	        sta c_tmp+1
+.63a9	8d 9e 66	sta $669e	        sta c_rem
+.63ac	8d 9f 66	sta $669f	        sta c_rem+1
+.63af	a2 10		ldx #$10	        ldx #$10
+.63b1	0e 99 66	asl $6699	_um_l:  asl c_tmp                       ; product <<= 1 (32-bit)
+.63b4	2e 9a 66	rol $669a	        rol c_tmp+1
+.63b7	2e 9e 66	rol $669e	        rol c_rem
+.63ba	2e 9f 66	rol $669f	        rol c_rem+1
+.63bd	ad 94 66	lda $6694	        lda c_ent+1                     ; test the multiplier's current bit15
+.63c0	10 23		bpl $63e5	        bpl _um_s
+.63c2	ad 99 66	lda $6699	        lda c_tmp                       ; product += acc
+.63c5	18		clc		        clc
+.63c6	6d 91 66	adc $6691	        adc c_acc
+.63c9	8d 99 66	sta $6699	        sta c_tmp
+.63cc	ad 9a 66	lda $669a	        lda c_tmp+1
+.63cf	6d 92 66	adc $6692	        adc c_acc+1
+.63d2	8d 9a 66	sta $669a	        sta c_tmp+1
+.63d5	ad 9e 66	lda $669e	        lda c_rem
+.63d8	69 00		adc #$00	        adc #$00
+.63da	8d 9e 66	sta $669e	        sta c_rem
+.63dd	ad 9f 66	lda $669f	        lda c_rem+1
+.63e0	69 00		adc #$00	        adc #$00
+.63e2	8d 9f 66	sta $669f	        sta c_rem+1
+.63e5	0e 93 66	asl $6693	_um_s:  asl c_ent                       ; multiplier <<= 1
+.63e8	2e 94 66	rol $6694	        rol c_ent+1
+.63eb	ca		dex		        dex
+.63ec	d0 c3		bne $63b1	        bne _um_l
+.63ee	60		rts		        rts
+.63ef					fmt_dec:
+.63ef	ad 99 66	lda $6699	        lda c_tmp
+.63f2	0d 9a 66	ora $669a	        ora c_tmp+1
+.63f5	d0 0b		bne $6402	        bne _fd_nz
+.63f7	a9 30		lda #$30	        lda #$30
+.63f9	8d a1 66	sta $66a1	        sta dispbuf
+.63fc	a9 00		lda #$00	        lda #$00
+.63fe	8d a2 66	sta $66a2	        sta dispbuf+1
+.6401	60		rts		        rts
+.6402	a9 00		lda #$00	_fd_nz: lda #$00                       ; digit count (NOT Y: d10tmp's tay
+.6404	8d 9b 66	sta $669b	        sta c_tmp2                      ; clobbers Y — count lives in c_tmp2)
+.6407	20 2e 64	jsr $642e	_fd_l:  jsr d10tmp
+.640a	ad 9e 66	lda $669e	        lda c_rem
+.640d	18		clc		        clc
+.640e	69 30		adc #$30	        adc #$30
+.6410	48		pha		        pha                             ; digits pushed least-significant first
+.6411	ee 9b 66	inc $669b	        inc c_tmp2
+.6414	ad 99 66	lda $6699	        lda c_tmp
+.6417	0d 9a 66	ora $669a	        ora c_tmp+1
+.641a	d0 eb		bne $6407	        bne _fd_l
+.641c	a0 00		ldy #$00	        ldy #$00
+.641e	68		pla		_fd_c:  pla
+.641f	99 a1 66	sta $66a1,y	        sta dispbuf,y
+.6422	c8		iny		        iny
+.6423	ce 9b 66	dec $669b	        dec c_tmp2
+.6426	d0 f6		bne $641e	        bne _fd_c
+.6428	a9 00		lda #$00	        lda #$00
+.642a	99 a1 66	sta $66a1,y	        sta dispbuf,y
+.642d	60		rts		        rts
+.642e					d10tmp:
+.642e	a9 00		lda #$00	        lda #$00
+.6430	8d 9e 66	sta $669e	        sta c_rem
+.6433	8d 9f 66	sta $669f	        sta c_rem+1
+.6436	a2 10		ldx #$10	        ldx #$10
+.6438	0e 99 66	asl $6699	_d1l:   asl c_tmp
+.643b	2e 9a 66	rol $669a	        rol c_tmp+1                     ; shift the FULL 16-bit dividend
+.643e	2e 9e 66	rol $669e	        rol c_rem
+.6441	2e 9f 66	rol $669f	        rol c_rem+1
+.6444	ad 9e 66	lda $669e	        lda c_rem
+.6447	38		sec		        sec
+.6448	e9 0a		sbc #$0a	        sbc #$0a
+.644a	a8		tay		        tay
+.644b	ad 9f 66	lda $669f	        lda c_rem+1
+.644e	e9 00		sbc #$00	        sbc #$00
+.6450	90 09		bcc $645b	        bcc _d1n
+.6452	8d 9f 66	sta $669f	        sta c_rem+1
+.6455	8c 9e 66	sty $669e	        sty c_rem
+.6458	ee 99 66	inc $6699	        inc c_tmp
+.645b	ca		dex		_d1n:   dex
+.645c	d0 da		bne $6438	        bne _d1l
+.645e	60		rts		        rts
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
 
-.644f					c_show:
-.644f	ad 7c 66	lda $667c	        lda c_elen
-.6452	d0 14		bne $6468	        bne calc_show_entry
-.6454	ad 7e 66	lda $667e	        lda c_fresh
-.6457	f0 0f		beq $6468	        beq calc_show_entry
-.6459	ad 78 66	lda $6678	        lda c_acc
-.645c	8d 80 66	sta $6680	        sta c_tmp
-.645f	ad 79 66	lda $6679	        lda c_acc+1
-.6462	8d 81 66	sta $6681	        sta c_tmp+1
-.6465	4c 74 64	jmp $6474	        jmp calc_format
-.6468					calc_show_entry:
-.6468	ad 7a 66	lda $667a	        lda c_ent
-.646b	8d 80 66	sta $6680	        sta c_tmp
-.646e	ad 7b 66	lda $667b	        lda c_ent+1
-.6471	8d 81 66	sta $6681	        sta c_tmp+1
-.6474					calc_format:
-.6474	ad 7f 66	lda $667f	        lda c_err
-.6477	f0 20		beq $6499	        beq calc_number
-.6479	a2 00		ldx #$00	        ldx #0
-.647b	c9 01		cmp #$01	        cmp #1
-.647d	d0 0d		bne $648c	        bne calc_overflow
-.647f					calc_divzero_text:
-.647f	bd 61 66	lda $6661,x	        lda text_divzero,x
-.6482	9d 88 66	sta $6688,x	        sta dispbuf,x
-.6485	e8		inx		        inx
-.6486	c9 00		cmp #$00	        cmp #0
-.6488	d0 f5		bne $647f	        bne calc_divzero_text
-.648a	f0 10		beq $649c	        beq calc_formatted
-.648c					calc_overflow:
-.648c	bd 67 66	lda $6667,x	        lda text_overflow,x
-.648f	9d 88 66	sta $6688,x	        sta dispbuf,x
-.6492	e8		inx		        inx
-.6493	c9 00		cmp #$00	        cmp #0
-.6495	d0 f5		bne $648c	        bne calc_overflow
-.6497	f0 03		beq $649c	        beq calc_formatted
-.6499					calc_number:
-.6499	20 df 63	jsr $63df	        jsr fmt_dec
-.649c					calc_formatted:
-.649c	ad 75 66	lda $6675	        lda history_pending
-.649f	f0 03		beq $64a4	        beq calc_redraw
-.64a1	20 0c 65	jsr $650c	        jsr history_append
-.64a4					calc_redraw:
-.64a4	a9 00		lda #$00	        lda #0
-.64a6	8d 6c 66	sta $666c	        sta screen
-.64a9					calc_screen:
-.64a9	a5 d7		lda $d7		        lda $d7
-.64ab	2a		rol a		        rol
-.64ac	a9 00		lda #$00	        lda #0
-.64ae	2a		rol a		        rol
-.64af	cd 6c 66	cmp $666c	        cmp screen
-.64b2	f0 03		beq $64b7	        beq calc_screen_ready
-.64b4	20 5f ff	jsr $ff5f	        jsr $ff5f
-.64b7					calc_screen_ready:
-.64b7	a9 93		lda #$93	        lda #$93
-.64b9	20 d2 ff	jsr $ffd2	        jsr $ffd2
-.64bc	a9 cd		lda #$cd	        lda #<text_title
-.64be	a2 65		ldx #$65	        ldx #>text_title
-.64c0	20 b3 65	jsr $65b3	        jsr puts
-.64c3	a9 88		lda #$88	        lda #<dispbuf
-.64c5	a2 66		ldx #$66	        ldx #>dispbuf
-.64c7	20 b3 65	jsr $65b3	        jsr puts
-.64ca	a9 ea		lda #$ea	        lda #<text_help
-.64cc	a2 65		ldx #$65	        ldx #>text_help
-.64ce	20 b3 65	jsr $65b3	        jsr puts
-.64d1	20 54 65	jsr $6554	        jsr history_show
-.64d4	20 d1 68	jsr $68d1	        jsr save_show
-.64d7	ee 6c 66	inc $666c	        inc screen
-.64da	ad 6c 66	lda $666c	        lda screen
-.64dd	c9 02		cmp #$02	        cmp #2
-.64df	d0 c8		bne $64a9	        bne calc_screen
-.64e1	60		rts		        rts
-.64e2					history_select:
-.64e2	ad 6b 66	lda $666b	        lda owner
-.64e5	8d 00 3d	sta $3d00	        sta N_OWNER
-.64e8	a2 03		ldx #$03	        ldx #3
-.64ea					history_select_loop:
-.64ea	bd 6e 66	lda $666e,x	        lda history_handle,x
-.64ed	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
-.64f0	ca		dex		        dex
-.64f1	10 f7		bpl $64ea	        bpl history_select_loop
-.64f3	a9 10		lda #$10	        lda #16
-.64f5	8d 0a 3d	sta $3d0a	        sta N_COUNT
-.64f8	a9 00		lda #$00	        lda #0
-.64fa	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
-.64fd	60		rts		        rts
-.64fe					history_offset:
-.64fe	0a		asl a		        asl
-.64ff	0a		asl a		        asl
-.6500	0a		asl a		        asl
-.6501	0a		asl a		        asl
-.6502	8d 08 3d	sta $3d08	        sta N_OFFSET
-.6505	a9 00		lda #$00	        lda #0
-.6507	2a		rol a		        rol
-.6508	8d 09 3d	sta $3d09	        sta N_OFFSET+1
-.650b	60		rts		        rts
-.650c					history_append:
+.645f					c_show:
+.645f	ad 95 66	lda $6695	        lda c_elen
+.6462	d0 14		bne $6478	        bne calc_show_entry
+.6464	ad 97 66	lda $6697	        lda c_fresh
+.6467	f0 0f		beq $6478	        beq calc_show_entry
+.6469	ad 91 66	lda $6691	        lda c_acc
+.646c	8d 99 66	sta $6699	        sta c_tmp
+.646f	ad 92 66	lda $6692	        lda c_acc+1
+.6472	8d 9a 66	sta $669a	        sta c_tmp+1
+.6475	4c 84 64	jmp $6484	        jmp calc_format
+.6478					calc_show_entry:
+.6478	ad 93 66	lda $6693	        lda c_ent
+.647b	8d 99 66	sta $6699	        sta c_tmp
+.647e	ad 94 66	lda $6694	        lda c_ent+1
+.6481	8d 9a 66	sta $669a	        sta c_tmp+1
+.6484					calc_format:
+.6484	ad 98 66	lda $6698	        lda c_err
+.6487	f0 20		beq $64a9	        beq calc_number
+.6489	a2 00		ldx #$00	        ldx #0
+.648b	c9 01		cmp #$01	        cmp #1
+.648d	d0 0d		bne $649c	        bne calc_overflow
+.648f					calc_divzero_text:
+.648f	bd 7a 66	lda $667a,x	        lda text_divzero,x
+.6492	9d a1 66	sta $66a1,x	        sta dispbuf,x
+.6495	e8		inx		        inx
+.6496	c9 00		cmp #$00	        cmp #0
+.6498	d0 f5		bne $648f	        bne calc_divzero_text
+.649a	f0 10		beq $64ac	        beq calc_formatted
+.649c					calc_overflow:
+.649c	bd 80 66	lda $6680,x	        lda text_overflow,x
+.649f	9d a1 66	sta $66a1,x	        sta dispbuf,x
+.64a2	e8		inx		        inx
+.64a3	c9 00		cmp #$00	        cmp #0
+.64a5	d0 f5		bne $649c	        bne calc_overflow
+.64a7	f0 03		beq $64ac	        beq calc_formatted
+.64a9					calc_number:
+.64a9	20 ef 63	jsr $63ef	        jsr fmt_dec
+.64ac					calc_formatted:
+.64ac	ad 8e 66	lda $668e	        lda history_pending
+.64af	f0 03		beq $64b4	        beq calc_redraw
+.64b1	20 20 65	jsr $6520	        jsr history_append
+.64b4					calc_redraw:
+.64b4	20 d4 6c	jsr $6cd4	        jsr cg_redraw
+.64b7	ad a4 6f	lda $6fa4	        lda cg_bitmap
+.64ba	8d 85 66	sta $6685	        sta screen
+.64bd					calc_screen:
+.64bd	a5 d7		lda $d7		        lda $d7
+.64bf	2a		rol a		        rol
+.64c0	a9 00		lda #$00	        lda #0
+.64c2	2a		rol a		        rol
+.64c3	cd 85 66	cmp $6685	        cmp screen
+.64c6	f0 03		beq $64cb	        beq calc_screen_ready
+.64c8	20 5f ff	jsr $ff5f	        jsr $ff5f
+.64cb					calc_screen_ready:
+.64cb	a9 93		lda #$93	        lda #$93
+.64cd	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.64d0	a9 e6		lda #$e6	        lda #<text_title
+.64d2	a2 65		ldx #$65	        ldx #>text_title
+.64d4	20 cc 65	jsr $65cc	        jsr puts
+.64d7	a9 a1		lda #$a1	        lda #<dispbuf
+.64d9	a2 66		ldx #$66	        ldx #>dispbuf
+.64db	20 cc 65	jsr $65cc	        jsr puts
+.64de	a9 03		lda #$03	        lda #<text_help
+.64e0	a2 66		ldx #$66	        ldx #>text_help
+.64e2	20 cc 65	jsr $65cc	        jsr puts
+.64e5	20 6d 65	jsr $656d	        jsr history_show
+.64e8	20 ea 68	jsr $68ea	        jsr save_show
+.64eb	ee 85 66	inc $6685	        inc screen
+.64ee	ad 85 66	lda $6685	        lda screen
+.64f1	c9 02		cmp #$02	        cmp #2
+.64f3	d0 c8		bne $64bd	        bne calc_screen
+.64f5	60		rts		        rts
+.64f6					history_select:
+.64f6	ad 84 66	lda $6684	        lda owner
+.64f9	8d 00 3d	sta $3d00	        sta N_OWNER
+.64fc	a2 03		ldx #$03	        ldx #3
+.64fe					history_select_loop:
+.64fe	bd 87 66	lda $6687,x	        lda history_handle,x
+.6501	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.6504	ca		dex		        dex
+.6505	10 f7		bpl $64fe	        bpl history_select_loop
+.6507	a9 10		lda #$10	        lda #16
+.6509	8d 0a 3d	sta $3d0a	        sta N_COUNT
 .650c	a9 00		lda #$00	        lda #0
-.650e	8d 75 66	sta $6675	        sta history_pending
-.6511	8d 74 66	sta $6674	        sta history_view
-.6514	20 e2 64	jsr $64e2	        jsr history_select
-.6517	a2 0f		ldx #$0f	        ldx #15
-.6519	a9 20		lda #$20	        lda #$20
-.651b					history_blank:
-.651b	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
-.651e	ca		dex		        dex
-.651f	10 fa		bpl $651b	        bpl history_blank
-.6521	a2 00		ldx #$00	        ldx #0
-.6523					history_text:
-.6523	bd 88 66	lda $6688,x	        lda dispbuf,x
-.6526	f0 08		beq $6530	        beq history_text_done
-.6528	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
-.652b	e8		inx		        inx
-.652c	e0 08		cpx #$08	        cpx #8
-.652e	d0 f3		bne $6523	        bne history_text
-.6530					history_text_done:
-.6530	ad 73 66	lda $6673	        lda history_head
-.6533	20 fe 64	jsr $64fe	        jsr history_offset
-.6536	20 29 1c	jsr $1c29	        jsr N_WRITE
-.6539	b0 16		bcs $6551	        bcs history_failure
-.653b	ee 73 66	inc $6673	        inc history_head
-.653e	ad 73 66	lda $6673	        lda history_head
-.6541	29 1f		and #$1f	        and #31
-.6543	8d 73 66	sta $6673	        sta history_head
-.6546	ad 72 66	lda $6672	        lda history_count
-.6549	c9 20		cmp #$20	        cmp #32
-.654b	f0 03		beq $6550	        beq history_appended
-.654d	ee 72 66	inc $6672	        inc history_count
-.6550					history_appended:
-.6550	60		rts		        rts
-.6551					history_failure:
-.6551	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; loader preserves error as the app exit code
-.6554					history_show:
-.6554	20 e2 64	jsr $64e2	        jsr history_select
-.6557	a9 00		lda #$00	        lda #0
-.6559	8d 76 66	sta $6676	        sta history_row
-.655c	ad 72 66	lda $6672	        lda history_count
-.655f	d0 07		bne $6568	        bne history_row_loop
-.6561	a9 51		lda #$51	        lda #<text_empty
-.6563	a2 66		ldx #$66	        ldx #>text_empty
-.6565	4c b3 65	jmp $65b3	        jmp puts
-.6568					history_row_loop:
-.6568	18		clc		        clc
-.6569	ad 74 66	lda $6674	        lda history_view
-.656c	6d 76 66	adc $6676	        adc history_row
-.656f	cd 72 66	cmp $6672	        cmp history_count
-.6572	b0 3e		bcs $65b2	        bcs history_shown
-.6574	8d 77 66	sta $6677	        sta history_ordinal
-.6577	38		sec		        sec
-.6578	ad 73 66	lda $6673	        lda history_head
-.657b	e9 01		sbc #$01	        sbc #1
-.657d	38		sec		        sec
-.657e	ed 77 66	sbc $6677	        sbc history_ordinal
-.6581	29 1f		and #$1f	        and #31
-.6583	20 fe 64	jsr $64fe	        jsr history_offset
-.6586	20 26 1c	jsr $1c26	        jsr N_READ
-.6589	b0 c6		bcs $6551	        bcs history_failure
-.658b	a9 00		lda #$00	        lda #0
-.658d	8d 6d 66	sta $666d	        sta text_index
-.6590					history_print:
-.6590	ae 6d 66	ldx $666d	        ldx text_index
-.6593	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
-.6596	20 d2 ff	jsr $ffd2	        jsr $ffd2
-.6599	ee 6d 66	inc $666d	        inc text_index
-.659c	ad 6d 66	lda $666d	        lda text_index
-.659f	c9 10		cmp #$10	        cmp #16
-.65a1	d0 ed		bne $6590	        bne history_print
-.65a3	a9 0d		lda #$0d	        lda #13
-.65a5	20 d2 ff	jsr $ffd2	        jsr $ffd2
-.65a8	ee 76 66	inc $6676	        inc history_row
-.65ab	ad 76 66	lda $6676	        lda history_row
-.65ae	c9 08		cmp #$08	        cmp #8
-.65b0	d0 b6		bne $6568	        bne history_row_loop
-.65b2					history_shown:
-.65b2	60		rts		        rts
-.65b3					puts:
-.65b3	8d ba 65	sta $65ba	        sta text_read+1
-.65b6	8e bb 65	stx $65bb	        stx text_read+2
-.65b9					text_read:
-.65b9	ad ff ff	lda $ffff	        lda $ffff
-.65bc	f0 0e		beq $65cc	        beq text_done
+.650e	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.6511	60		rts		        rts
+.6512					history_offset:
+.6512	0a		asl a		        asl
+.6513	0a		asl a		        asl
+.6514	0a		asl a		        asl
+.6515	0a		asl a		        asl
+.6516	8d 08 3d	sta $3d08	        sta N_OFFSET
+.6519	a9 00		lda #$00	        lda #0
+.651b	2a		rol a		        rol
+.651c	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.651f	60		rts		        rts
+.6520					history_append:
+.6520	a9 00		lda #$00	        lda #0
+.6522	8d 8e 66	sta $668e	        sta history_pending
+.6525	8d 8d 66	sta $668d	        sta history_view
+.6528	20 f6 64	jsr $64f6	        jsr history_select
+.652b	a2 0f		ldx #$0f	        ldx #15
+.652d	a9 20		lda #$20	        lda #$20
+.652f					history_blank:
+.652f	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.6532	ca		dex		        dex
+.6533	10 fa		bpl $652f	        bpl history_blank
+.6535	a2 00		ldx #$00	        ldx #0
+.6537					history_text:
+.6537	bd a1 66	lda $66a1,x	        lda dispbuf,x
+.653a	f0 08		beq $6544	        beq history_text_done
+.653c	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.653f	e8		inx		        inx
+.6540	e0 08		cpx #$08	        cpx #8
+.6542	d0 f3		bne $6537	        bne history_text
+.6544					history_text_done:
+.6544	ad 8c 66	lda $668c	        lda history_head
+.6547	20 12 65	jsr $6512	        jsr history_offset
+.654a	20 29 1c	jsr $1c29	        jsr N_WRITE
+.654d	b0 16		bcs $6565	        bcs history_failure
+.654f	ee 8c 66	inc $668c	        inc history_head
+.6552	ad 8c 66	lda $668c	        lda history_head
+.6555	29 1f		and #$1f	        and #31
+.6557	8d 8c 66	sta $668c	        sta history_head
+.655a	ad 8b 66	lda $668b	        lda history_count
+.655d	c9 20		cmp #$20	        cmp #32
+.655f	f0 03		beq $6564	        beq history_appended
+.6561	ee 8b 66	inc $668b	        inc history_count
+.6564					history_appended:
+.6564	60		rts		        rts
+.6565					history_failure:
+.6565	48		pha		        pha
+.6566	20 bb 81	jsr $81bb	        jsr pm_close
+.6569	68		pla		        pla
+.656a	4c 3e 1c	jmp $1c3e	        jmp N_EXIT             ; loader preserves error as the app exit code
+.656d					history_show:
+.656d	20 f6 64	jsr $64f6	        jsr history_select
+.6570	a9 00		lda #$00	        lda #0
+.6572	8d 8f 66	sta $668f	        sta history_row
+.6575	ad 8b 66	lda $668b	        lda history_count
+.6578	d0 07		bne $6581	        bne history_row_loop
+.657a	a9 6a		lda #$6a	        lda #<text_empty
+.657c	a2 66		ldx #$66	        ldx #>text_empty
+.657e	4c cc 65	jmp $65cc	        jmp puts
+.6581					history_row_loop:
+.6581	18		clc		        clc
+.6582	ad 8d 66	lda $668d	        lda history_view
+.6585	6d 8f 66	adc $668f	        adc history_row
+.6588	cd 8b 66	cmp $668b	        cmp history_count
+.658b	b0 3e		bcs $65cb	        bcs history_shown
+.658d	8d 90 66	sta $6690	        sta history_ordinal
+.6590	38		sec		        sec
+.6591	ad 8c 66	lda $668c	        lda history_head
+.6594	e9 01		sbc #$01	        sbc #1
+.6596	38		sec		        sec
+.6597	ed 90 66	sbc $6690	        sbc history_ordinal
+.659a	29 1f		and #$1f	        and #31
+.659c	20 12 65	jsr $6512	        jsr history_offset
+.659f	20 26 1c	jsr $1c26	        jsr N_READ
+.65a2	b0 c1		bcs $6565	        bcs history_failure
+.65a4	a9 00		lda #$00	        lda #0
+.65a6	8d 86 66	sta $6686	        sta text_index
+.65a9					history_print:
+.65a9	ae 86 66	ldx $6686	        ldx text_index
+.65ac	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.65af	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.65b2	ee 86 66	inc $6686	        inc text_index
+.65b5	ad 86 66	lda $6686	        lda text_index
+.65b8	c9 10		cmp #$10	        cmp #16
+.65ba	d0 ed		bne $65a9	        bne history_print
+.65bc	a9 0d		lda #$0d	        lda #13
 .65be	20 d2 ff	jsr $ffd2	        jsr $ffd2
-.65c1	ee ba 65	inc $65ba	        inc text_read+1
-.65c4	d0 f3		bne $65b9	        bne text_read
-.65c6	ee bb 65	inc $65bb	        inc text_read+2
-.65c9	4c b9 65	jmp $65b9	        jmp text_read
-.65cc					text_done:
-.65cc	60		rts		        rts
->65cd	55 4f 53 20 31 32 38 20		text_title: .text "uos 128 calculator",13,13,"result: ",0
->65d5	43 41 4c 43 55 4c 41 54 4f 52 0d 0d 52 45 53 55
->65e5	4c 54 3a 20 00
->65ea	0d 0d 30 2d 39 20 2b 20		text_help: .text 13,13,"0-9 + - * / =  del  c clear",13
->65f2	2d 20 2a 20 2f 20 3d 20 20 44 45 4c 20 20 43 20
->6602	43 4c 45 41 52 0d
->6608	45 53 43 20 52 45 54 55		           .text "esc return   s save   n/b history",13,13
->6610	52 4e 20 20 20 53 20 53 41 56 45 20 20 20 4e 2f
->6620	42 20 48 49 53 54 4f 52 59 0d 0d
->662b	48 49 53 54 4f 52 59 20		           .text "history (newest first, 32 retained):",13,0
->6633	28 4e 45 57 45 53 54 20 46 49 52 53 54 2c 20 33
->6643	32 20 52 45 54 41 49 4e 45 44 29 3a 0d 00
->6651	4e 4f 20 52 45 53 55 4c		text_empty: .text "no results yet",13,0
->6659	54 53 20 59 45 54 0d 00
->6661	44 49 56 2f 30 00		text_divzero: .text "div/0",0
->6667	4f 56 46 00			text_overflow: .text "ovf",0
->666b	00				owner: .byte 0
->666c	00				screen: .byte 0
->666d	00				text_index: .byte 0
->666e	00 00 00 00			history_handle: .fill 4,0
->6672	00				history_count: .byte 0
->6673	00				history_head: .byte 0
->6674	00				history_view: .byte 0
->6675	00				history_pending: .byte 0
->6676	00				history_row: .byte 0
->6677	00				history_ordinal: .byte 0
->6678	00 00				c_acc: .word 0
->667a	00 00				c_ent: .word 0
->667c	00				c_elen: .byte 0
->667d	00				c_pen: .byte 0
->667e	00				c_fresh: .byte 0
->667f	00				c_err: .byte 0
->6680	00 00				c_tmp: .word 0
->6682	00				c_tmp2: .byte 0
->6683	00 00				c_divs: .word 0
->6685	00 00				c_rem: .word 0
->6687	00				c_opkey: .byte 0
->6688	00 00 00 00 00 00 00 00		dispbuf: .fill 8,0
+.65c1	ee 8f 66	inc $668f	        inc history_row
+.65c4	ad 8f 66	lda $668f	        lda history_row
+.65c7	c9 08		cmp #$08	        cmp #8
+.65c9	d0 b6		bne $6581	        bne history_row_loop
+.65cb					history_shown:
+.65cb	60		rts		        rts
+.65cc					puts:
+.65cc	8d d3 65	sta $65d3	        sta text_read+1
+.65cf	8e d4 65	stx $65d4	        stx text_read+2
+.65d2					text_read:
+.65d2	ad ff ff	lda $ffff	        lda $ffff
+.65d5	f0 0e		beq $65e5	        beq text_done
+.65d7	20 d2 ff	jsr $ffd2	        jsr $ffd2
+.65da	ee d3 65	inc $65d3	        inc text_read+1
+.65dd	d0 f3		bne $65d2	        bne text_read
+.65df	ee d4 65	inc $65d4	        inc text_read+2
+.65e2	4c d2 65	jmp $65d2	        jmp text_read
+.65e5					text_done:
+.65e5	60		rts		        rts
+>65e6	55 4f 53 20 31 32 38 20		text_title: .text "uos 128 calculator",13,13,"result: ",0
+>65ee	43 41 4c 43 55 4c 41 54 4f 52 0d 0d 52 45 53 55
+>65fe	4c 54 3a 20 00
+>6603	0d 0d 30 2d 39 20 2b 20		text_help: .text 13,13,"0-9 + - * / =  del  c clear",13
+>660b	2d 20 2a 20 2f 20 3d 20 20 44 45 4c 20 20 43 20
+>661b	43 4c 45 41 52 0d
+>6621	45 53 43 20 52 45 54 55		           .text "esc return   s save   n/b history",13,13
+>6629	52 4e 20 20 20 53 20 53 41 56 45 20 20 20 4e 2f
+>6639	42 20 48 49 53 54 4f 52 59 0d 0d
+>6644	48 49 53 54 4f 52 59 20		           .text "history (newest first, 32 retained):",13,0
+>664c	28 4e 45 57 45 53 54 20 46 49 52 53 54 2c 20 33
+>665c	32 20 52 45 54 41 49 4e 45 44 29 3a 0d 00
+>666a	4e 4f 20 52 45 53 55 4c		text_empty: .text "no results yet",13,0
+>6672	54 53 20 59 45 54 0d 00
+>667a	44 49 56 2f 30 00		text_divzero: .text "div/0",0
+>6680	4f 56 46 00			text_overflow: .text "ovf",0
+>6684	00				owner: .byte 0
+>6685	00				screen: .byte 0
+>6686	00				text_index: .byte 0
+>6687	00 00 00 00			history_handle: .fill 4,0
+>668b	00				history_count: .byte 0
+>668c	00				history_head: .byte 0
+>668d	00				history_view: .byte 0
+>668e	00				history_pending: .byte 0
+>668f	00				history_row: .byte 0
+>6690	00				history_ordinal: .byte 0
+>6691	00 00				c_acc: .word 0
+>6693	00 00				c_ent: .word 0
+>6695	00				c_elen: .byte 0
+>6696	00				c_pen: .byte 0
+>6697	00				c_fresh: .byte 0
+>6698	00				c_err: .byte 0
+>6699	00 00				c_tmp: .word 0
+>669b	00				c_tmp2: .byte 0
+>669c	00 00				c_divs: .word 0
+>669e	00 00				c_rem: .word 0
+>66a0	00				c_opkey: .byte 0
+>66a1	00 00 00 00 00 00 00 00		dispbuf: .fill 8,0
 
 ;******  Processing file: /home/marc/geos128/uos/src/native/calc-save.inc
 
-.6690					save_begin:
-.6690	20 c0 68	jsr $68c0	        jsr save_close_file
-.6693	90 03		bcc $6698	        bcc *+5
-.6695	4c 7f 68	jmp $687f	        jmp save_failed_closed
-.6698	ad 72 66	lda $6672	        lda history_count
-.669b	d0 08		bne $66a5	        bne save_prompt
-.669d	a9 04		lda #$04	        lda #4
-.669f	8d 38 6a	sta $6a38	        sta save_status
-.66a2	4c bd 66	jmp $66bd	        jmp save_redraw
-.66a5					save_prompt:
-.66a5	a9 00		lda #$00	        lda #0
-.66a7	8d 39 6a	sta $6a39	        sta save_length
-.66aa	8d 44 6a	sta $6a44	        sta save_name
-.66ad	8d 38 6a	sta $6a38	        sta save_status
-.66b0	8d 37 3d	sta $3d37	        sta N_UIKEY
-.66b3	20 eb 66	jsr $66eb	        jsr save_field_edit
-.66b6	b0 26		bcs $66de	        bcs save_input_error
-.66b8	a9 01		lda #$01	        lda #1
-.66ba	8d 37 6a	sta $6a37	        sta save_mode
-.66bd					save_redraw:
-.66bd	20 4f 64	jsr $644f	        jsr c_show
-.66c0	4c 5f 60	jmp $605f	        jmp cloop
-.66c3					save_key:
-.66c3	c9 1b		cmp #$1b	        cmp #27
-.66c5	f0 35		beq $66fc	        beq save_cancel
-.66c7	c9 0d		cmp #$0d	        cmp #13
-.66c9	d0 03		bne $66ce	        bne *+5
-.66cb	4c 07 67	jmp $6707	        jmp save_enter
-.66ce	8d 37 3d	sta $3d37	        sta N_UIKEY
-.66d1	20 eb 66	jsr $66eb	        jsr save_field_edit
-.66d4	b0 08		bcs $66de	        bcs save_input_error
-.66d6	ad 39 3d	lda $3d39	        lda N_UIFLAGS
-.66d9	f0 29		beq $6704	        beq save_key_done
-.66db	4c bd 66	jmp $66bd	        jmp save_redraw
-.66de					save_input_error:
-.66de	a9 00		lda #$00	        lda #0
-.66e0	8d 37 6a	sta $6a37	        sta save_mode
-.66e3	a9 06		lda #$06	        lda #6
-.66e5	8d 38 6a	sta $6a38	        sta save_status
-.66e8	4c bd 66	jmp $66bd	        jmp save_redraw
-.66eb					save_field_edit:
-.66eb	20 f1 66	jsr $66f1	        jsr save_field_pointer
-.66ee	4c 59 1c	jmp $1c59	        jmp N_FEDIT
-.66f1					save_field_pointer:
-.66f1	a9 39		lda #$39	        lda #<save_field
-.66f3	8d 35 3d	sta $3d35	        sta N_UIPTR
-.66f6	a9 6a		lda #$6a	        lda #>save_field
-.66f8	8d 36 3d	sta $3d36	        sta N_UIPTR+1
-.66fb	60		rts		        rts
-.66fc					save_cancel:
-.66fc	a9 00		lda #$00	        lda #0
-.66fe	8d 37 6a	sta $6a37	        sta save_mode
-.6701	4c bd 66	jmp $66bd	        jmp save_redraw
-.6704					save_key_done:
-.6704	4c 5f 60	jmp $605f	        jmp cloop
-.6707					save_enter:
-.6707	ad 39 6a	lda $6a39	        lda save_length
-.670a	f0 f8		beq $6704	        beq save_key_done
-.670c	a9 00		lda #$00	        lda #0
-.670e	8d 37 6a	sta $6a37	        sta save_mode
-.6711	8d 41 6a	sta $6a41	        sta save_size
-.6714	8d 42 6a	sta $6a42	        sta save_row
-.6717					save_collect:
-.6717	20 e2 64	jsr $64e2	        jsr history_select
-.671a	38		sec		        sec
-.671b	ad 73 66	lda $6673	        lda history_head
-.671e	ed 72 66	sbc $6672	        sbc history_count
-.6721	18		clc		        clc
-.6722	6d 42 6a	adc $6a42	        adc save_row
-.6725	29 1f		and #$1f	        and #31
-.6727	20 fe 64	jsr $64fe	        jsr history_offset
-.672a	20 26 1c	jsr $1c26	        jsr N_READ
-.672d	90 03		bcc $6732	        bcc *+5
-.672f	4c 51 65	jmp $6551	        jmp history_failure
-.6732	a2 00		ldx #$00	        ldx #0
-.6734	ac 41 6a	ldy $6a41	        ldy save_size
-.6737					save_collect_text:
-.6737	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
-.673a	c9 20		cmp #$20	        cmp #$20
-.673c	f0 09		beq $6747	        beq save_collect_line
-.673e	99 55 6a	sta $6a55,y	        sta save_data,y
-.6741	c8		iny		        iny
-.6742	e8		inx		        inx
-.6743	e0 05		cpx #$05	        cpx #5
-.6745	d0 f0		bne $6737	        bne save_collect_text
-.6747					save_collect_line:
-.6747	a9 0d		lda #$0d	        lda #13
-.6749	99 55 6a	sta $6a55,y	        sta save_data,y
-.674c	c8		iny		        iny
-.674d	8c 41 6a	sty $6a41	        sty save_size
-.6750	ee 42 6a	inc $6a42	        inc save_row
-.6753	ad 42 6a	lda $6a42	        lda save_row
-.6756	cd 72 66	cmp $6672	        cmp history_count
-.6759	d0 bc		bne $6717	        bne save_collect
-.675b	ad 6b 66	lda $666b	        lda owner
-.675e	8d 80 3d	sta $3d80	        sta N_FOWNER
-.6761	ad 21 3d	lda $3d21	        lda N_DEVICE
-.6764	8d 85 3d	sta $3d85	        sta N_FDEVICE
-.6767	a9 00		lda #$00	        lda #0
-.6769	8d 88 3d	sta $3d88	        sta N_FTYPE
-.676c	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
-.676f	8d 96 3d	sta $3d96	        sta N_FFORMAT
-.6772	c9 03		cmp #$03	        cmp #3
-.6774	f0 14		beq $678a	        beq save_usb_name
-.6776	ad 39 6a	lda $6a39	        lda save_length
-.6779	8d 86 3d	sta $3d86	        sta N_FNAMELEN
-.677c	a2 0f		ldx #$0f	        ldx #15
-.677e					save_filename:
-.677e	bd 44 6a	lda $6a44,x	        lda save_name,x
-.6781	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
-.6784	ca		dex		        dex
-.6785	10 f7		bpl $677e	        bpl save_filename
-.6787	4c b5 67	jmp $67b5	        jmp save_create
-.678a					save_usb_name:
-.678a	ad 15 6b	lda $6b15	        lda save_prefix
-.678d	f0 64		beq $67f3	        beq save_path_long
-.678f	18		clc		        clc
-.6790	6d 39 6a	adc $6a39	        adc save_length
-.6793	b0 5e		bcs $67f3	        bcs save_path_long
-.6795	8d 86 3d	sta $3d86	        sta N_FNAMELEN
-.6798	a2 00		ldx #$00	        ldx #0
-.679a					save_usb_prefix:
-.679a	bd 16 6b	lda $6b16,x	        lda save_path,x
-.679d	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
-.67a0	e8		inx		        inx
-.67a1	ec 15 6b	cpx $6b15	        cpx save_prefix
-.67a4	d0 f4		bne $679a	        bne save_usb_prefix
-.67a6	a0 00		ldy #$00	        ldy #0
-.67a8					save_usb_leaf:
-.67a8	b9 44 6a	lda $6a44,y	        lda save_name,y
-.67ab	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
-.67ae	e8		inx		        inx
-.67af	c8		iny		        iny
-.67b0	cc 39 6a	cpy $6a39	        cpy save_length
-.67b3	d0 f3		bne $67a8	        bne save_usb_leaf
-.67b5					save_create:
-.67b5	a9 01		lda #$01	        lda #1
-.67b7	8d 87 3d	sta $3d87	        sta N_FMODE
-.67ba	20 ad 68	jsr $68ad	        jsr save_open_file
-.67bd	90 3c		bcc $67fb	        bcc save_created
-.67bf	a9 02		lda #$02	        lda #2
-.67c1	8d 38 6a	sta $6a38	        sta save_status
-.67c4	ad 8f 3d	lda $3d8f	        lda N_FDOS
-.67c7	c9 3f		cmp #$3f	        cmp #63
-.67c9	f0 18		beq $67e3	        beq save_file_exists
-.67cb	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
-.67ce	c9 03		cmp #$03	        cmp #3
-.67d0	d0 16		bne $67e8	        bne save_rejected
-.67d2	a2 00		ldx #$00	        ldx #0
-.67d4					save_exists_text:
-.67d4	bd 1f 6a	lda $6a1f,x	        lda save_exists_status,x
-.67d7	dd 00 4f	cmp $4f00,x	        cmp N_USTATUS,x
-.67da	d0 0c		bne $67e8	        bne save_rejected
-.67dc	c9 00		cmp #$00	        cmp #0
-.67de	f0 03		beq $67e3	        beq save_file_exists
-.67e0	e8		inx		        inx
-.67e1	d0 f1		bne $67d4	        bne save_exists_text
-.67e3					save_file_exists:
-.67e3	a9 03		lda #$03	        lda #3
-.67e5	8d 38 6a	sta $6a38	        sta save_status
-.67e8					save_rejected:
-.67e8	20 c0 68	jsr $68c0	        jsr save_close_file
-.67eb	90 03		bcc $67f0	        bcc *+5
-.67ed	4c 7f 68	jmp $687f	        jmp save_failed_closed
-.67f0	4c bd 66	jmp $66bd	        jmp save_redraw
-.67f3					save_path_long:
-.67f3	a9 05		lda #$05	        lda #5
-.67f5	8d 38 6a	sta $6a38	        sta save_status
-.67f8	4c bd 66	jmp $66bd	        jmp save_redraw
-.67fb					save_created:
-.67fb	a2 00		ldx #$00	        ldx #0
-.67fd					save_copy:
-.67fd	bd 55 6a	lda $6a55,x	        lda save_data,x
-.6800	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
-.6803	e8		inx		        inx
-.6804	ec 41 6a	cpx $6a41	        cpx save_size
-.6807	d0 f4		bne $67fd	        bne save_copy
-.6809	ad 41 6a	lda $6a41	        lda save_size
-.680c	8d 89 3d	sta $3d89	        sta N_FCOUNT
-.680f	a9 00		lda #$00	        lda #0
-.6811	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
-.6814	20 47 1c	jsr $1c47	        jsr N_FWRITE
-.6817	90 03		bcc $681c	        bcc *+5
-.6819	4c 7c 68	jmp $687c	        jmp save_failed
-.681c	20 c0 68	jsr $68c0	        jsr save_close_file
-.681f	90 03		bcc $6824	        bcc *+5
-.6821	4c 7c 68	jmp $687c	        jmp save_failed
-.6824	a9 00		lda #$00	        lda #0
-.6826	8d 87 3d	sta $3d87	        sta N_FMODE
-.6829	20 ad 68	jsr $68ad	        jsr save_open_file
-.682c	90 03		bcc $6831	        bcc *+5
-.682e	4c 7c 68	jmp $687c	        jmp save_failed
-.6831	a9 00		lda #$00	        lda #0
-.6833	8d 89 3d	sta $3d89	        sta N_FCOUNT
-.6836	a9 02		lda #$02	        lda #2
-.6838	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
-.683b	20 44 1c	jsr $1c44	        jsr N_FREAD
-.683e	90 03		bcc $6843	        bcc *+5
-.6840	4c 7c 68	jmp $687c	        jmp save_failed
-.6843	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
-.6846	d0 34		bne $687c	        bne save_failed
-.6848	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
-.684b	cd 41 6a	cmp $6a41	        cmp save_size
-.684e	d0 2c		bne $687c	        bne save_failed
-.6850	ad 8d 3d	lda $3d8d	        lda N_FEOF
-.6853	c9 01		cmp #$01	        cmp #1
-.6855	d0 25		bne $687c	        bne save_failed
-.6857	a2 00		ldx #$00	        ldx #0
-.6859					save_compare:
-.6859	bd 55 6a	lda $6a55,x	        lda save_data,x
-.685c	dd 00 3a	cmp $3a00,x	        cmp N_BUFFER,x
-.685f	d0 1b		bne $687c	        bne save_failed
-.6861	e8		inx		        inx
-.6862	ec 41 6a	cpx $6a41	        cpx save_size
-.6865	d0 f2		bne $6859	        bne save_compare
-.6867	20 c0 68	jsr $68c0	        jsr save_close_file
-.686a	90 03		bcc $686f	        bcc *+5
-.686c	4c 7c 68	jmp $687c	        jmp save_failed
-.686f	a9 00		lda #$00	        lda #0
-.6871	8d 43 6a	sta $6a43	        sta save_open
-.6874	a9 01		lda #$01	        lda #1
-.6876	8d 38 6a	sta $6a38	        sta save_status
-.6879	4c bd 66	jmp $66bd	        jmp save_redraw
-.687c					save_failed:
-.687c	20 c0 68	jsr $68c0	        jsr save_close_file      ; only checked CLOSE may retry; retain failure
-.687f					save_failed_closed:
-.687f	a9 02		lda #$02	        lda #2
-.6881	8d 38 6a	sta $6a38	        sta save_status
-.6884	4c bd 66	jmp $66bd	        jmp save_redraw
-.6887					save_source:
-.6887	a9 00		lda #$00	        lda #0
-.6889	8d 15 6b	sta $6b15	        sta save_prefix
-.688c	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
-.688f	c9 03		cmp #$03	        cmp #3
-.6891	d0 19		bne $68ac	        bne save_source_done
-.6893	a2 00		ldx #$00	        ldx #0
-.6895					save_source_byte:
-.6895	bd 00 4e	lda $4e00,x	        lda N_UPATH,x
-.6898	9d 16 6b	sta $6b16,x	        sta save_path,x
-.689b	c9 2f		cmp #$2f	        cmp #$2f
-.689d	d0 07		bne $68a6	        bne +
-.689f	8a		txa		        txa
-.68a0	18		clc		        clc
-.68a1	69 01		adc #$01	        adc #1
-.68a3	8d 15 6b	sta $6b15	        sta save_prefix
-.68a6	e8		inx		+       inx
-.68a7	ec 22 3d	cpx $3d22	        cpx N_NAMELEN
-.68aa	d0 e9		bne $6895	        bne save_source_byte
-.68ac					save_source_done:
-.68ac	60		rts		        rts
-.68ad					save_open_file:
-.68ad	a9 00		lda #$00	        lda #0
-.68af	8d 81 3d	sta $3d81	        sta N_FHANDLE
-.68b2	20 41 1c	jsr $1c41	        jsr N_FOPEN
-.68b5	08		php		        php
-.68b6	48		pha		        pha
-.68b7	ad 81 3d	lda $3d81	        lda N_FHANDLE
-.68ba	8d 43 6a	sta $6a43	        sta save_open           ; rejected Ultimate OPEN still requires CLOSE
-.68bd	68		pla		        pla
-.68be	28		plp		        plp
-.68bf	60		rts		        rts
-.68c0					save_close_file:
-.68c0	ad 43 6a	lda $6a43	        lda save_open
-.68c3	f0 0a		beq $68cf	        beq save_closed
-.68c5	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
-.68c8	b0 06		bcs $68d0	        bcs save_close_done
-.68ca	a9 00		lda #$00	        lda #0
-.68cc	8d 43 6a	sta $6a43	        sta save_open
-.68cf					save_closed:
-.68cf	18		clc		        clc
-.68d0					save_close_done:
-.68d0	60		rts		        rts
-.68d1					save_show:
-.68d1	ad 37 6a	lda $6a37	        lda save_mode
-.68d4	f0 24		beq $68fa	        beq save_show_status
-.68d6	a9 0d		lda #$0d	        lda #<save_prompt_text
-.68d8	a2 69		ldx #$69	        ldx #>save_prompt_text
-.68da	ac 2c 3d	ldy $3d2c	        ldy N_APPFORMAT
-.68dd	c0 03		cpy #$03	        cpy #3
-.68df	d0 04		bne $68e5	        bne +
-.68e1	a9 34		lda #$34	        lda #<save_usb_text
-.68e3	a2 69		ldx #$69	        ldx #>save_usb_text
-.68e5					+
-.68e5	20 b3 65	jsr $65b3	        jsr puts
-.68e8	20 f1 66	jsr $66f1	        jsr save_field_pointer
-.68eb	a9 13		lda #$13	        lda #19
-.68ed	8d 38 3d	sta $3d38	        sta N_UIWIDTH
-.68f0	20 5c 1c	jsr $1c5c	        jsr N_FDRAW
-.68f3	a9 55		lda #$55	        lda #<save_controls
-.68f5	a2 69		ldx #$69	        ldx #>save_controls
-.68f7	4c b3 65	jmp $65b3	        jmp puts
-.68fa					save_show_status:
-.68fa	ae 38 6a	ldx $6a38	        ldx save_status
-.68fd	f0 0d		beq $690c	        beq save_show_done
-.68ff	ca		dex		        dex
-.6900	bd 2b 6a	lda $6a2b,x	        lda save_messages_lo,x
-.6903	48		pha		        pha
-.6904	bd 31 6a	lda $6a31,x	        lda save_messages_hi,x
-.6907	aa		tax		        tax
-.6908	68		pla		        pla
-.6909	4c b3 65	jmp $65b3	        jmp puts
-.690c					save_show_done:
-.690c	60		rts		        rts
->690d	0d 53 41 56 45 20 41 53		save_prompt_text: .text 13,"save as (seq file on iec disk)",13,"name: ",0
->6915	20 28 53 45 51 20 46 49 4c 45 20 4f 4e 20 49 45
->6925	43 20 44 49 53 4b 29 0d 4e 41 4d 45 3a 20 00
->6934	0d 53 41 56 45 20 41 53		save_usb_text: .text 13,"save as (beside usb app)",13,"name: ",0
->693c	20 28 42 45 53 49 44 45 20 55 53 42 20 41 50 50
->694c	29 0d 4e 41 4d 45 3a 20 00
->6955	0d 45 4e 54 45 52 20 53		save_controls: .text 13,"enter save   esc cancel",0
->695d	41 56 45 20 20 20 45 53 43 20 43 41 4e 43 45 4c
->696d	00
->696e	0d 48 49 53 54 4f 52 59		save_ok: .text 13,"history saved and verified",0
->6976	20 53 41 56 45 44 20 41 4e 44 20 56 45 52 49 46
->6986	49 45 44 00
->698a	0d 44 49 53 4b 20 45 52		save_error_text: .text 13,"disk error; file may be partial",0
->6992	52 4f 52 3b 20 46 49 4c 45 20 4d 41 59 20 42 45
->69a2	20 50 41 52 54 49 41 4c 00
->69ab	0d 46 49 4c 45 20 45 58		save_exists: .text 13,"file exists - choose another name",0
->69b3	49 53 54 53 20 2d 20 43 48 4f 4f 53 45 20 41 4e
->69c3	4f 54 48 45 52 20 4e 41 4d 45 00
->69ce	0d 4e 4f 20 52 45 53 55		save_empty: .text 13,"no results to save",0
->69d6	4c 54 53 20 54 4f 20 53 41 56 45 00
->69e2	0d 50 41 54 48 20 54 4f		save_long_path: .text 13,"path too long; shorten name",0
->69ea	4f 20 4c 4f 4e 47 3b 20 53 48 4f 52 54 45 4e 20
->69fa	4e 41 4d 45 00
->69ff	0d 49 4e 50 55 54 20 55		save_input_text: .text 13,"input unavailable; esc returns",0
->6a07	4e 41 56 41 49 4c 41 42 4c 45 3b 20 45 53 43 20
->6a17	52 45 54 55 52 4e 53 00
->6a1f	46 49 4c 45 20 45 58 49		save_exists_status: .text "file exists",0
->6a27	53 54 53 00
->6a2b	6e 8a ab ce e2 ff		save_messages_lo: .byte <save_ok,<save_error_text,<save_exists,<save_empty,<save_long_path,<save_input_text
->6a31	69 69 69 69 69 69		save_messages_hi: .byte >save_ok,>save_error_text,>save_exists,>save_empty,>save_long_path,>save_input_text
->6a37	00				save_mode: .byte 0
->6a38	00				save_status: .byte 0
-.6a39					save_field:
->6a39	00				save_length: .byte 0
->6a3a	00				save_cursor: .byte 0
->6a3b	10				        .byte 16
->6a3c	44 6a				        .word save_name
->6a3e	00 00				save_views: .fill 2,0
->6a40	03				        .byte 3
->6a41	00				save_size: .byte 0
->6a42	00				save_row: .byte 0
->6a43	00				save_open: .byte 0
->6a44	00 00 00 00 00 00 00 00		save_name: .fill 17,0
->6a4c	00 00 00 00 00 00 00 00 00
->6a55	00 00 00 00 00 00 00 00		save_data: .fill 192,0
->6a5d	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+.66a9					save_begin:
+.66a9	20 d9 68	jsr $68d9	        jsr save_close_file
+.66ac	90 03		bcc $66b1	        bcc *+5
+.66ae	4c 98 68	jmp $6898	        jmp save_failed_closed
+.66b1	ad 8b 66	lda $668b	        lda history_count
+.66b4	d0 08		bne $66be	        bne save_prompt
+.66b6	a9 04		lda #$04	        lda #4
+.66b8	8d 51 6a	sta $6a51	        sta save_status
+.66bb	4c d6 66	jmp $66d6	        jmp save_redraw
+.66be					save_prompt:
+.66be	a9 00		lda #$00	        lda #0
+.66c0	8d 52 6a	sta $6a52	        sta save_length
+.66c3	8d 5d 6a	sta $6a5d	        sta save_name
+.66c6	8d 51 6a	sta $6a51	        sta save_status
+.66c9	8d 37 3d	sta $3d37	        sta N_UIKEY
+.66cc	20 04 67	jsr $6704	        jsr save_field_edit
+.66cf	b0 26		bcs $66f7	        bcs save_input_error
+.66d1	a9 01		lda #$01	        lda #1
+.66d3	8d 50 6a	sta $6a50	        sta save_mode
+.66d6					save_redraw:
+.66d6	20 5f 64	jsr $645f	        jsr c_show
+.66d9	4c 62 60	jmp $6062	        jmp cloop
+.66dc					save_key:
+.66dc	c9 1b		cmp #$1b	        cmp #27
+.66de	f0 35		beq $6715	        beq save_cancel
+.66e0	c9 0d		cmp #$0d	        cmp #13
+.66e2	d0 03		bne $66e7	        bne *+5
+.66e4	4c 20 67	jmp $6720	        jmp save_enter
+.66e7	8d 37 3d	sta $3d37	        sta N_UIKEY
+.66ea	20 04 67	jsr $6704	        jsr save_field_edit
+.66ed	b0 08		bcs $66f7	        bcs save_input_error
+.66ef	ad 39 3d	lda $3d39	        lda N_UIFLAGS
+.66f2	f0 29		beq $671d	        beq save_key_done
+.66f4	4c d6 66	jmp $66d6	        jmp save_redraw
+.66f7					save_input_error:
+.66f7	a9 00		lda #$00	        lda #0
+.66f9	8d 50 6a	sta $6a50	        sta save_mode
+.66fc	a9 06		lda #$06	        lda #6
+.66fe	8d 51 6a	sta $6a51	        sta save_status
+.6701	4c d6 66	jmp $66d6	        jmp save_redraw
+.6704					save_field_edit:
+.6704	20 0a 67	jsr $670a	        jsr save_field_pointer
+.6707	4c 59 1c	jmp $1c59	        jmp N_FEDIT
+.670a					save_field_pointer:
+.670a	a9 52		lda #$52	        lda #<save_field
+.670c	8d 35 3d	sta $3d35	        sta N_UIPTR
+.670f	a9 6a		lda #$6a	        lda #>save_field
+.6711	8d 36 3d	sta $3d36	        sta N_UIPTR+1
+.6714	60		rts		        rts
+.6715					save_cancel:
+.6715	a9 00		lda #$00	        lda #0
+.6717	8d 50 6a	sta $6a50	        sta save_mode
+.671a	4c d6 66	jmp $66d6	        jmp save_redraw
+.671d					save_key_done:
+.671d	4c 62 60	jmp $6062	        jmp cloop
+.6720					save_enter:
+.6720	ad 52 6a	lda $6a52	        lda save_length
+.6723	f0 f8		beq $671d	        beq save_key_done
+.6725	a9 00		lda #$00	        lda #0
+.6727	8d 50 6a	sta $6a50	        sta save_mode
+.672a	8d 5a 6a	sta $6a5a	        sta save_size
+.672d	8d 5b 6a	sta $6a5b	        sta save_row
+.6730					save_collect:
+.6730	20 f6 64	jsr $64f6	        jsr history_select
+.6733	38		sec		        sec
+.6734	ad 8c 66	lda $668c	        lda history_head
+.6737	ed 8b 66	sbc $668b	        sbc history_count
+.673a	18		clc		        clc
+.673b	6d 5b 6a	adc $6a5b	        adc save_row
+.673e	29 1f		and #$1f	        and #31
+.6740	20 12 65	jsr $6512	        jsr history_offset
+.6743	20 26 1c	jsr $1c26	        jsr N_READ
+.6746	90 03		bcc $674b	        bcc *+5
+.6748	4c 65 65	jmp $6565	        jmp history_failure
+.674b	a2 00		ldx #$00	        ldx #0
+.674d	ac 5a 6a	ldy $6a5a	        ldy save_size
+.6750					save_collect_text:
+.6750	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.6753	c9 20		cmp #$20	        cmp #$20
+.6755	f0 09		beq $6760	        beq save_collect_line
+.6757	99 6e 6a	sta $6a6e,y	        sta save_data,y
+.675a	c8		iny		        iny
+.675b	e8		inx		        inx
+.675c	e0 05		cpx #$05	        cpx #5
+.675e	d0 f0		bne $6750	        bne save_collect_text
+.6760					save_collect_line:
+.6760	a9 0d		lda #$0d	        lda #13
+.6762	99 6e 6a	sta $6a6e,y	        sta save_data,y
+.6765	c8		iny		        iny
+.6766	8c 5a 6a	sty $6a5a	        sty save_size
+.6769	ee 5b 6a	inc $6a5b	        inc save_row
+.676c	ad 5b 6a	lda $6a5b	        lda save_row
+.676f	cd 8b 66	cmp $668b	        cmp history_count
+.6772	d0 bc		bne $6730	        bne save_collect
+.6774	ad 84 66	lda $6684	        lda owner
+.6777	8d 80 3d	sta $3d80	        sta N_FOWNER
+.677a	ad 21 3d	lda $3d21	        lda N_DEVICE
+.677d	8d 85 3d	sta $3d85	        sta N_FDEVICE
+.6780	a9 00		lda #$00	        lda #0
+.6782	8d 88 3d	sta $3d88	        sta N_FTYPE
+.6785	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.6788	8d 96 3d	sta $3d96	        sta N_FFORMAT
+.678b	c9 03		cmp #$03	        cmp #3
+.678d	f0 14		beq $67a3	        beq save_usb_name
+.678f	ad 52 6a	lda $6a52	        lda save_length
+.6792	8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.6795	a2 0f		ldx #$0f	        ldx #15
+.6797					save_filename:
+.6797	bd 5d 6a	lda $6a5d,x	        lda save_name,x
+.679a	9d a0 3d	sta $3da0,x	        sta N_FNAME,x
+.679d	ca		dex		        dex
+.679e	10 f7		bpl $6797	        bpl save_filename
+.67a0	4c ce 67	jmp $67ce	        jmp save_create
+.67a3					save_usb_name:
+.67a3	ad 2e 6b	lda $6b2e	        lda save_prefix
+.67a6	f0 64		beq $680c	        beq save_path_long
+.67a8	18		clc		        clc
+.67a9	6d 52 6a	adc $6a52	        adc save_length
+.67ac	b0 5e		bcs $680c	        bcs save_path_long
+.67ae	8d 86 3d	sta $3d86	        sta N_FNAMELEN
+.67b1	a2 00		ldx #$00	        ldx #0
+.67b3					save_usb_prefix:
+.67b3	bd 2f 6b	lda $6b2f,x	        lda save_path,x
+.67b6	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.67b9	e8		inx		        inx
+.67ba	ec 2e 6b	cpx $6b2e	        cpx save_prefix
+.67bd	d0 f4		bne $67b3	        bne save_usb_prefix
+.67bf	a0 00		ldy #$00	        ldy #0
+.67c1					save_usb_leaf:
+.67c1	b9 5d 6a	lda $6a5d,y	        lda save_name,y
+.67c4	9d 00 4e	sta $4e00,x	        sta N_UPATH,x
+.67c7	e8		inx		        inx
+.67c8	c8		iny		        iny
+.67c9	cc 52 6a	cpy $6a52	        cpy save_length
+.67cc	d0 f3		bne $67c1	        bne save_usb_leaf
+.67ce					save_create:
+.67ce	a9 01		lda #$01	        lda #1
+.67d0	8d 87 3d	sta $3d87	        sta N_FMODE
+.67d3	20 c6 68	jsr $68c6	        jsr save_open_file
+.67d6	90 3c		bcc $6814	        bcc save_created
+.67d8	a9 02		lda #$02	        lda #2
+.67da	8d 51 6a	sta $6a51	        sta save_status
+.67dd	ad 8f 3d	lda $3d8f	        lda N_FDOS
+.67e0	c9 3f		cmp #$3f	        cmp #63
+.67e2	f0 18		beq $67fc	        beq save_file_exists
+.67e4	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.67e7	c9 03		cmp #$03	        cmp #3
+.67e9	d0 16		bne $6801	        bne save_rejected
+.67eb	a2 00		ldx #$00	        ldx #0
+.67ed					save_exists_text:
+.67ed	bd 38 6a	lda $6a38,x	        lda save_exists_status,x
+.67f0	dd 00 4f	cmp $4f00,x	        cmp N_USTATUS,x
+.67f3	d0 0c		bne $6801	        bne save_rejected
+.67f5	c9 00		cmp #$00	        cmp #0
+.67f7	f0 03		beq $67fc	        beq save_file_exists
+.67f9	e8		inx		        inx
+.67fa	d0 f1		bne $67ed	        bne save_exists_text
+.67fc					save_file_exists:
+.67fc	a9 03		lda #$03	        lda #3
+.67fe	8d 51 6a	sta $6a51	        sta save_status
+.6801					save_rejected:
+.6801	20 d9 68	jsr $68d9	        jsr save_close_file
+.6804	90 03		bcc $6809	        bcc *+5
+.6806	4c 98 68	jmp $6898	        jmp save_failed_closed
+.6809	4c d6 66	jmp $66d6	        jmp save_redraw
+.680c					save_path_long:
+.680c	a9 05		lda #$05	        lda #5
+.680e	8d 51 6a	sta $6a51	        sta save_status
+.6811	4c d6 66	jmp $66d6	        jmp save_redraw
+.6814					save_created:
+.6814	a2 00		ldx #$00	        ldx #0
+.6816					save_copy:
+.6816	bd 6e 6a	lda $6a6e,x	        lda save_data,x
+.6819	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.681c	e8		inx		        inx
+.681d	ec 5a 6a	cpx $6a5a	        cpx save_size
+.6820	d0 f4		bne $6816	        bne save_copy
+.6822	ad 5a 6a	lda $6a5a	        lda save_size
+.6825	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.6828	a9 00		lda #$00	        lda #0
+.682a	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.682d	20 47 1c	jsr $1c47	        jsr N_FWRITE
+.6830	90 03		bcc $6835	        bcc *+5
+.6832	4c 95 68	jmp $6895	        jmp save_failed
+.6835	20 d9 68	jsr $68d9	        jsr save_close_file
+.6838	90 03		bcc $683d	        bcc *+5
+.683a	4c 95 68	jmp $6895	        jmp save_failed
+.683d	a9 00		lda #$00	        lda #0
+.683f	8d 87 3d	sta $3d87	        sta N_FMODE
+.6842	20 c6 68	jsr $68c6	        jsr save_open_file
+.6845	90 03		bcc $684a	        bcc *+5
+.6847	4c 95 68	jmp $6895	        jmp save_failed
+.684a	a9 00		lda #$00	        lda #0
+.684c	8d 89 3d	sta $3d89	        sta N_FCOUNT
+.684f	a9 02		lda #$02	        lda #2
+.6851	8d 8a 3d	sta $3d8a	        sta N_FCOUNT+1
+.6854	20 44 1c	jsr $1c44	        jsr N_FREAD
+.6857	90 03		bcc $685c	        bcc *+5
+.6859	4c 95 68	jmp $6895	        jmp save_failed
+.685c	ad 8c 3d	lda $3d8c	        lda N_FACTUAL+1
+.685f	d0 34		bne $6895	        bne save_failed
+.6861	ad 8b 3d	lda $3d8b	        lda N_FACTUAL
+.6864	cd 5a 6a	cmp $6a5a	        cmp save_size
+.6867	d0 2c		bne $6895	        bne save_failed
+.6869	ad 8d 3d	lda $3d8d	        lda N_FEOF
+.686c	c9 01		cmp #$01	        cmp #1
+.686e	d0 25		bne $6895	        bne save_failed
+.6870	a2 00		ldx #$00	        ldx #0
+.6872					save_compare:
+.6872	bd 6e 6a	lda $6a6e,x	        lda save_data,x
+.6875	dd 00 3a	cmp $3a00,x	        cmp N_BUFFER,x
+.6878	d0 1b		bne $6895	        bne save_failed
+.687a	e8		inx		        inx
+.687b	ec 5a 6a	cpx $6a5a	        cpx save_size
+.687e	d0 f2		bne $6872	        bne save_compare
+.6880	20 d9 68	jsr $68d9	        jsr save_close_file
+.6883	90 03		bcc $6888	        bcc *+5
+.6885	4c 95 68	jmp $6895	        jmp save_failed
+.6888	a9 00		lda #$00	        lda #0
+.688a	8d 5c 6a	sta $6a5c	        sta save_open
+.688d	a9 01		lda #$01	        lda #1
+.688f	8d 51 6a	sta $6a51	        sta save_status
+.6892	4c d6 66	jmp $66d6	        jmp save_redraw
+.6895					save_failed:
+.6895	20 d9 68	jsr $68d9	        jsr save_close_file      ; only checked CLOSE may retry; retain failure
+.6898					save_failed_closed:
+.6898	a9 02		lda #$02	        lda #2
+.689a	8d 51 6a	sta $6a51	        sta save_status
+.689d	4c d6 66	jmp $66d6	        jmp save_redraw
+.68a0					save_source:
+.68a0	a9 00		lda #$00	        lda #0
+.68a2	8d 2e 6b	sta $6b2e	        sta save_prefix
+.68a5	ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
+.68a8	c9 03		cmp #$03	        cmp #3
+.68aa	d0 19		bne $68c5	        bne save_source_done
+.68ac	a2 00		ldx #$00	        ldx #0
+.68ae					save_source_byte:
+.68ae	bd 00 4e	lda $4e00,x	        lda N_UPATH,x
+.68b1	9d 2f 6b	sta $6b2f,x	        sta save_path,x
+.68b4	c9 2f		cmp #$2f	        cmp #$2f
+.68b6	d0 07		bne $68bf	        bne +
+.68b8	8a		txa		        txa
+.68b9	18		clc		        clc
+.68ba	69 01		adc #$01	        adc #1
+.68bc	8d 2e 6b	sta $6b2e	        sta save_prefix
+.68bf	e8		inx		+       inx
+.68c0	ec 22 3d	cpx $3d22	        cpx N_NAMELEN
+.68c3	d0 e9		bne $68ae	        bne save_source_byte
+.68c5					save_source_done:
+.68c5	60		rts		        rts
+.68c6					save_open_file:
+.68c6	a9 00		lda #$00	        lda #0
+.68c8	8d 81 3d	sta $3d81	        sta N_FHANDLE
+.68cb	20 41 1c	jsr $1c41	        jsr N_FOPEN
+.68ce	08		php		        php
+.68cf	48		pha		        pha
+.68d0	ad 81 3d	lda $3d81	        lda N_FHANDLE
+.68d3	8d 5c 6a	sta $6a5c	        sta save_open           ; rejected Ultimate OPEN still requires CLOSE
+.68d6	68		pla		        pla
+.68d7	28		plp		        plp
+.68d8	60		rts		        rts
+.68d9					save_close_file:
+.68d9	ad 5c 6a	lda $6a5c	        lda save_open
+.68dc	f0 0a		beq $68e8	        beq save_closed
+.68de	20 4a 1c	jsr $1c4a	        jsr N_FCLOSE
+.68e1	b0 06		bcs $68e9	        bcs save_close_done
+.68e3	a9 00		lda #$00	        lda #0
+.68e5	8d 5c 6a	sta $6a5c	        sta save_open
+.68e8					save_closed:
+.68e8	18		clc		        clc
+.68e9					save_close_done:
+.68e9	60		rts		        rts
+.68ea					save_show:
+.68ea	ad 50 6a	lda $6a50	        lda save_mode
+.68ed	f0 24		beq $6913	        beq save_show_status
+.68ef	a9 26		lda #$26	        lda #<save_prompt_text
+.68f1	a2 69		ldx #$69	        ldx #>save_prompt_text
+.68f3	ac 2c 3d	ldy $3d2c	        ldy N_APPFORMAT
+.68f6	c0 03		cpy #$03	        cpy #3
+.68f8	d0 04		bne $68fe	        bne +
+.68fa	a9 4d		lda #$4d	        lda #<save_usb_text
+.68fc	a2 69		ldx #$69	        ldx #>save_usb_text
+.68fe					+
+.68fe	20 cc 65	jsr $65cc	        jsr puts
+.6901	20 0a 67	jsr $670a	        jsr save_field_pointer
+.6904	a9 13		lda #$13	        lda #19
+.6906	8d 38 3d	sta $3d38	        sta N_UIWIDTH
+.6909	20 5c 1c	jsr $1c5c	        jsr N_FDRAW
+.690c	a9 6e		lda #$6e	        lda #<save_controls
+.690e	a2 69		ldx #$69	        ldx #>save_controls
+.6910	4c cc 65	jmp $65cc	        jmp puts
+.6913					save_show_status:
+.6913	ae 51 6a	ldx $6a51	        ldx save_status
+.6916	f0 0d		beq $6925	        beq save_show_done
+.6918	ca		dex		        dex
+.6919	bd 44 6a	lda $6a44,x	        lda save_messages_lo,x
+.691c	48		pha		        pha
+.691d	bd 4a 6a	lda $6a4a,x	        lda save_messages_hi,x
+.6920	aa		tax		        tax
+.6921	68		pla		        pla
+.6922	4c cc 65	jmp $65cc	        jmp puts
+.6925					save_show_done:
+.6925	60		rts		        rts
+>6926	0d 53 41 56 45 20 41 53		save_prompt_text: .text 13,"save as (seq file on iec disk)",13,"name: ",0
+>692e	20 28 53 45 51 20 46 49 4c 45 20 4f 4e 20 49 45
+>693e	43 20 44 49 53 4b 29 0d 4e 41 4d 45 3a 20 00
+>694d	0d 53 41 56 45 20 41 53		save_usb_text: .text 13,"save as (beside usb app)",13,"name: ",0
+>6955	20 28 42 45 53 49 44 45 20 55 53 42 20 41 50 50
+>6965	29 0d 4e 41 4d 45 3a 20 00
+>696e	0d 45 4e 54 45 52 20 53		save_controls: .text 13,"enter save   esc cancel",0
+>6976	41 56 45 20 20 20 45 53 43 20 43 41 4e 43 45 4c
+>6986	00
+>6987	0d 48 49 53 54 4f 52 59		save_ok: .text 13,"history saved and verified",0
+>698f	20 53 41 56 45 44 20 41 4e 44 20 56 45 52 49 46
+>699f	49 45 44 00
+>69a3	0d 44 49 53 4b 20 45 52		save_error_text: .text 13,"disk error; file may be partial",0
+>69ab	52 4f 52 3b 20 46 49 4c 45 20 4d 41 59 20 42 45
+>69bb	20 50 41 52 54 49 41 4c 00
+>69c4	0d 46 49 4c 45 20 45 58		save_exists: .text 13,"file exists - choose another name",0
+>69cc	49 53 54 53 20 2d 20 43 48 4f 4f 53 45 20 41 4e
+>69dc	4f 54 48 45 52 20 4e 41 4d 45 00
+>69e7	0d 4e 4f 20 52 45 53 55		save_empty: .text 13,"no results to save",0
+>69ef	4c 54 53 20 54 4f 20 53 41 56 45 00
+>69fb	0d 50 41 54 48 20 54 4f		save_long_path: .text 13,"path too long; shorten name",0
+>6a03	4f 20 4c 4f 4e 47 3b 20 53 48 4f 52 54 45 4e 20
+>6a13	4e 41 4d 45 00
+>6a18	0d 49 4e 50 55 54 20 55		save_input_text: .text 13,"input unavailable; esc returns",0
+>6a20	4e 41 56 41 49 4c 41 42 4c 45 3b 20 45 53 43 20
+>6a30	52 45 54 55 52 4e 53 00
+>6a38	46 49 4c 45 20 45 58 49		save_exists_status: .text "file exists",0
+>6a40	53 54 53 00
+>6a44	87 a3 c4 e7 fb 18		save_messages_lo: .byte <save_ok,<save_error_text,<save_exists,<save_empty,<save_long_path,<save_input_text
+>6a4a	69 69 69 69 69 6a		save_messages_hi: .byte >save_ok,>save_error_text,>save_exists,>save_empty,>save_long_path,>save_input_text
+>6a50	00				save_mode: .byte 0
+>6a51	00				save_status: .byte 0
+.6a52					save_field:
+>6a52	00				save_length: .byte 0
+>6a53	00				save_cursor: .byte 0
+>6a54	10				        .byte 16
+>6a55	5d 6a				        .word save_name
+>6a57	00 00				save_views: .fill 2,0
+>6a59	03				        .byte 3
+>6a5a	00				save_size: .byte 0
+>6a5b	00				save_row: .byte 0
+>6a5c	00				save_open: .byte 0
+>6a5d	00 00 00 00 00 00 00 00		save_name: .fill 17,0
+>6a65	00 00 00 00 00 00 00 00 00
+>6a6e	00 00 00 00 00 00 00 00		save_data: .fill 192,0
+>6a76	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 10 times (160 bytes)...
->6b0d	00 00 00 00 00 00 00 00
->6b15	00				save_prefix: .byte 0
->6b16	00 00 00 00 00 00 00 00		save_path: .fill 256,0
->6b1e	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6b26	00 00 00 00 00 00 00 00
+>6b2e	00				save_prefix: .byte 0
+>6b2f	00 00 00 00 00 00 00 00		save_path: .fill 256,0
+>6b37	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;	...repeated 14 times (224 bytes)...
->6c0e	00 00 00 00 00 00 00 00
+>6c27	00 00 00 00 00 00 00 00
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
 
-.6c16					calc_end:
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+.6c2f					cg_begin:
+.6c2f	a9 00		lda #$00	        lda #0
+.6c31	8d a4 6f	sta $6fa4	        sta cg_bitmap
+.6c34	8d a5 6f	sta $6fa5	        sta cg_handle
+.6c37	8d aa 6f	sta $6faa	        sta cg_mode
+.6c3a	8d 02 3d	sta $3d02	        sta N_BANK
+.6c3d	ad 84 66	lda $6684	        lda owner
+.6c40	8d 00 3d	sta $3d00	        sta N_OWNER
+.6c43	a9 c0		lda #$c0	        lda #$c0
+.6c45	8d 03 3d	sta $3d03	        sta N_PAGE
+.6c48	a9 24		lda #$24	        lda #36
+.6c4a	8d 01 3d	sta $3d01	        sta N_PAGES
+.6c4d	20 35 1c	jsr $1c35	        jsr N_RESERVE
+.6c50	b0 4f		bcs $6ca1	        bcs cg_failed
+.6c52	a2 03		ldx #$03	        ldx #3
+.6c54	bd 04 3d	lda $3d04,x	-       lda N_HANDLE,x
+.6c57	9d a5 6f	sta $6fa5,x	        sta cg_handle,x
+.6c5a	ca		dex		        dex
+.6c5b	10 f7		bpl $6c54	        bpl -
+.6c5d	a9 00		lda #$00	        lda #0
+.6c5f	8d 08 3d	sta $3d08	        sta N_OFFSET
+.6c62	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.6c65	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.6c68	8d 0c 3d	sta $3d0c	        sta N_VALUE
+.6c6b	a9 02		lda #$02	        lda #2
+.6c6d	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.6c70	20 2c 1c	jsr $1c2c	-       jsr N_FILL
+.6c73	b0 2c		bcs $6ca1	        bcs cg_failed
+.6c75	ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.6c78	ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.6c7b	ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.6c7e	c9 24		cmp #$24	        cmp #$24
+.6c80	d0 ee		bne $6c70	        bne -
+.6c82	20 c2 6c	jsr $6cc2	        jsr cg_select_surface
+.6c85	20 88 76	jsr $7688	        jsr gfx_bind
+.6c88	b0 17		bcs $6ca1	        bcs cg_failed
+.6c8a	20 09 6d	jsr $6d09	        jsr cg_scene_draw
+.6c8d	b0 12		bcs $6ca1	        bcs cg_failed
+.6c8f	20 c2 6c	jsr $6cc2	        jsr cg_select_surface
+.6c92	20 68 1c	jsr $1c68	        jsr N_VSHOW
+.6c95	b0 0a		bcs $6ca1	        bcs cg_failed
+.6c97	a9 01		lda #$01	        lda #1
+.6c99	8d a4 6f	sta $6fa4	        sta cg_bitmap
+.6c9c	20 05 81	jsr $8105	        jsr pm_install
+.6c9f	90 20		bcc $6cc1	        bcc cg_return
+.6ca1					cg_failed:
+.6ca1	8d a9 6f	sta $6fa9	        sta cg_error
+.6ca4	20 bb 81	jsr $81bb	        jsr pm_close
+.6ca7	20 6b 1c	jsr $1c6b	        jsr N_VCLOSE
+.6caa	a9 00		lda #$00	        lda #0
+.6cac	8d a4 6f	sta $6fa4	        sta cg_bitmap
+.6caf	ad a5 6f	lda $6fa5	        lda cg_handle
+.6cb2	f0 0d		beq $6cc1	        beq cg_return
+.6cb4	20 c2 6c	jsr $6cc2	        jsr cg_select_surface
+.6cb7	20 23 1c	jsr $1c23	        jsr N_FREE
+.6cba	b0 05		bcs $6cc1	        bcs cg_return
+.6cbc	a9 00		lda #$00	        lda #0
+.6cbe	8d a5 6f	sta $6fa5	        sta cg_handle
+.6cc1					cg_return:
+.6cc1	60		rts		        rts
+.6cc2					cg_select_surface:
+.6cc2	ad 84 66	lda $6684	        lda owner
+.6cc5	8d 00 3d	sta $3d00	        sta N_OWNER
+.6cc8	a2 03		ldx #$03	        ldx #3
+.6cca	bd a5 6f	lda $6fa5,x	-       lda cg_handle,x
+.6ccd	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.6cd0	ca		dex		        dex
+.6cd1	10 f7		bpl $6cca	        bpl -
+.6cd3	60		rts		        rts
+.6cd4					cg_redraw:
+.6cd4	ad a4 6f	lda $6fa4	        lda cg_bitmap
+.6cd7	f0 e8		beq $6cc1	        beq cg_return
+.6cd9	ad 50 6a	lda $6a50	        lda save_mode
+.6cdc	cd aa 6f	cmp $6faa	        cmp cg_mode
+.6cdf	f0 22		beq $6d03	        beq cg_dynamic
+.6ce1	8d aa 6f	sta $6faa	        sta cg_mode
+.6ce4	a9 ff		lda #$ff	        lda #$ff
+.6ce6	8d e5 83	sta $83e5	        sta pm_arm
+.6ce9	ad aa 6f	lda $6faa	        lda cg_mode
+.6cec	f0 0a		beq $6cf8	        beq cg_main_focus
+.6cee	ad 87 76	lda $7687	        lda ui_selected
+.6cf1	8d ab 6f	sta $6fab	        sta cg_saved_focus
+.6cf4	a9 15		lda #$15	        lda #21
+.6cf6	d0 03		bne $6cfb	        bne cg_mode_focus
+.6cf8					cg_main_focus:
+.6cf8	ad ab 6f	lda $6fab	        lda cg_saved_focus
+.6cfb					cg_mode_focus:
+.6cfb	8d 87 76	sta $7687	        sta ui_selected
+.6cfe	20 09 6d	jsr $6d09	        jsr cg_scene_draw
+.6d01	b0 9e		bcs $6ca1	        bcs cg_failed
+.6d03					cg_dynamic:
+.6d03	20 70 6d	jsr $6d70	        jsr cg_contents
+.6d06	b0 99		bcs $6ca1	        bcs cg_failed
+.6d08	60		rts		        rts
+.6d09					cg_scene_draw:
+.6d09	a2 00		ldx #$00	        ldx #0
+.6d0b	20 8f 6e	jsr $6e8f	        jsr cg_clear_region
+.6d0e	b0 5f		bcs $6d6f	        bcs cg_draw_done
+.6d10	a9 00		lda #$00	        lda #0
+.6d12	8d 8b 7c	sta $7c8b	        sta gfx_x0
+.6d15	8d 8d 7c	sta $7c8d	        sta gfx_y0
+.6d18	a9 28		lda #$28	        lda #40
+.6d1a	8d 8f 7c	sta $7c8f	        sta gfx_x1
+.6d1d	a9 19		lda #$19	        lda #25
+.6d1f	8d 91 7c	sta $7c91	        sta gfx_y1
+.6d22	a9 00		lda #$00	        lda #0
+.6d24	8d 90 7c	sta $7c90	        sta gfx_x1+1
+.6d27	a9 16		lda #$16	        lda #$16
+.6d29	8d 94 7c	sta $7c94	        sta gfx_color
+.6d2c	20 ea 76	jsr $76ea	        jsr gfx_colors
+.6d2f	b0 3e		bcs $6d6f	        bcs cg_draw_done
+.6d31	ad aa 6f	lda $6faa	        lda cg_mode
+.6d34	d0 10		bne $6d46	        bne cg_save_scene
+.6d36	a9 00		lda #$00	        lda #0
+.6d38	8d 85 76	sta $7685	        sta ui_first
+.6d3b	a9 15		lda #$15	        lda #21
+.6d3d	8d 86 76	sta $7686	        sta ui_limit
+.6d40	20 1b 70	jsr $701b	        jsr cg_main.draw_scene
+.6d43	4c 53 6d	jmp $6d53	        jmp cg_scene_result
+.6d46					cg_save_scene:
+.6d46	a9 15		lda #$15	        lda #21
+.6d48	8d 85 76	sta $7685	        sta ui_first
+.6d4b	a9 17		lda #$17	        lda #23
+.6d4d	8d 86 76	sta $7686	        sta ui_limit
+.6d50	20 84 73	jsr $7384	        jsr cg_save.draw_scene
+.6d53					cg_scene_result:
+.6d53	b0 1a		bcs $6d6f	        bcs cg_draw_done
+.6d55	ad 85 76	lda $7685	        lda ui_first
+.6d58	8d ac 6f	sta $6fac	        sta cg_index
+.6d5b	ae ac 6f	ldx $6fac	-       ldx cg_index
+.6d5e	20 23 76	jsr $7623	        jsr ui_paint
+.6d61	b0 0c		bcs $6d6f	        bcs cg_draw_done
+.6d63	ee ac 6f	inc $6fac	        inc cg_index
+.6d66	ad ac 6f	lda $6fac	        lda cg_index
+.6d69	cd 86 76	cmp $7686	        cmp ui_limit
+.6d6c	d0 ed		bne $6d5b	        bne -
+.6d6e	18		clc		        clc
+.6d6f					cg_draw_done:
+.6d6f	60		rts		        rts
+.6d70					cg_contents:
+.6d70	ad aa 6f	lda $6faa	        lda cg_mode
+.6d73	f0 03		beq $6d78	        bne cg_filename
+.6d75	4c 18 6e	jmp $6e18
+.6d78	a2 08		ldx #$08	        ldx #8
+.6d7a	20 8f 6e	jsr $6e8f	        jsr cg_clear_region
+.6d7d	b0 f0		bcs $6d6f	        bcs cg_draw_done
+.6d7f	a9 a1		lda #$a1	        lda #<dispbuf
+.6d81	a2 66		ldx #$66	        ldx #>dispbuf
+.6d83	20 a5 6e	jsr $6ea5	        jsr cg_copy_text
+.6d86	a9 18		lda #$18	        lda #24
+.6d88	a0 30		ldy #$30	        ldy #48
+.6d8a	20 c5 6e	jsr $6ec5	        jsr cg_text
+.6d8d	b0 e0		bcs $6d6f	        bcs cg_draw_done
+.6d8f	a2 10		ldx #$10	        ldx #16
+.6d91	20 8f 6e	jsr $6e8f	        jsr cg_clear_region
+.6d94	b0 d9		bcs $6d6f	        bcs cg_draw_done
+.6d96	ad 8b 66	lda $668b	        lda history_count
+.6d99	d0 13		bne $6dae	        bne cg_history
+.6d9b	a9 10		lda #$10	        lda #<cg_empty
+.6d9d	a2 70		ldx #$70	        ldx #>cg_empty
+.6d9f	20 a5 6e	jsr $6ea5	        jsr cg_copy_text
+.6da2	a9 c0		lda #$c0	        lda #192
+.6da4	a0 50		ldy #$50	        ldy #80
+.6da6	20 c5 6e	jsr $6ec5	        jsr cg_text
+.6da9	b0 c4		bcs $6d6f	        bcs cg_draw_done
+.6dab	4c 63 6e	jmp $6e63	        jmp cg_status
+.6dae					cg_history:
+.6dae	a9 00		lda #$00	        lda #0
+.6db0	8d ad 6f	sta $6fad	        sta cg_row
+.6db3					cg_history_next:
+.6db3	ad 8d 66	lda $668d	        lda history_view
+.6db6	18		clc		        clc
+.6db7	6d ad 6f	adc $6fad	        adc cg_row
+.6dba	cd 8b 66	cmp $668b	        cmp history_count
+.6dbd	90 03		bcc $6dc2	        bcs cg_status
+.6dbf	4c 63 6e	jmp $6e63
+.6dc2	8d 90 66	sta $6690	        sta history_ordinal
+.6dc5	ad 8c 66	lda $668c	        lda history_head
+.6dc8	38		sec		        sec
+.6dc9	e9 01		sbc #$01	        sbc #1
+.6dcb	38		sec		        sec
+.6dcc	ed 90 66	sbc $6690	        sbc history_ordinal
+.6dcf	29 1f		and #$1f	        and #31
+.6dd1	20 12 65	jsr $6512	        jsr history_offset
+.6dd4	20 f6 64	jsr $64f6	        jsr history_select
+.6dd7	20 26 1c	jsr $1c26	        jsr N_READ
+.6dda	90 03		bcc $6ddf	        bcs history_failure
+.6ddc	4c 65 65	jmp $6565
+.6ddf	a2 00		ldx #$00	        ldx #0
+.6de1	bd 00 3a	lda $3a00,x	-       lda N_BUFFER,x
+.6de4	c9 20		cmp #$20	        cmp #$20
+.6de6	f0 08		beq $6df0	        beq +
+.6de8	9d ca 7d	sta $7dca,x	        sta gfx_text_buffer,x
+.6deb	e8		inx		        inx
+.6dec	e0 08		cpx #$08	        cpx #8
+.6dee	d0 f1		bne $6de1	        bne -
+.6df0	8e c9 7d	stx $7dc9	+       stx gfx_text_length
+.6df3	ad ad 6f	lda $6fad	        lda cg_row
+.6df6	0a		asl a		        asl
+.6df7	0a		asl a		        asl
+.6df8	18		clc		        clc
+.6df9	6d ad 6f	adc $6fad	        adc cg_row
+.6dfc	0a		asl a		        asl
+.6dfd	18		clc		        clc
+.6dfe	69 4c		adc #$4c	        adc #76
+.6e00	a8		tay		        tay
+.6e01	a9 c0		lda #$c0	        lda #192
+.6e03	20 c5 6e	jsr $6ec5	        jsr cg_text
+.6e06	90 03		bcc $6e0b	        bcs cg_draw_done
+.6e08	4c 6f 6d	jmp $6d6f
+.6e0b	ee ad 6f	inc $6fad	        inc cg_row
+.6e0e	ad ad 6f	lda $6fad	        lda cg_row
+.6e11	c9 08		cmp #$08	        cmp #8
+.6e13	d0 9e		bne $6db3	        bne cg_history_next
+.6e15	4c 63 6e	jmp $6e63	        jmp cg_status
+.6e18					cg_filename:
+.6e18	a2 20		ldx #$20	        ldx #32
+.6e1a	20 8f 6e	jsr $6e8f	        jsr cg_clear_region
+.6e1d	b0 e9		bcs $6e08	        bcs cg_draw_done
+.6e1f	a9 5d		lda #$5d	        lda #<save_name
+.6e21	a2 6a		ldx #$6a	        ldx #>save_name
+.6e23	20 a5 6e	jsr $6ea5	        jsr cg_copy_text
+.6e26	a9 20		lda #$20	        lda #32
+.6e28	a0 58		ldy #$58	        ldy #88
+.6e2a	20 c5 6e	jsr $6ec5	        jsr cg_text
+.6e2d	b0 d9		bcs $6e08	        bcs cg_draw_done
+.6e2f	ad 53 6a	lda $6a53	        lda save_cursor
+.6e32	0a		asl a		        asl
+.6e33	0a		asl a		        asl
+.6e34	0a		asl a		        asl
+.6e35	18		clc		        clc
+.6e36	69 20		adc #$20	        adc #32
+.6e38	8d 8b 7c	sta $7c8b	        sta gfx_x0
+.6e3b	18		clc		        clc
+.6e3c	69 08		adc #$08	        adc #8
+.6e3e	8d 8f 7c	sta $7c8f	        sta gfx_x1
+.6e41	a9 00		lda #$00	        lda #0
+.6e43	8d 8c 7c	sta $7c8c	        sta gfx_x0+1
+.6e46	8d 90 7c	sta $7c90	        sta gfx_x1+1
+.6e49	8d 8e 7c	sta $7c8e	        sta gfx_y0+1
+.6e4c	8d 92 7c	sta $7c92	        sta gfx_y1+1
+.6e4f	a9 58		lda #$58	        lda #88
+.6e51	8d 8d 7c	sta $7c8d	        sta gfx_y0
+.6e54	a9 60		lda #$60	        lda #96
+.6e56	8d 91 7c	sta $7c91	        sta gfx_y1
+.6e59	a9 02		lda #$02	        lda #2
+.6e5b	8d 93 7c	sta $7c93	        sta gfx_pen
+.6e5e	20 e4 76	jsr $76e4	        jsr gfx_rect
+.6e61	b0 a5		bcs $6e08	        bcs cg_draw_done
+.6e63					cg_status:
+.6e63	a2 18		ldx #$18	        ldx #24
+.6e65	20 8f 6e	jsr $6e8f	        jsr cg_clear_region
+.6e68	b0 9e		bcs $6e08	        bcs cg_draw_done
+.6e6a	a9 d7		lda #$d7	        lda #<cg_help
+.6e6c	a2 6f		ldx #$6f	        ldx #>cg_help
+.6e6e	ac 50 6a	ldy $6a50	        ldy save_mode
+.6e71	f0 06		beq $6e79	        beq +
+.6e73	a9 f6		lda #$f6	        lda #<cg_save_help
+.6e75	a2 6f		ldx #$6f	        ldx #>cg_save_help
+.6e77	d0 0c		bne $6e85	        bne cg_status_text
+.6e79	ac 51 6a	ldy $6a51	+       ldy save_status
+.6e7c	f0 07		beq $6e85	        beq cg_status_text
+.6e7e	88		dey		        dey
+.6e7f	b9 44 6a	lda $6a44,y	        lda save_messages_lo,y
+.6e82	be 4a 6a	ldx $6a4a,y	        ldx save_messages_hi,y
+.6e85					cg_status_text:
+.6e85	20 a5 6e	jsr $6ea5	        jsr cg_copy_text
+.6e88	a9 08		lda #$08	        lda #8
+.6e8a	a0 c0		ldy #$c0	        ldy #192
+.6e8c	4c c5 6e	jmp $6ec5	        jmp cg_text
+.6e8f					cg_clear_region:
+.6e8f	a0 00		ldy #$00	        ldy #0
+.6e91	bd af 6f	lda $6faf,x	-       lda cg_regions,x
+.6e94	99 8b 7c	sta $7c8b,y	        sta gfx_x0,y
+.6e97	e8		inx		        inx
+.6e98	c8		iny		        iny
+.6e99	c0 08		cpy #$08	        cpy #8
+.6e9b	d0 f4		bne $6e91	        bne -
+.6e9d	a9 00		lda #$00	        lda #0
+.6e9f	8d 93 7c	sta $7c93	        sta gfx_pen
+.6ea2	4c e4 76	jmp $76e4	        jmp gfx_rect
+.6ea5					cg_copy_text:
+.6ea5	8d b0 6e	sta $6eb0	        sta cg_read+1
+.6ea8	8e b1 6e	stx $6eb1	        stx cg_read+2
+.6eab	a2 00		ldx #$00	        ldx #0
+.6ead	a0 00		ldy #$00	        ldy #0
+.6eaf					cg_read:
+.6eaf	b9 ff ff	lda $ffff,y	        lda $ffff,y
+.6eb2	f0 0d		beq $6ec1	        beq cg_copied
+.6eb4	c8		iny		        iny
+.6eb5	c9 0d		cmp #$0d	        cmp #13
+.6eb7	f0 f6		beq $6eaf	        beq cg_read
+.6eb9	9d ca 7d	sta $7dca,x	        sta gfx_text_buffer,x
+.6ebc	e8		inx		        inx
+.6ebd	e0 26		cpx #$26	        cpx #38
+.6ebf	d0 ee		bne $6eaf	        bne cg_read
+.6ec1					cg_copied:
+.6ec1	8e c9 7d	stx $7dc9	        stx gfx_text_length
+.6ec4	60		rts		        rts
+.6ec5					cg_text:
+.6ec5	8d 8b 7c	sta $7c8b	        sta gfx_x0
+.6ec8	8c 8d 7c	sty $7c8d	        sty gfx_y0
+.6ecb	a9 00		lda #$00	        lda #0
+.6ecd	8d 8c 7c	sta $7c8c	        sta gfx_x0+1
+.6ed0	8d 8e 7c	sta $7c8e	        sta gfx_y0+1
+.6ed3	a9 01		lda #$01	        lda #1
+.6ed5	8d 93 7c	sta $7c93	        sta gfx_pen
+.6ed8	4c 2a 7d	jmp $7d2a	        jmp gfx_text
+.6edb					cg_mouse:
+.6edb	20 e3 81	jsr $81e3	        jsr pm_poll
+.6ede	ad e7 83	lda $83e7	        lda pm_event
+.6ee1	f0 1c		beq $6eff	        beq cg_no_mouse
+.6ee3	ae e6 83	ldx $83e6	        ldx pm_hit
+.6ee6	20 61 76	jsr $7661	        jsr ui_focus
+.6ee9	b0 0e		bcs $6ef9	        bcs cg_input_failed
+.6eeb	ad e7 83	lda $83e7	        lda pm_event
+.6eee	c9 02		cmp #$02	        cmp #2
+.6ef0	d0 0d		bne $6eff	        bne cg_no_mouse
+.6ef2	ae e6 83	ldx $83e6	        ldx pm_hit
+.6ef5	bd d0 75	lda $75d0,x	        lda ui_keys,x
+.6ef8	60		rts		        rts
+.6ef9					cg_input_failed:
+.6ef9	20 a1 6c	jsr $6ca1	        jsr cg_failed
+.6efc	20 5f 64	jsr $645f	        jsr c_show
+.6eff					cg_no_mouse:
+.6eff	a9 00		lda #$00	        lda #0
+.6f01	60		rts		        rts
+.6f02					cg_key:
+.6f02	8d ae 6f	sta $6fae	        sta cg_key_value
+.6f05	ad a4 6f	lda $6fa4	        lda cg_bitmap
+.6f08	f0 59		beq $6f63	        beq cg_key_return
+.6f0a	ad ae 6f	lda $6fae	        lda cg_key_value
+.6f0d	c9 09		cmp #$09	        cmp #9
+.6f0f	f0 57		beq $6f68	        beq cg_next
+.6f11	ae 50 6a	ldx $6a50	        ldx save_mode
+.6f14	d0 39		bne $6f4f	        bne cg_dialog_key
+.6f16	c9 11		cmp #$11	        cmp #$11
+.6f18	f0 4e		beq $6f68	        beq cg_next
+.6f1a	c9 1d		cmp #$1d	        cmp #$1d
+.6f1c	f0 4a		beq $6f68	        beq cg_next
+.6f1e	c9 91		cmp #$91	        cmp #$91
+.6f20	f0 54		beq $6f76	        beq cg_previous
+.6f22	c9 9d		cmp #$9d	        cmp #$9d
+.6f24	f0 50		beq $6f76	        beq cg_previous
+.6f26	c9 20		cmp #$20	        cmp #32
+.6f28	d0 09		bne $6f33	        bne +
+.6f2a	ae 87 76	ldx $7687	        ldx ui_selected
+.6f2d	bd d0 75	lda $75d0,x	        lda ui_keys,x
+.6f30	8d ae 6f	sta $6fae	        sta cg_key_value
+.6f33	c9 0d		cmp #$0d	+       cmp #13
+.6f35	d0 02		bne $6f39	        bne +
+.6f37	a9 3d		lda #$3d	        lda #$3d
+.6f39	c9 61		cmp #$61	+       cmp #$61
+.6f3b	90 06		bcc $6f43	        bcc +
+.6f3d	c9 7b		cmp #$7b	        cmp #$7b
+.6f3f	b0 02		bcs $6f43	        bcs +
+.6f41	29 df		and #$df	        and #$df
+.6f43	a2 14		ldx #$14	+       ldx #20
+.6f45	dd d0 75	cmp $75d0,x	-       cmp ui_keys,x
+.6f48	f0 14		beq $6f5e	        beq cg_key_focus
+.6f4a	ca		dex		        dex
+.6f4b	10 f8		bpl $6f45	        bpl -
+.6f4d	30 14		bmi $6f63	        bmi cg_key_return
+.6f4f					cg_dialog_key:
+.6f4f	c9 0d		cmp #$0d	        cmp #13
+.6f51	d0 10		bne $6f63	        bne cg_key_return
+.6f53	ae 87 76	ldx $7687	        ldx ui_selected
+.6f56	bd d0 75	lda $75d0,x	        lda ui_keys,x
+.6f59	8d ae 6f	sta $6fae	        sta cg_key_value
+.6f5c	d0 05		bne $6f63	        bne cg_key_return
+.6f5e					cg_key_focus:
+.6f5e	20 61 76	jsr $7661	        jsr ui_focus
+.6f61	b0 24		bcs $6f87	        bcs cg_key_failed
+.6f63					cg_key_return:
+.6f63	ad ae 6f	lda $6fae	        lda cg_key_value
+.6f66	18		clc		        clc
+.6f67	60		rts		        rts
+.6f68					cg_next:
+.6f68	ae 87 76	ldx $7687	        ldx ui_selected
+.6f6b	e8		inx		        inx
+.6f6c	ec 86 76	cpx $7686	        cpx ui_limit
+.6f6f	90 11		bcc $6f82	        bcc cg_focus_only
+.6f71	ae 85 76	ldx $7685	        ldx ui_first
+.6f74	b0 0c		bcs $6f82	        bcs cg_focus_only
+.6f76					cg_previous:
+.6f76	ae 87 76	ldx $7687	        ldx ui_selected
+.6f79	ec 85 76	cpx $7685	        cpx ui_first
+.6f7c	d0 03		bne $6f81	        bne +
+.6f7e	ae 86 76	ldx $7686	        ldx ui_limit
+.6f81	ca		dex		+       dex
+.6f82					cg_focus_only:
+.6f82	20 61 76	jsr $7661	        jsr ui_focus
+.6f85	90 06		bcc $6f8d	        bcc +
+.6f87					cg_key_failed:
+.6f87	20 a1 6c	jsr $6ca1	        jsr cg_failed
+.6f8a	20 5f 64	jsr $645f	        jsr c_show
+.6f8d	38		sec		+       sec
+.6f8e	60		rts		        rts
+=23					pm_control_count=ui_button_count
+=$6cc2					pm_select_surface=cg_select_surface
+.6f8f					pm_find_hit:
+.6f8f	ad dc 83	lda $83dc	        lda pm_x
+.6f92	8d 80 76	sta $7680	        sta ui_x
+.6f95	ad dd 83	lda $83dd	        lda pm_x+1
+.6f98	8d 81 76	sta $7681	        sta ui_x+1
+.6f9b	ad de 83	lda $83de	        lda pm_y
+.6f9e	8d 82 76	sta $7682	        sta ui_y
+.6fa1	4c e7 75	jmp $75e7	        jmp ui_hit
+>6fa4	00				cg_bitmap: .byte 0
+>6fa5	00 00 00 00			cg_handle: .fill 4,0
+>6fa9	00				cg_error: .byte 0
+>6faa	00				cg_mode: .byte 0
+>6fab	0e				cg_saved_focus: .byte 14
+>6fac	00				cg_index: .byte 0
+>6fad	00				cg_row: .byte 0
+>6fae	00				cg_key_value: .byte 0
+.6faf					cg_regions:
+>6faf	00 00 00 00 40 01 c8 00		        .word 0,0,320,200
+>6fb7	18 00 30 00 a8 00 38 00		        .word 24,48,168,56
+>6fbf	c0 00 4c 00 30 01 9c 00		        .word 192,76,304,156
+>6fc7	08 00 c0 00 38 01 c8 00		        .word 8,192,312,200
+>6fcf	20 00 58 00 a8 00 60 00		        .word 32,88,168,96
+>6fd7	54 61 62 2f 61 72 72 6f		cg_help: .byte 84,97,98,47,97,114,114,111,119,115,32,109,111,118,101,32,32,83,112,97,99,101,32,112,114,101,115,115,101,115,0
+>6fdf	77 73 20 6d 6f 76 65 20 20 53 70 61 63 65 20 70
+>6fef	72 65 73 73 65 73 00
+>6ff6	45 6e 74 65 72 20 73 61		cg_save_help: .byte 69,110,116,101,114,32,115,97,118,101,115,32,32,32,69,115,99,32,99,97,110,99,101,108,115,0
+>6ffe	76 65 73 20 20 20 45 73 63 20 63 61 6e 63 65 6c
+>700e	73 00
+>7010	4e 6f 20 72 65 73 75 6c		cg_empty: .byte 78,111,32,114,101,115,117,108,116,115,0
+>7018	74 73 00
+.701b					cg_main
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/scene-rect.inc
+
+.701b					draw_scene:
+.701b	20 88 76	jsr $7688	        jsr gfx_bind
+.701e	b0 5a		bcs $707a	        bcs scene_return
+.7020	a9 e3		lda #$e3	        lda #<scene_commands
+.7022	8d 7c 70	sta $707c	        sta scene_read+1
+.7025	a9 70		lda #$70	        lda #>scene_commands
+.7027	8d 7d 70	sta $707d	        sta scene_read+2
+.702a	a9 2e		lda #$2e	        lda #scene_commands_count
+.702c	8d 7f 70	sta $707f	        sta scene_remaining
+.702f					scene_next:
+.702f	a2 07		ldx #$07	        ldx #7
+.7031					scene_copy:
+.7031	20 7b 70	jsr $707b	        jsr scene_read
+.7034	9d 8b 7c	sta $7c8b,x	        sta gfx_x0,x
+.7037	ca		dex		        dex
+.7038	10 f7		bpl $7031	        bpl scene_copy
+.703a	a2 08		ldx #$08	        ldx #8
+.703c	20 7b 70	jsr $707b	        jsr scene_read
+.703f	d0 0d		bne $704e	        bne scene_colors
+.7041	e8		inx		        inx
+.7042	20 7b 70	jsr $707b	        jsr scene_read
+.7045	8d 93 7c	sta $7c93	        sta gfx_pen
+.7048	20 e4 76	jsr $76e4	        jsr gfx_rect
+.704b	4c 62 70	jmp $7062	        jmp scene_result
+.704e					scene_colors:
+.704e	c9 02		cmp #$02	        cmp #2
+.7050	f0 0d		beq $705f	        beq scene_clip
+.7052	e8		inx		        inx
+.7053	20 7b 70	jsr $707b	        jsr scene_read
+.7056	8d 94 7c	sta $7c94	        sta gfx_color
+.7059	20 ea 76	jsr $76ea	        jsr gfx_colors
+.705c	4c 62 70	jmp $7062	        jmp scene_result
+.705f					scene_clip:
+.705f	20 f0 76	jsr $76f0	        jsr gfx_set_clip
+.7062					scene_result:
+.7062	b0 16		bcs $707a	        bcs scene_return
+.7064	18		clc		        clc
+.7065	ad 7c 70	lda $707c	        lda scene_read+1
+.7068	69 0a		adc #$0a	        adc #10
+.706a	8d 7c 70	sta $707c	        sta scene_read+1
+.706d	90 03		bcc $7072	        bcc +
+.706f	ee 7d 70	inc $707d	        inc scene_read+2
+.7072	ce 7f 70	dec $707f	+       dec scene_remaining
+.7075	d0 b8		bne $702f	        bne scene_next
+.7077	4c 80 70	jmp $7080	        jmp draw_text_scene
+.707a					scene_return:
+.707a	60		rts		        rts
+.707b					scene_read:
+.707b	bd e3 70	lda $70e3,x	        lda scene_commands,x
+.707e	60		rts		        rts
+>707f	00				scene_remaining:.byte 0
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/scene-text.inc
+
+.7080					draw_text_scene:
+.7080	a9 af		lda #$af	        lda #<text_commands
+.7082	8d df 70	sta $70df	        sta text_read+1
+.7085	a9 72		lda #$72	        lda #>text_commands
+.7087	8d e0 70	sta $70e0	        sta text_read+2
+.708a	a9 18		lda #$18	        lda #text_commands_count
+.708c	8d e2 70	sta $70e2	        sta text_remaining
+.708f					text_scene_next:
+.708f	a2 03		ldx #$03	        ldx #3
+.7091					text_scene_coords:
+.7091	20 de 70	jsr $70de	        jsr text_read
+.7094	9d 8b 7c	sta $7c8b,x	        sta gfx_x0,x
+.7097	ca		dex		        dex
+.7098	10 f7		bpl $7091	        bpl text_scene_coords
+.709a	a2 04		ldx #$04	        ldx #4
+.709c	20 de 70	jsr $70de	        jsr text_read
+.709f	8d 93 7c	sta $7c93	        sta gfx_pen
+.70a2	e8		inx		        inx
+.70a3	20 de 70	jsr $70de	        jsr text_read
+.70a6	8d c9 7d	sta $7dc9	        sta gfx_text_length
+.70a9	a9 06		lda #$06	        lda #6
+.70ab	20 d1 70	jsr $70d1	        jsr text_advance
+.70ae	a2 00		ldx #$00	        ldx #0
+.70b0					text_scene_copy:
+.70b0	20 de 70	jsr $70de	        jsr text_read
+.70b3	9d ca 7d	sta $7dca,x	        sta gfx_text_buffer,x
+.70b6	e8		inx		        inx
+.70b7	ec c9 7d	cpx $7dc9	        cpx gfx_text_length
+.70ba	d0 f4		bne $70b0	        bne text_scene_copy
+.70bc	20 2a 7d	jsr $7d2a	        jsr gfx_text
+.70bf	b0 0f		bcs $70d0	        bcs text_scene_done
+.70c1	ad c9 7d	lda $7dc9	        lda gfx_text_length
+.70c4	20 d1 70	jsr $70d1	        jsr text_advance
+.70c7	ce e2 70	dec $70e2	        dec text_remaining
+.70ca	d0 c3		bne $708f	        bne text_scene_next
+.70cc	a9 00		lda #$00	        lda #0
+.70ce	18		clc		        clc
+.70cf	60		rts		        rts
+.70d0					text_scene_done:
+.70d0	60		rts		        rts
+.70d1					text_advance:
+.70d1	18		clc		        clc
+.70d2	6d df 70	adc $70df	        adc text_read+1
+.70d5	8d df 70	sta $70df	        sta text_read+1
+.70d8	90 03		bcc $70dd	        bcc +
+.70da	ee e0 70	inc $70e0	        inc text_read+2
+.70dd	60		rts		+       rts
+.70de					text_read:
+.70de	bd af 72	lda $72af,x	        lda text_commands,x
+.70e1	60		rts		        rts
+>70e2	00				text_remaining: .byte 0
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/main-scene.inc
+
+=46					scene_commands_count=46
+.70e3					scene_commands:
+>70e3	08 00 20 00 38 01 bc 00		        .sint 8,32,312,188
+>70eb	00 01				        .byte 0,1
+>70ed	09 00 21 00 37 01 bb 00		        .sint 9,33,311,187
+>70f5	00 00				        .byte 0,0
+>70f7	10 00 28 00 b0 00 40 00		        .sint 16,40,176,64
+>70ff	00 01				        .byte 0,1
+>7101	11 00 29 00 af 00 3f 00		        .sint 17,41,175,63
+>7109	00 00				        .byte 0,0
+>710b	10 00 48 00 30 00 58 00		        .sint 16,72,48,88
+>7113	00 01				        .byte 0,1
+>7115	11 00 49 00 2f 00 57 00		        .sint 17,73,47,87
+>711d	00 00				        .byte 0,0
+>711f	38 00 48 00 58 00 58 00		        .sint 56,72,88,88
+>7127	00 01				        .byte 0,1
+>7129	39 00 49 00 57 00 57 00		        .sint 57,73,87,87
+>7131	00 00				        .byte 0,0
+>7133	60 00 48 00 80 00 58 00		        .sint 96,72,128,88
+>713b	00 01				        .byte 0,1
+>713d	61 00 49 00 7f 00 57 00		        .sint 97,73,127,87
+>7145	00 00				        .byte 0,0
+>7147	88 00 48 00 a8 00 58 00		        .sint 136,72,168,88
+>714f	00 01				        .byte 0,1
+>7151	89 00 49 00 a7 00 57 00		        .sint 137,73,167,87
+>7159	00 00				        .byte 0,0
+>715b	10 00 60 00 30 00 70 00		        .sint 16,96,48,112
+>7163	00 01				        .byte 0,1
+>7165	11 00 61 00 2f 00 6f 00		        .sint 17,97,47,111
+>716d	00 00				        .byte 0,0
+>716f	38 00 60 00 58 00 70 00		        .sint 56,96,88,112
+>7177	00 01				        .byte 0,1
+>7179	39 00 61 00 57 00 6f 00		        .sint 57,97,87,111
+>7181	00 00				        .byte 0,0
+>7183	60 00 60 00 80 00 70 00		        .sint 96,96,128,112
+>718b	00 01				        .byte 0,1
+>718d	61 00 61 00 7f 00 6f 00		        .sint 97,97,127,111
+>7195	00 00				        .byte 0,0
+>7197	88 00 60 00 a8 00 70 00		        .sint 136,96,168,112
+>719f	00 01				        .byte 0,1
+>71a1	89 00 61 00 a7 00 6f 00		        .sint 137,97,167,111
+>71a9	00 00				        .byte 0,0
+>71ab	10 00 78 00 30 00 88 00		        .sint 16,120,48,136
+>71b3	00 01				        .byte 0,1
+>71b5	11 00 79 00 2f 00 87 00		        .sint 17,121,47,135
+>71bd	00 00				        .byte 0,0
+>71bf	38 00 78 00 58 00 88 00		        .sint 56,120,88,136
+>71c7	00 01				        .byte 0,1
+>71c9	39 00 79 00 57 00 87 00		        .sint 57,121,87,135
+>71d1	00 00				        .byte 0,0
+>71d3	60 00 78 00 80 00 88 00		        .sint 96,120,128,136
+>71db	00 01				        .byte 0,1
+>71dd	61 00 79 00 7f 00 87 00		        .sint 97,121,127,135
+>71e5	00 00				        .byte 0,0
+>71e7	88 00 78 00 a8 00 88 00		        .sint 136,120,168,136
+>71ef	00 01				        .byte 0,1
+>71f1	89 00 79 00 a7 00 87 00		        .sint 137,121,167,135
+>71f9	00 00				        .byte 0,0
+>71fb	10 00 90 00 30 00 a0 00		        .sint 16,144,48,160
+>7203	00 01				        .byte 0,1
+>7205	11 00 91 00 2f 00 9f 00		        .sint 17,145,47,159
+>720d	00 00				        .byte 0,0
+>720f	38 00 90 00 58 00 a0 00		        .sint 56,144,88,160
+>7217	00 01				        .byte 0,1
+>7219	39 00 91 00 57 00 9f 00		        .sint 57,145,87,159
+>7221	00 00				        .byte 0,0
+>7223	60 00 90 00 80 00 a0 00		        .sint 96,144,128,160
+>722b	00 01				        .byte 0,1
+>722d	61 00 91 00 7f 00 9f 00		        .sint 97,145,127,159
+>7235	00 00				        .byte 0,0
+>7237	88 00 90 00 a8 00 a0 00		        .sint 136,144,168,160
+>723f	00 01				        .byte 0,1
+>7241	89 00 91 00 a7 00 9f 00		        .sint 137,145,167,159
+>7249	00 00				        .byte 0,0
+>724b	10 00 a8 00 40 00 b8 00		        .sint 16,168,64,184
+>7253	00 01				        .byte 0,1
+>7255	11 00 a9 00 3f 00 b7 00		        .sint 17,169,63,183
+>725d	00 00				        .byte 0,0
+>725f	48 00 a8 00 80 00 b8 00		        .sint 72,168,128,184
+>7267	00 01				        .byte 0,1
+>7269	49 00 a9 00 7f 00 b7 00		        .sint 73,169,127,183
+>7271	00 00				        .byte 0,0
+>7273	c0 00 a8 00 f0 00 b8 00		        .sint 192,168,240,184
+>727b	00 01				        .byte 0,1
+>727d	c1 00 a9 00 ef 00 b7 00		        .sint 193,169,239,183
+>7285	00 00				        .byte 0,0
+>7287	f8 00 a8 00 28 01 b8 00		        .sint 248,168,296,184
+>728f	00 01				        .byte 0,1
+>7291	f9 00 a9 00 27 01 b7 00		        .sint 249,169,295,183
+>7299	00 00				        .byte 0,0
+>729b	10 01 08 00 30 01 18 00		        .sint 272,8,304,24
+>72a3	00 01				        .byte 0,1
+>72a5	11 01 09 00 2f 01 17 00		        .sint 273,9,303,23
+>72ad	00 00				        .byte 0,0
+=24					text_commands_count=24
+.72af					text_commands:
+>72af	10 00 0c 00			        .word 16,12
+>72b3	01 10				        .byte 1,16
+>72b5	75 4f 53 20 2f 20 43 61		        .byte 117,79,83,32,47,32,67,97,108,99,117,108,97,116,111,114
+>72bd	6c 63 75 6c 61 74 6f 72
+>72c5	c0 00 30 00			        .word 192,48
+>72c9	01 07				        .byte 1,7
+>72cb	48 69 73 74 6f 72 79		        .byte 72,105,115,116,111,114,121
+>72d2	c0 00 3c 00			        .word 192,60
+>72d6	01 0c				        .byte 1,12
+>72d8	4e 65 77 65 73 74 20 66		        .byte 78,101,119,101,115,116,32,102,105,114,115,116
+>72e0	69 72 73 74
+>72e4	1c 00 4c 00			        .word 28,76
+>72e8	01 01				        .byte 1,1
+>72ea	37				        .byte 55
+>72eb	44 00 4c 00			        .word 68,76
+>72ef	01 01				        .byte 1,1
+>72f1	38				        .byte 56
+>72f2	6c 00 4c 00			        .word 108,76
+>72f6	01 01				        .byte 1,1
+>72f8	39				        .byte 57
+>72f9	94 00 4c 00			        .word 148,76
+>72fd	01 01				        .byte 1,1
+>72ff	2f				        .byte 47
+>7300	1c 00 64 00			        .word 28,100
+>7304	01 01				        .byte 1,1
+>7306	34				        .byte 52
+>7307	44 00 64 00			        .word 68,100
+>730b	01 01				        .byte 1,1
+>730d	35				        .byte 53
+>730e	6c 00 64 00			        .word 108,100
+>7312	01 01				        .byte 1,1
+>7314	36				        .byte 54
+>7315	94 00 64 00			        .word 148,100
+>7319	01 01				        .byte 1,1
+>731b	2a				        .byte 42
+>731c	1c 00 7c 00			        .word 28,124
+>7320	01 01				        .byte 1,1
+>7322	31				        .byte 49
+>7323	44 00 7c 00			        .word 68,124
+>7327	01 01				        .byte 1,1
+>7329	32				        .byte 50
+>732a	6c 00 7c 00			        .word 108,124
+>732e	01 01				        .byte 1,1
+>7330	33				        .byte 51
+>7331	94 00 7c 00			        .word 148,124
+>7335	01 01				        .byte 1,1
+>7337	2d				        .byte 45
+>7338	1c 00 94 00			        .word 28,148
+>733c	01 01				        .byte 1,1
+>733e	43				        .byte 67
+>733f	44 00 94 00			        .word 68,148
+>7343	01 01				        .byte 1,1
+>7345	30				        .byte 48
+>7346	6c 00 94 00			        .word 108,148
+>734a	01 01				        .byte 1,1
+>734c	3d				        .byte 61
+>734d	94 00 94 00			        .word 148,148
+>7351	01 01				        .byte 1,1
+>7353	2b				        .byte 43
+>7354	1c 00 ac 00			        .word 28,172
+>7358	01 03				        .byte 1,3
+>735a	44 65 6c			        .byte 68,101,108
+>735d	54 00 ac 00			        .word 84,172
+>7361	01 04				        .byte 1,4
+>7363	53 61 76 65			        .byte 83,97,118,101
+>7367	c4 00 ac 00			        .word 196,172
+>736b	01 05				        .byte 1,5
+>736d	4f 6c 64 65 72			        .byte 79,108,100,101,114
+>7372	fc 00 ac 00			        .word 252,172
+>7376	01 05				        .byte 1,5
+>7378	4e 65 77 65 72			        .byte 78,101,119,101,114
+>737d	1c 01 0c 00			        .word 284,12
+>7381	01 01				        .byte 1,1
+>7383	58				        .byte 88
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+.7384					cg_save
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/scene-rect.inc
+
+.7384					draw_scene:
+.7384	20 88 76	jsr $7688	        jsr gfx_bind
+.7387	b0 5a		bcs $73e3	        bcs scene_return
+.7389	a9 4c		lda #$4c	        lda #<scene_commands
+.738b	8d e5 73	sta $73e5	        sta scene_read+1
+.738e	a9 74		lda #$74	        lda #>scene_commands
+.7390	8d e6 73	sta $73e6	        sta scene_read+2
+.7393	a9 08		lda #$08	        lda #scene_commands_count
+.7395	8d e8 73	sta $73e8	        sta scene_remaining
+.7398					scene_next:
+.7398	a2 07		ldx #$07	        ldx #7
+.739a					scene_copy:
+.739a	20 e4 73	jsr $73e4	        jsr scene_read
+.739d	9d 8b 7c	sta $7c8b,x	        sta gfx_x0,x
+.73a0	ca		dex		        dex
+.73a1	10 f7		bpl $739a	        bpl scene_copy
+.73a3	a2 08		ldx #$08	        ldx #8
+.73a5	20 e4 73	jsr $73e4	        jsr scene_read
+.73a8	d0 0d		bne $73b7	        bne scene_colors
+.73aa	e8		inx		        inx
+.73ab	20 e4 73	jsr $73e4	        jsr scene_read
+.73ae	8d 93 7c	sta $7c93	        sta gfx_pen
+.73b1	20 e4 76	jsr $76e4	        jsr gfx_rect
+.73b4	4c cb 73	jmp $73cb	        jmp scene_result
+.73b7					scene_colors:
+.73b7	c9 02		cmp #$02	        cmp #2
+.73b9	f0 0d		beq $73c8	        beq scene_clip
+.73bb	e8		inx		        inx
+.73bc	20 e4 73	jsr $73e4	        jsr scene_read
+.73bf	8d 94 7c	sta $7c94	        sta gfx_color
+.73c2	20 ea 76	jsr $76ea	        jsr gfx_colors
+.73c5	4c cb 73	jmp $73cb	        jmp scene_result
+.73c8					scene_clip:
+.73c8	20 f0 76	jsr $76f0	        jsr gfx_set_clip
+.73cb					scene_result:
+.73cb	b0 16		bcs $73e3	        bcs scene_return
+.73cd	18		clc		        clc
+.73ce	ad e5 73	lda $73e5	        lda scene_read+1
+.73d1	69 0a		adc #$0a	        adc #10
+.73d3	8d e5 73	sta $73e5	        sta scene_read+1
+.73d6	90 03		bcc $73db	        bcc +
+.73d8	ee e6 73	inc $73e6	        inc scene_read+2
+.73db	ce e8 73	dec $73e8	+       dec scene_remaining
+.73de	d0 b8		bne $7398	        bne scene_next
+.73e0	4c e9 73	jmp $73e9	        jmp draw_text_scene
+.73e3					scene_return:
+.73e3	60		rts		        rts
+.73e4					scene_read:
+.73e4	bd 4c 74	lda $744c,x	        lda scene_commands,x
+.73e7	60		rts		        rts
+>73e8	00				scene_remaining:.byte 0
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/scene-text.inc
+
+.73e9					draw_text_scene:
+.73e9	a9 9c		lda #$9c	        lda #<text_commands
+.73eb	8d 48 74	sta $7448	        sta text_read+1
+.73ee	a9 74		lda #$74	        lda #>text_commands
+.73f0	8d 49 74	sta $7449	        sta text_read+2
+.73f3	a9 06		lda #$06	        lda #text_commands_count
+.73f5	8d 4b 74	sta $744b	        sta text_remaining
+.73f8					text_scene_next:
+.73f8	a2 03		ldx #$03	        ldx #3
+.73fa					text_scene_coords:
+.73fa	20 47 74	jsr $7447	        jsr text_read
+.73fd	9d 8b 7c	sta $7c8b,x	        sta gfx_x0,x
+.7400	ca		dex		        dex
+.7401	10 f7		bpl $73fa	        bpl text_scene_coords
+.7403	a2 04		ldx #$04	        ldx #4
+.7405	20 47 74	jsr $7447	        jsr text_read
+.7408	8d 93 7c	sta $7c93	        sta gfx_pen
+.740b	e8		inx		        inx
+.740c	20 47 74	jsr $7447	        jsr text_read
+.740f	8d c9 7d	sta $7dc9	        sta gfx_text_length
+.7412	a9 06		lda #$06	        lda #6
+.7414	20 3a 74	jsr $743a	        jsr text_advance
+.7417	a2 00		ldx #$00	        ldx #0
+.7419					text_scene_copy:
+.7419	20 47 74	jsr $7447	        jsr text_read
+.741c	9d ca 7d	sta $7dca,x	        sta gfx_text_buffer,x
+.741f	e8		inx		        inx
+.7420	ec c9 7d	cpx $7dc9	        cpx gfx_text_length
+.7423	d0 f4		bne $7419	        bne text_scene_copy
+.7425	20 2a 7d	jsr $7d2a	        jsr gfx_text
+.7428	b0 0f		bcs $7439	        bcs text_scene_done
+.742a	ad c9 7d	lda $7dc9	        lda gfx_text_length
+.742d	20 3a 74	jsr $743a	        jsr text_advance
+.7430	ce 4b 74	dec $744b	        dec text_remaining
+.7433	d0 c3		bne $73f8	        bne text_scene_next
+.7435	a9 00		lda #$00	        lda #0
+.7437	18		clc		        clc
+.7438	60		rts		        rts
+.7439					text_scene_done:
+.7439	60		rts		        rts
+.743a					text_advance:
+.743a	18		clc		        clc
+.743b	6d 48 74	adc $7448	        adc text_read+1
+.743e	8d 48 74	sta $7448	        sta text_read+1
+.7441	90 03		bcc $7446	        bcc +
+.7443	ee 49 74	inc $7449	        inc text_read+2
+.7446	60		rts		+       rts
+.7447					text_read:
+.7447	bd 9c 74	lda $749c,x	        lda text_commands,x
+.744a	60		rts		        rts
+>744b	00				text_remaining: .byte 0
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/save-scene.inc
+
+=8					scene_commands_count=8
+.744c					scene_commands:
+>744c	08 00 20 00 38 01 bc 00		        .sint 8,32,312,188
+>7454	00 01				        .byte 0,1
+>7456	09 00 21 00 37 01 bb 00		        .sint 9,33,311,187
+>745e	00 00				        .byte 0,0
+>7460	18 00 54 00 28 01 64 00		        .sint 24,84,296,100
+>7468	00 01				        .byte 0,1
+>746a	19 00 55 00 27 01 63 00		        .sint 25,85,295,99
+>7472	00 00				        .byte 0,0
+>7474	40 00 78 00 90 00 90 00		        .sint 64,120,144,144
+>747c	00 01				        .byte 0,1
+>747e	41 00 79 00 8f 00 8f 00		        .sint 65,121,143,143
+>7486	00 00				        .byte 0,0
+>7488	b0 00 78 00 00 01 90 00		        .sint 176,120,256,144
+>7490	00 01				        .byte 0,1
+>7492	b1 00 79 00 ff 00 8f 00		        .sint 177,121,255,143
+>749a	00 00				        .byte 0,0
+=6					text_commands_count=6
+.749c					text_commands:
+>749c	10 00 0c 00			        .word 16,12
+>74a0	01 10				        .byte 1,16
+>74a2	75 4f 53 20 2f 20 43 61		        .byte 117,79,83,32,47,32,67,97,108,99,117,108,97,116,111,114
+>74aa	6c 63 75 6c 61 74 6f 72
+>74b2	18 00 30 00			        .word 24,48
+>74b6	01 1e				        .byte 1,30
+>74b8	53 61 76 65 20 68 69 73		        .byte 83,97,118,101,32,104,105,115,116,111,114,121,32,97,115,32,97,32,110,101,119,32,83,69,81,32,102,105,108,101
+>74c0	74 6f 72 79 20 61 73 20 61 20 6e 65 77 20 53 45
+>74d0	51 20 66 69 6c 65
+>74d6	18 00 48 00			        .word 24,72
+>74da	01 05				        .byte 1,5
+>74dc	4e 61 6d 65 3a			        .byte 78,97,109,101,58
+>74e1	18 00 68 00			        .word 24,104
+>74e5	01 1b				        .byte 1,27
+>74e7	54 61 62 20 73 65 6c 65		        .byte 84,97,98,32,115,101,108,101,99,116,115,59,32,69,110,116,101,114,32,99,111,110,102,105,114,109,115
+>74ef	63 74 73 3b 20 45 6e 74 65 72 20 63 6f 6e 66 69
+>74ff	72 6d 73
+>7502	58 00 80 00			        .word 88,128
+>7506	01 04				        .byte 1,4
+>7508	53 61 76 65			        .byte 83,97,118,101
+>750c	c0 00 80 00			        .word 192,128
+>7510	01 06				        .byte 1,6
+>7512	43 61 6e 63 65 6c		        .byte 67,97,110,99,101,108
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/buttons.inc
+
+=23					ui_button_count=23
+.7518					ui_rects:
+>7518	10 00 48 00 30 00 58 00		        .word 16,72,48,88
+>7520	38 00 48 00 58 00 58 00		        .word 56,72,88,88
+>7528	60 00 48 00 80 00 58 00		        .word 96,72,128,88
+>7530	88 00 48 00 a8 00 58 00		        .word 136,72,168,88
+>7538	10 00 60 00 30 00 70 00		        .word 16,96,48,112
+>7540	38 00 60 00 58 00 70 00		        .word 56,96,88,112
+>7548	60 00 60 00 80 00 70 00		        .word 96,96,128,112
+>7550	88 00 60 00 a8 00 70 00		        .word 136,96,168,112
+>7558	10 00 78 00 30 00 88 00		        .word 16,120,48,136
+>7560	38 00 78 00 58 00 88 00		        .word 56,120,88,136
+>7568	60 00 78 00 80 00 88 00		        .word 96,120,128,136
+>7570	88 00 78 00 a8 00 88 00		        .word 136,120,168,136
+>7578	10 00 90 00 30 00 a0 00		        .word 16,144,48,160
+>7580	38 00 90 00 58 00 a0 00		        .word 56,144,88,160
+>7588	60 00 90 00 80 00 a0 00		        .word 96,144,128,160
+>7590	88 00 90 00 a8 00 a0 00		        .word 136,144,168,160
+>7598	10 00 a8 00 40 00 b8 00		        .word 16,168,64,184
+>75a0	48 00 a8 00 80 00 b8 00		        .word 72,168,128,184
+>75a8	c0 00 a8 00 f0 00 b8 00		        .word 192,168,240,184
+>75b0	f8 00 a8 00 28 01 b8 00		        .word 248,168,296,184
+>75b8	10 01 08 00 30 01 18 00		        .word 272,8,304,24
+>75c0	40 00 78 00 90 00 90 00		        .word 64,120,144,144
+>75c8	b0 00 78 00 00 01 90 00		        .word 176,120,256,144
+.75d0					ui_keys:
+>75d0	37 38 39 2f 34 35 36 2a		        .byte 55,56,57,47,52,53,54,42,49,50,51,45,67,48,61,43,20,83,78,66,27,13,27
+>75d8	31 32 33 2d 43 30 3d 2b 14 53 4e 42 1b 0d 1b
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/buttons.inc
+
+.75e7					ui_hit:
+.75e7	ae 85 76	ldx $7685	        ldx ui_first
+.75ea					ui_hit_next:
+.75ea	ec 86 76	cpx $7686	        cpx ui_limit
+.75ed	b0 31		bcs $7620	        bcs ui_missed
+.75ef	8a		txa		        txa
+.75f0	0a		asl a		        asl
+.75f1	0a		asl a		        asl
+.75f2	0a		asl a		        asl
+.75f3	a8		tay		        tay
+.75f4	ad 80 76	lda $7680	        lda ui_x
+.75f7	d9 18 75	cmp $7518,y	        cmp ui_rects,y
+.75fa	ad 81 76	lda $7681	        lda ui_x+1
+.75fd	f9 19 75	sbc $7519,y	        sbc ui_rects+1,y
+.7600	90 1b		bcc $761d	        bcc ui_hit_skip
+.7602	ad 80 76	lda $7680	        lda ui_x
+.7605	d9 1c 75	cmp $751c,y	        cmp ui_rects+4,y
+.7608	ad 81 76	lda $7681	        lda ui_x+1
+.760b	f9 1d 75	sbc $751d,y	        sbc ui_rects+5,y
+.760e	b0 0d		bcs $761d	        bcs ui_hit_skip
+.7610	ad 82 76	lda $7682	        lda ui_y
+.7613	d9 1a 75	cmp $751a,y	        cmp ui_rects+2,y
+.7616	90 05		bcc $761d	        bcc ui_hit_skip
+.7618	d9 1e 75	cmp $751e,y	        cmp ui_rects+6,y
+.761b	90 05		bcc $7622	        bcc ui_hit_done
+.761d					ui_hit_skip:
+.761d	e8		inx		        inx
+.761e	d0 ca		bne $75ea	        bne ui_hit_next
+.7620					ui_missed:
+.7620	a2 ff		ldx #$ff	        ldx #$ff
+.7622					ui_hit_done:
+.7622	60		rts		        rts
+.7623					ui_paint:
+.7623	a9 1b		lda #$1b	        lda #$1b
+.7625	ec 87 76	cpx $7687	        cpx ui_selected
+.7628	d0 02		bne $762c	        bne +
+.762a	a9 07		lda #$07	        lda #$07
+.762c	8d 94 7c	sta $7c94	+       sta gfx_color
+.762f	8a		txa		        txa
+.7630	0a		asl a		        asl
+.7631	0a		asl a		        asl
+.7632	0a		asl a		        asl
+.7633	a8		tay		        tay
+.7634	a2 00		ldx #$00	        ldx #0
+.7636					ui_cells:
+.7636	b9 18 75	lda $7518,y	        lda ui_rects,y
+.7639	8d 83 76	sta $7683	        sta ui_value
+.763c	b9 19 75	lda $7519,y	        lda ui_rects+1,y
+.763f	4a		lsr a		        lsr
+.7640	6e 83 76	ror $7683	        ror ui_value
+.7643	4a		lsr a		        lsr
+.7644	6e 83 76	ror $7683	        ror ui_value
+.7647	4a		lsr a		        lsr
+.7648	6e 83 76	ror $7683	        ror ui_value
+.764b	ad 83 76	lda $7683	        lda ui_value
+.764e	9d 8b 7c	sta $7c8b,x	        sta gfx_x0,x
+.7651	a9 00		lda #$00	        lda #0
+.7653	9d 8c 7c	sta $7c8c,x	        sta gfx_x0+1,x
+.7656	c8		iny		        iny
+.7657	c8		iny		        iny
+.7658	e8		inx		        inx
+.7659	e8		inx		        inx
+.765a	e0 08		cpx #$08	        cpx #8
+.765c	d0 d8		bne $7636	        bne ui_cells
+.765e	4c ea 76	jmp $76ea	        jmp gfx_colors
+.7661					ui_focus:
+.7661	8e 84 76	stx $7684	        stx ui_next
+.7664	ae 87 76	ldx $7687	        ldx ui_selected
+.7667	ec 84 76	cpx $7684	        cpx ui_next
+.766a	d0 02		bne $766e	        bne +
+.766c	18		clc		        clc
+.766d	60		rts		        rts
+.766e					+
+.766e	ad 84 76	lda $7684	        lda ui_next
+.7671	8d 87 76	sta $7687	        sta ui_selected
+.7674	20 23 76	jsr $7623	        jsr ui_paint
+.7677	b0 06		bcs $767f	        bcs ui_focus_done
+.7679	ae 87 76	ldx $7687	        ldx ui_selected
+.767c	4c 23 76	jmp $7623	        jmp ui_paint
+.767f					ui_focus_done:
+.767f	60		rts		        rts
+>7680	00 00				ui_x: .word 0
+>7682	00				ui_y: .byte 0
+>7683	00				ui_value: .byte 0
+>7684	00				ui_next: .byte 0
+>7685	00				ui_first: .byte 0
+>7686	00				ui_limit: .byte 0
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+>7687	0e				ui_selected: .byte 14
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/graphics-core.inc
+
+.7688					gfx_bind:
+.7688	08		php		        php
+.7689	d8		cld		        cld
+.768a	20 d5 76	jsr $76d5	        jsr gfx_guard
+.768d	b0 39		bcs $76c8	        bcs gfx_finish
+.768f	a9 00		lda #$00	        lda #0
+.7691	8d 96 7c	sta $7c96	        sta gfx_bound
+.7694	ad 00 3d	lda $3d00	        lda N_OWNER
+.7697	8d 97 7c	sta $7c97	        sta gfx_owner
+.769a	a2 03		ldx #$03	        ldx #3
+.769c					gfx_bind_handle:
+.769c	bd 04 3d	lda $3d04,x	        lda N_HANDLE,x
+.769f	9d 98 7c	sta $7c98,x	        sta gfx_handle,x
+.76a2	ca		dex		        dex
+.76a3	10 f7		bpl $769c	        bpl gfx_bind_handle
+.76a5	a9 ff		lda #$ff	        lda #$ff
+.76a7	8d 08 3d	sta $3d08	        sta N_OFFSET
+.76aa	a9 23		lda #$23	        lda #$23
+.76ac	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.76af	a9 01		lda #$01	        lda #1
+.76b1	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.76b4	a9 00		lda #$00	        lda #0
+.76b6	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.76b9	20 26 1c	jsr $1c26	        jsr N_READ
+.76bc	b0 0a		bcs $76c8	        bcs gfx_finish
+.76be	a9 01		lda #$01	        lda #1
+.76c0	8d 96 7c	sta $7c96	        sta gfx_bound
+.76c3	20 a3 78	jsr $78a3	        jsr gfx_clip_defaults
+.76c6	a9 00		lda #$00	        lda #0
+.76c8					gfx_finish:
+.76c8	8d 95 7c	sta $7c95	        sta gfx_error
+.76cb	28		plp		        plp
+.76cc	ad 95 7c	lda $7c95	        lda gfx_error
+.76cf	f0 02		beq $76d3	        beq gfx_success
+.76d1	38		sec		        sec
+.76d2	60		rts		        rts
+.76d3					gfx_success:
+.76d3	18		clc		        clc
+.76d4	60		rts		        rts
+.76d5					gfx_guard:
+.76d5	ad 11 3d	lda $3d11	        lda N_BUSY
+.76d8	0d 91 3d	ora $3d91	        ora N_FBUSY
+.76db	0d 3b 3d	ora $3d3b	        ora N_UIBUSY
+.76de	f0 f3		beq $76d3	        beq gfx_success
+.76e0	a9 07		lda #$07	        lda #N_REENTRANT
+.76e2	38		sec		        sec
+.76e3	60		rts		        rts
+.76e4					gfx_rect:
+.76e4	08		php		        php
+.76e5	d8		cld		        cld
+.76e6	a9 00		lda #$00	        lda #0
+.76e8	f0 6b		beq $7755	        beq gfx_begin
+.76ea					gfx_colors:
+.76ea	08		php		        php
+.76eb	d8		cld		        cld
+.76ec	a9 01		lda #$01	        lda #1
+.76ee	d0 65		bne $7755	        bne gfx_begin
+.76f0					gfx_set_clip:
+.76f0	08		php		        php
+.76f1	d8		cld		        cld
+.76f2	a9 03		lda #$03	        lda #3
+.76f4	d0 5f		bne $7755	        bne gfx_begin
+.76f6					gfx_glyph:
+.76f6	08		php		        php
+.76f7	d8		cld		        cld
+.76f8	20 d5 76	jsr $76d5	        jsr gfx_guard
+.76fb	b0 12		bcs $770f	        bcs gfx_glyph_failed
+.76fd	ad 96 7c	lda $7c96	        lda gfx_bound
+.7700	d0 04		bne $7706	        bne +
+.7702	a9 04		lda #$04	        lda #N_BADHANDLE
+.7704	d0 09		bne $770f	        bne gfx_glyph_failed
+.7706	ad 93 7c	lda $7c93	+       lda gfx_pen
+.7709	c9 04		cmp #$04	        cmp #4
+.770b	90 05		bcc $7712	        bcc +
+.770d	a9 01		lda #$01	        lda #N_BADARG
+.770f					gfx_glyph_failed:
+.770f	4c c8 76	jmp $76c8	        jmp gfx_finish
+.7712					+
+.7712	a2 00		ldx #$00	        ldx #0
+.7714					gfx_glyph_origin:
+.7714	bd 8c 7c	lda $7c8c,x	        lda gfx_x0+1,x
+.7717	30 11		bmi $772a	        bmi gfx_glyph_negative
+.7719	dd c1 7c	cmp $7cc1,x	        cmp gfx_glyph_bounds+1,x
+.771c	90 17		bcc $7735	        bcc gfx_glyph_add
+.771e	d0 30		bne $7750	        bne gfx_glyph_empty
+.7720	bd 8b 7c	lda $7c8b,x	        lda gfx_x0,x
+.7723	dd c0 7c	cmp $7cc0,x	        cmp gfx_glyph_bounds,x
+.7726	b0 28		bcs $7750	        bcs gfx_glyph_empty
+.7728	90 0b		bcc $7735	        bcc gfx_glyph_add
+.772a					gfx_glyph_negative:
+.772a	c9 ff		cmp #$ff	        cmp #$ff
+.772c	d0 22		bne $7750	        bne gfx_glyph_empty
+.772e	bd 8b 7c	lda $7c8b,x	        lda gfx_x0,x
+.7731	c9 f9		cmp #$f9	        cmp #$f9
+.7733	90 1b		bcc $7750	        bcc gfx_glyph_empty
+.7735					gfx_glyph_add:
+.7735	18		clc		        clc
+.7736	bd 8b 7c	lda $7c8b,x	        lda gfx_x0,x
+.7739	69 08		adc #$08	        adc #8
+.773b	9d 8f 7c	sta $7c8f,x	        sta gfx_x1,x
+.773e	bd 8c 7c	lda $7c8c,x	        lda gfx_x0+1,x
+.7741	69 00		adc #$00	        adc #0
+.7743	9d 90 7c	sta $7c90,x	        sta gfx_x1+1,x
+.7746	e8		inx		        inx
+.7747	e8		inx		        inx
+.7748	e0 04		cpx #$04	        cpx #4
+.774a	d0 c8		bne $7714	        bne gfx_glyph_origin
+.774c	a9 02		lda #$02	        lda #2
+.774e	d0 05		bne $7755	        bne gfx_begin
+.7750					gfx_glyph_empty:
+.7750	a9 00		lda #$00	        lda #0
+.7752	4c c8 76	jmp $76c8	        jmp gfx_finish
+.7755					gfx_begin:
+.7755	8d a8 7c	sta $7ca8	        sta gfx_operation
+.7758	20 d5 76	jsr $76d5	        jsr gfx_guard
+.775b	90 03		bcc $7760	        bcs gfx_finish
+.775d	4c c8 76	jmp $76c8
+.7760	ad 96 7c	lda $7c96	        lda gfx_bound
+.7763	d0 04		bne $7769	        bne +
+.7765	a9 04		lda #$04	        lda #N_BADHANDLE
+.7767	d0 f4		bne $775d	        bne gfx_finish
+.7769	ad a8 7c	lda $7ca8	+       lda gfx_operation
+.776c	c9 01		cmp #$01	        cmp #1
+.776e	f0 1d		beq $778d	        beq gfx_color_limits
+.7770	c9 02		cmp #$02	        cmp #2
+.7772	b0 0b		bcs $777f	        bcs gfx_pixel_limits
+.7774	ad 93 7c	lda $7c93	        lda gfx_pen
+.7777	c9 03		cmp #$03	        cmp #3
+.7779	90 04		bcc $777f	        bcc +
+.777b	a9 01		lda #$01	        lda #N_BADARG
+.777d	d0 de		bne $775d	        bne gfx_finish
+.777f					+
+.777f					gfx_pixel_limits:
+.777f	a9 40		lda #$40	        lda #64
+.7781	8d 9c 7c	sta $7c9c	        sta gfx_limits
+.7784	a9 01		lda #$01	        lda #1
+.7786	8d 9d 7c	sta $7c9d	        sta gfx_limits+1
+.7789	a9 c8		lda #$c8	        lda #200
+.778b	d0 0c		bne $7799	        bne gfx_limits_y
+.778d					gfx_color_limits:
+.778d	a9 28		lda #$28	        lda #40
+.778f	8d 9c 7c	sta $7c9c	        sta gfx_limits
+.7792	a9 00		lda #$00	        lda #0
+.7794	8d 9d 7c	sta $7c9d	        sta gfx_limits+1
+.7797	a9 19		lda #$19	        lda #25
+.7799					gfx_limits_y:
+.7799	8d 9e 7c	sta $7c9e	        sta gfx_limits+2
+.779c	a9 00		lda #$00	        lda #0
+.779e	8d 9f 7c	sta $7c9f	        sta gfx_limits+3
+.77a1	a2 00		ldx #$00	        ldx #0
+.77a3					gfx_clip_next:
+.77a3	8a		txa		        txa
+.77a4	29 02		and #$02	        and #2
+.77a6	a8		tay		        tay
+.77a7	bd 8c 7c	lda $7c8c,x	        lda gfx_x0+1,x
+.77aa	30 1a		bmi $77c6	        bmi gfx_clip_zero
+.77ac	d9 9d 7c	cmp $7c9d,y	        cmp gfx_limits+1,y
+.77af	90 1c		bcc $77cd	        bcc gfx_clip_copy
+.77b1	d0 08		bne $77bb	        bne gfx_clip_limit
+.77b3	bd 8b 7c	lda $7c8b,x	        lda gfx_x0,x
+.77b6	d9 9c 7c	cmp $7c9c,y	        cmp gfx_limits,y
+.77b9	90 12		bcc $77cd	        bcc gfx_clip_copy
+.77bb					gfx_clip_limit:
+.77bb	b9 9c 7c	lda $7c9c,y	        lda gfx_limits,y
+.77be	9d a0 7c	sta $7ca0,x	        sta gfx_clipped,x
+.77c1	b9 9d 7c	lda $7c9d,y	        lda gfx_limits+1,y
+.77c4	10 10		bpl $77d6	        bpl gfx_clip_high
+.77c6					gfx_clip_zero:
+.77c6	a9 00		lda #$00	        lda #0
+.77c8	9d a0 7c	sta $7ca0,x	        sta gfx_clipped,x
+.77cb	f0 09		beq $77d6	        beq gfx_clip_high
+.77cd					gfx_clip_copy:
+.77cd	bd 8b 7c	lda $7c8b,x	        lda gfx_x0,x
+.77d0	9d a0 7c	sta $7ca0,x	        sta gfx_clipped,x
+.77d3	bd 8c 7c	lda $7c8c,x	        lda gfx_x0+1,x
+.77d6					gfx_clip_high:
+.77d6	9d a1 7c	sta $7ca1,x	        sta gfx_clipped+1,x
+.77d9	e8		inx		        inx
+.77da	e8		inx		        inx
+.77db	e0 08		cpx #$08	        cpx #8
+.77dd	d0 c4		bne $77a3	        bne gfx_clip_next
+.77df	ad a8 7c	lda $7ca8	        lda gfx_operation
+.77e2	c9 03		cmp #$03	        cmp #3
+.77e4	d0 03		bne $77e9	        beq gfx_store_clip
+.77e6	4c 6a 78	jmp $786a
+.77e9	a0 00		ldy #$00	        ldy #0
+.77eb	c9 01		cmp #$01	        cmp #1
+.77ed	d0 02		bne $77f1	        bne +
+.77ef	a0 08		ldy #$08	        ldy #8
+.77f1	a2 00		ldx #$00	+       ldx #0
+.77f3					gfx_clip_intersect:
+.77f3	bd a1 7c	lda $7ca1,x	        lda gfx_clipped+1,x
+.77f6	d9 c9 7c	cmp $7cc9,y	        cmp gfx_clip_pixels+1,y
+.77f9	d0 06		bne $7801	        bne gfx_clip_compared
+.77fb	bd a0 7c	lda $7ca0,x	        lda gfx_clipped,x
+.77fe	d9 c8 7c	cmp $7cc8,y	        cmp gfx_clip_pixels,y
+.7801					gfx_clip_compared:
+.7801	8a		txa		        txa
+.7802	29 04		and #$04	        and #4
+.7804	f0 04		beq $780a	        beq gfx_clip_start
+.7806	90 10		bcc $7818	        bcc gfx_clip_keep
+.7808	b0 02		bcs $780c	        bcs gfx_clip_replace
+.780a					gfx_clip_start:
+.780a	b0 0c		bcs $7818	        bcs gfx_clip_keep
+.780c					gfx_clip_replace:
+.780c	b9 c8 7c	lda $7cc8,y	        lda gfx_clip_pixels,y
+.780f	9d a0 7c	sta $7ca0,x	        sta gfx_clipped,x
+.7812	b9 c9 7c	lda $7cc9,y	        lda gfx_clip_pixels+1,y
+.7815	9d a1 7c	sta $7ca1,x	        sta gfx_clipped+1,x
+.7818					gfx_clip_keep:
+.7818	e8		inx		        inx
+.7819	e8		inx		        inx
+.781a	c8		iny		        iny
+.781b	c8		iny		        iny
+.781c	e0 08		cpx #$08	        cpx #8
+.781e	d0 d3		bne $77f3	        bne gfx_clip_intersect
+.7820	ad a1 7c	lda $7ca1	        lda gfx_clipped+1
+.7823	cd a5 7c	cmp $7ca5	        cmp gfx_clipped+5
+.7826	90 0a		bcc $7832	        bcc gfx_nonempty_x
+.7828	d0 3b		bne $7865	        bne gfx_empty
+.782a	ad a0 7c	lda $7ca0	        lda gfx_clipped
+.782d	cd a4 7c	cmp $7ca4	        cmp gfx_clipped+4
+.7830	b0 33		bcs $7865	        bcs gfx_empty
+.7832					gfx_nonempty_x:
+.7832	ad a2 7c	lda $7ca2	        lda gfx_clipped+2
+.7835	cd a6 7c	cmp $7ca6	        cmp gfx_clipped+6
+.7838	b0 2b		bcs $7865	        bcs gfx_empty
+.783a	8d a9 7c	sta $7ca9	        sta gfx_y
+.783d	ad a8 7c	lda $7ca8	        lda gfx_operation
+.7840	c9 01		cmp #$01	        cmp #1
+.7842	f0 6b		beq $78af	        beq gfx_color_rows
+.7844	c9 02		cmp #$02	        cmp #2
+.7846	d0 1a		bne $7862	        bne gfx_clipped_bitmap
+.7848	ad 8b 7c	lda $7c8b	        lda gfx_x0
+.784b	0d 8d 7c	ora $7c8d	        ora gfx_y0
+.784e	29 07		and #$07	        and #7
+.7850	d0 10		bne $7862	        bne gfx_clipped_bitmap
+.7852	a2 07		ldx #$07	        ldx #7
+.7854					gfx_glyph_unclipped:
+.7854	bd 8b 7c	lda $7c8b,x	        lda gfx_x0,x
+.7857	dd a0 7c	cmp $7ca0,x	        cmp gfx_clipped,x
+.785a	d0 06		bne $7862	        bne gfx_clipped_bitmap
+.785c	ca		dex		        dex
+.785d	10 f5		bpl $7854	        bpl gfx_glyph_unclipped
+.785f	4c ae 7b	jmp $7bae	        jmp gfx_aligned_glyph
+.7862					gfx_clipped_bitmap:
+.7862	4c 0e 79	jmp $790e	        jmp gfx_bitmap_setup
+.7865					gfx_empty:
+.7865	a9 00		lda #$00	        lda #0
+.7867	4c c8 76	jmp $76c8	        jmp gfx_finish
+.786a					gfx_store_clip:
+.786a	a2 07		ldx #$07	        ldx #7
+.786c					gfx_store_clip_next:
+.786c	bd a0 7c	lda $7ca0,x	        lda gfx_clipped,x
+.786f	9d c8 7c	sta $7cc8,x	        sta gfx_clip_pixels,x
+.7872	9d d0 7c	sta $7cd0,x	        sta gfx_clip_cells,x
+.7875	ca		dex		        dex
+.7876	10 f4		bpl $786c	        bpl gfx_store_clip_next
+.7878	a2 00		ldx #$00	        ldx #0
+.787a					gfx_clip_cell:
+.787a	e0 04		cpx #$04	        cpx #4
+.787c	b0 11		bcs $788f	        bcs gfx_clip_divide
+.787e	18		clc		        clc
+.787f	bd d0 7c	lda $7cd0,x	        lda gfx_clip_cells,x
+.7882	69 07		adc #$07	        adc #7
+.7884	9d d0 7c	sta $7cd0,x	        sta gfx_clip_cells,x
+.7887	bd d1 7c	lda $7cd1,x	        lda gfx_clip_cells+1,x
+.788a	69 00		adc #$00	        adc #0
+.788c	9d d1 7c	sta $7cd1,x	        sta gfx_clip_cells+1,x
+.788f					gfx_clip_divide:
+.788f	a0 03		ldy #$03	        ldy #3
+.7891					gfx_clip_shift:
+.7891	5e d1 7c	lsr $7cd1,x	        lsr gfx_clip_cells+1,x
+.7894	7e d0 7c	ror $7cd0,x	        ror gfx_clip_cells,x
+.7897	88		dey		        dey
+.7898	d0 f7		bne $7891	        bne gfx_clip_shift
+.789a	e8		inx		        inx
+.789b	e8		inx		        inx
+.789c	e0 08		cpx #$08	        cpx #8
+.789e	d0 da		bne $787a	        bne gfx_clip_cell
+.78a0	4c 65 78	jmp $7865	        jmp gfx_empty
+.78a3					gfx_clip_defaults:
+.78a3	a2 0f		ldx #$0f	        ldx #15
+.78a5					gfx_clip_reset_next:
+.78a5	bd d8 7c	lda $7cd8,x	        lda gfx_clip_full,x
+.78a8	9d c8 7c	sta $7cc8,x	        sta gfx_clip_pixels,x
+.78ab	ca		dex		        dex
+.78ac	10 f7		bpl $78a5	        bpl gfx_clip_reset_next
+.78ae	60		rts		        rts
+.78af					gfx_color_rows:
+.78af	a9 00		lda #$00	        lda #0
+.78b1	8d aa 7c	sta $7caa	        sta gfx_offset
+.78b4	a9 20		lda #$20	        lda #$20
+.78b6	8d ab 7c	sta $7cab	        sta gfx_offset+1
+.78b9	ae a9 7c	ldx $7ca9	        ldx gfx_y
+.78bc	f0 11		beq $78cf	        beq gfx_color_x
+.78be					gfx_color_multiply:
+.78be	18		clc		        clc
+.78bf	ad aa 7c	lda $7caa	        lda gfx_offset
+.78c2	69 28		adc #$28	        adc #40
+.78c4	8d aa 7c	sta $7caa	        sta gfx_offset
+.78c7	90 03		bcc $78cc	        bcc +
+.78c9	ee ab 7c	inc $7cab	        inc gfx_offset+1
+.78cc	ca		dex		+       dex
+.78cd	d0 ef		bne $78be	        bne gfx_color_multiply
+.78cf					gfx_color_x:
+.78cf	18		clc		        clc
+.78d0	ad aa 7c	lda $7caa	        lda gfx_offset
+.78d3	6d a0 7c	adc $7ca0	        adc gfx_clipped
+.78d6	8d aa 7c	sta $7caa	        sta gfx_offset
+.78d9	90 03		bcc $78de	        bcc +
+.78db	ee ab 7c	inc $7cab	        inc gfx_offset+1
+.78de	38		sec		+       sec
+.78df	ad a4 7c	lda $7ca4	        lda gfx_clipped+4
+.78e2	ed a0 7c	sbc $7ca0	        sbc gfx_clipped
+.78e5	8d ac 7c	sta $7cac	        sta gfx_span
+.78e8	a9 00		lda #$00	        lda #0
+.78ea	8d ad 7c	sta $7cad	        sta gfx_span+1
+.78ed	20 61 7c	jsr $7c61	        jsr gfx_select
+.78f0	ad 94 7c	lda $7c94	        lda gfx_color
+.78f3	8d 0c 3d	sta $3d0c	        sta N_VALUE
+.78f6	20 2c 1c	jsr $1c2c	        jsr N_FILL
+.78f9	b0 10		bcs $790b	        bcs gfx_failed
+.78fb	ee a9 7c	inc $7ca9	        inc gfx_y
+.78fe	ad a9 7c	lda $7ca9	        lda gfx_y
+.7901	cd a6 7c	cmp $7ca6	        cmp gfx_clipped+6
+.7904	d0 a9		bne $78af	        bne gfx_color_rows
+.7906	d0 03		bne $790b	        beq gfx_empty
+.7908	4c 65 78	jmp $7865
+.790b					gfx_failed:
+.790b	4c c8 76	jmp $76c8	        jmp gfx_finish
+.790e					gfx_bitmap_setup:
+.790e	a9 00		lda #$00	        lda #0
+.7910	8d c4 7c	sta $7cc4	        sta gfx_band_allowed
+.7913	ad a8 7c	lda $7ca8	        lda gfx_operation
+.7916	d0 03		bne $791b	        bne +
+.7918	ee c4 7c	inc $7cc4	        inc gfx_band_allowed
+.791b					+
+.791b	ad a0 7c	lda $7ca0	        lda gfx_clipped
+.791e	29 07		and #$07	        and #7
+.7920	aa		tax		        tax
+.7921	bd e8 7c	lda $7ce8,x	        lda gfx_left_masks,x
+.7924	8d b1 7c	sta $7cb1	        sta gfx_left
+.7927	ad a4 7c	lda $7ca4	        lda gfx_clipped+4
+.792a	29 07		and #$07	        and #7
+.792c	aa		tax		        tax
+.792d	bd f0 7c	lda $7cf0,x	        lda gfx_right_masks,x
+.7930	8d b2 7c	sta $7cb2	        sta gfx_right
+.7933	38		sec		        sec
+.7934	ad a4 7c	lda $7ca4	        lda gfx_clipped+4
+.7937	e9 01		sbc #$01	        sbc #1
+.7939	8d ac 7c	sta $7cac	        sta gfx_span
+.793c	ad a5 7c	lda $7ca5	        lda gfx_clipped+5
+.793f	e9 00		sbc #$00	        sbc #0
+.7941	8d ad 7c	sta $7cad	        sta gfx_span+1
+.7944	ad ac 7c	lda $7cac	        lda gfx_span
+.7947	29 f8		and #$f8	        and #$f8
+.7949	8d ac 7c	sta $7cac	        sta gfx_span
+.794c	ad a0 7c	lda $7ca0	        lda gfx_clipped
+.794f	29 f8		and #$f8	        and #$f8
+.7951	8d ae 7c	sta $7cae	        sta gfx_xbyte
+.7954	38		sec		        sec
+.7955	ad ac 7c	lda $7cac	        lda gfx_span
+.7958	ed ae 7c	sbc $7cae	        sbc gfx_xbyte
+.795b	8d ac 7c	sta $7cac	        sta gfx_span
+.795e	ad ad 7c	lda $7cad	        lda gfx_span+1
+.7961	ed a1 7c	sbc $7ca1	        sbc gfx_clipped+1
+.7964	8d ad 7c	sta $7cad	        sta gfx_span+1
+.7967	ad ad 7c	lda $7cad	        lda gfx_span+1
+.796a	4a		lsr a		        lsr
+.796b	ad ac 7c	lda $7cac	        lda gfx_span
+.796e	6a		ror a		        ror
+.796f	4a		lsr a		        lsr
+.7970	4a		lsr a		        lsr
+.7971	18		clc		        clc
+.7972	69 01		adc #$01	        adc #1
+.7974	8d af 7c	sta $7caf	        sta gfx_columns
+.7977	ee ac 7c	inc $7cac	        inc gfx_span
+.797a					gfx_bitmap_row:
+.797a	ad a9 7c	lda $7ca9	        lda gfx_y
+.797d	29 f8		and #$f8	        and #$f8
+.797f	4a		lsr a		        lsr
+.7980	4a		lsr a		        lsr
+.7981	a8		tay		        tay
+.7982	18		clc		        clc
+.7983	b9 f8 7c	lda $7cf8,y	        lda gfx_rows,y
+.7986	6d ae 7c	adc $7cae	        adc gfx_xbyte
+.7989	8d aa 7c	sta $7caa	        sta gfx_offset
+.798c	b9 f9 7c	lda $7cf9,y	        lda gfx_rows+1,y
+.798f	6d a1 7c	adc $7ca1	        adc gfx_clipped+1
+.7992	8d ab 7c	sta $7cab	        sta gfx_offset+1
+.7995	ad a9 7c	lda $7ca9	        lda gfx_y
+.7998	29 07		and #$07	        and #7
+.799a	18		clc		        clc
+.799b	6d aa 7c	adc $7caa	        adc gfx_offset
+.799e	8d aa 7c	sta $7caa	        sta gfx_offset
+.79a1	90 03		bcc $79a6	        bcc +
+.79a3	ee ab 7c	inc $7cab	        inc gfx_offset+1
+.79a6	ad c4 7c	lda $7cc4	+       lda gfx_band_allowed
+.79a9	f0 15		beq $79c0	        beq gfx_read_row
+.79ab	ad a9 7c	lda $7ca9	        lda gfx_y
+.79ae	29 07		and #$07	        and #7
+.79b0	d0 0e		bne $79c0	        bne gfx_read_row
+.79b2	38		sec		        sec
+.79b3	ad a6 7c	lda $7ca6	        lda gfx_clipped+6
+.79b6	ed a9 7c	sbc $7ca9	        sbc gfx_y
+.79b9	c9 08		cmp #$08	        cmp #8
+.79bb	90 03		bcc $79c0	        bcc gfx_read_row
+.79bd	4c 95 7a	jmp $7a95	        jmp gfx_band
+.79c0					gfx_read_row:
+.79c0	20 61 7c	jsr $7c61	        jsr gfx_select
+.79c3	20 26 1c	jsr $1c26	        jsr N_READ
+.79c6	90 03		bcc $79cb	        bcs gfx_failed
+.79c8	4c 0b 79	jmp $790b
+.79cb	ad a8 7c	lda $7ca8	        lda gfx_operation
+.79ce	c9 02		cmp #$02	        cmp #2
+.79d0	d0 03		bne $79d5	        bne gfx_bitmap_loaded
+.79d2	20 24 7c	jsr $7c24	        jsr gfx_glyph_row
+.79d5					gfx_bitmap_loaded:
+.79d5	a9 3a		lda #$3a	        lda #>N_BUFFER
+.79d7	8d 26 7a	sta $7a26	        sta gfx_load+2
+.79da	8d 61 7a	sta $7a61	        sta gfx_store+2
+.79dd	ad af 7c	lda $7caf	        lda gfx_columns
+.79e0	8d b0 7c	sta $7cb0	        sta gfx_remaining
+.79e3	a2 00		ldx #$00	        ldx #0
+.79e5					gfx_column:
+.79e5	a9 ff		lda #$ff	        lda #$ff
+.79e7	e0 00		cpx #$00	        cpx #0
+.79e9	d0 0b		bne $79f6	        bne gfx_mask_last
+.79eb	ac b0 7c	ldy $7cb0	        ldy gfx_remaining
+.79ee	cc af 7c	cpy $7caf	        cpy gfx_columns
+.79f1	d0 03		bne $79f6	        bne gfx_mask_last
+.79f3	ad b1 7c	lda $7cb1	        lda gfx_left
+.79f6					gfx_mask_last:
+.79f6	ac b0 7c	ldy $7cb0	        ldy gfx_remaining
+.79f9	c0 01		cpy #$01	        cpy #1
+.79fb	d0 03		bne $7a00	        bne +
+.79fd	2d b2 7c	and $7cb2	        and gfx_right
+.7a00	8d b3 7c	sta $7cb3	+       sta gfx_mask
+.7a03	8d b5 7c	sta $7cb5	        sta gfx_cover
+.7a06	ad a8 7c	lda $7ca8	        lda gfx_operation
+.7a09	c9 02		cmp #$02	        cmp #2
+.7a0b	d0 17		bne $7a24	        bne gfx_load
+.7a0d	ad b0 7c	lda $7cb0	        lda gfx_remaining
+.7a10	cd af 7c	cmp $7caf	        cmp gfx_columns
+.7a13	f0 06		beq $7a1b	        beq gfx_glyph_first
+.7a15	ad b7 7c	lda $7cb7	        lda gfx_second
+.7a18	4c 1e 7a	jmp $7a1e	        jmp gfx_glyph_ink
+.7a1b					gfx_glyph_first:
+.7a1b	ad b6 7c	lda $7cb6	        lda gfx_first
+.7a1e					gfx_glyph_ink:
+.7a1e	2d b3 7c	and $7cb3	        and gfx_mask
+.7a21	8d b3 7c	sta $7cb3	        sta gfx_mask
+.7a24					gfx_load:
+.7a24	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.7a27	8d b4 7c	sta $7cb4	        sta gfx_old
+.7a2a	ad 93 7c	lda $7c93	        lda gfx_pen
+.7a2d	f0 11		beq $7a40	        beq gfx_clear
+.7a2f	c9 01		cmp #$01	        cmp #1
+.7a31	f0 18		beq $7a4b	        beq gfx_set
+.7a33	c9 03		cmp #$03	        cmp #3
+.7a35	f0 1d		beq $7a54	        beq gfx_copy
+.7a37	ad b4 7c	lda $7cb4	        lda gfx_old
+.7a3a	4d b3 7c	eor $7cb3	        eor gfx_mask
+.7a3d	4c 5f 7a	jmp $7a5f	        jmp gfx_store
+.7a40					gfx_clear:
+.7a40	ad b3 7c	lda $7cb3	        lda gfx_mask
+.7a43	49 ff		eor #$ff	        eor #$ff
+.7a45	2d b4 7c	and $7cb4	        and gfx_old
+.7a48	4c 5f 7a	jmp $7a5f	        jmp gfx_store
+.7a4b					gfx_set:
+.7a4b	ad b4 7c	lda $7cb4	        lda gfx_old
+.7a4e	0d b3 7c	ora $7cb3	        ora gfx_mask
+.7a51	4c 5f 7a	jmp $7a5f	        jmp gfx_store
+.7a54					gfx_copy:
+.7a54	ad b5 7c	lda $7cb5	        lda gfx_cover
+.7a57	49 ff		eor #$ff	        eor #$ff
+.7a59	2d b4 7c	and $7cb4	        and gfx_old
+.7a5c	0d b3 7c	ora $7cb3	        ora gfx_mask
+.7a5f					gfx_store:
+.7a5f	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.7a62	ce b0 7c	dec $7cb0	        dec gfx_remaining
+.7a65	f0 12		beq $7a79	        beq gfx_write_row
+.7a67	8a		txa		        txa
+.7a68	18		clc		        clc
+.7a69	69 08		adc #$08	        adc #8
+.7a6b	aa		tax		        tax
+.7a6c	b0 03		bcs $7a71	        bcc gfx_column
+.7a6e	4c e5 79	jmp $79e5
+.7a71	ee 26 7a	inc $7a26	        inc gfx_load+2
+.7a74	ee 61 7a	inc $7a61	        inc gfx_store+2
+.7a77	d0 f5		bne $7a6e	        bne gfx_column
+.7a79					gfx_write_row:
+.7a79	20 61 7c	jsr $7c61	        jsr gfx_select
+.7a7c	20 29 1c	jsr $1c29	        jsr N_WRITE
+.7a7f	90 03		bcc $7a84	        bcs gfx_failed
+.7a81	4c 0b 79	jmp $790b
+.7a84	ee a9 7c	inc $7ca9	        inc gfx_y
+.7a87	ad a9 7c	lda $7ca9	        lda gfx_y
+.7a8a	cd a6 7c	cmp $7ca6	        cmp gfx_clipped+6
+.7a8d	f0 03		beq $7a92	        bne gfx_bitmap_row
+.7a8f	4c 7a 79	jmp $797a
+.7a92	4c 65 78	jmp $7865	        jmp gfx_empty
+.7a95					gfx_band:
+.7a95	20 13 7b	jsr $7b13	        jsr gfx_band_select
+.7a98	ad b1 7c	lda $7cb1	        lda gfx_left
+.7a9b	2d b2 7c	and $7cb2	        and gfx_right
+.7a9e	c9 ff		cmp #$ff	        cmp #$ff
+.7aa0	f0 03		beq $7aa5	        bne gfx_band_masked
+.7aa2	4c 2e 7b	jmp $7b2e
+.7aa5	ad 93 7c	lda $7c93	        lda gfx_pen
+.7aa8	c9 02		cmp #$02	        cmp #2
+.7aaa	f0 13		beq $7abf	        beq gfx_band_xor
+.7aac	aa		tax		        tax
+.7aad	a9 00		lda #$00	        lda #0
+.7aaf	e0 00		cpx #$00	        cpx #0
+.7ab1	f0 02		beq $7ab5	        beq +
+.7ab3	a9 ff		lda #$ff	        lda #$ff
+.7ab5	8d 0c 3d	sta $3d0c	+       sta N_VALUE
+.7ab8	20 2c 1c	jsr $1c2c	        jsr N_FILL
+.7abb	b0 53		bcs $7b10	        bcs gfx_band_failed
+.7abd	90 3d		bcc $7afc	        bcc gfx_band_next
+.7abf					gfx_band_xor:
+.7abf	20 26 1c	jsr $1c26	        jsr N_READ
+.7ac2	b0 4c		bcs $7b10	        bcs gfx_band_failed
+.7ac4	a9 3a		lda #$3a	        lda #>N_BUFFER
+.7ac6	8d d0 7a	sta $7ad0	        sta gfx_xor_load+2
+.7ac9	8d d5 7a	sta $7ad5	        sta gfx_xor_store+2
+.7acc	a2 00		ldx #$00	        ldx #0
+.7ace					gfx_xor_load:
+.7ace	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.7ad1	49 ff		eor #$ff	        eor #$ff
+.7ad3					gfx_xor_store:
+.7ad3	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.7ad6	ad c5 7c	lda $7cc5	        lda gfx_band_left
+.7ad9	d0 03		bne $7ade	        bne +
+.7adb	ce c6 7c	dec $7cc6	        dec gfx_band_left+1
+.7ade	ce c5 7c	dec $7cc5	+       dec gfx_band_left
+.7ae1	ad c5 7c	lda $7cc5	        lda gfx_band_left
+.7ae4	0d c6 7c	ora $7cc6	        ora gfx_band_left+1
+.7ae7	f0 0b		beq $7af4	        beq gfx_band_write
+.7ae9	e8		inx		        inx
+.7aea	d0 e2		bne $7ace	        bne gfx_xor_load
+.7aec	ee d0 7a	inc $7ad0	        inc gfx_xor_load+2
+.7aef	ee d5 7a	inc $7ad5	        inc gfx_xor_store+2
+.7af2	d0 da		bne $7ace	        bne gfx_xor_load
+.7af4					gfx_band_write:
+.7af4	20 13 7b	jsr $7b13	        jsr gfx_band_select
+.7af7	20 29 1c	jsr $1c29	        jsr N_WRITE
+.7afa	b0 14		bcs $7b10	        bcs gfx_band_failed
+.7afc					gfx_band_next:
+.7afc	18		clc		        clc
+.7afd	ad a9 7c	lda $7ca9	        lda gfx_y
+.7b00	69 08		adc #$08	        adc #8
+.7b02	8d a9 7c	sta $7ca9	        sta gfx_y
+.7b05	cd a6 7c	cmp $7ca6	        cmp gfx_clipped+6
+.7b08	f0 03		beq $7b0d	        beq gfx_band_done
+.7b0a	4c 7a 79	jmp $797a	        jmp gfx_bitmap_row
+.7b0d					gfx_band_done:
+.7b0d	4c 65 78	jmp $7865	        jmp gfx_empty
+.7b10					gfx_band_failed:
+.7b10	4c c8 76	jmp $76c8	        jmp gfx_finish
+.7b13					gfx_band_select:
+.7b13	20 61 7c	jsr $7c61	        jsr gfx_select
+.7b16	18		clc		        clc
+.7b17	ad 0a 3d	lda $3d0a	        lda N_COUNT
+.7b1a	69 07		adc #$07	        adc #7
+.7b1c	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.7b1f	8d c5 7c	sta $7cc5	        sta gfx_band_left
+.7b22	ad 0b 3d	lda $3d0b	        lda N_COUNT+1
+.7b25	69 00		adc #$00	        adc #0
+.7b27	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.7b2a	8d c6 7c	sta $7cc6	        sta gfx_band_left+1
+.7b2d	60		rts		        rts
+.7b2e					gfx_band_masked:
+.7b2e	20 26 1c	jsr $1c26	        jsr N_READ
+.7b31	b0 dd		bcs $7b10	        bcs gfx_band_failed
+.7b33	a9 3a		lda #$3a	        lda #>N_BUFFER
+.7b35	8d 63 7b	sta $7b63	        sta gfx_band_load+2
+.7b38	8d 8c 7b	sta $7b8c	        sta gfx_band_store+2
+.7b3b	a9 08		lda #$08	        lda #8
+.7b3d	8d c7 7c	sta $7cc7	        sta gfx_band_first
+.7b40	a2 00		ldx #$00	        ldx #0
+.7b42					gfx_band_pixel:
+.7b42	a9 ff		lda #$ff	        lda #$ff
+.7b44	ac c7 7c	ldy $7cc7	        ldy gfx_band_first
+.7b47	f0 06		beq $7b4f	        beq +
+.7b49	ce c7 7c	dec $7cc7	        dec gfx_band_first
+.7b4c	ad b1 7c	lda $7cb1	        lda gfx_left
+.7b4f	ac c6 7c	ldy $7cc6	+       ldy gfx_band_left+1
+.7b52	d0 0a		bne $7b5e	        bne gfx_band_mask_ready
+.7b54	ac c5 7c	ldy $7cc5	        ldy gfx_band_left
+.7b57	c0 09		cpy #$09	        cpy #9
+.7b59	b0 03		bcs $7b5e	        bcs gfx_band_mask_ready
+.7b5b	2d b2 7c	and $7cb2	        and gfx_right
+.7b5e					gfx_band_mask_ready:
+.7b5e	8d b3 7c	sta $7cb3	        sta gfx_mask
+.7b61					gfx_band_load:
+.7b61	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.7b64	8d b4 7c	sta $7cb4	        sta gfx_old
+.7b67	ad 93 7c	lda $7c93	        lda gfx_pen
+.7b6a	f0 0d		beq $7b79	        beq gfx_band_clear
+.7b6c	c9 01		cmp #$01	        cmp #1
+.7b6e	f0 14		beq $7b84	        beq gfx_band_set
+.7b70	ad b4 7c	lda $7cb4	        lda gfx_old
+.7b73	4d b3 7c	eor $7cb3	        eor gfx_mask
+.7b76	4c 8a 7b	jmp $7b8a	        jmp gfx_band_store
+.7b79					gfx_band_clear:
+.7b79	ad b3 7c	lda $7cb3	        lda gfx_mask
+.7b7c	49 ff		eor #$ff	        eor #$ff
+.7b7e	2d b4 7c	and $7cb4	        and gfx_old
+.7b81	4c 8a 7b	jmp $7b8a	        jmp gfx_band_store
+.7b84					gfx_band_set:
+.7b84	ad b4 7c	lda $7cb4	        lda gfx_old
+.7b87	0d b3 7c	ora $7cb3	        ora gfx_mask
+.7b8a					gfx_band_store:
+.7b8a	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.7b8d	ad c5 7c	lda $7cc5	        lda gfx_band_left
+.7b90	d0 03		bne $7b95	        bne +
+.7b92	ce c6 7c	dec $7cc6	        dec gfx_band_left+1
+.7b95	ce c5 7c	dec $7cc5	+       dec gfx_band_left
+.7b98	ad c5 7c	lda $7cc5	        lda gfx_band_left
+.7b9b	0d c6 7c	ora $7cc6	        ora gfx_band_left+1
+.7b9e	d0 03		bne $7ba3	        beq gfx_band_write
+.7ba0	4c f4 7a	jmp $7af4
+.7ba3	e8		inx		        inx
+.7ba4	d0 9c		bne $7b42	        bne gfx_band_pixel
+.7ba6	ee 63 7b	inc $7b63	        inc gfx_band_load+2
+.7ba9	ee 8c 7b	inc $7b8c	        inc gfx_band_store+2
+.7bac	d0 94		bne $7b42	        bne gfx_band_pixel
+.7bae					gfx_aligned_glyph:
+.7bae	ad 8d 7c	lda $7c8d	        lda gfx_y0
+.7bb1	4a		lsr a		        lsr
+.7bb2	4a		lsr a		        lsr
+.7bb3	a8		tay		        tay
+.7bb4	18		clc		        clc
+.7bb5	b9 f8 7c	lda $7cf8,y	        lda gfx_rows,y
+.7bb8	6d 8b 7c	adc $7c8b	        adc gfx_x0
+.7bbb	8d aa 7c	sta $7caa	        sta gfx_offset
+.7bbe	b9 f9 7c	lda $7cf9,y	        lda gfx_rows+1,y
+.7bc1	6d 8c 7c	adc $7c8c	        adc gfx_x0+1
+.7bc4	8d ab 7c	sta $7cab	        sta gfx_offset+1
+.7bc7	a9 08		lda #$08	        lda #8
+.7bc9	8d ac 7c	sta $7cac	        sta gfx_span
+.7bcc	a9 00		lda #$00	        lda #0
+.7bce	8d ad 7c	sta $7cad	        sta gfx_span+1
+.7bd1	20 61 7c	jsr $7c61	        jsr gfx_select
+.7bd4	ad 93 7c	lda $7c93	        lda gfx_pen
+.7bd7	c9 03		cmp #$03	        cmp #3
+.7bd9	f0 35		beq $7c10	        beq gfx_aligned_copy
+.7bdb	20 26 1c	jsr $1c26	        jsr N_READ
+.7bde	90 03		bcc $7be3	        bcs gfx_band_failed
+.7be0	4c 10 7b	jmp $7b10
+.7be3	a2 07		ldx #$07	        ldx #7
+.7be5					gfx_aligned_ink:
+.7be5	ad 93 7c	lda $7c93	        lda gfx_pen
+.7be8	f0 0d		beq $7bf7	        beq gfx_aligned_clear
+.7bea	c9 01		cmp #$01	        cmp #1
+.7bec	f0 14		beq $7c02	        beq gfx_aligned_set
+.7bee	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.7bf1	5d b8 7c	eor $7cb8,x	        eor gfx_bits,x
+.7bf4	4c 08 7c	jmp $7c08	        jmp gfx_aligned_store
+.7bf7					gfx_aligned_clear:
+.7bf7	bd b8 7c	lda $7cb8,x	        lda gfx_bits,x
+.7bfa	49 ff		eor #$ff	        eor #$ff
+.7bfc	3d 00 3a	and $3a00,x	        and N_BUFFER,x
+.7bff	4c 08 7c	jmp $7c08	        jmp gfx_aligned_store
+.7c02					gfx_aligned_set:
+.7c02	bd 00 3a	lda $3a00,x	        lda N_BUFFER,x
+.7c05	1d b8 7c	ora $7cb8,x	        ora gfx_bits,x
+.7c08					gfx_aligned_store:
+.7c08	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.7c0b	ca		dex		        dex
+.7c0c	10 d7		bpl $7be5	        bpl gfx_aligned_ink
+.7c0e	30 0b		bmi $7c1b	        bmi gfx_aligned_write
+.7c10					gfx_aligned_copy:
+.7c10	a2 07		ldx #$07	        ldx #7
+.7c12					gfx_aligned_copy_next:
+.7c12	bd b8 7c	lda $7cb8,x	        lda gfx_bits,x
+.7c15	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.7c18	ca		dex		        dex
+.7c19	10 f7		bpl $7c12	        bpl gfx_aligned_copy_next
+.7c1b					gfx_aligned_write:
+.7c1b	20 61 7c	jsr $7c61	        jsr gfx_select
+.7c1e	20 29 1c	jsr $1c29	        jsr N_WRITE
+.7c21	4c c8 76	jmp $76c8	        jmp gfx_finish
+.7c24					gfx_glyph_row:
+.7c24	38		sec		        sec
+.7c25	ad a9 7c	lda $7ca9	        lda gfx_y
+.7c28	ed 8d 7c	sbc $7c8d	        sbc gfx_y0
+.7c2b	a8		tay		        tay
+.7c2c	b9 b8 7c	lda $7cb8,y	        lda gfx_bits,y
+.7c2f	8d b6 7c	sta $7cb6	        sta gfx_first
+.7c32	a9 00		lda #$00	        lda #0
+.7c34	8d b7 7c	sta $7cb7	        sta gfx_second
+.7c37	ad 8b 7c	lda $7c8b	        lda gfx_x0
+.7c3a	29 07		and #$07	        and #7
+.7c3c	a8		tay		        tay
+.7c3d	f0 09		beq $7c48	        beq gfx_glyph_shifted
+.7c3f					gfx_glyph_shift:
+.7c3f	4e b6 7c	lsr $7cb6	        lsr gfx_first
+.7c42	6e b7 7c	ror $7cb7	        ror gfx_second
+.7c45	88		dey		        dey
+.7c46	d0 f7		bne $7c3f	        bne gfx_glyph_shift
+.7c48					gfx_glyph_shifted:
+.7c48	ad 8c 7c	lda $7c8c	        lda gfx_x0+1
+.7c4b	cd a1 7c	cmp $7ca1	        cmp gfx_clipped+1
+.7c4e	d0 0a		bne $7c5a	        bne gfx_glyph_second_visible
+.7c50	ad 8b 7c	lda $7c8b	        lda gfx_x0
+.7c53	29 f8		and #$f8	        and #$f8
+.7c55	cd ae 7c	cmp $7cae	        cmp gfx_xbyte
+.7c58	f0 06		beq $7c60	        beq +
+.7c5a					gfx_glyph_second_visible:
+.7c5a	ad b7 7c	lda $7cb7	        lda gfx_second
+.7c5d	8d b6 7c	sta $7cb6	        sta gfx_first
+.7c60	60		rts		+       rts
+.7c61					gfx_select:
+.7c61	ad 97 7c	lda $7c97	        lda gfx_owner
+.7c64	8d 00 3d	sta $3d00	        sta N_OWNER
+.7c67	a2 03		ldx #$03	        ldx #3
+.7c69					gfx_restore_handle:
+.7c69	bd 98 7c	lda $7c98,x	        lda gfx_handle,x
+.7c6c	9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.7c6f	ca		dex		        dex
+.7c70	10 f7		bpl $7c69	        bpl gfx_restore_handle
+.7c72	ad aa 7c	lda $7caa	        lda gfx_offset
+.7c75	8d 08 3d	sta $3d08	        sta N_OFFSET
+.7c78	ad ab 7c	lda $7cab	        lda gfx_offset+1
+.7c7b	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.7c7e	ad ac 7c	lda $7cac	        lda gfx_span
+.7c81	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.7c84	ad ad 7c	lda $7cad	        lda gfx_span+1
+.7c87	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.7c8a	60		rts		        rts
+>7c8b	00 00				gfx_x0:         .word 0
+>7c8d	00 00				gfx_y0:         .word 0
+>7c8f	00 00				gfx_x1:         .word 0
+>7c91	00 00				gfx_y1:         .word 0
+>7c93	01				gfx_pen:        .byte 1
+>7c94	e6				gfx_color:      .byte $e6
+>7c95	00				gfx_error:      .byte 0
+>7c96	00				gfx_bound:      .byte 0
+>7c97	00				gfx_owner:      .byte 0
+>7c98	00 00 00 00			gfx_handle:     .fill 4,0
+>7c9c	00 00 00 00			gfx_limits:     .fill 4,0
+>7ca0	00 00 00 00 00 00 00 00		gfx_clipped:    .fill 8,0
+>7ca8	00				gfx_operation:  .byte 0
+>7ca9	00				gfx_y:          .byte 0
+>7caa	00 00				gfx_offset:     .word 0
+>7cac	00 00				gfx_span:       .word 0
+>7cae	00				gfx_xbyte:      .byte 0
+>7caf	00				gfx_columns:    .byte 0
+>7cb0	00				gfx_remaining:  .byte 0
+>7cb1	00				gfx_left:       .byte 0
+>7cb2	00				gfx_right:      .byte 0
+>7cb3	00				gfx_mask:       .byte 0
+>7cb4	00				gfx_old:        .byte 0
+>7cb5	00				gfx_cover:      .byte 0
+>7cb6	00				gfx_first:      .byte 0
+>7cb7	00				gfx_second:     .byte 0
+>7cb8	00 00 00 00 00 00 00 00		gfx_bits:       .fill 8,0
+>7cc0	40 01 c8 00			gfx_glyph_bounds:.word 320,200
+>7cc4	00				gfx_band_allowed:.byte 0
+>7cc5	00 00				gfx_band_left:  .word 0
+>7cc7	00				gfx_band_first: .byte 0
+>7cc8	00 00 00 00 40 01 c8 00		gfx_clip_pixels:.word 0,0,320,200
+>7cd0	00 00 00 00 28 00 19 00		gfx_clip_cells: .word 0,0,40,25
+>7cd8	00 00 00 00 40 01 c8 00		gfx_clip_full:  .word 0,0,320,200,0,0,40,25
+>7ce0	00 00 00 00 28 00 19 00
+>7ce8	ff 7f 3f 1f 0f 07 03 01		gfx_left_masks: .byte $ff,$7f,$3f,$1f,$0f,$07,$03,$01
+>7cf0	ff 80 c0 e0 f0 f8 fc fe		gfx_right_masks:.byte $ff,$80,$c0,$e0,$f0,$f8,$fc,$fe
+.7cf8					gfx_rows:
+>7cf8	00 00 40 01 80 02 c0 03		        .word $0000,$0140,$0280,$03c0,$0500,$0640,$0780,$08c0
+>7d00	00 05 40 06 80 07 c0 08
+>7d08	00 0a 40 0b 80 0c c0 0d		        .word $0a00,$0b40,$0c80,$0dc0,$0f00,$1040,$1180,$12c0
+>7d10	00 0f 40 10 80 11 c0 12
+>7d18	00 14 40 15 80 16 c0 17		        .word $1400,$1540,$1680,$17c0,$1900,$1a40,$1b80,$1cc0,$1e00
+>7d20	00 19 40 1a 80 1b c0 1c 00 1e
+.7d2a					gfx_end:
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../graphics/text-core.inc
+
+.7d2a					gfx_text:
+.7d2a	08		php		        php
+.7d2b	d8		cld		        cld
+.7d2c	20 d5 76	jsr $76d5	        jsr gfx_guard
+.7d2f	b0 19		bcs $7d4a	        bcs gfx_text_failed
+.7d31	ad 96 7c	lda $7c96	        lda gfx_bound
+.7d34	d0 04		bne $7d3a	        bne +
+.7d36	a9 04		lda #$04	        lda #N_BADHANDLE
+.7d38	d0 10		bne $7d4a	        bne gfx_text_failed
+.7d3a	ad 93 7c	lda $7c93	+       lda gfx_pen
+.7d3d	c9 04		cmp #$04	        cmp #4
+.7d3f	b0 07		bcs $7d48	        bcs gfx_text_badarg
+.7d41	ad c9 7d	lda $7dc9	        lda gfx_text_length
+.7d44	c9 41		cmp #$41	        cmp #65
+.7d46	90 05		bcc $7d4d	        bcc +
+.7d48					gfx_text_badarg:
+.7d48	a9 01		lda #$01	        lda #N_BADARG
+.7d4a					gfx_text_failed:
+.7d4a	4c c8 76	jmp $76c8	        jmp gfx_finish
+.7d4d	8d 0a 7e	sta $7e0a	+       sta gfx_text_left
+.7d50	a9 00		lda #$00	        lda #0
+.7d52	8d 0b 7e	sta $7e0b	        sta gfx_text_index
+.7d55	ad 0a 7e	lda $7e0a	        lda gfx_text_left
+.7d58	f0 6a		beq $7dc4	        beq gfx_text_done
+.7d5a					gfx_text_next:
+.7d5a	ae 0b 7e	ldx $7e0b	        ldx gfx_text_index
+.7d5d	bd ca 7d	lda $7dca,x	        lda gfx_text_buffer,x
+.7d60	c9 20		cmp #$20	        cmp #32
+.7d62	90 04		bcc $7d68	        bcc gfx_text_unknown
+.7d64	c9 7f		cmp #$7f	        cmp #127
+.7d66	90 02		bcc $7d6a	        bcc gfx_text_code
+.7d68					gfx_text_unknown:
+.7d68	a9 3f		lda #$3f	        lda #63
+.7d6a					gfx_text_code:
+.7d6a	38		sec		        sec
+.7d6b	e9 20		sbc #$20	        sbc #32
+.7d6d	a2 00		ldx #$00	        ldx #0
+.7d6f	8e 0c 7e	stx $7e0c	        stx gfx_text_high
+.7d72	0a		asl a		        asl
+.7d73	2e 0c 7e	rol $7e0c	        rol gfx_text_high
+.7d76	0a		asl a		        asl
+.7d77	2e 0c 7e	rol $7e0c	        rol gfx_text_high
+.7d7a	0a		asl a		        asl
+.7d7b	2e 0c 7e	rol $7e0c	        rol gfx_text_high
+.7d7e	18		clc		        clc
+.7d7f	69 0d		adc #$0d	        adc #<gfx_font
+.7d81	8d 8f 7d	sta $7d8f	        sta gfx_text_load+1
+.7d84	ad 0c 7e	lda $7e0c	        lda gfx_text_high
+.7d87	69 7e		adc #$7e	        adc #>gfx_font
+.7d89	8d 90 7d	sta $7d90	        sta gfx_text_load+2
+.7d8c	a2 07		ldx #$07	        ldx #7
+.7d8e					gfx_text_load:
+.7d8e	bd 0d 7e	lda $7e0d,x	        lda gfx_font,x
+.7d91	9d b8 7c	sta $7cb8,x	        sta gfx_bits,x
+.7d94	ca		dex		        dex
+.7d95	10 f7		bpl $7d8e	        bpl gfx_text_load
+.7d97	20 f6 76	jsr $76f6	        jsr gfx_glyph
+.7d9a	b0 ae		bcs $7d4a	        bcs gfx_text_failed
+.7d9c	18		clc		        clc
+.7d9d	ad 8b 7c	lda $7c8b	        lda gfx_x0
+.7da0	69 08		adc #$08	        adc #8
+.7da2	8d 8b 7c	sta $7c8b	        sta gfx_x0
+.7da5	ad 8c 7c	lda $7c8c	        lda gfx_x0+1
+.7da8	69 00		adc #$00	        adc #0
+.7daa	70 06		bvs $7db2	        bvs gfx_text_saturate
+.7dac	8d 8c 7c	sta $7c8c	        sta gfx_x0+1
+.7daf	4c bc 7d	jmp $7dbc	        jmp gfx_text_advance
+.7db2					gfx_text_saturate:
+.7db2	a9 ff		lda #$ff	        lda #$ff
+.7db4	8d 8b 7c	sta $7c8b	        sta gfx_x0
+.7db7	a9 7f		lda #$7f	        lda #$7f
+.7db9	8d 8c 7c	sta $7c8c	        sta gfx_x0+1
+.7dbc					gfx_text_advance:
+.7dbc	ee 0b 7e	inc $7e0b	        inc gfx_text_index
+.7dbf	ce 0a 7e	dec $7e0a	        dec gfx_text_left
+.7dc2	d0 96		bne $7d5a	        bne gfx_text_next
+.7dc4					gfx_text_done:
+.7dc4	a9 00		lda #$00	        lda #0
+.7dc6	4c c8 76	jmp $76c8	        jmp gfx_finish
+>7dc9	00				gfx_text_length:.byte 0
+>7dca	00 00 00 00 00 00 00 00		gfx_text_buffer:.fill 64,0
+>7dd2	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+;	...repeated 2 times (32 bytes)...
+>7e02	00 00 00 00 00 00 00 00
+>7e0a	00				gfx_text_left:  .byte 0
+>7e0b	00				gfx_text_index: .byte 0
+>7e0c	00				gfx_text_high:  .byte 0
+.7e0d					gfx_font:
+>7e0d	00 00 00 00 00 00 00 00		        .binary "font8.bin"
+>7e15	10 10 10 10 10 00 10 00 28 28 28 00 00 00 00 00
+>7e25	28 7c 28 28 7c 28 00 00 10 3c 50 38 14 78 10 00
+>7e35	60 64 08 10 20 4c 0c 00 30 48 50 20 54 48 34 00
+>7e45	10 10 20 00 00 00 00 00 08 10 20 20 20 10 08 00
+>7e55	20 10 08 08 08 10 20 00 00 54 38 7c 38 54 00 00
+>7e65	00 10 10 7c 10 10 00 00 00 00 00 00 10 10 20 00
+>7e75	00 00 00 7c 00 00 00 00 00 00 00 00 00 30 30 00
+>7e85	04 04 08 10 20 40 40 00 38 44 4c 54 64 44 38 00
+>7e95	10 30 10 10 10 10 38 00 38 44 04 08 10 20 7c 00
+>7ea5	78 04 04 38 04 04 78 00 08 18 28 48 7c 08 08 00
+>7eb5	7c 40 40 78 04 04 78 00 18 20 40 78 44 44 38 00
+>7ec5	7c 04 08 10 20 20 20 00 38 44 44 38 44 44 38 00
+>7ed5	38 44 44 3c 04 08 30 00 00 30 30 00 30 30 00 00
+>7ee5	00 30 30 00 10 10 20 00 08 10 20 40 20 10 08 00
+>7ef5	00 00 7c 00 7c 00 00 00 20 10 08 04 08 10 20 00
+>7f05	38 44 04 08 10 00 10 00 38 44 5c 54 5c 40 38 00
+>7f15	38 44 44 7c 44 44 44 00 78 44 44 78 44 44 78 00
+>7f25	38 44 40 40 40 44 38 00 78 44 44 44 44 44 78 00
+>7f35	7c 40 40 78 40 40 7c 00 7c 40 40 78 40 40 40 00
+>7f45	38 44 40 5c 44 44 3c 00 44 44 44 7c 44 44 44 00
+>7f55	38 10 10 10 10 10 38 00 1c 08 08 08 48 48 30 00
+>7f65	44 48 50 60 50 48 44 00 40 40 40 40 40 40 7c 00
+>7f75	44 6c 54 54 44 44 44 00 44 64 64 54 4c 4c 44 00
+>7f85	38 44 44 44 44 44 38 00 78 44 44 78 40 40 40 00
+>7f95	38 44 44 44 54 48 34 00 78 44 44 78 50 48 44 00
+>7fa5	3c 40 40 38 04 04 78 00 7c 10 10 10 10 10 10 00
+>7fb5	44 44 44 44 44 44 38 00 44 44 44 44 44 28 10 00
+>7fc5	44 44 44 54 54 54 28 00 44 44 28 10 28 44 44 00
+>7fd5	44 44 28 10 10 10 10 00 7c 04 08 10 20 40 7c 00
+>7fe5	38 20 20 20 20 20 38 00 40 40 20 10 08 04 04 00
+>7ff5	38 08 08 08 08 08 38 00 10 28 44 00 00 00 00 00
+>8005	00 00 00 00 00 00 7c 00 20 10 08 00 00 00 00 00
+>8015	00 00 38 04 3c 44 3c 00 40 40 78 44 44 44 78 00
+>8025	00 00 38 44 40 44 38 00 04 04 3c 44 44 44 3c 00
+>8035	00 00 38 44 7c 40 38 00 18 24 20 78 20 20 20 00
+>8045	00 3c 44 44 3c 04 38 00 40 40 78 44 44 44 44 00
+>8055	10 00 30 10 10 10 38 00 08 00 18 08 08 48 30 00
+>8065	40 40 48 50 60 50 48 00 30 10 10 10 10 10 38 00
+>8075	00 00 68 54 54 54 54 00 00 00 78 44 44 44 44 00
+>8085	00 00 38 44 44 44 38 00 00 78 44 44 78 40 40 00
+>8095	00 3c 44 44 3c 04 04 00 00 00 58 64 40 40 40 00
+>80a5	00 00 3c 40 38 04 78 00 20 20 78 20 20 24 18 00
+>80b5	00 00 44 44 44 44 3c 00 00 00 44 44 44 28 10 00
+>80c5	00 00 44 44 54 54 28 00 00 00 44 28 10 28 44 00
+>80d5	00 44 44 44 3c 04 38 00 00 00 7c 08 10 20 7c 00
+>80e5	08 10 10 20 10 10 08 00 10 10 10 10 10 10 10 00
+>80f5	20 10 10 08 10 10 20 00 00 00 24 58 00 00 00 00
+.8105					gfx_text_end:
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../input/pointer.inc
+
+.8105					pm_install:
+.8105	a2 7f		ldx #$7f	        ldx #127
+.8107	bd 08 84	lda $8408,x	-       lda pm_shape,x
+.810a	9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.810d	ca		dex		        dex
+.810e	10 f7		bpl $8107	        bpl -
+.8110	20 c2 6c	jsr $6cc2	        jsr pm_select_surface
+.8113	a9 40		lda #$40	        lda #$40
+.8115	8d 08 3d	sta $3d08	        sta N_OFFSET
+.8118	a9 1f		lda #$1f	        lda #$1f
+.811a	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.811d	a9 80		lda #$80	        lda #128
+.811f	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.8122	a9 00		lda #$00	        lda #0
+.8124	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.8127	20 29 1c	jsr $1c29	        jsr N_WRITE
+.812a	90 03		bcc $812f	        bcs pm_install_return
+.812c	4c ba 81	jmp $81ba
+.812f	a9 7d		lda #$7d	        lda #$7d
+.8131	8d 00 3a	sta $3a00	        sta N_BUFFER
+.8134	a9 7e		lda #$7e	        lda #$7e
+.8136	8d 01 3a	sta $3a01	        sta N_BUFFER+1
+.8139	a9 f8		lda #$f8	        lda #$f8
+.813b	8d 08 3d	sta $3d08	        sta N_OFFSET
+.813e	a9 23		lda #$23	        lda #$23
+.8140	8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.8143	a9 02		lda #$02	        lda #2
+.8145	8d 0a 3d	sta $3d0a	        sta N_COUNT
+.8148	20 29 1c	jsr $1c29	        jsr N_WRITE
+.814b	b0 6d		bcs $81ba	        bcs pm_install_return
+.814d	08		php		        php
+.814e	78		sei		        sei
+.814f	a0 0b		ldy #$0b	        ldy #11
+.8151	be f0 83	ldx $83f0,y	-       ldx pm_registers,y
+.8154	bd 00 d0	lda $d000,x	        lda $d000,x
+.8157	99 fc 83	sta $83fc,y	        sta pm_saved,y
+.815a	88		dey		        dey
+.815b	10 f4		bpl $8151	        bpl -
+.815d	ad 04 0a	lda $0a04	        lda $0a04
+.8160	8d ef 83	sta $83ef	        sta pm_init_saved
+.8163	29 fe		and #$fe	        and #$fe               ; bit 0 enables BASIC's sprite motion IRQ hook
+.8165	8d 04 0a	sta $0a04	        sta $0a04
+.8168	a9 01		lda #$01	        lda #1
+.816a	8d d7 83	sta $83d7	        sta pm_active
+.816d	a9 00		lda #$00	        lda #0
+.816f	8d d8 83	sta $83d8	        sta pm_seen
+.8172	8d e3 83	sta $83e3	        sta pm_buttons
+.8175	8d da 83	sta $83da	        sta pm_pending
+.8178	8d dd 83	sta $83dd	        sta pm_x+1
+.817b	a9 a0		lda #$a0	        lda #160
+.817d	8d dc 83	sta $83dc	        sta pm_x
+.8180	8d de 83	sta $83de	        sta pm_y
+.8183	a9 ff		lda #$ff	        lda #$ff
+.8185	8d d9 83	sta $83d9	        sta pm_tick
+.8188	8d e5 83	sta $83e5	        sta pm_arm
+.818b	ad 17 d0	lda $d017	        lda $d017
+.818e	29 fc		and #$fc	        and #$fc
+.8190	8d 17 d0	sta $d017	        sta $d017
+.8193	ad 1b d0	lda $d01b	        lda $d01b
+.8196	29 fc		and #$fc	        and #$fc
+.8198	8d 1b d0	sta $d01b	        sta $d01b
+.819b	ad 1c d0	lda $d01c	        lda $d01c
+.819e	29 fc		and #$fc	        and #$fc
+.81a0	8d 1c d0	sta $d01c	        sta $d01c
+.81a3	ad 1d d0	lda $d01d	        lda $d01d
+.81a6	29 fc		and #$fc	        and #$fc
+.81a8	8d 1d d0	sta $d01d	        sta $d01d
+.81ab	a9 01		lda #$01	        lda #1
+.81ad	8d 27 d0	sta $d027	        sta $d027              ; sprite 0: white interior, above black outline
+.81b0	a9 00		lda #$00	        lda #0
+.81b2	8d 28 d0	sta $d028	        sta $d028
+.81b5	20 a7 83	jsr $83a7	        jsr pm_place
+.81b8	28		plp		        plp
+.81b9	18		clc		        clc
+.81ba					pm_install_return:
+.81ba	60		rts		        rts
+.81bb					pm_close:
+.81bb	ad d7 83	lda $83d7	        lda pm_active
+.81be	f0 22		beq $81e2	        beq pm_close_return
+.81c0	08		php		        php
+.81c1	78		sei		        sei
+.81c2	a9 00		lda #$00	        lda #0
+.81c4	8d 15 d0	sta $d015	        sta $d015              ; hide before restoring coordinates and format
+.81c7	8d d7 83	sta $83d7	        sta pm_active
+.81ca	8d d8 83	sta $83d8	        sta pm_seen
+.81cd	a0 0b		ldy #$0b	        ldy #11
+.81cf	be f0 83	ldx $83f0,y	-       ldx pm_registers,y
+.81d2	b9 fc 83	lda $83fc,y	        lda pm_saved,y
+.81d5	9d 00 d0	sta $d000,x	        sta $d000,x
+.81d8	88		dey		        dey
+.81d9	10 f4		bpl $81cf	        bpl -
+.81db	ad ef 83	lda $83ef	        lda pm_init_saved
+.81de	8d 04 0a	sta $0a04	        sta $0a04
+.81e1	28		plp		        plp
+.81e2					pm_close_return:
+.81e2	60		rts		        rts
+.81e3					pm_poll:
+.81e3	a9 00		lda #$00	        lda #0
+.81e5	8d e7 83	sta $83e7	        sta pm_event
+.81e8	ad d7 83	lda $83d7	        lda pm_active
+.81eb	d0 03		bne $81f0	        beq pm_poll_return
+.81ed	4c a2 82	jmp $82a2
+.81f0	2c 11 d0	bit $d011	        bit $d011
+.81f3	30 f8		bmi $81ed	        bmi pm_poll_return
+.81f5	ad 12 d0	lda $d012	        lda $d012
+.81f8	c9 50		cmp #$50	        cmp #80
+.81fa	90 f1		bcc $81ed	        bcc pm_poll_return
+.81fc	c9 a0		cmp #$a0	        cmp #160
+.81fe	b0 ed		bcs $81ed	        bcs pm_poll_return
+.8200	a5 a2		lda $a2		        lda $a2
+.8202	cd d9 83	cmp $83d9	        cmp pm_tick
+.8205	f0 0f		beq $8216	        beq pm_settling
+.8207	8d d9 83	sta $83d9	        sta pm_tick
+.820a	ad 12 d0	lda $d012	        lda $d012
+.820d	8d db 83	sta $83db	        sta pm_sample_line
+.8210	a9 01		lda #$01	        lda #1
+.8212	8d da 83	sta $83da	        sta pm_pending
+.8215	60		rts		        rts
+.8216					pm_settling:
+.8216	ad da 83	lda $83da	        lda pm_pending
+.8219	f0 d2		beq $81ed	        beq pm_poll_return
+.821b	ad 12 d0	lda $d012	        lda $d012
+.821e	38		sec		        sec
+.821f	ed db 83	sbc $83db	        sbc pm_sample_line
+.8222	c9 20		cmp #$20	        cmp #32                ; >=2 ms; no IRQ masking or busy delay
+.8224	90 7c		bcc $82a2	        bcc pm_poll_return
+.8226	a9 00		lda #$00	        lda #0
+.8228	8d da 83	sta $83da	        sta pm_pending
+.822b	8d 12 3d	sta $3d12	        sta N_READY
+.822e	ad 02 dc	lda $dc02	        lda $dc02
+.8231	c9 ff		cmp #$ff	        cmp #$ff
+.8233	d0 6e		bne $82a3	        bne pm_absent
+.8235	ad 03 dc	lda $dc03	        lda $dc03
+.8238	d0 69		bne $82a3	        bne pm_absent
+.823a	ad 00 dc	lda $dc00	        lda $dc00
+.823d	c9 7f		cmp #$7f	        cmp #$7f
+.823f	d0 62		bne $82a3	        bne pm_absent
+.8241	ad 19 d4	lda $d419	        lda $d419
+.8244	8d e1 83	sta $83e1	        sta pm_pots
+.8247	ad 1a d4	lda $d41a	        lda $d41a
+.824a	8d e2 83	sta $83e2	        sta pm_pots+1
+.824d	a2 01		ldx #$01	        ldx #1
+.824f	bd e1 83	lda $83e1,x	-       lda pm_pots,x
+.8252	c9 40		cmp #$40	        cmp #$40
+.8254	90 4d		bcc $82a3	        bcc pm_absent
+.8256	c9 c0		cmp #$c0	        cmp #$c0
+.8258	b0 49		bcs $82a3	        bcs pm_absent
+.825a	ca		dex		        dex
+.825b	10 f2		bpl $824f	        bpl -
+.825d	08		php		        php
+.825e	78		sei		        sei
+.825f	ad 2f d0	lda $d02f	        lda $d02f
+.8262	8d eb 83	sta $83eb	        sta pm_columns
+.8265	a9 ff		lda #$ff	        lda #$ff              ; release both sets of keyboard columns
+.8267	8d 00 dc	sta $dc00	        sta $dc00
+.826a	8d 2f d0	sta $d02f	        sta $d02f
+.826d	ad 01 dc	lda $dc01	        lda $dc01
+.8270	29 10		and #$10	        and #$10              ; port 1 fire is the left mouse button
+.8272	49 10		eor #$10	        eor #$10
+.8274	8d e4 83	sta $83e4	        sta pm_down
+.8277	ad eb 83	lda $83eb	        lda pm_columns
+.827a	8d 2f d0	sta $d02f	        sta $d02f
+.827d	a9 7f		lda #$7f	        lda #$7f
+.827f	8d 00 dc	sta $dc00	        sta $dc00
+.8282	28		plp		        plp
+.8283	ad d8 83	lda $83d8	        lda pm_seen
+.8286	d0 2c		bne $82b4	        bne pm_move
+.8288	ee d8 83	inc $83d8	        inc pm_seen
+.828b	ad e1 83	lda $83e1	        lda pm_pots
+.828e	8d df 83	sta $83df	        sta pm_old
+.8291	ad e2 83	lda $83e2	        lda pm_pots+1
+.8294	8d e0 83	sta $83e0	        sta pm_old+1
+.8297	ad e4 83	lda $83e4	        lda pm_down
+.829a	8d e3 83	sta $83e3	        sta pm_buttons        ; held during entry/reconnect cannot launch
+.829d	a9 03		lda #$03	        lda #3
+.829f	8d 15 d0	sta $d015	        sta $d015
+.82a2					pm_poll_return:
+.82a2	60		rts		        rts
+.82a3					pm_absent:
+.82a3	a9 00		lda #$00	        lda #0
+.82a5	8d d8 83	sta $83d8	        sta pm_seen
+.82a8	8d e3 83	sta $83e3	        sta pm_buttons
+.82ab	8d 15 d0	sta $d015	        sta $d015
+.82ae	a9 ff		lda #$ff	        lda #$ff
+.82b0	8d e5 83	sta $83e5	        sta pm_arm
+.82b3	60		rts		        rts
+.82b4					pm_move:
+.82b4	a9 00		lda #$00	        lda #0
+.82b6	8d e8 83	sta $83e8	        sta pm_moved
+.82b9	ad e1 83	lda $83e1	        lda pm_pots
+.82bc	ac df 83	ldy $83df	        ldy pm_old
+.82bf	20 7d 83	jsr $837d	        jsr pm_delta
+.82c2	8c df 83	sty $83df	        sty pm_old
+.82c5	90 31		bcc $82f8	        bcc pm_vertical
+.82c7	ee e8 83	inc $83e8	        inc pm_moved
+.82ca	18		clc		        clc
+.82cb	6d dc 83	adc $83dc	        adc pm_x
+.82ce	8d dc 83	sta $83dc	        sta pm_x
+.82d1	8a		txa		        txa
+.82d2	6d dd 83	adc $83dd	        adc pm_x+1
+.82d5	8d dd 83	sta $83dd	        sta pm_x+1
+.82d8	30 16		bmi $82f0	        bmi pm_left
+.82da	c9 01		cmp #$01	        cmp #1
+.82dc	90 1a		bcc $82f8	        bcc pm_vertical
+.82de	d0 07		bne $82e7	        bne pm_right
+.82e0	ad dc 83	lda $83dc	        lda pm_x
+.82e3	c9 40		cmp #$40	        cmp #64
+.82e5	90 11		bcc $82f8	        bcc pm_vertical
+.82e7					pm_right:
+.82e7	a9 01		lda #$01	        lda #1
+.82e9	8d dd 83	sta $83dd	        sta pm_x+1
+.82ec	a9 3f		lda #$3f	        lda #63
+.82ee	d0 05		bne $82f5	        bne pm_set_x
+.82f0					pm_left:
+.82f0	a9 00		lda #$00	        lda #0
+.82f2	8d dd 83	sta $83dd	        sta pm_x+1
+.82f5					pm_set_x:
+.82f5	8d dc 83	sta $83dc	        sta pm_x
+.82f8					pm_vertical:
+.82f8	ad e2 83	lda $83e2	        lda pm_pots+1
+.82fb	ac e0 83	ldy $83e0	        ldy pm_old+1
+.82fe	20 7d 83	jsr $837d	        jsr pm_delta
+.8301	8c e0 83	sty $83e0	        sty pm_old+1
+.8304	90 27		bcc $832d	        bcc pm_hit_test
+.8306	ee e8 83	inc $83e8	        inc pm_moved
+.8309	8d e9 83	sta $83e9	        sta pm_step
+.830c	8e ea 83	stx $83ea	        stx pm_step+1
+.830f	ad de 83	lda $83de	        lda pm_y
+.8312	38		sec		        sec
+.8313	ed e9 83	sbc $83e9	        sbc pm_step
+.8316	a8		tay		        tay
+.8317	a9 00		lda #$00	        lda #0
+.8319	ed ea 83	sbc $83ea	        sbc pm_step+1
+.831c	30 0a		bmi $8328	        bmi pm_top
+.831e	d0 04		bne $8324	        bne pm_bottom
+.8320	c0 c8		cpy #$c8	        cpy #200
+.8322	90 06		bcc $832a	        bcc pm_set_y
+.8324					pm_bottom:
+.8324	a0 c7		ldy #$c7	        ldy #199
+.8326	d0 02		bne $832a	        bne pm_set_y
+.8328					pm_top:
+.8328	a0 00		ldy #$00	        ldy #0
+.832a					pm_set_y:
+.832a	8c de 83	sty $83de	        sty pm_y
+.832d					pm_hit_test:
+.832d	20 a7 83	jsr $83a7	        jsr pm_place
+.8330	20 8f 6f	jsr $6f8f	        jsr pm_find_hit        ; caller returns X=index or $ff
+.8333	8e e6 83	stx $83e6	        stx pm_hit
+.8336	e0 17		cpx #$17	        cpx #pm_control_count
+.8338	b0 0a		bcs $8344	        bcs pm_button
+.833a	ad e8 83	lda $83e8	        lda pm_moved
+.833d	f0 05		beq $8344	        beq pm_button
+.833f	a9 01		lda #$01	        lda #1
+.8341	8d e7 83	sta $83e7	        sta pm_event
+.8344					pm_button:
+.8344	ad e4 83	lda $83e4	        lda pm_down
+.8347	cd e3 83	cmp $83e3	        cmp pm_buttons
+.834a	d0 03		bne $834f	        beq pm_poll_return
+.834c	4c a2 82	jmp $82a2
+.834f	8d e3 83	sta $83e3	        sta pm_buttons
+.8352	c9 00		cmp #$00	        cmp #0
+.8354	f0 10		beq $8366	        beq pm_release
+.8356	ad e6 83	lda $83e6	        lda pm_hit
+.8359	8d e5 83	sta $83e5	        sta pm_arm
+.835c	c9 17		cmp #$17	        cmp #pm_control_count
+.835e	b0 ec		bcs $834c	        bcs pm_poll_return
+.8360	a9 01		lda #$01	        lda #1
+.8362	8d e7 83	sta $83e7	        sta pm_event
+.8365	60		rts		        rts
+.8366					pm_release:
+.8366	ae e5 83	ldx $83e5	        ldx pm_arm
+.8369	a9 ff		lda #$ff	        lda #$ff
+.836b	8d e5 83	sta $83e5	        sta pm_arm
+.836e	e0 17		cpx #$17	        cpx #pm_control_count
+.8370	b0 da		bcs $834c	        bcs pm_poll_return
+.8372	ec e6 83	cpx $83e6	        cpx pm_hit
+.8375	d0 d5		bne $834c	        bne pm_poll_return
+.8377	a9 02		lda #$02	        lda #2
+.8379	8d e7 83	sta $83e7	        sta pm_event
+.837c	60		rts		        rts
+.837d					pm_delta:
+.837d	8c ec 83	sty $83ec	        sty pm_previous
+.8380	8d ed 83	sta $83ed	        sta pm_sample
+.8383	38		sec		        sec
+.8384	ed ec 83	sbc $83ec	        sbc pm_previous
+.8387	29 7f		and #$7f	        and #$7f
+.8389	a2 00		ldx #$00	        ldx #0
+.838b	c9 02		cmp #$02	        cmp #2
+.838d	90 15		bcc $83a4	        bcc pm_no_delta
+.838f	c9 7f		cmp #$7f	        cmp #127
+.8391	f0 11		beq $83a4	        beq pm_no_delta
+.8393	c9 40		cmp #$40	        cmp #64
+.8395	90 07		bcc $839e	        bcc pm_positive
+.8397	09 80		ora #$80	        ora #$80
+.8399	38		sec		        sec
+.839a	6a		ror a		        ror
+.839b	ca		dex		        dex
+.839c	d0 01		bne $839f	        bne pm_delta_done
+.839e					pm_positive:
+.839e	4a		lsr a		        lsr
+.839f					pm_delta_done:
+.839f	ac ed 83	ldy $83ed	        ldy pm_sample
+.83a2	38		sec		        sec
+.83a3	60		rts		        rts
+.83a4					pm_no_delta:
+.83a4	8a		txa		        txa
+.83a5	18		clc		        clc
+.83a6	60		rts		        rts
+.83a7					pm_place:
+.83a7	ad dc 83	lda $83dc	        lda pm_x
+.83aa	18		clc		        clc
+.83ab	69 18		adc #$18	        adc #24
+.83ad	8d 00 d0	sta $d000	        sta $d000
+.83b0	8d 02 d0	sta $d002	        sta $d002
+.83b3	ad dd 83	lda $83dd	        lda pm_x+1
+.83b6	69 00		adc #$00	        adc #0
+.83b8	f0 02		beq $83bc	        beq +
+.83ba	a9 03		lda #$03	        lda #3
+.83bc	8d ee 83	sta $83ee	+       sta pm_high
+.83bf	ad 10 d0	lda $d010	        lda $d010
+.83c2	29 fc		and #$fc	        and #$fc
+.83c4	0d ee 83	ora $83ee	        ora pm_high
+.83c7	8d 10 d0	sta $d010	        sta $d010
+.83ca	ad de 83	lda $83de	        lda pm_y
+.83cd	18		clc		        clc
+.83ce	69 32		adc #$32	        adc #50
+.83d0	8d 01 d0	sta $d001	        sta $d001
+.83d3	8d 03 d0	sta $d003	        sta $d003
+.83d6	60		rts		        rts
+>83d7	00				pm_active: .byte 0
+>83d8	00				pm_seen: .byte 0
+>83d9	00				pm_tick: .byte 0
+>83da	00				pm_pending: .byte 0
+>83db	00				pm_sample_line: .byte 0
+>83dc	00 00				pm_x: .word 0
+>83de	00				pm_y: .byte 0
+>83df	00 00				pm_old: .word 0
+>83e1	00 00				pm_pots: .word 0
+>83e3	00				pm_buttons: .byte 0
+>83e4	00				pm_down: .byte 0
+>83e5	ff				pm_arm: .byte $ff
+>83e6	ff				pm_hit: .byte $ff
+>83e7	00				pm_event: .byte 0             ; 0=idle, 1=focus hit, 2=activate hit
+>83e8	00				pm_moved: .byte 0
+>83e9	00 00				pm_step: .word 0
+>83eb	00				pm_columns: .byte 0
+>83ec	00				pm_previous: .byte 0
+>83ed	00				pm_sample: .byte 0
+>83ee	00				pm_high: .byte 0
+>83ef	00				pm_init_saved: .byte 0
+>83f0	00 01 02 03 10 15 17 1b		pm_registers: .byte $00,$01,$02,$03,$10,$15,$17,$1b,$1c,$1d,$27,$28
+>83f8	1c 1d 27 28
+>83fc	00 00 00 00 00 00 00 00		pm_saved: .fill 12,0
+>8404	00 00 00 00
+.8408					pm_shape:
+
+;******  Processing file: /home/marc/geos128/uos/src/native/calc/../input/../desktop/pointer-shape.inc
+
+>8408	00 00 00 00 00 00 40 00		        .byte $00,$00,$00,$00,$00,$00,$40,$00,$00,$60,$00,$00,$70,$00,$00,$78
+>8410	00 60 00 00 70 00 00 78
+>8418	00 00 7c 00 00 7e 00 00		        .byte $00,$00,$7c,$00,$00,$7e,$00,$00,$7f,$00,$00,$78,$00,$00,$6c,$00
+>8420	7f 00 00 78 00 00 6c 00
+>8428	00 46 00 00 06 00 00 03		        .byte $00,$46,$00,$00,$06,$00,$00,$03,$00,$00,$03,$00,$00,$00,$00,$00
+>8430	00 00 03 00 00 00 00 00
+>8438	00 00 00 00 00 00 00 00		        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+>8440	00 00 00 00 00 00 00 00
+>8448	80 00 00 c0 00 00 a0 00		        .byte $80,$00,$00,$c0,$00,$00,$a0,$00,$00,$90,$00,$00,$88,$00,$00,$84
+>8450	00 90 00 00 88 00 00 84
+>8458	00 00 82 00 00 81 00 00		        .byte $00,$00,$82,$00,$00,$81,$00,$00,$80,$80,$00,$87,$c0,$00,$92,$00
+>8460	80 80 00 87 c0 00 92 00
+>8468	00 a9 00 00 c9 00 00 84		        .byte $00,$a9,$00,$00,$c9,$00,$00,$84,$80,$00,$04,$80,$00,$03,$00,$00
+>8470	80 00 04 80 00 03 00 00
+>8478	00 00 00 00 00 00 00 00		        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+>8480	00 00 00 00 00 00 00 00
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/../input/pointer.inc
+
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc/gui.inc
+
+
+;******  Return to file: /home/marc/geos128/uos/src/native/calc.asm
+
+.8488					calc_end:
 
 ;******  End of listing

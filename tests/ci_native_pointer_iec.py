@@ -24,7 +24,9 @@ from native_capture_transport import PausedViceMonitor
 from native_mode_capture import NativeModeCapture
 from native_running_layout import verify_running_layout
 from launcher_scene import surface,console
-from native_pointer_check import pixels,check_canvas
+from native_pointer_check import pixels,surface_pixels,check_canvas
+from native_calc_scene import surface as calc_surface, BUTTONS
+from native_files_check import exact_d64_files
 from native_editor_check import editor_screen
 from native_browser_check import browser_screen,disk_records
 from native_controls_check import panel_screen
@@ -68,10 +70,11 @@ def main():
     shutil.copy2(__file__,work/'run.py')
     disk=work/'suite.d64';shutil.copy2(ROOT/'target/native-desktop/uos128.d64',disk)
     image=ROOT/'target/native-desktop'
-    report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],
+    report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],calculator_frames=[],
         images={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in image.iterdir() if p.suffix in ('.prg','.d64')})
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
-    def symbol(name):return lst_symbol('native-desktop/desktop',name)
+    pointer_app='desktop'
+    def symbol(name):return lst_symbol('native-desktop/'+pointer_app,name)
     with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
     xv=ci.cbm.Xvfb();emu=mon=mouse=None;log=(work/'vice.log').open('w')
     try:
@@ -145,6 +148,36 @@ def main():
                 actual=capture.capture(label+('-vic' if mode==0 else '-vdc'),mode=mode,address=address,count=columns*25)
                 assert actual==oracle(columns),(label,columns)
             report['screens'].append(label);save()
+        def calculator_view(label,display,history,selected,*,dialog=False,name='',cursor=0,status=0):
+            wait(lambda:header('calc') and ready(),label,60)
+            expected=dict(display=display,history=history,selected=selected,dialog=dialog,name=name,cursor=cursor,status=status)
+            wanted=calc_surface(**expected)
+            actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+            (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'calculator bitmap')
+            messages=[None,'HISTORY SAVED AND VERIFIED','DISK ERROR; FILE MAY BE PARTIAL','FILE EXISTS - CHOOSE ANOTHER NAME']
+            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
+            assert vdc==calculator_screen(80,display,history,save_prompt=name if dialog else None,
+                save_status=None if dialog else messages[status],save_caret=cursor,save_view=0),(label,'calculator VDC')
+            for _ in range(20):
+                xy=position();time.sleep(.2)
+                if position()==xy:break
+            else:raise AssertionError('calculator pointer did not settle')
+            mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3
+            error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+            (work/(label+'-canvas.bin')).write_bytes(raw)
+            rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
+            report['calculator_frames'].append(dict(label=label,expected=expected,position=xy,rectangle=rectangle,mode=mode));save()
+            subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
+            print('PASS: graphical calculator bitmap, VDC and 64000 pointer pixels:',label,flush=True)
+        def calc_click(index):
+            (x0,y0,x1,y1),_,_=BUTTONS[index]
+            move_to((x0+x1)//2,(y0+y1)//2)
+            before=int.from_bytes(read(0x3d13,2),'little')
+            mouse.button(True);assert value('pm_arm')==index
+            mouse.button(False)
+            wait(ready,'calculator click ready',60)
+            assert int.from_bytes(read(0x3d13,2),'little')==before
+            report['events'].append(dict(calculator_button=index,keyboard_events_during_click=0));save()
         # Drain the window grab/warp through real relative input before the
         # first long capture. End in the margin, outside every app button.
         move_to(310,180)
@@ -161,15 +194,36 @@ def main():
             mouse.button(True);assert header('desktop') and value('pm_arm')==index
             mouse.button(False);wait(lambda:header(name) and ready(),'click opens '+name,120)
             assert int.from_bytes(read(0x3d13,2),'little')==before,'mouse generated a keyboard shortcut'
-            current=bytes(read(0xd000+at)[0] for at in (0,1,2,3,0x10,0x15,0x17,0x1b,0x1c,0x1d,0x27,0x28))
-            assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
-            assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
-            if name=='calc':screens(name,lambda cols:calculator_screen(cols,'0',[]))
-            elif name=='editor':screens(name,lambda cols:editor_screen(cols,b'',0))
+            if name=='calc':
+                pointer_app='calc'
+                assert read(symbol('pm_saved'),12)==saved_registers and read(symbol('pm_init_saved'))==saved_init
+                wait(lambda:value('pm_seen')==1,'calculator 1351 attached',15)
+                move_to(112,152)
+                wait(lambda:value('ui_selected')==14,'calculator equals focus',15)
+                calculator_view('calculator-open','0',[],14)
+                for button in (8,9,15,10,13,14):calc_click(button)
+                calculator_view('calculator-result','42',['42'],14)
+                calc_click(17)
+                for char in 'guihist':key(char,'calc')
+                calculator_view('calculator-save','42',['42'],21,dialog=True,name='GUIHIST',cursor=7)
+                calc_click(21)
+                wait(lambda:value('save_status')==1,'history saved and verified',60)
+                calculator_view('calculator-saved','42',['42'],17,status=1)
+                calc_click(17)
+                for char in 'cancel':key(char,'calc')
+                calc_click(22)
+                calculator_view('calculator-cancelled','42',['42'],17)
+            else:
+                current=bytes(read(0xd000+at)[0] for at in (0,1,2,3,0x10,0x15,0x17,0x1b,0x1c,0x1d,0x27,0x28))
+                assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
+                assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
+            if name=='editor' :screens(name,lambda cols:editor_screen(cols,b'',0))
             elif name=='files':screens(name,lambda cols:browser_screen(cols,disk_records(disk.read_bytes()),files_app=True))
             elif name=='claude':screens(name,landing_screen)
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
-            key('F8' if name=='claude' else 'F9','desktop');desktop(name+'-returned',index)
+            key('F8' if name=='claude' else 'F9','desktop')
+            pointer_app='desktop'
+            desktop(name+'-returned',index)
             assert capture.capture(name+'-keys-restored',address=0x1000,count=256)==saved_keys
             report['events'].append(dict(mouse_app=name,keyboard_events_during_click=0));save()
         before=int.from_bytes(read(0x3d13,2),'little');mouse.press('F9')
@@ -184,6 +238,13 @@ def main():
         assert heap[0x50:0xff]==bytes(175) and heap[0x104:0x1ff]==bytes(251)
         assert all(records[i*8]==0 for i in range(32))
         report['resident_return']=verify_running_layout(capture,ROOT,'resident-return',image_dir=image)
+        # Only the explicitly created history file may differ on this private disk.
+        contents=exact_d64_files(disk.read_bytes())
+        before_files=exact_d64_files((image/'uos128.d64').read_bytes())
+        assert contents.pop(b'GUIHIST')==(1,b'42\r')
+        assert contents==before_files
+        report['calculator_history_export_hex']=b'42\r'.hex()
+        report['system_disk_files_preserved']=True
         report['passed']=True;save()
     except BaseException as error:
         report['error']=repr(error)

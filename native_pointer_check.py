@@ -3,7 +3,11 @@ from launcher_scene import POINTER, surface
 
 
 def pixels(selected, x, y, *, visible=True):
-    source=surface(selected)
+    return surface_pixels(surface(selected),x,y,visible=visible)
+
+
+def surface_pixels(source,x,y,*,visible=True):
+    assert len(source)==9216
     rows=[]
     for py in range(200):
         row=bytearray()

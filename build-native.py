@@ -20,8 +20,9 @@ def build(*, out=None, desktop_boot=False):
     out = OUT if out is None else Path(out)
     out.mkdir(parents=True,exist_ok=True)
     for source,name in [('uos128','uos128'),('boot','boot'),('calc','calc'),('browser','browse'),('editor','editor')]:
-        branch=['-B'] if source in ('uos128','browser','editor') else []
+        branch=['-B'] if source in ('uos128','browser','editor') or (source=='calc' and desktop_boot) else []
         defines=['-D','NATIVE_DESKTOP_BOOT=1'] if source=='uos128' and desktop_boot else []
+        if source=='calc' and desktop_boot:defines=['-D','NATIVE_CALC_GRAPHICS=1']
         labels=['-l',str(out/'uos128.sym')] if source=='uos128' else []
         subprocess.run(['64tass','-a',*defines,*branch,*labels,str(ROOT/'src/native'/f'{source}.asm'),
                         '-o',str(out/f'{name}.prg'),'-L',str(out/f'{name}.lst')],check=True)

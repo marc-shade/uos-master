@@ -19,6 +19,8 @@ from native_mode_capture import NativeModeCapture
 from native_browser_check import disk_records,browser_screen
 from native_editor_check import editor_screen
 from launcher_scene import surface,console
+from native_calc_scene import surface as calc_surface
+from hwlib import lst_symbol
 
 
 def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll=2,kernel_prefix='native-desktop',additional_apps=None):
@@ -47,6 +49,19 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
             actual=capture.capture(label+('-vic' if mode==0 else '-vdc'),mode=mode,address=address,count=columns*25)
             assert actual==oracle(columns),(label,columns)
         report['screens'].append(label);save();print('Verified native screens:',label,flush=True)
+    def calculator(label,result,history):
+        assert read(lst_symbol('native-desktop/calc','cg_bitmap'))==b'\1'
+        actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
+                       count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+        (work/(label+'-surface.bin')).write_bytes(actual)
+        assert actual==calc_surface(result,history),(label,'calculator bitmap')
+        vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
+        assert vdc==calculator_screen(80,result,history),(label,'calculator VDC')
+        registers=modes.snapshot(label+'-mode')
+        assert registers['vic_d011']&0x7f==0x3b
+        assert registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/calc','pm_seen'))==b'\1' else 0)
+        report.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,registers=registers))
+        save();print('Verified graphical calculator RAM and VDC:',label,flush=True)
     def desktop(label,selected=0):
         assert read(0x3d2f)==bytes([selected]),'saved native desktop selection differs'
         assert read(0x3d60,32)==(ROOT/'target/native-desktop/desktop.prg').read_bytes()[2:34]
@@ -58,7 +73,7 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
         vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000);assert vdc==console(80,selected)
         registers=modes.snapshot(label+'-mode')
         assert registers['vic_d011']&0x7f==0x3b and registers['vic_d016']&0x1f==8 and registers['vic_d018']&0xfe==0x80
-        assert registers['vic_irq_mask']&15==1 and registers['vic_sprites']==0
+        assert registers['vic_irq_mask']&15==1 and registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/desktop','pm_seen'))==b'\1' else 0)
         assert registers['cia2_port']&3==0 and registers['cia2_ddr']&3==3
         assert registers['foreground_mmu'] in (0,0x0e) and not registers['mode']&0x40 and registers['common']&15==4
         assert (registers['cpu_ddr'],registers['cpu_port'])==(0x2f,0x75) and registers['text_graphics']==255
@@ -75,9 +90,9 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
     report['resident_boot']=verify_running_layout(capture,ROOT,'resident-boot',image_dir=ROOT/'target'/kernel_prefix);save()
     desktop('desktop-boot')
     key(9);desktop('desktop-editor-selected',1)
-    key(ord('C'));screens('calculator-new',lambda cols:calculator_screen(cols,'0',[]))
+    key(ord('C'));calculator('calculator-new','0',[])
     for value in b'12+30=':key(value)
-    screens('calculator-result',lambda cols:calculator_screen(cols,'42',['42']))
+    calculator('calculator-result','42',['42'])
     key(27);desktop('desktop-after-calculator')
     key(ord('E'));screens('editor-new',lambda cols:editor_screen(cols,b'',0))
     document=b'C128'
