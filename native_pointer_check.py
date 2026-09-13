@@ -26,16 +26,18 @@ def surface_pixels(source,x,y,*,visible=True):
 
 def check_canvas(raw, expected):
     import struct
+    target_height, target_width = len(expected), len(expected[0])
+    assert target_height and target_width and all(len(row)==target_width for row in expected)
     fields,=struct.unpack_from('<I',raw)
     width,height,xoff,yoff,innerw,innerh,bpp=struct.unpack_from('<6HB',raw,4)
     length,=struct.unpack_from('<I',raw,4+fields);data=raw[8+fields:]
     assert fields>=13 and bpp==8 and length==width*height and length-len(data) in (0,4)
     matches=[]
-    for y in range(height-199):
+    for y in range(height-target_height+1):
         row=data[y*width:(y+1)*width];x=row.find(expected[0])
         while x>=0:
-            if all(data[(y+dy)*width+x:(y+dy)*width+x+320]==wanted for dy,wanted in enumerate(expected)):
-                matches.append([x,y,320,200])
+            if all(data[(y+dy)*width+x:(y+dy)*width+x+target_width]==wanted for dy,wanted in enumerate(expected)):
+                matches.append([x,y,target_width,target_height])
             x=row.find(expected[0],x+1)
     assert len(matches)==1,('rendered pointer/desktop mismatch',matches)
     return matches[0]

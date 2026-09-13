@@ -77,9 +77,14 @@ gd_fill:
         sta gd_bitmap
         jsr pm_install
         bcs gd_failed
+        jsr vd_open
+        bcc gd_loop
+        jsr vd_close           ; roll back partial setup; a failed restore stays owned
         jmp gd_loop
 gd_failed:
         sta gd_error
+        jsr vd_close
+        bcs gd_vdc_blocked
         jsr pm_close
         jsr N_VCLOSE
         lda #0
@@ -134,6 +139,7 @@ gd_get_key:
         jmp gd_loop
 gd_idle:
         jsr pm_poll
+        jsr vd_poll
         lda pm_event
         beq gd_loop
         cmp #2
@@ -189,17 +195,23 @@ gd_select:
         beq gd_redraw_text
         jsr gd_highlight
         bcs gd_failed
-        ; Text rendering stays on the already selected VDC console while
-        ; the VIC surface is visible. Do not toggle console modes here.
+        jsr vd_select
+        lda vd_phase
+        bne gd_loop
+        ; A refused VDC setup retains the existing text controls.
         jsr gd_text
         jmp gd_loop
 gd_redraw_text:
         jsr gd_text_both
         jmp gd_loop
 gd_workspace:
+        jsr vd_close
+        bcs gd_vdc_blocked
         jsr pm_close
         jmp N_WORKSPACE
 gd_launch:
+        jsr vd_close
+        bcs gd_vdc_blocked
         jsr pm_close
         lda #0
         sta N_APPFORMAT
@@ -219,6 +231,10 @@ gd_name_copy:
         cpy N_NAMELEN
         bne gd_name_copy
         jmp N_REPLACE
+gd_vdc_blocked:
+        sta gd_launch_error
+        jsr gd_graphics_status
+        jmp gd_loop
 gd_select_surface:
         lda N_CURRENT
         sta N_OWNER
@@ -436,5 +452,6 @@ gd_error_label_end:
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 .include "desktop/pointer.inc"
+.include "desktop/vdc.inc"
 gd_end:
-.cerror gd_end > N_APPBASE+$2000, "desktop exceeds the 8 KiB app budget"
+.cerror gd_end > N_APPBASE+$4000, "desktop exceeds the 16 KiB app budget"

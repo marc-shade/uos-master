@@ -24,6 +24,7 @@ from native_capture_transport import PausedViceMonitor
 from native_claude_check import landing_screen,waiting_panel,capture_frame
 from native_claude_scene import RECTS
 from native_pointer_check import surface_pixels,check_canvas
+from native_vdc_check import capture_frame as vdc_capture,saved_region as saved_vdc_region
 from ci_native_pointer_iec import Mouse
 from launcher_scene import surface, console
 import font
@@ -39,7 +40,8 @@ def main():
     p = argparse.ArgumentParser(); p.add_argument('--host-exit', action='store_true')
     p.add_argument('--cpu-capture', action='store_true', help='verify settled terminal through the physical IRQ observer')
     p.add_argument('--mouse', action='store_true', help='real 1351 session controls and ROM Ctrl+Help')
-    p.add_argument('--80col', dest='eighty', action='store_true'); args = p.parse_args()
+    p.add_argument('--80col', dest='eighty', action='store_true')
+    p.add_argument('--vdc64', action='store_true'); args = p.parse_args()
     if args.cpu_capture and args.host_exit:
         p.error('--cpu-capture requires the stationary fixture without the updating status panel')
     work = Path(tempfile.mkdtemp(prefix='uos-native-claude-iec-', dir='/var/tmp/arc-scratch'))
@@ -53,7 +55,7 @@ def main():
     for name in ('claude.prg','claude.lbl','desktop.prg'):
         shutil.copyfile(ROOT/'target/native-desktop'/name, work/name)
     shutil.copyfile(__file__, work/'run.py')
-    xv = ci.cbm.Xvfb(); mon = emu = bridge = mouse = None
+    xv = ci.cbm.Xvfb(geometry='1920x1200x24'); mon = emu = bridge = mouse = None
     result['private_x_display']=xv.display
     emulog = (work/'vice.log').open('w'); hostlog = (work/'bridge.log').open('w')
     try:
@@ -66,7 +68,7 @@ def main():
         # Readiness from the bridge's actual log, without consuming its one connection.
         wait(lambda:'listening on' in (work/'bridge.log').read_text(), 'bridge listening', 15)
         command = ['x128','-default','-80col' if args.eighty else '-40col','-8',str(disk),
-            '-drive8true','-drive8type','1541','-VDC16KB','-sounddev','dummy','-jamaction','0','-warp',
+            '-drive8true','-drive8type','1541','-VDC64KB' if args.vdc64 else '-VDC16KB','-sounddev','dummy','-jamaction','0','-warp',
             '-acia1','-acia1base','0xDE00','-acia1irq','1','-acia1mode','1','-myaciadev','0',
             '-rsdev1',f'127.0.0.1:{linkport}','-rsdev1baud','38400',
             '-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{monport}']
@@ -155,9 +157,11 @@ def main():
             result['events'].append(value)
         def desktop(label, selected):
             wait(lambda:ready() and read(0xc000,9216,banks['ram00'])==surface(selected),label,180)
-            assert read(0,2000,banks['vdc'])==console(80,selected)
             (work/(label+'-surface.bin')).write_bytes(read(0xc000,9216,banks['ram00']))
-            (work/(label+'-vdc.bin')).write_bytes(read(0,2000,banks['vdc']))
+            def vdc_canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            result.setdefault('desktop_frames',[]).append(vdc_capture(capture,app_read,vdc_canvas,work,label,selected,color=args.vdc64))
             assert read(0x3d2f)==bytes([selected])
         desktop('boot-desktop',0)
         saved_keys=read(0x1000,256);saved_callback=read(0x33c,2);repeat=read(0xa22)
@@ -165,7 +169,9 @@ def main():
             mon.write_mem(0xa22,b'\x40');mon.resume()
             mouse=Mouse(xv.display);result['private_x_windows']=mouse.windows
             assert len(mouse.windows)==2,'the private display must contain only this C128 pair'
-        original_font = read(0x3000,4096,banks['vdc']); (work/'font-before.bin').write_bytes(original_font)
+        original_font,original_state = saved_vdc_region(capture,app_read,work,'before-claude-font')
+        result['original_vdc_snapshot']=original_state
+        (work/'font-before.bin').write_bytes(original_font)
         original_nmi = read(0x318,2); original_gate = read(0x3d3e,2)
         (work/'nmi-before.bin').write_bytes(original_nmi+original_gate)
         key(ord('A'))
@@ -285,7 +291,9 @@ def main():
         desktop('returned-desktop',4)
         assert read(0x1000,256)==saved_keys and read(0x33c,2)==saved_callback
         mon.write_mem(0xa22,repeat);mon.resume();assert read(0xa22)==repeat
-        after_font = read(0x3000,4096,banks['vdc']); (work/'font-after.bin').write_bytes(after_font)
+        after_font,restored_state = saved_vdc_region(capture,app_read,work,'after-claude-font')
+        result['restored_vdc_snapshot']=restored_state
+        (work/'font-after.bin').write_bytes(after_font)
         assert after_font==original_font
         after_nmi = read(0x318,2)+read(0x3d3e,2)
         (work/'nmi-after.bin').write_bytes(after_nmi)

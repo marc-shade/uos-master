@@ -56,12 +56,13 @@ the [field checkpoint](docs/validation/2026-09-10-native-fields/README.md) passe
 20 CPU suites, ten emulator workflows and physical USB/IEC qualification.
 ABI 1.8 adds a [native graphical desktop and drawing library](docs/NATIVE-GRAPHICS.md).
 Run `python3 -B build-native-desktop.py` to build
-`target/native-desktop/uos128.d64`. The desktop starts in native mode, mirrors
-its controls on the VDC, and launches Calculator, Editor, Files, Ultimate, Claude and Paint with
-keyboard selection or a port-1 1351 mouse on the VIC display. Escape opens the diagnostic workspace; B returns to the
+`target/native-desktop/uos128.d64`. The desktop starts in native mode with
+blue graphical launchers on both displays: 320×200 VIC and
+[640×200 VDC](docs/NATIVE-VDC-DESKTOP.md). It launches Calculator, Editor,
+Files, Ultimate, Claude and Paint with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
-Boot still uses IEC. Shared window/widget input, VDC bitmap presentation, persistent
-desktop state and the broader OS roadmap remain open. Physical desktop
+Boot still uses IEC. Shared window/widget input, VDC graphics inside apps,
+persistent desktop state and the broader OS roadmap remain open. Physical desktop
 qualification of ABI 1.9 passed in the [physical record](docs/validation/2026-09-12-native-desktop-abi19-hardware/README.md).
 ABI 1.11 adds a shared Ultimate command service and graphical drive controls.
 The current suite, including Claude serial and the new drive operations,
@@ -83,7 +84,9 @@ controls. Editor adds mouse caret placement, graphical Open/Save As and
 Find/Replace while keeping banked documents and verified saves. The
 [shared picker](docs/NATIVE-PICKER-GUI.md) carries those controls through file
 selection. Claude adds Connect, Repaint, Desktop and status paging beside its
-full VDC terminal. VDC bitmap presentation remains in progress.
+full VDC terminal. The VDC launcher shows yellow selected cards with 64 KiB
+of video RAM; a 16 KiB VDC uses white graphics on blue and a selection arrow.
+App VDC views remain text while their graphical migration continues.
 
 The suite [Files app](docs/NATIVE-BROWSER.md#copying-from-the-suite-files-app)
 copies selected files across IEC drives and Ultimate paths. Press **C** in

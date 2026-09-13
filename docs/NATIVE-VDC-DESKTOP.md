@@ -1,0 +1,113 @@
+# Native VDC graphical desktop
+
+The native suite launcher now draws its blue desktop, six app icons and mouse
+pointer on the VDC at 640×200 as well as the VIC at 320×200. Calculator, Text
+Editor, Files, Ultimate, Claude and Paint use the same selection and launch
+actions on both monitors. On a 64 KiB VDC the selected card is yellow. A
+16 KiB VDC shows white graphics on blue with an arrow beside the selection;
+the complete bitmap plus separate color attributes would exceed its RAM.
+
+Build with `python3 -B build-native-desktop.py` and boot
+`target/native-desktop/uos128.d64` in C128 native mode. Arrows and Tab select;
+Enter opens. C/E/F/U/A/P open the corresponding app. A 1351 mouse in control
+port 1 moves both pointers; press and release on the same card to open it.
+Escape opens the diagnostic workspace, and B returns to the blue launcher.
+The VDC layout uses the extra width for app names and descriptions beside
+each icon. It shares selection and input with the VIC; independent focus and
+extended desktop roles remain future work.
+
+The six apps and the shared file picker already use blue VIC controls. Their
+VDC views remain text, including Claude's full terminal. App launch restores
+the original VDC memory and registers before loading the app, and app return
+reloads the graphical launcher. The older green legacy desktop is a separate
+build; the green native workspace remains a diagnostic view.
+
+## Memory and display lifetime
+
+The launcher uses the existing ABI 1.11 heap and dispatcher. The resident
+kernel and other application images retain their bytes. The app-local
+[driver](../src/native/desktop/vdc.inc) runs in the foreground with interrupts
+enabled and without borrowed zero-page scratch. Monitor sync timing remains
+unchanged. Its supported entry state is 80×25 text with eight-pixel character
+cells, eight raster lines per cell and no interlace.
+
+| Allocation | 16 KiB VDC | 64 KiB VDC |
+|---|---:|---:|
+| Launcher app | 43 pages | 43 pages |
+| VIC surface | 36 pages | 36 pages |
+| Saved VDC memory | 64 pages | 72 pages |
+| Free managed pages while desktop is open | 283 | 275 |
+| Bitmap address | `$0000` | `$4000` |
+| Attribute address | Disabled | `$8000` |
+| Entire saved address range | `$0000..$3fff` | `$4000..$87ff` |
+
+The desktop image contains 10,885 loaded bytes. Its two suite disks retain all
+twelve shipping files with eight free blocks before user documents. Use a
+separate data disk or Ultimate storage for larger documents and pictures.
+Qualification saves the small calculator and Editor samples on the system
+disk, and copies the complete search module and Paint picture to device 9.
+
+Register 28 selects the VDC address arrangement; its bit 4 does not establish
+physical RAM capacity. A reversible alias probe distinguishes 16 and 64 KiB
+chips even when the incoming address arrangement differs. Both probe bytes
+and all fourteen changed configuration registers have recovery state before
+their first mutation. The complete memory snapshot is copied into an owned
+heap allocation before the first bitmap write. The allocator chooses the
+bank; the current desktop layout places the snapshot in bank 1.
+
+The driver saves registers 10, 12, 13, 18, 19, 20, 21, 24, 25, 26, 27, 28,
+32 and 33. Registers 30 and 31 are command/data latches; replaying their old
+values would issue new memory operations. Close first restores the entire
+saved RAM range, then the configuration registers, with display control and
+the update address restored last. Only then does it free the snapshot and
+permit an app or workspace handoff.
+
+Each register and data access has a bounded ready wait. A setup or drawing
+timeout retains the recovery phase. If close also times out, the desktop
+keeps its snapshot and blocks handoff; a later action retries the complete
+restore. A partial register restore can change the address arrangement, so
+each retry reinstates the snapshot's arrangement before copying RAM back.
+Allocation refusal or unsupported text geometry restores any setup changes
+and retains usable VIC graphics with VDC text. A refused VIC surface keeps
+the existing text launcher on both displays.
+
+## Rendering
+
+The build-time [scene generator](../native_vdc_scene.py) emits a lossless
+2,393-byte stream for the 16,000-byte bitmap. Literal runs, fills and earlier
+nonoverlapping blocks map to VDC data writes and hardware fill/copy commands.
+The independent scene renderer checks the expanded image. Selection updates
+change the arrow and, on 64 KiB hardware, the card attributes. The software
+pointer XORs a clipped arrow into the bitmap and restores its old pixels
+before moving or redrawing selection. Its horizontal position is twice the
+shared 320-pixel pointer coordinate.
+
+The RAM layout and register behavior follow the Commodore
+[C128 Programmer's Reference Guide](https://www.pagetable.com/docs/Commodore%20128%20Programmer%27s%20Reference%20Guide.pdf)
+and [Mapping the Commodore 128](https://www.cubic.org/~doj/c64/mapping128.pdf).
+The independent model also checks address aliasing, block counts and attribute
+nibbles against pinned
+[VICE VDC source](https://github.com/VICE-Team/svn-mirror/blob/86fb219f3214bf0dcbb74dc965bde4116109d388/vice/src/vdc/vdc-mem.c).
+The [Commodore source reference](COMMODORE-SOURCE-REFERENCE.md) supplies the
+native ROM/editor interrupt context. Emulator palette captures use the
+[official binary monitor protocol](https://vice-emu.sourceforge.io/vice_13.html).
+
+## Verification and next steps
+
+The [software checkpoint](validation/2026-09-13-native-vdc-desktop/README.md)
+retains exact images, CPU cases, VICE workflows, full palette frames and
+byte-for-byte snapshot restoration before app handoff. The CPU model covers
+both physical RAM sizes in both initial address arrangements, all six app
+launches, selection, pointer clipping, allocation refusal and recovery from
+setup, drawing and close stalls. Emulator captures check both full bitmaps
+and their displayed pixels, alongside existing app workflows and final heap
+cleanup. This change has not been run on physical hardware.
+
+VDC graphics inside every app need a shared display lifetime and rendering
+service. Copying this launcher driver and snapshot into each app would exceed
+current budgets: Editor with its large document and D81 picker uses 423 of
+426 pages, its core/picker window has two spare bytes, and resident regions
+are nearly full. Preserve that workload while designing display backing
+storage, overlays and owned cleanup. Shared VDC widgets, app switching,
+independent monitor focus, physical qualification and the remaining
+[OS roadmap](IMPLEMENTATION-ROADMAP.md) remain open.

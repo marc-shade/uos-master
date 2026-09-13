@@ -10,10 +10,14 @@ class DisplayBus(BaseBus):
         self.ram[0][0:2]=bytes([0x2f,0x73]);self.ram[0][0xd8]=0
         self.writes=[];self.raster_high=0x80;self.compare=255
     def __getitem__(self,address):
+        if not self.config&1 and address==0xd600:
+            return 0            # This VIC-only model has no ready VDC.
         if not self.config&1 and address in self.video:
             return self.video[address]|self.raster_high if address==0xd011 else self.video[address]
         return super().__getitem__(address)
     def __setitem__(self,address,value):
+        if not self.config&1 and address==0xd600:
+            self.writes.append((address,value));return
         if not self.config&1 and address in self.video:
             self.writes.append((address,value))
             if address==0xd011:

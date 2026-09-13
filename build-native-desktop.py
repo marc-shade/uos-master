@@ -28,6 +28,8 @@ def build():
     (ROOT/'src/native/graphics/font8.bin').write_bytes(font.font())
     from launcher_scene import write_assembly
     write_assembly(ROOT/'src/native/desktop')
+    from native_vdc_scene import write_assembly as write_vdc
+    write_vdc(ROOT/'src/native/desktop')
     from native_calc_scene import write_assembly as write_calculator
     write_calculator(ROOT/'src/native/calc')
     from paint_scene import write_assembly as write_paint

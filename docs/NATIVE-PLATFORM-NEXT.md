@@ -217,12 +217,14 @@ overlap the editor and its document storage; moving drawing-code origins alone
 does not make the graphical desktop native.
 
 The integrated [native launcher](NATIVE-GRAPHICS.md)
-boots a working graphical app selector with VDC text controls, actual
-Calculator/Editor/Files handoff, app return and allocation fallback. Its software
-qualification is sealed. The [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
+boots a graphical app selector on VIC and [VDC](NATIVE-VDC-DESKTOP.md),
+with actual handoff to all six suite apps, app return and allocation fallback.
+The VDC driver saves its overwritten memory in owned RAM and restores it
+before each handoff. Its current software evidence is linked from the VDC
+checkpoint; physical qualification below covers the earlier three-app build. The [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
 also passes, with complete CPU display-RAM/mode observations and verified
 restoration/cleanup. Physical video pixels remain unqualified.
-It releases the launcher and surface before opening another app, preserving
+It releases the launcher, surface and VDC snapshot before opening another app, preserving
 the full native application memory budget.
 
 Move the existing graphical desktop, cartridge file/control service, drive

@@ -41,10 +41,11 @@ from native_claude_check import landing_screen,capture_frame as claude_capture
 from native_claude_scene import RECTS as CLAUDE_RECTS
 from paint_scene import surface as paint_surface,console as paint_console,RECTS as PAINT_RECTS,MESSAGES as PAINT_MESSAGES
 from native_paint_format import encode as paint_encode
+from native_vdc_check import capture_frame as vdc_capture,capture_snapshot as vdc_snapshot
 
 
 class Mouse(Keyboard):
-    def __init__(self,display):
+    def __init__(self,display,*,vdc_window=False):
         super().__init__(display)
         self.t.XTestFakeRelativeMotionEvent.argtypes=[C.c_void_p,C.c_int,C.c_int,C.c_ulong]
         self.t.XTestFakeButtonEvent.argtypes=[C.c_void_p,C.c_uint,C.c_int,C.c_ulong]
@@ -52,13 +53,13 @@ class Mouse(Keyboard):
         self.x.XGetGeometry.argtypes=[C.c_void_p,C.c_ulong,C.POINTER(C.c_ulong),C.POINTER(C.c_int),C.POINTER(C.c_int),
             C.POINTER(C.c_uint),C.POINTER(C.c_uint),C.POINTER(C.c_uint),C.POINTER(C.c_uint)]
         self.x.XRaiseWindow.argtypes=[C.c_void_p,C.c_ulong]
-        # The default console changes X stacking order. Target the narrower
-        # VIC window explicitly; a VDC warp can feed unrelated host offsets.
+        # Target the requested monitor explicitly; stacking order depends on
+        # the initial console. The private X screen must contain its grab center.
         def width(window):
             root=C.c_ulong();x=C.c_int();y=C.c_int();w=C.c_uint();h=C.c_uint();border=C.c_uint();depth=C.c_uint()
             assert self.x.XGetGeometry(self.display,window,C.byref(root),C.byref(x),C.byref(y),C.byref(w),C.byref(h),C.byref(border),C.byref(depth))
             return w.value
-        self.window=min(self.windows,key=lambda row:width(row[0]))[0]
+        self.window=(max if vdc_window else min)(self.windows,key=lambda row:width(row[0]))[0]
         self.x.XRaiseWindow(self.display,self.window)
         self.x.XSetInputFocus(self.display,self.window,2,0)
         self.x.XWarpPointer(self.display,0,self.window,0,0,0,0,150,150)
@@ -85,6 +86,8 @@ class Mouse(Keyboard):
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--80col',dest='eighty',action='store_true')
+    parser.add_argument('--vdc64',action='store_true')
+    parser.add_argument('--boot-frame-only',action='store_true')
     parser.add_argument('--paint-only',action='store_true')
     parser.add_argument('--controls-only',action='store_true')
     parser.add_argument('--files-only',action='store_true')
@@ -112,13 +115,14 @@ def main():
                 return picker_symbol(pointer_app,'pgm_'+name[3:])
         return lst_symbol('native-desktop/'+pointer_app,name)
     with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
-    xv=ci.cbm.Xvfb();emu=mon=mouse=None;log=(work/'vice.log').open('w')
+    xv=ci.cbm.Xvfb(geometry='1920x1200x24');emu=mon=mouse=None;log=(work/'vice.log').open('w')
     report['private_x_display']=xv.display
+    report['private_x_geometry']='1920x1200x24'
     try:
         command=['x128','-default','-80col' if args.eighty else '-40col','-8',str(disk),'-drive8true','-drive8type','1541',
             '-9',str(data_disk),'-drive9true','-drive9type','1541',
-            '-VDC16KB','-sounddev','dummy','-soundwarpmode','1','-jamaction','0','-warp','-controlport1device','3',
-            '-controlport2device','0','-mouse','-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{port}']
+            '-VDC64KB' if args.vdc64 else '-VDC16KB','-sounddev','dummy','-soundwarpmode','1','-jamaction','0','-warp','-controlport1device','3',
+            '-controlport2device','0','+mouse','-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{port}']
         report['command']=command;save()
         emu=subprocess.Popen(command,env=dict(os.environ,DISPLAY=xv.display,
             __EGL_VENDOR_LIBRARY_FILENAMES=ci.cbm.MESA_EGL),stdout=log,stderr=subprocess.STDOUT)
@@ -174,8 +178,12 @@ def main():
         report['saved_sprite_registers']=saved_registers.hex();report['saved_init']=saved_init.hex()
         repeat=read(0xa22)
         with paused.paused('disable-accelerated-repeat'):paused.write_mem(0xa22,b'\x40')
-        mouse=Mouse(xv.display);report['private_x_windows']=mouse.windows;save()
+        mouse=Mouse(xv.display,vdc_window=args.eighty);report['private_x_windows']=mouse.windows;save()
         assert len(mouse.windows)==2,'the private X display must contain only this C128 pair'
+        resource=b'Mouse'
+        error,_=mon._recv(mon._send(0x52,bytes([1,len(resource)])+resource+bytes([4])+bytes([1,0,0,0])))
+        mon.resume();assert not error
+        report['mouse_enabled_after_boot']=True
         wait(lambda:value('pm_seen')==1,'1351 attached',15)
         time.sleep(1)
         def move_to(tx,ty):
@@ -203,7 +211,6 @@ def main():
             wait(lambda:header('desktop') and ready() and value('gd_selected')==selected,label,90)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==surface(selected)
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000);assert vdc==console(80,selected)
             mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3 and not mode['cpu_speed']&1
             # Host mouse deltas may still be draining when the large RAM
             # capture begins. Pair the canvas with settled current coordinates.
@@ -215,10 +222,14 @@ def main():
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
             rectangle=check_canvas(raw,pixels(selected,*xy))
-            report['desktops'].append(dict(label=label,selected=selected,position=xy,rectangle=rectangle,mode=mode));save()
+            def vdc_canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            vdc=vdc_capture(capture,app_read,vdc_canvas,work,label,selected,color=args.vdc64)
+            report['desktops'].append(dict(label=label,selected=selected,position=xy,rectangle=rectangle,mode=mode,vdc=vdc));save()
             if label=='claude-returned':
                 subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'desktop.png')],check=True,capture_output=True)
-            print('PASS: 64000 VIC pixels including pointer and complete VDC:',label,flush=True)
+            print('PASS: complete VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
         def key(name,target):
             before=int.from_bytes(read(0x3d13,2),'little')
             # A short host press can begin and end between emulated keyboard
@@ -496,6 +507,10 @@ def main():
         time.sleep(.5)
         key('Home','desktop')
         desktop('attached',0)
+        if args.boot_frame_only:
+            subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'vdc-desktop.png')],check=True,capture_output=True)
+            report['passed']=True;save()
+            return
         move_to(100,40);desktop('calculator-hover',0)
         key('Down','desktop');desktop('keyboard-selection',1)
         time.sleep(.3);assert value('gd_selected')==1
@@ -511,9 +526,31 @@ def main():
             if args.claude_only and name!='claude':continue
             ran_apps.add(name)
             move_to(100,40+24*index);desktop(name+'-hover',index)
+            snapshot,restore=vdc_snapshot(capture,app_read,work,name+'-close')
+            entry=lst_symbol('native-desktop/desktop','vd_restore_registers')
+            error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
+            assert not error
+            checkpoint_id=checkpoint[:4];mon.resume()
             before=int.from_bytes(read(0x3d13,2),'little')
             mouse.button(True);assert header('desktop') and value('pm_arm')==index
-            mouse.button(False);wait(lambda:header(name) and ready(),'click opens '+name,120)
+            mouse.button(False)
+            deadline=time.monotonic()+120
+            while True:
+                error,checkpoint=mon._recv(mon._send(0x11,checkpoint_id));assert not error
+                if int.from_bytes(checkpoint[13:17],'little'):break
+                mon.resume();assert time.monotonic()<deadline,'VDC restore checkpoint was not reached'
+                time.sleep(.1)
+            base=restore['base']
+            restored=bytes(mon.read_mem(base,base+len(snapshot)-1,bank=banks['vdc']))
+            (work/(name+'-restored-vram.bin')).write_bytes(restored)
+            (work/(name+'-restore-checkpoint.bin')).write_bytes(checkpoint)
+            assert restored==snapshot,'VDC snapshot was not fully restored before app handoff'
+            assert bytes(mon.read_mem(0x3d20,0x3d20))==b'\x20'
+            restore.update(checkpoint_address=entry,checkpoint_hex=checkpoint.hex(),lifetime='desktop snapshot still owned; VRAM restored before register restoration')
+            report.setdefault('vdc_restores',[]).append(restore);save()
+            error,_=mon._recv(mon._send(0x13,checkpoint_id));assert not error
+            mon.resume()
+            wait(lambda:header(name) and ready(),'click opens '+name,120)
             assert int.from_bytes(read(0x3d13,2),'little')==before,'mouse generated a keyboard shortcut'
             if name=='editor':
                 pointer_app='editor'
@@ -718,8 +755,24 @@ def main():
     except BaseException as error:
         report['error']=repr(error)
         if mon is not None:
-            try:report['failure_state']={hex(at):read(at,count).hex() for at,count in ((0xd0,8),(0xa20,16),(0x3d12,16),(0x3d60,32),(0xdc00,4),(0xd02f,1),(0xd419,2))}
+            try:
+                # Keep one stopped CPU context when diagnosing a timeout. A
+                # header alone cannot distinguish a loader from directory I/O.
+                with paused.paused('failure-diagnostic'):
+                    error_code,registers=mon._recv(mon._send(0x31,b'\0'))
+                    assert not error_code
+                    report['failure_registers_hex']=registers.hex()
+                    report['failure_state']={hex(at):bytes(paused.read_mem(at,at+count-1)).hex()
+                        for at,count in ((0xd0,8),(0xa20,16),(0x3d00,256),(0x100,256),(0xdc00,16),(0xdd00,16),(0xd02f,1),(0xd419,2))}
+                    for name in ('desktop','calc','editor','files','controls','claude','paint'):
+                        if bytes(paused.read_mem(0x3d60,0x3d7f))==(image/(name+'.prg')).read_bytes()[2:34]:
+                            data=bytes(paused.read_mem(0x6000,0xbfff,bank=banks['ram00']))
+                            (work/('failure-'+name+'-ram.bin')).write_bytes(data)
+                            report['failure_app']=name
+                            break
             except BaseException as diagnostic:report['diagnostic_error']=repr(diagnostic)
+            try:subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'failure.png')],check=True,capture_output=True)
+            except BaseException as diagnostic:report['screenshot_error']=repr(diagnostic)
         raise
     finally:
         if mouse is not None:

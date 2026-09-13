@@ -1,8 +1,8 @@
 # Native graphics and desktop
 
-The ABI 1.10 desktop starts in C128 native mode and launches Calculator, Text
-Editor, Files, Ultimate, [Claude](../apps/claude/README.md), and [Paint](NATIVE-PAINT.md). It presents a 320×200 VIC bitmap and mirrors its controls in
-the VDC text console. Apps use the existing owner-checked heap, file and module
+The ABI 1.11 desktop starts in C128 native mode and launches Calculator, Text
+Editor, Files, Ultimate, [Claude](../apps/claude/README.md), and [Paint](NATIVE-PAINT.md). It presents a 320×200 VIC bitmap and a
+[640×200 VDC graphical launcher](NATIVE-VDC-DESKTOP.md). Apps use the existing owner-checked heap, file and module
 services. The dispatcher releases the desktop before loading an app and reloads
 it when the app returns. [Calculator](NATIVE-CALCULATOR.md) shares the blue
 bitmap, yellow buttons and mouse controls, including its history and save
@@ -22,8 +22,9 @@ picker modules alternate in one window. Returning from the picker reloads the
 graphical copy dialog. Ordinary field edits repaint changed cells and the caret.
 [Editor](NATIVE-EDITOR-GUI.md) now shares the same controls for document caret
 placement, file dialogs and Find/Replace. Its banked document remains allocated
-while the shared picker replaces the graphics module. Terminal framing, the
-shared picker and VDC graphics remain migration work.
+while the shared picker replaces the graphics module. The
+[shared picker](NATIVE-PICKER-GUI.md) and [Claude frame](NATIVE-CLAUDE-GUI.md)
+now use the same blue VIC controls. VDC graphics inside apps remain migration work.
 
 The preceding desktop software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
 pass. The C128 run verifies all three app handoffs, retained selection, complete
@@ -63,11 +64,11 @@ The builder retains three distinct boot disks:
 
 Use arrows or Tab to select an app, Home to select Calculator, and Enter to
 open the selection. C, E, F, U, A and P open Calculator, Editor, Files, Ultimate,
-Claude and Paint directly. A 1351 mouse in control port 1 selects VIC app buttons on
+Claude and Paint directly. A 1351 mouse in control port 1 selects app cards on both displays on
 movement; press and release the left button on the same button to open it.
 Moving off the button before release cancels the launch. A stationary mouse
-preserves keyboard selection. The VDC text console mirrors the selected app
-and keeps its existing keyboard controls.
+preserves keyboard selection. The 64 KiB VDC highlights the selected card in
+yellow; the 16 KiB VDC uses white graphics on blue and a selection arrow.
 Escape returns to the diagnostic workspace. When graphics cannot be reserved
 or the current display configuration is unsupported, the same desktop controls
 remain available as text on both consoles. A missing app reports its load error
@@ -77,7 +78,7 @@ Arrow/Tab selection and C/E/F/U/A/P shortcuts update `N_DESKTOPSEL` at `$3d2f`:
 0 Calculator, 1 Editor, 2 Files, 3 Ultimate, 4 Claude, 5 Paint. A reloaded desktop restores that selection
 in both graphics and text fallback; values outside 0–5 recover to Calculator.
 Native restart clears the selection. This uses an existing mailbox byte and
-uses 26 app pages plus 36 surface pages. Selection is
+uses 43 app pages, 36 VIC surface pages and a 64- or 72-page VDC snapshot. Selection is
 session state; preferences saved across restarts remain roadmap work.
 The [selection checkpoint](validation/2026-09-12-native-desktop-selection/README.md)
 records the ABI 1.9 build, compatibility checks and complete app/workspace
@@ -87,12 +88,13 @@ On a physical C128, mount the desktop disk on device 8 and boot in native mode.
 The Ultimate PRG runner enters C64 mode; use native disk boot for this kernel.
 The physical workflow in `hw_ultimate_check.py --native-desktop` is still
 admitted only for its frozen ABI 1.9 images. A new frozen candidate is required
-before qualifying the added ABI 1.10 apps on the physical machine.
+before qualifying the current ABI 1.11 suite and VDC desktop on the physical machine.
 
-The desktop PRG occupies 26 app pages and reserves 36 surface pages, leaving
-364 of the 426 managed pages free. Both allocations are released before an app
-handoff. There is one foreground app; desktop preferences saved across restarts, broader widgets and menus,
-overlapping windows, VDC bitmap presentation and styled-document layout
+The desktop PRG occupies 43 app pages and reserves 36 VIC surface pages plus
+a 64- or 72-page VDC snapshot, leaving 283 or 275 of the 426 managed pages free.
+All desktop allocations are released before an app handoff; VDC memory and
+registers are restored before the snapshot is freed. There is one foreground app; desktop preferences saved across restarts, broader widgets and menus,
+overlapping windows, VDC graphics inside apps and styled-document layout
 remain roadmap work.
 
 ## Presentation lifetime

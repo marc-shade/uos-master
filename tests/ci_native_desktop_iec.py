@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Cold boot the graphical dispatcher and operate actual native apps in VICE."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -20,6 +21,8 @@ sys.path[:0] = [str(ROOT), str(ROOT/'tests')]
 import ci_fm as ci
 from native_capture import expected_screen, calculator_screen, wait
 from native_capture import NativeCapture
+from native_capture_transport import PausedViceMonitor
+from native_vdc_check import capture_frame as vdc_capture,saved_region as saved_vdc_region
 from native_running_layout import verify_running_layout
 from native_editor_scene import surface as editor_surface,console as editor_console
 from native_browser_check import disk_records, browser_screen
@@ -36,6 +39,7 @@ from paint_scene import surface as paint_surface,console as paint_console
 parser = argparse.ArgumentParser()
 parser.add_argument('--missing-calc', action='store_true')
 parser.add_argument('--80col', dest='eighty', action='store_true')
+parser.add_argument('--vdc64', action='store_true')
 parser.add_argument('--desktop-boot', action='store_true')
 parser.add_argument('--missing-desktop', action='store_true')
 parser.add_argument('--cpu-observation', action='store_true')
@@ -75,7 +79,7 @@ xv=ci.cbm.Xvfb();process=None;mon=None
 log=(work/'vice.log').open('w')
 try:
     command=['x128','-default','-80col' if args.eighty else '-40col','-8',str(disk),
-             '-drive8true','-drive8type','1541','-VDC16KB','-sounddev','dummy','-jamaction','0',
+             '-drive8true','-drive8type','1541','-VDC64KB' if args.vdc64 else '-VDC16KB','-sounddev','dummy','-jamaction','0',
              '-warp','-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{port}']
     record['command']=command
     process=subprocess.Popen(command,env=dict(os.environ,DISPLAY=xv.display,
@@ -169,10 +173,10 @@ try:
         state=read(syms['gd_selected'],8)
         assert state[:4]==bytes([selected,int(not fallback),2 if fallback else 0,error]),(label,state.hex())
         assert read(0x3d2f)==bytes([selected]),(label,'saved desktop selection')
-        text=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(text)
-        assert text==console(80,selected,error,fallback),(label,'VDC desktop')
         obs=observation(label)
         if fallback:
+            text=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(text)
+            assert text==console(80,selected,error,True),(label,'VDC desktop fallback')
             data=read(0x400,1000,banks['ram00']);(work/f'{label}-40.bin').write_bytes(data)
             assert data==console(40,selected,error,True)
             assert obs['display_tag']=='00' and obs['port']=='2f73'
@@ -208,8 +212,12 @@ try:
                     matches.append([x,y,320,200])
                 x=row.find(expected_rows[0],x+1)
         assert len(matches)==1,(label,'rendered bitmap mismatch',matches)
+        def vdc_canvas():
+            err,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not err
+            return raw
+        vdc=vdc_capture(capture,lambda at,n:read(at,n,banks['ram00']),vdc_canvas,work,label,selected,color=args.vdc64,error=error)
         record['desktops'].append(dict(label=label,selected=selected,error=error,fallback=False,
-            bytes=9216,pixels=64000,rectangle=matches[0],missing_canvas_tail_bytes=length-len(pixels)))
+            bytes=9216,pixels=64000,rectangle=matches[0],missing_canvas_tail_bytes=length-len(pixels),vdc=vdc))
         print('PASS: desktop surface, pixels and VDC controls:',label,flush=True)
     def controls(label,page):
         def value(name):return read(lst_symbol('native-desktop/controls',name))[0]
@@ -248,6 +256,22 @@ try:
         record.setdefault('paint_frames',[]).append(dict(label=label,x=x,dirty=dirty,mode=mode,rectangle=rectangle))
         print('PASS: Paint without a mouse, visible keyboard brush, complete document, bitmap and VDC:',label,flush=True)
     wait(lambda:read(0x1c13,6)==b'UOS128' and ready(),'native workspace boot',60)
+    paused=PausedViceMonitor(mon)
+    @contextmanager
+    def stable_batch(label):
+        if not label.endswith(('-before','-restore')):
+            with paused.paused(label):yield
+            return
+        deadline=time.monotonic()+30
+        while True:
+            with paused.paused(label):
+                if bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0':
+                    yield
+                    return
+            assert time.monotonic()<deadline,('idle capture admission',label)
+            time.sleep(.01)
+    capture=NativeCapture(paused,work,quiet=.05,kernel_prefix=kernel_prefix,batch=stable_batch)
+    record.update(captures=capture.records,paused_capture_batches=paused.batches)
     if args.input_during_capture:
         assert args.desktop_boot
         from native_input_capture_vice import run_input_capture
@@ -297,9 +321,6 @@ try:
     if not args.desktop_boot:
         screens('workspace-boot',lambda columns:expected_screen(columns,0))
         key(ord('B'))
-    if args.cpu_observation or args.running_layout:
-        capture=NativeCapture(mon,work,quiet=.1,kernel_prefix=kernel_prefix)
-        record['captures']=capture.records
     desktop('desktop-initial')
     if args.running_layout:
         record['resident_boot']=verify_running_layout(capture,ROOT,'resident-boot',image_dir=kernel_dir)
@@ -309,7 +330,10 @@ try:
                         count=min(2000,9216-offset)) for offset in range(0,9216,2000))
         (work/'cpu-surface.bin').write_bytes(observed)
         assert observed==surface()
-        assert capture.capture('cpu-vdc',mode=1,address=0,count=2000)==console(80)
+        def captured_vdc_canvas():
+            err,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not err
+            return raw
+        record['observed_vdc']=vdc_capture(capture,lambda at,n:read(at,n,banks['ram00']),captured_vdc_canvas,work,'cpu-vdc',0,color=args.vdc64)
         after=observation('after-cpu-observation')
         for field in ('app','heap','port','text','display_tag','keys'):
             assert before[field]==after[field],('observer changed foreground state',field)
@@ -358,10 +382,13 @@ try:
         key(ord('T'))
         controls('ultimate-absent-clock',3)
         key(27);desktop('desktop-after-ultimate',3)
-        original_font=read(0x3000,4096,banks['vdc'])
+        original_font,original_state=saved_vdc_region(capture,lambda at,n:read(at,n,banks['ram00']),work,'before-claude-font')
+        record['original_vdc_snapshot']=original_state
         key(ord('A'));screens('claude-launch-page',landing_screen)
         key(0x8c);desktop('desktop-after-claude',4)
-        assert read(0x3000,4096,banks['vdc'])==original_font,'Claude font restoration'
+        restored_font,restored_state=saved_vdc_region(capture,lambda at,n:read(at,n,banks['ram00']),work,'after-claude-font')
+        record['restored_vdc_snapshot']=restored_state
+        assert restored_font==original_font,'Claude font restoration'
         original_keys=read(0x1000,256,banks['ram00'])
         key(ord('P'));picture=bytearray(bytes(8192)+b'\x10'*1024);paint('paint-keyboard-open',picture)
         key(32);picture[0]=128;key(0x1d);key(32);picture[0]=192
