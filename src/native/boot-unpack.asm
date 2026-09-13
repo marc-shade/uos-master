@@ -60,30 +60,12 @@ decoder_image:
 decoder:
         tsx
         stx boot_stack
-boot_token:
-        jsr boot_get
-        tax
-        beq boot_finished
-        bmi boot_run
-boot_literal:
-        jsr boot_get
-        jsr boot_put
-        dex
-        bne boot_literal
-        beq boot_token
-boot_run:
-        and #$7f
-        clc
-        adc #3
-        tax
-        jsr boot_get
-        sta boot_value
--       lda boot_value
-        jsr boot_put
-        dex
-        bne -
-        beq boot_token
+        jsr DECOMPRESS_LZSA2
+        jmp boot_finished
+.include "boot-lzsa2.inc"
+; Preserve carry: LZSA2 uses it while decoding offsets and extended lengths.
 boot_get:
+        php
         lda boot_read+2
         cmp #>($6000+BOOT_LENGTH)
         bcc boot_read
@@ -96,8 +78,20 @@ boot_read:
         inc boot_read+1
         bne +
         inc boot_read+2
-+       rts
++       plp
+        rts
 boot_put:
+        sta boot_value
+        php
+        tya
+        pha
+        lda boot_value
+        jsr boot_put_body
+        pla
+        tay
+        plp
+        rts
+boot_put_body:
         pha
         lda boot_write+2
         cmp #>BOOT_END
@@ -127,6 +121,29 @@ boot_write:
         bne +
         inc boot_write+2
 +       rts
+
+; A match may overlap its output, but its first byte must already be decoded.
+; Source and destination then advance together; boot_put checks every write.
+boot_match:
+        php
+        pha
+        lda COPY_MATCH_LOOP+2
+        cmp #>$1c01
+        bcc boot_bad
+        bne +
+        lda COPY_MATCH_LOOP+1
+        cmp #<$1c01
+        bcc boot_bad
++       lda COPY_MATCH_LOOP+2
+        cmp boot_write+2
+        bcc +
+        bne boot_bad
+        lda COPY_MATCH_LOOP+1
+        cmp boot_write+1
+        bcs boot_bad
++       pla
+        plp
+        rts
 boot_finished:
         lda boot_read+1
         cmp #<($6000+BOOT_LENGTH)

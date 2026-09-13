@@ -652,3 +652,9 @@ The resident kernel, shipped suite images and 426-page heap are unchanged.
 Moving Editor/Files/Paint/VDC services into these components, backing documents
 with REU, shared scheduled driver ownership and physical qualification remain
 the next steps; this SDK milestone does not complete those app migrations.
+
+The [bounded LZSA2 boot wrapper](NATIVE-BOOT-MEDIA.md) increases free space on
+the full D64 suite from 2 to 15 blocks. It preserves the unpacked resident
+kernel, every app payload, and the 426-page heap. The shared bank-1 VDC service
+is still under development; this packaging change provides room for that work
+without changing the desktop layout or marking the remaining app views complete.

@@ -64,7 +64,8 @@ python3 build-native.py
 x128 -default -8 target/native/uos128.d64 -drive8true -drive8type 1541
 ```
 
-The build requires Python 3, 64tass and VICE's c1541. It creates the native
+The build requires Python 3, 64tass, VICE's c1541 and a host C compiler (`cc`,
+or `CC`) for the bundled boot compressor. It creates the native
 kernel, boot-sector, three app PRGs, two Editor modules, D64/D81 disks and
 image hash manifest in `target/native/`. The D81 kernel and its symbols/layout
 are in `target/native/d81/`; app PRGs are shared between both formats.

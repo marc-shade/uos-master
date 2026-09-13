@@ -1,49 +1,11 @@
-"""Deterministic bounded RLE container for the disk's native BASIC boot file."""
+"""Bounded LZSA2 and CRC16 container for the disk's native BASIC boot file."""
 import binascii
 import os
 import subprocess
 from pathlib import Path
 
 
-def pack(data):
-    out = bytearray()
-    at = 0
-    while at < len(data):
-        run = 1
-        while at+run < len(data) and data[at+run] == data[at] and run < 130:
-            run += 1
-        if run >= 3:
-            out += bytes([0x80+run-3, data[at]])
-            at += run
-        else:
-            first = at
-            at += run
-            while at < len(data) and at-first < 127:
-                if data[at:at+3] == data[at:at+1]*3:
-                    break
-                at += 1
-            out.append(at-first)
-            out += data[first:at]
-    out.append(0)
-    return bytes(out)
-
-
-def unpack(data, length):
-    out = bytearray()
-    at = 0
-    while at < len(data):
-        code = data[at]; at += 1
-        if code == 0:
-            if at != len(data) or len(out) != length:
-                raise ValueError('wrong boot stream length')
-            return bytes(out)
-        count = code-125 if code >= 128 else code
-        needed = 1 if code >= 128 else count
-        if at+needed > len(data) or len(out)+count > length:
-            raise ValueError('boot stream exceeds its input or output bounds')
-        out += data[at:at+1]*count if code >= 128 else data[at:at+count]
-        at += needed
-    raise ValueError('unterminated boot stream')
+from native_lzsa import pack, unpack
 
 
 def build(root, out):
@@ -67,5 +29,5 @@ def build(root, out):
                         '-L', str(out/'uos128-boot.lst')], check=True)
     finally:
         payload.unlink()
-    return dict(codec='rle1-crc16', unpacked_bytes=len(data), packed_bytes=len(packed),
+    return dict(codec='lzsa2-crc16', unpacked_bytes=len(data), packed_bytes=len(packed),
                 boot_file='uos128-boot.prg', decoder_start=0x1300, scratch_start=0x6000)

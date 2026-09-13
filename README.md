@@ -97,7 +97,9 @@ Calculator also shows its keypad, history and save dialog graphically on the
 VDC. Its shared display layer updates changed rows and retains the saved screen
 if restoration needs a retry. The other app VDC views remain text while their
 graphical migration continues. A checked compressed kernel boot file keeps the
-complete suite on D64 without reducing application RAM.
+complete suite on D64 without reducing application RAM. The bounded LZSA2 boot
+wrapper leaves 15 free blocks for further integration; native disk builds need
+a host C compiler (`cc` or `CC`) for the bundled compressor.
 
 The suite [Files app](docs/NATIVE-BROWSER.md#copying-from-the-suite-files-app)
 copies selected files across IEC drives and Ultimate paths. Press **C** in
