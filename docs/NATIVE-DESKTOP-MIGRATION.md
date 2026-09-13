@@ -2,8 +2,9 @@
 
 The [native graphical desktop](NATIVE-GRAPHICS.md) now has a separate direct-boot
 disk, owned VIC presentation, clipped drawing, VDC text controls and keyboard/
-1351 app handoff. Calculator now shares its graphical controls and input; the
-Ultimate information panel and Claude terminal are included. The diagnostic
+1351 app handoff. Calculator, Paint, Ultimate, Files and
+[Editor](NATIVE-EDITOR-GUI.md) share the blue controls and input; the Claude
+terminal is included. The diagnostic
 text workspace remains available. This document retains the migration history;
 windows, persistent desktop state, broader cartridge controls and an app
 switcher remain open. The legacy desktop has a separate memory layout and build.
@@ -241,8 +242,8 @@ remain separate rows in the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 ## Added suite apps
 
 ABI 1.10 adds **Claude** and **Ultimate** to both native desktop suite disks.
-The launcher has five entries, retains selection 0–4, occupies 23 pages and
-releases its 36-page bitmap before launching an app. Claude is a relocated
+That checkpoint's launcher had five entries, retained selection 0–4 and used
+23 pages plus its 36-page bitmap, released before launching an app. Claude is a relocated
 native port of Marc Shade's MIT client, with its Linux bridge packaged under
 `apps/claude`. Its 80-column terminal, 40-column panel, cc65 workspace and NMI
 callback follow an explicit launch/return lifetime. See [the app guide](../apps/claude/README.md)
@@ -256,7 +257,7 @@ selection retained while the mouse is stationary. Native apps return to this
 shell. Diagnostic Escape paths and restoring an older deployed desktop during
 physical tests explain the green screens seen during development.
 [Calculator](NATIVE-CALCULATOR.md), [Paint](NATIVE-PAINT.md),
-[Files](NATIVE-FILES-GUI.md) and
+[Files](NATIVE-FILES-GUI.md), [Editor](NATIVE-EDITOR-GUI.md) and
 [Ultimate](NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap, yellow buttons and
 shared mouse driver. Ultimate adds four tabbed pages, selectable drive rows,
 an image picker and explicit mount/eject confirmation. The app occupies 81
@@ -272,3 +273,10 @@ app allocation; the graphical view uses a separate 36-page display surface.
 This avoids adding resident services and keeps the 426-page heap unchanged.
 The [graphical Files software record](validation/2026-09-13-native-files-gui/README.md) passes. Physical
 suite qualification remains separate from the earlier ABI 1.9 record.
+
+The [graphical Editor software checkpoint](validation/2026-09-13-native-editor-gui/README.md) carries the blue
+interface through document editing, file/search dialogs and mouse caret placement.
+Its module and surface lifetimes preserve documents beyond 64 KiB and recover
+the graphical view after picker cleanup. The shared picker remains a text
+interface. Physical qualification, terminal framing and VDC bitmap migration
+remain open.

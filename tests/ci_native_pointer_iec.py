@@ -28,7 +28,7 @@ from launcher_scene import surface,console
 from native_pointer_check import pixels,surface_pixels,check_canvas
 from native_calc_scene import surface as calc_surface, BUTTONS
 from native_files_check import exact_d64_files
-from native_editor_check import editor_screen
+from native_editor_scene import surface as editor_surface,console as editor_console,RECTS as EDITOR_RECTS
 from native_browser_check import browser_screen,disk_records
 from native_controls_check import panel_screen,absent_body
 from native_controls_scene import surface as controls_surface,RECTS as CONTROLS_RECTS
@@ -73,14 +73,15 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--80col',dest='eighty',action='store_true')
     parser.add_argument('--paint-only',action='store_true')
     parser.add_argument('--controls-only',action='store_true')
-    parser.add_argument('--files-only',action='store_true');args=parser.parse_args()
-    assert sum((args.paint_only,args.controls_only,args.files_only))<=1
+    parser.add_argument('--files-only',action='store_true')
+    parser.add_argument('--editor-only',action='store_true');args=parser.parse_args()
+    assert sum((args.paint_only,args.controls_only,args.files_only,args.editor_only))<=1
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
     print('Native pointer VICE:',work,flush=True)
     shutil.copy2(__file__,work/'run.py')
     disk=work/'suite.d64';shutil.copy2(ROOT/'target/native-desktop/uos128.d64',disk)
     image=ROOT/'target/native-desktop'
-    report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],calculator_frames=[],paint_frames=[],controls_frames=[],files_frames=[],
+    report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],calculator_frames=[],paint_frames=[],controls_frames=[],files_frames=[],editor_frames=[],
         images={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in image.iterdir() if p.suffix in ('.prg','.d64')})
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     pointer_app='desktop'
@@ -188,9 +189,13 @@ def main():
             print('PASS: 64000 VIC pixels including pointer and complete VDC:',label,flush=True)
         def key(name,target):
             before=int.from_bytes(read(0x3d13,2),'little');mouse.press(name)
-            wait(lambda:header(target) and ready(),name+' reaches '+target,120)
-            assert int.from_bytes(read(0x3d13,2),'little')==before+1,(name,'extra or missing ROM key')
-            report['events'].append(dict(key=name,target=target));save()
+            # GTK can queue an event after the host's fixed key-up interval.
+            # The previous idle state is not completion of this new input.
+            wait(lambda:header(target) and ready() and int.from_bytes(read(0x3d13,2),'little')!=before,
+                name+' reaches '+target,120)
+            after=int.from_bytes(read(0x3d13,2),'little')
+            assert after==(before+1)&65535,(name,'extra or missing ROM key',before,after)
+            report['events'].append(dict(key=name,target=target,keys_before=before,keys_after=after));save()
         def screens(label,oracle):
             for mode,columns,address in ((0,40,0x400),(1,80,0)):
                 actual=capture.capture(label+('-vic' if mode==0 else '-vdc'),mode=mode,address=address,count=columns*25)
@@ -226,6 +231,39 @@ def main():
             wait(ready,'calculator click ready',60)
             assert int.from_bytes(read(0x3d13,2),'little')==before
             report['events'].append(dict(calculator_button=index,keyboard_events_during_click=0));save()
+        def editor_view(label,data,cursor,*,focus=6,**expected):
+            wait(lambda:header('editor') and ready(),label,90)
+            state={name:value(name) for name in ('eg_bitmap','eg_error','ed_module_kind','ed_mode','ed_status','ui_selected')}
+            assert (state['eg_bitmap'],state['ed_module_kind'],state['ui_selected'])==(1,2,focus),(label,state)
+            state['cursor']=int.from_bytes(app_read(symbol('ed_cursor'),3),'little')
+            report.setdefault('editor_states',[]).append(dict(label=label,**state));save()
+            assert state['cursor']==cursor,(label,state,cursor)
+            assert state['ed_mode']==expected.get('mode',0) and state['ed_status']==expected.get('status',0),(label,state)
+            kwargs=dict(focus=focus,**expected)
+            wanted=editor_surface(data,cursor,**kwargs)
+            actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+            (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
+            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
+            assert vdc==editor_console(data,cursor,**kwargs),(label,'editor VDC')
+            for _ in range(20):
+                xy=position();time.sleep(.2)
+                if position()==xy:break
+            else:raise AssertionError('editor pointer did not settle')
+            mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3
+            error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+            (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
+            report['editor_frames'].append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=kwargs,position=xy,rectangle=rectangle,mode=mode));save()
+            subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
+            print('PASS: graphical editor, VDC and 64000 pointer pixels:',label,flush=True)
+        def editor_click(index,point=None):
+            x0,y0,x1,y1=EDITOR_RECTS[index]
+            move_to(*(point or ((x0+x1)//2,(y0+y1)//2)))
+            before=int.from_bytes(read(0x3d13,2),'little')
+            mouse.button(True);wait(lambda:value('pm_arm')==index,'editor button armed',30)
+            mouse.button(False)
+            wait(lambda:ready() and (value('ed_module_kind')!=2 or not value('eg_bitmap') or value('pm_buttons')==0),'editor click ready',120)
+            after=int.from_bytes(read(0x3d13,2),'little')
+            report['events'].append(dict(editor_button=index,point=point,keyboard_events_during_click=after-before));save();assert after==before
         def controls_view(label,page,focus,notice=0):
             wait(lambda:header('controls') and ready(),label,60)
             state={name:value(name) for name in ('ug_bitmap','ug_error','uc_page','ui_selected','ug_mode','ug_notice')}
@@ -381,13 +419,39 @@ def main():
             if args.paint_only and name!='paint':continue
             if args.controls_only and name!='controls':continue
             if args.files_only and name!='files':continue
+            if args.editor_only and name!='editor':continue
             ran_apps.add(name)
             move_to(100,40+24*index);desktop(name+'-hover',index)
             before=int.from_bytes(read(0x3d13,2),'little')
             mouse.button(True);assert header('desktop') and value('pm_arm')==index
             mouse.button(False);wait(lambda:header(name) and ready(),'click opens '+name,120)
             assert int.from_bytes(read(0x3d13,2),'little')==before,'mouse generated a keyboard shortcut'
-            if name=='calc':
+            if name=='editor':
+                pointer_app='editor'
+                assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
+                wait(lambda:value('pm_seen')==1,'editor 1351 attached',15)
+                move_to(164,172);editor_view('editor-open',b'',0)
+                for char in ('c','1','2','8','space','t','e','x','t'):key(char,'editor')
+                document=b'C128 TEXT';editor_view('editor-typed',document,len(document),dirty=True)
+                editor_click(6,(28,60));editor_view('editor-caret',document,2,dirty=True)
+                key('x','editor');document=b'C1X28 TEXT';editor_view('editor-insert',document,3,dirty=True)
+                editor_click(2)
+                for char in 'guinote':key(char,'editor')
+                field=dict(mode=2,field='GUINOTE',field_caret=7,field_view=0,dirty=True)
+                editor_view('editor-save-dialog',document,3,focus=11,**field)
+                editor_click(14)
+                assert value('ed_module_kind')==1 and value('fd_active')==1 and not value('eg_bitmap')
+                entries=disk_records(disk.read_bytes())
+                for entry in entries:entry['app']=False
+                screens('editor-destination-picker',lambda cols:browser_screen(cols,entries,picker=True))
+                key('F9','editor');wait(lambda:value('pm_seen')==1,'editor pointer after picker',15)
+                editor_view('editor-picker-return',document,3,focus=11,**field)
+                editor_click(12);editor_view('editor-saved',document,3,name='GUINOTE',status=1)
+                editor_click(3);key('x','editor')
+                editor_view('editor-find',document,3,name='GUINOTE',mode=6,field='X',field_caret=1,field_view=0,focus=11)
+                editor_click(12);editor_view('editor-found',document,8,name='GUINOTE',status=13)
+                report['editor_saved_hex']=document.hex();save()
+            elif name=='calc':
                 pointer_app='calc'
                 assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
                 wait(lambda:value('pm_seen')==1,'calculator 1351 attached',15)
@@ -500,8 +564,7 @@ def main():
                 current=bytes(read(0xd000+at)[0] for at in (0,1,2,3,0x10,0x15,0x17,0x1b,0x1c,0x1d,0x27,0x28))
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
-            if name=='editor' :screens(name,lambda cols:editor_screen(cols,b'',0))
-            elif name=='claude':screens(name,landing_screen)
+            if name=='claude':screens(name,landing_screen)
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
             key('F8' if name=='claude' else 'F9','desktop')
             pointer_app='desktop'
@@ -524,6 +587,7 @@ def main():
         # Independently export each created file and preserve every shipped file.
         contents=exact_d64_files(disk.read_bytes())
         before_files=exact_d64_files((image/'uos128.d64').read_bytes())
+        if 'editor' in ran_apps:assert contents.pop(b'GUINOTE')==(1,bytes.fromhex(report['editor_saved_hex']))
         if 'calc' in ran_apps:assert contents.pop(b'GUIHIST')==(1,b'42\r')
         if 'paint' in ran_apps:assert contents.pop(b'PAINTPIC')==(1,paint_encode(paint_document))
         if 'files' in ran_apps:assert contents.pop(b'FSCOPY')==copied_source

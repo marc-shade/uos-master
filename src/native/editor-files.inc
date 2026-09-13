@@ -2,6 +2,12 @@
 ; A failed/cancelled Open discards only the pending context. A failed Save As
 ; leaves dirty state intact and never retries or deletes partially written data.
 ed_close_owned:
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_cleanup
+        bcc +
+        rts
++
+.endif
         lda d_owner
         sta N_FOWNER
         jmp N_FRELEASE
@@ -413,6 +419,9 @@ ed_nl_next:
         rts
 ed_cancel_check:
         jsr N_KEYIN
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_input
+.endif
         cmp #27
         beq +
         clc
@@ -428,9 +437,19 @@ ed_progress_maybe:
         jmp ed_progress
 +       rts
 ed_progress:
+.if NATIVE_EDITOR_GRAPHICS
+        lda #6
+        jsr eg_render
+        jsr eg_screen_start
+.else
         lda #0
+.endif
         sta ed_screen
 ed_progress_screen:
+.if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        bne ed_progress_selected
+.endif
         lda $d7
         rol
         lda #0
@@ -438,7 +457,9 @@ ed_progress_screen:
         cmp ed_screen
         beq +
         jsr $ff5f
-+       lda #$93
++
+ed_progress_selected:
+        lda #$93
         jsr ed_chrout
         ldx ed_io_phase
         dex
@@ -459,10 +480,17 @@ ed_progress_screen:
         lda #<ed_progress_cancel
         ldx #>ed_progress_cancel
         jsr ed_puts
+.if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        bne +
+.endif
         inc ed_screen
         lda ed_screen
         cmp #2
         bne ed_progress_screen
+.if NATIVE_EDITOR_GRAPHICS
++
+.endif
         rts
 ed_opening: .text "opening: ",0
 ed_saving: .text "saving new file: ",0

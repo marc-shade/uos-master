@@ -23,6 +23,7 @@ def build(*, out=None, desktop_boot=False):
         branch=['-B'] if source in ('uos128','browser','editor') or (source=='calc' and desktop_boot) else []
         defines=['-D','NATIVE_DESKTOP_BOOT=1'] if source=='uos128' and desktop_boot else []
         if source=='calc' and desktop_boot:defines=['-D','NATIVE_CALC_GRAPHICS=1']
+        if source=='editor' and desktop_boot:defines=['-D','NATIVE_EDITOR_GRAPHICS=1']
         labels=['-l',str(out/'uos128.sym')] if source=='uos128' else []
         subprocess.run(['64tass','-a',*defines,*branch,*labels,str(ROOT/'src/native'/f'{source}.asm'),
                         '-o',str(out/f'{name}.prg'),'-L',str(out/f'{name}.lst')],check=True)

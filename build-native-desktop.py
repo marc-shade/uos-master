@@ -36,6 +36,8 @@ def build():
     write_controls(ROOT/'src/native/controls')
     from native_files_scene import write_assembly as write_files
     write_files(ROOT/'src/native/files')
+    from native_editor_scene import write_assembly as write_editor
+    write_editor(ROOT/'src/native/editor')
     native.build()
     native.build(out=OUT, desktop_boot=True)
     module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
@@ -62,9 +64,12 @@ def build():
         validate(path.read_bytes())
     workspace = OUT/'workspace.d64'
     shutil.copyfile(ROOT/'target/native/uos128.d64', workspace)
-    subprocess.run(['c1541', '-attach', str(workspace), '-delete', 'browse', 'calc',
+    subprocess.run(['c1541', '-attach', str(workspace), '-delete', 'browse', 'calc', 'editor', 'edpick.prg', 'edfind.prg',
                     '-write', str(OUT/'calc.prg'), 'calc',
                     '-write', str(OUT/'desktop.prg'), 'browse',
+                    '-write', str(OUT/'editor.prg'), 'editor',
+                    '-write', str(OUT/'edpick.prg'), 'edpick.prg',
+                    '-write', str(OUT/'edfind.prg'), 'edfind.prg',
                     '-write', str(OUT/'files.prg'), 'files',
                     '-write', str(OUT/'fspick.prg'), 'fspick.prg',
                     '-write', str(OUT/'fsview.prg'), 'fsview.prg',

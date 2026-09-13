@@ -1,14 +1,20 @@
 # Native banked text editor
 
 Build with `python3 build-native.py`, boot `target/native/uos128.d64`, press
-**B**, select **EDITOR** and press Enter. The current editor is an ABI 1.7
+**B**, select **EDITOR** and press Enter. This diagnostic editor is an ABI 1.7
 application. It edits a document held in owned allocations across both C128
 RAM banks, with a 24-bit byte position and length. Both displays show the
 same document and cursor; the 80-column display shows more of each line.
 
+The desktop suite instead opens the [blue graphical Editor](NATIVE-EDITOR-GUI.md),
+with mouse caret placement, visible file/search controls and VDC text. It
+requires ABI 1.10; Tab moves focus, F7 opens Browse inside Open/Save As,
+and the Case button toggles search case. The key table below describes the diagnostic text interface.
+
 The [module loader](NATIVE-MODULES.md) loads the picker from `EDPICK.PRG`
 and search from `EDFIND.PRG` beside the original app. All three files are
-included on both suite disks. For USB, copy both modules beside the editor
+included on both suite disks; the suite combines search and graphics in
+`EDFIND.PRG`. For USB, copy both modules beside the editor
 using those uppercase filenames. The modules must come from the same build
 as the editor. All 22 CPU suites,
 ten emulator workflows and complete physical USB/IEC workflows pass in the
@@ -170,7 +176,10 @@ reject it instead of treating uncertain memory as a valid document. Cleanup
 retains failed handles for a later release attempt. Ordinary application exit
 uses the kernel's owner cleanup for both contexts and the application image.
 
-The editor reserves 79 heap pages for code, local state and either module.
+The diagnostic editor reserves 79 heap pages for code, local state and either
+module. The graphical suite uses 96 app pages and an optional 36-page surface;
+its [memory and lifetime contract](NATIVE-EDITOR-GUI.md#storage-and-presentation-lifetime)
+accounts for those allocations separately.
 Saving reuses the insertion buffer for its reopen comparison. The picker
 borrows three idle 512-byte buffers and allocates additional cache blocks of
 at most four pages
@@ -280,8 +289,9 @@ The native app may use RAM occupied by the inactive legacy settings record.
 After rebooting the legacy desktop, the harness checks its active settings fields and restores
 the saved record's header and reserved bytes as well.
 
-Selection, clipboard, undo/redo, graphical widgets and pointer input, document
-associations, multiple open tabs and session recovery remain open. Fonts,
+The [suite build](NATIVE-EDITOR-GUI.md) supplies graphical controls and mouse
+caret placement. Selection, clipboard, undo/redo, document associations,
+multiple open tabs and session recovery remain open. Fonts,
 styles, pagination, images, spelling and printing belong to the word processor
 work. The [completion roadmap](IMPLEMENTATION-ROADMAP.md) retains those
 requirements along with the native desktop, Ultimate services and expansion

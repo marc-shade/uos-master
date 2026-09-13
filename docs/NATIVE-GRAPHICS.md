@@ -20,7 +20,10 @@ controls for its list, byte viewer, device/path fields and verified copy dialog.
 Its permanent core owns the keyboard and file state while checked graphics and
 picker modules alternate in one window. Returning from the picker reloads the
 graphical copy dialog. Ordinary field edits repaint changed cells and the caret.
-The editor, terminal framing, shared picker and VDC graphics remain migration work.
+[Editor](NATIVE-EDITOR-GUI.md) now shares the same controls for document caret
+placement, file dialogs and Find/Replace. Its banked document remains allocated
+while the shared picker replaces the graphics module. Terminal framing, the
+shared picker and VDC graphics remain migration work.
 
 The preceding desktop software qualification and the [full ABI 1.9 physical workflow](validation/2026-09-12-native-desktop-abi19-hardware/README.md)
 pass. The C128 run verifies all three app handoffs, retained selection, complete
@@ -89,7 +92,7 @@ before qualifying the added ABI 1.10 apps on the physical machine.
 The desktop PRG occupies 26 app pages and reserves 36 surface pages, leaving
 364 of the 426 managed pages free. Both allocations are released before an app
 handoff. There is one foreground app; desktop preferences saved across restarts, broader widgets and menus,
-overlapping windows, VDC bitmap presentation and graphical text-document editing
+overlapping windows, VDC bitmap presentation and styled-document layout
 remain roadmap work.
 
 ## Presentation lifetime

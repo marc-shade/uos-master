@@ -179,7 +179,7 @@ middle edits, both clipped viewports and the full 255-byte browser path through
 the shared ABI 1.6 controls, without increasing the 28-page app allocation.
 
 Native rename/delete, zero-byte IEC creation, file associations, richer document
-editing, GUI controls, scheduling and migration of the Ultimate desktop
+editing, broader widgets, scheduling and migration of remaining Ultimate desktop
 services remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
 ## Validation

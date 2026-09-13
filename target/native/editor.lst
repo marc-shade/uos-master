@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -o /home/marc/geos128/uos/target/native/editor.prg -L /home/marc/geos128/uos/target/native/editor.lst /home/marc/geos128/uos/src/native/editor.asm
-; Sun Sep 13 03:29:14 2026
+; Sun Sep 13 06:09:47 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -170,11 +170,14 @@
 
 ;******  Return to file: /home/marc/geos128/uos/src/native/editor.asm
 
+=0						NATIVE_EDITOR_GRAPHICS=0
+=7						ED_ABI=7
+=79						ED_PAGES=79
 .6000						editor_image:
 >6000		4e 41 50 50			        .text "napp"
->6004		01 01 07 9b			        .byte 1,1,7,< (editor_module-editor_image)
+>6004		01 01 07 9b			        .byte 1,1,ED_ABI,< (editor_module-editor_image)
 >6008		9b 30				        .word editor_module-editor_image
->600a		4f 30				        .byte 79,> (editor_module-editor_image)
+>600a		4f 30				        .byte ED_PAGES,> (editor_module-editor_image)
 >600c		02 0f				        .word editor_entry-editor_image
 >600e		00 00				        .word 0
 >6010		54 45 58 54 20 45 44 49		        .text "text editor",0
@@ -3873,7 +3876,9 @@
 .8ea3		cd 4a 85	cmp $854a	        cmp ed_screen
 .8ea6		f0 03		beq $8eab	        beq +
 .8ea8		20 5f ff	jsr $ff5f	        jsr $ff5f
-.8eab		a9 93		lda #$93	+       lda #$93
+.8eab						+
+.8eab						ed_progress_selected:
+.8eab		a9 93		lda #$93	        lda #$93
 .8ead		20 69 7f	jsr $7f69	        jsr ed_chrout
 .8eb0		ae 6b 8f	ldx $8f6b	        ldx ed_io_phase
 .8eb3		ca		dex		        dex
@@ -4090,7 +4095,7 @@
 =$9076						FD_SAFE_CHARACTER = ed_safe_character
 .909b						editor_module:
 >909b		4e 4d 4f 44			        .text "nmod"
->909f		01 01 07 00			        .byte 1,1,7,0
+>909f		01 01 07 00			        .byte 1,1,ED_ABI,0
 >90a3		39 1e				        .word editor_end-editor_module
 >90a5		00 00				        .word 0                ; build binds the module to the sealed core CRC
 >90a7		10 00				        .word fd_run-editor_module
@@ -6612,7 +6617,7 @@
 .aed4						editor_end:
 .aed4	909b					editor_search_module:
 >aed4	909b	4e 4d 4f 44			        .text "nmod"
->aed8	909f	01 01 07 00			        .byte 1,1,7,0
+>aed8	909f	01 01 07 00			        .byte 1,1,ED_ABI,0
 >aedc	90a3	2a 08				        .word editor_search_end-editor_search_module
 >aede	90a5	00 00				        .word 0
 >aee0	90a7	10 00				        .word ed_search_entry-editor_search_module

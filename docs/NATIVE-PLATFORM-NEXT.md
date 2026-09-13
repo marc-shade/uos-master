@@ -48,7 +48,7 @@ Further growth must continue accounting for both final and peak boot footprints.
 Longer-term modules need their own owner/lifetime records; this small range
 alone is not a memory architecture for the complete OS.
 
-The shared-field build makes the next memory constraint concrete. The editor
+The diagnostic shared-field build makes the next memory constraint concrete. The editor
 uses 79 pages, both workspace blocks use 64, and a 66,056-byte document uses
 seventeen 16-page chunks. That is 415 of 426 pages before opening the picker;
 its eight extra cache pages raise the total to 423. The tested allocation
@@ -258,7 +258,12 @@ navigation, byte viewing and verified file copy. Graphics and the destination
 picker share a checked module window while the core retains keyboard ownership,
 raw names, preferences and file handles. Its 93-page app and optional 36-page
 surface fit the existing ABI. The [software qualification](validation/2026-09-13-native-files-gui/README.md) passes; graphical
-editor/picker integration, VDC presentation and the remaining roadmap stay open.
+picker integration, VDC presentation and the remaining roadmap stay open.
+The [suite Editor](NATIVE-EDITOR-GUI.md) now uses 96 app pages and a 36-page
+surface, with its graphics/search and picker sharing one window. Its desktop
+launch releases workspace allocations before loading the app; it supports a
+17-chunk document above 64 KiB with graphics active. The
+[software qualification](validation/2026-09-13-native-editor-gui/README.md) passes; physical qualification and document backing storage remain open.
 
 The [Claude lifecycle checkpoint](validation/2026-09-12-native-claude-lifecycle/README.md)
 addresses the Ultimate's asynchronous relay: the client keeps its NMI handler

@@ -17,7 +17,7 @@ from native_capture import ROOT,NativeCapture,wait,expected_screen,calculator_sc
 from native_running_layout import verify_running_layout
 from native_mode_capture import NativeModeCapture
 from native_browser_check import disk_records,browser_screen
-from native_editor_check import editor_screen
+from native_editor_scene import surface as editor_surface,console as editor_console
 from launcher_scene import surface,console
 from native_calc_scene import surface as calc_surface
 from native_files_scene import browser_surface as files_surface,browser_console as files_console
@@ -63,6 +63,19 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
         assert registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/calc','pm_seen'))==b'\1' else 0)
         report.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,registers=registers))
         save();print('Verified graphical calculator RAM and VDC:',label,flush=True)
+    def editor(label,data,cursor,**expected):
+        assert capture.capture(label+'-bitmap-active',address=lst_symbol('native-desktop/editor','eg_bitmap'),count=1)==b'\1'
+        wanted=editor_surface(data,cursor,**expected)
+        actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
+            count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+        (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
+        assert capture.capture(label+'-vdc',mode=1,address=0,count=2000)==editor_console(data,cursor,**expected),(label,'editor VDC')
+        registers=modes.snapshot(label+'-mode');assert registers['vic_d011']&0x7f==0x3b
+        seen=capture.capture(label+'-pointer-seen',address=lst_symbol('native-desktop/editor','pm_seen'),count=1)
+        assert registers['vic_sprites']==(3 if seen==b'\1' else 0)
+        report.setdefault('editor_frames',[]).append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=expected,registers=registers,
+            surface_sha256=hashlib.sha256(actual).hexdigest()))
+        save();print('Verified graphical editor RAM and VDC:',label,flush=True)
     def files(label):
         assert read(lst_symbol('native-desktop/files','fg_bitmap'))==b'\1'
         entries=disk_records(disk.read_bytes())
@@ -109,10 +122,10 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
     for value in b'12+30=':key(value)
     calculator('calculator-result','42',['42'])
     key(27);desktop('desktop-after-calculator')
-    key(ord('E'));screens('editor-new',lambda cols:editor_screen(cols,b'',0))
+    key(ord('E'));editor('editor-new',b'',0)
     document=b'C128'
     for value in document:key(value)
-    screens('editor-typed',lambda cols:editor_screen(cols,document,4,dirty=True))
+    editor('editor-typed',document,4,dirty=True)
     key(27);key(ord('Y'));desktop('desktop-after-editor',1)
     key(ord('F'));files('files')
     key(27);desktop('desktop-after-files',2)

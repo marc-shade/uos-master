@@ -7,7 +7,13 @@ ed_search_launch:
         bcs ed_picker_failed
         lda #1
         sta ed_s_running
+.if NATIVE_EDITOR_GRAPHICS
+        lda #5
+        sta eg_operation
+        jsr eg_call
+.else
         jsr N_MCALL
+.endif
         php
         lda #0
         sta ed_s_running

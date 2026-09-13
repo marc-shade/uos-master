@@ -21,7 +21,7 @@ import ci_fm as ci
 from native_capture import expected_screen, calculator_screen, wait
 from native_capture import NativeCapture
 from native_running_layout import verify_running_layout
-from native_editor_check import editor_screen
+from native_editor_scene import surface as editor_surface,console as editor_console
 from native_browser_check import disk_records, browser_screen
 from launcher_scene import surface, console
 from native_calc_scene import surface as calc_surface
@@ -54,7 +54,7 @@ if args.missing_calc:
     subprocess.run(['c1541','-attach',str(disk),'-delete','calc'],check=True,capture_output=True)
 if args.missing_desktop:
     subprocess.run(['c1541','-attach',str(disk),'-delete','browse'],check=True,capture_output=True)
-for name in ('desktop.prg','desktop.lst','desktop.sym','files.prg','files.lst','fsview.prg','fspick.prg'):
+for name in ('desktop.prg','desktop.lst','desktop.sym','files.prg','files.lst','fsview.prg','fspick.prg','editor.prg','editor.lst','edfind.prg','edpick.prg'):
     shutil.copyfile(ROOT/'target/native-desktop'/name,work/name)
 shutil.copyfile(__file__,work/'run.py')
 shutil.copyfile(ROOT/'launcher_scene.py',work/'launcher_scene.py')
@@ -129,6 +129,25 @@ try:
         rectangle=check_canvas(raw,surface_pixels(expected,0,0,visible=False))
         record.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,rectangle=rectangle))
         print('PASS: graphical calculator surface, VIC pixels and VDC:',label,flush=True)
+    def editor(label,data,cursor,*,focus=6,**expected):
+        assert read(lst_symbol('native-desktop/editor','eg_bitmap'),1,banks['ram00'])==b'\1'
+        assert read(lst_symbol('native-desktop/editor','ed_module_kind'),1,banks['ram00'])==b'\2'
+        assert read(lst_symbol('native-desktop/editor','ui_selected'),1,banks['ram00'])==bytes([focus])
+        wanted=editor_surface(data,cursor,focus=focus,**expected)
+        actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
+        assert actual==wanted,(label,'editor surface')
+        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
+        assert vdc==editor_console(data,cursor,focus=focus,**expected),(label,'editor VDC')
+        assert read(ksyms['v_tag'])!=b'\0'
+        handle=read(lst_symbol('native-desktop/editor','eg_handle'),4,banks['ram00'])
+        assert read(0x38c0,36)==handle[:1]*36
+        assert read(0x3c00+(handle[0]-1)*8,7)==bytes([32,0,0xc0,36])+handle[1:]
+        time.sleep(.15)
+        error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+        (work/f'{label}-display-get.bin').write_bytes(raw)
+        rectangle=check_canvas(raw,surface_pixels(wanted,0,0,visible=False))
+        record.setdefault('editor_frames',[]).append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=dict(focus=focus,**expected),rectangle=rectangle))
+        print('PASS: graphical editor surface, VIC pixels and VDC:',label,flush=True)
     def files(label):
         assert read(lst_symbol('native-desktop/files','fg_bitmap'))==b'\1'
         wanted=files_surface(records)
@@ -321,12 +340,12 @@ try:
         for value in b'12+30=':key(value)
         calculator('calculator-result','42',['42'])
         key(27);desktop('desktop-after-calculator')
-        key(ord('E'));screens('editor-new',lambda columns:editor_screen(columns,b'',0))
+        key(ord('E'));editor('editor-new',b'',0)
         document=b'Native desktop'
         for value in document:key(value)
-        screens('editor-typed',lambda columns:editor_screen(columns,document,len(document),dirty=True))
-        key(27);screens('editor-discard-prompt',lambda columns:editor_screen(columns,document,len(document),dirty=True,mode=5))
-        key(ord('N'));screens('editor-kept',lambda columns:editor_screen(columns,document,len(document),dirty=True))
+        editor('editor-typed',document,len(document),dirty=True)
+        key(27);editor('editor-discard-prompt',document,len(document),dirty=True,mode=5,focus=15)
+        key(ord('N'));editor('editor-kept',document,len(document),dirty=True)
         key(27);key(ord('Y'));desktop('desktop-after-editor',1)
         key(ord('F'));files('files')
         key(27);desktop('desktop-after-files',2)

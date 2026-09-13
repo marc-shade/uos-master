@@ -71,13 +71,14 @@ The blue native desktop is the interface being developed for the unified app
 suite. The older green desktop remains a separate legacy build; restoring that
 installed build after a test does not change the native desktop's direction.
 [Calculator](docs/NATIVE-CALCULATOR.md), [Paint](docs/NATIVE-PAINT.md),
-[Files](docs/NATIVE-FILES-GUI.md) and
+[Files](docs/NATIVE-FILES-GUI.md), [Editor](docs/NATIVE-EDITOR-GUI.md) and
 [Ultimate](docs/NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap and yellow
 controls inside their apps. Paint adds connected mouse
 strokes, a visible keyboard brush, colors, undo, and verified picture files.
 Files adds graphical lists, byte viewing, editable paths and verified copy
-controls. The text editor, terminal framing, shared file picker and VDC bitmap
-presentation still need graphical migration.
+controls. Editor adds mouse caret placement, graphical Open/Save As and
+Find/Replace while keeping banked documents and verified saves. Terminal
+framing, the shared file picker and VDC bitmap presentation still need migration.
 
 The suite [Files app](docs/NATIVE-BROWSER.md#copying-from-the-suite-files-app)
 copies selected files across IEC drives and Ultimate paths. Press **C** in
@@ -139,8 +140,9 @@ verified only after closing, reopening and comparing both files completely.
 Existing destinations are rejected; cancelled or failed new files are retained.
 [Legacy Open and Save As](docs/FILE-DIALOGS.md) keep the editor in memory
 while browsing folders. Saves are closed, reopened and compared before success.
-IEC selection and banked documents still need migration into the graphical
-desktop, alongside the broader application suite.
+The [native graphical Editor](docs/NATIVE-EDITOR-GUI.md) now combines banked
+documents with IEC/Ultimate selection and the blue desktop controls. The shared
+picker remains text, and broader app and desktop features remain on the roadmap.
 The [file-service validation](docs/validation/2026-09-08-ultimate-files/README.md)
 records exact physical create/copy/readback, viewer restoration and firmware limits.
 The [desktop-copy validation](docs/validation/2026-09-08-desktop-copy/README.md)

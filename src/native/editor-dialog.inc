@@ -45,6 +45,12 @@ ed_browse_memory:
         lda #3
 ed_browse_status:
         sta ed_status
+.if NATIVE_EDITOR_GRAPHICS
+        ; Explicit Browse retries may release a previously retained picker.
+        ; Let this return try the graphical module again after that cleanup.
+        lda #0
+        sta eg_attempted
+.endif
         ; The dialog has repainted both displays, but never touched document
         ; cursor/cache/viewport state. Redraw it without resetting those values.
         jsr ed_invalidate_pages
@@ -76,6 +82,11 @@ ed_module_cache_check:
         dex
         bpl ed_module_cache_check
 ed_module_replace:
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_close
+        lda #0
+        sta eg_attempted
+.endif
         lda #0
         sta ed_module_kind
         lda N_MSTATE

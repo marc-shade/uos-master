@@ -1,11 +1,21 @@
 ; Native uOS plain-text editor with banked, byte-preserving documents. GPL v3.
 .include "api.inc"
+.weak
+NATIVE_EDITOR_GRAPHICS=0
+.endweak
+.if NATIVE_EDITOR_GRAPHICS
+ED_ABI=10
+ED_PAGES=(editor_search_end-editor_image+255)/256
+.else
+ED_ABI=7
+ED_PAGES=79
+.endif
 * = N_APPBASE
 editor_image:
         .text "napp"
-        .byte 1,1,7,< (editor_module-editor_image)
+        .byte 1,1,ED_ABI,< (editor_module-editor_image)
         .word editor_module-editor_image
-        .byte 79,> (editor_module-editor_image)
+        .byte ED_PAGES,> (editor_module-editor_image)
         .word editor_entry-editor_image
         .word 0
         .text "text editor",0
@@ -53,13 +63,24 @@ cloop:
         lda #1
         sta N_READY
         jsr N_KEYIN
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_input
+.endif
         beq cloop
         ldx #0
         stx N_READY
         stx ed_structure
         stx ed_document_changed
+.if NATIVE_EDITOR_GRAPHICS
+        cmp #$ff
+        beq ed_cursor_changed
+.endif
         ldx ed_mode
         bne ed_prompt_key
+.if NATIVE_EDITOR_GRAPHICS
+        cmp #12
+        beq ed_graphics_retry
+.endif
         cmp #27
         beq ed_request_exit
         cmp #$85
@@ -157,6 +178,9 @@ ed_confirmed:
         beq ed_open_file
         cmp #5
         beq ed_new_document
+ .if NATIVE_EDITOR_GRAPHICS
+        jsr eg_close
+ .endif
         jsr ed_keys_restore
         lda #0
         jmp N_EXIT
@@ -202,6 +226,14 @@ ed_prompt_key:
         beq ed_prompt_cancel
         jmp cloop
 ed_field_key:
+.if NATIVE_EDITOR_GRAPHICS
+        cmp #$88
+        bne +
+        ldx ed_mode
+        cpx #3
+        bcc ed_browse
++
+.endif
         cmp #9
         bne +
         ldx ed_mode
@@ -882,19 +914,41 @@ ed_field_refresh:
         jsr ed_paint_fields
         jmp cloop
 ed_paint_fields:
+.if NATIVE_EDITOR_GRAPHICS
+        lda #2
+        jsr eg_render
+        jsr eg_screen_start
+.else
         lda #0
+.endif
         sta ed_screen
 ed_field_screen:
         jsr ed_select_screen
         jsr ed_paint_status
+ .if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        bne +
+ .endif
         inc ed_screen
         lda ed_screen
         cmp #2
         bne ed_field_screen
+ .if NATIVE_EDITOR_GRAPHICS
++
+ .endif
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_footer
+.endif
         rts
 
 ed_show:
+.if NATIVE_EDITOR_GRAPHICS
         lda #0
+        jsr eg_render
+        jsr eg_screen_start
+.else
+        lda #0
+.endif
         sta ed_screen
 ed_show_screen:
         jsr ed_select_screen
@@ -926,16 +980,30 @@ ed_show_row:
         lda #<ed_search_help
         ldx #>ed_search_help
         jsr ed_puts
+ .if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        bne +
+ .endif
         inc ed_screen
         lda ed_screen
         cmp #2
         bne ed_show_screen
+ .if NATIVE_EDITOR_GRAPHICS
++
+ .endif
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_footer
+.endif
         rts
 
 ; Cursor moves and edits within one logical line preserve the viewport.
 ; Redraw the old and new caret rows, plus mutable headings/status. Scrolling,
 ; line splits/joins, file operations and new documents use the complete path.
 ed_show_partial:
+.if NATIVE_EDITOR_GRAPHICS
+        lda #1
+        jsr eg_render
+.endif
         lda ed_last_row
         cmp ed_cursor_row
         bcs +
@@ -943,14 +1011,22 @@ ed_show_partial:
 +       clc
         adc #1
         sta ed_row_limit
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_screen_start
+.else
         lda #0
+.endif
         sta ed_screen
 ed_partial_screen:
         jsr ed_select_screen
         ldx #1
         ldy #0
         clc
+ .if NATIVE_EDITOR_GRAPHICS
+        jsr eg_plot
+ .else
         jsr $fff0
+ .endif
         lda #<ed_name_text
         ldx #>ed_name_text
         jsr ed_puts
@@ -980,17 +1056,31 @@ ed_partial_paint:
         tax
         ldy #0
         clc
+ .if NATIVE_EDITOR_GRAPHICS
+        jsr eg_plot
+ .else
         jsr $fff0
+ .endif
         jsr ed_text_row
 ed_partial_next:
         inc ed_row
         lda ed_row
         cmp ed_row_limit
         bne ed_partial_row
+ .if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        bne +
+ .endif
         inc ed_screen
         lda ed_screen
         cmp #2
         bne ed_partial_screen
+ .if NATIVE_EDITOR_GRAPHICS
++
+ .endif
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_footer
+.endif
         rts
 ed_row_index:
         lda ed_row
@@ -1170,6 +1260,16 @@ ed_tens:
         rts
 
 ed_select_screen:
+.if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        beq +
+        lda #40
+        sta ed_columns
+        lda #38
+        sta ed_width
+        rts
++
+.endif
         lda $d7
         rol
         lda #0
@@ -1190,14 +1290,22 @@ ed_paint_status:
         ldx #6
         ldy #0
         clc
+ .if NATIVE_EDITOR_GRAPHICS
+        jsr eg_plot
+ .else
         jsr $fff0
+ .endif
         jsr ed_status_show
         jmp ed_clear_tail
 ; Header/status strings leave the final column blank. Erase a shortened
 ; value through column width-2, avoiding an automatic wrap or linked line.
 ed_clear_tail:
         sec
+ .if NATIVE_EDITOR_GRAPHICS
+        jsr eg_plot
+ .else
         jsr $fff0
+ .endif
         sty ed_blank_left
         lda ed_columns
         sec
@@ -1255,6 +1363,14 @@ ed_text_read:
 ; clear quote mode before emitting a glyph/control; a quoted caret must not
 ; print the reverse-on/off control codes as document characters.
 ed_chrout:
+.if NATIVE_EDITOR_GRAPHICS
+        pha
+        lda eg_collect
+        beq +
+        pla
+        jmp eg_emit
++       pla
+.endif
         pha
         lda #0
         sta $f4
@@ -1265,6 +1381,10 @@ ed_chrout:
 ; ten definitions one code while this app owns the foreground, and restore
 ; all 256 original bytes on every controlled exit. The IRQ cannot observe a
 ; partially installed length/string table. $d1/$d2 are expansion count/index.
+.if NATIVE_EDITOR_GRAPHICS
+ed_keys_install = nk_install
+ed_keys_restore = nk_close
+.else
 ed_keys_install:
         php
         sei
@@ -1301,6 +1421,7 @@ ed_keys_restore_loop:
         sta $d2
         plp
         rts
+.endif
 ed_hex24:
         lda #2
         sta ed_hex_index
@@ -1326,6 +1447,16 @@ ed_hex_digit:
 +       adc #$30
         jmp ed_chrout
 ed_status_show:
+.if NATIVE_EDITOR_GRAPHICS
+        lda eg_collect
+        beq +
+        lda ed_mode
+        beq ed_normal_status
+        lda ed_status
+        bne ed_normal_status
+        rts
++
+.endif
         lda ed_status
         cmp #12
         bcs ed_normal_status
@@ -1504,8 +1635,13 @@ ed_status_hi: .byte >ed_ready_text,>ed_saved_text,>ed_io_error,>ed_memory_text,>
               .byte >ed_found_text,>ed_wrapped_text,>ed_not_found_text,>ed_search_busy_text
               .byte >ed_replaced_text,>ed_search_cancel_text,>ed_search_memory_text
 ed_one: .byte 1,0,0
+.if NATIVE_EDITOR_GRAPHICS
+ed_key_codes = nk_codes
+ed_saved_keys = nk_saved_keys
+.else
 ed_key_codes: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84
 ed_saved_keys: .fill 256,0
+.endif
 ed_width_minus_one: .byte 37,0,0
 ed_active: .byte 0
 ed_cursor: .fill 3,0
@@ -1575,6 +1711,10 @@ ed_other_page: .fill 512,0
 .include "editor-search-gate.inc"
 .include "editor-files.inc"
 .include "editor-dialog.inc"
+.if NATIVE_EDITOR_GRAPHICS
+.include "editor/presentation.inc"
+.include "input/keys.inc"
+.endif
 FD_EMBEDDED = 1
 FD_DIRECT_PAGES = 6
 FD_NAME_BUFFER = ed_field
@@ -1585,14 +1725,14 @@ FD_SCRATCH3 = ed_verify_data
 FD_SAFE_CHARACTER = ed_safe_character
 editor_module:
         .text "nmod"
-        .byte 1,1,7,0
+        .byte 1,1,ED_ABI,0
         .word editor_end-editor_module
         .word 0                ; build binds the module to the sealed core CRC
         .word fd_run-editor_module
         .word 0                ; build seals the independent module CRC
 .include "file-dialog.inc"
 editor_end:
-        .cerror * > N_APPBASE+79*256, "editor must leave RAM for large documents and dialogs"
+        .cerror * > N_APPBASE+ED_PAGES*256, "editor must leave RAM for large documents and dialogs"
 
 ; A second on-disk module uses the same reserved window. Both are assembled
 ; here so forward references bind to one exact core. The builder splits these
@@ -1600,13 +1740,24 @@ editor_end:
         .logical editor_module
 editor_search_module:
         .text "nmod"
-        .byte 1,1,7,0
+        .byte 1,1,ED_ABI,0
         .word editor_search_end-editor_search_module
         .word 0
+.if NATIVE_EDITOR_GRAPHICS
+        .word eg_entry-editor_search_module
+.else
         .word ed_search_entry-editor_search_module
+.endif
         .word 0
 .include "editor-search.inc"
 .include "document-replace.inc"
+.if NATIVE_EDITOR_GRAPHICS
+.include "editor/gui.inc"
+.endif
 editor_search_end:
-        .cerror * > N_APPBASE+79*256, "search exceeds the editor module window"
+        .cerror * > N_APPBASE+ED_PAGES*256, "search exceeds the editor module window"
         .here
+
+.if NATIVE_EDITOR_GRAPHICS
+        .cerror N_APPBASE+ED_PAGES*256 > $c000, "editor overlaps surface: ", editor_module-editor_image, " / ", editor_search_end-editor_image, " / ", ED_PAGES
+.endif

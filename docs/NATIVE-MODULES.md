@@ -1,11 +1,14 @@
 # Native application modules — ABI 1.7
 
 The current source loads the editor's picker from `EDPICK.PRG` and its search
-engine from `EDFIND.PRG` on the app's original disk or Ultimate folder.
+engine from `EDFIND.PRG` on the app's original disk or Ultimate folder. The
+[graphical suite Editor](NATIVE-EDITOR-GUI.md) combines search and graphics in
+`EDFIND.PRG`, with keyboard/document state retained in its 96-page core and
+module allocation. The diagnostic editor retains the 79-page text build.
 The editor core, document descriptors,
-field, cursor and both workspace allocations remain live. The first Tab in
-Open/Save As loads the picker; subsequent calls reuse its verified image and
-directory state until search replaces that module. Ctrl-F/Ctrl-N/Ctrl-R load
+field and cursor remain live. Tab in the diagnostic editor
+or F7/Browse in the suite editor loads the picker; subsequent calls reuse its verified image and
+directory state until search or the suite graphical view replaces that module. Ctrl-F/Ctrl-N/Ctrl-R load
 search into the same window. The accepted query and case choice remain in the
 core across module switches. Missing or damaged modules keep the document.
 Install **EDPICK.PRG** and **EDFIND.PRG** beside the editor on USB; both suite
@@ -43,7 +46,7 @@ Offsets exclude the two-byte PRG address.
 | 0 | 4 | `NMOD` bytes `4e 4d 4f 44` |
 | 4 | 1 | Module format 1 |
 | 5 | 1 | ABI major 1 |
-| 6 | 1 | Required module ABI minor 7..9; presentation calls require 8; desktop session selection requires 9 |
+| 6 | 1 | Required module ABI minor 7..11; presentation calls require 8; desktop selection requires 9; shared keyboard input requires 10 |
 | 7 | 1 | Reserved, zero |
 | 8 | 2 | Complete module extent including this manifest |
 | 10 | 2 | Sealed parent core's CRC16 |
@@ -134,7 +137,7 @@ existing owner quarantine; it must not be described as recovered.
 
 ## Memory and acceptance
 
-The editor remains 79 pages (`$6000..$aeff`). Its core and the larger picker
+The diagnostic text editor remains 79 pages (`$6000..$aeff`). Its core and the larger picker
 module share that allocation; the smaller search module uses the same window.
 The 66,056-byte document,
 both 8 KiB workspaces and ten picker-cache pages use 425 of 426 heap
