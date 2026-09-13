@@ -1,0 +1,1637 @@
+
+; 64tass Turbo Assembler Macro V1.60.3243 listing file
+; 64tass -a -B -b -o /home/marc/geos128/uos/target/native-desktop/claude-build/gui.bin -l /home/marc/geos128/uos/target/native-desktop/claude-gui.sym -L /home/marc/geos128/uos/target/native-desktop/claude-gui.lst /home/marc/geos128/uos/src/native/claude/gui.asm
+; Sun Sep 13 10:12:41 2026
+
+;Offset	;PC	;Hex		;Monitor	;Source
+
+;******  Processing input file: /home/marc/geos128/uos/src/native/claude/gui.asm
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/claude/../api.inc
+
+=1						N_ABI_MAJOR = 1
+=11						N_ABI_MINOR = 11
+=$1c20						N_ALLOC         = $1c20
+=$1c23						N_FREE          = $1c23
+=$1c26						N_READ          = $1c26
+=$1c29						N_WRITE         = $1c29
+=$1c2c						N_FILL          = $1c2c
+=$1c2f						N_STATS         = $1c2f
+=$1c32						N_RELEASE       = $1c32
+=$1c35						N_RESERVE       = $1c35
+=$1c38						N_LAUNCH        = $1c38          ; checked PRG through owned IEC/Ultimate streams
+=$1c3b						N_KEYIN         = $1c3b          ; native GETIN with shared key-event accounting
+=$1c3e						N_EXIT          = $1c3e          ; one-way app exit, A=app result; restores saved stack
+=$1c41						N_FOPEN         = $1c41          ; owned read/create stream or Ultimate directory cursor
+=$1c44						N_FREAD         = $1c44          ; up to 512 file bytes, or one complete directory entry
+=$1c47						N_FWRITE        = $1c47          ; up to 512 bytes from N_BUFFER
+=$1c4a						N_FCLOSE        = $1c4a          ; close only this owned file
+=$1c4d						N_FRELEASE      = $1c4d          ; close every file owned by N_FOWNER
+=$1c50						N_DIRPAGE       = $1c50          ; one normalized directory page; no live stream on success
+=$1c53						N_REPLACE       = $1c53          ; leave app, request dispatcher launch with source fields
+=$1c56						N_WORKSPACE     = $1c56          ; leave app, request return to the memory workspace
+=$1c59						N_FEDIT         = $1c59          ; edit the active app's bounded field, no input polling
+=$1c5c						N_FDRAW         = $1c5c          ; draw that focused field at the current console position
+=$1c5f						N_MLOAD         = $1c5f          ; checked module from the original app's source folder
+=$1c62						N_MCALL         = $1c62          ; call the current module using its generation token
+=$1c65						N_MCLOSE        = $1c65          ; invalidate module; close/recover only its source stream
+=$1c68						N_VSHOW         = $1c68          ; experimental: present owned bank-0 $c000..$e3ff
+=$1c6b						N_VCLOSE        = $1c6b          ; experimental: restore text; keep surface allocation
+=$1c6e						N_UQUERY        = $1c6e          ; checked, read-only Ultimate query; shared file lock
+=$1c71						N_UCOMMAND      = $1c71          ; serialized UCI packet: N_BUFFER header + N_FCOUNT body bytes
+=$1bf0						N_NMIGATE       = $1bf0
+=$3d3e						N_NMIPTR        = $3d3e
+=$3d00						N_OWNER         = $3d00
+=$3d01						N_PAGES         = $3d01
+=$3d02						N_BANK          = $3d02
+=$3d03						N_PAGE          = $3d03
+=$3d04						N_HANDLE        = $3d04          ; four bytes
+=$3d08						N_OFFSET        = $3d08          ; word
+=$3d0a						N_COUNT         = $3d0a          ; word
+=$3d0c						N_VALUE         = $3d0c
+=$3d0d						N_ERROR         = $3d0d
+=$3d0e						N_FREE0         = $3d0e          ; free 256-byte pages, bank 0
+=$3d0f						N_FREE1         = $3d0f          ; free 256-byte pages, bank 1
+=$3d10						N_SLOTS         = $3d10          ; reusable descriptor slots
+=$3d11						N_BUSY          = $3d11
+=$3d12						N_READY         = $3d12
+=$3d13						N_KEYS          = $3d13          ; word: consumed keyboard events
+=$3d15						N_LASTKEY       = $3d15
+=$3d16						N_RESULT        = $3d16          ; workspace's last command result
+=$3d17						N_MTOKEN        = $3d17          ; LE24: MLOAD output / MCALL input; zero is invalid
+=$3d1a						N_MERROR        = $3d1a          ; gate/loader error; MCALL preserves module's A/carry
+=$3d1b						N_MSTATE        = $3d1b          ; read-only: 0 empty, 1 loading, 2 ready, 3 running, 4 close retained
+=$3d20						N_CURRENT       = $3d20          ; active app owner; 0 when no app owns the slot
+=$3d21						N_DEVICE        = $3d21          ; launch IEC device 8..30, or Ultimate DOS context 1/2
+=$3d22						N_NAMELEN       = $3d22          ; IEC launch name 1..16; Ultimate path length 1..255
+=$3d23						N_APPSTATE      = $3d23          ; 0 idle, 1 loading, 2 running, 3 cleanup, 4 retained error
+=$3d24						N_EXITCODE      = $3d24          ; last application's A on return/EXIT
+=$3d25						N_DOSCODE       = $3d25          ; DOS error code (decimal), when available
+=$3d26						N_IOSTATUS      = $3d26          ; first failed loader stream's nonzero transport status
+=$3d27						N_APPERROR      = $3d27          ; stable launch result, separate from heap ERROR
+=$3d28						N_ACTION        = $3d28          ; completed app request: 0 normal, 1 replace, 2 workspace
+=$3d29						N_BROWSERDEV    = $3d29          ; workspace/browser preferences (not file-call arguments)
+=$3d2a						N_BROWSERFMT    = $3d2a
+=$3d2b						N_BROWSERERROR  = $3d2b          ; last dispatcher error shown when the browser returns
+=$3d2c						N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
+=$3d2d						N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
+=$3d2e						N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
+=$3d2f						N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude / 5 Paint
+=$3d30						N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
+=$3d34						N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
+=$3d35						N_UIPTR         = $3d35          ; word: field-state address
+=$3d37						N_UIKEY         = $3d37
+=$3d38						N_UIWIDTH       = $3d38
+=$3d39						N_UIFLAGS       = $3d39          ; successful edit: bit 0 content, bit 1 caret changed
+=$3d3a						N_UIERROR       = $3d3a
+=$3d3b						N_UIBUSY        = $3d3b
+=$3d3c						N_UOP           = $3d3c
+=$3d3d						N_UARG          = $3d3d
+=0						N_U_IDENTIFY    = 0             ; UARG target 1..15; interface identification
+=1						N_U_HARDWARE    = 1             ; control hardware model, selector 0
+=2						N_U_DRIVES      = 2             ; control inventory, effective IEC addresses
+=3						N_U_POWER_A     = 3
+=4						N_U_POWER_B     = 4
+=5						N_U_INTERFACES  = 5             ; network interface count
+=6						N_U_MAC         = 6             ; UARG interface index
+=7						N_U_IP          = 7             ; UARG interface index; IP/mask/gateway
+=8						N_U_TIME        = 8             ; DOS GET_TIME; running cartridge RTC
+=9						N_U_QUERY_COUNT = 9
+=0						UI_LENGTH       = 0
+=1						UI_CARET        = 1
+=2						UI_MAXIMUM      = 2
+=3						UI_BUFFER       = 3
+=5						UI_VIEW40       = 5
+=6						UI_VIEW80       = 6
+=7						UI_FILTER       = 7
+=8						UI_STATE_BYTES  = 8
+=$3e00						N_BROWSERNAME   = $3e00          ; 256 bytes; restore selection after directory edits
+=$3d40						N_APPNAME       = $3d40          ; 16-byte filename, no wildcard/DOS syntax
+=$3d50						N_MHEADER       = $3d50          ; private: independent 16-byte module manifest
+=$3d60						N_APPHEADER     = $3d60          ; validated 32-byte native image manifest
+=$3f00						N_SOURCEPATH    = $3f00          ; private: original Ultimate app parent directory
+=$3a00						N_BUFFER        = $3a00          ; 512 bytes, bank 0, reserved
+=$3d80						N_FOWNER        = $3d80
+=$3d81						N_FHANDLE       = $3d81          ; four bytes
+=$3d85						N_FDEVICE       = $3d85          ; IEC 8..30 or Ultimate DOS context 1/2
+=$3d86						N_FNAMELEN      = $3d86
+=$3d87						N_FMODE         = $3d87
+=$3d88						N_FTYPE         = $3d88
+=$3d89						N_FCOUNT        = $3d89          ; requested word, 1..512
+=$3d8b						N_FACTUAL       = $3d8b          ; returned word; may be a prefix on I/O error
+=$3d8d						N_FEOF          = $3d8d          ; read handle has consumed its checked extent
+=$3d8e						N_FERROR        = $3d8e
+=$3d8f						N_FDOS          = $3d8f          ; IEC first error; Ultimate most recent numeric status
+=$3d90						N_FSTATUS       = $3d90          ; IEC serial error; Ultimate transport/verification detail
+=$3d91						N_FBUSY         = $3d91
+=$3d92						N_FPOSITION     = $3d92          ; LE32 byte position, or directory entries consumed
+=$3d96						N_FFORMAT       = $3d96          ; 0 D64, 1 D71, 2 D81, 3 Ultimate DOS
+=$4e00						N_UPATH         = $4e00          ; 256-byte path mailbox, bank 0, reserved
+=$4a00						N_BROWSERPATH   = $4a00          ; ABI 1.5: persistent browser path, 1..255 raw bytes
+=$4f00						N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes + NUL
+=$3d97						N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
+=$3d98						N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
+=$3d99						N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3da0						N_FNAME         = $3da0          ; 16 bytes
+=$3dc0						NFILES          = $3dc0          ; private: two 16-byte descriptors
+=$3de0						NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
+=0						N_OK            = 0
+=1						N_BADARG        = 1
+=2						N_NOMEM         = 2
+=3						N_NOSLOT        = 3
+=4						N_BADHANDLE     = 4
+=5						N_WRONGOWNER    = 5
+=6						N_RANGE         = 6
+=7						N_REENTRANT     = 7
+=8						N_PLATFORM      = 8
+=9						N_CORRUPT       = 9
+=$10						N_BADIMAGE      = $10            ; invalid manifest/load address/ABI
+=$11						N_IOERROR       = $11            ; IEC or DOS failure (see DOSCODE/IOSTATUS)
+=$12						N_SHORTIMAGE    = $12            ; EOF before declared length
+=$13						N_LONGIMAGE     = $13            ; declared length reached without EOF
+=$14						N_CHECKSUM      = $14            ; image CRC16 does not match
+=$15						N_CHANNELS      = $15            ; reserved channels conflict / redirected console
+=$16						N_MEXHAUSTED    = $16            ; module generation retired until the next kernel boot
+=$6000						N_APPBASE       = $6000          ; bank 0 application executable slot
+=$c000						N_APPLIMIT      = $c000          ; exclusive: keep native editor/KERNAL visible
+=32						N_APPOWNER      = 32             ; one foreground app in this initial lifecycle
+=$1300						N_LOWBASE       = $1300          ; resident kernel section, initialized before heap use
+=$1c00						N_LOWLIMIT      = $1c00          ; exclusive; below the BASIC entry stub
+=$5000						N_RELOCBASE     = $5000          ; boot-only staging, reusable after relocation
+=$4000						N_SERVICEBASE   = $4000          ; resident Ultimate services and mailboxes
+=$5000						N_SERVICELIMIT  = $5000
+=$3800						NPAGES0         = $3800          ; page -> slot+1, 0 free, $ff reserved
+=$3900						NPAGES1         = $3900
+=$3c00						NHANDLES        = $3c00          ; 32 records of eight bytes
+=32						NSLOTS          = 32
+=$50						N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
+=$04						N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
+
+;******  Return to file: /home/marc/geos128/uos/src/native/claude/gui.asm
+
+.6080		4c a1 60	jmp $60a1	gui_begin: jmp cg_begin
+.6083		4c 8e 64	jmp $648e	gui_poll:  jmp cg_poll
+.6086		4c d1 63	jmp $63d1	gui_key:   jmp cg_key
+.6089		4c 23 61	jmp $6123	gui_end:   jmp cg_end
+.608c		4c b8 61	jmp $61b8	gui_dirty_all: jmp cg_dirty_all
+.608f						cg_surface:
+.608f		ad 20 3d	lda $3d20	        lda N_CURRENT
+.6092		8d 00 3d	sta $3d00	        sta N_OWNER
+.6095		a2 03		ldx #$03	        ldx #3
+.6097		bd 16 66	lda $6616,x	-       lda cg_handle,x
+.609a		9d 04 3d	sta $3d04,x	        sta N_HANDLE,x
+.609d		ca		dex		        dex
+.609e		10 f7		bpl $6097	        bpl -
+.60a0		60		rts		        rts
+.60a1						cg_begin:
+.60a1		a9 00		lda #$00	        lda #0
+.60a3		8d 14 66	sta $6614	        sta cg_bitmap
+.60a6		8d 16 66	sta $6616	        sta cg_handle
+.60a9		8d 02 3d	sta $3d02	        sta N_BANK
+.60ac		ad 20 3d	lda $3d20	        lda N_CURRENT
+.60af		8d 00 3d	sta $3d00	        sta N_OWNER
+.60b2		a9 c0		lda #$c0	        lda #$c0
+.60b4		8d 03 3d	sta $3d03	        sta N_PAGE
+.60b7		a9 24		lda #$24	        lda #36
+.60b9		8d 01 3d	sta $3d01	        sta N_PAGES
+.60bc		20 35 1c	jsr $1c35	        jsr N_RESERVE
+.60bf		b0 5f		bcs $6120	        bcs cg_failed
+.60c1		a2 03		ldx #$03	        ldx #3
+.60c3		bd 04 3d	lda $3d04,x	-       lda N_HANDLE,x
+.60c6		9d 16 66	sta $6616,x	        sta cg_handle,x
+.60c9		ca		dex		        dex
+.60ca		10 f7		bpl $60c3	        bpl -
+.60cc		a9 4d		lda #$4d	        lda #<cg_scene
+.60ce		a2 66		ldx #$66	        ldx #>cg_scene
+.60d0		20 52 61	jsr $6152	        jsr cg_source
+.60d3		a9 00		lda #$00	        lda #0
+.60d5		8d 08 3d	sta $3d08	        sta N_OFFSET
+.60d8		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.60db		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.60de		a9 02		lda #$02	        lda #2
+.60e0		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.60e3		20 6a 61	jsr $616a	-       jsr cg_unpack
+.60e6		b0 38		bcs $6120	        bcs cg_failed
+.60e8		ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.60eb		ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.60ee		ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.60f1		c9 24		cmp #$24	        cmp #36
+.60f3		d0 ee		bne $60e3	        bne -
+.60f5		20 68 1c	jsr $1c68	        jsr N_VSHOW
+.60f8		b0 26		bcs $6120	        bcs cg_failed
+.60fa		ee 14 66	inc $6614	        inc cg_bitmap
+.60fd		ad 20 d0	lda $d020	        lda $d020
+.6100		8d 15 66	sta $6615	        sta cg_border
+.6103		a9 06		lda #$06	        lda #6
+.6105		8d 20 d0	sta $d020	        sta $d020
+.6108		20 a9 65	jsr $65a9	        jsr cg_keys_begin
+.610b		20 81 73	jsr $7381	        jsr pm_install
+.610e		b0 10		bcs $6120	        bcs cg_failed
+.6110		20 b8 61	jsr $61b8	        jsr cg_dirty_all
+.6113		a2 10		ldx #$10	        ldx #16
+.6115		8a		txa		-       txa
+.6116		48		pha		        pha
+.6117		20 fb 61	jsr $61fb	        jsr cg_panel
+.611a		68		pla		        pla
+.611b		aa		tax		        tax
+.611c		ca		dex		        dex
+.611d		d0 f6		bne $6115	        bne -
+.611f		60		rts		        rts
+.6120						cg_failed:
+.6120		8d 1a 66	sta $661a	        sta cg_error
+.6123						cg_end:
+.6123		20 37 74	jsr $7437	        jsr pm_close
+.6126		20 db 65	jsr $65db	        jsr cg_keys_end
+.6129		ad 14 66	lda $6614	        lda cg_bitmap
+.612c		f0 0e		beq $613c	        beq +
+.612e		20 6b 1c	jsr $1c6b	        jsr N_VCLOSE
+.6131		ad 15 66	lda $6615	        lda cg_border
+.6134		8d 20 d0	sta $d020	        sta $d020
+.6137		a9 00		lda #$00	        lda #0
+.6139		8d 14 66	sta $6614	        sta cg_bitmap
+.613c		ad 16 66	lda $6616	+       lda cg_handle
+.613f		f0 0d		beq $614e	        beq +
+.6141		20 8f 60	jsr $608f	        jsr cg_surface
+.6144		20 23 1c	jsr $1c23	        jsr N_FREE
+.6147		b0 05		bcs $614e	        bcs +
+.6149		a9 00		lda #$00	        lda #0
+.614b		8d 16 66	sta $6616	        sta cg_handle
+.614e		a9 00		lda #$00	+       lda #0
+.6150		aa		tax		        tax
+.6151		60		rts		        rts
+.6152						cg_source:
+.6152		8d 5f 61	sta $615f	        sta cg_source_read+1
+.6155		8e 60 61	stx $6160	        stx cg_source_read+2
+.6158		a9 00		lda #$00	        lda #0
+.615a		8d 46 66	sta $6646	        sta cg_run
+.615d		60		rts		        rts
+.615e						cg_byte:
+.615e						cg_source_read:
+.615e		ad ff ff	lda $ffff	        lda $ffff
+.6161		ee 5f 61	inc $615f	        inc cg_source_read+1
+.6164		d0 03		bne $6169	        bne +
+.6166		ee 60 61	inc $6160	        inc cg_source_read+2
+.6169		60		rts		+       rts
+.616a						cg_unpack:
+.616a		a9 00		lda #$00	        lda #<N_BUFFER
+.616c		8d 95 61	sta $6195	        sta cg_store+1
+.616f		a9 3a		lda #$3a	        lda #>N_BUFFER
+.6171		8d 96 61	sta $6196	        sta cg_store+2
+.6174		ad 0a 3d	lda $3d0a	        lda N_COUNT
+.6177		8d 48 66	sta $6648	        sta cg_left
+.617a		ad 0b 3d	lda $3d0b	        lda N_COUNT+1
+.617d		8d 49 66	sta $6649	        sta cg_left+1
+.6180		ad 46 66	lda $6646	-       lda cg_run
+.6183		d0 0c		bne $6191	        bne +
+.6185		20 5e 61	jsr $615e	        jsr cg_byte
+.6188		8d 46 66	sta $6646	        sta cg_run
+.618b		20 5e 61	jsr $615e	        jsr cg_byte
+.618e		8d 47 66	sta $6647	        sta cg_run_value
+.6191		ad 47 66	lda $6647	+       lda cg_run_value
+.6194						cg_store:
+.6194		8d ff ff	sta $ffff	        sta $ffff
+.6197		ee 95 61	inc $6195	        inc cg_store+1
+.619a		d0 03		bne $619f	        bne +
+.619c		ee 96 61	inc $6196	        inc cg_store+2
+.619f		ce 46 66	dec $6646	+       dec cg_run
+.61a2		ad 48 66	lda $6648	        lda cg_left
+.61a5		d0 03		bne $61aa	        bne +
+.61a7		ce 49 66	dec $6649	        dec cg_left+1
+.61aa		ce 48 66	dec $6648	+       dec cg_left
+.61ad		ad 48 66	lda $6648	        lda cg_left
+.61b0		0d 49 66	ora $6649	        ora cg_left+1
+.61b3		d0 cb		bne $6180	        bne -
+.61b5		4c 29 1c	jmp $1c29	        jmp N_WRITE
+.61b8						cg_dirty_all:
+.61b8		a9 01		lda #$01	        lda #1
+.61ba		a2 18		ldx #$18	        ldx #24
+.61bc		9d 21 66	sta $6621,x	-       sta cg_dirty,x
+.61bf		ca		dex		        dex
+.61c0		10 fa		bpl $61bc	        bpl -
+.61c2		60		rts		        rts
+.61c3						cg_offset:
+.61c3		ad 3c 66	lda $663c	        lda cg_row
+.61c6		0a		asl a		        asl
+.61c7		0a		asl a		        asl
+.61c8		0a		asl a		        asl
+.61c9		8d 08 3d	sta $3d08	        sta N_OFFSET
+.61cc		a8		tay		        tay
+.61cd		a9 00		lda #$00	        lda #0
+.61cf		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.61d2		0e 08 3d	asl $3d08	        asl N_OFFSET
+.61d5		2e 09 3d	rol $3d09	        rol N_OFFSET+1
+.61d8		0e 08 3d	asl $3d08	        asl N_OFFSET
+.61db		2e 09 3d	rol $3d09	        rol N_OFFSET+1
+.61de		98		tya		        tya
+.61df		18		clc		        clc
+.61e0		6d 08 3d	adc $3d08	        adc N_OFFSET
+.61e3		8d 08 3d	sta $3d08	        sta N_OFFSET
+.61e6		90 03		bcc $61eb	        bcc +
+.61e8		ee 09 3d	inc $3d09	        inc N_OFFSET+1
+.61eb		60		rts		+       rts
+.61ec						cg_bitmap_offset:
+.61ec		20 c3 61	jsr $61c3	        jsr cg_offset
+.61ef		a2 03		ldx #$03	        ldx #3
+.61f1		0e 08 3d	asl $3d08	-       asl N_OFFSET
+.61f4		2e 09 3d	rol $3d09	        rol N_OFFSET+1
+.61f7		ca		dex		        dex
+.61f8		d0 f7		bne $61f1	        bne -
+.61fa		60		rts		        rts
+.61fb						cg_panel:
+.61fb		ad 14 66	lda $6614	        lda cg_bitmap
+.61fe		f0 17		beq $6217	        beq cg_panel_return
+.6200		ad 1f 66	lda $661f	        lda cg_top
+.6203		18		clc		        clc
+.6204		69 10		adc #$10	        adc #16
+.6206		8d 3f 66	sta $663f	        sta cg_limit
+.6209		ae 1f 66	ldx $661f	        ldx cg_top
+.620c		bd 21 66	lda $6621,x	-       lda cg_dirty,x
+.620f		d0 07		bne $6218	        bne cg_panel_found
+.6211		e8		inx		        inx
+.6212		ec 3f 66	cpx $663f	        cpx cg_limit
+.6215		d0 f5		bne $620c	        bne -
+.6217						cg_panel_return:
+.6217		60		rts		        rts
+.6218						cg_panel_found:
+.6218		8e 3d 66	stx $663d	        stx cg_panel_row
+.621b		8e 3c 66	stx $663c	        stx cg_row
+.621e		20 8f 60	jsr $608f	        jsr cg_surface
+.6221		20 c3 61	jsr $61c3	        jsr cg_offset
+.6224		ad 08 3d	lda $3d08	        lda N_OFFSET
+.6227		8d 4f 62	sta $624f	        sta cg_code_read+1
+.622a		8d d0 62	sta $62d0	        sta cg_color_read+1
+.622d		ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.6230		18		clc		        clc
+.6231		69 04		adc #$04	        adc #4
+.6233		8d 50 62	sta $6250	        sta cg_code_read+2
+.6236		18		clc		        clc
+.6237		69 d4		adc #$d4	        adc #$d4
+.6239		8d d1 62	sta $62d1	        sta cg_color_read+2
+.623c		a9 00		lda #$00	        lda #<N_BUFFER
+.623e		8d 8c 62	sta $628c	        sta cg_glyph_store+1
+.6241		a9 3a		lda #$3a	        lda #>N_BUFFER
+.6243		8d 8d 62	sta $628d	        sta cg_glyph_store+2
+.6246		a9 00		lda #$00	        lda #0
+.6248		8d 3e 66	sta $663e	        sta cg_column
+.624b						cg_panel_cell:
+.624b		ae 3e 66	ldx $663e	        ldx cg_column
+.624e						cg_code_read:
+.624e		bd ff ff	lda $ffff,x	        lda $ffff,x
+.6251		a2 00		ldx #$00	        ldx #0
+.6253		8e 45 66	stx $6645	        stx cg_glyph_hi
+.6256		0a		asl a		        asl
+.6257		2e 45 66	rol $6645	        rol cg_glyph_hi
+.625a		0a		asl a		        asl
+.625b		2e 45 66	rol $6645	        rol cg_glyph_hi
+.625e		0a		asl a		        asl
+.625f		2e 45 66	rol $6645	        rol cg_glyph_hi
+.6262		0a		asl a		        asl
+.6263		2e 45 66	rol $6645	        rol cg_glyph_hi
+.6266		8d 44 66	sta $6644	        sta cg_glyph_lo
+.6269		ad 45 66	lda $6645	        lda cg_glyph_hi
+.626c		18		clc		        clc
+.626d		6d 20 66	adc $6620	        adc cg_font_hi
+.6270		8d 45 66	sta $6645	        sta cg_glyph_hi
+.6273		20 02 63	jsr $6302	        jsr cg_vdc_address
+.6276		2c 00 d6	bit $d600	-       bit $d600
+.6279		10 fb		bpl $6276	        bpl -
+.627b		ad 01 d6	lda $d601	        lda $d601              ; prime the VDC read latch, then rewind
+.627e		20 02 63	jsr $6302	        jsr cg_vdc_address
+.6281		a0 00		ldy #$00	        ldy #0
+.6283		2c 00 d6	bit $d600	-       bit $d600
+.6286		10 fb		bpl $6283	        bpl -
+.6288		ad 01 d6	lda $d601	        lda $d601
+.628b						cg_glyph_store:
+.628b		99 ff ff	sta $ffff,y	        sta $ffff,y
+.628e		c8		iny		        iny
+.628f		c0 08		cpy #$08	        cpy #8
+.6291		d0 f0		bne $6283	        bne -
+.6293		18		clc		        clc
+.6294		ad 8c 62	lda $628c	        lda cg_glyph_store+1
+.6297		69 08		adc #$08	        adc #8
+.6299		8d 8c 62	sta $628c	        sta cg_glyph_store+1
+.629c		90 03		bcc $62a1	        bcc +
+.629e		ee 8d 62	inc $628d	        inc cg_glyph_store+2
+.62a1		ee 3e 66	inc $663e	+       inc cg_column
+.62a4		ad 3e 66	lda $663e	        lda cg_column
+.62a7		c9 28		cmp #$28	        cmp #40
+.62a9		d0 a0		bne $624b	        bne cg_panel_cell
+.62ab		ad 3d 66	lda $663d	        lda cg_panel_row
+.62ae		38		sec		        sec
+.62af		ed 1f 66	sbc $661f	        sbc cg_top
+.62b2		18		clc		        clc
+.62b3		69 05		adc #$05	        adc #5
+.62b5		8d 3c 66	sta $663c	        sta cg_row
+.62b8		20 ec 61	jsr $61ec	        jsr cg_bitmap_offset
+.62bb		a9 40		lda #$40	        lda #$40
+.62bd		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.62c0		a9 01		lda #$01	        lda #1
+.62c2		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.62c5		20 29 1c	jsr $1c29	        jsr N_WRITE
+.62c8		90 03		bcc $62cd	        bcs cg_failed
+.62ca		4c 20 61	jmp $6120
+.62cd		a2 27		ldx #$27	        ldx #39
+.62cf						cg_color_read:
+.62cf		bd ff ff	lda $ffff,x	        lda $ffff,x
+.62d2		0a		asl a		        asl
+.62d3		0a		asl a		        asl
+.62d4		0a		asl a		        asl
+.62d5		0a		asl a		        asl
+.62d6		09 06		ora #$06	        ora #6
+.62d8		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.62db		ca		dex		        dex
+.62dc		10 f1		bpl $62cf	        bpl cg_color_read
+.62de		20 c3 61	jsr $61c3	        jsr cg_offset
+.62e1		ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.62e4		18		clc		        clc
+.62e5		69 20		adc #$20	        adc #32
+.62e7		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.62ea		a9 28		lda #$28	        lda #40
+.62ec		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.62ef		a9 00		lda #$00	        lda #0
+.62f1		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.62f4		20 29 1c	jsr $1c29	        jsr N_WRITE
+.62f7		b0 d1		bcs $62ca	        bcs cg_failed
+.62f9		ae 3d 66	ldx $663d	        ldx cg_panel_row
+.62fc		a9 00		lda #$00	        lda #0
+.62fe		9d 21 66	sta $6621,x	        sta cg_dirty,x
+.6301		60		rts		        rts
+.6302						cg_vdc_address:
+.6302		a2 12		ldx #$12	        ldx #18
+.6304		ad 45 66	lda $6645	        lda cg_glyph_hi
+.6307		20 17 63	jsr $6317	        jsr cg_vdc_reg
+.630a		e8		inx		        inx
+.630b		ad 44 66	lda $6644	        lda cg_glyph_lo
+.630e		20 17 63	jsr $6317	        jsr cg_vdc_reg
+.6311		a9 1f		lda #$1f	        lda #31
+.6313		8d 00 d6	sta $d600	        sta $d600
+.6316		60		rts		        rts
+.6317						cg_vdc_reg:
+.6317		8e 00 d6	stx $d600	        stx $d600
+.631a		2c 00 d6	bit $d600	-       bit $d600
+.631d		10 fb		bpl $631a	        bpl -
+.631f		8d 01 d6	sta $d601	        sta $d601
+.6322		60		rts		        rts
+.6323						cg_enabled:
+.6323		e0 02		cpx #$02	        cpx #2
+.6325		f0 2e		beq $6355	        beq cg_yes
+.6327		e0 00		cpx #$00	        cpx #0
+.6329		d0 07		bne $6332	        bne +
+.632b		ad 1b 66	lda $661b	        lda cg_live
+.632e		f0 25		beq $6355	        beq cg_yes
+.6330		d0 21		bne $6353	        bne cg_no
+.6332		e0 01		cpx #$01	+       cpx #1
+.6334		d0 09		bne $633f	        bne +
+.6336		ad 1b 66	lda $661b	        lda cg_live
+.6339		c9 01		cmp #$01	        cmp #1
+.633b		f0 18		beq $6355	        beq cg_yes
+.633d		d0 14		bne $6353	        bne cg_no
+.633f		e0 03		cpx #$03	+       cpx #3
+.6341		d0 07		bne $634a	        bne +
+.6343		ad 1f 66	lda $661f	        lda cg_top
+.6346		d0 0d		bne $6355	        bne cg_yes
+.6348		f0 09		beq $6353	        beq cg_no
+.634a		e0 04		cpx #$04	+       cpx #4
+.634c		d0 05		bne $6353	        bne cg_no
+.634e		ad 1f 66	lda $661f	        lda cg_top
+.6351		f0 02		beq $6355	        beq cg_yes
+.6353		38		sec		cg_no:  sec
+.6354		60		rts		        rts
+.6355		18		clc		cg_yes: clc
+.6356		60		rts		        rts
+.6357						cg_hit:
+.6357		ad 59 76	lda $7659	        lda pm_x+1
+.635a		4a		lsr a		        lsr
+.635b		ad 58 76	lda $7658	        lda pm_x
+.635e		6a		ror a		        ror
+.635f		4a		lsr a		        lsr
+.6360		4a		lsr a		        lsr
+.6361		8d 40 66	sta $6640	        sta cg_hit_x
+.6364		ad 5a 76	lda $765a	        lda pm_y
+.6367		4a		lsr a		        lsr
+.6368		4a		lsr a		        lsr
+.6369		4a		lsr a		        lsr
+.636a		8d 41 66	sta $6641	        sta cg_hit_y
+.636d		a2 00		ldx #$00	        ldx #0
+.636f		20 23 63	jsr $6323	-       jsr cg_enabled
+.6372		b0 1a		bcs $638e	        bcs +
+.6374		ad 40 66	lda $6640	        lda cg_hit_x
+.6377		dd f5 65	cmp $65f5,x	        cmp cg_x0,x
+.637a		90 12		bcc $638e	        bcc +
+.637c		dd fa 65	cmp $65fa,x	        cmp cg_x1,x
+.637f		b0 0d		bcs $638e	        bcs +
+.6381		ad 41 66	lda $6641	        lda cg_hit_y
+.6384		dd ff 65	cmp $65ff,x	        cmp cg_y0,x
+.6387		90 05		bcc $638e	        bcc +
+.6389		dd 04 66	cmp $6604,x	        cmp cg_y1,x
+.638c		90 07		bcc $6395	        bcc cg_hit_return
+.638e		e8		inx		+       inx
+.638f		e0 05		cpx #$05	        cpx #5
+.6391		d0 dc		bne $636f	        bne -
+.6393		a2 ff		ldx #$ff	        ldx #255
+.6395						cg_hit_return:
+.6395		60		rts		        rts
+.6396						cg_focus_set:
+.6396		ec 1e 66	cpx $661e	        cpx cg_focus
+.6399		f0 06		beq $63a1	        beq +
+.639b		8e 1e 66	stx $661e	        stx cg_focus
+.639e		ee 3a 66	inc $663a	        inc cg_controls_dirty
+.63a1		60		rts		+       rts
+.63a2						cg_activate:
+.63a2		20 23 63	jsr $6323	        jsr cg_enabled
+.63a5		b0 26		bcs $63cd	        bcs cg_zero
+.63a7		e0 03		cpx #$03	        cpx #3
+.63a9		b0 0e		bcs $63b9	        bcs cg_page
+.63ab		a9 00		lda #$00	        lda #0
+.63ad		8d 1c 66	sta $661c	        sta cg_menu
+.63b0		ee 3a 66	inc $663a	        inc cg_controls_dirty
+.63b3		bd 09 66	lda $6609,x	        lda cg_actions,x
+.63b6		a2 00		ldx #$00	        ldx #0
+.63b8		60		rts		        rts
+.63b9						cg_page:
+.63b9		ad 1f 66	lda $661f	        lda cg_top
+.63bc		49 09		eor #$09	        eor #9
+.63be		8d 1f 66	sta $661f	        sta cg_top
+.63c1		8a		txa		        txa
+.63c2		49 07		eor #$07	        eor #7               ; Prev <-> Next; focus stays on an enabled button
+.63c4		8d 1e 66	sta $661e	        sta cg_focus
+.63c7		ee 3a 66	inc $663a	        inc cg_controls_dirty
+.63ca		20 b8 61	jsr $61b8	        jsr cg_dirty_all
+.63cd						cg_zero:
+.63cd		a9 00		lda #$00	        lda #0
+.63cf		aa		tax		        tax
+.63d0		60		rts		        rts
+.63d1						cg_key:
+.63d1		8d 42 66	sta $6642	        sta cg_keycode
+.63d4		ad 14 66	lda $6614	        lda cg_bitmap
+.63d7		f0 69		beq $6442	        beq cg_key_return
+.63d9		ad 42 66	lda $6642	        lda cg_keycode
+.63dc		f0 64		beq $6442	        beq cg_key_return
+.63de		a9 00		lda #$00	        lda #0
+.63e0		8d 12 3d	sta $3d12	        sta N_READY
+.63e3		a9 ff		lda #$ff	        lda #255
+.63e5		8d 61 76	sta $7661	        sta pm_arm
+.63e8		ad 42 66	lda $6642	        lda cg_keycode
+.63eb		c9 8c		cmp #$8c	        cmp #$8c
+.63ed		f0 53		beq $6442	        beq cg_key_return
+.63ef		c9 ff		cmp #$ff	        cmp #255              ; Ctrl+Help, decoded at KEYCHK with its modifiers
+.63f1		f0 55		beq $6448	        beq cg_menu_toggle
+.63f3		ad 1b 66	lda $661b	        lda cg_live
+.63f6		f0 09		beq $6401	        beq cg_local_key
+.63f8		c9 01		cmp #$01	        cmp #1
+.63fa		d0 46		bne $6442	        bne cg_key_return
+.63fc		ad 1c 66	lda $661c	        lda cg_menu
+.63ff		f0 41		beq $6442	        beq cg_key_return
+.6401						cg_local_key:
+.6401		ad 42 66	lda $6642	        lda cg_keycode
+.6404		c9 09		cmp #$09	        cmp #9
+.6406		f0 5e		beq $6466	        beq cg_next
+.6408		c9 11		cmp #$11	        cmp #$11
+.640a		f0 5a		beq $6466	        beq cg_next
+.640c		c9 1d		cmp #$1d	        cmp #$1d
+.640e		f0 56		beq $6466	        beq cg_next
+.6410		c9 18		cmp #$18	        cmp #$18
+.6412		f0 67		beq $647b	        beq cg_previous
+.6414		c9 91		cmp #$91	        cmp #$91
+.6416		f0 63		beq $647b	        beq cg_previous
+.6418		c9 9d		cmp #$9d	        cmp #$9d
+.641a		f0 5f		beq $647b	        beq cg_previous
+.641c		c9 0d		cmp #$0d	        cmp #13
+.641e		f0 40		beq $6460	        beq cg_key_activate
+.6420		c9 20		cmp #$20	        cmp #32
+.6422		f0 3c		beq $6460	        beq cg_key_activate
+.6424		c9 1b		cmp #$1b	        cmp #27
+.6426		d0 10		bne $6438	        bne +
+.6428		ad 1b 66	lda $661b	        lda cg_live
+.642b		f0 15		beq $6442	        beq cg_key_return
+.642d		a9 00		lda #$00	        lda #0
+.642f		8d 1c 66	sta $661c	        sta cg_menu
+.6432		ee 3a 66	inc $663a	        inc cg_controls_dirty
+.6435		4c cd 63	jmp $63cd	        jmp cg_zero
+.6438		ad 42 66	lda $6642	+       lda cg_keycode
+.643b		c9 84		cmp #$84	        cmp #$84
+.643d		f0 03		beq $6442	        beq cg_key_return
+.643f		4c cd 63	jmp $63cd	        jmp cg_zero
+.6442						cg_key_return:
+.6442		ad 42 66	lda $6642	        lda cg_keycode
+.6445		a2 00		ldx #$00	        ldx #0
+.6447		60		rts		        rts
+.6448						cg_menu_toggle:
+.6448		ad 1b 66	lda $661b	        lda cg_live
+.644b		c9 01		cmp #$01	        cmp #1
+.644d		f0 03		beq $6452	        bne cg_zero
+.644f		4c cd 63	jmp $63cd
+.6452		ad 1c 66	lda $661c	        lda cg_menu
+.6455		49 01		eor #$01	        eor #1
+.6457		8d 1c 66	sta $661c	        sta cg_menu
+.645a		ee 3a 66	inc $663a	        inc cg_controls_dirty
+.645d		4c cd 63	jmp $63cd	        jmp cg_zero
+.6460						cg_key_activate:
+.6460		ae 1e 66	ldx $661e	        ldx cg_focus
+.6463		4c a2 63	jmp $63a2	        jmp cg_activate
+.6466						cg_next:
+.6466		ae 1e 66	ldx $661e	        ldx cg_focus
+.6469		e8		inx		-       inx
+.646a		e0 05		cpx #$05	        cpx #5
+.646c		90 02		bcc $6470	        bcc +
+.646e		a2 00		ldx #$00	        ldx #0
+.6470		20 23 63	jsr $6323	+       jsr cg_enabled
+.6473		b0 f4		bcs $6469	        bcs -
+.6475		20 96 63	jsr $6396	        jsr cg_focus_set
+.6478		4c cd 63	jmp $63cd	        jmp cg_zero
+.647b						cg_previous:
+.647b		ae 1e 66	ldx $661e	        ldx cg_focus
+.647e		ca		dex		-       dex
+.647f		10 02		bpl $6483	        bpl +
+.6481		a2 04		ldx #$04	        ldx #4
+.6483		20 23 63	jsr $6323	+       jsr cg_enabled
+.6486		b0 f6		bcs $647e	        bcs -
+.6488		20 96 63	jsr $6396	        jsr cg_focus_set
+.648b		4c cd 63	jmp $63cd	        jmp cg_zero
+.648e						cg_poll:
+.648e		ad 14 66	lda $6614	        lda cg_bitmap
+.6491		f0 bc		beq $644f	        beq cg_zero
+.6493		a9 00		lda #$00	        lda #0
+.6495		8d 12 3d	sta $3d12	        sta N_READY
+.6498		8d 43 66	sta $6643	        sta cg_action
+.649b		ad 1b 66	lda $661b	        lda cg_live
+.649e		cd 1d 66	cmp $661d	        cmp cg_seen_live
+.64a1		f0 13		beq $64b6	        beq +
+.64a3		8d 1d 66	sta $661d	        sta cg_seen_live
+.64a6		8d 1e 66	sta $661e	        sta cg_focus           ; Connect / Repaint / Desktop
+.64a9		a9 00		lda #$00	        lda #0
+.64ab		8d 1c 66	sta $661c	        sta cg_menu
+.64ae		a9 ff		lda #$ff	        lda #255
+.64b0		8d 61 76	sta $7661	        sta pm_arm
+.64b3		ee 3a 66	inc $663a	        inc cg_controls_dirty
+.64b6		20 5f 74	jsr $745f	+       jsr pm_poll
+.64b9		ad 63 76	lda $7663	        lda pm_event
+.64bc		f0 1b		beq $64d9	        beq +
+.64be		ae 62 76	ldx $7662	        ldx pm_hit
+.64c1		20 23 63	jsr $6323	        jsr cg_enabled
+.64c4		b0 13		bcs $64d9	        bcs +
+.64c6		20 96 63	jsr $6396	        jsr cg_focus_set
+.64c9		ad 63 76	lda $7663	        lda pm_event
+.64cc		c9 02		cmp #$02	        cmp #2
+.64ce		d0 09		bne $64d9	        bne +
+.64d0		ae 1e 66	ldx $661e	        ldx cg_focus
+.64d3		20 a2 63	jsr $63a2	        jsr cg_activate
+.64d6		8d 43 66	sta $6643	        sta cg_action
+.64d9		ad 3a 66	lda $663a	+       lda cg_controls_dirty
+.64dc		f0 03		beq $64e1	        beq +
+.64de		20 ea 64	jsr $64ea	        jsr cg_controls
+.64e1		20 fb 61	jsr $61fb	+       jsr cg_panel
+.64e4		ad 43 66	lda $6643	        lda cg_action
+.64e7		a2 00		ldx #$00	        ldx #0
+.64e9		60		rts		        rts
+.64ea						cg_controls:
+.64ea		20 8f 60	jsr $608f	        jsr cg_surface
+.64ed		a9 00		lda #$00	        lda #0
+.64ef		8d 3b 66	sta $663b	        sta cg_control
+.64f2						cg_control_next:
+.64f2		ae 3b 66	ldx $663b	        ldx cg_control
+.64f5		a9 b6		lda #$b6	        lda #$b6
+.64f7		8d 0c 3d	sta $3d0c	        sta N_VALUE
+.64fa		20 23 63	jsr $6323	        jsr cg_enabled
+.64fd		b0 0c		bcs $650b	        bcs +
+.64ff		a9 1b		lda #$1b	        lda #$1b
+.6501		ec 1e 66	cpx $661e	        cpx cg_focus
+.6504		d0 02		bne $6508	        bne cg_control_color
+.6506		a9 07		lda #$07	        lda #7
+.6508						cg_control_color:
+.6508		8d 0c 3d	sta $3d0c	        sta N_VALUE
+.650b		bd ff 65	lda $65ff,x	+       lda cg_y0,x
+.650e		8d 3c 66	sta $663c	        sta cg_row
+.6511		20 c3 61	jsr $61c3	-       jsr cg_offset
+.6514		ae 3b 66	ldx $663b	        ldx cg_control
+.6517		ad 08 3d	lda $3d08	        lda N_OFFSET
+.651a		18		clc		        clc
+.651b		7d f5 65	adc $65f5,x	        adc cg_x0,x
+.651e		8d 08 3d	sta $3d08	        sta N_OFFSET
+.6521		ad 09 3d	lda $3d09	        lda N_OFFSET+1
+.6524		69 20		adc #$20	        adc #32
+.6526		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.6529		bd fa 65	lda $65fa,x	        lda cg_x1,x
+.652c		38		sec		        sec
+.652d		fd f5 65	sbc $65f5,x	        sbc cg_x0,x
+.6530		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.6533		a9 00		lda #$00	        lda #0
+.6535		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.6538		20 2c 1c	jsr $1c2c	        jsr N_FILL
+.653b		90 03		bcc $6540	        bcs cg_failed
+.653d		4c 20 61	jmp $6120
+.6540		ee 3c 66	inc $663c	        inc cg_row
+.6543		ae 3b 66	ldx $663b	        ldx cg_control
+.6546		ad 3c 66	lda $663c	        lda cg_row
+.6549		dd 04 66	cmp $6604,x	        cmp cg_y1,x
+.654c		d0 c3		bne $6511	        bne -
+.654e		ee 3b 66	inc $663b	        inc cg_control
+.6551		ad 3b 66	lda $663b	        lda cg_control
+.6554		c9 05		cmp #$05	        cmp #5
+.6556		d0 9a		bne $64f2	        bne cg_control_next
+.6558		ac 1b 66	ldy $661b	        ldy cg_live
+.655b		c0 01		cpy #$01	        cpy #1
+.655d		d0 07		bne $6566	        bne +
+.655f		ad 1c 66	lda $661c	        lda cg_menu
+.6562		f0 02		beq $6566	        beq +
+.6564		a0 03		ldy #$03	        ldy #3
+.6566		b9 0c 66	lda $660c,y	+       lda cg_status_lo,y
+.6569		be 10 66	ldx $6610,y	        ldx cg_status_hi,y
+.656c		20 52 61	jsr $6152	        jsr cg_source
+.656f		a9 04		lda #$04	        lda #4
+.6571		8d 3c 66	sta $663c	        sta cg_row
+.6574		20 99 65	jsr $6599	        jsr cg_row_unpack
+.6577		b0 c4		bcs $653d	        bcs cg_failed
+.6579		a9 a1		lda #$a1	        lda #<cg_page_0
+.657b		a2 71		ldx #$71	        ldx #>cg_page_0
+.657d		ac 1f 66	ldy $661f	        ldy cg_top
+.6580		f0 04		beq $6586	        beq +
+.6582		a9 8f		lda #$8f	        lda #<cg_page_9
+.6584		a2 72		ldx #$72	        ldx #>cg_page_9
+.6586		20 52 61	jsr $6152	+       jsr cg_source
+.6589		a9 16		lda #$16	        lda #22
+.658b		8d 3c 66	sta $663c	        sta cg_row
+.658e		20 99 65	jsr $6599	        jsr cg_row_unpack
+.6591		b0 aa		bcs $653d	        bcs cg_failed
+.6593		a9 00		lda #$00	        lda #0
+.6595		8d 3a 66	sta $663a	        sta cg_controls_dirty
+.6598		60		rts		        rts
+.6599						cg_row_unpack:
+.6599		20 ec 61	jsr $61ec	        jsr cg_bitmap_offset
+.659c		a9 40		lda #$40	        lda #$40
+.659e		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.65a1		a9 01		lda #$01	        lda #1
+.65a3		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.65a6		4c 6a 61	jmp $616a	        jmp cg_unpack
+.65a9						cg_keys_begin:
+.65a9		08		php		        php
+.65aa		78		sei		        sei
+.65ab		a2 00		ldx #$00	        ldx #0
+.65ad		bd 04 77	lda $7704,x	-       lda nk_filter_image,x
+.65b0		9d 14 10	sta $1014,x	        sta pk_entry,x
+.65b3		e8		inx		        inx
+.65b4		e0 ae		cpx #$ae	        cpx #pk_end-pk_entry
+.65b6		d0 f5		bne $65ad	        bne -
+.65b8		ad 3c 03	lda $033c	        lda $033c
+.65bb		8d 4b 66	sta $664b	        sta cg_saved_callback
+.65be		8d b0 10	sta $10b0	        sta pk_next
+.65c1		ad 3d 03	lda $033d	        lda $033d
+.65c4		8d 4c 66	sta $664c	        sta cg_saved_callback+1
+.65c7		8d b1 10	sta $10b1	        sta pk_next+1
+.65ca		a9 14		lda #$14	        lda #<pk_entry
+.65cc		8d 3c 03	sta $033c	        sta $033c
+.65cf		a9 10		lda #$10	        lda #>pk_entry
+.65d1		8d 3d 03	sta $033d	        sta $033d
+.65d4		a9 01		lda #$01	        lda #1
+.65d6		8d 4a 66	sta $664a	        sta cg_keys_owned
+.65d9		28		plp		        plp
+.65da		60		rts		        rts
+.65db						cg_keys_end:
+.65db		ad 4a 66	lda $664a	        lda cg_keys_owned
+.65de		f0 14		beq $65f4	        beq +
+.65e0		08		php		        php
+.65e1		78		sei		        sei
+.65e2		ad 4b 66	lda $664b	        lda cg_saved_callback
+.65e5		8d 3c 03	sta $033c	        sta $033c
+.65e8		ad 4c 66	lda $664c	        lda cg_saved_callback+1
+.65eb		8d 3d 03	sta $033d	        sta $033d
+.65ee		a9 00		lda #$00	        lda #0
+.65f0		8d 4a 66	sta $664a	        sta cg_keys_owned
+.65f3		28		plp		        plp
+.65f4		60		rts		+       rts
+>65f5		01 0e 1b 01 1d			cg_x0: .byte 1,14,27,1,29
+>65fa		0c 19 27 0b 27			cg_x1: .byte 12,25,39,11,39
+>65ff		01 01 01 15 15			cg_y0: .byte 1,1,1,21,21
+>6604		04 04 04 18 18			cg_y1: .byte 4,4,4,24,24
+>6609		0d 84 8c			cg_actions: .byte 13,$84,$8c
+>660c		89 9f 9b 79			cg_status_lo: .byte <cg_status_0,<cg_status_1,<cg_status_2,<cg_status_3
+>6610		6d 6e 6f 70			cg_status_hi: .byte >cg_status_0,>cg_status_1,>cg_status_2,>cg_status_3
+>6614		00				cg_bitmap: .byte 0
+>6615		00				cg_border: .byte 0
+>6616		00 00 00 00			cg_handle: .fill 4,0
+>661a		00				cg_error: .byte 0
+>661b		00				cg_live: .byte 0
+>661c		00				cg_menu: .byte 0
+>661d		00				cg_seen_live: .byte 0
+>661e		00				cg_focus: .byte 0
+>661f		00				cg_top: .byte 0
+>6620		00				cg_font_hi: .byte 0
+>6621		00 00 00 00 00 00 00 00		cg_dirty: .fill 25,0
+>6629		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>6639		00
+>663a		00				cg_controls_dirty: .byte 0
+>663b		00				cg_control: .byte 0
+>663c		00				cg_row: .byte 0
+>663d		00				cg_panel_row: .byte 0
+>663e		00				cg_column: .byte 0
+>663f		00				cg_limit: .byte 0
+>6640		00				cg_hit_x: .byte 0
+>6641		00				cg_hit_y: .byte 0
+>6642		00				cg_keycode: .byte 0
+>6643		00				cg_action: .byte 0
+>6644		00				cg_glyph_lo: .byte 0
+>6645		00				cg_glyph_hi: .byte 0
+>6646		00				cg_run: .byte 0
+>6647		00				cg_run_value: .byte 0
+>6648		00 00				cg_left: .word 0
+>664a		00				cg_keys_owned: .byte 0
+>664b		00 00				cg_saved_callback: .word 0
+
+;******  Processing file: /home/marc/geos128/uos/src/native/claude/scene.inc
+
+.664d						cg_scene:
+>664d		0a 00 04 44 01 3c 01 00		 .byte 10,0,4,68,1,60,1,0,1,56,5,68,1,56,1,0,1,60,2,64,1,56,2,4
+>6655		01 38 05 44 01 38 01 00 01 3c 02 40 01 38 02 04
+>6665		01 78 09 00 02 04 01 08		 .byte 1,120,9,0,2,4,1,8,1,16,1,32,2,64,9,0,1,56,1,68,3,64,1,68
+>666d		01 10 01 20 02 40 09 00 01 38 01 44 03 40 01 44
+>667d		01 38 01 00 01 30 05 10		 .byte 1,56,1,0,1,48,5,16,1,56,3,0,1,56,1,4,1,60,1,68,1,60,3,0
+>6685		01 38 03 00 01 38 01 04 01 3c 01 44 01 3c 03 00
+>6695		04 44 01 3c 01 00 02 04		 .byte 4,68,1,60,1,0,2,4,1,60,3,68,1,60,3,0,1,56,1,68,1,124,1,64
+>669d		01 3c 03 44 01 3c 03 00 01 38 01 44 01 7c 01 40
+>66ad		01 38 e1 00 01 ff 07 80		 .byte 1,56,225,0,1,255,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0
+>66b5		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00
+>66c5		01 ff 07 00 01 ff 07 00		 .byte 1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,1
+>66cd		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 01
+>66dd		10 00 01 ff 07 80 01 ff		 .byte 16,0,1,255,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>66e5		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>66f5		07 00 01 ff 07 00 01 ff		 .byte 7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,1,16,0
+>66fd		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 01 10 00
+>670d		01 ff 07 80 01 ff 07 00		 .byte 1,255,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0
+>6715		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00
+>6725		01 ff 07 00 01 ff 07 00		 .byte 1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,1
+>672d		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 01
+>673d		10 00 08 80 01 00 01 40		 .byte 16,0,8,128,1,0,1,64,1,96,1,112,1,120,1,112,1,96,1,64,8,0,1,56
+>6745		01 60 01 70 01 78 01 70 01 60 01 40 08 00 01 38
+>6755		01 44 03 40 01 44 01 38		 .byte 1,68,3,64,1,68,1,56,3,0,1,56,3,68,1,56,3,0,1,120,4,68,3,0
+>675d		03 00 01 38 03 44 01 38 03 00 01 78 04 44 03 00
+>676d		01 78 04 44 03 00 01 38		 .byte 1,120,4,68,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,56,1,68,1,64
+>6775		01 44 01 7c 01 40 01 38 03 00 01 38 01 44 01 40
+>6785		01 44 01 38 01 00 02 20		 .byte 1,68,1,56,1,0,2,32,1,120,2,32,1,36,1,24,1,0,8,1,16,0,8,128
+>678d		01 78 02 20 01 24 01 18 01 00 08 01 10 00 08 80
+>679d		01 00 01 3c 01 42 01 82		 .byte 1,0,1,60,1,66,1,130,1,158,1,128,1,66,1,60,8,0,1,120,2,68,1,120
+>67a5		01 9e 01 80 01 42 01 3c 08 00 01 78 02 44 01 78
+>67b5		01 50 01 48 01 44 03 00		 .byte 1,80,1,72,1,68,3,0,1,56,1,68,1,124,1,64,1,56,2,0,1,120,2,68
+>67bd		01 38 01 44 01 7c 01 40 01 38 02 00 01 78 02 44
+>67cd		01 78 02 40 03 00 01 38		 .byte 1,120,2,64,3,0,1,56,1,4,1,60,1,68,1,60,1,0,1,16,1,0,1,48
+>67d5		01 04 01 3c 01 44 01 3c 01 00 01 10 01 00 01 30
+>67e5		03 10 01 38 03 00 01 78		 .byte 3,16,1,56,3,0,1,120,4,68,1,0,2,32,1,120,2,32,1,36,1,24,1,0
+>67ed		04 44 01 00 02 20 01 78 02 20 01 24 01 18 01 00
+>67fd		08 01 10 00 08 80 01 00		 .byte 8,1,16,0,8,128,1,0,1,16,1,56,1,124,1,254,1,68,1,84,1,124,8,0
+>6805		01 10 01 38 01 7c 01 fe 01 44 01 54 01 7c 08 00
+>6815		01 78 05 44 01 78 03 00		 .byte 1,120,5,68,1,120,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,60,1,64
+>681d		01 38 01 44 01 7c 01 40 01 38 03 00 01 3c 01 40
+>682d		01 38 01 04 01 78 01 00		 .byte 1,56,1,4,1,120,1,0,2,64,1,72,1,80,1,96,1,80,1,72,1,0,2,32
+>6835		02 40 01 48 01 50 01 60 01 50 01 48 01 00 02 20
+>6845		01 78 02 20 01 24 01 18		 .byte 1,120,2,32,1,36,1,24,3,0,1,56,3,68,1,56,2,0,1,120,2,68,1,120
+>684d		03 00 01 38 03 44 01 38 02 00 01 78 02 44 01 78
+>685d		02 40 09 00 08 01 10 00		 .byte 2,64,9,0,8,1,16,0,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>6865		07 80 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>6875		07 00 01 ff 07 00 01 ff		 .byte 7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>687d		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>688d		07 01 01 ff 10 00 07 80		 .byte 7,1,1,255,16,0,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0
+>6895		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00
+>68a5		01 ff 07 00 01 ff 07 00		 .byte 1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,1
+>68ad		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 01
+>68bd		01 ff 10 00 07 80 01 ff		 .byte 1,255,16,0,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>68c5		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>68d5		07 00 01 ff 07 00 01 ff		 .byte 7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>68dd		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>68ed		07 01 01 ff 10 00 01 7c		 .byte 7,1,1,255,16,0,1,124,6,16,3,0,1,56,1,4,1,60,1,68,1,60,1,0
+>68f5		06 10 03 00 01 38 01 04 01 3c 01 44 01 3c 01 00
+>6905		02 40 01 78 03 44 01 78		 .byte 2,64,1,120,3,68,1,120,11,0,1,60,1,64,1,56,1,4,1,120,3,0,1,56
+>690d		0b 00 01 3c 01 40 01 38 01 04 01 78 03 00 01 38
+>691d		01 44 01 7c 01 40 01 38		 .byte 1,68,1,124,1,64,1,56,1,0,1,48,5,16,1,56,3,0,1,56,1,68,1,124
+>6925		01 00 01 30 05 10 01 38 03 00 01 38 01 44 01 7c
+>6935		01 40 01 38 03 00 01 38		 .byte 1,64,1,56,3,0,1,56,1,68,1,64,1,68,1,56,1,0,2,32,1,120,2,32
+>693d		01 44 01 40 01 44 01 38 01 00 02 20 01 78 02 20
+>694d		01 24 01 18 03 00 01 3c		 .byte 1,36,1,24,3,0,1,60,1,64,1,56,1,4,1,120,2,0,2,48,1,0,2,16
+>6955		01 40 01 38 01 04 01 78 02 00 02 30 01 00 02 10
+>6965		01 20 09 00 01 7c 02 40		 .byte 1,32,9,0,1,124,2,64,1,120,2,64,1,124,3,0,1,120,4,68,1,0,2,32
+>696d		01 78 02 40 01 7c 03 00 01 78 04 44 01 00 02 20
+>697d		01 78 02 20 01 24 01 18		 .byte 1,120,2,32,1,36,1,24,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,88
+>6985		03 00 01 38 01 44 01 7c 01 40 01 38 03 00 01 58
+>6995		01 64 03 40 0b 00 01 38		 .byte 1,100,3,64,11,0,1,56,1,4,1,60,1,68,1,60,3,0,1,56,1,68,1,64
+>699d		01 04 01 3c 01 44 01 3c 03 00 01 38 01 44 01 40
+>69ad		01 44 01 38 01 00 02 20		 .byte 1,68,1,56,1,0,2,32,1,120,2,32,1,36,1,24,1,0,1,16,1,0,1,48
+>69b5		01 78 02 20 01 24 01 18 01 00 01 10 01 00 01 30
+>69c5		03 10 01 38 03 00 03 44		 .byte 3,16,1,56,3,0,3,68,1,40,1,16,3,0,1,56,1,4,1,60,1,68,1,60
+>69cd		01 28 01 10 03 00 01 38 01 04 01 3c 01 44 01 3c
+>69dd		01 00 02 20 01 78 02 20		 .byte 1,0,2,32,1,120,2,32,1,36,1,24,3,0,1,56,1,68,1,124,1,64,1,56
+>69e5		01 24 01 18 03 00 01 38 01 44 01 7c 01 40 01 38
+>69f5		03 00 01 3c 01 40 01 38		 .byte 3,0,1,60,1,64,1,56,1,4,1,120,6,0,2,48,255,0,255,0,255,0,255,0
+>69fd		01 04 01 78 06 00 02 30 ff 00 ff 00 ff 00 ff 00
+>6a0d		ff 00 ff 00 ff 00 ff 00		 .byte 255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0
+>6a15		ff 00 ff 00 ff 00 ff 00 ff 00 ff 00 ff 00 ff 00
+>6a25		ff 00 ff 00 ff 00 ff 00		 .byte 255,0,255,0,255,0,255,0,109,0,1,255,7,128,1,255,7,0,1,255,7,0,1,255
+>6a2d		6d 00 01 ff 07 80 01 ff 07 00 01 ff 07 00 01 ff
+>6a3d		07 00 01 ff 07 00 01 ff		 .byte 7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>6a45		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>6a55		07 01 90 00 01 ff 07 80		 .byte 7,1,144,0,1,255,7,128,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0
+>6a5d		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00
+>6a6d		01 ff 07 00 01 ff 07 00		 .byte 1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,1,16,0,8,128
+>6a75		01 ff 07 00 01 ff 07 00 01 ff 07 01 10 00 08 80
+>6a85		01 00 01 04 01 0c 01 1c		 .byte 1,0,1,4,1,12,1,28,1,60,1,28,1,12,1,4,8,0,1,120,2,68,1,120
+>6a8d		01 3c 01 1c 01 0c 01 04 08 00 01 78 02 44 01 78
+>6a9d		03 40 03 00 01 58 01 64		 .byte 3,64,3,0,1,88,1,100,3,64,3,0,1,56,1,68,1,124,1,64,1,56,3,0
+>6aa5		03 40 03 00 01 38 01 44 01 7c 01 40 01 38 03 00
+>6ab5		03 44 01 28 01 10 11 00		 .byte 3,68,1,40,1,16,17,0,8,1,16,0,1,120,2,68,1,120,3,64,3,0,1,56
+>6abd		08 01 10 00 01 78 02 44 01 78 03 40 03 00 01 38
+>6acd		01 04 01 3c 01 44 01 3c		 .byte 1,4,1,60,1,68,1,60,3,0,1,120,4,68,3,0,1,56,1,68,1,124,1,64
+>6ad5		03 00 01 78 04 44 03 00 01 38 01 44 01 7c 01 40
+>6ae5		01 38 01 00 01 30 05 10		 .byte 1,56,1,0,1,48,5,16,1,56,9,0,1,56,1,68,1,76,1,84,1,100,1,68
+>6aed		01 38 09 00 01 38 01 44 01 4c 01 54 01 64 01 44
+>6afd		01 38 01 00 01 10 01 30		 .byte 1,56,1,0,1,16,1,48,4,16,1,56,4,0,1,124,4,0,1,16,1,48,4,16
+>6b05		04 10 01 38 04 00 01 7c 04 00 01 10 01 30 04 10
+>6b15		01 38 01 00 01 18 01 20		 .byte 1,56,1,0,1,24,1,32,1,64,1,120,2,68,1,56,41,0,8,128,1,0,1,32
+>6b1d		01 40 01 78 02 44 01 38 29 00 08 80 01 00 01 20
+>6b2d		01 30 01 38 01 3c 01 38		 .byte 1,48,1,56,1,60,1,56,1,48,1,32,8,0,1,68,2,100,1,84,2,76,1,68
+>6b35		01 30 01 20 08 00 01 44 02 64 01 54 02 4c 01 44
+>6b45		03 00 01 38 01 44 01 7c		 .byte 3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,68,1,40,1,16,1,40,1,68
+>6b4d		01 40 01 38 03 00 01 44 01 28 01 10 01 28 01 44
+>6b5d		01 00 02 20 01 78 02 20		 .byte 1,0,2,32,1,120,2,32,1,36,1,24,17,0,8,1,16,0,7,128,1,255,7,0
+>6b65		01 24 01 18 11 00 08 01 10 00 07 80 01 ff 07 00
+>6b75		01 ff 07 00 01 ff 07 00		 .byte 1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0
+>6b7d		01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00
+>6b8d		01 ff 07 00 01 ff 07 01		 .byte 1,255,7,0,1,255,7,1,1,255,144,0,7,128,1,255,7,0,1,255,7,0,1,255
+>6b95		01 ff 90 00 07 80 01 ff 07 00 01 ff 07 00 01 ff
+>6ba5		07 00 01 ff 07 00 01 ff		 .byte 7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255,7,0,1,255
+>6bad		07 00 01 ff 07 00 01 ff 07 00 01 ff 07 00 01 ff
+>6bbd		07 01 01 ff 10 00 01 38		 .byte 7,1,1,255,16,0,1,56,1,68,3,64,1,68,1,56,1,0,2,32,1,120,2,32
+>6bc5		01 44 03 40 01 44 01 38 01 00 02 20 01 78 02 20
+>6bd5		01 24 01 18 03 00 01 58		 .byte 1,36,1,24,3,0,1,88,1,100,3,64,1,0,1,48,5,16,1,56,2,0,2,16
+>6bdd		01 64 03 40 01 00 01 30 05 10 01 38 02 00 02 10
+>6bed		01 7c 02 10 02 00 03 44		 .byte 1,124,2,16,2,0,3,68,1,124,3,68,3,0,1,56,1,68,1,124,1,64,1,56
+>6bf5		01 7c 03 44 03 00 01 38 01 44 01 7c 01 40 01 38
+>6c05		01 00 01 30 05 10 01 38		 .byte 1,0,1,48,5,16,1,56,2,0,1,120,2,68,1,120,2,64,11,0,1,56,1,68
+>6c0d		02 00 01 78 02 44 01 78 02 40 0b 00 01 38 01 44
+>6c1d		01 40 01 44 01 38 03 00		 .byte 1,64,1,68,1,56,3,0,1,56,3,68,1,56,3,0,1,120,4,68,1,0,2,32
+>6c25		01 38 03 44 01 38 03 00 01 78 04 44 01 00 02 20
+>6c35		01 78 02 20 01 24 01 18		 .byte 1,120,2,32,1,36,1,24,3,0,1,88,1,100,3,64,3,0,1,56,3,68,1,56
+>6c3d		03 00 01 58 01 64 03 40 03 00 01 38 03 44 01 38
+>6c4d		01 00 01 30 05 10 01 38		 .byte 1,0,1,48,5,16,1,56,3,0,1,60,1,64,1,56,1,4,1,120,17,0,1,124
+>6c55		03 00 01 3c 01 40 01 38 01 04 01 78 11 00 01 7c
+>6c65		02 40 01 78 03 40 01 00		 .byte 2,64,1,120,3,64,1,0,1,56,2,68,1,56,2,68,1,56,9,0,2,4,1,60
+>6c6d		01 38 02 44 01 38 02 44 01 38 09 00 02 04 01 3c
+>6c7d		03 44 01 3c 03 00 01 38		 .byte 3,68,1,60,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,60,1,64,1,56
+>6c85		01 44 01 7c 01 40 01 38 03 00 01 3c 01 40 01 38
+>6c95		01 04 01 78 01 00 02 40		 .byte 1,4,1,120,1,0,2,64,1,72,1,80,1,96,1,80,1,72,1,0,2,32,1,120
+>6c9d		01 48 01 50 01 60 01 50 01 48 01 00 02 20 01 78
+>6cad		02 20 01 24 01 18 03 00		 .byte 2,32,1,36,1,24,3,0,1,56,3,68,1,56,2,0,1,120,2,68,1,120,2,64
+>6cb5		01 38 03 44 01 38 02 00 01 78 02 44 01 78 02 40
+>6cc5		4f 00 01 40 02 00 01 60		 .byte 79,0,1,64,2,0,1,96,2,0,1,112,2,0,1,120,2,0,1,124,2,0,1,126
+>6ccd		02 00 01 70 02 00 01 78 02 00 01 7c 02 00 01 7e
+>6cdd		02 00 01 7f 02 00 01 78		 .byte 2,0,1,127,2,0,1,120,2,0,1,108,2,0,1,70,2,0,1,6,2,0,1,3
+>6ce5		02 00 01 6c 02 00 01 46 02 00 01 06 02 00 01 03
+>6cf5		02 00 01 03 15 00 01 80		 .byte 2,0,1,3,21,0,1,128,2,0,1,192,2,0,1,160,2,0,1,144,2,0,1,136
+>6cfd		02 00 01 c0 02 00 01 a0 02 00 01 90 02 00 01 88
+>6d0d		02 00 01 84 02 00 01 82		 .byte 2,0,1,132,2,0,1,130,2,0,1,129,2,0,2,128,1,0,1,135,1,192,1,0
+>6d15		02 00 01 81 02 00 02 80 01 00 01 87 01 c0 01 00
+>6d25		01 92 02 00 01 a9 02 00		 .byte 1,146,2,0,1,169,2,0,1,201,2,0,1,132,1,128,1,0,1,4,1,128,1,0
+>6d2d		01 c9 02 00 01 84 01 80 01 00 01 04 01 80 01 00
+>6d3d		01 03 52 00 29 16 0b 07		 .byte 1,3,82,0,41,22,11,7,2,22,11,182,2,22,12,27,2,22,11,7,2,22,11,182
+>6d45		02 16 0b b6 02 16 0c 1b 02 16 0b 07 02 16 0b b6
+>6d55		02 16 0c 1b 02 16 0b 07		 .byte 2,22,12,27,2,22,11,7,2,22,11,182,2,22,12,27,255,22,255,22,172,22,10,182
+>6d5d		02 16 0b b6 02 16 0c 1b ff 16 ff 16 ac 16 0a b6
+>6d6d		12 16 0a 1b 02 16 0a b6		 .byte 18,22,10,27,2,22,10,182,18,22,10,27,2,22,10,182,18,22,10,27,57,22,1,125
+>6d75		12 16 0a 1b 02 16 0a b6 12 16 0a 1b 39 16 01 7d
+>6d85		01 7e 06 16			 .byte 1,126,6,22
+.6d89						cg_status_0:
+>6d89		08 00 01 7c 06 10 03 00		 .byte 8,0,1,124,6,16,3,0,1,56,1,4,1,60,1,68,1,60,1,0,2,64,1,120
+>6d91		01 38 01 04 01 3c 01 44 01 3c 01 00 02 40 01 78
+>6da1		03 44 01 78 0b 00 01 3c		 .byte 3,68,1,120,11,0,1,60,1,64,1,56,1,4,1,120,3,0,1,56,1,68,1,124
+>6da9		01 40 01 38 01 04 01 78 03 00 01 38 01 44 01 7c
+>6db9		01 40 01 38 01 00 01 30		 .byte 1,64,1,56,1,0,1,48,5,16,1,56,3,0,1,56,1,68,1,124,1,64,1,56
+>6dc1		05 10 01 38 03 00 01 38 01 44 01 7c 01 40 01 38
+>6dd1		03 00 01 38 01 44 01 40		 .byte 3,0,1,56,1,68,1,64,1,68,1,56,1,0,2,32,1,120,2,32,1,36,1,24
+>6dd9		01 44 01 38 01 00 02 20 01 78 02 20 01 24 01 18
+>6de9		03 00 01 3c 01 40 01 38		 .byte 3,0,1,60,1,64,1,56,1,4,1,120,2,0,2,48,1,0,2,16,1,32,9,0
+>6df1		01 04 01 78 02 00 02 30 01 00 02 10 01 20 09 00
+>6e01		01 7c 02 40 01 78 02 40		 .byte 1,124,2,64,1,120,2,64,1,124,3,0,1,120,4,68,1,0,2,32,1,120,2,32
+>6e09		01 7c 03 00 01 78 04 44 01 00 02 20 01 78 02 20
+>6e19		01 24 01 18 03 00 01 38		 .byte 1,36,1,24,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,88,1,100,3,64
+>6e21		01 44 01 7c 01 40 01 38 03 00 01 58 01 64 03 40
+>6e31		0b 00 01 38 01 04 01 3c		 .byte 11,0,1,56,1,4,1,60,1,68,1,60,3,0,1,56,1,68,1,64,1,68,1,56
+>6e39		01 44 01 3c 03 00 01 38 01 44 01 40 01 44 01 38
+>6e49		01 00 02 20 01 78 02 20		 .byte 1,0,2,32,1,120,2,32,1,36,1,24,1,0,1,16,1,0,1,48,3,16,1,56
+>6e51		01 24 01 18 01 00 01 10 01 00 01 30 03 10 01 38
+>6e61		03 00 03 44 01 28 01 10		 .byte 3,0,3,68,1,40,1,16,3,0,1,56,1,4,1,60,1,68,1,60,1,0,2,32
+>6e69		03 00 01 38 01 04 01 3c 01 44 01 3c 01 00 02 20
+>6e79		01 78 02 20 01 24 01 18		 .byte 1,120,2,32,1,36,1,24,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,60
+>6e81		03 00 01 38 01 44 01 7c 01 40 01 38 03 00 01 3c
+>6e91		01 40 01 38 01 04 01 78		 .byte 1,64,1,56,1,4,1,120,6,0,2,48,81,0
+>6e99		06 00 02 30 51 00
+.6e9f						cg_status_1:
+>6e9f		08 00 01 7c 06 10 03 00		 .byte 8,0,1,124,6,16,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,88,1,100
+>6ea7		01 38 01 44 01 7c 01 40 01 38 03 00 01 58 01 64
+>6eb7		03 40 03 00 01 68 04 54		 .byte 3,64,3,0,1,104,4,84,1,0,1,16,1,0,1,48,3,16,1,56,3,0,1,120
+>6ebf		01 00 01 10 01 00 01 30 03 10 01 38 03 00 01 78
+>6ecf		04 44 03 00 01 38 01 04		 .byte 4,68,3,0,1,56,1,4,1,60,1,68,1,60,1,0,1,48,5,16,1,56,9,0
+>6ed7		01 3c 01 44 01 3c 01 00 01 30 05 10 01 38 09 00
+>6ee7		01 10 01 00 01 30 03 10		 .byte 1,16,1,0,1,48,3,16,1,56,3,0,1,120,4,68,2,0,1,120,2,68,1,120
+>6eef		01 38 03 00 01 78 04 44 02 00 01 78 02 44 01 78
+>6eff		02 40 03 00 04 44 01 3c		 .byte 2,64,3,0,4,68,1,60,1,0,2,32,1,120,2,32,1,36,1,24,9,0,2,4
+>6f07		01 00 02 20 01 78 02 20 01 24 01 18 09 00 02 04
+>6f17		01 08 01 10 01 20 02 40		 .byte 1,8,1,16,1,32,2,64,9,0,3,68,1,124,3,68,3,0,1,56,1,68,1,124
+>6f1f		09 00 03 44 01 7c 03 44 03 00 01 38 01 44 01 7c
+>6f2f		01 40 01 38 01 00 01 30		 .byte 1,64,1,56,1,0,1,48,5,16,1,56,2,0,1,120,2,68,1,120,2,64,11,0
+>6f37		05 10 01 38 02 00 01 78 02 44 01 78 02 40 0b 00
+>6f47		01 58 01 64 03 40 03 00		 .byte 1,88,1,100,3,64,3,0,1,56,1,68,1,124,1,64,1,56,2,0,1,120,2,68
+>6f4f		01 38 01 44 01 7c 01 40 01 38 02 00 01 78 02 44
+>6f5f		01 78 02 40 03 00 01 38		 .byte 1,120,2,64,3,0,1,56,1,4,1,60,1,68,1,60,1,0,1,16,1,0,1,48
+>6f67		01 04 01 3c 01 44 01 3c 01 00 01 10 01 00 01 30
+>6f77		03 10 01 38 03 00 01 78		 .byte 3,16,1,56,3,0,1,120,4,68,1,0,2,32,1,120,2,32,1,36,1,24,3,0
+>6f7f		04 44 01 00 02 20 01 78 02 20 01 24 01 18 03 00
+>6f8f		01 3c 01 40 01 38 01 04		 .byte 1,60,1,64,1,56,1,4,1,120,73,0
+>6f97		01 78 49 00
+.6f9b						cg_status_2:
+>6f9b		08 00 01 38 01 44 03 40		 .byte 8,0,1,56,1,68,3,64,1,68,1,56,1,0,1,48,5,16,1,56,3,0,1,56
+>6fa3		01 44 01 38 01 00 01 30 05 10 01 38 03 00 01 38
+>6fb3		03 44 01 38 03 00 01 3c		 .byte 3,68,1,56,3,0,1,60,1,64,1,56,1,4,1,120,1,0,1,16,1,0,1,48
+>6fbb		01 40 01 38 01 04 01 78 01 00 01 10 01 00 01 30
+>6fcb		03 10 01 38 03 00 01 78		 .byte 3,16,1,56,3,0,1,120,4,68,2,0,1,60,2,68,1,60,1,4,1,56,6,0
+>6fd3		04 44 02 00 01 3c 02 44 01 3c 01 04 01 38 06 00
+>6fe3		02 30 06 00 02 30 06 00		 .byte 2,48,6,0,2,48,6,0,2,48,9,0,1,124,2,64,1,120,3,64,1,0,1,56
+>6feb		02 30 09 00 01 7c 02 40 01 78 03 40 01 00 01 38
+>6ffb		02 44 01 38 02 44 01 38		 .byte 2,68,1,56,2,68,1,56,9,0,1,24,1,36,1,32,1,120,3,32,3,0,1,56
+>7003		09 00 01 18 01 24 01 20 01 78 03 20 03 00 01 38
+>7013		03 44 01 38 03 00 01 58		 .byte 3,68,1,56,3,0,1,88,1,100,3,64,3,0,1,56,1,68,1,64,1,68,1,56
+>701b		01 64 03 40 03 00 01 38 01 44 01 40 01 44 01 38
+>702b		03 00 01 38 01 44 01 7c		 .byte 3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,60,1,64,1,56,1,4,1,120
+>7033		01 40 01 38 03 00 01 3c 01 40 01 38 01 04 01 78
+>7043		0b 00 01 58 01 64 03 40		 .byte 11,0,1,88,1,100,3,64,3,0,1,56,1,68,1,124,1,64,1,56,1,0,2,32
+>704b		03 00 01 38 01 44 01 7c 01 40 01 38 01 00 02 20
+>705b		01 78 02 20 01 24 01 18		 .byte 1,120,2,32,1,36,1,24,3,0,4,68,1,60,3,0,1,88,1,100,3,64,3,0
+>7063		03 00 04 44 01 3c 03 00 01 58 01 64 03 40 03 00
+>7073		01 78 04 44 61 00		 .byte 1,120,4,68,97,0
+.7079						cg_status_3:
+>7079		08 00 01 38 01 44 03 40		 .byte 8,0,1,56,1,68,3,64,1,68,1,56,3,0,1,56,3,68,1,56,3,0,1,120
+>7081		01 44 01 38 03 00 01 38 03 44 01 38 03 00 01 78
+>7091		04 44 01 00 02 20 01 78		 .byte 4,68,1,0,2,32,1,120,2,32,1,36,1,24,3,0,1,88,1,100,3,64,3,0
+>7099		02 20 01 24 01 18 03 00 01 58 01 64 03 40 03 00
+>70a9		01 38 03 44 01 38 01 00		 .byte 1,56,3,68,1,56,1,0,1,48,5,16,1,56,3,0,1,60,1,64,1,56,1,4
+>70b1		01 30 05 10 01 38 03 00 01 3c 01 40 01 38 01 04
+>70c1		01 78 02 00 02 30 01 00		 .byte 1,120,2,0,2,48,1,0,2,48,10,0,1,124,6,16,3,0,1,56,1,4,1,60
+>70c9		02 30 0a 00 01 7c 06 10 03 00 01 38 01 04 01 3c
+>70d9		01 44 01 3c 01 00 02 40		 .byte 1,68,1,60,1,0,2,64,1,120,3,68,1,120,1,0,2,4,1,8,1,16,1,32
+>70e1		01 78 03 44 01 78 01 00 02 04 01 08 01 10 01 20
+>70f1		02 40 01 00 01 7c 02 40		 .byte 2,64,1,0,1,124,2,64,1,120,2,64,1,124,3,0,1,120,4,68,1,0,2,32
+>70f9		01 78 02 40 01 7c 03 00 01 78 04 44 01 00 02 20
+>7109		01 78 02 20 01 24 01 18		 .byte 1,120,2,32,1,36,1,24,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,88
+>7111		03 00 01 38 01 44 01 7c 01 40 01 38 03 00 01 58
+>7121		01 64 03 40 02 00 02 30		 .byte 1,100,3,64,2,0,2,48,1,0,2,16,1,32,9,0,1,124,2,64,1,120,2,64
+>7129		01 00 02 10 01 20 09 00 01 7c 02 40 01 78 02 40
+>7139		01 7c 03 00 01 3c 01 40		 .byte 1,124,3,0,1,60,1,64,1,56,1,4,1,120,3,0,1,56,1,68,1,64,1,68
+>7141		01 38 01 04 01 78 03 00 01 38 01 44 01 40 01 44
+>7151		01 38 09 00 02 20 01 78		 .byte 1,56,9,0,2,32,1,120,2,32,1,36,1,24,3,0,1,56,1,68,1,124,1,64
+>7159		02 20 01 24 01 18 03 00 01 38 01 44 01 7c 01 40
+>7169		01 38 03 00 01 58 01 64		 .byte 1,56,3,0,1,88,1,100,3,64,3,0,1,104,4,84,1,0,1,16,1,0,1,48
+>7171		03 40 03 00 01 68 04 54 01 00 01 10 01 00 01 30
+>7181		03 10 01 38 03 00 01 78		 .byte 3,16,1,56,3,0,1,120,4,68,3,0,1,56,1,4,1,60,1,68,1,60,1,0
+>7189		04 44 03 00 01 38 01 04 01 3c 01 44 01 3c 01 00
+>7199		01 30 05 10 01 38 31 00		 .byte 1,48,5,16,1,56,49,0
+.71a1						cg_page_0:
+>71a1		08 00 08 80 01 00 01 04		 .byte 8,0,8,128,1,0,1,4,1,12,1,28,1,60,1,28,1,12,1,4,8,0,1,120
+>71a9		01 0c 01 1c 01 3c 01 1c 01 0c 01 04 08 00 01 78
+>71b9		02 44 01 78 03 40 03 00		 .byte 2,68,1,120,3,64,3,0,1,88,1,100,3,64,3,0,1,56,1,68,1,124,1,64
+>71c1		01 58 01 64 03 40 03 00 01 38 01 44 01 7c 01 40
+>71d1		01 38 03 00 03 44 01 28		 .byte 1,56,3,0,3,68,1,40,1,16,17,0,8,1,16,0,1,120,2,68,1,120,3,64
+>71d9		01 10 11 00 08 01 10 00 01 78 02 44 01 78 03 40
+>71e9		03 00 01 38 01 04 01 3c		 .byte 3,0,1,56,1,4,1,60,1,68,1,60,3,0,1,120,4,68,3,0,1,56,1,68
+>71f1		01 44 01 3c 03 00 01 78 04 44 03 00 01 38 01 44
+>7201		01 7c 01 40 01 38 01 00		 .byte 1,124,1,64,1,56,1,0,1,48,5,16,1,56,9,0,1,56,1,68,1,76,1,84
+>7209		01 30 05 10 01 38 09 00 01 38 01 44 01 4c 01 54
+>7219		01 64 01 44 01 38 01 00		 .byte 1,100,1,68,1,56,1,0,1,16,1,48,4,16,1,56,4,0,1,124,4,0,1,16
+>7221		01 10 01 30 04 10 01 38 04 00 01 7c 04 00 01 10
+>7231		01 30 04 10 01 38 01 00		 .byte 1,48,4,16,1,56,1,0,1,24,1,32,1,64,1,120,2,68,1,56,41,0,8,128
+>7239		01 18 01 20 01 40 01 78 02 44 01 38 29 00 08 80
+>7249		01 00 01 20 01 30 01 38		 .byte 1,0,1,32,1,48,1,56,1,60,1,56,1,48,1,32,8,0,1,68,2,100,1,84
+>7251		01 3c 01 38 01 30 01 20 08 00 01 44 02 64 01 54
+>7261		02 4c 01 44 03 00 01 38		 .byte 2,76,1,68,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,68,1,40,1,16
+>7269		01 44 01 7c 01 40 01 38 03 00 01 44 01 28 01 10
+>7279		01 28 01 44 01 00 02 20		 .byte 1,40,1,68,1,0,2,32,1,120,2,32,1,36,1,24,17,0,8,1,8,0
+>7281		01 78 02 20 01 24 01 18 11 00 08 01 08 00
+.728f						cg_page_9:
+>728f		08 00 08 80 01 00 01 04		 .byte 8,0,8,128,1,0,1,4,1,12,1,28,1,60,1,28,1,12,1,4,8,0,1,120
+>7297		01 0c 01 1c 01 3c 01 1c 01 0c 01 04 08 00 01 78
+>72a7		02 44 01 78 03 40 03 00		 .byte 2,68,1,120,3,64,3,0,1,88,1,100,3,64,3,0,1,56,1,68,1,124,1,64
+>72af		01 58 01 64 03 40 03 00 01 38 01 44 01 7c 01 40
+>72bf		01 38 03 00 03 44 01 28		 .byte 1,56,3,0,3,68,1,40,1,16,17,0,8,1,16,0,1,120,2,68,1,120,3,64
+>72c7		01 10 11 00 08 01 10 00 01 78 02 44 01 78 03 40
+>72d7		03 00 01 38 01 04 01 3c		 .byte 3,0,1,56,1,4,1,60,1,68,1,60,3,0,1,120,4,68,3,0,1,56,1,68
+>72df		01 44 01 3c 03 00 01 78 04 44 03 00 01 38 01 44
+>72ef		01 7c 01 40 01 38 01 00		 .byte 1,124,1,64,1,56,1,0,1,48,5,16,1,56,9,0,1,16,1,48,4,16,1,56
+>72f7		01 30 05 10 01 38 09 00 01 10 01 30 04 10 01 38
+>7307		01 00 01 38 01 44 01 4c		 .byte 1,0,1,56,1,68,1,76,1,84,1,100,1,68,1,56,4,0,1,124,4,0,1,56
+>730f		01 54 01 64 01 44 01 38 04 00 01 7c 04 00 01 38
+>731f		01 44 01 04 01 08 01 10		 .byte 1,68,1,4,1,8,1,16,1,32,1,124,1,0,1,124,2,64,1,120,2,4,1,120
+>7327		01 20 01 7c 01 00 01 7c 02 40 01 78 02 04 01 78
+>7337		29 00 08 80 01 00 01 20		 .byte 41,0,8,128,1,0,1,32,1,48,1,56,1,60,1,56,1,48,1,32,8,0,1,68
+>733f		01 30 01 38 01 3c 01 38 01 30 01 20 08 00 01 44
+>734f		02 64 01 54 02 4c 01 44		 .byte 2,100,1,84,2,76,1,68,3,0,1,56,1,68,1,124,1,64,1,56,3,0,1,68
+>7357		03 00 01 38 01 44 01 7c 01 40 01 38 03 00 01 44
+>7367		01 28 01 10 01 28 01 44		 .byte 1,40,1,16,1,40,1,68,1,0,2,32,1,120,2,32,1,36,1,24,17,0,8,1
+>736f		01 00 02 20 01 78 02 20 01 24 01 18 11 00 08 01
+>737f		08 00				 .byte 8,0
+
+;******  Return to file: /home/marc/geos128/uos/src/native/claude/gui.asm
+
+=1						PM_KEYS_OWNED=1
+=1						PM_KEYS_EXTERNAL=1
+=1						NK_LOCAL_HELP=1
+=5						pm_control_count=5
+=$608f						pm_select_surface=cg_surface
+=$6357						pm_find_hit=cg_hit
+
+;******  Processing file: /home/marc/geos128/uos/src/native/claude/../input/pointer.inc
+
+=0						PM_KEYS_OWNED=0
+=0						PM_KEYS_EXTERNAL=0
+.7381						pm_install:
+.7381		a2 7f		ldx #$7f	        ldx #127
+.7383		bd 84 76	lda $7684,x	-       lda pm_shape,x
+.7386		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.7389		ca		dex		        dex
+.738a		10 f7		bpl $7383	        bpl -
+.738c		20 8f 60	jsr $608f	        jsr pm_select_surface
+.738f		a9 40		lda #$40	        lda #$40
+.7391		8d 08 3d	sta $3d08	        sta N_OFFSET
+.7394		a9 1f		lda #$1f	        lda #$1f
+.7396		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.7399		a9 80		lda #$80	        lda #128
+.739b		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.739e		a9 00		lda #$00	        lda #0
+.73a0		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
+.73a3		20 29 1c	jsr $1c29	        jsr N_WRITE
+.73a6		90 03		bcc $73ab	        bcs pm_install_return
+.73a8		4c 36 74	jmp $7436
+.73ab		a9 7d		lda #$7d	        lda #$7d
+.73ad		8d 00 3a	sta $3a00	        sta N_BUFFER
+.73b0		a9 7e		lda #$7e	        lda #$7e
+.73b2		8d 01 3a	sta $3a01	        sta N_BUFFER+1
+.73b5		a9 f8		lda #$f8	        lda #$f8
+.73b7		8d 08 3d	sta $3d08	        sta N_OFFSET
+.73ba		a9 23		lda #$23	        lda #$23
+.73bc		8d 09 3d	sta $3d09	        sta N_OFFSET+1
+.73bf		a9 02		lda #$02	        lda #2
+.73c1		8d 0a 3d	sta $3d0a	        sta N_COUNT
+.73c4		20 29 1c	jsr $1c29	        jsr N_WRITE
+.73c7		b0 6d		bcs $7436	        bcs pm_install_return
+.73c9		08		php		        php
+.73ca		78		sei		        sei
+.73cb		a0 0b		ldy #$0b	        ldy #11
+.73cd		be 6c 76	ldx $766c,y	-       ldx pm_registers,y
+.73d0		bd 00 d0	lda $d000,x	        lda $d000,x
+.73d3		99 78 76	sta $7678,y	        sta pm_saved,y
+.73d6		88		dey		        dey
+.73d7		10 f4		bpl $73cd	        bpl -
+.73d9		ad 04 0a	lda $0a04	        lda $0a04
+.73dc		8d 6b 76	sta $766b	        sta pm_init_saved
+.73df		29 fe		and #$fe	        and #$fe               ; bit 0 enables BASIC's sprite motion IRQ hook
+.73e1		8d 04 0a	sta $0a04	        sta $0a04
+.73e4		a9 01		lda #$01	        lda #1
+.73e6		8d 53 76	sta $7653	        sta pm_active
+.73e9		a9 00		lda #$00	        lda #0
+.73eb		8d 54 76	sta $7654	        sta pm_seen
+.73ee		8d 5f 76	sta $765f	        sta pm_buttons
+.73f1		8d 56 76	sta $7656	        sta pm_pending
+.73f4		8d 59 76	sta $7659	        sta pm_x+1
+.73f7		a9 a0		lda #$a0	        lda #160
+.73f9		8d 58 76	sta $7658	        sta pm_x
+.73fc		8d 5a 76	sta $765a	        sta pm_y
+.73ff		a9 ff		lda #$ff	        lda #$ff
+.7401		8d 55 76	sta $7655	        sta pm_tick
+.7404		8d 61 76	sta $7661	        sta pm_arm
+.7407		ad 17 d0	lda $d017	        lda $d017
+.740a		29 fc		and #$fc	        and #$fc
+.740c		8d 17 d0	sta $d017	        sta $d017
+.740f		ad 1b d0	lda $d01b	        lda $d01b
+.7412		29 fc		and #$fc	        and #$fc
+.7414		8d 1b d0	sta $d01b	        sta $d01b
+.7417		ad 1c d0	lda $d01c	        lda $d01c
+.741a		29 fc		and #$fc	        and #$fc
+.741c		8d 1c d0	sta $d01c	        sta $d01c
+.741f		ad 1d d0	lda $d01d	        lda $d01d
+.7422		29 fc		and #$fc	        and #$fc
+.7424		8d 1d d0	sta $d01d	        sta $d01d
+.7427		a9 01		lda #$01	        lda #1
+.7429		8d 27 d0	sta $d027	        sta $d027              ; sprite 0: white interior, above black outline
+.742c		a9 00		lda #$00	        lda #0
+.742e		8d 28 d0	sta $d028	        sta $d028
+.7431		20 23 76	jsr $7623	        jsr pm_place
+.7434		28		plp		        plp
+.7435		18		clc		        clc
+.7436						pm_install_return:
+.7436		60		rts		        rts
+.7437						pm_close:
+.7437		ad 53 76	lda $7653	        lda pm_active
+.743a		f0 22		beq $745e	        beq pm_close_return
+.743c		08		php		        php
+.743d		78		sei		        sei
+.743e		a9 00		lda #$00	        lda #0
+.7440		8d 15 d0	sta $d015	        sta $d015              ; hide before restoring coordinates and format
+.7443		8d 53 76	sta $7653	        sta pm_active
+.7446		8d 54 76	sta $7654	        sta pm_seen
+.7449		a0 0b		ldy #$0b	        ldy #11
+.744b		be 6c 76	ldx $766c,y	-       ldx pm_registers,y
+.744e		b9 78 76	lda $7678,y	        lda pm_saved,y
+.7451		9d 00 d0	sta $d000,x	        sta $d000,x
+.7454		88		dey		        dey
+.7455		10 f4		bpl $744b	        bpl -
+.7457		ad 6b 76	lda $766b	        lda pm_init_saved
+.745a		8d 04 0a	sta $0a04	        sta $0a04
+.745d		28		plp		        plp
+.745e						pm_close_return:
+.745e		60		rts		        rts
+.745f						pm_poll:
+.745f		a9 00		lda #$00	        lda #0
+.7461		8d 63 76	sta $7663	        sta pm_event
+.7464		ad 53 76	lda $7653	        lda pm_active
+.7467		d0 03		bne $746c	        beq pm_poll_return
+.7469		4c 1e 75	jmp $751e
+.746c		2c 11 d0	bit $d011	        bit $d011
+.746f		30 f8		bmi $7469	        bmi pm_poll_return
+.7471		ad 12 d0	lda $d012	        lda $d012
+.7474		c9 50		cmp #$50	        cmp #80
+.7476		90 f1		bcc $7469	        bcc pm_poll_return
+.7478		c9 a0		cmp #$a0	        cmp #160
+.747a		b0 ed		bcs $7469	        bcs pm_poll_return
+.747c		a5 a2		lda $a2		        lda $a2
+.747e		cd 55 76	cmp $7655	        cmp pm_tick
+.7481		f0 0f		beq $7492	        beq pm_settling
+.7483		8d 55 76	sta $7655	        sta pm_tick
+.7486		ad 12 d0	lda $d012	        lda $d012
+.7489		8d 57 76	sta $7657	        sta pm_sample_line
+.748c		a9 01		lda #$01	        lda #1
+.748e		8d 56 76	sta $7656	        sta pm_pending
+.7491		60		rts		        rts
+.7492						pm_settling:
+.7492		ad 56 76	lda $7656	        lda pm_pending
+.7495		f0 d2		beq $7469	        beq pm_poll_return
+.7497		ad 12 d0	lda $d012	        lda $d012
+.749a		38		sec		        sec
+.749b		ed 57 76	sbc $7657	        sbc pm_sample_line
+.749e		c9 20		cmp #$20	        cmp #32                ; >=2 ms; no IRQ masking or busy delay
+.74a0		90 7c		bcc $751e	        bcc pm_poll_return
+.74a2		a9 00		lda #$00	        lda #0
+.74a4		8d 56 76	sta $7656	        sta pm_pending
+.74a7		8d 12 3d	sta $3d12	        sta N_READY
+.74aa		ad 02 dc	lda $dc02	        lda $dc02
+.74ad		c9 ff		cmp #$ff	        cmp #$ff
+.74af		d0 6e		bne $751f	        bne pm_absent
+.74b1		ad 03 dc	lda $dc03	        lda $dc03
+.74b4		d0 69		bne $751f	        bne pm_absent
+.74b6		ad 00 dc	lda $dc00	        lda $dc00
+.74b9		c9 7f		cmp #$7f	        cmp #$7f
+.74bb		d0 62		bne $751f	        bne pm_absent
+.74bd		ad 19 d4	lda $d419	        lda $d419
+.74c0		8d 5d 76	sta $765d	        sta pm_pots
+.74c3		ad 1a d4	lda $d41a	        lda $d41a
+.74c6		8d 5e 76	sta $765e	        sta pm_pots+1
+.74c9		a2 01		ldx #$01	        ldx #1
+.74cb		bd 5d 76	lda $765d,x	-       lda pm_pots,x
+.74ce		c9 40		cmp #$40	        cmp #$40
+.74d0		90 4d		bcc $751f	        bcc pm_absent
+.74d2		c9 c0		cmp #$c0	        cmp #$c0
+.74d4		b0 49		bcs $751f	        bcs pm_absent
+.74d6		ca		dex		        dex
+.74d7		10 f2		bpl $74cb	        bpl -
+.74d9		08		php		        php
+.74da		78		sei		        sei
+.74db		ad 2f d0	lda $d02f	        lda $d02f
+.74de		8d 67 76	sta $7667	        sta pm_columns
+.74e1		a9 ff		lda #$ff	        lda #$ff              ; release both sets of keyboard columns
+.74e3		8d 00 dc	sta $dc00	        sta $dc00
+.74e6		8d 2f d0	sta $d02f	        sta $d02f
+.74e9		ad 01 dc	lda $dc01	        lda $dc01
+.74ec		29 10		and #$10	        and #$10              ; port 1 fire is the left mouse button
+.74ee		49 10		eor #$10	        eor #$10
+.74f0		8d 60 76	sta $7660	        sta pm_down
+.74f3		ad 67 76	lda $7667	        lda pm_columns
+.74f6		8d 2f d0	sta $d02f	        sta $d02f
+.74f9		a9 7f		lda #$7f	        lda #$7f
+.74fb		8d 00 dc	sta $dc00	        sta $dc00
+.74fe		28		plp		        plp
+.74ff		ad 54 76	lda $7654	        lda pm_seen
+.7502		d0 2c		bne $7530	        bne pm_move
+.7504		ee 54 76	inc $7654	        inc pm_seen
+.7507		ad 5d 76	lda $765d	        lda pm_pots
+.750a		8d 5b 76	sta $765b	        sta pm_old
+.750d		ad 5e 76	lda $765e	        lda pm_pots+1
+.7510		8d 5c 76	sta $765c	        sta pm_old+1
+.7513		ad 60 76	lda $7660	        lda pm_down
+.7516		8d 5f 76	sta $765f	        sta pm_buttons        ; held during entry/reconnect cannot launch
+.7519		a9 03		lda #$03	        lda #3
+.751b		8d 15 d0	sta $d015	        sta $d015
+.751e						pm_poll_return:
+.751e		60		rts		        rts
+.751f						pm_absent:
+.751f		a9 00		lda #$00	        lda #0
+.7521		8d 54 76	sta $7654	        sta pm_seen
+.7524		8d 5f 76	sta $765f	        sta pm_buttons
+.7527		8d 15 d0	sta $d015	        sta $d015
+.752a		a9 ff		lda #$ff	        lda #$ff
+.752c		8d 61 76	sta $7661	        sta pm_arm
+.752f		60		rts		        rts
+.7530						pm_move:
+.7530		a9 00		lda #$00	        lda #0
+.7532		8d 64 76	sta $7664	        sta pm_moved
+.7535		ad 5d 76	lda $765d	        lda pm_pots
+.7538		ac 5b 76	ldy $765b	        ldy pm_old
+.753b		20 f9 75	jsr $75f9	        jsr pm_delta
+.753e		8c 5b 76	sty $765b	        sty pm_old
+.7541		90 31		bcc $7574	        bcc pm_vertical
+.7543		ee 64 76	inc $7664	        inc pm_moved
+.7546		18		clc		        clc
+.7547		6d 58 76	adc $7658	        adc pm_x
+.754a		8d 58 76	sta $7658	        sta pm_x
+.754d		8a		txa		        txa
+.754e		6d 59 76	adc $7659	        adc pm_x+1
+.7551		8d 59 76	sta $7659	        sta pm_x+1
+.7554		30 16		bmi $756c	        bmi pm_left
+.7556		c9 01		cmp #$01	        cmp #1
+.7558		90 1a		bcc $7574	        bcc pm_vertical
+.755a		d0 07		bne $7563	        bne pm_right
+.755c		ad 58 76	lda $7658	        lda pm_x
+.755f		c9 40		cmp #$40	        cmp #64
+.7561		90 11		bcc $7574	        bcc pm_vertical
+.7563						pm_right:
+.7563		a9 01		lda #$01	        lda #1
+.7565		8d 59 76	sta $7659	        sta pm_x+1
+.7568		a9 3f		lda #$3f	        lda #63
+.756a		d0 05		bne $7571	        bne pm_set_x
+.756c						pm_left:
+.756c		a9 00		lda #$00	        lda #0
+.756e		8d 59 76	sta $7659	        sta pm_x+1
+.7571						pm_set_x:
+.7571		8d 58 76	sta $7658	        sta pm_x
+.7574						pm_vertical:
+.7574		ad 5e 76	lda $765e	        lda pm_pots+1
+.7577		ac 5c 76	ldy $765c	        ldy pm_old+1
+.757a		20 f9 75	jsr $75f9	        jsr pm_delta
+.757d		8c 5c 76	sty $765c	        sty pm_old+1
+.7580		90 27		bcc $75a9	        bcc pm_hit_test
+.7582		ee 64 76	inc $7664	        inc pm_moved
+.7585		8d 65 76	sta $7665	        sta pm_step
+.7588		8e 66 76	stx $7666	        stx pm_step+1
+.758b		ad 5a 76	lda $765a	        lda pm_y
+.758e		38		sec		        sec
+.758f		ed 65 76	sbc $7665	        sbc pm_step
+.7592		a8		tay		        tay
+.7593		a9 00		lda #$00	        lda #0
+.7595		ed 66 76	sbc $7666	        sbc pm_step+1
+.7598		30 0a		bmi $75a4	        bmi pm_top
+.759a		d0 04		bne $75a0	        bne pm_bottom
+.759c		c0 c8		cpy #$c8	        cpy #200
+.759e		90 06		bcc $75a6	        bcc pm_set_y
+.75a0						pm_bottom:
+.75a0		a0 c7		ldy #$c7	        ldy #199
+.75a2		d0 02		bne $75a6	        bne pm_set_y
+.75a4						pm_top:
+.75a4		a0 00		ldy #$00	        ldy #0
+.75a6						pm_set_y:
+.75a6		8c 5a 76	sty $765a	        sty pm_y
+.75a9						pm_hit_test:
+.75a9		20 23 76	jsr $7623	        jsr pm_place
+.75ac		20 57 63	jsr $6357	        jsr pm_find_hit        ; caller returns X=index or $ff
+.75af		8e 62 76	stx $7662	        stx pm_hit
+.75b2		e0 05		cpx #$05	        cpx #pm_control_count
+.75b4		b0 0a		bcs $75c0	        bcs pm_button
+.75b6		ad 64 76	lda $7664	        lda pm_moved
+.75b9		f0 05		beq $75c0	        beq pm_button
+.75bb		a9 01		lda #$01	        lda #1
+.75bd		8d 63 76	sta $7663	        sta pm_event
+.75c0						pm_button:
+.75c0		ad 60 76	lda $7660	        lda pm_down
+.75c3		cd 5f 76	cmp $765f	        cmp pm_buttons
+.75c6		d0 03		bne $75cb	        beq pm_poll_return
+.75c8		4c 1e 75	jmp $751e
+.75cb		8d 5f 76	sta $765f	        sta pm_buttons
+.75ce		c9 00		cmp #$00	        cmp #0
+.75d0		f0 10		beq $75e2	        beq pm_release
+.75d2		ad 62 76	lda $7662	        lda pm_hit
+.75d5		8d 61 76	sta $7661	        sta pm_arm
+.75d8		c9 05		cmp #$05	        cmp #pm_control_count
+.75da		b0 ec		bcs $75c8	        bcs pm_poll_return
+.75dc		a9 01		lda #$01	        lda #1
+.75de		8d 63 76	sta $7663	        sta pm_event
+.75e1		60		rts		        rts
+.75e2						pm_release:
+.75e2		ae 61 76	ldx $7661	        ldx pm_arm
+.75e5		a9 ff		lda #$ff	        lda #$ff
+.75e7		8d 61 76	sta $7661	        sta pm_arm
+.75ea		e0 05		cpx #$05	        cpx #pm_control_count
+.75ec		b0 da		bcs $75c8	        bcs pm_poll_return
+.75ee		ec 62 76	cpx $7662	        cpx pm_hit
+.75f1		d0 d5		bne $75c8	        bne pm_poll_return
+.75f3		a9 02		lda #$02	        lda #2
+.75f5		8d 63 76	sta $7663	        sta pm_event
+.75f8		60		rts		        rts
+.75f9						pm_delta:
+.75f9		8c 68 76	sty $7668	        sty pm_previous
+.75fc		8d 69 76	sta $7669	        sta pm_sample
+.75ff		38		sec		        sec
+.7600		ed 68 76	sbc $7668	        sbc pm_previous
+.7603		29 7f		and #$7f	        and #$7f
+.7605		a2 00		ldx #$00	        ldx #0
+.7607		c9 02		cmp #$02	        cmp #2
+.7609		90 15		bcc $7620	        bcc pm_no_delta
+.760b		c9 7f		cmp #$7f	        cmp #127
+.760d		f0 11		beq $7620	        beq pm_no_delta
+.760f		c9 40		cmp #$40	        cmp #64
+.7611		90 07		bcc $761a	        bcc pm_positive
+.7613		09 80		ora #$80	        ora #$80
+.7615		38		sec		        sec
+.7616		6a		ror a		        ror
+.7617		ca		dex		        dex
+.7618		d0 01		bne $761b	        bne pm_delta_done
+.761a						pm_positive:
+.761a		4a		lsr a		        lsr
+.761b						pm_delta_done:
+.761b		ac 69 76	ldy $7669	        ldy pm_sample
+.761e		38		sec		        sec
+.761f		60		rts		        rts
+.7620						pm_no_delta:
+.7620		8a		txa		        txa
+.7621		18		clc		        clc
+.7622		60		rts		        rts
+.7623						pm_place:
+.7623		ad 58 76	lda $7658	        lda pm_x
+.7626		18		clc		        clc
+.7627		69 18		adc #$18	        adc #24
+.7629		8d 00 d0	sta $d000	        sta $d000
+.762c		8d 02 d0	sta $d002	        sta $d002
+.762f		ad 59 76	lda $7659	        lda pm_x+1
+.7632		69 00		adc #$00	        adc #0
+.7634		f0 02		beq $7638	        beq +
+.7636		a9 03		lda #$03	        lda #3
+.7638		8d 6a 76	sta $766a	+       sta pm_high
+.763b		ad 10 d0	lda $d010	        lda $d010
+.763e		29 fc		and #$fc	        and #$fc
+.7640		0d 6a 76	ora $766a	        ora pm_high
+.7643		8d 10 d0	sta $d010	        sta $d010
+.7646		ad 5a 76	lda $765a	        lda pm_y
+.7649		18		clc		        clc
+.764a		69 32		adc #$32	        adc #50
+.764c		8d 01 d0	sta $d001	        sta $d001
+.764f		8d 03 d0	sta $d003	        sta $d003
+.7652		60		rts		        rts
+>7653		00				pm_active: .byte 0
+>7654		00				pm_seen: .byte 0
+>7655		00				pm_tick: .byte 0
+>7656		00				pm_pending: .byte 0
+>7657		00				pm_sample_line: .byte 0
+>7658		00 00				pm_x: .word 0
+>765a		00				pm_y: .byte 0
+>765b		00 00				pm_old: .word 0
+>765d		00 00				pm_pots: .word 0
+>765f		00				pm_buttons: .byte 0
+>7660		00				pm_down: .byte 0
+>7661		ff				pm_arm: .byte $ff
+>7662		ff				pm_hit: .byte $ff
+>7663		00				pm_event: .byte 0             ; 0=idle, 1=focus hit, 2=activate hit
+>7664		00				pm_moved: .byte 0
+>7665		00 00				pm_step: .word 0
+>7667		00				pm_columns: .byte 0
+>7668		00				pm_previous: .byte 0
+>7669		00				pm_sample: .byte 0
+>766a		00				pm_high: .byte 0
+>766b		00				pm_init_saved: .byte 0
+>766c		00 01 02 03 10 15 17 1b		pm_registers: .byte $00,$01,$02,$03,$10,$15,$17,$1b,$1c,$1d,$27,$28
+>7674		1c 1d 27 28
+>7678		00 00 00 00 00 00 00 00		pm_saved: .fill 12,0
+>7680		00 00 00 00
+.7684						pm_shape:
+
+;******  Processing file: /home/marc/geos128/uos/src/native/claude/../input/../desktop/pointer-shape.inc
+
+>7684		00 00 00 00 00 00 40 00		        .byte $00,$00,$00,$00,$00,$00,$40,$00,$00,$60,$00,$00,$70,$00,$00,$78
+>768c		00 60 00 00 70 00 00 78
+>7694		00 00 7c 00 00 7e 00 00		        .byte $00,$00,$7c,$00,$00,$7e,$00,$00,$7f,$00,$00,$78,$00,$00,$6c,$00
+>769c		7f 00 00 78 00 00 6c 00
+>76a4		00 46 00 00 06 00 00 03		        .byte $00,$46,$00,$00,$06,$00,$00,$03,$00,$00,$03,$00,$00,$00,$00,$00
+>76ac		00 00 03 00 00 00 00 00
+>76b4		00 00 00 00 00 00 00 00		        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+>76bc		00 00 00 00 00 00 00 00
+>76c4		80 00 00 c0 00 00 a0 00		        .byte $80,$00,$00,$c0,$00,$00,$a0,$00,$00,$90,$00,$00,$88,$00,$00,$84
+>76cc		00 90 00 00 88 00 00 84
+>76d4		00 00 82 00 00 81 00 00		        .byte $00,$00,$82,$00,$00,$81,$00,$00,$80,$80,$00,$87,$c0,$00,$92,$00
+>76dc		80 80 00 87 c0 00 92 00
+>76e4		00 a9 00 00 c9 00 00 84		        .byte $00,$a9,$00,$00,$c9,$00,$00,$84,$80,$00,$04,$80,$00,$03,$00,$00
+>76ec		80 00 04 80 00 03 00 00
+>76f4		00 00 00 00 00 00 00 00		        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+>76fc		00 00 00 00 00 00 00 00
+
+;******  Return to file: /home/marc/geos128/uos/src/native/claude/../input/pointer.inc
+
+
+;******  Return to file: /home/marc/geos128/uos/src/native/claude/gui.asm
+
+
+;******  Processing file: /home/marc/geos128/uos/src/native/claude/../input/key-filter.inc
+
+=0						NK_LOCAL_HELP=0
+.7704						nk_filter_image:
+.7704	1014					pk_entry:
+.7704	1014	08		php		        php
+.7705	1015	78		sei		        sei
+.7706	1016	48		pha		        pha
+.7707	1017	8a		txa		        txa
+.7708	1018	48		pha		        pha
+.7709	1019	98		tya		        tya
+.770a	101a	48		pha		        pha
+.770b	101b	c0 58		cpy #$58	        cpy #88
+.770d	101d	b0 78		bcs $1097	        bcs pk_pass            ; keep the resident's invalid-index guard
+.770f	101f	98		tya		        tya
+.7710	1020	29 07		and #$07	        and #7
+.7712	1022	c9 04		cmp #$04	        cmp #4
+.7714	1024	d0 71		bne $1097	        bne pk_pass
+.7716	1026	ad 02 dc	lda $dc02	        lda $dc02
+.7719	1029	c9 ff		cmp #$ff	        cmp #$ff
+.771b	102b	d0 6a		bne $1097	        bne pk_pass
+.771d	102d	ad 03 dc	lda $dc03	        lda $dc03
+.7720	1030	d0 65		bne $1097	        bne pk_pass            ; do not take over a foreign CIA configuration
+.7722	1032	ad 00 dc	lda $dc00	        lda $dc00
+.7725	1035	8d b4 10	sta $10b4	        sta pk_columns
+.7728	1038	ad 2f d0	lda $d02f	        lda $d02f
+.772b	103b	8d b5 10	sta $10b5	        sta pk_extended
+.772e	103e	a9 ff		lda #$ff	        lda #$ff
+.7730	1040	8d 00 dc	sta $dc00	        sta $dc00
+.7733	1043	8d 2f d0	sta $d02f	        sta $d02f
+.7736	1046	ad 01 dc	lda $dc01	        lda $dc01
+.7739	1049	29 10		and #$10	        and #$10
+.773b	104b	f0 1c		beq $1069	        beq pk_reject          ; fire held: this row is electrically ambiguous
+.773d	104d	98		tya		        tya
+.773e	104e	4a		lsr a		        lsr
+.773f	104f	4a		lsr a		        lsr
+.7740	1050	4a		lsr a		        lsr
+.7741	1051	aa		tax		        tax
+.7742	1052	bd b7 10	lda $10b7,x	        lda pk_masks,x
+.7745	1055	e0 08		cpx #$08	        cpx #8
+.7747	1057	90 06		bcc $105f	        bcc +
+.7749	1059	8d 2f d0	sta $d02f	        sta $d02f
+.774c	105c	4c 62 10	jmp $1062	        jmp pk_read_key
+.774f	105f	8d 00 dc	sta $dc00	+       sta $dc00
+.7752	1062					pk_read_key:
+.7752	1062	ad 01 dc	lda $dc01	        lda $dc01
+.7755	1065	29 10		and #$10	        and #$10
+.7757	1067	f0 04		beq $106d	        beq pk_accept
+.7759	1069					pk_reject:
+.7759	1069	a9 01		lda #$01	        lda #1
+.775b	106b	d0 02		bne $106f	        bne pk_restore_columns
+.775d	106d					pk_accept:
+.775d	106d	a9 00		lda #$00	        lda #0
+.775f	106f					pk_restore_columns:
+.775f	106f	8d b6 10	sta $10b6	        sta pk_rejected
+.7762	1072	ad b5 10	lda $10b5	        lda pk_extended
+.7765	1075	8d 2f d0	sta $d02f	        sta $d02f
+.7768	1078	ad b4 10	lda $10b4	        lda pk_columns
+.776b	107b	8d 00 dc	sta $dc00	        sta $dc00
+.776e	107e	ad b6 10	lda $10b6	        lda pk_rejected
+.7771	1081	f0 14		beq $1097	        beq pk_pass
+.7773	1083	ee b2 10	inc $10b2	        inc pk_rejects
+.7776	1086	d0 03		bne $108b	        bne +
+.7778	1088	ee b3 10	inc $10b3	        inc pk_rejects+1
+.777b	108b	68		pla		+       pla
+.777c	108c	a8		tay		        tay
+.777d	108d	68		pla		        pla
+.777e	108e	aa		tax		        tax
+.777f	108f	68		pla		        pla
+.7780	1090	28		plp		        plp
+.7781	1091	a9 7f		lda #$7f	        lda #$7f              ; the ROM's SCNRTS column-restoration contract
+.7783	1093	8d 00 dc	sta $dc00	        sta $dc00
+.7786	1096	60		rts		        rts
+.7787	1097					pk_pass:
+.7787	1097	68		pla		        pla
+.7788	1098	a8		tay		        tay
+.7789	1099	68		pla		        pla
+.778a	109a	aa		tax		        tax
+.778b	109b	68		pla		        pla
+.778c	109c	c9 84		cmp #$84	        cmp #$84
+.778e	109e	d0 0c		bne $10ac	        bne pk_chained
+.7790	10a0	48		pha		        pha
+.7791	10a1	8a		txa		        txa
+.7792	10a2	29 04		and #$04	        and #4                ; KEYCHK receives the scan's modifiers in X
+.7794	10a4	f0 05		beq $10ab	        beq pk_plain_help
+.7796	10a6	68		pla		        pla
+.7797	10a7	a9 ff		lda #$ff	        lda #255              ; no ROM key table emits $ff as an input key
+.7799	10a9	d0 01		bne $10ac	        bne pk_chained
+.779b	10ab					pk_plain_help:
+.779b	10ab	68		pla		        pla
+.779c	10ac					pk_chained:
+.779c	10ac	28		plp		        plp
+.779d	10ad	6c b0 10	jmp ($10b0)	        jmp (pk_next)
+>77a0	10b0	00 00				pk_next: .word 0
+>77a2	10b2	00 00				pk_rejects: .word 0
+>77a4	10b4	00				pk_columns: .byte 0
+>77a5	10b5	00				pk_extended: .byte 0
+>77a6	10b6	00				pk_rejected: .byte 0
+>77a7	10b7	fe fd fb f7 ef df bf 7f		pk_masks: .byte $fe,$fd,$fb,$f7,$ef,$df,$bf,$7f,$fe,$fd,$fb
+>77af	10bf	fe fd fb
+.77b2	10c2					pk_end:
+
+;******  Return to file: /home/marc/geos128/uos/src/native/claude/gui.asm
+
+=$77b2						gui_limit = *
+
+;******  End of listing

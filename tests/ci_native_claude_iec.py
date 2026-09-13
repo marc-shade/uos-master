@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Cold-boot uOS, launch packaged Claude, run the real TCP/PTY bridge, return."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -20,7 +21,10 @@ sys.path[:0] = [str(ROOT), str(ROOT/'tests'), str(ROOT/'apps/claude/host')]
 import ci_fm as ci
 from native_capture import NativeCapture, wait, expected_screen
 from native_capture_transport import PausedViceMonitor
-from native_claude_check import landing_screen
+from native_claude_check import landing_screen,waiting_panel,capture_frame
+from native_claude_scene import RECTS
+from native_pointer_check import surface_pixels,check_canvas
+from ci_native_pointer_iec import Mouse
 from launcher_scene import surface, console
 import font
 import petscii
@@ -34,6 +38,7 @@ def port():
 def main():
     p = argparse.ArgumentParser(); p.add_argument('--host-exit', action='store_true')
     p.add_argument('--cpu-capture', action='store_true', help='verify settled terminal through the physical IRQ observer')
+    p.add_argument('--mouse', action='store_true', help='real 1351 session controls and ROM Ctrl+Help')
     p.add_argument('--80col', dest='eighty', action='store_true'); args = p.parse_args()
     if args.cpu_capture and args.host_exit:
         p.error('--cpu-capture requires the stationary fixture without the updating status panel')
@@ -48,14 +53,15 @@ def main():
     for name in ('claude.prg','claude.lbl','desktop.prg'):
         shutil.copyfile(ROOT/'target/native-desktop'/name, work/name)
     shutil.copyfile(__file__, work/'run.py')
-    xv = ci.cbm.Xvfb(); mon = emu = bridge = None
+    xv = ci.cbm.Xvfb(); mon = emu = bridge = mouse = None
+    result['private_x_display']=xv.display
     emulog = (work/'vice.log').open('w'); hostlog = (work/'bridge.log').open('w')
     try:
         linkport, monport = port(), port()
         fixture = ROOT/'tests/fixtures/claude-session.py'
         host = [sys.executable, '-B', str(ROOT/'apps/claude/run.py'), '--listen', str(linkport),
                 '--command', shlex.join([sys.executable,'-B',str(fixture)]), '-v']
-        if not args.host_exit: host.append('--no-panel')
+        if not args.host_exit or args.mouse: host.append('--no-panel')
         bridge = subprocess.Popen(host, stdout=hostlog, stderr=subprocess.STDOUT)
         # Readiness from the bridge's actual log, without consuming its one connection.
         wait(lambda:'listening on' in (work/'bridge.log').read_text(), 'bridge listening', 15)
@@ -64,6 +70,10 @@ def main():
             '-acia1','-acia1base','0xDE00','-acia1irq','1','-acia1mode','1','-myaciadev','0',
             '-rsdev1',f'127.0.0.1:{linkport}','-rsdev1baud','38400',
             '-binarymonitor','-binarymonitoraddress',f'ip4://127.0.0.1:{monport}']
+        # GTK's initial 80-column window motion can move a live 1351 over a
+        # launcher card before this test owns input. Enable host motion only
+        # after checking the untouched cold boot and launching Claude.
+        if args.mouse:command += ['-controlport1device','3','-controlport2device','0','+mouse']
         result.update(emulator_command=command, bridge_command=host)
         emu = subprocess.Popen(command, env=dict(os.environ, DISPLAY=xv.display,
             __EGL_VENDOR_LIBRARY_FILENAMES=ci.cbm.MESA_EGL), stdout=emulog, stderr=subprocess.STDOUT)
@@ -75,9 +85,67 @@ def main():
                 if time.monotonic()>deadline: raise
                 time.sleep(.1)
         banks = mon.banks(); mon.resume()
+        paused = PausedViceMonitor(mon)
+        @contextmanager
+        def stable_batch(label):
+            if not label.endswith(('-before','-restore')):
+                with paused.paused(label):yield
+                return
+            deadline=time.monotonic()+30
+            while True:
+                with paused.paused(label):
+                    if bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0':
+                        yield
+                        return
+                assert time.monotonic()<deadline,('idle capture admission',label)
+                time.sleep(.01)
+        capture = NativeCapture(paused,work,quiet=.02,kernel_prefix='native-desktop',batch=stable_batch)
+        result['cpu_captures']=capture.records;result['cpu_capture_batches']=paused.batches
         def read(address, count=1, bank=0):
             data = bytes(mon.read_mem(address,address+count-1,bank=bank)); mon.resume(); return data
         def ready(): return read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2)
+        def app_read(address,count=1):return read(address,count,banks['ram00'])
+        def position():
+            raw=app_read(labels['pm_x'],3)
+            return int.from_bytes(raw[:2],'little'),raw[2]
+        def move_to(tx,ty):
+            deadline=time.monotonic()+90;samples=[]
+            while time.monotonic()<deadline:
+                x,y=position();samples.append([x,y])
+                if abs(x-tx)<=2 and abs(y-ty)<=2:
+                    wait(ready,'mouse destination idle',60);time.sleep(.2)
+                    if position()==(x,y):
+                        result.setdefault('mouse_routes',[]).append(dict(target=[tx,ty],samples=samples));return
+                    continue
+                mouse.move(max(-12,min(12,(tx-x)*2)),max(-12,min(12,(ty-y)*2)))
+            raise AssertionError(('Claude mouse failed to reach target',position(),(tx,ty)))
+        def click(index):
+            x0,y0,x1,y1=RECTS[index];move_to((x0+x1)//2,(y0+y1)//2)
+            before=int.from_bytes(read(0x3d13,2),'little')
+            mouse.button(True);wait(lambda:app_read(labels['pm_arm'])==bytes([index]),'Claude button armed',30)
+            mouse.button(False)
+            wait(lambda:ready() and app_read(labels['pm_buttons'])==b'\0','Claude mouse action',60)
+            assert int.from_bytes(read(0x3d13,2),'little')==before
+            result.setdefault('mouse_events',[]).append(dict(button=index,keyboard_events=0))
+        def rom_key(name,code):
+            wait(ready,'ROM key readiness',120);before=int.from_bytes(read(0x3d13,2),'little')
+            with mouse.held_key(name):
+                wait(lambda:int.from_bytes(read(0x3d13,2),'little')!=before,'ROM consumed '+name,120)
+            wait(ready,'ROM key completed',120)
+            assert int.from_bytes(read(0x3d13,2),'little')==(before+1)&65535
+            assert read(0x3d15)==bytes([code]),(name,'wrong ROM key',read(0x3d15))
+            result.setdefault('rom_keys',[]).append(dict(name=name,code=code,before=before,after=(before+1)&65535))
+        def frame(label,*,live=0,menu=0,top=0,focus=0):
+            panel=waiting_panel(connected=True) if live else landing_screen(40)
+            actual,row=capture_frame(capture,app_read,labels,work,label,panel=panel,live=live,menu=menu,top=top,focus=focus)
+            xy=position()
+            error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+            (work/(label+'-canvas.bin')).write_bytes(raw)
+            row.update(position=xy,pointer_visible=bool(app_read(labels['pm_seen'])[0]),
+                rectangle=check_canvas(raw,surface_pixels(actual,*xy,visible=bool(app_read(labels['pm_seen'])[0]))))
+            result.setdefault('claude_frames',[]).append(row)
+            subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
+            print('PASS: Claude bitmap, live font and 64000 VIC pixels:',label,flush=True)
         def key(value):
             wait(ready,'native readiness',120)
             before = int.from_bytes(read(0x3d13,2),'little')
@@ -92,6 +160,11 @@ def main():
             (work/(label+'-vdc.bin')).write_bytes(read(0,2000,banks['vdc']))
             assert read(0x3d2f)==bytes([selected])
         desktop('boot-desktop',0)
+        saved_keys=read(0x1000,256);saved_callback=read(0x33c,2);repeat=read(0xa22)
+        if args.mouse:
+            mon.write_mem(0xa22,b'\x40');mon.resume()
+            mouse=Mouse(xv.display);result['private_x_windows']=mouse.windows
+            assert len(mouse.windows)==2,'the private display must contain only this C128 pair'
         original_font = read(0x3000,4096,banks['vdc']); (work/'font-before.bin').write_bytes(original_font)
         original_nmi = read(0x318,2); original_gate = read(0x3d3e,2)
         (work/'nmi-before.bin').write_bytes(original_nmi+original_gate)
@@ -99,7 +172,16 @@ def main():
         assert read(0x400,1000,banks['ram00'])==landing_screen(40)
         assert read(0,2000,banks['vdc'])==landing_screen(80)
         print('PASS: packaged app launch page',flush=True)
-        key(13)
+        if args.mouse:
+            resource=b'Mouse'
+            error,_=mon._recv(mon._send(0x52,bytes([1,len(resource)])+resource+bytes([4])+bytes([1,0,0,0])))
+            mon.resume();assert not error
+            result['mouse_enabled_after_claude_launch']=True
+            wait(lambda:app_read(labels['pm_seen'])==b'\1','Claude mouse attached',20)
+            move_to(160,100)
+        frame('claude-landing')
+        if args.mouse:click(0)
+        else:key(13)
         def row_text(row, text):
             expected = bytes(petscii.to_screen_code(c) for c in text)
             return read(row*80,len(expected),banks['vdc'])==expected
@@ -123,15 +205,30 @@ def main():
             expected[row*80:row*80+len(codes)]=codes
         wait(lambda:read(0,2000,banks['vdc'])==expected,'complete terminal repaint',60)
 
+        if not args.host_exit or args.mouse:
+            if args.mouse:move_to(160,100)
+            frame('claude-connected',live=1,focus=1)
+        if args.mouse:
+            with mouse.held_key('Control_L'):
+                time.sleep(.1)
+                rom_key('End',255)
+            assert app_read(labels['cg_menu'])==b'\1'
+            frame('claude-controls',live=1,menu=1,focus=1)
+            rom_key('F10',9);rom_key('F10',9);rom_key('Return',13)
+            frame('claude-bottom-panel',live=1,menu=1,top=9,focus=3)
+            rom_key('F9',27);assert app_read(labels['cg_menu'])==b'\0'
+            click(3);frame('claude-top-panel',live=1,focus=4)
+            before_rx=int.from_bytes(app_read(labels['_rxCount'],2),'little')
+            click(1)
+            wait(lambda:int.from_bytes(app_read(labels['_rxCount'],2),'little')!=before_rx and
+                 read(0,2000,banks['vdc'])==expected,'mouse Repaint completed',90)
+            frame('claude-mouse-repaint',live=1,focus=1)
+
         if args.cpu_capture:
             # The fixture is now stationary and --no-panel emits no timer
             # updates. This observer borrows the VDC address/selected register;
             # it is not admitted as a concurrent drawing observer.
             time.sleep(.5)
-            paused = PausedViceMonitor(mon)
-            capture = NativeCapture(paused, work, quiet=.02, kernel_prefix='native-desktop', batch=paused.paused)
-            result['cpu_captures'] = capture.records
-            result['cpu_capture_batches'] = paused.batches
             assert capture.capture('cpu-session-vdc', mode=1, count=2000) == expected
             assert capture.capture('cpu-session-vic', address=0x400, count=1000) == read(0x400,1000,banks['ram00'])
             assert capture.capture('cpu-session-nmi', address=0x318, count=2) == b'\xf0\x1b'
@@ -159,7 +256,13 @@ def main():
         wait(ready,'native ready before closing checkpoint',120)
         before=int.from_bytes(read(0x3d13,2),'little')
         closing_key=ord('Q') if args.host_exit else 0x8c
-        mon.write_mem(0x3d12,b'\0');mon.write_mem(0x34a,bytes([closing_key]));mon.write_mem(0xd0,b'\1');mon.resume()
+        mouse_close=args.mouse and not args.host_exit
+        if mouse_close:
+            x0,y0,x1,y1=RECTS[2];move_to((x0+x1)//2,(y0+y1)//2)
+            mouse.button(True);wait(lambda:app_read(labels['pm_arm'])==b'\2','Desktop armed',30)
+            mouse.button(False)
+        else:
+            mon.write_mem(0x3d12,b'\0');mon.write_mem(0x34a,bytes([closing_key]));mon.write_mem(0xd0,b'\1');mon.resume()
         deadline=time.monotonic()+90
         while True:
             error,checkpoint=mon._recv(mon._send(0x11,checkpoint_id));assert not error
@@ -174,10 +277,14 @@ def main():
             checkpoint_hex=checkpoint.hex(),lifetime='Claude allocation still live; before native_video_end')
         assert outcome==bytes([0 if args.host_exit else 2]),'client missed the shutdown acknowledgement'
         assert bytes(mon.read_mem(0x3d20,0x3d20))==b'\x20'
-        assert int.from_bytes(bytes(mon.read_mem(0x3d13,0x3d14)),'little')==(before+1)&65535
+        assert int.from_bytes(bytes(mon.read_mem(0x3d13,0x3d14)),'little')==(before+(not mouse_close))&65535
         error,_=mon._recv(mon._send(0x13,checkpoint_id));assert not error
-        mon.resume();result['events'].append(closing_key)
+        mon.resume()
+        if mouse_close:result.setdefault('mouse_events',[]).append(dict(button=2,keyboard_events=0))
+        else:result['events'].append(closing_key)
         desktop('returned-desktop',4)
+        assert read(0x1000,256)==saved_keys and read(0x33c,2)==saved_callback
+        mon.write_mem(0xa22,repeat);mon.resume();assert read(0xa22)==repeat
         after_font = read(0x3000,4096,banks['vdc']); (work/'font-after.bin').write_bytes(after_font)
         assert after_font==original_font
         after_nmi = read(0x318,2)+read(0x3d3e,2)
@@ -194,8 +301,20 @@ def main():
         result['passed'] = True
         print('PASS: original font/NMI restored, desktop selection retained, host reaped and all 426 pages free',flush=True)
     except BaseException as exc:
-        result['error'] = repr(exc); raise
+        result['error'] = repr(exc)
+        if mon:
+            try:
+                result['failure_state']={hex(at):app_read(at,count).hex() for at,count in
+                    ((0x3d11,24),(0x3d60,32),(0xd0,10),(0x33c,2))}
+                for name,address,count,bank in (('surface',0xc000,9216,banks['ram00']),
+                        ('panel',0x400,1000,banks['ram00']),('vdc',0,2000,banks['vdc'])):
+                    (work/('failure-'+name+'.bin')).write_bytes(read(address,count,bank))
+                subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'failure.png')],check=True,capture_output=True)
+            except BaseException as diagnostic:result['diagnostic_error']=repr(diagnostic)
+        raise
     finally:
+        if mouse:
+            mouse.button(False);mouse.close()
         if mon:
             try: mon.quit_emulator()
             except (OSError,EOFError): pass

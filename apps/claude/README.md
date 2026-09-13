@@ -2,7 +2,8 @@
 
 Claude is a native C128 app in the uOS suite. Select **Claude** on the desktop,
 or press **A**. It uses the 80-column VDC as a terminal and the 40-column VIC
-screen for session information. Claude Code runs on your Linux host, using
+screen for [graphical session controls](../../docs/NATIVE-CLAUDE-GUI.md) and
+all 25 rows of status information. Claude Code runs on your Linux host, using
 that host's login, project directory and normal Claude permissions.
 
 Build the suite with `python3 -B build-native-desktop.py`. This requires cc65
@@ -44,6 +45,15 @@ launch page.
 | Escape on the launch page | Return to the desktop |
 | Escape during a session | Send Escape to Claude |
 | Help during a session | Request a full repaint and rearm modem answering |
+| Ctrl+Help during a session | Enter or leave local graphical controls |
+| Tab/arrows in local controls | Select an enabled button |
+| Enter/Space in local controls | Activate the selected button |
+| Escape in local controls | Return keyboard focus to the terminal |
+
+Connect, Repaint and Desktop also accept a port-1 1351 mouse. Prev and Next
+show both status pages. The active control is yellow. Ordinary terminal keys,
+including Tab, Escape and F1–F7, retain their host meanings while local controls
+are closed. The 80-column terminal keeps its full 80×25 area.
 
 Returning closes the host PTY session. Start the bridge again for a new
 session; the launcher does not run a host service automatically. The supplied
@@ -98,5 +108,6 @@ The native client temporarily defines the ten C128 programmable keys as single
 key codes, including F8 and Help. This prevents the ROM's default `MONITOR` macro
 from replacing F8. All 256 bytes of the original definition table are restored
 on every exit, alongside the existing font, NMI, display and zero-page state.
-The app now reserves 51 pages. The [desktop pointer workflow](../../docs/validation/2026-09-12-native-pointer/README.md)
+The graphical app reserves 75 pages plus its optional 36-page surface. The
+earlier [desktop pointer workflow](../../docs/validation/2026-09-12-native-pointer/README.md)
 checks real ROM F8 return after launching Claude with the mouse.

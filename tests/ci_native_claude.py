@@ -30,6 +30,7 @@ class TerminalBus(VDC):
         self.sent, self.serial_writes = bytearray(), []
         self.last_data = 0
         self.port = {0xd020: 6, 0xdd0d: 0}
+        self.colors = bytearray(1024)  # Color RAM is separate from bitmap RAM.
         self.saved_video, self.saved_regs = bytes(self.video), bytes(self.reg)
 
     @property
@@ -40,6 +41,7 @@ class TerminalBus(VDC):
     def __getitem__(self, address):
         if self.config&1: return self.parent[address]
         if address in (0xd600, 0xd601): return super().__getitem__(address)
+        if 0xd800 <= address < 0xdc00:return self.colors[address-0xd800]&15
         if address in self.port: return self.port[address]
         if 0xde00 <= address <= 0xde03:
             if not self.serial_present: return 255
@@ -71,7 +73,7 @@ class TerminalBus(VDC):
             return super().__setitem__(address, value)
         if address in self.port: self.port[address] = value; return
         if 0xd800 <= address < 0xdc00:
-            self.parent.ram[0][address] = value; return
+            self.colors[address-0xd800] = value&15; return
         if 0xde00 <= address <= 0xde03:
             self.serial_writes.append((address, value))
             if not self.serial_present: return

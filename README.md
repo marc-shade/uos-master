@@ -70,15 +70,20 @@ still requires native physical qualification.
 The blue native desktop is the interface being developed for the unified app
 suite. The older green desktop remains a separate legacy build; restoring that
 installed build after a test does not change the native desktop's direction.
+The green native memory workspace is also retained for diagnostics: Escape
+from the blue launcher opens it, and B returns to the suite desktop.
 [Calculator](docs/NATIVE-CALCULATOR.md), [Paint](docs/NATIVE-PAINT.md),
 [Files](docs/NATIVE-FILES-GUI.md), [Editor](docs/NATIVE-EDITOR-GUI.md) and
-[Ultimate](docs/NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap and yellow
+[Ultimate](docs/NATIVE-ULTIMATE-CONTROLS.md) and
+[Claude](docs/NATIVE-CLAUDE-GUI.md) use the blue bitmap and yellow
 controls inside their apps. Paint adds connected mouse
 strokes, a visible keyboard brush, colors, undo, and verified picture files.
 Files adds graphical lists, byte viewing, editable paths and verified copy
 controls. Editor adds mouse caret placement, graphical Open/Save As and
-Find/Replace while keeping banked documents and verified saves. Terminal
-framing, the shared file picker and VDC bitmap presentation still need migration.
+Find/Replace while keeping banked documents and verified saves. The
+[shared picker](docs/NATIVE-PICKER-GUI.md) carries those controls through file
+selection. Claude adds Connect, Repaint, Desktop and status paging beside its
+full VDC terminal. VDC bitmap presentation remains in progress.
 
 The suite [Files app](docs/NATIVE-BROWSER.md#copying-from-the-suite-files-app)
 copies selected files across IEC drives and Ultimate paths. Press **C** in

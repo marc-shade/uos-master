@@ -270,8 +270,15 @@ through Editor, Files, Paint and Ultimate. Compact IEC records retain all 296
 D81 entries while a 66,057-byte edited document remains live: 96 app pages,
 36 display pages, 272 document pages and 19 banked cache pages use 423 of the
 426 available pages. Its [software qualification](validation/2026-09-13-native-picker-gui/README.md) passes. Native physical
-qualification, Claude's graphical frame, VDC graphics and backing storage
+qualification, VDC graphics and backing storage
 remain open.
+
+The [Claude frame](NATIVE-CLAUDE-GUI.md) now uses blue icon buttons, yellow
+focus and the shared 1351 pointer. Its VDC terminal retains all 80×25 cells;
+both graphical status pages preserve all 25 host panel rows and live glyphs.
+Ctrl+Help selects local controls without changing ordinary terminal shortcuts.
+The app uses 75 pages plus a 36-page surface; the resident kernel is unchanged.
+The [software qualification](validation/2026-09-13-native-claude-gui/README.md) passes.
 
 The [Claude lifecycle checkpoint](validation/2026-09-12-native-claude-lifecycle/README.md)
 addresses the Ultimate's asynchronous relay: the client keeps its NMI handler

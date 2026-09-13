@@ -70,9 +70,9 @@ additional allocation is needed for a bitmap text cache.
 
 The Editor core and picker occupy 24,574 bytes of their 24,576-byte window;
 the build rejects a module that exceeds it. The complete suite D64 has twelve
-entries and 48 free blocks. The full mouse workflow selects a separate data
-disk for its module copy so that the boot disk also has room for its Editor,
-calculator and Paint sample files.
+entries. Adding Claude's graphical frame leaves 24 free blocks. The full mouse
+workflow selects a separate data disk for its module copy and Paint image;
+the boot disk retains its Editor and calculator sample files.
 
 ## Software qualification
 

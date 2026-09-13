@@ -26,6 +26,10 @@ unsigned char acia_open(void);
 void native_video_begin(void);
 void native_video_end(void);
 void panel_clear(void);
+void gui_begin(void);
+void gui_dirty_all(void);
+extern unsigned char gui_live, gui_top, gui_controls_dirty, gui_dirty[25], gui_bitmap;
+static void panel_text(unsigned char row, const char *text);
 
 /* --- hardware, implemented in c128hw.s ---------------------------------- */
 extern unsigned char scrRow, scrCol, scrAttr, scrLen, scrChar;
@@ -115,8 +119,8 @@ unsigned int desyncs;   /* unrecognised opcodes seen */
 static unsigned char resyncCooldown;
 
 #if HAS_PANEL
-/* The 40-column VIC-II companion screen is written directly; it is small and
-   updated rarely, so it does not need the VDC fast path. */
+/* Keep every host panel cell in the text screen. The graphical companion
+   reads this backing store incrementally; text remains the display fallback. */
 #define VIC_SCREEN ((unsigned char *)0x0400)
 #define VIC_COLOR  ((unsigned char *)0xD800)
 
@@ -129,6 +133,7 @@ static void panel_write(unsigned char row, unsigned char col, unsigned char code
     if (row < 25 && col < 40) {
         VIC_SCREEN[off] = code;
         VIC_COLOR[off] = panelColor;
+        gui_dirty[row] = 1;
     }
 }
 #else
@@ -159,7 +164,7 @@ static void bell(void)
 static void bell_tick(void)
 {
     if (bellTimer && --bellTimer == 0)
-        *(volatile unsigned char*)0xd020 = native_border;
+        *(volatile unsigned char*)0xd020 = gui_bitmap ? 6 : native_border;
 }
 
 /*
@@ -224,7 +229,10 @@ static void handle_byte(unsigned char b)
         case CMD_HELLO:  argsNeeded = 2; break;
         case CMD_GLYPH:  argsNeeded = 1; break;
         case CMD_SCROLL: argsNeeded = 3; break;
-        case CMD_FRAME:  framesSeen = 1; resyncCooldown = 0; return;
+        case CMD_FRAME:
+            if (!framesSeen && !panelOwned && !closing)
+                panel_text(2, "bridge connected; terminal ready");
+            framesSeen = 1; resyncCooldown = 0; return;
         case CMD_BELL:   bell(); return;
         case CMD_BYE:    argsNeeded = 1; break;
         default:
@@ -363,6 +371,7 @@ static void handle_byte(unsigned char b)
         ++payloadGot;
         if (payloadGot >= 8) {
             scr_setglyph();
+            gui_dirty_all();    /* the companion also uses the live VDC font */
             state = S_OPCODE;
         }
         return;
@@ -413,6 +422,7 @@ static void pump_keyboard(void)
                    flag cannot prove the host received BYE. Keep NMI, parsing
                    and receive credits alive until its in-stream BYE reply. */
                 closing = 1;
+                gui_live = 2;
                 closeOutcome = 1;
                 closeJiffy = JIFFY_LOW;
                 closeTicks = 1200; /* 20 seconds at the KERNAL's 60 Hz clock */
@@ -476,6 +486,7 @@ void panel_clear(void)
         VIC_SCREEN[i] = 0x20;
         VIC_COLOR[i] = 1;
     }
+    gui_dirty_all();
 }
 
 static void panel_text(unsigned char row, const char *text)
@@ -527,6 +538,7 @@ int main(void)
     scrAttr = 0x0e;
     scr_init();
     landing(0);
+    gui_begin();
     for (;;) {
         N_READY = 1;
         key = kb_get();
@@ -539,8 +551,11 @@ int main(void)
             key = acia_open();
             if (!key) break;
             landing(key);
+            gui_top = 9;        /* show the complete error on panel row 17 */
+            gui_controls_dirty = 1;
         }
     }
+    gui_live = 1;
     panel_clear();
     panel_text(0, "claude / uos");
     panel_text(2, "waiting for the linux bridge");

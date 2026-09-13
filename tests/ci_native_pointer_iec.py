@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -36,7 +37,8 @@ from native_controls_check import panel_screen,absent_body
 from native_controls_scene import surface as controls_surface,RECTS as CONTROLS_RECTS
 from native_files_scene import (browser_surface as files_surface,browser_console as files_console,
     copy_surface as files_copy_surface,copy_console as files_copy_console,RECTS as FILES_RECTS)
-from native_claude_check import landing_screen
+from native_claude_check import landing_screen,capture_frame as claude_capture
+from native_claude_scene import RECTS as CLAUDE_RECTS
 from paint_scene import surface as paint_surface,console as paint_console,RECTS as PAINT_RECTS,MESSAGES as PAINT_MESSAGES
 from native_paint_format import encode as paint_encode
 
@@ -86,8 +88,9 @@ def main():
     parser.add_argument('--paint-only',action='store_true')
     parser.add_argument('--controls-only',action='store_true')
     parser.add_argument('--files-only',action='store_true')
-    parser.add_argument('--editor-only',action='store_true');args=parser.parse_args()
-    assert sum((args.paint_only,args.controls_only,args.files_only,args.editor_only))<=1
+    parser.add_argument('--editor-only',action='store_true')
+    parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
+    assert sum((args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
     print('Native pointer VICE:',work,flush=True)
     shutil.copy2(__file__,work/'run.py')
@@ -100,7 +103,9 @@ def main():
         images={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in image.iterdir() if p.suffix in ('.prg','.d64')})
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     pointer_app='desktop'
+    claude_labels={m[2]:int(m[1],16) for m in re.finditer(r'^al ([0-9A-Fa-f]+) \.(\S+)',(image/'claude.lbl').read_text(),re.M)}
     def symbol(name):
+        if pointer_app=='claude':return claude_labels[name]
         if name.startswith('pm_') and pointer_app in ('editor','files'):
             kind,active={'editor':('ed_module_kind',1),'files':('fg_kind',2)}[pointer_app]
             if app_read(lst_symbol('native-desktop/'+pointer_app,kind))==bytes([active]) and app_read(picker_symbol(pointer_app,'fd_active'))==b'\1':
@@ -232,6 +237,24 @@ def main():
                 actual=capture.capture(label+('-vic' if mode==0 else '-vdc'),mode=mode,address=address,count=columns*25)
                 assert actual==oracle(columns),(label,columns)
             report['screens'].append(label);save()
+        def claude_view(label,*,top=0,focus=0,error=0):
+            actual,record=claude_capture(capture,app_read,claude_labels,work,label,
+                panel=landing_screen(40,error),top=top,focus=focus)
+            assert capture.capture(label+'-vdc',mode=1,count=2000)==landing_screen(80,error)
+            xy=position();mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3
+            error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+            (work/(label+'-canvas.bin')).write_bytes(raw)
+            record.update(position=xy,mode=mode,rectangle=check_canvas(raw,surface_pixels(actual,*xy)))
+            report.setdefault('claude_frames',[]).append(record);save()
+            subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
+            print('PASS: Claude companion, VDC and 64000 mouse pixels:',label,flush=True)
+        def claude_click(index):
+            x0,y0,x1,y1=CLAUDE_RECTS[index];move_to((x0+x1)//2,(y0+y1)//2)
+            before=int.from_bytes(read(0x3d13,2),'little')
+            mouse.button(True);wait(lambda:value('pm_arm')==index,'Claude button armed',30)
+            mouse.button(False);wait(lambda:ready() and value('pm_buttons')==0,'Claude click completed',120)
+            assert int.from_bytes(read(0x3d13,2),'little')==before
+            report['events'].append(dict(claude_button=index,keyboard_events_during_click=0));save()
         def calculator_view(label,display,history,selected,*,dialog=False,name='',cursor=0,status=0):
             wait(lambda:header('calc') and ready(),label,60)
             expected=dict(display=display,history=history,selected=selected,dialog=dialog,name=name,cursor=cursor,status=status)
@@ -485,6 +508,7 @@ def main():
             if args.controls_only and name!='controls':continue
             if args.files_only and name!='files':continue
             if args.editor_only and name!='editor':continue
+            if args.claude_only and name!='claude':continue
             ran_apps.add(name)
             move_to(100,40+24*index);desktop(name+'-hover',index)
             before=int.from_bytes(read(0x3d13,2),'little')
@@ -592,6 +616,14 @@ def main():
                 # Stock GTK symbolic mapping: host F10 is the C128 Tab key.
                 controls_click(0);key('F10','controls');controls_view('ultimate-tab',0,1)
                 key('Return','controls');controls_view('ultimate-enter',1,1)
+            elif name=='claude':
+                pointer_app='claude'
+                assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
+                wait(lambda:value('pm_seen')==1,'Claude 1351 attached',15)
+                move_to(160,170);claude_view('claude-open')
+                claude_click(4);claude_view('claude-next-page',top=9,focus=3)
+                claude_click(3);claude_view('claude-previous-page',focus=4)
+                claude_click(0);claude_view('claude-port-unavailable',top=9,focus=0,error=2)
             elif name=='paint':
                 pointer_app='paint'
                 assert read(0x033c,2)==symbol('pk_entry').to_bytes(2,'little')
@@ -618,6 +650,10 @@ def main():
                 paint_click(2);paint_view('paint-redo',paint_document,dirty=1)
                 paint_click(4)
                 for char in 'paintpic':key(char,'paint')
+                key('F10','paint');picker_click(1)
+                key('9','paint');key('Return','paint')
+                picker_view('paint-save-destination',disk_records(data_disk.read_bytes()),mode=2,device=9)
+                picker_click(17)
                 paint_view('paint-save-dialog',paint_document,dirty=1,mode=2)
                 paint_click(24);wait(lambda:value('pa_status')==1,'Paint save verified',120)
                 paint_view('paint-saved',paint_document,dirty=0,status=1)
@@ -629,19 +665,18 @@ def main():
                 paint_click(3);assert value('pd_dirty')==1
                 paint_click(5);paint_view('paint-open-confirm',bytes(8192)+b'\x10'*1024,dirty=1,mode=1)
                 paint_click(24);assert value('pa_picker_active')==1 and not value('pa_bitmap')
-                entries=disk_records(disk.read_bytes())
+                entries=disk_records(data_disk.read_bytes())
                 for entry in entries:entry['app']=False
                 chosen=next(i for i,entry in enumerate(entries) if entry['name'].rstrip(b'\xa0')==b'PAINTPIC')
                 key('Home','paint')
                 for _ in range(chosen):key('Down','paint')
-                picker_view('paint-file-picker',entries,selected=chosen)
+                picker_view('paint-file-picker',entries,selected=chosen,device=9)
                 picker_click(16);paint_view('paint-loaded',paint_document,dirty=0,status=2)
                 report['paint_filtered_line_samples']=int.from_bytes(app_read(symbol('pk_rejects'),2),'little');save()
             else:
                 current=bytes(read(0xd000+at)[0] for at in (0,1,2,3,0x10,0x15,0x17,0x1b,0x1c,0x1d,0x27,0x28))
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
-            if name=='claude':screens(name,landing_screen)
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
             key('F8' if name=='claude' else 'F9','desktop')
             pointer_app='desktop'
@@ -666,12 +701,14 @@ def main():
         before_files=exact_d64_files((image/'uos128.d64').read_bytes())
         if 'editor' in ran_apps:assert contents.pop(b'GUINOTE')==(1,bytes.fromhex(report['editor_saved_hex']))
         if 'calc' in ran_apps:assert contents.pop(b'GUIHIST')==(1,b'42\r')
-        if 'paint' in ran_apps:assert contents.pop(b'PAINTPIC')==(1,paint_encode(paint_document))
         data_contents=exact_d64_files(data_disk.read_bytes())
+        if 'paint' in ran_apps:assert data_contents.pop(b'PAINTPIC')==(1,paint_encode(paint_document))
         assert exact_d64_files((work/'initial-data-9.d64').read_bytes())=={}
         assert data_contents==({b'FSCOPY':copied_source} if 'files' in ran_apps else {})
         assert contents==before_files
-        if 'paint' in ran_apps:report['paint_file_sha256']=hashlib.sha256(paint_encode(paint_document)).hexdigest()
+        if 'paint' in ran_apps:
+            report['paint_file_sha256']=hashlib.sha256(paint_encode(paint_document)).hexdigest()
+            report['paint_destination_device']=9
         if 'calc' in ran_apps:report['calculator_history_export_hex']=b'42\r'.hex()
         if 'files' in ran_apps:
             report['files_copy_sha256']=hashlib.sha256(copied_source[1]).hexdigest()

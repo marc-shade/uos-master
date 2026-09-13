@@ -5,6 +5,9 @@
 ; unused tail, visible in bank 0 during the ROM IRQ. No IRQ vector or MMU is
 ; changed. Chain the saved callback for unambiguous input and restore both
 ; the callback and the complete table before giving up ownership.
+.weak
+NK_LOCAL_HELP=0
+.endweak
 nk_filter_image:
 .logical $1014
 pk_entry:
@@ -84,6 +87,20 @@ pk_pass:
         pla
         tax
         pla
+ .if NK_LOCAL_HELP
+        cmp #$84
+        bne pk_chained
+        pha
+        txa
+        and #4                ; KEYCHK receives the scan's modifiers in X
+        beq pk_plain_help
+        pla
+        lda #255              ; no ROM key table emits $ff as an input key
+        bne pk_chained
+pk_plain_help:
+        pla
+pk_chained:
+ .endif
         plp
         jmp (pk_next)
 pk_next: .word 0

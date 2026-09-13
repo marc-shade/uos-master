@@ -81,7 +81,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Memory and FR-M1 | Native 426-page allocator with owner/generation checks, bounded transfers and 4 KiB resident Ultimate services; legacy fixed REU snapshot banks | REU/expansion size detection and allocation, larger app heaps, RAM disks, persistence, no-REU desktop fallback | 128 KiB through 16 MiB configurations; alias/wrap and allocation exhaustion tests; unrelated REU data preserved |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher with VDC text controls, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
-| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files and Editor | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
+| Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
 | FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and VDC text controls | Full interactive 80-column desktop; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes | RAM-size detection; bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
@@ -111,7 +111,7 @@ compatibility requirement from providing equivalent uOS applications.
 | APP-ORGANIZE | Calendar, appointments, alarms, contacts, notes and clock accessories | Clock plus editor | Persistent appointments; alarms while another app is active; timezone/date rollover tests |
 | APP-MEDIA | Image/document/text viewers, font browser, photo/text scrap managers, SID/audio player | Shell's short CAT and a paged cartridge hex/ASCII viewer | File association launch, scrolling/zoom, playlist, inter-app scraps, supported format round trips |
 | APP-COMMS | Terminal (PETSCII/ANSI), serial/modem and TCP/Telnet, file transfer; network resource browser | Socket driver, small HTTP GET and native Claude host-PTY client over SwiftLink; general terminal protocols remain open | Real BBS/LAN session, encoding negotiation, transfer integrity, reconnect and cancel |
-| APP-CLAUDE | Include marc-shade/claude-c128 as a native desktop suite app | Built into both suite disks; A launches, Return opens the modem, Linux bridge starts after handshake, F8 or host exit restores desktop/font/NMI state; CPU and VICE checks pass | Native physical serial session and actual authenticated Claude session; usable terminal controls on either display remain part of FR-D1/D2 |
+| APP-CLAUDE | Include marc-shade/claude-c128 as a native desktop suite app | Built into both suite disks with a blue graphical VIC companion, mouse/keyboard Connect/Repaint/Desktop and full status paging; full VDC terminal, handshake-controlled Linux bridge and acknowledged shutdown | Native physical serial session and actual authenticated Claude session; usable terminal controls on either display remain part of FR-D1/D2 |
 | APP-PRINT | Printer setup, spooler, preview, job queue and cancel; text/raster/PostScript/PDF where backend supports it | Absent | Print document/picture/table through declared physical and Ultimate printer backends; disk-full/disconnect recovery |
 | APP-ARCHIVE | Archive manager, disk-image tools, backup/restore, format conversion | Absent | Recover a backup after reset; malformed/truncated archive tests; byte-exact image/file verification |
 | APP-DEVELOP | Assembler/editor integration, monitor/debugger, build/run tools, API help | Shell PEEK/POKE only | Build and debug a small native app from uOS; preserve desktop/app state on exit |
@@ -615,5 +615,15 @@ The [shared graphical picker](NATIVE-PICKER-GUI.md) extends the blue interface
 through Editor, Files, Paint and Ultimate. It retains existing navigation,
 raw paths, caller state and checked resource cleanup. Compact IEC cache records
 preserve all 296 D81 entries beside a document over 64 KiB. The [software qualification](validation/2026-09-13-native-picker-gui/README.md)
-passes; physical installation, Claude's graphical frame,
+passes; physical installation,
 VDC bitmap UI and the wider roadmap remain open.
+
+The [Claude graphical companion](NATIVE-CLAUDE-GUI.md) completes blue VIC
+frames for the six current suite apps. Connect, Repaint, Desktop and status
+paging have icon buttons, yellow focus, keyboard controls and 1351 input.
+The VDC retains the entire terminal; Ctrl+Help selects local controls while
+ordinary terminal keys retain their meanings. All 25 panel rows, raw colors
+and live glyphs remain available. The 75-page client and its 36-page surface
+use the existing kernel. The [software qualification](validation/2026-09-13-native-claude-gui/README.md) passes; native
+physical serial, an authenticated session, a VIC-only terminal, VDC bitmap
+presentation and the remaining application roadmap still require work.

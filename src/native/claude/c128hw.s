@@ -790,6 +790,9 @@ _acia_put:
 ; transmitted while the receive direction worked perfectly.
 ; ---------------------------------------------------------------------------
 _kb_get:
+        jsr _gui_poll           ; bounded drawing and mouse actions, no key count
+        cmp #0
+        bne @mouse
         lda #1
         sta $3d12               ; each poll follows all effects of the previous key
         jsr $1c3b               ; native N_KEYIN and shared event accounting
@@ -798,7 +801,8 @@ _kb_get:
         inc _kbCount
         bne @none
         inc _kbCount+1
-@none:  ldx #0
+@none:  jsr _gui_key            ; local controls only while explicitly selected
+@mouse: ldx #0
         rts
 
 ; ---------------------------------------------------------------------------
@@ -1038,10 +1042,12 @@ fontAddress:
         clc
         adc #$10
         sta offsetHi
+        sta _gui_font_hi
         rts
 
 _native_video_end:
         jsr _acia_shutdown
+        jsr _gui_end            ; restore pointer/filter/display before VDC state
         jsr fontAddress
         jsr scrSetAddr
         lda #<savedFont
@@ -1083,6 +1089,7 @@ _native_video_end:
         rts
 
 .rodata
+        .import _gui_poll, _gui_key, _gui_end, _gui_font_hi
 nativeKeys: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84
 restoreRegs: .byte 10,11,12,13,14,15,20,21,24,25,26,27,28,29,32,33,18,19
 restoreCount = *-restoreRegs
