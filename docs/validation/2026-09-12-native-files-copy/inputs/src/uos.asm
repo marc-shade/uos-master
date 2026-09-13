@@ -1,0 +1,1040 @@
+;==========================================================================
+; UltOS
+; Scott Hutter
+;
+;   This file is part of UltOS.
+;
+;    UltOS is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    UltOS is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with UltOS.  If not, see <https://www.gnu.org/licenses/>.
+;==========================================================================
+
+.include "equates.inc"
+.include "routines.inc"
+.include "macros.inc"
+.include "kernal.inc"
+.include "vic-ii.inc"
+.include "io.inc"
+.include "ultimate-files.inc"
+.include "file-dialog.inc"
+
+
+* = $0801    ;start of BASIC area
+; ==========================================================
+; BASIC Loader
+; ==========================================================
+.byte $0C, $08      ; pointer to next GFX_LINE
+.byte $0A, $00      ; GFX_LINE number (10)
+.byte $9E           ; SYS token
+.text " 2062"       ; SYS address in ASCII
+.byte $00, $00, $00 ; end-of-program
+
+        jmp START
+        jmp main_loop   ; main loop entry
+        jmp find_control
+        jmp FETCH_STASH_APP
+        jmp FETCH_STASH_SCREEN
+        jmp FETCH_STASH_RECT
+        jmp CLEAR_RECT
+        jmp LOADIMM
+        jmp LOADER
+        jmp FILLFILE_RT ; r0 -> name; copies to load buffer for APP_LOADER
+        jmp KEYIN_EXT   ; A = keyboard event (0 = none): KERNAL GETIN + C128 ESC/cursor scan (drv1351)
+        jmp GETCAP_RT   ; X = capability id -> A/X = driver base, or 0
+        jmp LAUNCH_APP_RT ; file buffer -> load + enter the app (core-resident)
+        jmp VDC_TEXT    ; 80-col companion: A=row X=col r9->PETSCII text (driver, no-op w/o VDC)
+        jmp VDC_CLR     ; 80-col companion: A=row -> blank the row (driver, no-op w/o VDC)
+        jmp TICK        ; app input loops can keep the desktop clock serviced
+        jmp READ_BTN    ; shared, IRQ-guarded button read for either control port
+
+; ==========================================================
+; START
+; Initialize the system
+; ==========================================================
+START:
+        LDA #$12	; Load clock registers with inital time
+	STA TODHRS	; Store 12 in hour  (Bit 7=PM)
+	LDA #$00
+	STA TODMIN	; Store 0 in minutes
+	LDA #$00
+	STA TODSEC	; Store 0 in seconds
+	LDA #$00
+	STA TODTEN	; Store 0 in tenth of a second
+			; Clock starts after writing to this register
+
+        lda #$01
+        sta r16         ; second register test
+
+        lda #$00
+        sta VIC_BASE + VIC_BORDER_COL
+
+        lda #$00
+        sta VIC_BASE + VIC_BG_COL0
+
+        lda #$93
+        jsr CHROUT
+
+_prmsg1
+        LDY #$00
+_prloop:
+        LDA msg1,Y
+        BEQ _prdone
+        JSR CHROUT
+        INY
+        JMP _prloop
+_prdone:
+        LDA #$0D
+        JSR CHROUT
+
+        jmp loadfiles
+
+msg1:   .text "ultos", $0d, $00
+
+; ==========================================================
+; Load Files
+; Load the ML subsystems, base drivers, and data
+; ==========================================================
+loadfiles:
+        JSR LOADIMM
+	    .text "uos-gfx",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-vdc",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-drv1351",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-sprites",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-reu",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-net",$00
+        jsr LOADER
+
+        JSR LOADIMM
+            .text "uos-files",$00
+        jsr LOADER
+
+        JSR LOADIMM
+	    .text "uos-desktop",$00
+        jsr LOADER
+
+; ==========================================================
+; Setup
+; Various post loading initialization code
+; ==========================================================
+setup:
+        #HiresInit
+        #HiresOn VIC_COLOR_BLACK, VIC_COLOR_CYAN
+
+        ; point brk vector to our routine
+        sei
+        lda #<SYSERR
+        sta brkVectorlo
+        lda #>SYSERR
+        sta brkVectorhi
+        cli
+
+        ; clear app id table
+        lda #$ff 
+        sta APP_ID_TBL
+
+        jsr SETUP_CTL_BUF
+
+        ; enable sprite 0
+        lda #$01    
+        sta VIC_BASE + VIC_SPR_ENBL
+        
+        ;color
+        lda #VIC_COLOR_WHITE  
+        sta VIC_BASE + VIC_SPR_COL0   
+        
+        ; sprite 0 data pointer  
+        lda #$00        ; $8000 = sprite table
+        sta $87f8   
+        
+        ; sprite 0 x/y location
+        lda #$80    
+        sta VIC_BASE + VIC_SPR0_X
+        sta VIC_BASE + VIC_SPR0_Y
+
+        ; Keep KERNAL IRQ vectors visible while banking BASIC out. Interrupts
+        ; are enabled here and during the REU parameter setup; $35 hid both
+        ; ROMs, leaving an IRQ window before REU_STASH selected $37 again.
+setup_banking:
+        lda #$36
+        sta $01
+
+        ; stash the empty screen
+        lda #<BITMAP_START              ; source addr
+        sta REU_PARAMS
+        lda #>BITMAP_START
+        sta REU_PARAMS+1
+        lda #<$0000                     ; expanson ram addr
+        sta REU_PARAMS+2                
+        lda #>$0000
+        sta REU_PARAMS+3
+        lda #$00                        ; bank 0
+        sta REU_PARAMS+4                ; expansion bank #
+        lda #<$2000                     ; bytes to move  (8192)       
+        sta REU_PARAMS+5
+        lda #>$2000
+        sta REU_PARAMS+6
+        jsr REU_STASH
+
+        ; second display (8563 VDC): apply the persisted display mode
+        ; (FR-S3 p2): "UOS-SET" carries the mode byte at $7355 — 0 = 40-col
+        ; only. If the file is missing, the default is both (2).
+        jsr VDPREF
+        jsr VDSETUP
+
+        ; the self-setting clock: network check + SNTP through the
+        ; Ultimate command interface (uos-net); NET_STATE says how it went
+        jsr NET_SYNC
+
+        ; Install peripheral IRQ work after boot-time IEC/settings and
+        ; network I/O. A missing UOS-SET LOAD can stall with the mouse IRQ
+        ; already active; leave the standard KERNAL handler in place here.
+        jsr INIT_MOUSE
+
+        ; start the application
+        jsr DESK_START
+
+; ==========================================================
+; Main input waiting loop
+; ==========================================================
+main_loop:
+        jsr TICK
+
+        ; keyboard: ESC leaves the current app and returns to the desktop.
+        ; Apps that want keys themselves (e.g. the file manager's input
+        ; loop) poll KEYIN in their own loops and never return here.
+        jsr KEYIN
+        cmp #$1b
+        beq esc_to_desk
+
+        ;read the mouse button from EITHER control port (read-both-ports)
+        jsr READ_BTN
+        beq btnclick
+        jmp main_loop
+
+esc_to_desk:
+        #UnregisterApp
+        jsr LOAD_IMM
+        .text "uos-desktop",$00
+        jsr APP_LOADER
+        jmp DESK_START
+btnclick:
+        ; check for drag operation
+        inc mousedowntime
+        bne _keepwaiting
+        inc mousedowntime+1
+        lda mousedowntime+1
+        cmp #$20                ; just check if mouse down for a certain length of time
+        bne _keepwaiting
+        jsr dragmode
+_keepwaiting:
+        ; wait for mouse up (either control port)
+        jsr READ_BTN
+        beq btnclick
+        jsr normalmode
+        jsr TESTCLICK
+        bne goodclick
+        jmp next
+goodclick:
+        jmp (r4L)
+next:
+        jmp main_loop
+ 
+dragmode:
+        ; sprite 0 data pointer  
+        lda #$01        ; $8000 = sprite table
+        sta $87f8
+        rts
+
+normalmode:
+        lda #$00
+        sta mousedowntime
+        sta mousedowntime + 1
+        ; sprite 0 data pointer  
+        lda #$00        ; $8000 = sprite table
+        sta $87f8
+        rts
+
+mousedowntime:
+        .byte $00, $00
+
+; ==========================================================
+; Read Mouse Button (read-both-ports)
+; Returns Z=1 (A=0) if the fire button is down on EITHER control port.
+;   port 1 fire = $dc01 bit4 (port B is already an input) — read directly
+;   port 2 fire = $dc00 bit4 (port A is the keyboard-column OUTPUT, and an
+;     output pin is driven high hard enough that the switch can't pull it
+;     low on read; verified on HW). So briefly flip port-A bit4 to INPUT
+;     ($dc02), read, restore — guarded by sei so an IRQ can't run the
+;     keyboard scan with the column direction changed. Core-resident and
+;     only ever called from the post-boot main loop, so it can never
+;     disturb the boot-time IRQ (an earlier attempt to do this inside the
+;     mouse IRQ hung the boot).
+; ==========================================================
+READ_BTN:
+        lda $dc01
+        and #$10
+        beq _rb_down            ; port 1 fire down (port B is already input)
+        ; port 2 fire = $dc00 bit4; port A is the keyboard-column OUTPUT, so
+        ; flip it to input for the read (sei-guarded) then restore.
+        php
+        sei
+        lda $dc02
+        pha
+        and #$ef                ; ONLY bit4 (fire) -> input; bits 6-7 stay
+        sta $dc02               ; outputs = the SID pot MUX select, or the
+                                ; mouse's Y/X pot movement goes wild
+        lda $dc00
+        and #$10                ; port 2 fire
+        sta rbtmp
+        pla
+        sta $dc02
+        plp
+        lda rbtmp
+        rts                     ; Z=1 iff port 2 fire down
+_rb_down:
+        lda #$00
+        rts
+rbtmp:  .byte $00
+
+; ==========================================================
+; Find Control
+; r1 = app id to find 
+; r2 = control id to find
+;
+; returns
+; r3H = high address of control
+; r3L = lo address of control
+; ==========================================================
+find_control:
+        lda #<APP_CTL_BUF
+        sta r3L
+        lda #>APP_CTL_BUF
+        sta r3H
+
+        ldy #$00
+        ldx #$00
+ _loop:
+        lda r3H
+        cmp #>APP_CTL_END
+        beq _notfound  
+_skip:
+        lda (r3),y      
+        cmp r1         ; check app id
+        beq _foundappid
+        bne _skip9
+
+_foundappid:
+        iny
+        lda (r3),y      ; get 1st byte
+        cmp r2         ; compare to the id we want
+        beq _foundctlid
+        dey             ; not same app id
+        lda r3L
+        clc
+        adc #$0a        ; skip 10 bytes
+        bcc _cont
+        inc r3H         ; if so, increase hi byte
+_cont:
+        sta r3L         ; increase lo byte
+        jmp _loop       ; do it again
+
+_skip9:
+        lda r3L
+        clc
+        adc #$0a
+        bcc _cont2
+        inc r3H         ; if so, increase hi byte
+_cont2:
+        sta r3L         ; increase lo byte
+        jmp _loop       ; do checks again
+
+_foundctlid:
+        rts
+        
+_notfound:
+        lda #$00
+        sta r3H
+        sta r3L
+        rts
+
+; ==========================================================
+; Quit to BASIC
+; ==========================================================
+TOBASIC:
+        #HiresOff
+
+        lda #$01    
+        sta VIC_BASE + VIC_SPR_ENBL
+        RTS
+
+; ==========================================================
+; File Loader
+; Equivalent to LOAD"file",8,1
+; ==========================================================
+LOADER:
+        lda #$00
+        sta LOADERR             ; this attempt owns the error latch
+        LDY #$00        ; print file name being loaded
+_prloop:
+        LDA file,Y
+        BEQ _prdone
+        JSR CHROUT
+        INY
+        JMP _prloop
+_prdone:
+        LDA #$0D
+        JSR CHROUT
+
+        LDA ftmp
+        LDX #<file
+        LDY #>file
+        JSR $FFBD     ; call SETNAM
+        LDA #$01
+        LDX $BA       ; last used device number
+        BNE _skip
+        LDX #$08      ; default to device 8
+_skip   LDY #$01      ; not $01 means: load to address stored in file
+        JSR $FFBA     ; call SETLFS
+
+        LDA #$00      ; $00 means: load to memory (not verify)
+        JSR $FFD5     ; call LOAD
+        BCS _error    ; if carry set, a load error has happened
+        RTS
+_error
+        STA LOADERR   ; latch the kernal error for callers / diagnostics
+        ; Accumulator contains BASIC error code
+
+        ; most likely errors:
+        ; A = $05 (DEVICE NOT PRESENT)
+        ; A = $04 (FILE NOT FOUND)
+        ; A = $1D (LOAD ERROR)
+        ; A = $00 (BREAK, RUN/STOP has been pressed during loading)
+
+        ;... error handling ...
+        RTS
+
+ftmp:   .byte $00
+LOADERR: .byte $00     ; last kernal LOAD error ($04 file not found, $05 device
+                       ; not present, $1d load error); 0 until the first failure
+file:   .fill 17, 0              ; 16 filename bytes plus the terminator
+
+; ==========================================================
+; Fill File Buffer
+; r0 = pointer to a $00-terminated filename
+; Copies it into the LOADER filename buffer (file) and
+; sets ftmp to its length, so a subsequent jsr APP_LOADER
+; loads that file (LOAD"file",8,1 semantics).
+; ==========================================================
+FILLFILE_RT:
+        ldy #$00
+        ldx #$00
+_ffloop:
+        lda (r0),y
+        beq _ffdone
+        sta file,x
+        inx
+        iny
+        cpx #$10                ; 1541 filenames cap at 16 chars
+        bne _ffloop
+_ffdone:
+        txa
+        sta ftmp
+        lda #$00
+        sta file,x
+        rts
+
+; ==========================================================
+; Launch App
+; Loads the file named in the LOADER buffer (set by FILLFILE
+; or LOAD_IMM) and enters it at APP_START. Lives in the core
+; on purpose: an app that loads another app OVER ITSELF (both
+; at APP_START) has its own code overwritten while the kernal
+; LOAD is running, so the LOAD returns into the new image's
+; bytes. Callers therefore `jmp LAUNCH_APP` (never jsr) and
+; let core-resident code do the load and the jump.
+; ==========================================================
+LAUNCH_APP_RT:
+        jsr UFS_CLOSEALL        ; resident ownership survives a failed close
+        jsr UFP_RECOVER
+        ; clear the desktop bitmap before the app draws: apps paint outline
+        ; windows straight onto the bitmap, and the desktop icons showed
+        ; through them. Same colour rule and sprite-pointer restore as
+        ; DESK_START (GFX_ON's colour fill clobbers $87f8).
+        lda SETREC_BG
+        and #$0f
+        bne la_bg
+        lda #$10
+la_bg:  jsr GFX_ON
+        lda #$00
+        sta $87f8
+        jsr LOADER
+        bcc la_loaded
+        jmp DESK_START          ; a failed/partial load cannot enter APP_START
+la_loaded:
+        jmp APP_START
+
+; ==========================================================
+; Key In
+; Returns the next keyboard event from the KERNAL's keyboard
+; buffer (the KERNAL IRQ scans and decodes the matrix); A = 0
+; when nothing is pending. This is the OS keyboard driver path.
+; ==========================================================
+; ==========================================================
+; Load Immediate
+; Like a PRIMM subroutine, this will load the file
+; following the jsr call
+; ==========================================================
+LOADIMM:
+	PHA     		; save A
+	TYA			; copy Y
+	PHA  			; save Y
+	TXA			; copy X
+	PHA  			; save X
+	TSX			; get stack pointer
+	LDA $0104,X		; get return address low byte (+4 to correct pointer)
+	STA $BC			; save in page zero
+	LDA $0105,X		; get return address high byte (+5 to correct pointer)
+	STA $BD			; save in page zero
+	LDY #$01		; set index (+1 to allow for return address offset)
+LOADIMM2:
+	LDA ($BC),Y		; get byte from string
+	BEQ LOADIMM3	        ; exit if null (end of text)
+
+	;JSR CHAROUT	        ; else display character
+        DEY
+	STA file,Y
+        INY
+        TYA
+        STA ftmp
+
+        INY			; increment index
+	BNE LOADIMM2	        ; loop (exit if 256th character)
+
+LOADIMM3:
+	TYA                     ; copy index
+	CLC			; clear carry
+	ADC $BC			; add string pointer low byte to index
+	STA $0104,X		; put on stack as return address low byte
+				; (+4 to correct pointer, X is unchanged)
+	LDA #$00		; clear A
+	ADC $BD		        ; add string pointer high byte
+	STA $0105,X		; put on stack as return address high byte
+				; (+5 to correct pointer, X is unchanged)
+	PLA			; pull value
+	TAX  			; restore X
+	PLA			; pull value
+	TAY  			; restore Y
+	PLA  			; restore A
+	RTS
+
+; ==========================================================
+; Test click
+; Checked whenever a mouse click occurs
+; ==========================================================
+TESTCLICK:
+        ; Snapshot and normalize the full nine-bit sprite coordinate. In
+        ; particular X=232..255 borrows from the VIC high bit when -24.
+        php
+        sei
+        lda VIC_BASE + VIC_SPR_XMSb
+        and #1
+        sta r5H
+        sec
+        lda VIC_BASE + VIC_SPR0_X
+        sbc #24
+        sta r5L
+        lda r5H
+        sbc #0
+        sta r5H
+        lda VIC_BASE + VIC_SPR0_Y
+        sec
+        sbc #50
+        sta r6L
+        plp
+        ldx #$00
+        lda #25                 ; scan the whole bounded table (25 slots),
+        sta r1                  ; not the counter: a freed slot in the middle
+                                ; must not hide the live ones after it
+
+_loopbtns:
+        ; get app id; $ff = a freed slot whose stale coords must NOT match
+        ; (RemoveButton only marked the id; the scan never checked it, so
+        ; every "removed" button stayed clickable until its slot was reused)
+        lda APP_CTL_BUF,x
+        cmp #$ff
+        beq _checknextbtn
+        ; Inclusive left/top, exclusive right/bottom. Compare high bytes
+        ; first so controls may span the 256-pixel boundary.
+        lda r5H
+        cmp APP_CTL_BUF+5,x
+        bcc _checknextbtn
+        bne _test_right
+        lda r5L
+        cmp APP_CTL_BUF+4,x
+        bcc _checknextbtn
+_test_right:
+        lda r5H
+        cmp APP_CTL_BUF+8,x
+        bcc _test_vertical
+        bne _checknextbtn
+        lda r5L
+        cmp APP_CTL_BUF+7,x
+        bcs _checknextbtn
+_test_vertical:
+        lda r6L
+        cmp APP_CTL_BUF+6,x
+        bcc _checknextbtn
+        cmp APP_CTL_BUF+9,x
+        bcs _checknextbtn
+        lda APP_CTL_BUF,x
+        sta r2
+        lda APP_CTL_BUF+1,x
+        sta r3
+        lda APP_CTL_BUF+2,x
+        sta r4L
+        lda APP_CTL_BUF+3,x
+        sta r4H
+        lda #1
+        rts
+
+_checknextbtn
+        txa 
+        clc
+        adc #$0a
+        tax 
+        dec r1
+        bne _loopbtns
+_badclick:
+        lda #$00
+        rts 
+
+; ==========================================================
+; Clock Tick
+; Occurs when 1 second has passed
+; Uses cassette buffer for app registered callbacks 
+; ==========================================================
+TICK:
+        lda r16
+        ; check if a second has passed
+        cmp $DC09
+        bne _tick
+        jmp _skip
+_tick:
+        lda $DC09
+        sta r16
+        lda $033d
+        beq _skip
+        jmp ($033c)
+_skip:
+        rts
+
+; ==========================================================
+; System Error
+; Intercepts the BRK vector and displays a debug msg
+; ==========================================================
+SYSERR:
+        pla 
+        pla 
+        pla
+        pla
+        PopW r0
+        SubVW 2, r0
+        lda r0H
+        ldx #0
+	jsr er1
+        lda r0L
+	jsr er1
+        #DrawRect 100,70,119,70,1
+        ;#DrawImage 112, 85, 24, 44, img_stop
+        ;#Text 146, 85, oops
+        #Text 112, 85, oops
+        #Text 112, 105, panicstr
+_forever:
+        jmp _forever
+
+er1:	pha
+	lsr
+	lsr
+	lsr
+	lsr
+	jsr er2
+	inx
+	pla
+	and #%00001111
+	jsr er2
+	inx
+	rts
+er2:	cmp #10
+	bcs er3
+	addv '0'
+	bne er4
+er3:	addv '0'+7
+er4:	sta panicaddr,x
+	rts
+oops:
+        .text "SYSTEM SUSPENDED", $00
+panicstr:
+        .text "Error near "
+        .byte "$"
+panicaddr:
+	.text "xxxx"
+	.byte $00
+
+img_stop:
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%01111110,%00000000
+.byte %00000000,%11111111,%00000000
+.byte %00000001,%11111111,%10000000
+.byte %00000011,%11111111,%11000000
+.byte %00000111,%00001010,%01100000
+.byte %00000110,%11010100,%10100000
+.byte %00000111,%01010100,%01100000
+.byte %00000110,%11011010,%11100000
+.byte %00000011,%11111111,%11000000
+.byte %00000001,%11111111,%10000000
+.byte %00000000,%11111111,%00000000
+.byte %00000000,%01111110,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+.byte %00000000,%00000000,%00000000
+
+; ==========================================================
+; Set up Control Buffer
+; A buffer exists to manage the creation of controls
+; (hit spots) on the screen.  This subroutine initializes
+; it to it's basic state
+; ==========================================================
+SETUP_CTL_BUF:
+        lda #$00
+        sta APP_CTL_CTR         ; was never initialised: RAM garbage (122-135
+                                ; on three hardware boots) drove the click scan
+                                ; off the 25-slot table into driver code
+        lda #<APP_CTL_BUF
+        sta r1L
+        lda #>APP_CTL_BUF
+        sta r1H
+
+        lda #>APP_CTL_END
+        sta r2
+
+        ldy #$00
+        ldx #$00
+ _loop:
+        
+_skip:
+        lda #$ff        ; set app id to $ff
+        sta (r1L),y
+        
+        inc r1L
+        jsr _addhi
+        lda #$ff        ; set ctl id to $ff
+        sta (r1L),y
+
+        inc r1L
+        jsr _addhi
+        lda #$00 
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+        inc r1L
+        jsr _addhi
+        sta (r1L),y
+
+        jmp _loop
+
+ _addhi:
+        bne _cont
+        inc r1H
+        lda r1H        ; if we have reached the end
+        cmp r2         ; of control table, exit
+        beq _return
+        lda #$00
+        sta r1L
+_cont:
+        rts
+_return:
+        pla             ; break out of inner loop
+        pla
+        rts
+
+; ==========================================================
+; Clear Screen Rectangle
+;       r0 = RAM address, r2 = byte count (zero is a no-op)
+; Clears RAM even without an REU. Advances r0 and consumes r2; r1 unused.
+; The ClrRect macro saves/restores r0/r1/r2 (X1/Y1/X2) around its band
+; clears. Direct callers must likewise preserve any live coordinates.
+; ==========================================================
+CLEAR_RECT:
+        ; Clear RAM directly. Stores reach bitmap RAM even while BASIC
+        ; ROM is mapped over $a000-$bfff. Fetching a supposed zero pattern
+        ; from REU silently did nothing when no REU was configured.
+        lda r2L
+        ora r2H
+        beq cr_done
+        ldy #$00
+cr_loop:
+        lda #$00
+        sta (r0),y
+        inc r0L
+        bne cr_count
+        inc r0H
+cr_count:
+        lda r2L
+        bne cr_low
+        dec r2H
+cr_low:
+        dec r2L
+        lda r2L
+        ora r2H
+        bne cr_loop
+cr_done:
+        rts
+
+; ==========================================================
+; Fetch or Stash Screen Bitmap
+; .a = 0        - Stash
+; .a <> 0       - Fetch
+; ==========================================================
+FETCH_STASH_SCREEN:
+        pha
+        lda #<BITMAP_START              ; source addr
+        sta REU_PARAMS
+        lda #>BITMAP_START
+        sta REU_PARAMS+1
+        lda #<$2000                     ; expanson ram addr
+        sta REU_PARAMS+2                ; $2000 - $3fff
+        lda #>$2000
+        sta REU_PARAMS+3
+        lda #$00                        ; bank 0
+        sta REU_PARAMS+4                ; expansion bank #
+        lda #<$2000                     ; bytes to move  (8192)       
+        sta REU_PARAMS+5
+        lda #>$2000
+        sta REU_PARAMS+6
+        pla
+        beq _stash
+        jsr REU_FETCH
+        rts
+_stash:
+        jsr REU_STASH
+        rts
+
+; ==========================================================
+; Fetch or Stash App
+; .a = 0        - Stash
+; .a <> 0       - Fetch
+; Saves current app to REU
+; ==========================================================
+FETCH_STASH_APP:
+        pha
+        lda #<APP_START                 ; source addr
+        sta REU_PARAMS
+        lda #>APP_START
+        sta REU_PARAMS+1
+        lda #$00                        ; expanson ram addr
+        sta REU_PARAMS+2                
+        lda #$00
+        sta REU_PARAMS+3
+        lda #$01                        ; bank 1
+        sta REU_PARAMS+4                ; expansion bank #
+        lda #<(APP_END-APP_START)    ; bytes to move         
+        sta REU_PARAMS+5
+        lda #>(APP_END-APP_START)
+        sta REU_PARAMS+6
+        pla
+        beq _stash
+        jsr REU_FETCH
+        jmp MAINLOOP
+_stash:
+        jsr REU_STASH
+        jmp MAINLOOP
+
+; ==========================================================
+; Fetch or Stash Screen Rectangle
+; .a = 0        - Stash
+; .a <> 0       - Fetch
+; 
+; Saves current app to REU
+; ==========================================================
+FETCH_STASH_RECT:
+        pha
+        lda r0L                 ; source addr
+        sta REU_PARAMS
+        lda r0H
+        sta REU_PARAMS+1
+        lda r1L                        ; expanson ram addr
+        sta REU_PARAMS+2
+        lda r1H
+        sta REU_PARAMS+3
+        lda #$02                        ; bank 2
+        sta REU_PARAMS+4                ; expansion bank #
+        lda r2L                        ; bytes to move         
+        sta REU_PARAMS+5
+        lda r2H
+        sta REU_PARAMS+6
+        pla
+        beq _stash
+        jsr REU_FETCH
+        rts
+_stash:
+        jsr REU_STASH
+        rts
+
+        
+
+; ==========================================================
+; VDSETUP — init the 80-column display: clear, banner, clock
+; ==========================================================
+; apply the persisted display-mode preference (FR-S3): LOAD "UOS-SET";
+; the mode byte lands at $7355 (SETREC_DISP). 0 = 40-col only: VDSETUP is
+; skipped by the caller. A missing file leaves the default (2 = both).
+VDPREF:
+        lda #<setrecname
+        sta r0L
+        lda #>setrecname
+        sta r0H
+        jsr FILLFILE
+        jsr LOADER              ; "UOS-SET" -> record at $7350; C=1 if absent
+        bcc vdpr_ok
+        lda #$02                ; defaults when no record exists
+        sta SETREC_DISP
+        lda #VIC_COLOR_CYAN
+        sta SETREC_BG
+vdpr_ok:
+        rts
+        ; unshifted PETSCII "UOS-SET" — MUST match the SAVE's savename, which
+        ; is written unshifted; `.text` here assembles to SHIFTED bytes
+        ; ($d5 $cf ...) that never match the saved file, so the boot would
+        ; always fall back to defaults on real hardware.
+setrecname: .byte $55,$4f,$53,$2d,$53,$45,$54,$00
+VDSETUP:
+        lda SETREC_DISP
+        beq vds_no              ; persisted 0 = 40-column only
+        ; All VDC access is wait-free and reached through the driver's fixed
+        ; jump table (routines.inc). sei: a VDC register-select ($d600) then
+        ; data access ($d601) is a two-step transaction an IRQ can corrupt.
+        ; Init FIRST so a cold 8563 starts displaying; only then does its
+        ; status bit toggle for VDC_PRESENT. On a VDC-less C64 the init just
+        ; hits the SID mirror harmlessly and PRESENT fails closed.
+        sei
+        jsr VDC_INIT
+        jsr VDC_PRESENT
+        cmp #$01
+        bne vds_off
+        jsr VDC_FONTUP          ; per-glyph bank-flip upload (see driver)
+        jsr VDC_CLS
+        lda #$01
+        sta VDC_LIVE            ; VDC_TEXT/VDC_CLR are live from here on
+        jsr VDC_BANNER
+vds_off:
+        cli
+        rts
+vds_no:
+        rts
+
+; ==========================================================
+; Resident driver lookup (FR-A2 registry prerequisite)
+; Capability ids: 1=gfx(VIC), 2=vdc, 3=reu, 4=keyin, 5=fillfile, 6=files
+; GETCAP: X = capability id -> A/X = base lo/hi, or 0/0 = unknown id.
+; Preserves Y, zero page, non-stack RAM and D/I flags. Other flags clobbered.
+; This static table locates resident software, not attached hardware. Use
+; the driver's presence check before accessing an optional peripheral.
+; ==========================================================
+CAP_GFX         = $01
+CAP_VDC         = $02
+CAP_REU         = $03
+CAP_KEYIN       = $04
+CAP_FILLFILE    = $05
+CAP_FILES       = $06
+CAP_PICKER      = $07
+
+CAPTBL:
+        .byte CAP_GFX           ; driver bases follow, 3 bytes per entry:
+        .word $c000
+        .byte CAP_VDC
+        .word $cc00
+        .byte CAP_REU
+        .word $9c00
+        .byte CAP_KEYIN
+        .word $082c
+        .byte CAP_FILLFILE
+        .word $0829
+        .byte CAP_FILES
+        .word UFS_OPEN
+        .byte CAP_PICKER
+        .word UFP_PICK
+CAPTBLEND:
+        .cerror (CAPTBLEND-CAPTBL) % 3 != 0, "capability entry must have id and word address"
+        .cerror CAPTBLEND-CAPTBL == 0 || CAPTBLEND-CAPTBL > 255, "capability table size invalid"
+
+GETCAP_RT:
+        txa                     ; retain the requested id while X scans entries
+        ldx #$00
+gc_l:   cmp CAPTBL,x
+        beq gc_found
+        inx
+        inx
+        inx
+        cpx #CAPTBLEND-CAPTBL
+        bcc gc_l
+        lda #$00
+        tax
+        rts
+gc_found:
+        lda CAPTBL+1,x          ; low byte survives loading X with the high byte
+        pha
+        lda CAPTBL+2,x
+        tax
+        pla
+        rts
+getcap_end:
+        .cerror * > $1000, "core overlaps resident desktop"
