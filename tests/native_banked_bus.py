@@ -7,8 +7,7 @@ import ci_native_heap as heap
 from native_reu_bus import REUBusMixin
 
 
-class BankedBus(REUBusMixin, heap.Bus):
-    reu_configs = (0x0e, 0x4e)
+class BankedMemoryBus(heap.Bus):
 
     def physical_bank(self, address):
         size = (0x400, 0x1000, 0x2000, 0x4000)[self.mmu[6]&3]
@@ -31,9 +30,16 @@ class BankedBus(REUBusMixin, heap.Bus):
             self.maps.append(value)
             self.config = value
             return
+        if not self.config&1 and address == 0xd506:
+            self.mmu[6] = value
+            return
         if not self.config&1 and 0xd000 <= address < 0xe000:
             return super().__setitem__(address, value)
         bank = self.physical_bank(address)
         if bank or address >= 0x4000:
             self.far_writes.append((bank, address, value))
         self.ram[bank][address] = value
+
+
+class BankedBus(REUBusMixin, BankedMemoryBus):
+    reu_configs = (0x0e, 0x4e)

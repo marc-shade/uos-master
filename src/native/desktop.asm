@@ -452,6 +452,8 @@ gd_error_label_end:
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 .include "desktop/pointer.inc"
-.include "desktop/vdc.inc"
+BP_MODE=1
+bp_select_surface=gd_select_surface
+.include "graphics/vdc-client.inc"
 gd_end:
 .cerror gd_end > N_APPBASE+$4000, "desktop exceeds the 16 KiB app budget"

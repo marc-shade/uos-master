@@ -1,9 +1,35 @@
 """Independent raw VRAM and full palette-frame checks for the native VDC shell."""
 import hashlib
+from pathlib import Path
 from hwlib import lst_symbol
 from native_pointer_check import check_canvas
 from native_vdc_scene import bitmap, attributes, pointer_bitmap, pixels
 from native_vdc_mirror import bitmap as mirror_bitmap, attributes as mirror_attributes, pixels as mirror_pixels
+
+
+def owned_service(capture, read_app, folder, label, image_prefix):
+    """Read only the loaded component's owned extent, including its real REU state."""
+    symbol = lambda name: lst_symbol(image_prefix,name)
+    assert bytes(read_app(symbol('bk_state'),1)) == b'\2'
+    assert bytes(read_app(symbol('bk_busy'),1)) == b'\0'
+    token = bytes(read_app(symbol('bk_handle'),4))
+    assert 1 <= token[0] <= 32
+    record = bytes(read_app(0x3c00+(token[0]-1)*8,8))
+    expected = (Path(__file__).resolve().parent/'target/native-desktop/vdsvc.prg').read_bytes()[2:34]
+    assert record[:4] == bytes([32,1,0x60,expected[10]]) and record[4:7] == token[1:]
+    assert bytes(read_app(0x3960,record[3])) == bytes([token[0]])*record[3]
+    header = capture.capture(label+'-component-header',bank=1,address=0x6000,count=32)
+    assert int.from_bytes(header[22:24],'little') == symbol('bk_callback')
+    normalized = bytearray(header);normalized[22:24] = bytes(2)
+    assert normalized == expected
+    (folder/(label+'-component-header.bin')).write_bytes(header)
+    def read(name, count, offset=0):
+        address = lst_symbol('native-desktop/vdsvc',name)+offset
+        assert 0x6020 <= address < address+count <= 0x6000+int.from_bytes(expected[8:10],'little')
+        raw = capture.capture(label+'-component-'+name,bank=1,address=address,count=count)
+        (folder/(label+'-component-'+name+'.bin')).write_bytes(raw)
+        return raw
+    return read, dict(handle=token.hex(),record=record.hex(),header_sha256=hashlib.sha256(header).hexdigest())
 
 
 def capture_snapshot(capture, read_app, folder, label, *, image_prefix='native-desktop/desktop', reu_snapshot=None):
@@ -12,19 +38,24 @@ def capture_snapshot(capture, read_app, folder, label, *, image_prefix='native-d
     assert state[:2] == b'\2\1' and state[3] == 0
     handle = bytes(read_app(symbol('vd_handle'),4))
     assert 1 <= handle[0] <= 32
-    extra = {}
-    if image_prefix.endswith('/calc') and bytes(read_app(symbol('vs_reu'),1)) == b'\1':
+    component, code = owned_service(capture,read_app,folder,label,image_prefix)
+    actual_state = component('vd_phase',7)
+    assert actual_state[:4]+actual_state[5:] == state[:4]+state[5:]
+    extra = dict(component=code)
+    assert component('vs_reu',1) == bytes(read_app(symbol('vs_reu'),1))
+    if bytes(read_app(symbol('vs_reu'),1)) == b'\1':
         assert reu_snapshot is not None, 'REU backup requires an independent emulator snapshot'
         token = bytes(read_app(symbol('vs_token'),8))
-        record = bytes(read_app(symbol('ru_records')+(handle[0]-1)*8,8))
+        assert component('vs_token',8) == token
+        record = component('ru_records',8,(handle[0]-1)*8)
         assert token[:4] == handle and record[0] == 32 and record[5:] == handle[1:]
-        assert token[4:] == bytes(read_app(symbol('ru_cookie'),4))
+        assert token[4:] == component('ru_cookie',4)
         assert int.from_bytes(record[3:5],'little') == (state[6]+15)//16
         memory, info = reu_snapshot(label)
         address, count = int.from_bytes(record[1:3],'little')*4096, state[6]*256
         assert address+count <= len(memory)
         raw = memory[address:address+count]
-        extra = dict(storage='reu',token=token.hex(),reu_snapshot=info,reu_address=address)
+        extra.update(storage='reu',token=token.hex(),reu_snapshot=info,reu_address=address)
     else:
         record = bytes(read_app(0x3c00+(handle[0]-1)*8,8))
         assert record[0] == 32 and record[1] in (0,1) and record[3] == state[6] and record[4:7] == handle[1:]
@@ -33,6 +64,7 @@ def capture_snapshot(capture, read_app, folder, label, *, image_prefix='native-d
             address=address+offset,count=min(2000,count-offset)) for offset in range(0,count,2000))
     (folder/(label+'-snapshot.bin')).write_bytes(raw)
     saved = bytes(read_app(symbol('vd_saved'),14))
+    assert component('vd_saved',14) == saved
     (folder/(label+'-saved-registers.bin')).write_bytes(saved)
     return raw, dict(label=label,handle=handle.hex(),record=record.hex(),base=state[5]*256,
         pages=state[6],color=bool(state[2]),saved_registers=saved.hex(),sha256=hashlib.sha256(raw).hexdigest(),**extra)

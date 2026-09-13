@@ -160,6 +160,7 @@ def main():
             for options in (dict(present=False), dict(columns=79)):
                 p = start(**options)
                 assert not p.value('vd_phase') and not p.value('vd_handle')
+                assert p.value('bk_state') == p.value('bp_started') == 0
                 p.type('12+30='); GraphicalCalculator.check(p)
                 assert not p.bus.data_writes
                 p.key(27, exited=True); p.restored()
@@ -178,15 +179,20 @@ def main():
             class Occupied(machine):
                 def __init__(self):
                     super().__init__()
-                    self.foreign = self.alloc(249,1,77)
+                    end=0x60+(ROOT/'target/native-desktop/vdsvc.prg').read_bytes()[12]
+                    self.foreign = [self.alloc(0x60-6,1,77,page=6),
+                                    self.alloc(0xff-end,1,77,page=end)]
             calc.Machine = Occupied
             p = start()
             calc.Machine = machine
             assert not p.value('vd_phase') and not p.value('vd_handle')
+            assert p.value('bk_state') == p.value('bp_started') == 0
             p.type('7*8='); GraphicalCalculator.check(p)
             assert p.rollback_checked
-            p.m.select(p.m.foreign,77)
-            stack = bytes(p.ram[0x100:0x200]); p.m.invoke('free'); p.ram[0x100:0x200] = stack
+            stack = bytes(p.ram[0x100:0x200])
+            for handle in p.m.foreign:
+                p.m.select(handle,77); p.m.invoke('free')
+            p.ram[0x100:0x200] = stack
             p.key(27, exited=True)
             GraphicalCalculator.restored(p)
             done('snapshot allocation refusal leaves both app views and foreign allocation usable', p)

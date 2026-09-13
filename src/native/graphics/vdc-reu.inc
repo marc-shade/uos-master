@@ -5,6 +5,12 @@ vd_storage_read=vs_read
 vd_storage_write=vs_write
 vd_storage_free=vs_free
 vd_storage_close=vs_close
+.weak
+vs_native_alloc=N_ALLOC
+vs_native_read=N_READ
+vs_native_write=N_WRITE
+vs_native_free=N_FREE
+.endweak
 
 vs_alloc:
         lda #1
@@ -47,25 +53,25 @@ vs_ram_close:
 vs_ram:
         lda #0
         sta vs_reu
-        jmp N_ALLOC
+        jmp vs_native_alloc
 vs_read:
         lda vs_reu
         beq +
         jsr vs_select
         jmp ru_read
-+       jmp N_READ
++       jmp vs_native_read
 vs_write:
         lda vs_reu
         beq +
         jsr vs_select
         jmp ru_write
-+       jmp N_WRITE
++       jmp vs_native_write
 vs_free:
         lda vs_reu
         beq +
         jsr vs_select
         jmp ru_free
-+       jmp N_FREE
++       jmp vs_native_free
 vs_select:
         lda N_CURRENT
         sta ru_owner

@@ -20,7 +20,7 @@ class Calculator:
     expected_exit_code=0
 
     def __init__(self,image_name='calc',files=None,loader_name=b'CHECK',device=8,fmt=0,
-                 *,ultimate_files=None,source_path=None,source_context=1,image_prefix='native'):
+                 *,ultimate_files=None,source_path=None,source_context=1,image_prefix='native',vdc_component=True):
         self._symbol_cache={}
         self.m=Machine();self.ram=self.m.ram
         self.image_name=image_name;self.image_prefix=image_prefix
@@ -32,6 +32,11 @@ class Calculator:
         if image_name=='files':
             for name in ('fspick','fsview'):
                 self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
+        provider = None
+        if image_prefix=='native-desktop' and image_name in ('calc','desktop') and vdc_component is not False:
+            provider = ((ROOT/'target/native-desktop/vdsvc.prg').read_bytes()
+                        if vdc_component is True else bytes(vdc_component))
+            self.io.files[8,b'VDSVC.PRG',b'P']=provider
         self.io.formats[device]=fmt
         self.ram[0x3d21:0x3d23]=bytes([8,len(loader_name)])
         self.ram[0x3d40:0x3d40+len(loader_name)]=loader_name
@@ -49,6 +54,9 @@ class Calculator:
             if source_path is not None and image_name=='files':
                 for name in ('fspick','fsview'):
                     data[source_path.rsplit(b'/',1)[0]+b'/'+name.upper().encode()+b'.PRG']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
+            if source_path is not None and provider is not None:
+                prefix = source_path.rsplit(b'/',1)[0]+b'/' if b'/' in source_path else b''
+                data[prefix+b'VDSVC.PRG']=provider
             self.ultimate=DOSFiles(data);self.ultimate.fragment=103
             self.ultimate.direct_write_corruption=True
             self.m.bus=UltimateBus(self.m.bus,self.ultimate)

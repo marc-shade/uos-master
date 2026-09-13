@@ -104,8 +104,8 @@ class VDCBus(PointerBus):
 
 
 class Desktop(Pointer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.checked = 0
 
     def output(self, value):
@@ -146,6 +146,9 @@ class Desktop(Pointer):
     def restored(self):
         super().restored()
         assert self.value('vd_phase') == self.value('vd_live') == self.value('vd_handle') == 0
+        if self.bus.original is None:
+            assert self.bus.data_writes == 0, 'refused component never borrowed the VDC'
+            return
         assert self.bus.video_ram == self.bus.original[0], 'all physical VDC RAM must return exactly'
         for register in (1,6,8,9,10,12,13,14,15,18,19,20,21,22,23,24,25,26,27,28,32,33):
             assert self.bus.reg[register] == self.bus.original[1][register], ('register restoration', register)
@@ -207,6 +210,7 @@ def run(group):
             for options in (dict(present=False),dict(columns=79),dict(height=6)):
                 p = start(**options)
                 assert not p.value('vd_phase') and not p.value('vd_live') and not p.value('vd_handle')
+                assert p.value('bk_state') == p.value('bp_started') == 0
                 assert p.bus.original is None and not p.bus.data_writes
                 p.key(9); assert p.value('gd_selected') == 1
                 p.key(27,exited=True); Pointer.restored(p)
@@ -216,16 +220,20 @@ def run(group):
             class Occupied(machine):
                 def __init__(self):
                     super().__init__()
-                    self.foreign = self.alloc(251,1,77)
+                    end=0x60+(ROOT/'target/native-desktop/vdsvc.prg').read_bytes()[12]
+                    self.foreign = [self.alloc(0x60-4,1,77,page=4),
+                                    self.alloc(0xff-end,1,77,page=end)]
             calc.Machine = Occupied
             try: p = start()
             finally: calc.Machine = machine
             assert p.value('vd_phase') == p.value('vd_live') == p.value('vd_handle') == 0
+            assert p.value('bk_state') == p.value('bp_started') == 0
             assert p.bus.video_ram == p.bus.original[0]
             Pointer.check(p,0)
-            p.m.select(p.m.foreign,77)
             stack = bytes(p.ram[0x100:0x200])
-            p.m.invoke('free'); p.ram[0x100:0x200] = stack
+            for handle in p.m.foreign:
+                p.m.select(handle,77); p.m.invoke('free')
+            p.ram[0x100:0x200] = stack
             p.key(27,exited=True); p.restored()
             done('snapshot allocation refusal restores the probe/registers and retains working VIC/text controls',p)
 

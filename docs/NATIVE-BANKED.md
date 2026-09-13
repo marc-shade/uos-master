@@ -127,7 +127,8 @@ map. Its private two-byte probe buffer uses physical bank-1 DMA; payload
 transfers still use physical bank-0 `N_BUFFER`. Both paths restore the original
 DMA-bank and speed bits. There must still be exactly one retained REU arena
 per foreground app. The default bank-0 library produces the existing shipped
-Calculator image unchanged.
+Calculator image unchanged at that checkpoint. The suite now uses the same
+executor for its [shared VDC component](NATIVE-VDC-SERVICE.md).
 
 `ci_native_banked.py` executes checked loads, malformed files, ownership and
 generation failures, partial I/O/probe failures, native callbacks, maximum

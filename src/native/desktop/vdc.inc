@@ -2,9 +2,17 @@
 ; Foreground only, D=0 and IRQs enabled. Close before every app/workspace exit.
 ; A failed close retains the snapshot and blocks handoff until a retry succeeds.
 ; Register 28 selects addressing; an alias probe establishes physical capacity.
+.weak
+VD_DESKTOP_COMMON=1
+VD_USE_STATUS_SURFACE=0
+.endweak
+.if VD_DESKTOP_COMMON
+.weak
 vd_initial_bitmap=vd_unpack
 vd_initial_attributes=vd_render_selection
+.endweak
 .include "../graphics/vdc-lifetime.inc"
+.endif
 
 ; Packed scene uses non-overlapping earlier blocks, exploiting the VDC's
 ; block-copy unit. The build verifies every decoded byte and distance.
@@ -184,6 +192,9 @@ vd_marker:
         lda #0
         sta vd_row
 vd_status_row:
+.if VD_USE_STATUS_SURFACE
+        jsr vd_status_surface
+.else
         lda #0
         ldx #79
 -       sta N_BUFFER,x
@@ -217,6 +228,7 @@ vd_glyph_load:
         inx
         cpx gfx_text_length
         bne vd_status_glyph
+.endif
         jsr vd_write_block
         jsr vd_next_row
         inc vd_row
@@ -225,7 +237,11 @@ vd_glyph_load:
         bne vd_status_row
         rts
 
+.if VD_DESKTOP_COMMON
 .include "../graphics/vdc-pointer.inc"
 .include "../graphics/vdc-state.inc"
+.endif
 .include "vdc-scene.inc"
+.if VD_DESKTOP_COMMON
 .include "../graphics/vdc-pointer-shape.inc"
+.endif

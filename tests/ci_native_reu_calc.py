@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from ci_native_vdc_calc import Calculator, VDCBus, heap
@@ -10,15 +11,39 @@ from native_reu_bus import REUBusMixin
 from hwlib import lst_symbol
 
 ROOT = Path(__file__).resolve().parents[1]
-PROBE = lst_symbol('native-desktop/calc','ru_probe_data')
+PROBE = lst_symbol('native-desktop/vdsvc','ru_probe_data')
+COMPONENT_HEADER = (ROOT/'target/native-desktop/vdsvc.prg').read_bytes()[2:34]
+COMPONENT_PAGES = COMPONENT_HEADER[10]
+
+@lru_cache(maxsize=None)
+def component_symbol(name):return lst_symbol('native-desktop/vdsvc',name)
+
+def component(p,name,count=1,*,released=False):
+    at=component_symbol(name)
+    assert 0x6020 <= at < at+count <= 0x6000+int.from_bytes(COMPONENT_HEADER[8:10],'little')
+    if released:
+        assert p.value('bk_state')==p.value('bk_handle')==0
+    else:
+        assert p.value('bk_state')==2 and p.value('bk_busy')==0
+        token=bytes(p.ram[p.symbol('bk_handle'):p.symbol('bk_handle')+4])
+        assert 1<=token[0]<=32
+        offset=0x3c00+(token[0]-1)*8
+        record=bytes(p.ram[offset:offset+8])
+        assert record[:4]==bytes([32,1,0x60,COMPONENT_PAGES]) and record[4:7]==token[1:]
+        assert p.ram[0x3960:0x3960+COMPONENT_PAGES]==bytes([token[0]])*COMPONENT_PAGES
+        header=bytearray(p.bus.ram[1][0x6000:0x6020])
+        assert int.from_bytes(header[22:24],'little')==p.symbol('bk_callback')
+        header[22:24]=bytes(2);assert header==COMPONENT_HEADER
+    return bytes(p.bus.ram[1][at:at+count])
 
 
 class CalculatorBus(REUBusMixin,VDCBus):
+    reu_configs = (0x0e,0x4e)
     fault_start = None
 
     def __init__(self):
         super().__init__()
-        self.reu_hosts.append((PROBE,PROBE+2))
+        self.reu_bank1_hosts.append((PROBE,PROBE+2))
         self.reu_fault_from = self.fault_start
         self.reu_fault_prefix = 1
         self.reu_original = bytes(self.reu_ram)
@@ -41,11 +66,15 @@ def main():
         assert p.bus.reu_ram[:pages*256] == p.bus.original[0][p.value('vd_base')*256:(p.value('vd_base')+pages)*256]
         assert p.bus.reu_ram[pages*256:] == p.bus.reu_original[pages*256:]
         token_at = p.symbol('vs_token'); token = p.ram[token_at:token_at+8]
-        desc = p.symbol('ru_records')+(token[0]-1)*8
-        assert p.ram[desc] == 32 and int.from_bytes(p.ram[desc+3:desc+5],'little') == (pages+15)//16
+        assert component(p,'vs_token',8)==token and 1<=token[0]<=32
+        assert component(p,'ru_cookie',4)==token[4:]
+        records = component(p,'ru_records',256)
+        desc = (token[0]-1)*8
+        assert records[desc] == 32 and int.from_bytes(records[desc+3:desc+5],'little') == (pages+15)//16
+        assert records[desc+5:desc+8]==token[1:4]
         app_pages = p.image[12]
         f0,f1,slots = p.m.stats()
-        assert f0+f1 == 426-app_pages-36-2 and slots == 29
+        assert f0+f1 == 426-app_pages-COMPONENT_PAGES-36-2 and slots == 28
     def done(name,p,**extra):
         report['cases'].append(dict(name=name,instructions=p.instructions,frames=p.frames,keys=p.events,
                                    dmas=len(p.bus.reu_transactions),**extra))
@@ -59,13 +88,14 @@ def main():
             assert bytes(p.io.files[8,b'RESULT',b'S']) == b'42\r'
             p.key(27,exited=True); p.restored()
             assert p.value('ru_active') == p.value('vs_reu') == 0
-            assert all(p.ram[p.symbol('ru_records')+i] == 0 for i in range(0,256,8))
+            released=component(p,'ru_records',256,released=True)
+            assert all(released[i] == 0 for i in range(0,256,8))
             done(f'{size} KiB VDC / {kib} KiB REU: snapshot, arithmetic, pointer, verified save, exact restoration',p,free_pages=free)
 
         p = start(size=64,reu_present=False); p.check()
         assert not p.value('vs_reu') and not p.bus.reu_transactions
         free = sum(p.m.stats()[:2])
-        assert free == 426-p.image[12]-36-2-72
+        assert free == 426-p.image[12]-COMPONENT_PAGES-36-2-72
         p.key(27,exited=True); p.restored()
         done('absent REU retains exact main-RAM VDC backing and normal exit',p,free_pages=free)
 

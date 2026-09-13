@@ -1,5 +1,6 @@
 import ci_native_heap as heap
-BaseBus=heap.Bus
+from native_banked_bus import BankedMemoryBus
+BaseBus=BankedMemoryBus
 class DisplayBus(BaseBus):
     def __init__(self):
         super().__init__()
@@ -10,6 +11,7 @@ class DisplayBus(BaseBus):
         self.ram[0][0:2]=bytes([0x2f,0x73]);self.ram[0][0xd8]=0
         self.writes=[];self.raster_high=0x80;self.compare=255
     def __getitem__(self,address):
+        assert self.config != 0x4e or self.ram[0][0x3d12] == 0, "app component executed while input/capture readiness was published"
         if not self.config&1 and address==0xd600:
             return 0            # This VIC-only model has no ready VDC.
         if not self.config&1 and 0xdf00<=address<=0xdf0a:

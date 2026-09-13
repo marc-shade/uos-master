@@ -2,7 +2,7 @@
 
 `python3 -B build-native-desktop.py` builds the same six native apps for a
 1541/D64 and a 1581/D81. Both cold-boot into the blue graphical launcher.
-The D64 suite has 2 free data blocks; the D81 has **2,498** (634,492 bytes
+The D64 suite has 1 free data block; the D81 has **2,497** (634,238 bytes
 of sequential-file payload, before any additional directory allocation).
 
 | Image under `target/` | Startup | Files |
@@ -33,8 +33,9 @@ source through the existing module loader. Native restart resets preferences
 and reloads the build's boot format.
 
 The 426 managed RAM pages, API entry addresses, application slot and Editor
-module window are unchanged. Deployment metadata now reports available desktop
-pages separately for 16 KiB and 64 KiB VDC RAM, including the owned VDC snapshot.
+module window are unchanged. Both suites include the shared `VDSVC.PRG` beside
+the apps. Deployment metadata reports its 30-page allocation and available
+desktop pages for REU backing and both VDC RAM fallback sizes.
 
 The boot block occupies track 1, sector 0 and is outside every file chain.
 `native_disk.py` reserves it before adding files. On a 1581 the BAM occupies
@@ -68,8 +69,10 @@ The pinned [LZSA sources](../third_party/lzsa/README.uos.md) are included in the
 repository. Building native disks now also needs a host C compiler (`cc`, or
 the command in `CC`). The builder compiles it in a temporary directory without
 network access and verifies each packed result with a separate Python decoder.
-The packed D64 suite has 15 free blocks, compared with 2 under the earlier RLE
-wrapper. The unpacked kernel and every app payload remain byte-identical.
+The compression checkpoint recovered thirteen D64 blocks, increasing free
+space from 2 to 15 while preserving the unpacked kernel and every app payload
+at that checkpoint. The current shared VDC component uses that space; the full
+suite now has one free D64 block.
 
 During cold startup only, the decoder occupies the future low kernel area at
 `$1300` and copies its compressed input into future app RAM at `$6000`. These

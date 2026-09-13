@@ -29,8 +29,9 @@ def assemble(work, name, source):
 
 
 class Banked:
+    bus_type = BankedBus
     def __init__(self, parent, provider, ps, bs, *, kib=512, image=None, fmt=0):
-        heap.Bus = type('Bus',(BankedBus,),dict(reu_kib=kib))
+        heap.Bus = type('Bus',(self.bus_type,),dict(reu_kib=kib))
         self.m = heap.Machine()
         self.bus, self.ram = self.m.bus, self.m.ram
         self.ps, self.bs, self.provider = ps, bs, provider

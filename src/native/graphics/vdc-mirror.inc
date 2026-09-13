@@ -2,8 +2,18 @@
 ; Logical 320x200 pixels become 640x200; controls retain the same coordinates.
 ; 64K uses RGBI cell attributes. 16K keeps light button fills by reversing ink.
 ; Dirty flags cover eight scanlines. No unowned read through bank-0 ROM is used.
+.weak
+VM_INCLUDE_COMMON=1
+VM_INCLUDE_DIRTY=1
+vm_surface_read=N_READ
+.endweak
+.if VM_INCLUDE_COMMON
+.weak
 vd_initial_bitmap=vm_initial
 vd_initial_attributes=vd_success
+.endweak
+.endif
+.if VM_INCLUDE_DIRTY
 gfx_track_dirty=1
 
 vm_dirty:
@@ -34,6 +44,7 @@ vm_dirty:
         jmp -
 +
         rts
+.endif
 
 vm_initial:
         lda #1
@@ -99,7 +110,7 @@ vm_draw_row:
         sta N_COUNT
         lda #0
         sta N_COUNT+1
-        jsr N_READ
+        jsr vm_surface_read
         bcs vm_read_failed
         ldy #39
 vm_color_next:
@@ -150,7 +161,7 @@ vm_color_done:
         sta N_COUNT
         lda #1
         sta N_COUNT+1
-        jsr N_READ
+        jsr vm_surface_read
         bcc +
 vm_read_failed:
         jmp vd_fail
@@ -241,7 +252,9 @@ vm_foreground: .byte 0
 vm_brightness: .byte 0
 vm_colors: .fill 40,0
 vm_reverse: .fill 40,0
+.if VM_INCLUDE_COMMON
 .include "vdc-lifetime.inc"
 .include "vdc-pointer.inc"
 .include "vdc-state.inc"
 .include "vdc-pointer-shape.inc"
+.endif

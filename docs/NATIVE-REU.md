@@ -1,12 +1,12 @@
 # Native REU memory
 
-The desktop Calculator uses an available REU for its saved VDC screen. The
-same blue controls work without an REU, using the existing main-RAM backup.
-With an REU, Calculator leaves 331 of 426 main-RAM pages free on either VDC
-size. Without one, it leaves 267 pages with a 16 KiB VDC or 259 with a 64 KiB
-VDC. Its retained driver increases the app from 48 to 57 pages, so the net
-gain over the previous build is 55 or 63 pages. The two-page history and
-36-page VIC surface keep their existing native heap ownership.
+The Desktop and Calculator use an available REU for their saved VDC screens
+through the [shared bank-1 VDC component](NATIVE-VDC-SERVICE.md). The same blue
+controls work without an REU, using the existing main-RAM backup. With an REU,
+Desktop leaves 325 and Calculator 309 of 426 main-RAM pages free on either
+VDC size. The RAM fallback uses another 64 pages with a 16 KiB VDC or 72 with
+a 64 KiB VDC. Calculator history and both VIC surfaces keep their existing
+native heap ownership.
 
 `src/native/reu.inc` provides allocation, explicit reservation, free, owner
 release, statistics and bounded byte transfers. This is an app-core library
@@ -19,8 +19,8 @@ remain separate roadmap work.
 The [banked SDK example](../examples/native-banked/README.md) also runs this
 arena in a retained bank-1 component. Set `RU_BANKED = 1` only under the
 [banked executor](NATIVE-BANKED.md): it selects physical bank 1 for the private
-probe buffer and bank 0 for `N_BUFFER`. The shipped Calculator continues to
-use the default bank-0 build. This does not yet move Editor documents to REU.
+probe buffer and bank 0 for `N_BUFFER`. The shipped Desktop and Calculator
+now use that mapping inside `VDSVC.PRG`. Editor documents still use main RAM.
 
 ## Ownership and calls
 

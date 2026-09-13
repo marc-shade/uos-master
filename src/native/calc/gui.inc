@@ -512,5 +512,6 @@ ui_selected: .byte 14
 .include "../graphics/text-core.inc"
 .include "../input/pointer.inc"
 vm_select_surface=cg_select_surface
-.include "../graphics/vdc-reu.inc"
-.include "../graphics/vdc-mirror.inc"
+BP_MODE=0
+bp_select_surface=cg_select_surface
+.include "../graphics/vdc-client.inc"

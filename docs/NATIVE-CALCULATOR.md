@@ -27,11 +27,12 @@ fixed; desktop window management is still open.
 
 ## Memory and shared controls
 
-The suite Calculator uses 57 app pages, a two-page history in bank 1 and the
+The suite Calculator uses 49 app pages, the 30-page bank-1
+[shared VDC component](NATIVE-VDC-SERVICE.md), a two-page history in bank 1 and the
 existing 36-page VIC surface at bank 0 `$c000..$e3ff`. Saving the original VDC
-contents uses an available [REU](NATIVE-REU.md), leaving 331 of the 426 managed
+contents uses an available [REU](NATIVE-REU.md), leaving 309 of the 426 managed
 main-RAM pages free. Without an REU it takes another 64 pages on a 16 KiB VDC
-or 72 on a 64 KiB VDC, leaving 267 or 259 pages free. Display and mouse ownership end
+or 72 on a 64 KiB VDC, leaving 245 or 237 pages free. Display and mouse ownership end
 before app exit or a history failure. A stalled VDC restore retains all owners
 and blocks exit; Escape retries it. A fatal history error also retains its
 original exit code and accepts only Escape until recovery succeeds.
@@ -61,7 +62,11 @@ The builder generates Calculator's scenes and hit rectangles from
 `native_calc_scene.py`, which also contains the independent bitmap oracle.
 Neither resident kernel grows and no persistent desktop allocation is added.
 
-The shared `graphics/vdc-lifetime.inc` and `vdc-pointer.inc` handle the saved
+Keep `VDSVC.PRG` beside Calculator when copying the app to another source.
+The component loads from the original app disk/directory before borrowing VDC
+state. A missing component leaves the existing VIC and text controls usable.
+
+The shared `graphics/vdc-lifetime.inc` and `vdc-pointer.inc` run in bank 1 and handle the saved
 display, bounded port waits and pointer. `vdc-mirror.inc` reads the owned VIC
 surface through `N_READ`, doubles each horizontal pixel and converts the color
 cells to VDC RGBI attributes. On a 16 KiB VDC, relative foreground/background

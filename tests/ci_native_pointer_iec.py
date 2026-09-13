@@ -160,6 +160,35 @@ def main():
             point=app_read(symbol('pm_x'),3)
             return int.from_bytes(point[:2],'little'),point[2]
         def header(name):return read(0x3d60,32)==(image/(name+'.prg')).read_bytes()[2:34]
+        def wait_loaded_app(name):
+            if name!='files':
+                wait(lambda:header(name) and ready(),'click opens '+name,120)
+                return
+            # Files validates directory entries and their PRG metadata before
+            # publishing readiness. A busy host can run the emulated 1541 near
+            # real time. Bound both total time and time without file/list progress.
+            expected=(image/'files.prg').read_bytes()[2:34]
+            total_at=lst_symbol('native-desktop/files','b_total')
+            start=last_progress=time.monotonic();previous=None;progress=[]
+            report['files_load_progress']=progress
+            while True:
+                with paused.paused('files-load-progress'):
+                    state=bytes(paused.read_mem(0x3d10,0x3d97,bank=banks['ram00']))
+                    busy=bytes(paused.read_mem(0xd0,0xd1,bank=banks['ram00']))
+                    loaded=state[0x50:0x70]==expected
+                    total=bytes(paused.read_mem(total_at,total_at+1,bank=banks['ram00'])) if loaded else b''
+                now=time.monotonic()
+                if loaded and state[2]==1 and busy==bytes(2):
+                    report['files_load_seconds']=now-start;save();return
+                signature=state[0x10:0x14]+state[0x28:0x30]+state[0x71:0x75]+state[0x82:0x86]+total
+                if signature!=previous:
+                    previous=signature;last_progress=now
+                    progress.append(dict(seconds=now-start,state=signature.hex(),loaded=loaded,
+                        entries=int.from_bytes(total,'little') if loaded else None))
+                    save()
+                assert now-start<600,'Files did not become ready within ten minutes'
+                assert now-last_progress<120,'Files loading made no file/list progress for two minutes'
+                time.sleep(.25)
         @contextmanager
         def stable_batch(label):
             # N_READY is briefly zero during a foreground pointer sample.
@@ -260,18 +289,28 @@ def main():
             after=int.from_bytes(read(0x3d13,2),'little')
             assert after==(before+1)&65535,(name,'extra or missing ROM key',before,after)
             report['events'].append(dict(key=name,target=target,keys_before=before,keys_after=after));save()
-        def watch_app_vdc_restore(app,label):
-            def reu_snapshot(label):
-                with paused.paused(label+'-reu'):
-                    memory,info=reu_dump(mon,work/(label+'-reu.vsf'))
-                assert memory[72*256:]==reu_initial[72*256:], 'REU bytes outside Calculator backup'
-                return memory,info
-            snapshot,restore=vdc_snapshot(capture,app_read,work,label,image_prefix='native-desktop/'+app,
-                reu_snapshot=reu_snapshot if args.reu_kib else None)
-            entry=lst_symbol('native-desktop/'+app,'vd_restore_registers')
+        def reu_snapshot(label):
+            with paused.paused(label+'-reu'):
+                memory,info=reu_dump(mon,work/(label+'-reu.vsf'))
+            assert memory[72*256:]==reu_initial[72*256:], 'REU bytes outside foreground VDC backups'
+            return memory,info
+        def restore_checkpoint():
+            entry=lst_symbol('native-desktop/vdsvc','vd_restore_registers')
             error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
             assert not error
-            checkpoint_id=checkpoint[:4];mon.resume()
+            checkpoint_id=checkpoint[:4]
+            # A bank-0 app can execute at the same numeric address. Use the
+            # MMU configuration register through the monitor's I/O bank.
+            # https://vice-emu.sourceforge.io/vice_13.html (condition set 0x22)
+            condition=b'@io:$d500 == $4e'
+            error,_=mon._recv(mon._send(0x22,checkpoint_id+bytes([len(condition)])+condition))
+            assert not error
+            mon.resume()
+            return entry,checkpoint_id
+        def watch_app_vdc_restore(app,label):
+            snapshot,restore=vdc_snapshot(capture,app_read,work,label,image_prefix='native-desktop/'+app,
+                reu_snapshot=reu_snapshot if args.reu_kib else None)
+            entry,checkpoint_id=restore_checkpoint()
             def finish():
                 deadline=time.monotonic()+120
                 while True:
@@ -279,6 +318,7 @@ def main():
                     if int.from_bytes(checkpoint[13:17],'little'):break
                     mon.resume();assert time.monotonic()<deadline,'app VDC restore checkpoint was not reached'
                     time.sleep(.1)
+                assert bytes(mon.read_mem(0xd500,0xd500,bank=banks['io']))==b'\x4e'
                 base=restore['base']
                 restored=bytes(mon.read_mem(base,base+len(snapshot)-1,bank=banks['vdc']))
                 (work/(label+'-restored-vram.bin')).write_bytes(restored)
@@ -577,11 +617,9 @@ def main():
             if args.claude_only and name!='claude':continue
             ran_apps.add(name)
             move_to(100,40+24*index);desktop(name+'-hover',index)
-            snapshot,restore=vdc_snapshot(capture,app_read,work,name+'-close')
-            entry=lst_symbol('native-desktop/desktop','vd_restore_registers')
-            error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
-            assert not error
-            checkpoint_id=checkpoint[:4];mon.resume()
+            snapshot,restore=vdc_snapshot(capture,app_read,work,name+'-close',
+                reu_snapshot=reu_snapshot if args.reu_kib else None)
+            entry,checkpoint_id=restore_checkpoint()
             before=int.from_bytes(read(0x3d13,2),'little')
             mouse.button(True);assert header('desktop') and value('pm_arm')==index
             mouse.button(False)
@@ -591,6 +629,7 @@ def main():
                 if int.from_bytes(checkpoint[13:17],'little'):break
                 mon.resume();assert time.monotonic()<deadline,'VDC restore checkpoint was not reached'
                 time.sleep(.1)
+            assert bytes(mon.read_mem(0xd500,0xd500,bank=banks['io']))==b'\x4e'
             base=restore['base']
             restored=bytes(mon.read_mem(base,base+len(snapshot)-1,bank=banks['vdc']))
             (work/(name+'-restored-vram.bin')).write_bytes(restored)
@@ -601,7 +640,7 @@ def main():
             report.setdefault('vdc_restores',[]).append(restore);save()
             error,_=mon._recv(mon._send(0x13,checkpoint_id));assert not error
             mon.resume()
-            wait(lambda:header(name) and ready(),'click opens '+name,120)
+            wait_loaded_app(name)
             assert int.from_bytes(read(0x3d13,2),'little')==before,'mouse generated a keyboard shortcut'
             assert read(0x3d2c,2)==bytes([boot_format,8]) and read(0x3de4)==bytes([boot_format])
             if name=='editor':
@@ -624,10 +663,22 @@ def main():
                 picker_view('editor-destination-picker',entries,mode=2,fmt=boot_format)
                 picker_click(18);wait(lambda:value('pm_seen')==1,'editor pointer after picker',15)
                 editor_view('editor-picker-return',document,3,focus=11,**field)
-                editor_click(12);editor_view('editor-saved',document,3,name='GUINOTE',status=1)
+                editor_device=8 if args.d81 else 9
+                if editor_device==9:
+                    # Calculator history uses the D64 suite's final free block.
+                    # Select the data disk through the real picker while the
+                    # app, its modules and the desktop keep their system source.
+                    editor_click(14);picker_click(1)
+                    key('9','editor');key('Return','editor')
+                    picker_view('editor-data-picker',[],mode=2,device=9)
+                    picker_click(17);wait(lambda:value('pm_seen')==1,'editor pointer after data selection',15)
+                    field['device']=9
+                    editor_view('editor-data-destination',document,3,focus=11,**field)
+                editor_click(12);editor_view('editor-saved',document,3,name='GUINOTE',status=1,device=editor_device)
                 editor_click(3);key('x','editor')
-                editor_view('editor-find',document,3,name='GUINOTE',mode=6,field='X',field_caret=1,field_view=0,focus=11)
-                editor_click(12);editor_view('editor-found',document,8,name='GUINOTE',status=13)
+                editor_view('editor-find',document,3,name='GUINOTE',mode=6,field='X',field_caret=1,field_view=0,focus=11,device=editor_device)
+                editor_click(12);editor_view('editor-found',document,8,name='GUINOTE',status=13,device=editor_device)
+                report['editor_destination_device']=editor_device
                 report['editor_saved_hex']=document.hex();save()
             elif name=='calc':
                 pointer_app='calc'
@@ -680,7 +731,7 @@ def main():
                     picker_click(2);picker_click(2)  # D81 -> Ultimate -> D64
                 picker_click(1)
                 key('9','files');key('Return','files')
-                picker_view('files-data-picker',[],mode=2,device=9)
+                picker_view('files-data-picker',disk_records(data_disk.read_bytes(),0),mode=2,device=9)
                 picker_click(17);move_to(310,180)
                 for _ in range(28):
                     if value('ui_selected')==25:break
@@ -805,9 +856,10 @@ def main():
         # Independently export each created file and preserve every shipped file.
         contents=exact_disk_files(disk.read_bytes(),boot_format)
         before_files=exact_disk_files((image/disk_name).read_bytes(),boot_format)
-        if 'editor' in ran_apps:assert contents.pop(b'GUINOTE')==(1,bytes.fromhex(report['editor_saved_hex']))
         if 'calc' in ran_apps:assert contents.pop(b'GUIHIST')==(1,b'42\r')
         data_contents=exact_d64_files(data_disk.read_bytes())
+        if 'editor' in ran_apps:
+            assert (contents if editor_device==8 else data_contents).pop(b'GUINOTE')==(1,bytes.fromhex(report['editor_saved_hex']))
         if 'paint' in ran_apps:assert (contents if args.d81 else data_contents).pop(b'PAINTPIC')==(1,paint_encode(paint_document))
         assert exact_d64_files((work/'initial-data-9.d64').read_bytes())=={}
         assert data_contents==({b'FSCOPY':copied_source} if 'files' in ran_apps else {})

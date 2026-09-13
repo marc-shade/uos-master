@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent
 OUT = ROOT/'target/native-desktop'
 from native_image import seal, validate
 from native_module import seal as seal_module, validate as validate_module
+from native_banked import seal as seal_banked, validate as validate_banked
 
 
 def module(name, path):
@@ -66,6 +67,12 @@ def build():
             path.write_bytes(core)
         path.write_bytes(seal(path.read_bytes()))
         validate(path.read_bytes())
+    subprocess.run(['64tass', '-a', '-B', str(ROOT/'src/native/vdc-service.asm'),
+                    '-o', str(OUT/'vdsvc.prg'), '-l', str(OUT/'vdsvc.sym'),
+                    '-L', str(OUT/'vdsvc.lst')], check=True)
+    provider = OUT/'vdsvc.prg'
+    provider.write_bytes(seal_banked(provider.read_bytes()))
+    vdc_component = validate_banked(provider.read_bytes())
     for disk_format in ('d64', 'd81'):
         workspace = OUT/f'workspace.{disk_format}'
         shutil.copyfile(ROOT/f'target/native/uos128.{disk_format}', workspace)
@@ -80,7 +87,8 @@ def build():
                         '-write', str(OUT/'fsview.prg'), 'fsview.prg',
                         '-write', str(OUT/'controls.prg'), 'ultimate',
                         '-write', str(OUT/'claude.prg'), 'claude',
-                        '-write', str(OUT/'paint.prg'), 'paint'], check=True, capture_output=True)
+                        '-write', str(OUT/'paint.prg'), 'paint',
+                        '-write', str(OUT/'vdsvc.prg'), 'vdsvc.prg'], check=True, capture_output=True)
         desktop = OUT/f'uos128.{disk_format}'
         shutil.copyfile(workspace, desktop)
         subprocess.run(['c1541', '-attach', str(desktop), '-delete', 'u',
@@ -102,11 +110,13 @@ def build():
                       controls=validate((OUT/'controls.prg').read_bytes()),
                       claude=validate((OUT/'claude.prg').read_bytes()),
                       paint=validate((OUT/'paint.prg').read_bytes()),
-                      surface_pages=36,
-                      free_pages_at_desktop={str(kib):426-36-pages-validate((OUT/'desktop.prg').read_bytes())['pages']
+                      surface_pages=36, vdc_component=vdc_component,
+                      free_pages_at_desktop={str(kib):426-36-pages-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages']
                                              for kib,pages in ((16,64),(64,72))},
+                      free_pages_at_desktop_reu=426-36-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages'],
                       selection_state_address=0x3d2f, selection_lifetime='until native restart',
                       disk_entries={'u': 'uos128-boot.prg', 'browse': 'desktop.prg',
+                                    'vdsvc.prg': 'vdsvc.prg',
                                     'files': 'files.prg', 'calc': 'calc.prg',
                                     'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',

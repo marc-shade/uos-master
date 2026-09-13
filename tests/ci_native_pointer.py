@@ -49,8 +49,8 @@ from launcher_scene import surface, console
 class Pointer(calc.Calculator):
     instruction_limit = 12000000
 
-    def __init__(self):
-        super().__init__('desktop', loader_name=b'BROWSE', image_prefix='native-desktop')
+    def __init__(self, **kwargs):
+        super().__init__('desktop', loader_name=b'BROWSE', image_prefix='native-desktop', **kwargs)
         self.bus = self.m.bus
         self.frames = 0
         assert self.ram[0xa04]==self.bus.init_status&0xfe

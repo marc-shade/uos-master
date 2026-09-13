@@ -27,9 +27,9 @@ build; the green native workspace remains a diagnostic view.
 ## Memory and display lifetime
 
 The launcher uses the existing ABI 1.12 heap and dispatcher. The resident
-kernel retains its bytes. The app-local
-[driver](../src/native/desktop/vdc.inc), with its shared lifetime and pointer
-code under `src/native/graphics/`, runs in the foreground with interrupts
+kernel retains its bytes. The [shared VDC component](NATIVE-VDC-SERVICE.md),
+containing the desktop renderer, lifetime and pointer code, runs in bank 1
+in the foreground with interrupts
 enabled and without borrowed zero-page scratch. Monitor sync timing remains
 unchanged. Its supported entry state is 80×25 text with eight-pixel character
 cells, eight raster lines per cell and no interlace. Register 23 must display
@@ -37,28 +37,32 @@ all eight lines: its last-raster value is inclusive, so seven is sufficient.
 
 | Allocation | 16 KiB VDC | 64 KiB VDC |
 |---|---:|---:|
-| Launcher app | 43 pages | 43 pages |
+| Launcher app | 35 pages | 35 pages |
+| Bank-1 VDC component | 30 pages | 30 pages |
 | VIC surface | 36 pages | 36 pages |
-| Saved VDC memory | 64 pages | 72 pages |
-| Free managed pages while desktop is open | 283 | 275 |
+| Saved VDC memory without REU | 64 pages | 72 pages |
+| Free managed pages without REU | 261 | 253 |
+| Free managed pages with REU | 325 | 325 |
 | Bitmap address | `$0000` | `$4000` |
 | Attribute address | Disabled | `$8000` |
 | Entire saved address range | `$0000..$3fff` | `$4000..$87ff` |
 
-The desktop image contains 10,895 loaded bytes. The
-[suite disks](NATIVE-BOOT-MEDIA.md) retain all twelve shipping files, with 2
-free blocks on D64 and 2,498 on D81 before user documents. Use a
+The desktop image contains 8,833 loaded bytes. The
+[suite disks](NATIVE-BOOT-MEDIA.md) contain thirteen shipping files, including
+`VDSVC.PRG`, with 1 free block on D64 and 2,497 on D81 before user documents. Use a
 separate data disk or Ultimate storage for larger documents and pictures.
-Qualification saves the small calculator and Editor samples on the system
-disk, and copies the complete search module and Paint picture to device 9.
+Qualification saves the small Calculator sample on the system disk. On D64,
+Editor selects device 9 through the file picker; on D81 its sample also fits
+on the system disk. The full search-module copy uses device 9, as does the
+Paint picture with a D64 system disk.
 
 Register 28 selects the VDC address arrangement; its bit 4 does not establish
 physical RAM capacity. A reversible alias probe distinguishes 16 and 64 KiB
 chips even when the incoming address arrangement differs. Both probe bytes
 and all fourteen changed configuration registers have recovery state before
 their first mutation. The complete memory snapshot is copied into an owned
-heap allocation before the first bitmap write. The allocator chooses the
-bank; the current desktop layout places the snapshot in bank 1.
+REU allocation before the first bitmap write, or a native heap allocation when
+an REU is unavailable. The RAM fallback currently places it in bank 1.
 
 The driver saves registers 10, 12, 13, 18, 19, 20, 21, 24, 25, 26, 27, 28,
 32 and 33. Registers 30 and 31 are command/data latches; replaying their old
