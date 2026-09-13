@@ -1,10 +1,11 @@
-; Native Ultimate information panel. GPL v3.
-; All device access goes through the shared, bounded N_UQUERY service.
+; Native Ultimate controls. GPL v3.
+; Device access uses the shared, bounded query and command services.
 .include "api.inc"
+PM_KEYS_OWNED=1               ; retain keyboard ownership across the picker
 * = N_APPBASE
 uc_image:
         .text "napp"
-        .byte 1,1,10,0
+        .byte 1,1,11,0
         .word uc_end-uc_image
         .byte (uc_end-uc_image+255)/256,0
         .word uc_entry-uc_image
@@ -13,13 +14,20 @@ uc_image:
         .fill N_APPBASE+32-*,0
 uc_entry:
         cld
+        jsr ud_init
         lda #0
         sta uc_page
         sta uc_interface
         lda #4
         sta uc_target
+        jsr ug_init
 uc_refresh:
-        lda #0
+        jsr ug_cleanup
+        bcc +
+        jsr ug_cleanup_failed
+        jmp cloop
++       lda #0
+        sta ug_notice
         sta N_READY
         sta uc_valid
         sta uc_error
@@ -54,10 +62,7 @@ uc_model_long:
         jsr uc_query
         jmp uc_render
 uc_drives:
-        lda #N_U_DRIVES
-        jsr uc_query
-        bcs uc_render
-        jsr uc_parse_drives
+        jsr ud_probe
         jmp uc_render
 uc_network:
         lda #N_U_INTERFACES
@@ -100,15 +105,21 @@ uc_bad_reply:
         lda #N_CORRUPT
         sta uc_error
 uc_render:
+        jsr ug_update
         jsr uc_draw_both
 cloop:
         lda #1
         sta N_READY
 uc_get_key:
         jsr N_KEYIN
+        bne uc_key_ready
+        jsr ug_mouse
         beq cloop
+uc_key_ready:
         ldx #0
         stx N_READY
+        jsr ug_key
+        bcs cloop
         cmp #27
         beq uc_exit
         cmp #$9d
@@ -138,10 +149,11 @@ uc_network_key:
         lda #2
 uc_page_key:
         sta uc_page
+        sta ui_selected
         jmp uc_refresh
 uc_exit:
-        lda #0
-        jmp N_EXIT
+        jsr ug_exit
+        jmp cloop
 uc_previous:
         lda uc_page
         beq uc_target_previous
@@ -193,6 +205,7 @@ uc_query:
         lda N_CURRENT
         sta N_FOWNER
         jsr N_UQUERY
+uc_query_result:
         sta uc_error
         lda N_FDOS
         sta uc_dos
@@ -358,7 +371,7 @@ uc_pair:
         rts
 
 uc_draw_both:
-        lda #0
+        lda ug_bitmap
         sta uc_screen
 -       lda $d7
         rol
@@ -374,11 +387,22 @@ uc_draw_both:
         bne -
         rts
 uc_draw:
+        lda ug_collect
+        bne uc_draw_body
         lda #$93
-        jsr $ffd2
+        jsr uc_emit
+        lda ug_mode
+        beq +
+        lda #<ug_confirm_heading
+        ldx #>ug_confirm_heading
+        jsr uc_puts
+        jsr ug_confirm_body
+        jmp uc_draw_end
++
         lda #<uc_title
         ldx #>uc_title
         jsr uc_puts
+uc_draw_body:
         lda uc_page
         bne uc_draw_not_info
         jsr uc_draw_info
@@ -404,9 +428,10 @@ uc_draw_clock:
         ldx #>uc_clock_hint
         jsr uc_puts
 uc_draw_end:
-        lda #<uc_footer
-        ldx #>uc_footer
-        jmp uc_puts
+        lda ug_collect
+        bne +
+        jmp ug_console_footer
++       rts
 uc_draw_failed:
         jsr uc_show_error
         jmp uc_draw_end
@@ -426,6 +451,10 @@ uc_draw_info:
         lda uc_model_length
         sta uc_text_left
         lda #36
+        ldx ug_collect
+        beq +
+        lda #33                 ; reserve three cells for a clipped model suffix
++
         sta uc_text_limit
         jsr uc_text
 uc_draw_identity:
@@ -469,19 +498,19 @@ uc_draw_drive:
         ldx #>uc_type_title
         jsr uc_puts
         ldx uc_record
-        lda uc_data+1,x
+        lda ud_records,x
         jsr uc_hex
         lda #<uc_iec_title
         ldx #>uc_iec_title
         jsr uc_puts
         ldx uc_record
-        lda uc_data+2,x
+        lda ud_records+1,x
         jsr uc_decimal
         lda #<uc_off
         ldx #>uc_off
         ldy uc_record
         pha
-        lda uc_data+3,y
+        lda ud_records+2,y
         bne +
         pla
         jmp uc_draw_power
@@ -541,7 +570,7 @@ uc_draw_address:
         dec uc_octets
         beq +
         lda #$2e
-        jsr $ffd2
+        jsr uc_emit
         jmp -
 +       jsr uc_newline
         inc uc_record
@@ -649,17 +678,17 @@ uc_ascii:
         cmp #$7b
         bcs +
         and #$df
-+       jmp $ffd2
++       jmp uc_emit
 uc_ascii_bad:
         lda #$2e
-        jmp $ffd2
+        jmp uc_emit
 uc_puts:
         sta uc_put_byte+1
         stx uc_put_byte+2
 uc_put_byte:
         lda $ffff
         beq uc_put_done
-        jsr $ffd2
+        jsr uc_emit
         inc uc_put_byte+1
         bne uc_put_byte
         inc uc_put_byte+2
@@ -668,7 +697,7 @@ uc_put_done:
         rts
 uc_newline:
         lda #13
-        jmp $ffd2
+        jmp uc_emit
 uc_hex:
         pha
         lsr
@@ -677,12 +706,12 @@ uc_hex:
         lsr
         tax
         lda uc_hex_digits,x
-        jsr $ffd2
+        jsr uc_emit
         pla
         and #15
         tax
         lda uc_hex_digits,x
-        jmp $ffd2
+        jmp uc_emit
 uc_decimal:
         sta uc_number
         lda #0
@@ -711,7 +740,7 @@ uc_decimal_print:
         lda #1
         sta uc_leading
         lda uc_digit
-        jsr $ffd2
+        jsr uc_emit
 uc_decimal_skip:
         ldx uc_decimal_index
         inx
@@ -741,7 +770,7 @@ uc_mask_title: .text "mask:    ",0
 uc_gateway_title: .text "gateway: ",0
 uc_address_lo: .byte <uc_ip_title,<uc_mask_title,<uc_gateway_title
 uc_address_hi: .byte >uc_ip_title,>uc_mask_title,>uc_gateway_title
-uc_network_hint: .text 13,"configured addresses; link not tested.",13,0
+uc_network_hint: .text 13,"configured addresses; link untested.",13,0
 uc_clock_title: .text "cartridge rtc",13,13,0
 uc_clock_hint: .text "r refreshes this clock reading.",13,0
 uc_failed: .text "unavailable: ",0
@@ -781,5 +810,30 @@ uc_column: .byte 0
 uc_model: .fill 64,0
 uc_status: .fill 32,0
 uc_data: .fill 512,0
+.include "controls/drives.inc"
+.include "controls/view.inc"
+.include "controls/input.inc"
+.include "controls/console.inc"
+.include "controls/buttons.inc"
+.include "graphics/buttons.inc"
+ui_selected: .byte 0
+.include "graphics/graphics-core.inc"
+.include "graphics/text-core.inc"
+.include "input/pointer.inc"
+drive_picker .block
+FD_EMBEDDED=1
+B_COPY=0
+FD_DIRECT_PAGES=6
+FD_NAME_BUFFER=ud_name
+FD_SCRATCH0=uc_data
+FD_SCRATCH1=ug_scratch
+FD_SCRATCH2=ug_scratch+512
+FD_SCRATCH3=ug_scratch+512
+FD_SAFE_CHARACTER=ug_safe_character
+.include "file-dialog.inc"
+.bend
+ug_picker_active=drive_picker.fd_active
+ug_picker_get_key=drive_picker.b_get_key
+ug_scratch: .fill 1024,0
 uc_end:
-        .cerror uc_end>N_APPBASE+$2000, "Ultimate panel exceeds 8 KiB app budget"
+        .cerror uc_end>N_APPLIMIT, "Ultimate controls exceed native app slot"

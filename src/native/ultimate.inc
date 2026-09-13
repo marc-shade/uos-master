@@ -780,12 +780,14 @@ nu_code_end:
 .include "module-validate.inc"
 native_module_code_end:
 .include "display-show.inc"
+.include "keyboard-input.inc"
         .cerror * > N_BROWSERPATH, "native Ultimate code overlaps browser path"
 * = N_BROWSERPATH
         .byte $2f
         .fill 255,0
 .include "ultimate-query.inc"
 native_query_end:
+        .include "ultimate-command.inc"
         .include "keyboard.inc"
         .cerror * > NU_COMMAND, "native Ultimate queries overlap command buffer"
 * = NU_COMMAND

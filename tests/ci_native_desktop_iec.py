@@ -27,7 +27,8 @@ from launcher_scene import surface, console
 from native_calc_scene import surface as calc_surface
 from native_pointer_check import check_canvas, surface_pixels
 from hwlib import lst_symbol
-from native_controls_check import panel_screen
+from native_controls_check import panel_screen,absent_body
+from native_controls_scene import surface as controls_surface
 from native_claude_check import landing_screen
 from paint_scene import surface as paint_surface,console as paint_console
 
@@ -173,6 +174,22 @@ try:
         record['desktops'].append(dict(label=label,selected=selected,error=error,fallback=False,
             bytes=9216,pixels=64000,rectangle=matches[0],missing_canvas_tail_bytes=length-len(pixels)))
         print('PASS: desktop surface, pixels and VDC controls:',label,flush=True)
+    def controls(label,page):
+        def value(name):return read(lst_symbol('native-desktop/controls',name))[0]
+        assert value('ug_bitmap')==1 and value('pm_seen')==0 and value('uc_page')==page
+        assert value('ui_selected')==page and not value('ug_mode')
+        body=absent_body(page)
+        expected=controls_surface(body[2:] if page==1 else body,page=page,focus=page)
+        actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
+        assert actual==expected,(label,'Ultimate bitmap')
+        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
+        assert vdc==panel_screen(80,body,page=page,focus=page),(label,'Ultimate VDC')
+        time.sleep(.15)
+        error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+        (work/f'{label}-display-get.bin').write_bytes(raw)
+        rectangle=check_canvas(raw,surface_pixels(expected,0,0,visible=False))
+        record.setdefault('controls_frames',[]).append(dict(label=label,page=page,rectangle=rectangle))
+        print('PASS: Ultimate without a mouse, complete bitmap, VIC pixels and VDC:',label,flush=True)
     def paint(label,document,*,x=0,dirty=False,mode=0):
         def paint_value(name):return read(lst_symbol('native-desktop/paint',name))[0]
         assert paint_value('pa_bitmap')==1 and paint_value('pm_seen')==0
@@ -296,17 +313,13 @@ try:
         key(ord('F'));screens('files',lambda columns:browser_screen(columns,records,files_app=True))
         key(27);desktop('desktop-after-files',2)
         key(ord('U'))
-        screens('ultimate-absent-info',lambda columns:panel_screen(columns,
-            ['HARDWARE','UNAVAILABLE','','TARGET 4','UNAVAILABLE: 11  DOS 00  LINK FE','']))
+        controls('ultimate-absent-info',0)
         key(ord('D'))
-        screens('ultimate-absent-drives',lambda columns:panel_screen(columns,
-            ['ULTIMATE DRIVE INVENTORY','','UNAVAILABLE: 11  DOS 00  LINK FE','']))
+        controls('ultimate-absent-drives',1)
         key(ord('N'))
-        screens('ultimate-absent-network',lambda columns:panel_screen(columns,
-            ['NETWORK INTERFACES: 0','UNAVAILABLE: 11  DOS 00  LINK FE','']))
+        controls('ultimate-absent-network',2)
         key(ord('T'))
-        screens('ultimate-absent-clock',lambda columns:panel_screen(columns,
-            ['CARTRIDGE RTC','','UNAVAILABLE: 11  DOS 00  LINK FE','']))
+        controls('ultimate-absent-clock',3)
         key(27);desktop('desktop-after-ultimate',3)
         original_font=read(0x3000,4096,banks['vdc'])
         key(ord('A'));screens('claude-launch-page',landing_screen)

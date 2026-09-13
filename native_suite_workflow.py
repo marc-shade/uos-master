@@ -14,6 +14,8 @@ from hw_native_desktop_check import run_native_workflow
 from native_capture import ROOT, wait
 from native_claude_check import landing_screen
 from native_controls_check import panel_screen
+from native_controls_scene import surface as controls_surface,drive_body as graphical_drives
+from hwlib import lst_symbol
 
 sys.path.insert(0, str(ROOT/'apps/claude/host'))
 import font
@@ -25,7 +27,8 @@ def text_lines(payload, limit=144):
     text = ''.join(chr(b).upper() if 32 <= b < 127 else '.' for b in raw[:limit])
     lines = [text[i:i+36] for i in range(0, len(text), 36)] or ['']
     if len(raw) > limit:
-        lines.append('...')
+        if text and len(text)%36:lines[-1]+='...'
+        else:lines.append('...')
     return lines
 
 
@@ -41,9 +44,9 @@ def failed(reply, malformed=False):
     return [f"UNAVAILABLE: 11  DOS {reply['dos']:02X}  LINK 00"] + text_lines(reply['status'].encode(), 31)
 
 
-def info_body(reference, target=4):
+def info_body(reference, target=4, *, model_limit=36):
     model, identity = reference['model'], reference[f'identity-{target}']
-    return (['HARDWARE'] + (text_lines(reply_data(model)[:64], 36) if model['ok'] else ['UNAVAILABLE'])
+    return (['HARDWARE'] + (text_lines(reply_data(model)[:64], model_limit) if model['ok'] else ['UNAVAILABLE'])
             + ['', f'TARGET {target}'] + (text_lines(reply_data(identity)) if identity['ok'] else failed(identity)))
 
 
@@ -63,6 +66,13 @@ def drive_body(reference):
     if not received:
         return body+['NO DRIVE RECORDS']
     if received != declared:
+        if (raw[0]>=3 or raw[3]>=3 or raw[1]<8 or raw[4]<8 or raw[1]==raw[4]):
+            return body+failed(reply,True)
+        for slot in (0,1):
+            power=reference[f'power-{slot}']
+            if not power['ok']:return body+failed(power)
+            allowed=(b'on',b'on ') if raw[slot*3+2] else (b'off',)
+            if reply_data(power) not in allowed:return body+failed(power,True)
         body += [f'PARTIAL REPLY: {received} OF {declared} RECORDS', '']
     for slot in range(received):
         kind, iec, power = raw[slot*3:slot*3+3]
@@ -88,7 +98,7 @@ def network_body(reference, index=0):
         return body+failed(reply, True)
     addresses = ['.'.join(map(str, data[i:i+4])) for i in (0,4,8)]
     return body+[f'INTERFACE {index}', '', 'IP:      '+addresses[0], 'MASK:    '+addresses[1],
-                 'GATEWAY: '+addresses[2], '', 'CONFIGURED ADDRESSES; LINK NOT TESTED.']
+                 'GATEWAY: '+addresses[2], '', 'CONFIGURED ADDRESSES; LINK UNTESTED.']
 
 
 def suite_preflight(ult, mon, probe, work, report, save):
@@ -125,6 +135,8 @@ def suite_preflight(ult, mon, probe, work, report, save):
     query('identity-4', b'\x04\x01')
     query('identity-3', b'\x03\x01')
     query('drives', b'\x04\x29\x01')
+    query('power-0', b'\x04\x34')
+    query('power-1', b'\x04\x35')
     interfaces = query('interfaces', b'\x03\x02')
     if interfaces is not None and len(interfaces) == 1:
         for index in range(min(interfaces[0], 2)):
@@ -164,22 +176,41 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
     reference = report['suite_reference']
     labels = {m[2]:int(m[1],16) for m in re.finditer(r'^al ([0-9A-Fa-f]+) \.(\S+)',
               (ROOT/'target/native-desktop/claude.lbl').read_text(), re.M)}
+    # Terminal BSS may be reused by the next app. Observe its result while
+    # Claude still owns the allocation, through a transport-specific observer.
+    close_session=getattr(bridge_factory,'close_session',None)
+    if close_session is None:
+        raise RuntimeError('the full suite requires a qualified live Claude shutdown observer')
     report['suite_apps'] = suite = dict(ultimate=[], claude=[])
     def extra(*, key, screens, desktop, read):
-        def panel(label, body):
-            screens(label, lambda columns:panel_screen(columns, body))
-            suite['ultimate'].append(dict(label=label, body=body)); save()
+        def panel(label, body, page=0, *, target=4):
+            bitmap=read(lst_symbol('native-desktop/controls','ug_bitmap'))==b'\1'
+            row=dict(label=label,body=body,page=page,bitmap=bitmap)
+            oracle=lambda columns:panel_screen(columns,body,page=page,focus=page)
+            if bitmap:
+                graphical=body;count=0
+                if page==0:graphical=info_body(reference,target,model_limit=33)
+                elif page==1:graphical,count=graphical_drives(body)
+                expected=controls_surface(graphical,page=page,focus=page,count=count)
+                actual=b''.join(capture.capture(f'{label}-surface-{offset:04x}',address=0xc000+offset,
+                    count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+                (work/(label+'-surface.bin')).write_bytes(actual)
+                assert actual==expected,(label,'Ultimate complete bitmap')
+                assert capture.capture(label+'-vdc',mode=1,count=2000)==oracle(80),(label,'Ultimate VDC')
+                row.update(graphical_body=graphical,drive_count=count,surface_sha256=hashlib.sha256(actual).hexdigest())
+            else:screens(label,oracle)
+            suite['ultimate'].append(row); save()
         key(ord('U')); panel('ultimate-info', info_body(reference))
-        key(0x9d); panel('ultimate-network-identity', info_body(reference,3))
-        key(ord('D')); panel('ultimate-drives', drive_body(reference))
-        key(ord('N')); panel('ultimate-network', network_body(reference))
+        key(0x9d); panel('ultimate-network-identity', info_body(reference,3),target=3)
+        key(ord('D')); panel('ultimate-drives', drive_body(reference),1)
+        key(ord('N')); panel('ultimate-network', network_body(reference),2)
         count = reply_data(reference['interfaces'])
         if reference['interfaces']['ok'] and len(count) == 1 and count[0] > 1:
-            key(0x1d); panel('ultimate-network-next', network_body(reference,1))
+            key(0x1d); panel('ultimate-network-next', network_body(reference,1),2)
         key(ord('T'))
         rtc = reference['rtc']
         if not rtc['ok']:
-            panel('ultimate-clock-unavailable', ['CARTRIDGE RTC','']+failed(rtc))
+            panel('ultimate-clock-unavailable', ['CARTRIDGE RTC','']+failed(rtc),3)
         else:
             previous = None
             for index in range(2):
@@ -187,17 +218,16 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
                     key(ord('R'))
                 label = f'ultimate-clock-{index}'
                 start = time.monotonic()
-                vic = capture.capture(label+'-vic', address=0x400, count=1000)
-                text = vic[6*40:6*40+19].decode('ascii')
+                vdc = capture.capture(label+'-clock-reference',mode=1,count=2000)
+                text = vdc[6*80:6*80+19].decode('ascii')
                 finish = time.monotonic()
                 # Native query occurs before its screen capture. Include the
                 # key quiet interval and command/REST observation latency.
                 observed, elapsed, bounds = rtc_observation(text,rtc,start,finish,key_quiet,previous)
                 body = ['CARTRIDGE RTC','',text,'R REFRESHES THIS CLOCK READING.']
-                assert vic == panel_screen(40,body)
-                assert capture.capture(label+'-vdc',mode=1,count=2000) == panel_screen(80,body)
-                suite['ultimate'].append(dict(label=label, body=body, elapsed=elapsed,
-                    elapsed_bounds=bounds, reference='independent legacy RTC query plus monotonic elapsed time'))
+                panel(label,body,3)
+                suite['ultimate'][-1].update(elapsed=elapsed,elapsed_bounds=bounds,
+                    reference='independent legacy RTC query plus monotonic elapsed time')
                 previous = observed; save()
         key(27); desktop('desktop-after-ultimate',3)
 
@@ -210,7 +240,6 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
         original_nmi = capture_span('claude-nmi-before', 0x318, 2)
         original_gate = capture_span('claude-gate-before', 0x3d3e, 2)
         desktop_header = (ROOT/'target/native-desktop/desktop.prg').read_bytes()[2:34]
-        assert labels['_closeOutcome'] >= 0x6000+len((ROOT/'target/native-desktop/desktop.prg').read_bytes())-2
         for host_exit in (False, True):
             label = 'claude-host-exit' if host_exit else 'claude-f8'
             row = dict(label=label, passed=False, host_exit=host_exit)
@@ -266,12 +295,11 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
                     for name,size in (('_rxCount',2),('_nmiCount',2),('_rxDropped',1),('_rxOverruns',1))}
                 assert row['counters']['_rxDropped'] == row['counters']['_rxOverruns'] == 0
                 assert row['counters']['_nmiCount'] >= row['counters']['_rxCount'] >= 3+10*len(list(font.definitions()))
-                key(ord('Q') if host_exit else 0x8c)
+                outcome=close_session(mon,work,row,labels,ord('Q') if host_exit else 0x8c,report)
+                assert outcome == bytes([0 if host_exit else 2])
                 wait(lambda:read(0x3d60,32) == desktop_header and read(0x3d12) == b'\1',
                      'Claude returned through native dispatcher', 180)
                 desktop(label+'-desktop',4)
-                outcome = capture_span(label+'-close-outcome',labels['_closeOutcome'],1)
-                assert outcome == bytes([0 if host_exit else 2])
                 assert capture_span(label+'-font-after',0x3000,4096,1) == original_font
                 assert capture_span(label+'-nmi-after',0x318,2) == original_nmi
                 assert capture_span(label+'-gate-after',0x3d3e,2) == original_gate

@@ -1,6 +1,6 @@
-; Experimental native C128 ABI 1.10. Separate from the C64-mode $0811 table.
+; Experimental native C128 ABI 1.11. Separate from the C64-mode $0811 table.
 N_ABI_MAJOR = 1
-N_ABI_MINOR = 10
+N_ABI_MINOR = 11
 ; Call from bank-0 code with system KERNAL and I/O visible. The standard
 ; bottom 1 KiB common area, zero page and stack mappings must remain in force.
 ; Foreground calls only; no IRQ/NMI callbacks or reentrant use.
@@ -32,6 +32,7 @@ N_MCLOSE        = $1c65          ; invalidate module; close/recover only its sou
 N_VSHOW         = $1c68          ; experimental: present owned bank-0 $c000..$e3ff
 N_VCLOSE        = $1c6b          ; experimental: restore text; keep surface allocation
 N_UQUERY        = $1c6e          ; checked, read-only Ultimate query; shared file lock
+N_UCOMMAND      = $1c71          ; serialized UCI packet: N_BUFFER header + N_FCOUNT body bytes
 ; ABI 1.10: ROM-dispatched NMI mapping bridge for the foreground serial client.
 ; Before installing N_NMIGATE in $0318, disable/acknowledge the NMI source,
 ; save N_NMIPTR and the old vector, and set N_NMIPTR to bank-0 app code.
@@ -122,6 +123,13 @@ N_U_MAC         = 6             ; UARG interface index
 N_U_IP          = 7             ; UARG interface index; IP/mask/gateway
 N_U_TIME        = 8             ; DOS GET_TIME; running cartridge RTC
 N_U_QUERY_COUNT = 9
+; ABI 1.11: UCOMMAND uses the same owner/IRQ/lock/timeout/reply contract.
+; BUFFER starts with target and command bytes, followed by FCOUNT body bytes.
+; FCOUNT is 0..510, not the total packet length; overflow is rejected before
+; sending. BUFFER is replaced by the response prefix and FACTUAL counts it.
+; The driver serializes transport, not command semantics. Callers must own
+; affected resources, validate destinations and obtain required confirmation.
+; Target acceptance does not prove a device operation completed. No replay.
 UI_LENGTH       = 0
 UI_CARET        = 1
 UI_MAXIMUM      = 2

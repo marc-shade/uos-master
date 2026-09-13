@@ -11,6 +11,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import ci_native_calc as calc
+from native_controls_check import panel_screen
 from ci_native_heap import Machine
 from ci_native_ultimate import UltimateBus
 from ci_native_query import QueryDOS
@@ -38,6 +39,8 @@ class PanelDOS(QueryDOS):
                 reply = [(self.identities.get(command[0], b'NO TARGET'), b'00,OK')]
             elif command == b'\x04\x28\x00': reply = [(self.model, b'00,OK')]
             elif command == b'\x04\x29\x01': reply = [(self.inventory, b'00,OK')]
+            elif command == b'\x04\x34': reply = [(b'on', b'00,OK')]
+            elif command == b'\x04\x35': reply = [(b'off', b'00,OK')]
             elif command == b'\x03\x02': reply = [(bytes([self.interfaces]), b'00,OK')]
             elif command[:2] == b'\x03\x05':
                 assert len(command) == 3 and command[2] < self.interfaces
@@ -74,18 +77,14 @@ class Panel(calc.Calculator):
         self.device = self.m.device
 
     def check(self, body):
-        lines = TITLE+body+FOOTER
-        assert len(lines) <= 25
-        for display, columns in enumerate((40, 80)):
-            expected = bytearray(b' '*(columns*25))
-            for row, line in enumerate(lines):
-                assert len(line) < 40, line
-                for col, byte in enumerate(line.encode('ascii')):
-                    expected[row*columns+col] = byte-64 if 64 <= byte < 96 else byte
+        for display in ((1,) if self.value('ug_bitmap') else (0,1)):
+            columns=(40,80)[display]
+            expected = panel_screen(columns,body,page=self.value('uc_page'),focus=self.value('ui_selected'),
+                mode=self.value('ug_mode'),selected=self.value('ud_selected'),notice=self.value('ug_notice'))
             actual = self.screens[display]
             if actual != expected:
                 actual_lines = [bytes(actual[i:i+columns]).hex() for i in range(0, len(actual), columns)]
-                raise AssertionError(('panel console mismatch', display, lines, actual_lines))
+                raise AssertionError(('panel console mismatch', display, body, actual_lines))
 
     def exit(self):
         self.key(27, exited=True)
@@ -136,11 +135,11 @@ def run():
     p = Panel(); p.key(ord('N'))
     network = ['NETWORK INTERFACES: 2', 'INTERFACE 0', '', 'IP:      192.168.1.194',
         'MASK:    255.255.255.0', 'GATEWAY: 192.168.1.1', '',
-        'CONFIGURED ADDRESSES; LINK NOT TESTED.']
+        'CONFIGURED ADDRESSES; LINK UNTESTED.']
     p.check(network)
     p.key(0x1d)
     p.check(['NETWORK INTERFACES: 2', 'INTERFACE 1', '', 'IP:      0.0.0.0',
-        'MASK:    0.0.0.0', 'GATEWAY: 0.0.0.0', '', 'CONFIGURED ADDRESSES; LINK NOT TESTED.'])
+        'MASK:    0.0.0.0', 'GATEWAY: 0.0.0.0', '', 'CONFIGURED ADDRESSES; LINK UNTESTED.'])
     p.key(0x1d); p.check(network)
     p.key(0x9d); assert p.value('uc_interface') == 1
     p.device.interfaces = 1; p.key(ord('R')); assert p.value('uc_interface') == 0

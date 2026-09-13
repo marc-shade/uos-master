@@ -31,12 +31,13 @@ uq_target:
         sta nu_cmdlen
         lda #0
         sta nu_cmdlen+1
-        sta nu_packet_mode
         lda #<nu_short
         ldx #>nu_short
+uq_send:
+        ldy #0
+        sty nu_packet_mode
         jsr nu_send
         bcs uq_result
-        cmp #0
         beq uq_result
         lda #N_IOERROR
 uq_result:

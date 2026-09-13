@@ -31,6 +31,8 @@ def build():
     write_calculator(ROOT/'src/native/calc')
     from paint_scene import write_assembly as write_paint
     write_paint(ROOT/'src/native/paint')
+    from native_controls_scene import write_assembly as write_controls
+    write_controls(ROOT/'src/native/controls')
     native.build()
     native.build(out=OUT, desktop_boot=True)
     module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
@@ -57,7 +59,7 @@ def build():
     images = {p.name: dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.iterdir()) if p.suffix in ('.prg', '.d64')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
-    deployment = dict(abi='1.10', direct_desktop_disk='uos128.d64',
+    deployment = dict(abi='1.11', direct_desktop_disk='uos128.d64',
                       workspace_with_desktop_disk='workspace.d64',
                       standalone_diagnostic_disk='../native/uos128.d64',
                       desktop=validate((OUT/'desktop.prg').read_bytes()),

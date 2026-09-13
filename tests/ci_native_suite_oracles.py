@@ -21,6 +21,7 @@ def run():
     p = Panel()
     d = p.device
     ref = dict(model=reply(d.model), drives=reply(d.inventory), interfaces=reply(bytes([d.interfaces])))
+    ref.update({'power-0':reply(b'on'),'power-1':reply(b'off')})
     ref.update({f'identity-{target}':reply(d.identities[target]) for target in (3,4)})
     ref.update({f'ip-{index}':reply(data) for index,data in enumerate(d.addresses)})
     p.check(info_body(ref))

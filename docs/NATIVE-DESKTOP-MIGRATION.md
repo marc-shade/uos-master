@@ -250,12 +250,17 @@ and [the shared Ultimate query service](NATIVE-ULTIMATE-CONTROLS.md).
 The ABI 1.9 physical record above remains the physical baseline.
 
 
-The blue native desktop is the primary visual direction. Its five icon buttons
+The blue native desktop is the primary visual direction. Its six icon buttons
 now accept port-1 1351 mouse hover and left-button press/release, with keyboard
 selection retained while the mouse is stationary. Native apps return to this
 shell. Diagnostic Escape paths and restoring an older deployed desktop during
 physical tests explain the green screens seen during development.
-[Calculator](NATIVE-CALCULATOR.md) now uses the blue bitmap, yellow buttons and
-shared mouse driver, including its history and save dialog. Remaining app
+[Calculator](NATIVE-CALCULATOR.md), [Paint](NATIVE-PAINT.md) and
+[Ultimate](NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap, yellow buttons and
+shared mouse driver. Ultimate adds four tabbed pages, selectable drive rows,
+an image picker and explicit mount/eject confirmation. The app occupies 81
+pages plus its 36-page surface, with lazy picker caches, and retains all
+426 managed pages after exit. Native physical drive qualification remains
+open. Remaining app
 interfaces, menus, windows and a graphical VDC desktop are migration work;
 see [native graphics](NATIVE-GRAPHICS.md).

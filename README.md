@@ -63,14 +63,16 @@ desktop on this disk. Unsupported graphics leave usable text controls.
 Boot still uses IEC. Shared window/widget input, VDC bitmap presentation, persistent
 desktop state and the broader OS roadmap remain open. Physical desktop
 qualification of ABI 1.9 passed in the [physical record](docs/validation/2026-09-12-native-desktop-abi19-hardware/README.md).
-The current ABI 1.10 app suite has its own software qualification; its new
-Ultimate panel and Claude serial client still require native physical testing.
+ABI 1.11 adds a shared Ultimate command service and graphical drive controls.
+The current suite, including Claude serial and the new drive operations,
+still requires native physical qualification.
 
 The blue native desktop is the interface being developed for the unified app
 suite. The older green desktop remains a separate legacy build; restoring that
 installed build after a test does not change the native desktop's direction.
-[Calculator](docs/NATIVE-CALCULATOR.md) and [Paint](docs/NATIVE-PAINT.md) use the
-blue bitmap and yellow controls inside their apps. Paint adds connected mouse
+[Calculator](docs/NATIVE-CALCULATOR.md), [Paint](docs/NATIVE-PAINT.md) and
+[Ultimate](docs/NATIVE-ULTIMATE-CONTROLS.md) use the blue bitmap and yellow
+controls inside their apps. Paint adds connected mouse
 strokes, a visible keyboard brush, colors, undo, and verified picture files.
 Other app screens and the shared file picker still need graphical migration.
 
@@ -86,7 +88,10 @@ then start the supplied Linux bridge using your Claude login and project. F8 ret
 to uOS (the native app supplies single-key ROM definitions and restores them on exit); Escape is forwarded to Claude during the session. Building this client
 also requires cc65. The [Ultimate panel](docs/NATIVE-ULTIMATE-CONTROLS.md), opened
 with **U**, shows hardware identification, drive inventory, network addresses
-and the cartridge clock through shared native services.
+and the cartridge clock through shared native services. Its Drives page adds
+an image picker and confirmed mount/eject, with fresh destination checks and
+protection for the boot disk. A firmware acceptance reply is shown as a request
+accepted, since it does not verify the mounted image.
 
 The [Claude lifecycle update](docs/validation/2026-09-12-native-claude-lifecycle/README.md)
 adds acknowledged F8 shutdown with a bounded fallback and starts the Linux

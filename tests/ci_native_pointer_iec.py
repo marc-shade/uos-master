@@ -30,7 +30,8 @@ from native_calc_scene import surface as calc_surface, BUTTONS
 from native_files_check import exact_d64_files
 from native_editor_check import editor_screen
 from native_browser_check import browser_screen,disk_records
-from native_controls_check import panel_screen
+from native_controls_check import panel_screen,absent_body
+from native_controls_scene import surface as controls_surface,RECTS as CONTROLS_RECTS
 from native_claude_check import landing_screen
 from paint_scene import surface as paint_surface,console as paint_console,RECTS as PAINT_RECTS,MESSAGES as PAINT_MESSAGES
 from native_paint_format import encode as paint_encode
@@ -68,13 +69,15 @@ class Mouse(Keyboard):
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--80col',dest='eighty',action='store_true')
-    parser.add_argument('--paint-only',action='store_true');args=parser.parse_args()
+    parser.add_argument('--paint-only',action='store_true')
+    parser.add_argument('--controls-only',action='store_true');args=parser.parse_args()
+    assert not (args.paint_only and args.controls_only)
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
     print('Native pointer VICE:',work,flush=True)
     shutil.copy2(__file__,work/'run.py')
     disk=work/'suite.d64';shutil.copy2(ROOT/'target/native-desktop/uos128.d64',disk)
     image=ROOT/'target/native-desktop'
-    report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],calculator_frames=[],paint_frames=[],
+    report=dict(passed=False,physical_hardware_io=False,options=vars(args),events=[],desktops=[],screens=[],calculator_frames=[],paint_frames=[],controls_frames=[],
         images={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in image.iterdir() if p.suffix in ('.prg','.d64')})
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     pointer_app='desktop'
@@ -101,7 +104,10 @@ def main():
             data=bytes(paused.read_mem(at,at+n-1));paused.resume();return data
         def ready():return read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2)
         def value(name):return read(symbol(name))[0]
-        def position():return int.from_bytes(read(symbol('pm_x'),2),'little'),value('pm_y')
+        def position():
+            assert symbol('pm_y')==symbol('pm_x')+2
+            point=read(symbol('pm_x'),3)
+            return int.from_bytes(point[:2],'little'),point[2]
         def header(name):return read(0x3d60,32)==(image/(name+'.prg')).read_bytes()[2:34]
         @contextmanager
         def stable_batch(label):
@@ -139,9 +145,18 @@ def main():
         wait(lambda:value('pm_seen')==1,'1351 attached',15)
         time.sleep(1)
         def move_to(tx,ty):
+            samples=[]
             for _ in range(80):
-                x,y=position()
-                if abs(x-tx)<=2 and abs(y-ty)<=2:return x,y
+                x,y=position();samples.append([x,y])
+                if abs(x-tx)<=2 and abs(y-ty)<=2 and ready():
+                    # Finish the input gesture before taking the first capture.
+                    # A single position read can precede queued host deltas.
+                    time.sleep(.2)
+                    settled=position();samples.append(list(settled))
+                    if settled==(x,y) and ready():
+                        report.setdefault('mouse_routes',[]).append(dict(app=pointer_app,target=[tx,ty],samples=samples));save()
+                        return x,y
+                    continue
                 mouse.move(max(-12,min(12,(tx-x)*2)),max(-12,min(12,(ty-y)*2)))
             raise AssertionError(('host mouse failed to reach target',position(),(tx,ty)))
         def desktop(label,selected):
@@ -204,6 +219,38 @@ def main():
             wait(ready,'calculator click ready',60)
             assert int.from_bytes(read(0x3d13,2),'little')==before
             report['events'].append(dict(calculator_button=index,keyboard_events_during_click=0));save()
+        def controls_view(label,page,focus,notice=0):
+            wait(lambda:header('controls') and ready(),label,60)
+            state={name:value(name) for name in ('ug_bitmap','ug_error','uc_page','ui_selected','ug_mode','ug_notice')}
+            report.setdefault('controls_states',[]).append(dict(label=label,**state));save()
+            assert (state['ug_bitmap'],state['uc_page'],state['ui_selected'])==(1,page,focus),state
+            assert value('ug_mode')==0 and value('ug_notice')==notice
+            body=absent_body(page)
+            wanted=controls_surface(body[2:] if page==1 else body,page=page,focus=focus,notice=notice)
+            actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
+            (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'Ultimate bitmap')
+            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
+            assert vdc==panel_screen(80,body,page=page,focus=focus,notice=notice),(label,'Ultimate VDC')
+            for _ in range(20):
+                xy=position();time.sleep(.2)
+                if position()==xy:break
+            else:raise AssertionError('Ultimate pointer did not settle')
+            mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3
+            error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
+            (work/(label+'-canvas.bin')).write_bytes(raw)
+            rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
+            report['controls_frames'].append(dict(label=label,page=page,focus=focus,notice=notice,position=xy,rectangle=rectangle,mode=mode));save()
+            subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
+            print('PASS: Ultimate bitmap, VDC and 64000 mouse pixels:',label,flush=True)
+        def controls_click(index):
+            x0,y0,x1,y1=CONTROLS_RECTS[index]
+            move_to((x0+x1)//2,(y0+y1)//2)
+            before=int.from_bytes(read(0x3d13,2),'little')
+            mouse.button(True);wait(lambda:value('pm_arm')==index,'Ultimate button armed',30)
+            mouse.button(False);wait(ready,'Ultimate click ready',60)
+            after=int.from_bytes(read(0x3d13,2),'little')
+            report['events'].append(dict(controls_button=index,keyboard_events_during_click=after-before));save()
+            assert after==before
         def paint_view(label,document,*,dirty,mode=0,status=0):
             wait(lambda:header('paint') and ready(),label,120)
             assert value('pd_dirty')==dirty and value('pa_mode')==mode and value('pa_status')==status
@@ -264,6 +311,7 @@ def main():
         paint_document=bytearray(bytes(8192)+b'\x10'*1024)
         for index,name in enumerate(('calc','editor','files','controls','claude','paint')):
             if args.paint_only and name!='paint':continue
+            if args.controls_only and name!='controls':continue
             move_to(100,40+24*index);desktop(name+'-hover',index)
             before=int.from_bytes(read(0x3d13,2),'little')
             mouse.button(True);assert header('desktop') and value('pm_arm')==index
@@ -288,6 +336,19 @@ def main():
                 for char in 'cancel':key(char,'calc')
                 calc_click(22)
                 calculator_view('calculator-cancelled','42',['42'],17)
+            elif name=='controls':
+                pointer_app='controls'
+                assert read(symbol('pm_saved'),12)==saved_registers and read(symbol('pm_init_saved'))==saved_init
+                wait(lambda:value('pm_seen')==1,'Ultimate 1351 attached',15)
+                move_to(44,40);controls_view('ultimate-open',0,0)
+                controls_click(1);controls_view('ultimate-drives',1,1)
+                controls_click(8);controls_view('ultimate-missing-drive',1,8,5)
+                controls_click(2);controls_view('ultimate-network',2,2)
+                controls_click(3);controls_view('ultimate-clock',3,3)
+                controls_click(7);controls_view('ultimate-refresh',3,7)
+                # Stock GTK symbolic mapping: host F10 is the C128 Tab key.
+                controls_click(0);key('F10','controls');controls_view('ultimate-tab',0,1)
+                key('Return','controls');controls_view('ultimate-enter',1,1)
             elif name=='paint':
                 pointer_app='paint'
                 assert read(0x033c,2)==symbol('pk_entry').to_bytes(2,'little')
@@ -298,7 +359,7 @@ def main():
                 for tx,ty,color in ((48,56,1),(88,80,2)):
                     if color!=1:paint_click(7+color)
                     move_to(tx,ty);wait(ready,'Paint brush move',60);time.sleep(.3)
-                    x,y=position();assert abs(x-tx)<=2 and abs(y-ty)<=2
+                    x,y=position();assert abs(x-tx)<=2 and abs(y-ty)<=2,('Paint pointer moved after settling',(x,y),(tx,ty))
                     versions.append(bytes(paint_document));xx,yy=x-8,y-32
                     paint_document[yy//8*320+xx//8*8+yy%8]|=128>>(xx%8)
                     paint_document[8192+yy//8*40+xx//8]=color*16
@@ -362,11 +423,11 @@ def main():
         # Only the explicitly created history file may differ on this private disk.
         contents=exact_d64_files(disk.read_bytes())
         before_files=exact_d64_files((image/'uos128.d64').read_bytes())
-        if not args.paint_only:assert contents.pop(b'GUIHIST')==(1,b'42\r')
-        assert contents.pop(b'PAINTPIC')==(1,paint_encode(paint_document))
+        if not args.paint_only and not args.controls_only:assert contents.pop(b'GUIHIST')==(1,b'42\r')
+        if not args.controls_only:assert contents.pop(b'PAINTPIC')==(1,paint_encode(paint_document))
         assert contents==before_files
-        report['paint_file_sha256']=hashlib.sha256(paint_encode(paint_document)).hexdigest()
-        if not args.paint_only:report['calculator_history_export_hex']=b'42\r'.hex()
+        if not args.controls_only:report['paint_file_sha256']=hashlib.sha256(paint_encode(paint_document)).hexdigest()
+        if not args.paint_only and not args.controls_only:report['calculator_history_export_hex']=b'42\r'.hex()
         report['system_disk_files_preserved']=True
         report['passed']=True;save()
     except BaseException as error:

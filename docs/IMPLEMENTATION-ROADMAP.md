@@ -128,9 +128,9 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
-| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; shared native read-only queries and Ultimate panel; bounded handling of the reference cartridge's partial drive reply | Native panel hardware qualification; shared capability registry, missing peripheral records, observed completion of native-owned aborts, interrupted operations and per-firmware protocol coverage |
+| UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; shared native read-only queries, ABI 1.11 serialized packets and blue Ultimate controls; bounded handling of the reference cartridge's partial drive reply | Native panel hardware qualification; shared capability registry, missing peripheral records, observed completion of native-owned aborts, interrupted operations and per-firmware protocol coverage |
 | UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.6 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access, shared picker and focused fields | Shared graphical controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
-| UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Browser drive panel, explicit confirmed IEC destinations, fresh identity checks, power-state display, system-disk protection and mount/eject | Per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
+| UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Legacy browser and native blue drive controls, full-path picker, explicit confirmed IEC destinations, fresh inventory checks, power-state display, system-disk protection and mount/eject; native CPU/VICE qualification passes | Native physical mount/eject qualification; per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Static DMA services only | Save/restore a session without corrupting kernel-owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client; native panel displays configured interface addresses | Native panel hardware qualification; download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
 | UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; native cartridge-clock panel validates calendar replies and supports refresh | Native panel hardware qualification; power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
@@ -573,3 +573,15 @@ button transitions, with complete callback/function-key restoration. The
 resident kernels retain their bytes. This is an initial APP-PAINT milestone;
 advanced tools, image interchange, printing, graphical VDC editing, physical
 qualification and the remaining roadmap are still open.
+
+
+The ABI 1.11 [native Ultimate controls](NATIVE-ULTIMATE-CONTROLS.md) extend the
+blue appearance to hardware, drive, network and clock pages. Mount/eject uses
+the shared packet service, a complete path and explicit destination, fresh
+inventory, sticky system-slot protection and checks for open files in both DOS
+contexts. Confirmation starts on Cancel and is consumed before I/O. The UI
+reports firmware acceptance separately from mounted-media verification; neither
+a timeout nor Refresh silently replays an operation. The command and keyboard
+entries fit existing reserved memory and retain the 426-page heap. This
+[software checkpoint](validation/2026-09-13-native-ultimate-drives/README.md) passes; physical drive operations,
+media identity, settings, image creation and the remaining roadmap stay open.

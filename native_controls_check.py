@@ -3,8 +3,19 @@ TITLE = ['UOS ULTIMATE', '', 'I INFO  D DRIVES  N NETWORK  T CLOCK', '']
 FOOTER = ['', 'R REFRESH   ESC DESKTOP', 'LEFT/RIGHT: TARGET OR INTERFACE']
 
 
-def panel_screen(columns, body):
-    lines = TITLE+body+FOOTER
+def absent_body(page):
+    headings = [['HARDWARE','UNAVAILABLE','','TARGET 4'],
+                ['ULTIMATE DRIVE INVENTORY',''], ['NETWORK INTERFACES: 0'], ['CARTRIDGE RTC','']]
+    return headings[page]+['UNAVAILABLE: 11  DOS 00  LINK FE','']
+
+
+def panel_screen(columns, body, *, page=0, focus=0, mode=0, selected=0, notice=0):
+    from native_controls_scene import LABELS, NOTICES
+    title = ['UOS ULTIMATE', '', 'CHANGE DRIVE MEDIA?', ''] if mode else TITLE
+    footer = (['TAB CHOOSE  ENTER CONFIRMS', 'ESC CANCELS'] if mode else
+              (['UP/DOWN SELECT  M MOUNT  E EJECT'] if page==1 else [])+FOOTER)
+    label = LABELS[focus].decode().upper() if focus<12 else f'DRIVE {selected+1}'
+    lines = title+body+['']+footer+['FOCUS: '+label, NOTICES[notice].upper()]
     assert columns in (40, 80) and len(lines) <= 25
     result = bytearray(b' '*(columns*25))
     for row, line in enumerate(lines):

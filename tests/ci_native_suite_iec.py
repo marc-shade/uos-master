@@ -49,6 +49,38 @@ class ViceBridge:
     def __call__(self, label, work, row):
         return self.prepared[label][:2]
 
+    def close_session(self,mon,work,row,labels,closing_key,report):
+        """Stop before video cleanup and observe still-owned terminal BSS."""
+        monitor=mon.monitor
+        entry=labels['_native_video_end'];at=labels['_closeOutcome']
+        error,checkpoint=monitor._recv(monitor._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
+        assert not error
+        checkpoint_id=checkpoint[:4];monitor.resume();started=time.monotonic()
+        def read(address,count=1):
+            data=bytes(monitor.read_mem(address,address+count-1));monitor.resume();return data
+        wait(lambda:read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2),'ready before Claude close',120)
+        before=int.from_bytes(read(0x3d13,2),'little')
+        try:
+            monitor.write_mem(0x3d12,b'\0');monitor.write_mem(0x34a,bytes([closing_key]));monitor.write_mem(0xd0,b'\1');monitor.resume()
+            deadline=time.monotonic()+90
+            while True:
+                error,checkpoint=monitor._recv(monitor._send(0x11,checkpoint_id));assert not error
+                if int.from_bytes(checkpoint[13:17],'little'):break
+                monitor.resume();assert time.monotonic()<deadline,'Claude close checkpoint not reached'
+                time.sleep(.1)
+            outcome=bytes(monitor.read_mem(at,at,bank=monitor.banks()['ram00']))
+            label=row['label'];(work/(label+'-close-outcome.bin')).write_bytes(outcome)
+            (work/(label+'-close-checkpoint.bin')).write_bytes(checkpoint)
+            assert bytes(monitor.read_mem(0x3d20,0x3d20))==b'\x20'
+            assert int.from_bytes(bytes(monitor.read_mem(0x3d13,0x3d14)),'little')==(before+1)&65535
+            row['close_observation']=dict(address=at,cleanup_entry=entry,checkpoint_hex=checkpoint.hex(),
+                lifetime='Claude allocation still live; before native_video_end')
+            report['events'].append(dict(key=closing_key,elapsed_seconds=round(time.monotonic()-started,3),live_close_checkpoint=True))
+            return outcome
+        finally:
+            error,_=monitor._recv(monitor._send(0x13,checkpoint_id));assert not error
+            monitor.resume()
+
 
 def main():
     work = Path(tempfile.mkdtemp(prefix='uos-native-suite-iec-',dir='/var/tmp/arc-scratch'))

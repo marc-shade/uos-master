@@ -44,11 +44,11 @@ basic_end:
         jmp display_show
         jmp display_close
         jmp ultimate_query
+        jmp ultimate_command
 native_start:
         cld
-        lda $d505
-        and #$40
-        beq native_mode
+        bit $d505
+        bvc native_mode
         rts                     ; refuse C64 mode without changing its map
 native_mode:
         lda #$0e                ; bank 0 RAM below $c000, system ROM and I/O

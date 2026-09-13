@@ -4,10 +4,11 @@ The browser checkpoint left 139 bytes before the page tables at `$3800`.
 The [resident-growth checkpoint](validation/2026-09-09-native-relocation/README.md)
 moved the allocator to `$1300`. The native Ultimate backend now reserves an
 additional 4 KiB at `$4000..$4fff`; the remaining heap has 426 pages. Public
-entry addresses and the `$6000` app slot remain stable. The ABI 1.8 workspace
-main region has 10 free bytes (eight in the direct-desktop variant), the low
-region has 16, and resident services end seven bytes before `$5000`.
-Presentation setup leaves 28 bytes before the retained browser path at `$4a00`.
+entry addresses and the `$6000` app slot remain stable. The ABI 1.11 workspace
+main region has four free bytes (two in the direct-desktop variant), the low
+region has eight, and resident services end seven bytes before `$5000`.
+Presentation setup and the relocated keyboard-input wrapper leave three bytes
+before the retained browser path at `$4a00`.
 The [native desktop and drawing library](NATIVE-GRAPHICS.md) keep graphics code
 in the app/module allocation. The ABI 1.5 directory
 cursor shares the owned stream API and supports native folder navigation.
@@ -244,8 +245,13 @@ its Linux bridge, explicit serial connection and F8 return. The foreground app
 saves/restores the custom VDC font and NMI state. The kernel's mapping bridge
 occupies eight bytes below BASIC; all 426 managed heap pages remain available.
 [Ultimate queries](NATIVE-ULTIMATE-CONTROLS.md) reuse the existing serialized
-file transport. Mutating device controls and native physical qualification of
-these added apps remain open.
+file transport. ABI 1.11 adds a generic bounded command entry and the native
+app's guarded mount/eject workflow. The blue drive controls share keyboard,
+mouse and focus code; the image picker retains full paths and returns to a
+confirmation with Cancel selected. Fresh inventory and open-file checks precede
+each mutating request. Accepted requests are not presented as verified media
+changes. The [frozen software qualification](validation/2026-09-13-native-ultimate-drives/README.md) passes; native
+physical qualification and broader device settings remain open.
 
 The [Claude lifecycle checkpoint](validation/2026-09-12-native-claude-lifecycle/README.md)
 addresses the Ultimate's asynchronous relay: the client keeps its NMI handler
