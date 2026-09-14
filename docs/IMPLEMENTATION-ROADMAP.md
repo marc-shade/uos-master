@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,643 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,636 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -84,11 +84,11 @@ physically unavailable; unavailable capabilities must remain visible as such.
 |---|---|---|---|
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Native boot/kernel, two-screen workspace, banked files/apps and keyboard graphical desktop at 1 MHz; owned display lifetime and KERNAL gateways | Remaining desktop/app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
-| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) with 4 KiB allocations and generation tokens, used for Desktop and Calculator VDC snapshots with main-RAM fallback | REU-backed documents/caches and larger app heaps; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
+| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) with 4 KiB allocations and generation tokens, used for Desktop, Calculator and Ultimate VDC snapshots with main-RAM fallback | REU-backed documents/caches and larger app heaps; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher on VIC and 640×200 VDC, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
-| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
+| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator and Ultimate, including its picker, through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes; native reversible 16/64 KiB detection and 640×200 launcher, with color cards on 64 KiB | Further bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
@@ -672,3 +672,12 @@ are released before app entry. Original app bodies and module layouts remain
 exact, and the resident kernel and 426-page heap do not change. This removes
 the immediate distribution-space constraint; it does not increase the app
 code window or complete the remaining display and document migrations.
+
+Ultimate now shares the graphical VDC presenter across its panels, image picker
+and explicit drive confirmation. Temporary picker scratch moves into owned
+bank-0 heap memory, leaving room for the retained display client in the 96-page
+app. REU backing leaves 264 main-RAM pages free, with RAM fallback on either
+VDC size. Display faults pause drive actions until Escape restores the saved
+screen. The suite has 140 free D64 blocks and 2,636 D81 blocks. Editor, Files,
+Paint and Claude display migration, document backing, physical qualification
+and the rest of this roadmap remain open.

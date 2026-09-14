@@ -1,13 +1,14 @@
 # Shared native VDC service
 
-Desktop and Calculator load the same `VDSVC.PRG` from their original app
+Desktop, Calculator and Ultimate load the same `VDSVC.PRG` from their original app
 source. It supplies both the native 640×200 desktop layout and the incremental
-VIC-to-VDC presenter used by Calculator. The blue interface, app icons, focus
-colors and pointer behavior remain the same. Both apps can save their original
+VIC-to-VDC presenter used by Calculator and Ultimate, including Ultimate's
+file picker. The blue interface, app icons, focus colors and pointer behavior
+remain consistent. All three apps can save their original
 VDC screen in an available REU, with main RAM as the fallback.
 
 The component is included on both D64/D81 suite and workspace disks. When
-copying Desktop or Calculator to another IEC disk or Ultimate directory, copy
+copying Desktop, Calculator or Ultimate to another IEC disk or Ultimate directory, copy
 `VDSVC.PRG` beside it. A data-device selection or file-dialog path does not
 redirect component loading. Ultimate paths retain the original directory,
 including spaces and case, in either source context. A missing, damaged or
@@ -22,21 +23,26 @@ component, reserved in 30 bank-1 pages at `$6000..$7dff`. The retained
 stream before executing any provider code. The resident kernel and 426-page
 managed heap are unchanged.
 
-| Allocation while graphics are open | Desktop | Calculator |
-|---|---:|---:|
-| Bank-0 app | 35 pages | 49 pages |
-| Bank-1 component | 30 pages | 30 pages |
-| VIC surface | 36 pages | 36 pages |
-| History | 0 | 2 pages |
-| Free main-RAM pages with REU backing | 325 | 309 |
-| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 |
-| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 |
+| Allocation while graphics are open | Desktop | Calculator | Ultimate |
+|---|---:|---:|---:|
+| Bank-0 app | 35 pages | 49 pages | 96 pages |
+| Bank-1 component | 30 pages | 30 pages | 30 pages |
+| VIC surface | 36 pages | 36 pages | 36 pages |
+| History | 0 | 2 pages | 0 |
+| Free main-RAM pages with REU backing | 325 | 309 | 264 |
+| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 | 200 |
+| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 | 192 |
 
-Moving the display code saves eight pages in each app's executable allocation.
+Moving the display code saved eight pages in Desktop and Calculator's executable allocations.
 The separate component adds 30 pages while loaded; this is code-space headroom
 for further app migration, not a reduction in total RAM use on every machine.
 Editor documents, its module window and other app views still require separate
 backing-store work before they can adopt the component.
+
+Ultimate keeps one component and saved VDC screen while its picker borrows the
+same VIC surface. Its picker allocates four scratch pages only while open and
+releases them after closing its cursors and cache. No provider reload or VDC
+restoration occurs between the panel, picker and confirmation dialog.
 
 Input, application logic and the VIC surface stay in bank 0. Calls clear
 `N_READY` before preparing the mailbox or changing banks. The normal app input

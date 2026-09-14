@@ -11,7 +11,8 @@ NOTICES=['Tab controls  Enter activate','Request accepted; R checks inventory',
          'Cancelled','System disk remains protected','Drive is off',
          'Drive unavailable or ambiguous','Inventory changed; choose again',
          'Choose an Ultimate disk image','Close open files to change media',
-         'Command failed; R refreshes','Picker cleanup failed; R retries']
+         'Command failed; R refreshes','Picker cleanup failed; R retries',
+         '80-col paused; Esc retries return','Not enough memory for the picker']
 
 
 def enabled(index,page,mode,count):

@@ -4,6 +4,7 @@
 B_COPY = 0
 B_GUI = 0
 FD_GUI = 0
+FD_VDC = 0
 .endweak
 B_RECORD_BYTES=32-12*FD_GUI
 .if !FD_EMBEDDED

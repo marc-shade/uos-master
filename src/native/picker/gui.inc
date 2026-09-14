@@ -62,6 +62,9 @@ pg_draw:
         dex
         bpl -
 pg_refresh:
+.if FD_VDC
+        jsr FD_VDC_FULL
+.endif
         lda b_prompt
         cmp pg_prompt
         beq pg_same_prompt
@@ -190,17 +193,24 @@ pg_present:
         lda pg_error
         bne pg_failed
         lda pg_bitmap
-        bne pg_return
+        bne pg_shown
         jsr pg_surface
         jsr N_VSHOW
         bcs pg_failed
         inc pg_bitmap
         jsr pgm_install
         bcs pg_failed
+pg_shown:
+.if FD_VDC
+        jsr FD_VDC_SYNC
+.endif
 pg_return:
         rts
 pg_failed:
         sta pg_error
+.if FD_VDC
+        jsr FD_VDC_CLOSE        ; restore graphics before permitting text controls
+.endif
         jmp pg_close
 
 ; A logical browser row maps to the common 40-column picker layout. Long
@@ -263,6 +273,12 @@ pg_emitted:
 
 ; Cell coordinates -> byte offset in the surface's 40-column screen plane.
 pg_offset:
+.if FD_VDC
+        ldx pg_row
+        lda #1
+        sta FD_VDC_ROWS,x
+        sta FD_VDC_PENDING
+.endif
         lda pg_row
         asl
         asl
@@ -572,6 +588,17 @@ pg_hit_done:
         rts
 pg_input:
         sta pg_key
+.if FD_VDC
+        lda FD_VDC_PHASE
+        beq +
+        lda FD_VDC_FAULT
+        beq +
+        lda pg_key
+        cmp #27
+        beq pg_key_return
+        jmp pg_no_key
++
+.endif
         lda pg_bitmap
         beq pg_key_return
         lda pg_key
@@ -592,6 +619,9 @@ pg_arrow:
         lda #16
         sta pg_focus
 pg_key_return:
+.if FD_VDC
+        jsr FD_VDC_SYNC
+.endif
         lda pg_key
         cmp #$85
         bne +
@@ -607,6 +637,9 @@ pg_tab:
         bcs -
         jsr pg_focus_set
 pg_no_key:
+.if FD_VDC
+        jsr FD_VDC_SYNC
+.endif
         lda #0
         rts
 pg_enter:

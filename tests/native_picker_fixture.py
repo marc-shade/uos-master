@@ -47,7 +47,16 @@ class Picker:
         args=dict(fmt=fmt,device=device,selected=selected,prompt=prompt,field=field,caret=caret,**kw)
         want=surface(records,mode=mode,focus=focus,view=v0,**args);actual=bytes(self.ram[0xc000:0xe400])
         assert actual==want,('picker surface',[(i,a,b) for i,(a,b) in enumerate(zip(actual,want)) if a!=b][:24],args,focus)
-        want=console(records,view=v1,**args)
-        assert self.screens[1]==want,('picker VDC',[(i,a,b) for i,(a,b) in enumerate(zip(self.screens[1],want)) if a!=b][:24],args)
+        if self.app.image_name=='controls' and self.app.value('vd_phase'):
+            from native_vdc_mirror import bitmap,attributes
+            assert self.app.value('vd_phase')==2 and self.app.value('vd_live')==1
+            assert not self.app.value('vd_fault') and not self.app.value('vm_pending')
+            chip=self.app.bus;x,y=self.position
+            want=bitmap(actual,chip.size==64,x=x,y=y,pointer=bool(self.app.value('vd_pointer_visible')))
+            assert chip.bytes(self.app.value('vd_base')*256,16000)==want,'complete picker VDC bitmap'
+            if chip.size==64:assert chip.bytes(0x8000,2000)==attributes(actual),'complete picker VDC attributes'
+        else:
+            want=console(records,view=v1,**args)
+            assert self.screens[1]==want,('picker VDC',[(i,a,b) for i,(a,b) in enumerate(zip(self.screens[1],want)) if a!=b][:24],args)
         self.checked+=1
         return actual

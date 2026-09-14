@@ -1,10 +1,13 @@
 # Packed native app startup
 
 The desktop suite stores the launcher and six apps as standard NAPP files
-with a checked LZSA2 startup wrapper. The D64 suite has **147 free blocks**
-instead of one; D81 has **2,643**. The thirteen disk entries, resident kernel,
-426-page heap and application allocations are unchanged. The diagnostic native
+with a checked LZSA2 startup wrapper. The D64 suite has **140 free blocks**
+and D81 has **2,636**. Packing preserves the thirteen disk entries, resident
+kernel, 426-page heap and each expanded application's allocation. The diagnostic native
 disks continue to use their original app files.
+
+The first packed-app checkpoint left 147 D64 blocks. Ultimate's graphical VDC
+client uses seven more disk blocks and increases that app to 96 RAM pages.
 
 The kernel validates the complete outer file and closes its source before
 executing the wrapper. Startup expands the original app body into its owned
@@ -18,12 +21,12 @@ cleanup before any original program instruction executes.
 | Calculator | 12,430 | 9,275 | 49 |
 | Editor | 13,128 | 7,579 | 96 |
 | Files | 12,984 | 7,993 | 96 |
-| Ultimate | 22,678 | 14,011 | 89 |
+| Ultimate | 24,320 | 15,863 | 96 |
 | Claude | 11,059 | 7,298 | 75 |
 | Paint | 24,525 | 15,125 | 96 |
 
-PRG sizes include the two-byte load address. This saves 36,996 file bytes and
-146 disk blocks. Packing creates disk space; the expanded apps retain their
+PRG sizes include the two-byte load address. This saves 36,786 file bytes and
+145 disk blocks. Packing creates disk space; the expanded apps retain their
 existing code and document limits. The remaining graphical VDC app views and
 larger document backing still require their own implementation work.
 
@@ -74,7 +77,7 @@ The production wrapper retains its own compiled bounds and CRC checks.
 
 Editor and Files modules retain their exact code and layout. The builder
 reseals their parent and module checksums against the packed app's identity.
-Copy each app together with its matching modules; Desktop and Calculator also
+Copy each app together with its matching modules; Desktop, Calculator and Ultimate also
 need `VDSVC.PRG` beside them. Unpacking an app for development requires resealing
 its modules against that unpacked parent.
 

@@ -134,7 +134,9 @@ ug_mount:
         bcs ug_cleanup_failed
         jsr ud_guard
         bcs ug_result
-        jsr ug_view_close
+        jsr ug_scratch_open
+        bcs ug_scratch_failed
+        jsr ug_surface_close
         lda #1
         sta drive_picker.fd_mode
         lda ud_context
@@ -230,6 +232,10 @@ ug_result:
         jmp ug_handled
 ug_cleanup_failed:
         lda #10
+        bne ug_failure_notice
+ug_scratch_failed:
+        lda #12
+ug_failure_notice:
         sta ug_notice
         jsr ug_update
         jsr uc_draw_both
@@ -272,6 +278,7 @@ ug_focus:
         beq +
         jsr ui_focus
         bcs ug_focus_failed
+        jsr ug_vdc_sync
         jmp uc_draw_both
 +       stx ui_selected
         jmp uc_draw_both
@@ -281,7 +288,13 @@ ug_focus_failed:
 ug_mouse:
         lda ug_bitmap
         beq ug_no_mouse
+        lda vd_phase
+        beq +
+        lda vd_fault
+        bne ug_no_mouse
++
         jsr pm_poll
+        jsr ug_vdc_sync
         lda pm_event
         beq ug_no_mouse
         lda #0
@@ -353,6 +366,20 @@ ug_cleanup:
         sta ug_cache_at
         cmp #40
         bne -
+        lda ug_scratch_handle
+        beq +
+        ldx #3
+-       lda ug_scratch_handle,x
+        sta N_HANDLE,x
+        dex
+        bpl -
+        lda N_CURRENT
+        sta N_OWNER
+        jsr N_FREE
+        bcs ug_cleanup_done
+        lda #0
+        sta ug_scratch_handle
++
         lda #0
         clc
 ug_cleanup_done:
@@ -361,9 +388,37 @@ ug_exit:
         jsr ug_cleanup
         bcs ug_cleanup_failed
         jsr ug_view_close
+        bcs ug_vdc_exit_failed
         jsr nk_close
         lda #0
         jmp N_EXIT
+ug_vdc_exit_failed:
+        jsr ug_vdc_sync
+        jmp ug_handled
+ug_scratch_open:
+        lda #0
+        sta N_BANK
+        lda N_CURRENT
+        sta N_OWNER
+        lda #4
+        sta N_PAGES
+        jsr N_ALLOC
+        bcs ug_cleanup_done
+        ldx #3
+-       lda N_HANDLE,x
+        sta ug_scratch_handle,x
+        dex
+        bpl -
+        lda #0
+        sta drive_picker.fd_scratch+2
+        sta drive_picker.fd_scratch+4
+        lda N_PAGE
+        sta drive_picker.fd_scratch+3
+        clc
+        adc #2
+        sta drive_picker.fd_scratch+5
+        clc
+        rts
 ug_safe_character:
         cmp #32
         bcc +
@@ -378,3 +433,4 @@ ug_saved_focus: .byte 0
 ug_picker_error: .byte 0
 ug_picker_failed: .byte 0
 ug_cache_at: .byte 0
+ug_scratch_handle: .fill 4,0

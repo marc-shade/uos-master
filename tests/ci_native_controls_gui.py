@@ -88,6 +88,8 @@ class GraphicalPanel(DrivePanel):
             assert actual==wanted,('bitmap',page,focus,mode,notice,
                 [(i,a,b) for i,(a,b) in enumerate(zip(actual,wanted)) if a!=b][:24])
         for bank in ((1,) if bitmap else (0,1)):
+            if bank==1 and self.value('vd_phase'):
+                continue
             wanted=panel_screen((40,80)[bank],body,page=page,focus=focus,mode=mode,selected=selected,notice=notice)
             assert self.screens[bank]==wanted,('console',bank,page,focus,mode,notice,body,
                 [(i,a,b) for i,(a,b) in enumerate(zip(self.screens[bank],wanted)) if a!=b][:24])

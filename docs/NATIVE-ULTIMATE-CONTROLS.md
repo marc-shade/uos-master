@@ -1,9 +1,9 @@
 # Native Ultimate controls
 
 Open **Ultimate** with U on the native desktop. The app is included as
-`ULTIMATE` on both desktop suite disks and uses ABI 1.11. The VIC display uses
-the blue suite controls, yellow focus and the shared 1351 mouse. The VDC keeps
-the text controls; when the bitmap is unavailable, both text displays work.
+`ULTIMATE` on both desktop suite disks and uses ABI 1.12. Both VIC and VDC show
+the blue suite controls and shared 1351 pointer. A 64 KiB VDC uses yellow focus;
+16 KiB uses reversed light controls. Unavailable graphics retain text controls.
 The four pages show identification, drive inventory, configured network
 addresses and a refreshable cartridge clock reading.
 
@@ -20,8 +20,8 @@ addresses and a refreshable cartridge clock reading.
 | R | Refresh |
 | Escape | Return to desktop |
 
-The image picker temporarily uses both text displays, then restores the blue
-controls. It accepts an absolute Ultimate DOS path from either context. The
+The image picker shares the graphical surface on both displays, then returns
+to the app's blue controls. It accepts an absolute Ultimate DOS path from either context. The
 confirmation shows the destination IEC address and complete image path, with
 **Cancel** initially selected. Tab chooses Confirm; Enter activates the selected
 button. Escape cancels. Supported suffixes are D64, D71, D81, G64 and G71,
@@ -96,9 +96,24 @@ remains read only and continues rejecting operation numbers 9–255.
 
 The 56-byte command entry occupies existing reserved space after the query
 service. Relocating the 25-byte keyboard-input wrapper into presentation padding
-keeps the resident heap at 426 pages. The app currently occupies 89 pages and
-uses a separate 36-page bitmap, released on return. Its [graphical file
-picker](NATIVE-PICKER-GUI.md) shares the display, font and pointer. Source command definitions
+keeps the resident heap at 426 pages. The app occupies 96 pages and uses a
+separate 36-page VIC surface. Its [graphical file picker](NATIVE-PICKER-GUI.md)
+shares the display, font and pointer. The four-page picker scratch buffer is
+allocated in bank 0 when opening the picker and freed after its cursors and
+cache close. Allocation failure keeps the panel usable and permits a later retry.
+
+Copy `VDSVC.PRG` beside the app. The [shared VDC service](NATIVE-VDC-SERVICE.md)
+loads from the original app source and stays owned across picker transitions.
+It saves one original screen until final app exit. REU backing leaves 264
+main-RAM pages free; RAM backing leaves 200 with a 16 KiB VDC or 192 with 64 KiB.
+Picker scratch and cache temporarily consume additional pages. Dirty rows and
+pointer movement update incrementally. A failed VDC transfer freezes drive
+actions; Escape retries restoration before any display, component or app owner
+is released. A clean setup refusal permits VIC graphics and VDC text fallback. A failed
+picker surface restores the VDC before using text controls; Refresh in the
+main panel retries graphical VDC setup.
+
+Source command definitions
 were checked against Ultimate firmware revision
 `a01c04e8267a0d916b7203cb34dcf1127f75981d` in `control_target`,
 `network_target`, and `dos`; the drive type enum is in `c1541.h`.
@@ -114,6 +129,13 @@ against independent device state. `tests/ci_native_controls.py` retains full
 console and invalid-response checks. `tests/ci_native_controls_gui.py` exercises
 the graphical controls, full bitmap/text comparisons, picker, confirmations,
 faults and input/display teardown.
+
+`ci_native_vdc_controls.py` covers complete panel bitmaps and retained display
+failure recovery on both VDC sizes. The picker, REU and fallback companion
+tests cover complete dialog canvases, incremental fields/pointers, one explicit
+mount, backing-store restoration, missing/corrupt components and picker memory
+pressure. The VICE pointer workflow compares complete Ultimate VIC/VDC canvases
+and checks the saved VRAM before app handoff.
 
 The [frozen software record](validation/2026-09-13-native-ultimate-drives/README.md) retains the CPU,
 full mouse/keyboard VICE, serial shutdown and rebuild evidence. No physical

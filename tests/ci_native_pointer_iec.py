@@ -461,8 +461,6 @@ def main():
             wanted=controls_surface(body[2:] if page==1 else body,page=page,focus=focus,notice=notice)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'Ultimate bitmap')
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-            assert vdc==panel_screen(80,body,page=page,focus=focus,notice=notice),(label,'Ultimate VDC')
             for _ in range(20):
                 xy=position();time.sleep(.2)
                 if position()==xy:break
@@ -471,9 +469,14 @@ def main():
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
             rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            report['controls_frames'].append(dict(label=label,page=page,focus=focus,notice=notice,position=xy,rectangle=rectangle,mode=mode));save()
+            def vdc_canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            vdc=vdc_capture(capture,app_read,vdc_canvas,work,label,focus,color=args.vdc64,
+                            surface_data=wanted,image_prefix='native-desktop/controls')
+            report['controls_frames'].append(dict(label=label,page=page,focus=focus,notice=notice,position=xy,rectangle=rectangle,mode=mode,vdc=vdc));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
-            print('PASS: Ultimate bitmap, VDC and 64000 mouse pixels:',label,flush=True)
+            print('PASS: Ultimate VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
         def controls_click(index):
             x0,y0,x1,y1=CONTROLS_RECTS[index]
             move_to((x0+x1)//2,(y0+y1)//2)
@@ -825,7 +828,7 @@ def main():
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
-            after_key=watch_app_vdc_restore('calc','calculator-close') if name=='calc' else None
+            after_key=watch_app_vdc_restore(name,'calculator-close' if name=='calc' else 'ultimate-close') if name in ('calc','controls') else None
             key('F8' if name=='claude' else 'F9','desktop',after_key=after_key)
             pointer_app='desktop'
             desktop(name+'-returned',index)

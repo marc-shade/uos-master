@@ -50,7 +50,7 @@ all eight lines: its last-raster value is inclusive, so seven is sufficient.
 The expanded desktop program contains 8,833 bytes; its packed PRG is 7,362
 bytes including the load address. The
 [suite disks](NATIVE-BOOT-MEDIA.md) contain thirteen shipping files, including
-`VDSVC.PRG`, with 147 free blocks on D64 and 2,643 on D81 before user documents. Use a
+`VDSVC.PRG`, with 140 free blocks on D64 and 2,636 on D81 before user documents. Use a
 separate data disk or Ultimate storage for larger documents and pictures.
 Qualification saves the small Calculator sample on the system disk. On D64,
 Editor selects device 9 through the file picker; on D81 its sample also fits

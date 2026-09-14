@@ -6,6 +6,7 @@ ug_init:
         sta ug_bitmap
         sta ug_mode
         sta ug_notice
+        sta ug_vdc_attempted
         sta ui_selected
         rts
 ug_update:
@@ -20,7 +21,7 @@ ug_update:
         lda ug_bitmap
         beq ug_return
         jsr ug_draw
-        bcc ug_return
+        bcc ug_vdc_sync
         jmp ug_failed
 ug_view_open:
         lda #1
@@ -72,10 +73,11 @@ ug_initialize:
         lda #1
         sta ug_bitmap
         jsr pm_install
-        bcc ug_return
+        bcc ug_vdc_sync
 ug_failed:
         sta ug_error
         jsr ug_view_close
+        bcs ug_return
         lda ug_handle
         beq ug_return
         jsr ug_select_view
@@ -86,10 +88,14 @@ ug_failed:
 ug_return:
         rts
 ug_view_close:
+        jsr vd_close
+        bcs ug_return
+ug_surface_close:
         jsr pm_close
         jsr N_VCLOSE
         lda #0
         sta ug_bitmap
+        clc
         rts
 ug_select_view:
         lda N_CURRENT
@@ -97,6 +103,36 @@ ug_select_view:
         ldx #3
 -       lda ug_handle,x
         sta N_HANDLE,x
+        dex
+        bpl -
+        rts
+
+; The component keeps the same surface and original VDC snapshot while the
+; picker borrows it. Only the final app close releases that display lifetime.
+ug_vdc_sync:
+        lda ug_vdc_attempted
+        bne ug_vdc_present
+        inc ug_vdc_attempted
+        jsr vd_open
+        bcc ug_return
+        jsr vd_close
+ug_vdc_present:
+        jsr vm_present
+        jsr vd_poll
+        lda vd_phase
+        beq ug_return
+        lda vd_fault
+        beq ug_return
+        lda drive_picker.fd_active
+        bne ug_return
+        lda #11
+        sta ug_notice
+        jmp ug_draw
+ug_vdc_full:
+        lda #1
+        sta vm_pending
+        ldx #24
+-       sta vm_rows,x
         dex
         bpl -
         rts
@@ -434,6 +470,7 @@ ug_collected:
 ug_frame: .word 0,0,320,200
 ug_cells: .word 0,0,40,25
 ug_attempted: .byte 0
+ug_vdc_attempted: .byte 0
 ug_bitmap: .byte 0
 ug_handle: .fill 4,0
 ug_error: .byte 0

@@ -5,9 +5,9 @@ PM_KEYS_OWNED=1               ; retain keyboard ownership across the picker
 * = N_APPBASE
 uc_image:
         .text "napp"
-        .byte 1,1,11,0
+        .byte 1,1,12,0
         .word uc_end-uc_image
-        .byte (uc_end-uc_image+255)/256,0
+        .byte (uc_end-uc_image+255+48)/256,0
         .word uc_entry-uc_image
         .word 0
         .text "ultimate",0
@@ -118,6 +118,14 @@ uc_get_key:
 uc_key_ready:
         ldx #0
         stx N_READY
+        ldx vd_phase
+        beq +
+        ldx vd_fault
+        beq +
+        cmp #27
+        beq uc_exit
+        jmp cloop
++
         jsr ug_key
         bcs cloop
         cmp #27
@@ -128,7 +136,7 @@ uc_key_ready:
         beq uc_next
         and #$df
         cmp #$52
-        beq uc_refresh
+        beq uc_retry
         cmp #$49
         beq uc_info_key
         cmp #$44
@@ -154,6 +162,12 @@ uc_page_key:
 uc_exit:
         jsr ug_exit
         jmp cloop
+uc_retry:
+        lda vd_phase
+        bne uc_refresh
+        lda #0
+        sta ug_vdc_attempted
+        jmp uc_refresh
 uc_previous:
         lda uc_page
         beq uc_target_previous
@@ -373,7 +387,11 @@ uc_pair:
 uc_draw_both:
         lda ug_bitmap
         sta uc_screen
--       lda $d7
+-       lda uc_screen
+        beq +
+        lda vd_phase
+        bne uc_draw_both_done
++       lda $d7
         rol
         lda #0
         rol
@@ -385,6 +403,7 @@ uc_draw_both:
         lda uc_screen
         cmp #2
         bne -
+uc_draw_both_done:
         rts
 uc_draw:
         lda ug_collect
@@ -825,18 +844,28 @@ FD_EMBEDDED=1
 FD_GUI=1
 FD_GUI_SHARED=1
 FD_GUI_SURFACE=ug_handle
+FD_VDC=1
+FD_VDC_PHASE=vd_phase
+FD_VDC_FAULT=vd_fault
+FD_VDC_ROWS=vm_rows
+FD_VDC_PENDING=vm_pending
+FD_VDC_SYNC=ug_vdc_sync
+FD_VDC_FULL=ug_vdc_full
+FD_VDC_CLOSE=vd_close
 B_COPY=0
 FD_DIRECT_PAGES=6
 FD_NAME_BUFFER=ud_name
 FD_SCRATCH0=uc_data
-FD_SCRATCH1=ug_scratch
-FD_SCRATCH2=ug_scratch+512
-FD_SCRATCH3=ug_scratch+512
+FD_SCRATCH1=0                  ; patched only after allocating picker scratch
+FD_SCRATCH2=0
+FD_SCRATCH3=0
 FD_SAFE_CHARACTER=ug_safe_character
 .include "file-dialog.inc"
 .bend
 ug_picker_active=drive_picker.fd_active
 ug_picker_get_key=drive_picker.b_get_key
-ug_scratch: .fill 1024,0
+BP_MODE=0
+bp_select_surface=ug_select_view
+.include "graphics/vdc-client.inc"
 uc_end:
-        .cerror uc_end>N_APPLIMIT, "Ultimate controls exceed native app slot"
+        .cerror uc_end+48>N_APPLIMIT, "Ultimate controls need the packed-startup cleanup tail"

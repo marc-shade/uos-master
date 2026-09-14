@@ -41,8 +41,10 @@ ug_notices_7: .byte 67,104,111,111,115,101,32,97,110,32,85,108,116,105,109,97,11
 ug_notices_8: .byte 67,108,111,115,101,32,111,112,101,110,32,102,105,108,101,115,32,116,111,32,99,104,97,110,103,101,32,109,101,100,105,97,0
 ug_notices_9: .byte 67,111,109,109,97,110,100,32,102,97,105,108,101,100,59,32,82,32,114,101,102,114,101,115,104,101,115,0
 ug_notices_10: .byte 80,105,99,107,101,114,32,99,108,101,97,110,117,112,32,102,97,105,108,101,100,59,32,82,32,114,101,116,114,105,101,115,0
-ug_notices_lo: .byte <ug_notices_0,<ug_notices_1,<ug_notices_2,<ug_notices_3,<ug_notices_4,<ug_notices_5,<ug_notices_6,<ug_notices_7,<ug_notices_8,<ug_notices_9,<ug_notices_10
-ug_notices_hi: .byte >ug_notices_0,>ug_notices_1,>ug_notices_2,>ug_notices_3,>ug_notices_4,>ug_notices_5,>ug_notices_6,>ug_notices_7,>ug_notices_8,>ug_notices_9,>ug_notices_10
+ug_notices_11: .byte 56,48,45,99,111,108,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,116,114,105,101,115,32,114,101,116,117,114,110,0
+ug_notices_12: .byte 78,111,116,32,101,110,111,117,103,104,32,109,101,109,111,114,121,32,102,111,114,32,116,104,101,32,112,105,99,107,101,114,0
+ug_notices_lo: .byte <ug_notices_0,<ug_notices_1,<ug_notices_2,<ug_notices_3,<ug_notices_4,<ug_notices_5,<ug_notices_6,<ug_notices_7,<ug_notices_8,<ug_notices_9,<ug_notices_10,<ug_notices_11,<ug_notices_12
+ug_notices_hi: .byte >ug_notices_0,>ug_notices_1,>ug_notices_2,>ug_notices_3,>ug_notices_4,>ug_notices_5,>ug_notices_6,>ug_notices_7,>ug_notices_8,>ug_notices_9,>ug_notices_10,>ug_notices_11,>ug_notices_12
 ug_title: .byte 117,79,83,32,85,108,116,105,109,97,116,101,0
 ug_question: .byte 67,104,97,110,103,101,32,100,114,105,118,101,32,109,101,100,105,97,63,0
 ug_label_x: .word 28,100,176,260,288,24,96,172,40,152,68,200

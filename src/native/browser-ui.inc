@@ -15,6 +15,13 @@ b_draw:
 .endif
         sta b_screen
 b_draw_screen:
+.if FD_VDC
+        lda b_screen
+        beq +
+        lda FD_VDC_PHASE
+        bne b_screen_done
++
+.endif
         lda $d7
         rol
         lda #0
