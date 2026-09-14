@@ -305,6 +305,9 @@ pg_offset:
         inc N_OFFSET+1
 +       rts
 pg_glyph:
+.if FD_GUI_SHARED && GFX_FONT_COLUMNS
+        jsr gfx_load_glyph
+.else
         sec
         sbc #32
         ldx #0
@@ -321,6 +324,7 @@ pg_glyph:
         lda pg_high
         adc #>pg_font
         sta pg_font_read+2
+.endif
         ldx #7
 -       lda N_BUFFER,x
         pha
@@ -335,7 +339,11 @@ pg_glyph:
         bne -
         ldx #7
 pg_font_read:
+.if FD_GUI_SHARED && GFX_FONT_COLUMNS
+        lda gfx_bits,x
+.else
         lda $ffff,x
+.endif
         ora pg_edge
         eor pg_inverse
         sta N_BUFFER,x

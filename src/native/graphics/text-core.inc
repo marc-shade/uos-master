@@ -4,6 +4,7 @@
 ; 32767. Colors are unchanged. D/I preserved; other graphics args clobbered.
 .weak
 GFX_TEXT_STORAGE=0
+GFX_FONT_COLUMNS=0
 .endweak
 gfx_text:
         php
@@ -39,28 +40,7 @@ gfx_text_next:
 gfx_text_unknown:
         lda #63
 gfx_text_code:
-        sec
-        sbc #32
-        ldx #0
-        stx gfx_text_high
-        asl
-        rol gfx_text_high
-        asl
-        rol gfx_text_high
-        asl
-        rol gfx_text_high
-        clc
-        adc #<gfx_font
-        sta gfx_text_load+1
-        lda gfx_text_high
-        adc #>gfx_font
-        sta gfx_text_load+2
-        ldx #7
-gfx_text_load:
-        lda gfx_font,x
-        sta gfx_bits,x
-        dex
-        bpl gfx_text_load
+        jsr gfx_load_glyph
         jsr gfx_glyph
         bcs gfx_text_failed
         clc
@@ -85,6 +65,66 @@ gfx_text_done:
         lda #0
         jmp gfx_finish
 
+; A is a printable ASCII code. Cell renderers share this exact decoder.
+gfx_load_glyph:
+        sec
+        sbc #32
+.if GFX_FONT_COLUMNS
+        tay
+.endif
+        ldx #0
+        stx gfx_text_high
+        asl
+        rol gfx_text_high
+        asl
+        rol gfx_text_high
+.if GFX_FONT_COLUMNS
+        sta gfx_text_load+1
+        tya
+        clc
+        adc gfx_text_load+1
+        bcc +
+        inc gfx_text_high
++
+.else
+        asl
+        rol gfx_text_high
+.endif
+        clc
+        adc #<gfx_font
+        sta gfx_text_load+1
+        lda gfx_text_high
+        adc #>gfx_font
+        sta gfx_text_load+2
+        ldx #7-3*GFX_FONT_COLUMNS
+gfx_text_load:
+        lda gfx_font,x
+.if GFX_FONT_COLUMNS
+        sta gfx_text_columns,x
+.else
+        sta gfx_bits,x
+.endif
+        dex
+        bpl gfx_text_load
+.if GFX_FONT_COLUMNS
+        ldy #7
+gfx_text_row:
+        lda #0
+        ldx #0
+gfx_text_column:
+        lsr gfx_text_columns,x
+        rol
+        inx
+        cpx #5
+        bne gfx_text_column
+        asl
+        asl
+        sta gfx_bits,y
+        dey
+        bpl gfx_text_row
+.endif
+        rts
+
 gfx_text_length:.byte 0
 .if GFX_TEXT_STORAGE
 gfx_text_buffer=GFX_TEXT_STORAGE
@@ -94,6 +134,13 @@ gfx_text_buffer:.fill 64,0
 gfx_text_left:  .byte 0
 gfx_text_index: .byte 0
 gfx_text_high:  .byte 0
+.if GFX_FONT_COLUMNS
+gfx_text_columns: .fill 5,0
+.endif
 gfx_font:
+.if GFX_FONT_COLUMNS
+        .binary "font5.bin"
+.else
         .binary "font8.bin"
+.endif
 gfx_text_end:

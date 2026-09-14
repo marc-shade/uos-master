@@ -98,6 +98,12 @@ backing leaves 109 pages with a 16 KiB VDC or 101 with 64 KiB. Open needs
 another 36 bank-1 pages temporarily; the [graphical picker](NATIVE-PICKER-GUI.md)
 shares the display, font and pointer and uses transient directory caches.
 
+ABI 1.14 adds [opening selected pictures from Files](NATIVE-DOCUMENT-LAUNCH.md).
+Paint validates the complete picture before replacing its blank document, and
+closing it returns to Files at the selected name. The expanded PRG is 24,387
+bytes; the packed PRG is 16,856 bytes. Compact font storage reconstructs the
+original glyphs for both the app and its shared picker.
+
 The app reserves `$5000..$59ff` before installing input controls. It stores
 picker scratch, file comparison data, saved function keys and rendering buffers
 there. A conflicting allocation refuses startup without changing that owner's

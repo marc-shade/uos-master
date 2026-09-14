@@ -1,4 +1,4 @@
-ui_button_count=28
+ui_button_count=30
 ui_rects:
         .word 288,8,312,24
         .word 8,24,64,40
@@ -28,6 +28,8 @@ ui_rects:
         .word 8,104,312,120
         .word 192,144,248,160
         .word 256,144,312,160
+        .word 136,8,192,24
+        .word 200,8,272,24
 fv_title_0: .byte 117,79,83,32,70,105,108,101,115,0
 fv_title_1: .byte 67,111,112,121,32,97,32,102,105,108,101,0
 fv_title_2: .byte 67,104,111,111,115,101,32,100,101,118,105,99,101,0
@@ -62,6 +64,8 @@ fv_label_24: .byte 66,97,99,107,0
 fv_label_25: .byte 0
 fv_label_26: .byte 79,75,0
 fv_label_27: .byte 67,97,110,99,101,108,0
+fv_label_28: .byte 69,100,105,116,0
+fv_label_29: .byte 80,97,105,110,116,0
 fv_next: .byte 78,101,120,116,0
 fv_dos: .byte 68,79,83,0
 fv_cancel: .byte 67,97,110,99,101,108,0
@@ -75,8 +79,8 @@ fv_path_caption: .byte 68,73,82,69,67,84,79,82,89,32,80,65,84,72,59,32,70,49,32,
 fv_dos_caption: .byte 68,79,83,58,32,0
 fv_title_lo: .byte <fv_title_0,<fv_title_1,<fv_title_2,<fv_title_3,<fv_title_4,<fv_title_5
 fv_title_hi: .byte >fv_title_0,>fv_title_1,>fv_title_2,>fv_title_3,>fv_title_4,>fv_title_5
-fv_label_lo: .byte <fv_label_0,<fv_label_1,<fv_label_2,<fv_label_3,<fv_label_4,<fv_label_5,<fv_label_6,<fv_label_7,<fv_label_8,<fv_label_9,<fv_label_10,<fv_label_11,<fv_label_12,<fv_label_13,<fv_label_14,<fv_label_15,<fv_label_16,<fv_label_17,<fv_label_18,<fv_label_19,<fv_label_20,<fv_label_21,<fv_label_22,<fv_label_23,<fv_label_24,<fv_label_25,<fv_label_26,<fv_label_27
-fv_label_hi: .byte >fv_label_0,>fv_label_1,>fv_label_2,>fv_label_3,>fv_label_4,>fv_label_5,>fv_label_6,>fv_label_7,>fv_label_8,>fv_label_9,>fv_label_10,>fv_label_11,>fv_label_12,>fv_label_13,>fv_label_14,>fv_label_15,>fv_label_16,>fv_label_17,>fv_label_18,>fv_label_19,>fv_label_20,>fv_label_21,>fv_label_22,>fv_label_23,>fv_label_24,>fv_label_25,>fv_label_26,>fv_label_27
+fv_label_lo: .byte <fv_label_0,<fv_label_1,<fv_label_2,<fv_label_3,<fv_label_4,<fv_label_5,<fv_label_6,<fv_label_7,<fv_label_8,<fv_label_9,<fv_label_10,<fv_label_11,<fv_label_12,<fv_label_13,<fv_label_14,<fv_label_15,<fv_label_16,<fv_label_17,<fv_label_18,<fv_label_19,<fv_label_20,<fv_label_21,<fv_label_22,<fv_label_23,<fv_label_24,<fv_label_25,<fv_label_26,<fv_label_27,<fv_label_28,<fv_label_29
+fv_label_hi: .byte >fv_label_0,>fv_label_1,>fv_label_2,>fv_label_3,>fv_label_4,>fv_label_5,>fv_label_6,>fv_label_7,>fv_label_8,>fv_label_9,>fv_label_10,>fv_label_11,>fv_label_12,>fv_label_13,>fv_label_14,>fv_label_15,>fv_label_16,>fv_label_17,>fv_label_18,>fv_label_19,>fv_label_20,>fv_label_21,>fv_label_22,>fv_label_23,>fv_label_24,>fv_label_25,>fv_label_26,>fv_label_27,>fv_label_28,>fv_label_29
 fv_rows_0: .byte 2,48,3,56,5,64,6,72,7,80,8,88,9,96,10,104,11,112,12,120,19,168,20,176,21,184,255
 fv_rows_1: .byte 2,48,3,56,5,80,7,104,14,128,15,136,16,168,17,176,18,184,255
 fv_rows_2: .byte 0,48,1,56,7,104,9,168,255

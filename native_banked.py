@@ -12,7 +12,7 @@ def validate(image, check_crc=True):
     if len(image) < 35 or image[:8] != b'\x00\x60NBK1\x01\x01':
         raise ValueError('expected a complete NBK1 PRG at bank-1 $6000')
     header = image[2:34]
-    if header[6] > 13 or header[7] or header[11] != 1 or header[16:] != STUB:
+    if header[6] > 14 or header[7] or header[11] != 1 or header[16:] != STUB:
         raise ValueError('unsupported ABI, bank, flags, exit stub or callback import')
     size = int.from_bytes(header[8:10], 'little')
     entry = int.from_bytes(header[12:14], 'little')

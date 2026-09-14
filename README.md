@@ -62,7 +62,7 @@ blue graphical launchers on both displays: 320×200 VIC and
 Files, Ultimate, Claude and Paint with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
 The same build also creates `target/native-desktop/uos128.d81` for a 1581,
-with 2,592 free blocks for documents and future apps. ABI 1.12 remembers the
+with 2,589 free blocks for documents and future apps. ABI 1.12 remembers the
 system volume's format across app launches and data-disk browsing. Use the
 matching D64 or D81 image; see [native boot media](docs/NATIVE-BOOT-MEDIA.md).
 Boot still uses IEC. Movable windows, app switching,
@@ -71,6 +71,11 @@ qualification of ABI 1.9 passed in the [physical record](docs/validation/2026-09
 ABI 1.11 adds a shared Ultimate command service and graphical drive controls.
 The current suite, including Claude serial and the new drive operations,
 still requires native physical qualification.
+
+Files now opens selected text and UPNT documents directly in Editor or Paint
+and returns to the selected file when the app closes. See the
+[document launch workflow](docs/NATIVE-DOCUMENT-LAUNCH.md) for controls, exact
+file identity, module requirements and remaining association work.
 
 The blue native desktop is the interface being developed for the unified app
 suite. The older green desktop remains a separate legacy build; restoring that

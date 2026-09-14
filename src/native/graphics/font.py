@@ -116,6 +116,13 @@ def font():
     return b''.join(values[code] for code in range(32,127))
 
 
+def columns():
+    """Five column bytes per glyph; transpose losslessly into the same cells."""
+    data=font()
+    return bytes(sum(((data[glyph*8+row]>>(6-column))&1)<<(7-row) for row in range(8))
+                 for glyph in range(95) for column in range(5))
+
+
 if __name__=='__main__':
     data=font();Path(__file__).with_name('font8.bin').write_bytes(data)
     print(f'Wrote {len(data)//8} original ASCII glyphs, {len(data)} bytes')

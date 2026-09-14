@@ -6,7 +6,8 @@ NATIVE_EDITOR_GRAPHICS=0
 .if NATIVE_EDITOR_GRAPHICS
 DOC_COMPACT=1
 DOC_HISTORY=1
-ED_ABI=13
+ED_ABI=14
+GFX_FONT_COLUMNS=1
 .include "editor/selection-macros.inc"
 ED_PAGES=96
 DOC_INPUT_STORAGE=$5000
@@ -84,7 +85,7 @@ editor_entry:
         sta ed_device
         lda #3
         sta ed_format
-        jmp ed_refresh
+        jmp ed_source_ready
 ed_source_iec:
         lda N_BROWSERDEV
         cmp #8
@@ -96,12 +97,30 @@ ed_source_iec:
         cmp #3
         bcs ed_source_default
         sta ed_format
-        jmp ed_refresh
+        jmp ed_source_ready
 ed_source_default:
         lda N_DEVICE
         sta ed_device
         lda N_APPFORMAT
         sta ed_format
+ed_source_ready:
+.if NATIVE_EDITOR_GRAPHICS
+        lda N_DOCREQUEST
+        beq +
+        lda #3
+        jsr ed_module_load
+        bcs ed_picker_failed
+        lda #0
+        sta ed_clip_key
+        jsr N_MCALL
+        bcs ed_picker_failed
+        ; Match ordinary startup: the display acquires its provider before
+        ; document/history backing can retain it without an REU lease.
+        jsr ed_show
+        jsr dm_ensure
+        jmp ed_open_file
++
+.endif
         jmp ed_refresh
 cloop:
 .if NATIVE_EDITOR_GRAPHICS

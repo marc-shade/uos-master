@@ -32,7 +32,7 @@ class Calculator:
             self.io.files[8,b'EDFIND.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edfind.prg').read_bytes()
             if image_prefix=='native-desktop':self.io.files[8,b'EDCLIP.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edclip.prg').read_bytes()
         if image_name=='files':
-            for name in ('fspick','fsview'):
+            for name in ('fspick','fsview','fsopen'):
                 self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
         provider = None
         if image_prefix=='native-desktop' and image_name in ('calc','desktop','controls','paint','files','editor','claude') and vdc_component is not False:
@@ -55,7 +55,7 @@ class Calculator:
                 data[source_path.rsplit(b'/',1)[0]+b'/EDFIND.PRG']=(ROOT/'target'/self.image_prefix/'edfind.prg').read_bytes()
                 if image_prefix=='native-desktop':data[source_path.rsplit(b'/',1)[0]+b'/EDCLIP.PRG']=(ROOT/'target'/self.image_prefix/'edclip.prg').read_bytes()
             if source_path is not None and image_name=='files':
-                for name in ('fspick','fsview'):
+                for name in ('fspick','fsview','fsopen'):
                     data[source_path.rsplit(b'/',1)[0]+b'/'+name.upper().encode()+b'.PRG']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
             if source_path is not None and provider is not None:
                 prefix = source_path.rsplit(b'/',1)[0]+b'/' if b'/' in source_path else b''

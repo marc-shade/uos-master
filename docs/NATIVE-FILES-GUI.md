@@ -9,8 +9,11 @@ white graphics on blue with reversed focus. Both suite disks include this interf
 
 ## Controls
 
-Click a file row to select it, then Open, View or Copy. A keyboard selection
-followed by Enter opens the selected folder, app or byte viewer. Up/Down select
+Click a file row to select it, then Open, View, Copy, Edit or Paint. Open and
+Enter choose Paint for an UPNT signature and Editor for `.TXT`/`.SEQ` names;
+other files use the byte viewer. Edit/Ctrl-E and Paint/Ctrl-P explicitly choose
+an app. Closing it returns to the selected file. The [document launch contract](NATIVE-DOCUMENT-LAUNCH.md)
+preserves the source device, file type and full Ultimate path. Up/Down select
 rows, N/B change pages, R refreshes, D edits the IEC device and F changes the
 format. In Ultimate mode, G edits the directory path, P opens the parent and
 F1 changes DOS context. L edits an absolute Ultimate application path.
@@ -45,8 +48,10 @@ app replacement and preserves the original Files launch source.
 ## Memory and module lifetime
 
 Files declares 96 bank-0 app pages, with a resident core followed by one checked
-module window at `$96ac`, following a 13,996-byte core. `fsview.prg` contains graphics, font, controls and pointer code;
-`fspick.prg` contains the 10,221-byte destination picker. The two modules alternate. Both
+module window at `$9813`, following a 14,355-byte core. `fsview.prg` contains graphics, font, controls and pointer code;
+`fspick.prg` contains the 10,221-byte destination picker, ending exactly at `$c000`.
+`fsopen.prg` contains 340 bytes for document launch and returned selection.
+The three modules alternate. All
 are bound to the exact core checksum and loaded from the original app's device,
 format and folder, even after the data destination changes.
 
@@ -63,6 +68,11 @@ separate. Editable field buffers and descriptors stay inside the app's loader
 allocation. A conflicting owner refuses startup before keyboard or display
 ownership. All scratch pages are released through normal app cleanup.
 
+The suite app and its three matching modules require ABI 1.14. Its packed
+PRG is 10,089 bytes. Install `FSOPEN.PRG` together with Files and its other
+modules; an unavailable association module reports an error before publishing
+an app replacement request.
+
 The core retains one [VDC component](NATIVE-VDC-SERVICE.md) and original-screen
 backup across GUI/picker module swaps. Copy `VDSVC.PRG` beside Files when moving
 the app to another disk or Ultimate folder. The provider uses 39 bank-1 pages;
@@ -78,11 +88,15 @@ field edits update changed glyph cells and the old/new caret. Pointer polling
 enters the module only while a new or unfinished sample needs attention; the
 app publishes readiness after the complete module call returns.
 
-No kernel code or ABI change is required. The core and modules require the
-current ABI 1.12 suite. All 426 managed pages remain available after
-app and workspace allocations are released.
+The VDC service uses the existing owned display contract. Document launch adds
+the ABI 1.14 request fields and dispatcher return path. All 426 managed pages
+remain available after app and workspace allocations are released.
 
 ## Current scope
+
+The [document launch qualification](validation/2026-09-14-native-open-with/README.md)
+checks Files-to-Editor/Paint handoffs, exact identities and returned selections
+with CPU execution and both private VICE disk formats.
 
 The [frozen VDC qualification](validation/2026-09-14-native-files-vdc/README.md) retains
 CPU, full mouse/keyboard VICE, exact file-copy and independent rebuild results.

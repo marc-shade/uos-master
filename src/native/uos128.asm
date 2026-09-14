@@ -74,6 +74,7 @@ native_mode:
         ldx #4
 native_browser_position:
         sta N_DESKTOPSEL,x       ; reset selection and four-byte browser position
+        sta N_DOCREQUEST,x       ; reset the complete one-launch document packet
         dex
         bpl native_browser_position
         lda #NATIVE_BOOT_FORMAT
@@ -261,19 +262,10 @@ ui_pattern_block:
         jsr heap_read
         bcs ui_pattern_done
 ui_prepare_pattern:
-        lda #0
-        sta ui_index
-        sta ui_index+1
-        lda #<N_BUFFER
-        sta ui_pattern_store+1
-        sta ui_pattern_compare+1
-        lda #>N_BUFFER
-        sta ui_pattern_store+2
-        sta ui_pattern_compare+2
+        ldy #0
 ui_pattern_byte:
-        lda ui_index
+        tya
         eor N_OFFSET+1
-        eor ui_index+1
         ldx ui_bank
         beq ui_pattern_zero
         eor #$a5
@@ -281,22 +273,19 @@ ui_pattern_zero:
         ldx ui_test_operation
         beq ui_compare_pattern
 ui_pattern_store:
-        sta N_BUFFER
+        sta N_BUFFER,y
+        eor #1
+        sta N_BUFFER+256,y
         jmp ui_pattern_next
 ui_compare_pattern:
 ui_pattern_compare:
-        cmp N_BUFFER
+        cmp N_BUFFER,y
+        bne ui_pattern_mismatch
+        eor #1
+        cmp N_BUFFER+256,y
         bne ui_pattern_mismatch
 ui_pattern_next:
-        inc ui_pattern_store+1
-        inc ui_pattern_compare+1
-        inc ui_index
-        bne ui_pattern_byte
-        inc ui_pattern_store+2
-        inc ui_pattern_compare+2
-        inc ui_index+1
-        lda ui_index+1
-        cmp #2
+        iny
         bne ui_pattern_byte
         lda ui_test_operation
         beq ui_pattern_advance
@@ -321,15 +310,29 @@ native_browser:
         lda ui_system_device
         sta N_DEVICE
         ldx #5
+        ldy #5
+        lda N_DOCRETURN
+        beq +
+        ldy #10
+        dex
++       txa
+        clc
+        adc #1
+        sta N_NAMELEN
+        lda #0
+        sta N_DOCREQUEST
 native_browser_name:
-        lda ui_browser_name,x
+        lda ui_browser_name,y
         sta N_APPNAME,x
+        dey
         dex
         bpl native_browser_name
-        lda #6
-        sta N_NAMELEN
-        lda #1
+        lda N_DOCRETURN
+        sta N_DOCRESUME
+        eor #1                  ; Files returns to the Desktop; Desktop to workspace
         sta ui_browser_stage
+        lda #0
+        sta N_DOCRETURN
 native_dispatch:
         jsr app_launch
         bcc native_dispatch_return
@@ -356,6 +359,8 @@ native_dispatch_next:
         beq native_dispatch
 native_dispatch_done:
         lda #0
+        sta N_DOCREQUEST
+        sta N_DOCRETURN
         beq native_browser_result
 native_browser_result:
         jmp native_calc_result
@@ -506,7 +511,7 @@ native_keycheck_valid:
 native_keycheck_end:
 .include "field-view.inc"
 ui_calc_name = ui_help_calc+2   ; first four bytes of "calculator"
-ui_browser_name: .text "browse"
+ui_browser_name: .text "browsefiles"
 ui_title: .text "uos 128 - native memory workspace",13,13,"selected bank: ",0
 ui_free_title: .text 13,"free 256-byte pages (hex) 0/1: ",0
 ui_slots_title: .text 13,"free handles (hex): ",0
@@ -525,10 +530,9 @@ ui_screen: .byte 0
 ui_status = N_RESULT
 ui_digit: .byte 0
 ui_test_operation: .byte 0
-ui_index: .word 0
 .include "display-gate.inc"
 native_code_end:
-        .cerror * > $3800, "native kernel overlaps allocation tables"
+        .cerror * > $3800, "native kernel overlaps allocation tables: ", *
 * = NPAGES0
         .fill 512,0
 * = N_BUFFER

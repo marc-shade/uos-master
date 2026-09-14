@@ -575,24 +575,9 @@ eg_write_cell:
         lda #1
         sta vm_rows,x
         sta vm_pending
-        lda #0
-        sta eg_glyph_address+1
         lda eg_cell
         and #127
-        sec
-        sbc #32
-        asl
-        rol eg_glyph_address+1
-        asl
-        rol eg_glyph_address+1
-        asl
-        rol eg_glyph_address+1
-        clc
-        adc #<gfx_font
-        sta eg_glyph_read+1
-        lda eg_glyph_address+1
-        adc #>gfx_font
-        sta eg_glyph_read+2
+        jsr gfx_load_glyph
         lda #0
         bit eg_cell
         bpl +
@@ -600,7 +585,7 @@ eg_write_cell:
 +       sta eg_inverse
         ldx #7
 eg_glyph_read:
-        lda $ffff,x
+        lda gfx_bits,x
         eor eg_inverse
         sta N_BUFFER,x
         dex
@@ -1316,7 +1301,6 @@ eg_target_column: .byte 0
 eg_left: .byte 0
 eg_cell: .byte 0
 eg_inverse: .byte 0
-eg_glyph_address: .word 0
 eg_row: .byte 0
 eg_column: .byte 0
 eg_reverse: .byte 0

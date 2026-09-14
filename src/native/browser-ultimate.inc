@@ -797,6 +797,14 @@ bu_app_header:
         sta N_APPFORMAT
         jmp N_REPLACE
 bu_show_file:
+.if B_GUI
+        lda #1
+        sta b_preview
+        lda bu_inspection
+        bne +
+        jmp fl_associate
++
+.endif
         lda #1
         sta b_preview
         jmp b_redraw

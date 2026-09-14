@@ -1,6 +1,10 @@
 ; A third checked module stages clipboard transfers while the renderer is
 ; unloaded. All selection bounds and document contexts remain in the core.
 ec_entry:
+        lda ed_clip_key
+        bne +
+        jmp dl_claim
++
         lda #0
         sta ec_history
         sta ec_left+2
@@ -351,3 +355,10 @@ ec_offset: .fill 3,0
 ec_left: .fill 3,0
 ec_history: .byte 0
 .include "../clipboard.inc"
+DL_KIND=1
+DL_NAME=ed_field
+DL_LENGTH=ed_field_len
+DL_DEVICE=ed_device
+DL_FORMAT=ed_format
+DL_TYPE=ed_file_type
+.include "../document-launch.inc"

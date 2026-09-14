@@ -9,8 +9,10 @@ RECTS += [(8,64+8*i,312,72+8*i) for i in range(8)]
 RECTS += [(8,24,72,40),(80,24,144,40),(152,24,216,40),(224,24,280,40),
           (192,144,248,160),(256,144,312,160),(8,104,312,120),
           (192,144,248,160),(256,144,312,160)]
+RECTS += [(136,8,192,24),(200,8,272,24)]
 LABELS=['X','Device','Format','Path','Parent','R','Prev','Next','Open','View','Copy']
 LABELS += ['']*8+['Device','Format','Type','Browse','Copy','Back','','OK','Cancel']
+LABELS += ['Edit','Paint']
 ROWS={0:[(2,48),(3,56)]+[(5+i,64+8*i) for i in range(8)]+[(19,168),(20,176),(21,184)],
       1:[(2,48),(3,56),(5,80),(7,104),(14,128),(15,136),(16,168),(17,176),(18,184)],
       2:[(0,48),(1,56),(7,104),(9,168)],
@@ -19,6 +21,7 @@ ROWS={0:[(2,48),(3,56)]+[(5+i,64+8*i) for i in range(8)]+[(19,168),(20,176),(21,
 
 def enabled(index,view,*,count=0,ultimate=False,phase=0):
     if view==0:
+        if index in (28,29):return count>0
         if index in (3,4):return ultimate
         return index<11 or 11<=index<11+count
     if view==1:return index==24 if phase else index==0 or 19<=index<=25
@@ -109,7 +112,7 @@ def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None,hel
 
 def write_assembly(directory):
     directory.mkdir(parents=True,exist_ok=True)
-    lines=['ui_button_count=28','ui_rects:']
+    lines=['ui_button_count=30','ui_rects:']
     lines+=['        .word '+','.join(map(str,r)) for r in RECTS]
     strings={'fv_title_'+str(i):s for i,s in enumerate(['uOS Files','Copy a file','Choose device','Directory path','Copy device','File bytes'])}
     strings.update({'fv_label_'+str(i):s for i,s in enumerate(LABELS)})
@@ -118,7 +121,7 @@ def write_assembly(directory):
                    fv_device_caption='DEVICE: 8 TO 30',fv_copy_device_caption='DEVICE / DOS CONTEXT',
                    fv_path_caption='DIRECTORY PATH; F1 CHANGES DOS',fv_dos_caption='DOS: ')
     for name,s in strings.items():lines += [name+': .byte '+','.join(map(str,s.encode()+b'\0'))]
-    for prefix,count in [('fv_title',6),('fv_label',28)]:
+    for prefix,count in [('fv_title',6),('fv_label',30)]:
         for suffix,op in [('lo','<'),('hi','>')]:lines += [prefix+'_'+suffix+': .byte '+','.join(op+prefix+'_'+str(i) for i in range(count))]
     for view,values in ROWS.items():lines += ['fv_rows_'+str(view)+': .byte '+','.join(str(n) for pair in values for n in pair)+',255']
     for suffix,op in [('lo','<'),('hi','>')]:lines += ['fv_rows_'+suffix+': .byte '+','.join(op+'fv_rows_'+str(v if v in ROWS else 2) for v in range(7))]

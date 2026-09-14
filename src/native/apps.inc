@@ -85,6 +85,13 @@ app_channel_busy:
         lda #N_CHANNELS
         jmp app_before
 app_begin:
+        ; A staged request crosses exactly one launch attempt. An unclaimed
+        ; ready request expires before another executable can receive it.
+        lda N_DOCREQUEST
+        asl
+        lda #0
+        rol
+        sta N_DOCREQUEST
         lda #1
         sta N_APPSTATE
         lda #N_APPOWNER
@@ -92,16 +99,14 @@ app_begin:
         sta N_FOWNER
         lda #0
         sta N_READY
-        sta N_EXITCODE
-        sta N_DOSCODE
-        sta N_IOSTATUS
-        sta N_APPERROR
-        sta N_ACTION
-        sta l_result
-        sta l_open
-        sta l_eof
-        sta l_available
-        sta l_available+1
+        ldx #4
+-       sta N_EXITCODE,x        ; exit, DOS, transport, app error and action
+        dex
+        bpl -
+        ldx #6
+-       sta l_available,x       ; count, EOF, open, result, index and final EOF
+        dex
+        bpl -
         sta N_FMODE
         ldx #3
 app_clear_file_handle:

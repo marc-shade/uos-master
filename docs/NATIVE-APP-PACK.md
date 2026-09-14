@@ -1,8 +1,8 @@
 # Packed native app startup
 
 The desktop suite stores the launcher and six apps as standard NAPP files
-with a checked LZSA2 startup wrapper. The D64 suite has **96 free blocks**
-and D81 has **2,592**. Packing preserves the fourteen disk entries, resident
+with a checked LZSA2 startup wrapper. The D64 suite has **93 free blocks**
+and D81 has **2,589**. Packing preserves the fifteen disk entries, resident
 kernel, 426-page heap and each expanded application's allocation. The diagnostic native
 disks continue to use their original app files.
 
@@ -14,7 +14,9 @@ its 96-page executable allocation using sixteen owned scratch pages; its
 smaller graphics/picker modules recover six disk blocks. Editor adds VDC and
 REU document support. Claude now uses 96 app pages plus separately owned original/live fonts,
 terminal cells and bitmap buffers. Shared clipboard bytes have a separate
-session lifetime, and Editor loads `EDCLIP.PRG` for transfers and undo/redo replay.
+session lifetime, and Editor loads `EDCLIP.PRG` for transfers, undo/redo replay
+and incoming documents. Files uses `FSOPEN.PRG` for document launch and selection
+restoration, sharing its existing window with graphics and the picker.
 
 The kernel validates the complete outer file and closes its source before
 executing the wrapper. Startup expands the original app body into its owned
@@ -24,16 +26,15 @@ cleanup before any original program instruction executes.
 
 | Suite program | Original PRG bytes | Packed PRG bytes | App pages |
 |---|---:|---:|---:|
-| Desktop | 8,843 | 7,369 | 35 |
-| Calculator | 12,438 | 9,278 | 49 |
-| Editor | 14,194 | 10,032 | 96 |
-| Files | 14,006 | 9,833 | 96 |
-| Ultimate | 23,025 | 16,708 | 91 |
+| Desktop | 8,847 | 7,376 | 35 |
+| Calculator | 12,442 | 9,285 | 49 |
+| Editor | 14,228 | 10,053 | 96 |
+| Files | 14,357 | 10,089 | 96 |
+| Ultimate | 23,029 | 16,711 | 91 |
 | Claude | 20,316 | 12,442 | 96 |
-| Paint | 24,450 | 16,737 | 96 |
+| Paint | 24,387 | 16,856 | 96 |
 
-PRG sizes include the two-byte load address. This saves 34,873 file bytes and
-137 disk blocks. Packing creates disk space; the expanded apps retain their
+PRG sizes include the two-byte load address. This saves 34,794 file bytes. Packing creates disk space; the expanded apps retain their
 existing code and document limits. The current apps now have graphical VDC controls, and Editor uses shared REU
 documents. Wider desktop features and backing stores remain roadmap work.
 
@@ -91,7 +92,7 @@ its modules against that unpacked parent.
 ## Build and checks
 
 `python3 -B build-native-desktop.py` builds raw programs, wraps the seven suite
-apps, reseals the four app-bound modules and writes both disk formats. Runtime
+apps, reseals the six app-bound modules and writes both disk formats. Runtime
 assembly listings retain the original program addresses. Additional
 `*-pack.lst` and `*-pack.sym` files describe each startup wrapper. Packing uses
 the existing pinned LZSA compressor and licensed decoder source; it requires

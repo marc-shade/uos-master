@@ -40,7 +40,7 @@ class RunningLayout:
         # The opcode byte is always compared with the pinned boot image.
         for name in ('heap_buffer_read', 'heap_buffer_write', 'field_record_read',
                      'field_record_write', 'field_read', 'field_write',
-                     'ui_pattern_store', 'ui_pattern_compare', 'ui_text_byte',
+                     'ui_text_byte',
                      'app_image_store', 'app_buffer_read', 'fs_buffer_read',
                      'fs_buffer_write', 'nd_path_byte', 'nu_command_byte',
                      'nu_data_store', 'module_store'):
@@ -54,7 +54,7 @@ class RunningLayout:
             ('l_handle', 'l_left', 2), ('l_entry', 'l_entry', 2),
             ('f_mtrack', 'f_dskip', 1),
             ('f_filename', 'f_left', 2), ('nd_slot', 'nd_path', 256),
-            ('ui_handles', 'ui_index', 2), ('nu_high', 'nu_part_state', 1),
+            ('ui_handles', 'ui_test_operation', 1), ('nu_high', 'nu_part_state', 1),
             ('v_tag', 'v_port', 1)):
             declare(first, self.syms[first], self.syms[last]+length, 'declared mutable state')
         for offset in (8, 11):

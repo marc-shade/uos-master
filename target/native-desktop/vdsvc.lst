@@ -1,17 +1,17 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -B -o /var/tmp/arc-scratch/uos-editor-history-fre7fz85/target/native-desktop/vdsvc.prg -l /var/tmp/arc-scratch/uos-editor-history-fre7fz85/target/native-desktop/vdsvc.sym -L /var/tmp/arc-scratch/uos-editor-history-fre7fz85/target/native-desktop/vdsvc.lst /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
-; Mon Sep 14 13:01:15 2026
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/target/native-desktop/vdsvc.prg -l /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/target/native-desktop/vdsvc.sym -L /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/target/native-desktop/vdsvc.lst /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
+; Mon Sep 14 15:32:16 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
-;******  Processing input file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Processing input file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/api.inc
 
 =1					N_ABI_MAJOR = 1
-=13					N_ABI_MINOR = 13
+=14					N_ABI_MINOR = 14
 =$1c20					N_ALLOC         = $1c20
 =$1c23					N_FREE          = $1c23
 =$1c26					N_READ          = $1c26
@@ -136,6 +136,11 @@
 =$3d97					N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
 =$3d98					N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
 =$3d99					N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3d9a					N_DOCREQUEST    = $3d9a          ; 0 none, $80 staged, 1 ready for this app only
+=$3d9b					N_DOCKIND       = $3d9b          ; 1 Editor text, 2 Paint UPNT
+=$3d9c					N_DOCTYPE       = $3d9c          ; IEC 0 SEQ / 1 PRG / 2 USR; Ultimate must be 0
+=$3d9d					N_DOCRETURN     = $3d9d          ; 1 dispatcher returns to system Files, then clears
+=$3d9e					N_DOCRESUME     = $3d9e          ; dispatcher -> Files: restore selection once
 =$3da0					N_FNAME         = $3da0          ; 16 bytes
 =$3dc0					NFILES          = $3dc0          ; private: two 16-byte descriptors
 =$3de0					NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
@@ -171,7 +176,7 @@
 =$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
 =$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 =$6000					BK_BASE=$6000
 =1					RU_BANKED=1
@@ -447,7 +452,7 @@
 >622f	c0 1c				        .word row*320
 >6231	00 1e				        .word row*320
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/banked-client.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/banked-client.inc
 
 .6233					bk_native:
 .6233	08		php		        php
@@ -493,13 +498,13 @@
 >6274	00				bk_client_result: .byte 0
 >6275	00				bk_client_carry: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/shared-memory-service.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/shared-memory-service.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/shared-memory-api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/shared-memory-api.inc
 
 =6					SM_INFO=6                    ; TOKEN: version, lease, active, probe-live, pending
 =7					SM_OPEN=7                    ; acquire lease / retry a retained probe restore
@@ -518,7 +523,7 @@
 =1					SM_VERSION=1
 =33					SM_OWNER=N_APPOWNER+1
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/shared-memory-service.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/shared-memory-service.inc
 
 .6276					bm_entry:
 .6276	c9 06		cmp #$06	        cmp #SM_INFO
@@ -827,13 +832,13 @@
 >64fb	00 00 00			bm_offset: .fill 3,0
 >64fe	00 00 00			bm_bound: .fill 3,0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/history-service.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/history-service.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/history-api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/history-api.inc
 
 =15					H_INFO=15
 =16					H_BEGIN=16
@@ -851,7 +856,7 @@
 =16					H_STEPS=16
 =9					H_HEADER=9
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/history-service.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/history-service.inc
 
 .6501					bh_entry:
 .6501	c9 1b		cmp #$1b	        cmp #H_CLOSE+1
@@ -1445,10 +1450,10 @@
 ;	...repeated 8 times (128 bytes)...
 >6aa8	00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-reu.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-reu.inc
 
 =$6aa9					vd_storage_alloc=vs_alloc
 =$6b00					vd_storage_read=vs_read
@@ -1552,7 +1557,7 @@
 >6b63	00				vs_reu: .byte 0
 >6b64	00 00 00 00 00 00 00 00		vs_token: .fill 8,0
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/../reu.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/../reu.inc
 
 =0					RU_BANKED = 0                 ; banked.inc owns the temporary common-RAM map
 =0					RU_INCLUDE_RESIZE = 0         ; opt-in growth for shared document extents
@@ -2456,13 +2461,13 @@
 >743c	00 00 00 00 00 00 00 00
 .7444					ru_end_library:
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-reu.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-reu.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-mirror.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-mirror.inc
 
 =1					VM_INCLUDE_COMMON=1
 =1					VM_INCLUDE_DIRTY=1
@@ -2677,10 +2682,10 @@
 >764b	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >765b	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/desktop/vdc.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/desktop/vdc.inc
 
 =1					VD_DESKTOP_COMMON=1
 =0					VD_USE_STATUS_SURFACE=0
@@ -2870,7 +2875,7 @@
 .77fe	d0 ed		bne $77ed	        bne vd_status_row
 .7800	60		rts		        rts
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/desktop/vdc-scene.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/desktop/vdc-scene.inc
 
 .7801					vd_scene:
 >7801	7f 00 7f 00 fb 7e 00 ff		        .byte $7f,$00,$7f,$00,$fb,$7e,$00,$ff,$84,$00,$ff,$84,$00,$ff,$84,$00
@@ -3176,13 +3181,13 @@
 .815a					vd_scene_end:
 >815a	00 40 60 70 78 70 60 40		vd_arrow: .byte $00,$40,$60,$70,$78,$70,$60,$40
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/desktop/vdc.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/desktop/vdc.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-lifetime.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-lifetime.inc
 
 =$1c20					vd_storage_alloc=N_ALLOC
 =$1c26					vd_storage_read=N_READ
@@ -3557,10 +3562,10 @@
 .84a3	d0 f4		bne $8499	        bne -
 .84a5	60		rts		        rts
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-pointer.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-pointer.inc
 
 .84a6					vd_xy:
 .84a6	8e 47 86	stx $8647	        stx vd_column
@@ -3727,10 +3732,10 @@
 .8619	8d 5e 86	sta $865e	        sta vd_pointer_at
 .861c	60		rts		        rts
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-state.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-state.inc
 
 >861d	0a 0c 0d 12 13 14 15 18		vd_registers: .byte 10,12,13,18,19,20,21,24,25,26,27,28,32,33
 >8625	19 1a 1b 1c 20 21
@@ -3774,17 +3779,17 @@
 >867a	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >868a	00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/graphics/vdc-pointer-shape.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/graphics/vdc-pointer-shape.inc
 
 >8692	80 c0 e0 f0 f8 fc fe ff		vd_pointer_hi: .byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff,$ff,$ff,$fe,$ef,$cf,$87,$07,$03
 >869a	ff ff fe ef cf 87 07 03
 >86a2	00 00 00 00 00 00 00 00		vd_pointer_lo: .byte $00,$00,$00,$00,$00,$00,$00,$00,$80,$c0,$00,$00,$00,$80,$80,$00
 >86aa	80 c0 00 00 00 80 80 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/vdc-service.asm
 
 .86b2					bv_end:
 

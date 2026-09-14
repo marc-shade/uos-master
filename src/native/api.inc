@@ -1,6 +1,6 @@
-; Experimental native C128 ABI 1.13. Separate from the C64-mode $0811 table.
+; Experimental native C128 ABI 1.14. Separate from the C64-mode $0811 table.
 N_ABI_MAJOR = 1
-N_ABI_MINOR = 13
+N_ABI_MINOR = 14
 ; Call from bank-0 code with system KERNAL and I/O visible. The standard
 ; bottom 1 KiB common area, zero page and stack mappings must remain in force.
 ; Foreground calls only; no IRQ/NMI callbacks or reentrant use.
@@ -186,6 +186,14 @@ N_USTATUS       = $4f00          ; last Ultimate status text, at most 31 bytes +
 N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
 N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
 N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+; ABI 1.14: one-launch document request. Identity is the retained browser
+; device/format, raw name and parent path. Publish REQUEST=$80 last, before
+; N_REPLACE. The loader maps bit 7 to READY=1 once; consumers clear before I/O.
+N_DOCREQUEST    = $3d9a          ; 0 none, $80 staged, 1 ready for this app only
+N_DOCKIND       = $3d9b          ; 1 Editor text, 2 Paint UPNT
+N_DOCTYPE       = $3d9c          ; IEC 0 SEQ / 1 PRG / 2 USR; Ultimate must be 0
+N_DOCRETURN     = $3d9d          ; 1 dispatcher returns to system Files, then clears
+N_DOCRESUME     = $3d9e          ; dispatcher -> Files: restore selection once
 ; Directory records: 32 bytes; +0 type (0 deleted, 1 SEQ, 2 PRG, 3 USR,
 ; 4 REL, other values backend-specific), +1 flags ($80 closed/$40 locked),
 ; +2..17 exact PETSCII name padded with $a0, +18..19 blocks LE16.

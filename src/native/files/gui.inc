@@ -291,7 +291,7 @@ fv_button:
 fv_button_next:
         inc fv_index
         lda fv_index
-        cmp #28
+        cmp #30
         bne fv_button
 fv_rows_begin:
         ldx fv_view
@@ -899,7 +899,7 @@ fv_check_focus:
 -       jsr fv_enabled
         bcc +
         inx
-        cpx #28
+        cpx #30
         bne -
         ldx #0
 +       stx ui_selected
@@ -941,6 +941,24 @@ fv_copy_enabled:
         bcc fv_enabled_yes
         bcs fv_enabled_no
 fv_browser_enabled:
+        cpx #28
+        bcc +
+        cpx #30
+        bcs fv_enabled_no
+        lda b_busy
+        bne fv_enabled_no
+        lda N_BROWSERFMT
+        cmp #3
+        bne fl_gui_iec
+        lda bu_count
+        bne fv_enabled_yes
+        beq fv_enabled_no
+fl_gui_iec:
+        lda b_total
+        ora b_total+1
+        bne fv_enabled_yes
+        beq fv_enabled_no
++
         cpx #3
         beq fv_usb_button
         cpx #4
@@ -1024,7 +1042,7 @@ fv_passthrough:
 fv_tab:
         ldx ui_selected
 -       inx
-        cpx #28
+        cpx #30
         bcc +
         ldx #0
 +       jsr fv_enabled
@@ -1190,7 +1208,7 @@ fv_input_return:
         clc
         rts
 pm_select_surface = fv_surface
-pm_control_count = 28
+pm_control_count = 30
 pm_find_hit:
         lda pm_x
         sta ui_x
@@ -1200,7 +1218,7 @@ pm_find_hit:
         sta ui_y
         lda #0
         sta ui_first
-        lda #28
+        lda #30
         sta ui_limit
 -       jsr ui_hit
         cpx #255
@@ -1311,7 +1329,7 @@ fv_console_emit:
 
 fv_button_keys: .byte 27,$44,$46,$47,$50,$52,$42,$4e,13,$49,$43
         .fill 8,0
-        .byte $85,$86,$87,$88,13,27,13,13,27
+        .byte $85,$86,$87,$88,13,27,13,13,27,5,16
 fv_frame: .word 0,0,320,200
 fv_cells: .word 0,0,40,25
 fv_attempted: .byte 0

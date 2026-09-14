@@ -28,6 +28,7 @@ def build():
     native = module('native_builder', ROOT/'build-native.py')
     font = module('native_font', ROOT/'src/native/graphics/font.py')
     (ROOT/'src/native/graphics/font8.bin').write_bytes(font.font())
+    (ROOT/'src/native/graphics/font5.bin').write_bytes(font.columns())
     from launcher_scene import write_assembly
     write_assembly(ROOT/'src/native/desktop')
     from native_vdc_scene import write_assembly as write_vdc
@@ -57,7 +58,7 @@ def build():
             core_size = int.from_bytes(combined[10:12], 'little')
             core = seal(combined[:core_size+2])
             position = core_size+2
-            for part in ('fspick', 'fsview'):
+            for part in ('fspick', 'fsview', 'fsopen'):
                 size = int.from_bytes(combined[position+8:position+10], 'little')
                 payload = (0x6000+core_size).to_bytes(2, 'little')+combined[position:position+size]
                 sealed = seal_module(payload, core)
@@ -82,7 +83,7 @@ def build():
         path.write_bytes(packed)
         packing[name] = packed_information(packed)
         # Module identity remains the original source's checked NAPP identity.
-        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview')}.get(name,()):
+        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview','fsopen')}.get(name,()):
             module_path = OUT/f'{part}.prg'
             module_path.write_bytes(seal_module(module_path.read_bytes(),packed))
             validate_module(module_path.read_bytes(),packed)
@@ -102,6 +103,7 @@ def build():
                         '-write', str(OUT/'files.prg'), 'files',
                         '-write', str(OUT/'fspick.prg'), 'fspick.prg',
                         '-write', str(OUT/'fsview.prg'), 'fsview.prg',
+                        '-write', str(OUT/'fsopen.prg'), 'fsopen.prg',
                         '-write', str(OUT/'controls.prg'), 'ultimate',
                         '-write', str(OUT/'claude.prg'), 'claude',
                         '-write', str(OUT/'paint.prg'), 'paint',
@@ -113,7 +115,7 @@ def build():
     images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
-    deployment = dict(abi='1.13', direct_desktop_disk='uos128.d64',
+    deployment = dict(abi='1.14', direct_desktop_disk='uos128.d64',
                       workspace_with_desktop_disk='workspace.d64',
                       standalone_diagnostic_disk='../native/uos128.d64',
                       d81=dict(direct_desktop_disk='uos128.d81',
@@ -135,7 +137,7 @@ def build():
                       disk_entries={'u': 'uos128-boot.prg', 'browse': 'desktop.prg',
                                     'vdsvc.prg': 'vdsvc.prg',
                                     'files': 'files.prg', 'calc': 'calc.prg',
-                                    'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg',
+                                    'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg', 'fsopen.prg': 'fsopen.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',
                                     'edfind.prg': 'edfind.prg', 'edclip.prg':'edclip.prg',
                                     'ultimate': 'controls.prg', 'claude': 'claude.prg', 'paint': 'paint.prg'})

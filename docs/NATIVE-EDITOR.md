@@ -8,7 +8,7 @@ same document and cursor; the 80-column display shows more of each line.
 
 The desktop suite instead opens the [blue graphical Editor](NATIVE-EDITOR-GUI.md),
 with mouse caret placement and visible file/search controls on VIC and VDC. It
-requires ABI 1.13; Tab moves focus, F7 opens Browse inside Open/Save As,
+requires ABI 1.14; Tab moves focus, F7 opens Browse inside Open/Save As,
 and the Case button toggles search case. The key table below describes the diagnostic text interface.
 
 The [module loader](NATIVE-MODULES.md) loads the picker from `EDPICK.PRG`

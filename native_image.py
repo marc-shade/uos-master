@@ -9,7 +9,7 @@ def validate(image,check_crc=True):
     if len(image)<35 or image[:6]!=b'\0\x60NAPP':
         raise ValueError('expected a native NAPP PRG at $6000 with a complete manifest')
     header=image[2:34]
-    if header[4]!=1 or header[5]!=1 or header[6]>13:
+    if header[4]!=1 or header[5]!=1 or header[6]>14:
         raise ValueError('unsupported native image format, ABI or flags')
     size=int.from_bytes(header[8:10],'little')
     pages=header[10];entry=int.from_bytes(header[12:14],'little')

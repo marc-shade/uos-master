@@ -2,11 +2,12 @@
 .include "api.inc"
 NK_SAVED_BUFFER=$5600
 GFX_TEXT_STORAGE=$5940
+GFX_FONT_COLUMNS=1
 PM_KEYS_OWNED=1               ; keep shared key ownership across the text picker
 * = N_APPBASE
 pa_image:
         .text "napp"
-        .byte 1,1,12,0
+        .byte 1,1,14,0
         .word pa_end-pa_image
         .byte (pa_end-pa_image+255+48)/256,0
         .word pa_entry-pa_image
@@ -30,6 +31,14 @@ pa_entry:
         jsr pa_view_open
         jsr pa_cursor
         jsr pa_console
+        jsr dl_claim
+        bcs pa_start_request_error
+        jsr pa_load_document
+        jmp cloop
+pa_start_request_error:
+        cmp #0
+        beq cloop
+        jsr pa_file_error
 cloop:
         lda #1
         sta N_READY
@@ -133,5 +142,12 @@ BP_POINTER_STATE=pa_vdc_pointer
 bp_select_surface=pa_select_view
 .include "paint/vdc.inc"
 .include "graphics/vdc-client.inc"
+DL_KIND=2
+DL_NAME=pf_name
+DL_LENGTH=pf_length
+DL_DEVICE=pf_device
+DL_FORMAT=pf_format
+DL_TYPE=pf_type
+.include "document-launch.inc"
 pa_end:
 .cerror pa_end+48>N_APPLIMIT, "paint needs the packed-startup cleanup tail"

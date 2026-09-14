@@ -95,6 +95,7 @@ def main():
     parser.add_argument('--controls-only',action='store_true')
     parser.add_argument('--controls-clock',action='store_true',help='exercise manual clock fields without a physical cartridge')
     parser.add_argument('--files-only',action='store_true')
+    parser.add_argument('--files-open-with',action='store_true',help='open private text/UPNT fixtures from Files and return to their selection')
     parser.add_argument('--editor-only',action='store_true')
     parser.add_argument('--editor-clipboard',action='store_true',help='exercise shared Copy/Cut/Paste/Clear with ROM modifier keys')
     parser.add_argument('--editor-history',action='store_true',help='add keyboard and retained-toolbar Undo/Redo to the clipboard workflow')
@@ -103,6 +104,7 @@ def main():
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     if args.controls_clock:assert args.controls_only
+    if args.files_open_with:assert args.files_only and not args.reu_kib
     if args.editor_selection or args.editor_clipboard:assert args.editor_only
     if args.editor_history:assert args.editor_only and args.editor_clipboard
     if args.editor_large:
@@ -119,6 +121,12 @@ def main():
         editor_large=(b'0123456789ABCDEF\r\n'*8000)[:131113]
         source=work/'large-input.seq';source.write_bytes(editor_large)
         subprocess.run(['c1541','-attach',str(disk),'-write',str(source),'large,s'],check=True,capture_output=True)
+    if args.files_open_with:
+        open_text=b'Files opens this document.\r\nExact name and device.\r\n'
+        open_picture=bytes((i*19+i//256)&255 for i in range(8000))+bytes(192)+b'\x10'*1024
+        for name,data in (('doc.txt',open_text),('draw.upnt',paint_encode(open_picture))):
+            source=work/name;source.write_bytes(data)
+            subprocess.run(['c1541','-attach',str(disk),'-write',str(source),name+',s'],check=True,capture_output=True)
     data_disk=work/'data-9.d64'
     subprocess.run(['c1541','-format','picker data,09','d64',str(data_disk)],check=True,capture_output=True)
     shutil.copy2(data_disk,work/'initial-data-9.d64')
@@ -300,7 +308,7 @@ def main():
             if label=='claude-returned':
                 subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'desktop.png')],check=True,capture_output=True)
             print('PASS: complete VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
-        def key(name,target,after_key=None):
+        def key(name,target,after_key=None,*,reload=False):
             before=int.from_bytes(read(0x3d13,2),'little')
             # A short host press can begin and end between emulated keyboard
             # scans under load. Keep it down until the ROM-fed native counter
@@ -315,6 +323,9 @@ def main():
                     # host key while the callback still holds the CPU stopped.
                     after_key()
             if after_key is not None:mon.resume()
+            # A document close reloads and rescans Files. Keep the same
+            # bounded file/list-progress checks used for its initial launch.
+            if reload:wait_loaded_app(target)
             def key_finished():
                 with paused.paused('key-progress'):
                     after=int.from_bytes(read(0x3d13,2),'little')
@@ -1003,6 +1014,32 @@ def main():
                 files_click(24);move_to(310,180)
                 key('Up','files');key('Down','files')
                 files_view('files-copy-return',selected=chosen,focus=11+chosen)
+                if args.files_open_with:
+                    for document,target,button in ((b'DOC.TXT','editor',28),(b'DRAW.UPNT','paint',29)):
+                        entries=disk_records(disk.read_bytes(),boot_format)
+                        selected=next(i for i,e in enumerate(entries) if e['name'].rstrip(b'\xa0')==document)
+                        while value('b_selected')//8<selected//8:files_click(7)
+                        while value('b_selected')//8>selected//8:files_click(6)
+                        files_click(11+selected%8)
+                        files_view('open-with-'+target+'-selected',selected=selected,focus=11+selected%8)
+                        x0,y0,x1,y1=FILES_RECTS[button];move_to((x0+x1)//2,(y0+y1)//2)
+                        before=int.from_bytes(read(0x3d13,2),'little')
+                        mouse.button(True);wait(lambda:value('pm_arm')==button,'Open With button armed',30)
+                        mouse.button(False);wait_loaded_app(target);pointer_app=target
+                        assert int.from_bytes(read(0x3d13,2),'little')==before
+                        assert read(0x3d9a)==b'\0' and read(0x3d9d)==b'\1'
+                        assert read(0x3d29,2)==bytes([8,boot_format])
+                        assert read(0x3e00,len(document))==document
+                        if target=='editor':
+                            editor_view('open-with-editor',open_text,0,name='DOC.TXT',device=8,dirty=False,field='DOC.TXT')
+                        else:
+                            paint_view('open-with-paint',open_picture,dirty=0,status=2)
+                        key('F9','files',reload=True);pointer_app='files'
+                        assert read(0x3d9a)==b'\0' and read(0x3d9d,2)==b'\0\0'
+                        move_to(310,180)
+                        files_view('open-with-'+target+'-returned',selected=selected,focus=11+selected%8)
+                        report.setdefault('open_with',[]).append(dict(app=target,name_hex=document.hex(),button=button,selected=selected,keyboard_events_during_click=0))
+                        save()
             elif name=='controls':
                 pointer_app='controls'
                 assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
@@ -1132,6 +1169,9 @@ def main():
             assert exported.read_bytes()==(work/'expected-reu-copy.seq').read_bytes()
             report['editor_large_independent_export_matches']=True
         if 'calc' in ran_apps:assert contents.pop(b'GUIHIST')==(1,b'42\r')
+        if args.files_open_with:
+            assert contents.pop(b'DOC.TXT')==(1,open_text)
+            assert contents.pop(b'DRAW.UPNT')==(1,paint_encode(open_picture))
         data_contents=exact_d64_files(data_disk.read_bytes())
         if 'editor' in ran_apps:
             assert (contents if editor_device==8 else data_contents).pop(b'GUINOTE')==(1,bytes.fromhex(report['editor_saved_hex']))

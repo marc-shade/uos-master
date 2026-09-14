@@ -5,11 +5,12 @@ FC_SOURCE_STORAGE=$5d00
 FC_DATA_STORAGE=$5800
 B_VIEW_STORAGE=$5e00
 GFX_TEXT_STORAGE=$5e80
+GFX_FONT_COLUMNS=1
 * = N_APPBASE
 FILES_PAGES = 96
 b_image:
         .text "napp"
-        .byte 1,1,12,<(files_module-b_image)
+        .byte 1,1,14,<(files_module-b_image)
         .word files_module-b_image
         .byte FILES_PAGES,>(files_module-b_image)
         .word b_entry-b_image
@@ -33,6 +34,7 @@ PM_KEYS_OWNED = 1
 PM_KEYS_EXTERNAL = 1
 .include "file-browser.inc"
 .include "files-copy.inc"
+.include "files/open-with.inc"
 .include "files/presentation.inc"
 .include "files/workspace.inc"
 .include "input/keys.inc"
@@ -48,7 +50,7 @@ fc_safe_character = b_safe_character
 ; the same owned app image, with four idle transfer buffers for cache scratch.
 files_module:
         .text "nmod"
-        .byte 1,1,12,0
+        .byte 1,1,14,0
         .word files_picker_end-files_module
         .word 0
         .word copy_picker.fd_run-files_module
@@ -80,7 +82,7 @@ FD_SAFE_CHARACTER = fc_safe_character
 .include "file-dialog.inc"
 .bend
 files_picker_end:
-        .cerror * > N_APPBASE+FILES_PAGES*256, "Files picker exceeds the module window"
+        .cerror * > N_APPBASE+FILES_PAGES*256, "Files picker exceeds the module window: ", *
 fc_picker_active = fg_picker_active
 fc_picker_get_key = copy_picker.b_get_key
 fc_picker_cache = copy_picker.b_cache
@@ -90,7 +92,7 @@ cloop = b_loop
         .logical files_module
 files_gui_module:
         .text "nmod"
-        .byte 1,1,12,0
+        .byte 1,1,14,0
         .word files_gui_end-files_gui_module
         .word 0
         .word fg_gui_entry-files_gui_module
@@ -98,5 +100,17 @@ files_gui_module:
 .include "files/gui.inc"
 files_gui_end:
         .cerror * > N_APPBASE+FILES_PAGES*256, "Files graphics exceed the module window"
+        .here
+        .logical files_module
+files_open_module:
+        .text "nmod"
+        .byte 1,1,14,0
+        .word files_open_end-files_open_module
+        .word 0
+        .word fl_entry-files_open_module
+        .word 0
+.include "files/open-with-module.inc"
+files_open_end:
+        .cerror * > N_APPBASE+FILES_PAGES*256, "Files associations exceed the module window"
         .here
 b_end = files_module

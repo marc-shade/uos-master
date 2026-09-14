@@ -12,6 +12,10 @@ The [blue native desktop](NATIVE-GRAPHICS.md) launches the current six-app
 suite. Further Ultimate/productivity apps remain on the roadmap. This lifecycle supports one foreground application; scheduling and
 preserving suspended applications remain open.
 
+ABI 1.14 adds [document launch from Files](NATIVE-DOCUMENT-LAUNCH.md): the
+checked system Editor or Paint receives the selected file's exact identity,
+then returns to that selection in Files. The request expires after one launch.
+
 ## Calculator
 
 The native calculator accepts unsigned integers 0..65535 and the four basic
@@ -211,6 +215,7 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d2f` | N_DESKTOPSEL: ABI 1.9 desktop session selection, 0 Calculator / 1 Editor / 2 Files; clear on native restart |
 | `$3d30..$3d33` | N_BROWSERPOS: selected directory ordinal, little-endian 32-bit |
 | `$3d34` | N_BROWSERNAME_LEN: selected raw name length, 0 when empty |
+| `$3d9a..$3d9e` | ABI 1.14 document request, kind, IEC type, Files return and selection-resume flags; see [document launch](NATIVE-DOCUMENT-LAUNCH.md) |
 | `$3e00..$3eff` | N_BROWSERNAME: complete retained raw name |
 | `$4a00..$4aff` | N_BROWSERPATH: complete retained canonical path |
 | `$3d40..$3d4f` | N_APPNAME |

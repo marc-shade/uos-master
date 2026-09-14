@@ -104,16 +104,21 @@ persistence across restarts remains roadmap work.
 
 ## Storage and presentation lifetime
 
-The suite requires ABI 1.13. Its expanded core PRG contains 14,194 bytes
-(10,032 packed) and reserves 96 bank-0 pages (`$6000..$bfff`).
-The three checked modules share a window at `$9770`.
+The suite requires ABI 1.14. Its expanded core PRG contains 14,228 bytes
+(10,053 packed) and reserves 96 bank-0 pages (`$6000..$bfff`).
+The three checked modules share a window at `$9792`.
 `EDPICK.PRG` has a 10,223-byte payload;
-`EDFIND.PRG` combines search and graphics in 10,373 bytes;
-`EDCLIP.PRG` provides clipboard and history replay in 2,108 bytes.
-The largest module ends at `$bff5`, leaving 11 bytes before the VIC surface.
+`EDFIND.PRG` combines search and graphics in 10,097 bytes;
+`EDCLIP.PRG` provides clipboard, history replay and document launch in 2,309 bytes.
+The largest module ends at `$bf81`, leaving 127 bytes before the VIC surface.
 All modules bind to the core checksum and load from its original source
 volume and directory. Install all four matching Editor files and `VDSVC.PRG`
 together on Ultimate storage.
+
+Files can open a selected document directly in Editor through the
+[document launch contract](NATIVE-DOCUMENT-LAUNCH.md). The exact name, device,
+format and IEC type are copied before transactional Open, and closing Editor
+returns to the selected file. Ordinary desktop launches still start empty.
 
 Before installing keys or initializing documents, Editor reserves and clears
 16 bank-0 pages at `$5000..$5fff`. Transfer buffers, read caches and saved keys

@@ -156,6 +156,9 @@ fg_load:
         cmp #1
         beq +
         ldy #19
+        cmp #2
+        beq +
+        ldy #29
 +       ldx #9
 -       lda fg_names,y
         sta N_FNAME,x
@@ -250,7 +253,7 @@ fg_cache_advance:
         clc
         rts
 
-fg_names: .text "fsview.prg","fspick.prg"
+fg_names: .text "fsview.prg","fspick.prg","fsopen.prg"
 fg_generation: .fill 3,0
 fg_kind: .byte 0
 fg_wanted: .byte 0

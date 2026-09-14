@@ -12,6 +12,12 @@ B_RECORD_BYTES=32-12*FD_GUI
 .if !FD_EMBEDDED
 b_entry:
         cld
+.if B_GUI
+        lda N_DOCRESUME
+        sta fl_resume
+        lda #0
+        sta N_DOCRESUME
+.endif
         lda N_CURRENT
         sta b_owner
         sta N_OWNER
@@ -67,6 +73,9 @@ b_format_valid:
         sta b_selected
         sta b_selected+1
         jsr b_refresh
+.if B_GUI
+        jsr fl_restore_selection
+.endif
 b_redraw:
 .if FD_GUI
         lda b_prompt
@@ -112,6 +121,12 @@ b_have_key:
 .if !FD_EMBEDDED
         ldx b_preview
         bne b_preview_key
+.endif
+.if B_GUI
+        cmp #5                  ; Ctrl-E: selected document in Editor
+        beq fl_edit
+        cmp #16                 ; Ctrl-P: selected UPNT document in Paint
+        beq fl_paint
 .endif
         ldx N_BROWSERFMT
         cpx #3
@@ -390,7 +405,15 @@ b_enter:
         jmp fd_choose_iec
 .else
         lda b_record+20
+.if B_GUI
+        bne +
+        lda #1
+        sta fl_auto
+        jmp b_view_open
++
+.else
         beq b_view_open
+.endif
 .if B_GUI
         jsr fg_exit
         bcs b_loop
@@ -410,6 +433,10 @@ b_launch_name:
         sta N_APPFORMAT
         jmp N_REPLACE
 b_inspect:
+.if B_GUI
+        lda #0
+        sta fl_auto
+.endif
         lda b_total
         ora b_total+1
         beq b_loop

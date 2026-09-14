@@ -1,17 +1,17 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -B -o /var/tmp/arc-scratch/uos-editor-history-fre7fz85/target/native/editor.prg -L /var/tmp/arc-scratch/uos-editor-history-fre7fz85/target/native/editor.lst /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
-; Mon Sep 14 12:41:30 2026
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/target/native/editor.prg -L /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/target/native/editor.lst /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
+; Mon Sep 14 15:31:58 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
-;******  Processing input file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Processing input file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/api.inc
 
 =1						N_ABI_MAJOR = 1
-=13						N_ABI_MINOR = 13
+=14						N_ABI_MINOR = 14
 =$1c20						N_ALLOC         = $1c20
 =$1c23						N_FREE          = $1c23
 =$1c26						N_READ          = $1c26
@@ -136,6 +136,11 @@
 =$3d97						N_DPAGE         = $3d97          ; zero-based directory page, bounded by geometry
 =$3d98						N_DNEXT         = $3d98          ; next page ordinal, or $ff at directory end
 =$3d99						N_DCOUNT        = $3d99          ; 0 or 8 records returned in N_BUFFER
+=$3d9a						N_DOCREQUEST    = $3d9a          ; 0 none, $80 staged, 1 ready for this app only
+=$3d9b						N_DOCKIND       = $3d9b          ; 1 Editor text, 2 Paint UPNT
+=$3d9c						N_DOCTYPE       = $3d9c          ; IEC 0 SEQ / 1 PRG / 2 USR; Ultimate must be 0
+=$3d9d						N_DOCRETURN     = $3d9d          ; 1 dispatcher returns to system Files, then clears
+=$3d9e						N_DOCRESUME     = $3d9e          ; dispatcher -> Files: restore selection once
 =$3da0						N_FNAME         = $3da0          ; 16 bytes
 =$3dc0						NFILES          = $3dc0          ; private: two 16-byte descriptors
 =$3de0						NFCMDS          = $3de0          ; private: two device bytes, two state bytes (0/1/2)
@@ -171,7 +176,7 @@
 =$50						N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
 =$04						N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 =0						NATIVE_EDITOR_GRAPHICS=0
 =7						ED_ABI=7
@@ -189,7 +194,7 @@
 =1						DOC_REPLACE_EXTERNAL = 1
 =0						DOC_REPLACE_SPAN24 = NATIVE_EDITOR_GRAPHICS
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/document.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/document.inc
 
 =0						DOC_INPUT_STORAGE=0
 =0						DOC_OUTPUT_STORAGE=0
@@ -1212,7 +1217,7 @@
 ;		...repeated 30 times (480 bytes)...
 >6efa		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 .6f02						editor_entry:
 .6f02		d8		cld		        cld
@@ -1231,7 +1236,7 @@
 .6f21		8d 52 85	sta $8552	        sta ed_device
 .6f24		a9 03		lda #$03	        lda #3
 .6f26		8d 53 85	sta $8553	        sta ed_format
-.6f29		4c b6 78	jmp $78b6	        jmp ed_refresh
+.6f29		4c 53 6f	jmp $6f53	        jmp ed_source_ready
 .6f2c						ed_source_iec:
 .6f2c		ad 29 3d	lda $3d29	        lda N_BROWSERDEV
 .6f2f		c9 08		cmp #$08	        cmp #8
@@ -1243,12 +1248,13 @@
 .6f3d		c9 03		cmp #$03	        cmp #3
 .6f3f		b0 06		bcs $6f47	        bcs ed_source_default
 .6f41		8d 53 85	sta $8553	        sta ed_format
-.6f44		4c b6 78	jmp $78b6	        jmp ed_refresh
+.6f44		4c 53 6f	jmp $6f53	        jmp ed_source_ready
 .6f47						ed_source_default:
 .6f47		ad 21 3d	lda $3d21	        lda N_DEVICE
 .6f4a		8d 52 85	sta $8552	        sta ed_device
 .6f4d		ad 2c 3d	lda $3d2c	        lda N_APPFORMAT
 .6f50		8d 53 85	sta $8553	        sta ed_format
+.6f53						ed_source_ready:
 .6f53		4c b6 78	jmp $78b6	        jmp ed_refresh
 .6f56						cloop:
 .6f56		a9 01		lda #$01	        lda #1
@@ -3374,7 +3380,7 @@
 ;		...repeated 30 times (480 bytes)...
 >899f		00 00 00 00 00 00 00 00
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor-search-gate.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor-search-gate.inc
 
 .89a7						ed_search_launch:
 .89a7		8d 65 8a	sta $8a65	        sta ed_s_request
@@ -3416,10 +3422,10 @@
 >8a64		00				ed_s_running: .byte 0
 >8a65		00				ed_s_request: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor-files.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor-files.inc
 
 .8a66						ed_close_owned:
 .8a66		ad dc 69	lda $69dc	        lda d_owner
@@ -3958,10 +3964,10 @@
 >8f72		00 00				ed_nl_left: .word 0
 =$6b02						ed_verify_data = d_input
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor-dialog.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor-dialog.inc
 
 .8f74						ed_browse:
 .8f74		a9 01		lda #$01	        lda #1
@@ -4105,7 +4111,7 @@
 >9099		00				ed_module_kind: .byte 0
 >909a		00				ed_module_wanted: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 =1						FD_EMBEDDED = 1
 =6						FD_DIRECT_PAGES = 6
@@ -4124,7 +4130,7 @@
 >90a7		10 00				        .word fd_run-editor_module
 >90a9		00 00				        .word 0                ; build seals the independent module CRC
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/file-dialog.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/file-dialog.inc
 
 =8						FD_DIRECT_PAGES = 8
 =0						FD_GUI_SHARED = 0
@@ -4611,7 +4617,7 @@
 .94b9						fd_cursors_done:
 .94b9		60		rts		        rts
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/file-browser.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/file-browser.inc
 
 =0						B_COPY = 0
 =0						B_GUI = 0
@@ -5008,7 +5014,7 @@
 .9805		8e 86 3d	stx $3d86	        stx N_FNAMELEN
 .9808		60		rts		        rts
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/browser-ui.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/browser-ui.inc
 
 .9809						b_draw:
 .9809		a9 00		lda #$00	        lda #0
@@ -5377,10 +5383,10 @@
 >9cd9		00				b_num_started: .byte 0
 >9cda		00				b_digit: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/file-browser.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/file-browser.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/browser-usb.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/browser-usb.inc
 
 .9cdb						b_usb_begin:
 .9cdb		a9 02		lda #$02	        lda #2
@@ -5572,10 +5578,10 @@
 ;		...repeated 14 times (224 bytes)...
 >9f8f		00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/file-browser.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/file-browser.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/browser-ultimate.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/browser-ultimate.inc
 
 .9f91						bu_path_validate:
 .9f91		ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
@@ -6562,7 +6568,7 @@
 ;		...repeated 14 times (224 bytes)...
 >aa24		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/file-browser.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/file-browser.inc
 
 >aa2c		00 60 4e 41 50 50		b_app_magic: .byte 0,$60,$4e,$41,$50,$50
 .aa32						b_cache:
@@ -6598,7 +6604,7 @@
 ;		...repeated 14 times (224 bytes)...
 >ab8e		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/file-dialog.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/file-dialog.inc
 
 >ab96		02 6b 02 6d			fd_scratch: .word FD_SCRATCH0,FD_SCRATCH1
 >ab9a		a7 87				        .word FD_SCRATCH2
@@ -6644,7 +6650,7 @@
 ;		...repeated 14 times (224 bytes)...
 >aecc		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 .aed4						editor_end:
 .aed4	909b					editor_search_module:
@@ -6655,7 +6661,7 @@
 >aee0	90a7	10 00				        .word ed_search_entry-editor_search_module
 >aee2	90a9	00 00				        .word 0
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor-search.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor-search.inc
 
 .aee4	90ab					ed_search_entry:
 .aee4	90ab	ad 65 8a	lda $8a65	        lda ed_s_request
@@ -7180,10 +7186,10 @@
 >b531	96f8	00				ed_s_ticks: .byte 0
 >b532	96f9	00				ed_s_byte: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/document-replace.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/document-replace.inc
 
 =0						DOC_REPLACE_SPAN24=0
 .b533	96fa					doc_replace:
@@ -7354,7 +7360,7 @@
 .b6f8	98bf	4c 7b 66	jmp $667b	        jmp doc_dirty
 >b6fb	98c2	00 00 00			d_replace_count: .fill 3,0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-history-fre7fz85/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-open-with-q4-eure9xs5/src/native/editor.asm
 
 .b6fe	98c5					editor_search_end:
 

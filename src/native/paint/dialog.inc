@@ -206,6 +206,7 @@ pa_picked:
         lda pa_picker_mode
         cmp #2
         beq pa_picker_redraw
+pa_load_document:
         lda #11
         sta pa_status
         jsr pa_redraw

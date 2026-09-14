@@ -15,6 +15,14 @@ b_view_zero_offset:
         dex
         bpl b_view_zero_offset
         jsr b_view_read
+.if B_GUI
+        lda fl_auto
+        beq +
+        ; Enter/Inspect set this intent on every initial Open. Next-page
+        ; reads never pass here, so no second classification can occur.
+        jmp fl_associate
++
+.endif
         jmp b_redraw
 b_view_failed:
         sta b_error
