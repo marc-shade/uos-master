@@ -80,14 +80,13 @@ NMI_VECTOR      = $0318
 NMI_EXIT        = $FF33
 
         .export _native_video_begin, _native_video_end, _native_quit, _native_border
-        .export savedVdc, savedFont, serialOwned, nmiHandler
+        .export savedVdc, serialOwned, nmiHandler
         .bss
 _native_quit: .res 1
 _native_border: .res 1
 savedScreen: .res 1
 savedKeys: .res 256
 savedVdc: .res 37
-savedFont: .res 4096
 videoPhase: .res 1
 videoFault: .res 1
 videoStack: .res 1
@@ -1086,6 +1085,10 @@ clipSpan:
         rts
 
 _native_video_begin:
+        jsr sf_open
+        bcc @font_owned
+        rts
+@font_owned:
         jsr scrGate
         ; Native GETIN expands the ROM's programmable keys. Deliver one
         ; protocol key each; in particular stock F8 expands to MONITOR+CR.
@@ -1136,11 +1139,14 @@ _native_video_begin:
 @prime: jsr scrWait
         lda VDC_DATA
         jsr scrSetAddr
-        lda #<savedFont
+        lda #0
+        sta sf_chunk
+@chunk:
+        lda #<N_BUFFER
         sta ptr1
-        lda #>savedFont
+        lda #>N_BUFFER
         sta ptr1+1
-        ldx #16
+        ldx #2
 @page:  ldy #0
 @read:  jsr scrWait
         lda VDC_DATA
@@ -1150,6 +1156,16 @@ _native_video_begin:
         inc ptr1+1
         dex
         bne @page
+        lda sf_chunk
+        jsr sf_write
+        bcc @saved
+        ldx #0
+        rts
+@saved:inc sf_chunk
+        inc sf_chunk
+        lda sf_chunk
+        cmp #16
+        bne @chunk
         lda #3
         sta videoPhase
         lda #0
@@ -1202,11 +1218,19 @@ _native_video_end:
         bcc @font_restored
         jsr fontAddress
         jsr scrSetAddr
-        lda #<savedFont
+        lda #0
+        sta sf_chunk
+@chunk:lda sf_chunk
+        jsr sf_read
+        bcc @loaded
+        ldx #0
+        rts
+@loaded:
+        lda #<N_BUFFER
         sta ptr1
-        lda #>savedFont
+        lda #>N_BUFFER
         sta ptr1+1
-        ldx #16
+        ldx #2
 @page:  ldy #0
 @write: lda (ptr1),y
         jsr scrPut
@@ -1215,8 +1239,19 @@ _native_video_end:
         inc ptr1+1
         dex
         bne @page
+        inc sf_chunk
+        inc sf_chunk
+        lda sf_chunk
+        cmp #16
+        bne @chunk
 @font_restored:
+        ; Once restored, a later heap-free retry must not read a released font.
         lda videoPhase
+        cmp #3
+        bcc @mode
+        lda #2
+        sta videoPhase
+@mode:  lda videoPhase
         cmp #2
         bcc @mode_restored
         ldy #0
@@ -1228,6 +1263,11 @@ _native_video_end:
         bne @reg
 @mode_restored:
         jsr _gui_end            ; release graphics only after the font/mode restore
+        ; Keep native key handling until every retained allocation closes.
+        jsr _tm_end
+        bcs @retained
+        jsr sf_close
+        bcs @retained
         lda videoPhase
         beq @done
         lda savedScreen
@@ -1248,14 +1288,16 @@ _native_video_end:
         sta $d1
         sta $d2
         plp
-        jsr _tm_end
-        bcs @done
         lda #0
         sta videoPhase
         sta _gui_recovery
 @done: lda #0
         tax
         clc
+        rts
+@retained:
+        ldx #0
+        sec
         rts
 
 ; Paint the complete retained terminal after restoring a graphical overlay.
@@ -1347,3 +1389,5 @@ _scr_sync:
 nativeKeys: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84
 restoreRegs: .byte 10,11,12,13,14,15,20,21,24,25,26,27,28,29,32,33,18,19
 restoreCount = *-restoreRegs
+
+.include "saved-font.inc"

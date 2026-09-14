@@ -82,7 +82,7 @@ def build():
         path.write_bytes(packed)
         packing[name] = packed_information(packed)
         # Module identity remains the original source's checked NAPP identity.
-        for part in {'editor':('edpick','edfind'),'files':('fspick','fsview')}.get(name,()):
+        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview')}.get(name,()):
             module_path = OUT/f'{part}.prg'
             module_path.write_bytes(seal_module(module_path.read_bytes(),packed))
             validate_module(module_path.read_bytes(),packed)
@@ -98,6 +98,7 @@ def build():
                         '-write', str(OUT/'editor.prg'), 'editor',
                         '-write', str(OUT/'edpick.prg'), 'edpick.prg',
                         '-write', str(OUT/'edfind.prg'), 'edfind.prg',
+                        '-write', str(OUT/'edclip.prg'), 'edclip.prg',
                         '-write', str(OUT/'files.prg'), 'files',
                         '-write', str(OUT/'fspick.prg'), 'fspick.prg',
                         '-write', str(OUT/'fsview.prg'), 'fsview.prg',
@@ -112,7 +113,7 @@ def build():
     images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
-    deployment = dict(abi='1.12', direct_desktop_disk='uos128.d64',
+    deployment = dict(abi='1.13', direct_desktop_disk='uos128.d64',
                       workspace_with_desktop_disk='workspace.d64',
                       standalone_diagnostic_disk='../native/uos128.d64',
                       d81=dict(direct_desktop_disk='uos128.d81',
@@ -136,7 +137,7 @@ def build():
                                     'files': 'files.prg', 'calc': 'calc.prg',
                                     'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',
-                                    'edfind.prg': 'edfind.prg',
+                                    'edfind.prg': 'edfind.prg', 'edclip.prg':'edclip.prg',
                                     'ultimate': 'controls.prg', 'claude': 'claude.prg', 'paint': 'paint.prg'})
     (OUT/'deployment.json').write_text(json.dumps(deployment, indent=2)+'\n')
     print(f'Native graphical desktop disk: {desktop}')

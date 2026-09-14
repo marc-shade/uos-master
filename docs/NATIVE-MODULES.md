@@ -11,7 +11,8 @@ or F7/Browse in the suite editor loads the picker; subsequent calls reuse its ve
 directory state until search or the suite graphical view replaces that module. Ctrl-F/Ctrl-N/Ctrl-R load
 search into the same window. The accepted query and case choice remain in the
 core across module switches. Missing or damaged modules keep the document.
-Install **EDPICK.PRG** and **EDFIND.PRG** beside the editor on USB; both suite
+Install **EDPICK.PRG**, **EDFIND.PRG** and the graphical Editor’s
+**EDCLIP.PRG** beside the editor on USB; both suite
 disks contain the core and both modules from the same build.
 
 The earlier picker-only checkpoint passed all 22 CPU suites, ten emulator workflows and complete physical USB/IEC
@@ -164,3 +165,8 @@ This window is groundwork for additional native services. Background tasks,
 app suspension, GUI windows/events/focus, REU caching and allocation, general
 overlay replacement cleanup, and the rest of the
 [completion roadmap](IMPLEMENTATION-ROADMAP.md) remain open.
+
+The graphical Editor now uses a third checked module, `EDCLIP.PRG`, for
+[shared clipboard transfers](NATIVE-CLIPBOARD.md). It shares the existing
+module window and keeps document/selection state in the core. The diagnostic
+Editor retains its picker/search pair.

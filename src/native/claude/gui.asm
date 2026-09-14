@@ -508,7 +508,11 @@ cg_enabled:
         bne +
         lda cg_live
         beq cg_yes
-        bne cg_no
+        lda cg_menu
+        beq cg_no
+        lda cg_font_ram
+        bne cg_yes
+        beq cg_no
 +       cpx #1
         bne +
         lda cg_live
@@ -569,7 +573,16 @@ cg_focus_set:
 cg_activate:
         jsr cg_enabled
         bcs cg_zero
-        cpx #6
+        cpx #2
+        bcs +
+        lda cg_menu
+        beq +
+        cpx #0
+        beq cg_clip_copy
+        lda #254
+        ldx #0
+        rts
++       cpx #6
         beq cg_terminal_activate
         cpx #5
         beq cg_view_next
@@ -651,7 +664,17 @@ cg_recovery_other_key:
         lda cg_menu
         beq cg_key_return
 cg_local_key:
+        lda cg_menu
+        beq +
         lda cg_keycode
+        cmp #3
+        beq cg_clip_copy
+        cmp #22
+        bne +
+        lda #254
+        ldx #0
+        rts
++       lda cg_keycode
         cmp #9
         beq cg_next
         cmp #$11
@@ -669,14 +692,21 @@ cg_local_key:
         cmp #32
         beq cg_key_activate
         cmp #27
-        bne +
+        bne cg_local_help
+        lda cg_paste_active
+        beq cg_local_escape
+        lda #253
+        ldx #0
+        rts
+cg_local_escape:
         lda cg_live
         beq cg_key_return
         lda #0
         sta cg_menu
         inc cg_controls_dirty
         jmp cg_zero
-+       lda cg_keycode
+cg_local_help:
+        lda cg_keycode
         cmp #$84
         beq cg_key_return
         jmp cg_zero
@@ -685,6 +715,8 @@ cg_key_return:
         ldx #0
         rts
 cg_menu_toggle:
+        lda #0
+        sta cg_clip_status
         lda cg_live
         cmp #1
         bne cg_zero
@@ -788,6 +820,22 @@ cg_secondary_done:
 
 cg_controls:
         jsr cg_surface
+        lda cg_header_lo
+        ldx cg_header_hi
+        ldy cg_menu
+        beq +
+        lda cg_header_lo+1
+        ldx cg_header_hi+1
++       jsr cg_source
+        lda #1
+        sta cg_row
+cg_header_draw:
+        jsr cg_row_unpack
+        bcs cg_failed
+        inc cg_row
+        lda cg_row
+        cmp #4
+        bne cg_header_draw
         lda #0
         sta cg_control
 cg_control_next:
@@ -841,7 +889,14 @@ cg_control_color:
         ldy #3
 +
 cg_status_ready:
-        lda cg_status_lo,y
+        lda cg_recovery
+        bne +
+        lda cg_menu
+        beq +
+        lda cg_clip_status
+        beq +
+        tay
++       lda cg_status_lo,y
         ldx cg_status_hi,y
         jsr cg_source
         lda #4
@@ -927,8 +982,10 @@ cg_x1: .byte 12,25,39,11,39,28,39
 cg_y0: .byte 1,1,1,21,21,21,0
 cg_y1: .byte 4,4,4,24,24,24,1
 cg_actions: .byte 13,$84,$8c
-cg_status_lo: .byte <cg_status_0,<cg_status_1,<cg_status_2,<cg_status_3,<cg_status_4
-cg_status_hi: .byte >cg_status_0,>cg_status_1,>cg_status_2,>cg_status_3,>cg_status_4
+cg_header_lo: .byte <cg_header_0,<cg_header_1
+cg_header_hi: .byte >cg_header_0,>cg_header_1
+cg_status_lo: .byte <cg_status_0,<cg_status_1,<cg_status_2,<cg_status_3,<cg_status_4,<cg_status_5,<cg_status_6,<cg_status_7,<cg_status_8,<cg_status_9,<cg_status_10,<cg_status_11,<cg_status_12
+cg_status_hi: .byte >cg_status_0,>cg_status_1,>cg_status_2,>cg_status_3,>cg_status_4,>cg_status_5,>cg_status_6,>cg_status_7,>cg_status_8,>cg_status_9,>cg_status_10,>cg_status_11,>cg_status_12
 cg_page_lo: .byte <cg_page_0_0,<cg_page_0_9,<cg_page_1_0,<cg_page_1_9,<cg_page_2_0,<cg_page_2_9
 cg_page_hi: .byte >cg_page_0_0,>cg_page_0_9,>cg_page_1_0,>cg_page_1_9,>cg_page_2_0,>cg_page_2_9
 cg_vdc_colors: .byte 0,11,6,14,5,13,3,3,2,10,4,4,9,7,15,1
@@ -984,4 +1041,5 @@ pm_find_hit=cg_hit
 .include "../input/pointer.inc"
 .include "../input/key-filter.inc"
 .include "vdc.inc"
+.include "clipboard.inc"
 gui_limit = *

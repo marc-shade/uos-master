@@ -29,6 +29,8 @@ CMD_SCROLL = 0x0B    # top, bot, n -> shift rows top..bot by n & $7F rows;
                      # bit 7 of n set means downward. See Encoder.scroll.
 
 SCROLL_DOWN = 0x80   # direction flag inside the SCROLL count byte
+CMD_CAPABILITIES = 0x0D  # one feature byte; sent only after CLIENT_CAPABILITIES
+CMD_PASTE_RESULT = 0x0E  # 0 accepted; 1 rejected; only after a negotiated paste
 
 ATTR_UNDERLINE = 0x20
 ATTR_REVERSE = 0x40
@@ -43,6 +45,13 @@ CLIENT_ESCAPE = 0x00
 CLIENT_RESYNC = 0x01     # "repaint everything, I may have missed bytes"
 CLIENT_BYE = 0x02
 CLIENT_CREDIT = 0x03     # "I have consumed CREDIT_UNIT more bytes"
+CLIENT_CAPABILITIES = 0x04  # request optional protocol extensions
+CLIENT_PASTE_CHUNK = 0x05   # count byte, then 1..64 literal bytes (including $00)
+CLIENT_PASTE_BEGIN = 0x06   # total length LE16, 1..16384
+CLIENT_PASTE_END = 0x07     # publish only a complete, validated bracketed paste
+CLIENT_PASTE_ABORT = 0x08   # discard a staged paste; no terminal input
+FEATURE_PASTE = 1
+MAX_PASTE = 16384
 
 # Receiver-driven flow control. The C128 is always the slow party and only it
 # knows when it has actually applied a byte, so the server never sends more

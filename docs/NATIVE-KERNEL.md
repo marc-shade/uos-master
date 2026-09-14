@@ -52,6 +52,10 @@ match. System shortcuts and launcher handoffs use this saved format with
 `N_BOOTDEVICE`; data-disk preferences stay independent. Apps must treat these
 two session fields as read-only. See [boot media](NATIVE-BOOT-MEDIA.md).
 
+ABI 1.13 initializes the [shared clipboard](NATIVE-CLIPBOARD.md) session at
+`$3de5..$3dff`. Its library manages owner-31 allocations across foreground app
+exits. No resident entry was added, and all 426 heap pages remain managed.
+
 Use the native CPU observer when a hardware test needs bytes from a specific
 RAM bank. Direct cartridge DMA can return BASIC ROM at an application RAM
 address; the [editor checkpoint](validation/2026-09-09-native-editor/README.md)

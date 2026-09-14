@@ -36,8 +36,9 @@ The cc65 image embeds a 64tass GUI at `$6080`, after native startup at `$6020`.
 count and value; literal blocks keep mixed bitmap data compact. Both encodings
 may cross the native transfer buffer boundary.
 
-The app owns 94 pages, including its saved font, serial buffers, BSS, C stack
-and packed-startup cleanup tail. It reserves 16 bank-0 pages at `$5000` for the
+The app owns 96 pages, including serial buffers, BSS, C stack
+and packed-startup cleanup tail. A separate 16-page allocation retains the
+original VDC font until restoration succeeds. It reserves 16 bank-0 pages at `$5000` for the
 live font, allocates 16 bank-1 pages for terminal cells/attributes, and reserves
 36 pages at `$c000` for the optional VIC bitmap. The full terminal allocation
 has separate checked handles and never overlaps the bank-1 display service.
@@ -47,7 +48,8 @@ The resident kernel and 426-page heap are unchanged.
 beside Claude when copying the app. Its 33-page bank-1 image owns a 64-page
 monochrome or 72-page color screen snapshot, using the shared REU arena when
 available and checked main RAM otherwise. With REU backing, Claude leaves
-231 main-RAM pages free; with a RAM snapshot it leaves 167 or 159 pages.
+213 main-RAM pages free; with a RAM snapshot it leaves 149 or 141 pages.
+These counts assume an empty clipboard.
 A clean model allocation refusal retains the original VDC terminal and VIC
 status panel. A missing or invalid display service keeps the VIC controls and
 text terminal available. An uncertain source CLOSE retains its owners.
@@ -60,10 +62,9 @@ synchronous display call is in progress, so the 255-byte usable receive ring
 can hold that entire window while the component runs in bank 1.
 
 Claude saves all 256 programmable-key bytes and installs the shared KEYCHK
-filter in the unused tail. Its opt-in filter checks both mouse button lines
-against the selected keyboard column, preventing mouse presses from becoming
-ROM keystrokes. Ctrl+Help uses the scan's modifier flags. Other apps retain
-the previous pointer/filter bytes. The Commodore ROM contract is documented in
+filter in the unused tail. The shared filter verifies every decoded key
+against its matrix row and column, rejecting mouse signals and stale nested
+scan results. Ctrl+Help uses the scan's modifier flags. The Commodore ROM contract is documented in
 [source provenance](COMMODORE-SOURCE-REFERENCE.md); the right-button line also
 matches [VICE's 1351 implementation](https://raw.githubusercontent.com/VICE-Team/svn-mirror/main/vice/src/joyport/mouse_1351.c).
 
@@ -85,7 +86,16 @@ The TCP/PTY fixture sends deterministic terminal output; it sends no model
 requests. Both cold-boot display choices return to the blue suite desktop with
 font, keys, NMI and all app pages restored.
 
-The suite keeps 124 free D64 blocks and 2,620 free D81 blocks. This work does not
+The current suite keeps 103 free D64 blocks and 2,599 free D81 blocks. This work does not
 install a physical build. Physical serial/mouse qualification, an authenticated
-Claude session, wider display modes, independent desktop windows, clipboard
+Claude session, wider display modes, independent desktop windows, REU/image clipboard formats
 and the remaining [OS roadmap](IMPLEMENTATION-ROADMAP.md) remain open.
+
+The [shared text clipboard](NATIVE-CLIPBOARD.md) adds Copy and Paste to local
+controls. Copy exports the full retained terminal as ASCII rows; Paste uses
+the negotiated, acknowledged bridge extension. Ctrl-C/Ctrl-V remain terminal
+keys when local controls are closed.
+
+The [shared clipboard qualification](validation/2026-09-14-native-shared-clipboard/README.md)
+records the exact software inputs, app handoffs, failure recovery and cold-boot
+emulator workflows for this version. Physical deployment remains pending.

@@ -18,7 +18,7 @@ the public native API. Its separate CPU workflows pass; the ABI 1.7 system
 images are still undergoing physical qualification.
 Its `$1c20` jump table and memory map are separate from this
 legacy desktop ABI. ABI 1.9 adds the desktop session-selection mailbox at
-`$3d2f`; the current app/module validators accept requirements through 1.12.
+`$3d2f`; the current app/module validators accept requirements through 1.13.
 Desktop/app migration remains in progress.
 
 The [banked native SDK example](../examples/native-banked/README.md) adds a

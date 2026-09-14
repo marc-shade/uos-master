@@ -9,6 +9,7 @@ from ci_native_pointer import Pointer, PointerBus, heap
 from ci_native_claude import Client, TerminalMachine
 from native_claude_scene import surface, RECTS
 from native_claude_check import landing_screen
+from native_clipboard_check import released_stats
 from py65.devices.mpu6502 import MPU
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,7 +49,7 @@ class GraphicalClient(Client):
             top=self.value('cg_top'),focus=self.value('cg_focus'),model=bool(retained),
             view=self.value('cg_view'),terminal=terminal,
             cursor=(self.value('cg_cursor_row'),self.value('cg_cursor_col')),
-            recovery=bool(self.value('cg_recovery')))
+            recovery=bool(self.value('cg_recovery')),clip_status=self.value('cg_clip_status'))
         actual = bytes(self.ram[0xc000:0xe400])
         assert actual == want, ('Claude surface',[(i,a,b) for i,(a,b) in enumerate(zip(actual,want)) if a != b][:20])
         self.checked += 1
@@ -89,7 +90,7 @@ class GraphicalClient(Client):
         assert not self.value('pm_active') and not self.value('cg_keys_owned')
         assert not self.ram[heap.symbol('v_tag')]
         assert bytes(self.ram[0x33c:0x33e]) == bytes(self.ram[self.symbol('cg_saved_callback'):self.symbol('cg_saved_callback')+2])
-        assert self.m.stats() == (175,251,32)
+        assert self.m.stats() == released_stats(self.m)
 
 
 def run(selected="all"):
@@ -198,6 +199,10 @@ def run(selected="all"):
         # Modifier release after enqueue cannot change the already decoded event.
         at = c.symbol('pk_next');saved = bytes(c.ram[at:at+2])
         stack = bytes(c.ram[0x100:0x200]);c.ram[at:at+2] = b'\0\x0b'
+        # This fixture tests the callback's modifier/flag contract. Use a
+        # foreign CIA configuration to bypass matrix sampling; the complete
+        # real-ROM matrix cases live in ci_native_keyboard_matrix.py.
+        saved_ddr = c.bus.video[0xdc02];c.bus.video[0xdc02] = 0
         for modifiers in range(32):
             for code in (0x84,0x85,0x41):
                 cpu = MPU(memory=c.chip,pc=c.symbol('pk_entry'));cpu.sp=0xe0;cpu.p=0x30
@@ -207,6 +212,7 @@ def run(selected="all"):
                     cpu.step()
                 assert (cpu.pc,cpu.a,cpu.x,cpu.y,cpu.p,cpu.sp) == (0xb00,255 if code==0x84 and modifiers&4 else code,modifiers,65,0x30,0xde)
         c.ram[at:at+2]=saved;c.ram[0x100:0x200]=stack
+        c.bus.video[0xdc02] = saved_ddr
         c.key(27,exited=True);c.restored()
         done('Ctrl+Help is decoded in the owned ROM-visible filter; 96 modifier/key combinations',c)
 

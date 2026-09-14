@@ -57,7 +57,7 @@ ed_browse_status:
         jsr ed_show
         jmp cloop
 
-; A=1 picker, 2 search. A token belongs to exactly one loaded module. Invalidate
+; A=1 picker, 2 search/renderer, 3 clipboard. A token belongs to exactly one loaded module. Invalidate
 ; our kind before closing/replacing it; failed loads cannot call a stale token.
 ed_module_load:
         sta ed_module_wanted
@@ -98,6 +98,11 @@ ed_module_replace:
         cmp #1
         beq +
         ldy #19
+.if NATIVE_EDITOR_GRAPHICS
+        cmp #2
+        beq +
+        ldy #29
+.endif
 +       lda #10
         sta N_FNAMELEN
         ldx #9
@@ -166,6 +171,9 @@ ed_safe_character:
 ed_file_type: .byte 0
 ed_picker_name: .text "edpick.prg"
                 .text "edfind.prg"
+.if NATIVE_EDITOR_GRAPHICS
+                .text "edclip.prg"
+.endif
 ed_picker_token: .fill 3,0
 ed_module_kind: .byte 0
 ed_module_wanted: .byte 0

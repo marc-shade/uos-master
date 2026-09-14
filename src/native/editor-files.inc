@@ -95,7 +95,7 @@ ed_open_read:
         jsr ed_file_copy
         jsr ed_detect_newline
         #doc_load3 D_LEN,d_pos
-        #doc_copy3 ed_io_size,d_count
+        #ed_move3 ed_io_size,d_count
         jsr doc_insert
         bcs ed_open_memory_failed
         jsr ed_io_advance
@@ -191,7 +191,7 @@ ed_save_file:
         lda #6
         bne ed_save_cleanup
 ed_save_write:
-        #doc_copy3 ed_io_pos,d_pos
+        #ed_move3 ed_io_pos,d_pos
         lda #0
         sta d_count
         lda #2
@@ -254,7 +254,7 @@ ed_verify_read:
         lda #<N_BUFFER
         ldx #>N_BUFFER
         jsr ed_file_copy
-        #doc_copy3 ed_io_pos,d_pos
+        #ed_move3 ed_io_pos,d_pos
         lda #0
         sta d_count
         lda #2
@@ -500,7 +500,7 @@ ed_progress_selected:
         lda #<ed_progress_count
         ldx #>ed_progress_count
         jsr ed_puts
-        #doc_copy3 ed_io_pos,ed_print_number
+        #ed_move3 ed_io_pos,ed_print_number
         jsr ed_hex24
         lda #<ed_progress_cancel
         ldx #>ed_progress_cancel

@@ -31,6 +31,15 @@ void gui_dirty_all(void);
 extern unsigned char gui_live, gui_top, gui_controls_dirty, gui_dirty[25], gui_bitmap;
 extern unsigned char gui_recovery, gui_retiring;
 static void panel_text(unsigned char row, const char *text);
+extern unsigned char gui_clip_length[3], gui_clip_count, gui_clip_status, gui_paste_active;
+unsigned char gui_clip_prepare(void);
+unsigned char gui_clip_chunk(void);
+static unsigned char pasteJiffy;
+static unsigned int pasteTicks, pastePolls;
+static void paste_notice(unsigned char notice);
+static void paste_begin(void);
+static void paste_cancel(void);
+
 
 /* --- hardware, implemented in c128hw.s ---------------------------------- */
 extern unsigned char scrRow, scrCol, scrAttr, scrLen, scrChar;
@@ -72,6 +81,13 @@ extern unsigned char mirrorBuf[2048];
 #define CLIENT_RESYNC 0x01
 #define CLIENT_BYE    0x02
 #define CLIENT_CREDIT 0x03
+#define CLIENT_CAPABILITIES 4
+#define CLIENT_PASTE_CHUNK 5
+#define CLIENT_PASTE_BEGIN 6
+#define CLIENT_PASTE_END 7
+#define CLIENT_PASTE_ABORT 8
+#define CMD_CAPABILITIES 13
+#define CMD_PASTE_RESULT 14
 /* Must match CREDIT_UNIT in server/protocol.py. */
 #define CREDIT_UNIT   64
 
@@ -228,6 +244,7 @@ static void handle_byte(unsigned char b)
         case CMD_CURSOR: argsNeeded = 2; break;
         case CMD_PANEL:  argsNeeded = 3; break;
         case CMD_HELLO:  argsNeeded = 2; break;
+        case CMD_CAPABILITIES: case CMD_PASTE_RESULT: argsNeeded = 1; break;
         case CMD_GLYPH:  argsNeeded = 1; break;
         case CMD_SCROLL: argsNeeded = 3; break;
         case CMD_FRAME:
@@ -276,6 +293,21 @@ static void handle_byte(unsigned char b)
                 return;
             }
             state = S_PAYLOAD;
+            return;
+
+        case CMD_CAPABILITIES:
+            if (gui_paste_active == 3) {
+                if (b & 1) paste_begin();
+                else { gui_paste_active = 0; paste_notice(11); }
+            }
+            state = S_OPCODE;
+            return;
+        case CMD_PASTE_RESULT:
+            if (gui_paste_active == 2) {
+                gui_paste_active = 0;
+                paste_notice(b ? 9 : 7);
+            }
+            state = S_OPCODE;
             return;
 
         case CMD_FILL:
@@ -407,6 +439,8 @@ static void close_tick(void)
     }
 }
 
+#include "clipboard-client.inc"
+
 /* --- keyboard ----------------------------------------------------------- */
 static void pump_keyboard(void)
 {
@@ -415,6 +449,7 @@ static void pump_keyboard(void)
        Translation to terminal input happens on the Linux side. */
     while ((k = kb_get()) != 0) {
         if (k == KEY_DESKTOP) {
+            if (gui_paste_active) paste_cancel();
             if (closing) {
                 closeOutcome = 4;
                 running = 0;
@@ -433,6 +468,12 @@ static void pump_keyboard(void)
             return;
         } else if (closing) {
             continue;
+        } else if (k == 254) {
+            paste_request();
+        } else if (k == 253) {
+            paste_cancel();
+        } else if (gui_paste_active) {
+            if (k == 27) paste_cancel();
         } else if (k == KEY_RESYNC) {
             /* Repaint from scratch, and re-arm the modem watcher so a bridge
                that has been restarted can ring us again. */
@@ -663,7 +704,10 @@ int main(void)
                 retry = 0;
             }
         }
-        if (running) pump_keyboard();
+        if (running) {
+            pump_keyboard();
+            if (!closing) paste_pump();
+        }
         close_tick();
     }
 

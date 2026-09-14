@@ -8,7 +8,7 @@
 .segment "LOADADDR"
         .word $6000
 .segment "HEADER"
-        .byte $4e,$41,$50,$50,1,1,12,0
+        .byte $4e,$41,$50,$50,1,1,13,0
         .word __BSS_RUN__-$6000
         ; The startup packer needs a separate 48-byte tail after the live stack.
         .byte >(__CSTACK_RUN__+__CSTACK_SIZE__-$6000+$ff+48),0

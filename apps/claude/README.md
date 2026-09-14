@@ -87,7 +87,7 @@ format. The upstream BASIC-started client and reset/bootstrap helpers are
 not part of the native launch path.
 
 Native qualification is tracked separately from upstream hardware claims.
-The earlier uOS ABI 1.9 physical pass does not qualify this ABI 1.12 serial app.
+The earlier uOS ABI 1.9 physical pass does not qualify this ABI 1.13 serial app.
 
 The [initial software qualification](../../docs/validation/2026-09-12-native-claude-suite/README.md)
 passes 30 native CPU suites, 34 host checks and four VICE workflows. The
@@ -115,10 +115,13 @@ The native client temporarily defines the ten C128 programmable keys as single
 key codes, including F8 and Help. This prevents the ROM's default `MONITOR` macro
 from replacing F8. All 256 bytes of the original definition table are restored
 on every exit, alongside the existing font, NMI, display and zero-page state.
-The graphical app reserves 94 pages, 16 pages for its live font, 16 for terminal
+The graphical app reserves 96 pages, 16 pages for the original font, 16 pages for its live font, 16 for terminal
 cells/attributes and an optional 36-page surface. VDC controls also use the
 33-page shared component and a screen backup in REU or main RAM. See the
-[current display qualification](../../docs/validation/2026-09-14-native-claude-displays/README.md).
-The
-earlier [desktop pointer workflow](../../docs/validation/2026-09-12-native-pointer/README.md)
+[display qualification](../../docs/validation/2026-09-14-native-claude-displays/README.md).
+The earlier [desktop pointer workflow](../../docs/validation/2026-09-12-native-pointer/README.md)
 checks real ROM F8 return after launching Claude with the mouse.
+
+Local controls now provide [Copy and Paste](../../docs/NATIVE-CLIPBOARD.md).
+The clipboard survives app exits. Paste requires the matching bridge update
+and sends validated ASCII as one bracketed paste, without a trailing Return.

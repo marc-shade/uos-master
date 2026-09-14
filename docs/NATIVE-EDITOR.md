@@ -8,13 +8,14 @@ same document and cursor; the 80-column display shows more of each line.
 
 The desktop suite instead opens the [blue graphical Editor](NATIVE-EDITOR-GUI.md),
 with mouse caret placement and visible file/search controls on VIC and VDC. It
-requires ABI 1.12; Tab moves focus, F7 opens Browse inside Open/Save As,
+requires ABI 1.13; Tab moves focus, F7 opens Browse inside Open/Save As,
 and the Case button toggles search case. The key table below describes the diagnostic text interface.
 
 The [module loader](NATIVE-MODULES.md) loads the picker from `EDPICK.PRG`
-and search from `EDFIND.PRG` beside the original app. All three files are
+and search from `EDFIND.PRG` beside the original app. The graphical suite
+also loads `EDCLIP.PRG` for the [shared clipboard](NATIVE-CLIPBOARD.md). The matching files are
 included on both suite disks; the suite combines search and graphics in
-`EDFIND.PRG`. For USB, copy both modules beside the editor
+`EDFIND.PRG`. For USB, copy all modules for that Editor profile beside the editor
 using those uppercase filenames. The modules must come from the same build
 as the editor. All 22 CPU suites,
 ten emulator workflows and complete physical USB/IEC workflows pass in the
@@ -73,7 +74,8 @@ Search progress updates every 256 scanned bytes; cancellation is also checked
 after each replacement. Gap moves and individual memory transfers are blocking.
 Other keys are consumed while the working status is visible.
 
-The two modules share one reserved window. Switching from the picker to search
+The diagnostic Editor’s two modules share one reserved window; the graphical
+Editor adds `EDCLIP.PRG` in that window. Switching from the picker to search
 or back loads the requested module from the original app source. The saved query
 and case setting survive this switch. A missing, damaged or mismatched module
 reports an error and keeps the document; an explicit retry can load a corrected

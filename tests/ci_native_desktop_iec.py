@@ -58,7 +58,7 @@ if args.missing_calc:
     subprocess.run(['c1541','-attach',str(disk),'-delete','calc'],check=True,capture_output=True)
 if args.missing_desktop:
     subprocess.run(['c1541','-attach',str(disk),'-delete','browse'],check=True,capture_output=True)
-for name in ('desktop.prg','desktop.lst','desktop.sym','files.prg','files.lst','fsview.prg','fspick.prg','editor.prg','editor.lst','edfind.prg','edpick.prg'):
+for name in ('desktop.prg','desktop.lst','desktop.sym','files.prg','files.lst','fsview.prg','fspick.prg','editor.prg','editor.lst','edfind.prg','edpick.prg','edclip.prg'):
     shutil.copyfile(ROOT/'target/native-desktop'/name,work/name)
 shutil.copyfile(__file__,work/'run.py')
 shutil.copyfile(ROOT/'launcher_scene.py',work/'launcher_scene.py')

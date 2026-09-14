@@ -1,4 +1,4 @@
-ui_button_count=24
+ui_button_count=27
 ui_rects:
         .word 288,8,312,24
         .word 8,24,56,40
@@ -24,7 +24,10 @@ ui_rects:
         .word 8,24,88,40
         .word 96,24,168,40
         .word 176,24,264,40
-ui_keys: .byte 27,133,134,6,18,0,0,135,136,140,139,13,13,27,9,78,89,79,65,0,27,2,1,7
+        .word 8,24,88,40
+        .word 96,24,168,40
+        .word 176,24,264,40
+ui_keys: .byte 27,133,134,6,18,0,0,135,136,140,139,13,13,27,9,78,89,79,65,0,27,2,1,7,3,24,22
 eg_label_0: .byte 88,0
 eg_label_1: .byte 79,112,101,110,0
 eg_label_2: .byte 83,97,118,101,32,65,115,0
@@ -49,6 +52,9 @@ eg_label_20: .byte 67,97,110,99,101,108,0
 eg_label_21: .byte 77,97,114,107,0
 eg_label_22: .byte 65,108,108,0
 eg_label_23: .byte 67,108,101,97,114,0
+eg_label_24: .byte 67,111,112,121,0
+eg_label_25: .byte 67,117,116,0
+eg_label_26: .byte 80,97,115,116,101,0
 eg_title_0: .byte 0
 eg_title_1: .byte 79,112,101,110,32,97,32,102,105,108,101,0
 eg_title_2: .byte 83,97,118,101,32,65,115,32,97,32,110,101,119,32,102,105,108,101,0
@@ -74,7 +80,7 @@ eg_search_byte: .byte 66,89,84,69,58,32,0
 eg_opening: .byte 79,112,101,110,105,110,103,32,102,105,108,101,0
 eg_saving: .byte 83,97,118,105,110,103,32,110,101,119,32,102,105,108,101,0
 eg_verifying: .byte 86,101,114,105,102,121,32,115,97,118,101,100,32,102,105,108,101,0
-eg_label_lo: .byte <eg_label_0,<eg_label_1,<eg_label_2,<eg_label_3,<eg_label_4,<eg_label_5,<eg_label_6,<eg_label_7,<eg_label_8,<eg_label_9,<eg_label_10,<eg_label_11,<eg_label_12,<eg_label_13,<eg_label_14,<eg_label_15,<eg_label_16,<eg_label_17,<eg_label_18,<eg_label_19,<eg_label_20,<eg_label_21,<eg_label_22,<eg_label_23
-eg_label_hi: .byte >eg_label_0,>eg_label_1,>eg_label_2,>eg_label_3,>eg_label_4,>eg_label_5,>eg_label_6,>eg_label_7,>eg_label_8,>eg_label_9,>eg_label_10,>eg_label_11,>eg_label_12,>eg_label_13,>eg_label_14,>eg_label_15,>eg_label_16,>eg_label_17,>eg_label_18,>eg_label_19,>eg_label_20,>eg_label_21,>eg_label_22,>eg_label_23
+eg_label_lo: .byte <eg_label_0,<eg_label_1,<eg_label_2,<eg_label_3,<eg_label_4,<eg_label_5,<eg_label_6,<eg_label_7,<eg_label_8,<eg_label_9,<eg_label_10,<eg_label_11,<eg_label_12,<eg_label_13,<eg_label_14,<eg_label_15,<eg_label_16,<eg_label_17,<eg_label_18,<eg_label_19,<eg_label_20,<eg_label_21,<eg_label_22,<eg_label_23,<eg_label_24,<eg_label_25,<eg_label_26
+eg_label_hi: .byte >eg_label_0,>eg_label_1,>eg_label_2,>eg_label_3,>eg_label_4,>eg_label_5,>eg_label_6,>eg_label_7,>eg_label_8,>eg_label_9,>eg_label_10,>eg_label_11,>eg_label_12,>eg_label_13,>eg_label_14,>eg_label_15,>eg_label_16,>eg_label_17,>eg_label_18,>eg_label_19,>eg_label_20,>eg_label_21,>eg_label_22,>eg_label_23,>eg_label_24,>eg_label_25,>eg_label_26
 eg_title_lo: .byte <eg_title_0,<eg_title_1,<eg_title_2,<eg_title_3,<eg_title_4,<eg_title_5,<eg_title_6,<eg_title_7,<eg_title_8,<eg_title_9,<eg_title_10,<eg_title_11
 eg_title_hi: .byte >eg_title_0,>eg_title_1,>eg_title_2,>eg_title_3,>eg_title_4,>eg_title_5,>eg_title_6,>eg_title_7,>eg_title_8,>eg_title_9,>eg_title_10,>eg_title_11

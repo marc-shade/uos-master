@@ -313,6 +313,11 @@ class Bridge:
         self.frames_sent = 0
         self.pending_escape = False
         self.client_closed = False
+        self.paste_negotiated = False
+        self.input_packet = None
+        self.paste_expected = 0
+        self.paste_data = bytearray()
+        self.paste_invalid = False
 
         # Nothing is sent until the client announces itself. The transport
         # buffers whatever is written before the C128 has opened its ACIA, then
@@ -336,35 +341,86 @@ class Bridge:
             log.warning("unmapped character U+%04X %s x%d -> rendered as '?'",
                         ord(ch), unicodedata.name(ch, "(unnamed)"), n)
 
-    def _take_control(self, data):
-        """Split client control bytes out of the key stream.
+    def _take_control(self, data, *, translated=False):
+        """Parse control packets across reads; preserve key/paste ordering.
 
-        $00 introduces a control byte; everything else is a keystroke. The
-        escape may straddle a read, so a trailing $00 is carried over.
+        Clipboard payloads are length framed, so embedded zeroes never become
+        control opcodes. A complete paste is emitted only at END. The regular
+        key path retains PETSCII translation; clipboard text is already ASCII.
         """
         out = bytearray()
-        i = 0
-        if self.pending_escape and data:
-            self._control(data[0])
-            i = 1
-            self.pending_escape = False
-        while i < len(data):
-            b = data[i]
-            if b == protocol.CLIENT_ESCAPE:
-                if i + 1 >= len(data):
-                    self.pending_escape = True
-                    break
-                self._control(data[i + 1])
-                i += 2
+        for byte in data:
+            packet = getattr(self, "input_packet", None)
+            if packet is not None:
+                kind, count, body = packet
+                body.append(byte)
+                if len(body) == count:
+                    self.input_packet = None
+                    self._paste_packet(kind, bytes(body))
                 continue
-            out.append(b)
-            i += 1
+            if self.pending_escape:
+                self.pending_escape = False
+                out.extend(self._control(byte) or b"")
+            elif byte == protocol.CLIENT_ESCAPE:
+                self.pending_escape = True
+            elif not getattr(self, "paste_expected", 0):
+                out.extend(keymap.petscii_to_bytes(byte) if translated else bytes([byte]))
         return bytes(out)
+
+    def _paste_packet(self, kind, body):
+        if kind == "begin":
+            size = int.from_bytes(body, "little")
+            self.paste_expected = size or -1
+            self.paste_data = bytearray()
+            self.paste_invalid = not (getattr(self, "paste_negotiated", False)
+                and self.client_ready and not self.client_closed and 1 <= size <= protocol.MAX_PASTE)
+        elif kind == "count":
+            count = body[0]
+            if not 1 <= count <= 64:
+                self.paste_invalid = True
+            if count:
+                self.input_packet = ("data", count, bytearray())
+        elif kind == "data":
+            if (getattr(self, "paste_invalid", True) or not self.paste_expected
+                    or len(self.paste_data) + len(body) > self.paste_expected):
+                self.paste_invalid = True
+            else:
+                self.paste_data.extend(body)
+
+    def _paste_end(self):
+        data = bytes(getattr(self, "paste_data", b""))
+        valid = (getattr(self, "paste_negotiated", False) and self.client_ready
+            and not self.client_closed and not getattr(self, "paste_invalid", True)
+            and len(data) == getattr(self, "paste_expected", 0) and bool(data)
+            and all(byte in (9, 10, 13) or 32 <= byte <= 126 for byte in data))
+        self.paste_expected = 0
+        self.paste_data = bytearray()
+        self.paste_invalid = False
+        if getattr(self, "paste_negotiated", False):
+            self.link.queue(bytes([protocol.CMD_PASTE_RESULT, 0 if valid else 1]))
+        if not valid:
+            return b""
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        return b"\x1b[200~" + data + b"\x1b[201~"
 
     def _control(self, code):
         if self.client_closed and code != protocol.CLIENT_CREDIT:
             return
-        if code == protocol.CLIENT_RESYNC:
+        if code == protocol.CLIENT_CAPABILITIES:
+            if self.client_ready:
+                self.paste_negotiated = True
+                self.link.queue(bytes([protocol.CMD_CAPABILITIES, protocol.FEATURE_PASTE]))
+        elif code == protocol.CLIENT_PASTE_BEGIN:
+            self.input_packet = ("begin", 2, bytearray())
+        elif code == protocol.CLIENT_PASTE_CHUNK:
+            self.input_packet = ("count", 1, bytearray())
+        elif code == protocol.CLIENT_PASTE_END:
+            return self._paste_end()
+        elif code == protocol.CLIENT_PASTE_ABORT:
+            self.paste_expected = 0
+            self.paste_data = bytearray()
+            self.paste_invalid = False
+        elif code == protocol.CLIENT_RESYNC:
             if not self.client_ready:
                 # An Ultimate listener can accept TCP and immediately report
                 # an offline modem. Start the host program only when the C128
@@ -395,6 +451,8 @@ class Bridge:
             # Finish parsing this receive batch: credits after BYE still count
             # while queued protocol commands drain ahead of our BYE reply.
             self.client_closed = True
+            self.paste_expected = 0
+            self.paste_data = bytearray()
 
     def _send_frame(self):
         if self.link.take_overflow():
@@ -487,14 +545,14 @@ class Bridge:
                 if self.link in r:
                     keys = self.link.recv()
                     if keys:
-                        typed = self._take_control(keys)
+                        typed = self._take_control(keys, translated=True)
                         if self.client_closed:
                             raise ClientClosed("client returned to uOS")
                         # Before the client announces itself, anything arriving
                         # is the Ultimate's modem chatter ("Welcome to the Modem
                         # Emulation Layer...", "CONNECT 38400"), not keystrokes.
                         if self.client_ready and typed:
-                            out = keymap.translate(typed)
+                            out = typed
                             log.debug("keys from C128: %r -> pty %r", typed, out)
                             self.proc.write(out)
                         elif typed:

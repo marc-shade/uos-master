@@ -1,5 +1,8 @@
-; Port-1 fire pulls keyboard row bit 4 low. A transition during the ROM's
-; multi-column scan can decode as F1, M or another otherwise valid key.
+; Recheck every decoded key against the matrix with interrupts masked.
+; Port-1 signals and nested ROM scans can produce otherwise valid key codes.
+; In particular, a nested scan clears the outer extended-matrix flag, so a
+; held Control key can become keypad 5, minus or period. A real key must
+; still pull its row low only when its own column is selected.
 ; The client owns all 256 function-key bytes. Keep the first 20 bytes for
 ; the ten one-byte definitions, and install this small KEYCHK filter in the
 ; unused tail, visible in bank 0 during the ROM IRQ. No IRQ vector or MMU is
@@ -7,7 +10,6 @@
 ; the callback and the complete table before giving up ownership.
 .weak
 NK_LOCAL_HELP=0
-NK_LOCAL_SECONDARY=0
 .endweak
 nk_filter_image:
 .logical $1014
@@ -23,19 +25,10 @@ pk_entry:
         bcs pk_pass            ; keep the resident's invalid-index guard
         tya
         and #7
- .if NK_LOCAL_SECONDARY
-        beq pk_right_row
- .endif
-        cmp #4
-        bne pk_pass
- .if NK_LOCAL_SECONDARY
-        lda #$10
-        bne pk_mask_ready
-pk_right_row:
-        lda #1
-pk_mask_ready:
+        tax
+        lda pk_masks,x
+        eor #$ff
         sta pk_mask
- .endif
         lda $dc02
         cmp #$ff
         bne pk_pass
@@ -49,14 +42,8 @@ pk_mask_ready:
         sta $dc00
         sta $d02f
         lda $dc01
- .if NK_LOCAL_SECONDARY
         and pk_mask
- .else
-        and #$10
- .endif
-        beq pk_reject          ; fire held: this row is electrically ambiguous
-        ; Fire may have been released halfway through the earlier scan. A
-        ; real key on this row must still pull its own selected column low.
+        beq pk_reject          ; a low row with no columns is ambiguous
         tya
         lsr
         lsr
@@ -70,11 +57,7 @@ pk_mask_ready:
 +       sta $dc00
 pk_read_key:
         lda $dc01
- .if NK_LOCAL_SECONDARY
         and pk_mask
- .else
-        and #$10
- .endif
         beq pk_accept
 pk_reject:
         lda #1
@@ -128,9 +111,7 @@ pk_rejects: .word 0
 pk_columns: .byte 0
 pk_extended: .byte 0
 pk_rejected: .byte 0
- .if NK_LOCAL_SECONDARY
 pk_mask: .byte $10
- .endif
 pk_masks: .byte $fe,$fd,$fb,$f7,$ef,$df,$bf,$7f,$fe,$fd,$fb
 pk_end:
 .cerror pk_end>$1100, "Pointer keyboard filter exceeds its owned function-key tail"

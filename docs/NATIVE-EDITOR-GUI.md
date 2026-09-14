@@ -12,7 +12,8 @@ The [banked editor](NATIVE-EDITOR.md) supplies the document, search and file
 operations. This is plain-text editing with 24-bit byte positions, preserved
 imported bytes, transactional Open and exclusive, reopened-verified Save As.
 Selection supports keyboard marking, mouse dragging and replacing the selected
-bytes. Clipboard exchange, undo, styled pages, printing and session recovery
+bytes. The [shared clipboard](NATIVE-CLIPBOARD.md) exchanges text with Claude.
+Undo, styled pages, printing and session recovery
 remain roadmap work.
 
 ## Controls
@@ -23,10 +24,14 @@ remain roadmap work.
 | Save As / F3 | Create a new file and compare every byte after reopening it |
 | Find / Ctrl-F | Enter a literal query, with exact or ignored ASCII case |
 | Replace / Ctrl-R | Enter a query and replacement, then choose One or All |
-| `...` | Cycle file, New/Go To/Device/Format, and Mark/All/Clear controls |
+| `...` | Cycle file, New/Go To/Device/Format, Mark/All/Clear, and Copy/Cut/Paste controls |
 | Mark / Ctrl-B | Start or end keyboard marking at the caret |
 | All / Ctrl-A | Select the complete document |
 | Clear / Ctrl-G | Clear the selection without changing document bytes |
+| Copy / Ctrl-C | Copy the selection to the session clipboard |
+| Cut / Ctrl-X | Copy and remove the selected bytes |
+| Paste / Ctrl-V | Insert clipboard bytes or replace a selection |
+| Ctrl-K | Clear clipboard memory |
 | New / F5 | Start an empty document after confirming unsaved changes |
 | Go To / F7 in the document | Enter a hexadecimal byte offset |
 | Device / F8 | Select an IEC device or Ultimate DOS context |
@@ -89,21 +94,21 @@ The anchor and bounds survive Save As and the file-picker module swap. Save As
 still writes the entire document. If the renderer cannot reload while a range
 is active, document input waits for Ctrl-L to retry or Ctrl-G/Escape to clear
 that range; typing cannot bypass it. Display-restoration failures retain the
-existing pause/retry behavior. Selection does not yet copy text between apps;
-a persistent shared clipboard and undo remain separate roadmap work.
+existing pause/retry behavior. The shared clipboard exchanges selected text with Claude; clipboard
+persistence across restarts and undo remain roadmap work.
 
 ## Storage and presentation lifetime
 
-The suite requires ABI 1.12. Its expanded core PRG contains 14,068 bytes
-(9,885 packed) and reserves 96 bank-0 pages (`$6000..$bfff`) for code,
-persistent state and one checked module window at `$96f2`.
-`EDPICK.PRG` has a 10,223-byte module payload; `EDFIND.PRG` contains the search
-engine and graphical renderer in 10,499 bytes. The picker ends at `$bee1`,
-leaving 287 bytes before `$c000`; the search/graphics module ends at `$bff5`,
-leaving 11 bytes.
-Both modules bind to this core's checksum and load from the original app's
-source device/context and directory, even after changing the document device.
-For USB, install all three matching files and `VDSVC.PRG` together.
+The suite requires ABI 1.13. Its expanded core PRG contains 14,069 bytes
+(9,906 packed) and reserves 96 bank-0 pages (`$6000..$bfff`).
+The three checked modules share a window at `$96f3`.
+`EDPICK.PRG` has a 10,223-byte payload;
+`EDFIND.PRG` combines search and graphics in 10,485 bytes;
+`EDCLIP.PRG` provides clipboard transfers in 1,984 bytes.
+The largest module ends at `$bfe8`, leaving 24 bytes before the VIC surface.
+All modules bind to the core checksum and load from its original source
+volume and directory. Install all four matching Editor files and `VDSVC.PRG`
+together on Ultimate storage.
 
 Before installing keys or initializing documents, Editor reserves and clears
 16 bank-0 pages at `$5000..$5fff`. Transfer buffers, read caches and saved keys
@@ -123,7 +128,8 @@ pages free. REU documents can exceed 96 KiB. A clean optional-service refusal
 keeps the 4 KiB RAM-chunk path, whose capacity depends on remaining heap and
 fragmentation. Staged Open retains the old document until complete input and
 CLOSE succeed, so it can need more capacity than opening after New.
-The kernel and 426-page heap are unchanged. Disk-backed documents remain
+A retained clipboard consumes its own bank-1 pages and handle; these free-page
+figures assume an empty clipboard. The kernel still manages 426 heap pages. Disk-backed documents remain
 roadmap work. The [shared memory contract](NATIVE-SHARED-MEMORY.md) describes
 growth, ownership and the 24-bit capacity limit.
 
@@ -184,4 +190,9 @@ picker swaps and renderer/display recovery, plus original module-source
 loading with RAM and REU backing. Actual VICE mouse/ROM-key workflows compare
 both displays, complete saved files and REU snapshots. The independent build
 reproduces all 34 native program/disk images. Physical qualification remains
-pending; clipboard and undo are still separate work.
+pending. The subsequent clipboard checkpoint adds text exchange with Claude;
+undo remains roadmap work.
+
+The [shared clipboard qualification](validation/2026-09-14-native-shared-clipboard/README.md)
+records the exact software inputs, app handoffs, failure recovery and cold-boot
+emulator workflows for this version. Physical deployment remains pending.

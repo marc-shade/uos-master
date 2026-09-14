@@ -4,7 +4,7 @@
 NATIVE_EDITOR_GRAPHICS=0
 .endweak
 .if NATIVE_EDITOR_GRAPHICS
-ED_ABI=12
+ED_ABI=13
 .include "editor/selection-macros.inc"
 ED_PAGES=96
 DOC_INPUT_STORAGE=$5000
@@ -40,6 +40,22 @@ ed_move3 .macro source,dest
         #es_copy3 \source,\dest
  .else
         #doc_copy3 \source,\dest
+ .endif
+.endm
+
+ed_advance3 .macro source,dest
+ .if NATIVE_EDITOR_GRAPHICS
+        #es_add3 \source,\dest
+ .else
+        #doc_add3 \source,\dest
+ .endif
+.endm
+
+ed_retreat3 .macro source,dest
+ .if NATIVE_EDITOR_GRAPHICS
+        #es_sub3 \source,\dest
+ .else
+        #doc_sub3 \source,\dest
  .endif
 .endm
 
@@ -119,6 +135,14 @@ ed_get_key:
 .if NATIVE_EDITOR_GRAPHICS
         cmp #12
         beq ed_graphics_retry
+        cmp #3
+        beq ed_clip_launch
+        cmp #24
+        beq ed_clip_launch
+        cmp #22
+        beq ed_clip_launch
+        cmp #11
+        beq ed_clip_launch
 .endif
         cmp #27
         beq ed_request_exit
@@ -393,7 +417,7 @@ ed_hex_shift:
  .if NATIVE_EDITOR_GRAPHICS
         jsr es_clear
  .endif
-        #doc_copy3 ed_number,ed_cursor
+        #ed_move3 ed_number,ed_cursor
         jsr ed_normalize_cursor
         lda #0
         sta ed_mode
@@ -487,7 +511,7 @@ ed_enter:
         lda #0
         sta d_count+1
 ed_insert:
-        #doc_copy3 ed_cursor,d_pos
+        #ed_move3 ed_cursor,d_pos
         jsr doc_insert
         bcs ed_doc_error
         lda #1
@@ -496,7 +520,7 @@ ed_insert:
         #doc_add3 d_count,ed_cursor
         jmp ed_cursor_changed
 ed_backspace:
-        #doc_copy3 ed_cursor,ed_scan
+        #ed_move3 ed_cursor,ed_scan
         jsr ed_previous_end
         bcs cloop
         #doc_cmp3 ed_scan,ed_line_start
@@ -504,8 +528,8 @@ ed_backspace:
         lda #1
         sta ed_structure
 +
-        #doc_copy3 ed_scan,d_pos
-        #doc_copy3 ed_cursor,d_count
+        #ed_move3 ed_scan,d_pos
+        #ed_move3 ed_cursor,d_count
         #doc_sub3 ed_scan,d_count
         jsr doc_delete
         bcs ed_doc_error
@@ -513,7 +537,7 @@ ed_backspace:
         sta ed_document_changed
         lda #$ff
         sta ed_edit_delta
-        #doc_copy3 ed_scan,ed_cursor
+        #ed_move3 ed_scan,ed_cursor
         jmp ed_cursor_changed
 ed_doc_error:
         cmp #N_NOMEM
@@ -633,7 +657,7 @@ ed_cache_keep:
         sta ed_other_page+256,x
         inx
         bne ed_cache_keep
-        #doc_copy3 ed_cache_base,ed_other_base
+        #ed_move3 ed_cache_base,ed_other_base
         lda #1
         sta ed_other_valid
 ed_cache_read_page:
@@ -683,7 +707,7 @@ ed_byte_absent:
         sec
         rts
 ed_normalize_cursor:
-        #doc_copy3 ed_cursor,ed_probe
+        #ed_move3 ed_cursor,ed_probe
         jsr ed_byte_at
         bcs +
         cmp #10
@@ -692,7 +716,7 @@ ed_normalize_cursor:
         ora ed_cursor+1
         ora ed_cursor+2
         beq +
-        #doc_sub3 ed_one,ed_probe
+        #ed_retreat3 ed_one,ed_probe
         jsr ed_byte_at
         cmp #13
         bne +
@@ -703,8 +727,8 @@ ed_previous_end:
         ora ed_scan+1
         ora ed_scan+2
         beq ed_previous_none
-        #doc_sub3 ed_one,ed_scan
-        #doc_copy3 ed_scan,ed_probe
+        #ed_retreat3 ed_one,ed_scan
+        #ed_move3 ed_scan,ed_probe
         jsr ed_byte_at
         cmp #10
         bne ed_previous_done
@@ -712,11 +736,11 @@ ed_previous_end:
         ora ed_scan+1
         ora ed_scan+2
         beq ed_previous_done
-        #doc_sub3 ed_one,ed_probe
+        #ed_retreat3 ed_one,ed_probe
         jsr ed_byte_at
         cmp #13
         bne ed_previous_done
-        #doc_copy3 ed_probe,ed_scan
+        #ed_move3 ed_probe,ed_scan
 ed_previous_done:
         clc
         rts
@@ -728,18 +752,18 @@ ed_backward_start:
         ora ed_scan+1
         ora ed_scan+2
         beq ed_scan_done
-        #doc_copy3 ed_scan,ed_probe
-        #doc_sub3 ed_one,ed_probe
+        #ed_move3 ed_scan,ed_probe
+        #ed_retreat3 ed_one,ed_probe
         jsr ed_byte_at
         bcs ed_scan_done
         cmp #13
         beq ed_scan_done
         cmp #10
         beq ed_scan_done
-        #doc_copy3 ed_probe,ed_scan
+        #ed_move3 ed_probe,ed_scan
         jmp ed_backward_start
 ed_forward_end:
-        #doc_copy3 ed_scan,ed_probe
+        #ed_move3 ed_scan,ed_probe
         jsr ed_byte_at
         bcs ed_scan_done
         cmp #13
@@ -751,26 +775,26 @@ ed_forward_end:
 ed_scan_done:
         rts
 ed_after_line:
-        #doc_copy3 ed_scan,ed_fetch
+        #ed_move3 ed_scan,ed_fetch
         jsr ed_next_token
-        #doc_copy3 ed_fetch,ed_scan
+        #ed_move3 ed_fetch,ed_scan
         rts
 ed_next_token:
-        #doc_copy3 ed_fetch,ed_token_start
-        #doc_copy3 ed_fetch,ed_probe
+        #ed_move3 ed_fetch,ed_token_start
+        #ed_move3 ed_fetch,ed_probe
         jsr ed_byte_at
         bcs ed_token_eof
         sta ed_byte
-        #doc_add3 ed_one,ed_fetch
+        #ed_advance3 ed_one,ed_fetch
         lda ed_byte
         cmp #13
         bne ed_token_done
-        #doc_copy3 ed_fetch,ed_probe
+        #ed_move3 ed_fetch,ed_probe
         jsr ed_byte_at
         bcs ed_token_done
         cmp #10
         bne ed_token_done
-        #doc_add3 ed_one,ed_fetch
+        #ed_advance3 ed_one,ed_fetch
 ed_token_done:
         lda #0
         sta ed_eof
@@ -1200,7 +1224,7 @@ ed_skip_columns:
         beq ed_skip_ended
         cmp #10
         beq ed_skip_ended
-        #doc_sub3 ed_one,ed_skip
+        #ed_retreat3 ed_one,ed_skip
         jmp ed_skip_columns
 ed_skip_ended:
         inc ed_row_ended
@@ -1300,12 +1324,12 @@ ed_name_print:
         lda #<ed_bytes_text
         ldx #>ed_bytes_text
         jsr ed_puts
-        #doc_copy3 ed_length,ed_print_number
+        #ed_move3 ed_length,ed_print_number
         jsr ed_hex24
         lda #<ed_at_text
         ldx #>ed_at_text
         jsr ed_puts
-        #doc_copy3 ed_cursor,ed_print_number
+        #ed_move3 ed_cursor,ed_print_number
         jsr ed_hex24
         lda #<ed_iec_text
         ldx #>ed_iec_text
@@ -1632,7 +1656,11 @@ ed_normal_status:
         lda ed_status
         cmp #16
         bcc +
-        #doc_copy3 ed_s_count,ed_print_number
+.if NATIVE_EDITOR_GRAPHICS
+        cmp #20
+        bcs +
+.endif
+        #ed_move3 ed_s_count,ed_print_number
         jmp ed_hex24
 +       rts
 
@@ -1717,11 +1745,17 @@ ed_status_lo: .byte <ed_ready_text,<ed_saved_text,<ed_io_error,<ed_memory_text,<
               .byte <ed_cancelled_save,<ed_old_cleanup,<ed_input_text
               .byte <ed_found_text,<ed_wrapped_text,<ed_not_found_text,<ed_search_busy_text
               .byte <ed_replaced_text,<ed_search_cancel_text,<ed_search_memory_text
+.if NATIVE_EDITOR_GRAPHICS
+              .byte <ed_clip_copied,<ed_clip_pasted,<ed_clip_select,<ed_clip_empty,<ed_clip_large,<ed_clip_error,<ed_clip_cleared
+.endif
 ed_status_hi: .byte >ed_ready_text,>ed_saved_text,>ed_io_error,>ed_memory_text,>ed_range_text
               .byte >ed_fault_text,>ed_exists_text,>ed_partial_text,>ed_cancelled_text,>ed_close_text
               .byte >ed_cancelled_save,>ed_old_cleanup,>ed_input_text
               .byte >ed_found_text,>ed_wrapped_text,>ed_not_found_text,>ed_search_busy_text
               .byte >ed_replaced_text,>ed_search_cancel_text,>ed_search_memory_text
+.if NATIVE_EDITOR_GRAPHICS
+              .byte >ed_clip_copied,>ed_clip_pasted,>ed_clip_select,>ed_clip_empty,>ed_clip_large,>ed_clip_error,>ed_clip_cleared
+.endif
 ed_one: .byte 1,0,0
 .if NATIVE_EDITOR_GRAPHICS
 ed_key_codes = nk_codes
@@ -1809,6 +1843,7 @@ ed_other_page: .fill 512,0
 .include "editor-dialog.inc"
 .if NATIVE_EDITOR_GRAPHICS
 .include "editor/selection-state.inc"
+.include "editor/clipboard-gate.inc"
 .include "editor/presentation.inc"
 .include "editor/workspace.inc"
 .include "input/keys.inc"
@@ -1883,4 +1918,19 @@ editor_search_end:
 
 .if NATIVE_EDITOR_GRAPHICS
         .cerror N_APPBASE+ED_PAGES*256 > $c000, "editor overlaps surface: ", editor_module-editor_image, " / ", editor_search_end-editor_image, " / ", ED_PAGES
+.endif
+
+.if NATIVE_EDITOR_GRAPHICS
+        .logical editor_module
+editor_clipboard_module:
+        .text "nmod"
+        .byte 1,1,ED_ABI,0
+        .word editor_clipboard_end-editor_clipboard_module
+        .word 0
+        .word ec_entry-editor_clipboard_module
+        .word 0
+.include "editor/clipboard.inc"
+editor_clipboard_end:
+        .cerror * > $c000, "clipboard exceeds the Editor module window"
+        .here
 .endif

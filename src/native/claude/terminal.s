@@ -5,7 +5,7 @@
 .export _tm_begin, _tm_end, _tm_run, _tm_fill, _tm_clear, _tm_scroll
 .export _tm_cursor, _tm_glyph, _tm_read, _tm_live, _tm_error, tm_cells, tm_font
 .import _scrRow, _scrCol, _scrLen, _scrChar, _scrAttr, _scrBuf
-.import savedFont, _native_quit
+.import sf_read, _native_quit
 .import _gui_font_hi, _gui_font_ram, _gui_view, _gui_dirty, _gui_dirty_all
 .import _gui_terminal_read, _gui_cursor_row, _gui_cursor_col
 .import _gui_terminal_restore, _scr_sync
@@ -62,7 +62,7 @@ _tm_begin:
         lda #16
         sta N_PAGES
         jsr N_RESERVE
-        bcs @refused
+        jcs @refused
         ldx #3
 @font: lda N_HANDLE,x
         sta tm_font,x
@@ -73,28 +73,38 @@ _tm_begin:
         lda #16
         sta N_PAGES
         jsr N_ALLOC
-        bcs @refused
+        jcs @refused
         ldx #3
 @cells:lda N_HANDLE,x
         sta tm_cells,x
         dex
         bpl @cells
-        lda #<savedFont
-        sta ptr1
-        lda #>savedFont
-        sta ptr1+1
-        lda #$50
+        lda #0
+        sta tm_source
+@chunk:lda tm_source
+        jsr sf_read
+        jcs @refused
+        lda tm_source
+        clc
+        adc #$50
         sta @write+2
-        ldx #16
+        lda #>N_BUFFER
+        sta @read+2
+        ldx #2
 @page: ldy #0
-@copy: lda (ptr1),y
+@read: lda N_BUFFER,y
 @write:sta $5000,y
         iny
-        bne @copy
-        inc ptr1+1
+        bne @read
+        inc @read+2
         inc @write+2
         dex
         bne @page
+        inc tm_source
+        inc tm_source
+        lda tm_source
+        cmp #16
+        bne @chunk
         lda #<_tm_read
         sta _gui_terminal_read+1
         lda #>_tm_read

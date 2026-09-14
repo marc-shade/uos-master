@@ -75,7 +75,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..12; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9; Ultimate queries/NMI bridge require 10; Ultimate commands require 11; boot-format field requires 12 |
+| 6 | 1 | Required ABI minor: 0..13; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9; Ultimate queries/NMI bridge require 10; Ultimate commands require 11; boot-format field requires 12; shared clipboard session fields require 13 |
 | 7 | 1 | Zero for minor 0..6; minor 7 module-window offset low byte |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |
@@ -131,7 +131,9 @@ No private LFNs 120/121 are used.
 
 The app enters with MMU `$0e`, decimal mode clear and owner ID in `N_CURRENT`.
 Use that owner for every heap call. ID 32 is reserved for the current app in
-this initial implementation; owner 16 belongs to the workspace. The code
+this initial implementation; owner 16 belongs to the workspace. Owner 31 is reserved for the
+[shared clipboard library](NATIVE-CLIPBOARD.md); applications must not manage
+its allocations directly. The code
 allocation is itself owned by the app. APIs and execution are foreground-only,
 and nested launches are rejected. The [native file service](NATIVE-FILES.md)
 provides owned IEC and Ultimate handles. Direct raw KERNAL file use still requires the app
@@ -204,6 +206,7 @@ cannot be mistaken for completion using the previous iteration's ready flag.
 | `$3d2c` | N_APPFORMAT: application's source geometry/backend, 0..3 |
 | `$3d2d` | N_BOOTDEVICE: boot IEC device, independent of the current app source |
 | `$3de4` | N_BOOTFORMAT: ABI 1.12 boot geometry, 0 D64 / 1 D71 / 2 D81; read-only for apps |
+| `$3de5..$3dff` | ABI 1.13 private shared clipboard session; use the clipboard library |
 | `$3d2e` | N_BROWSERLEN: retained Ultimate path length, 1..255 |
 | `$3d2f` | N_DESKTOPSEL: ABI 1.9 desktop session selection, 0 Calculator / 1 Editor / 2 Files; clear on native restart |
 | `$3d30..$3d33` | N_BROWSERPOS: selected directory ordinal, little-endian 32-bit |

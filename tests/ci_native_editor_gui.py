@@ -17,15 +17,16 @@ class GraphicalEditor(Editor):
     move=Pointer.move
     restored=Pointer.restored
 
-    def __init__(self,*args,configure=lambda bus:None,configure_machine=lambda machine:None,configure_io=lambda editor:None,**kwargs):
+    def __init__(self,*args,configure=lambda bus:None,configure_machine=lambda machine:None,configure_io=lambda editor:None,existing_machine=None,**kwargs):
         self.configure_io=configure_io;self.configured_io=False
-        bus=PointerBus();configure(bus);factory=heap.Bus;heap.Bus=lambda:bus
+        bus=PointerBus() if existing_machine is None else existing_machine.bus;configure(bus);factory=heap.Bus;heap.Bus=lambda:bus
         machine_factory=calc.Machine
         def machine():
-            m=machine_factory();configure_machine(m);return m
+            m=machine_factory() if existing_machine is None else existing_machine;configure_machine(m);return m
         calc.Machine=machine
         try:super().__init__(*args,image_prefix='native-desktop',**kwargs)
         finally:heap.Bus=factory;calc.Machine=machine_factory
+        while not isinstance(bus.video,dict) and hasattr(bus,'parent'):bus=bus.parent
         self.bus=bus;self.frames=0;self.checked=0;self.module_calls=0
         step=self.cpu.step
         def checked_step():

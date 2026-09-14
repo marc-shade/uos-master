@@ -2,6 +2,9 @@
 import ctypes as C
 from ctypes.util import find_library
 import time
+import os
+import select
+import subprocess
 
 
 class Keyboard:
@@ -19,6 +22,11 @@ class Keyboard:
         self.x.XFlush.argtypes=[C.c_void_p];self.x.XCloseDisplay.argtypes=[C.c_void_p]
         self.t.XTestFakeKeyEvent.argtypes=[C.c_void_p,C.c_uint,C.c_int,C.c_ulong]
         self.display=self.x.XOpenDisplay(display.encode());assert self.display
+        # X autorepeat creates extra host press/release events while VICE is
+        # paused or busy with disk I/O. This display belongs only to the test;
+        # keep repeat behavior under the emulated C128 ROM's control.
+        self.x.XAutoRepeatOff.argtypes=[C.c_void_p]
+        self.x.XAutoRepeatOff(self.display);self.x.XFlush(self.display)
         root=C.c_ulong();parent=C.c_ulong();children=C.POINTER(C.c_ulong)();count=C.c_uint()
         self.x.XQueryTree(self.display,self.x.XDefaultRootWindow(self.display),C.byref(root),C.byref(parent),C.byref(children),C.byref(count))
         found=[]
@@ -42,3 +50,43 @@ class Keyboard:
 
     def close(self):self.x.XCloseDisplay(self.display)
 
+
+
+class PrivateXvfb:
+    """Ask Xvfb to reserve a display atomically, including parallel launches."""
+    def __init__(self,geometry='800x600x24',*,env=None):
+        read_fd,write_fd=os.pipe();self.proc=None
+        try:
+            self.proc=subprocess.Popen(['Xvfb','-displayfd',str(write_fd),
+                '-screen','0',geometry,'-nolisten','tcp'],pass_fds=(write_fd,),
+                stdout=subprocess.DEVNULL,env=env)
+            os.close(write_fd);write_fd=None
+            if not select.select([read_fd],[],[],10)[0]:
+                raise TimeoutError('private Xvfb did not publish its reserved display')
+            number=os.read(read_fd,64).strip()
+            assert number.isdigit() and self.proc.poll() is None,('private Xvfb startup',number)
+            self.num=int(number)
+            x=C.CDLL(find_library('X11'))
+            x.XOpenDisplay.argtypes=[C.c_char_p];x.XOpenDisplay.restype=C.c_void_p
+            x.XCloseDisplay.argtypes=[C.c_void_p]
+            deadline=time.monotonic()+5
+            while True:
+                connection=x.XOpenDisplay(self.display.encode())
+                if connection:x.XCloseDisplay(connection);break
+                assert self.proc.poll() is None,('private Xvfb exited',self.proc.returncode)
+                assert time.monotonic()<deadline,'private Xvfb display is not connectable'
+                time.sleep(.05)
+        except BaseException:
+            self.stop();raise
+        finally:
+            os.close(read_fd)
+            if write_fd is not None:os.close(write_fd)
+
+    @property
+    def display(self):return f':{self.num}'
+
+    def stop(self):
+        if self.proc is not None and self.proc.poll() is None:
+            self.proc.terminate()
+            try:self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:self.proc.kill();self.proc.wait(timeout=5)

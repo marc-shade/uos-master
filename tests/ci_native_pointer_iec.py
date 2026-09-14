@@ -19,7 +19,7 @@ sys.dont_write_bytecode=True
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT),str(ROOT/'tests')]
 import ci_fm as ci
-from vice_keyboard import Keyboard
+from vice_keyboard import Keyboard, PrivateXvfb
 from hwlib import lst_symbol
 from native_capture import NativeCapture,wait,expected_screen,calculator_screen
 from native_capture_transport import PausedViceMonitor
@@ -96,12 +96,13 @@ def main():
     parser.add_argument('--controls-clock',action='store_true',help='exercise manual clock fields without a physical cartridge')
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--editor-only',action='store_true')
+    parser.add_argument('--editor-clipboard',action='store_true',help='exercise shared Copy/Cut/Paste/Clear with ROM modifier keys')
     parser.add_argument('--editor-selection',action='store_true',help='exercise text selection and replacement with ROM keyboard and 1351 input')
     parser.add_argument('--editor-large',action='store_true',help='edit/save/reopen a 128 KiB REU document on the private D81')
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     if args.controls_clock:assert args.controls_only
-    if args.editor_selection:assert args.editor_only
+    if args.editor_selection or args.editor_clipboard:assert args.editor_only
     if args.editor_large:
         assert args.editor_only and args.d81 and args.reu_kib and args.reu_kib>=512
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
@@ -135,8 +136,9 @@ def main():
                 return picker_symbol(pointer_app,'pgm_'+name[3:])
         return lst_symbol('native-desktop/'+pointer_app,name)
     with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
-    xv=ci.cbm.Xvfb(geometry='1920x1200x24');emu=mon=mouse=None;log=(work/'vice.log').open('w')
+    xv=PrivateXvfb(geometry='1920x1200x24',env=dict(os.environ,__EGL_VENDOR_LIBRARY_FILENAMES=ci.cbm.MESA_EGL));emu=mon=mouse=None;log=(work/'vice.log').open('w')
     report['private_x_display']=xv.display
+    report['private_x_pid']=xv.proc.pid
     report['private_x_geometry']='1920x1200x24'
     try:
         command=['x128','-default','-80col' if args.eighty else '-40col','-8',str(disk),'-drive8true','-drive8type','1581' if args.d81 else '1541',
@@ -161,7 +163,11 @@ def main():
                 if time.monotonic()>deadline:raise
                 time.sleep(.1)
         banks=mon.banks();mon.resume();paused=PausedViceMonitor(mon,signature_bank=banks['ram00'])
-        def read(at,n=1,bank=0):
+        def read(at,n=1,bank=None):
+            # Progress polls can interrupt a far heap transfer during app
+            # cleanup/loading. Kernel metadata belongs to physical bank 0,
+            # regardless of the CPU's temporary mapping.
+            if bank is None:bank=banks['ram00']
             data=bytes(paused.read_mem(at,at+n-1,bank=bank));paused.resume();return data
         def app_read(at,n=1):
             # ROM IRQ/GETIN can hide high application RAM while ready is set.
@@ -214,7 +220,7 @@ def main():
             deadline=time.monotonic()+30;deferred=0
             while True:
                 with paused.paused(label):
-                    idle=bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0'
+                    idle=bytes(paused.read_mem(0x3d11,0x3d12,bank=banks['ram00']))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0,bank=banks['ram00']))==b'\0'
                     if idle:
                         report.setdefault('capture_admissions',[]).append(dict(label=label,deferred=deferred))
                         yield
@@ -304,8 +310,20 @@ def main():
                     # host key while the callback still holds the CPU stopped.
                     after_key()
             if after_key is not None:mon.resume()
-            wait(lambda:(read(0x3d20)==b'\0' if target=='workspace' else header(target)) and ready() and int.from_bytes(read(0x3d13,2),'little')!=before,
-                name+' reaches '+target,120)
+            def key_finished():
+                with paused.paused('key-progress'):
+                    after=int.from_bytes(read(0x3d13,2),'little')
+                    if after not in (before,(before+1)&65535):
+                        raw=bytes(mon.read_mem(0,0x10ff,bank=banks['ram00']))
+                        (work/'unexpected-key-input.bin').write_bytes(raw)
+                        error,regs=mon._recv(mon._send(0x31,b'\0'));assert not error
+                        report['unexpected_key_input']=dict(key=name,before=before,after=after,
+                            input_device=raw[0x99],queue=raw[0xd0:0xd6].hex(),
+                            keys=raw[0x34a:0x354].hex(),definitions=raw[0x1000:0x1100].hex(),
+                            last_key=read(0x3d15)[0],registers_hex=regs.hex(),sha256=hashlib.sha256(raw).hexdigest())
+                        save();raise AssertionError((name,'extra ROM key',before,after))
+                    return (read(0x3d20)==b'\0' if target=='workspace' else header(target)) and ready() and after!=before
+            wait(key_finished,name+' reaches '+target,120)
             after=int.from_bytes(read(0x3d13,2),'little')
             assert after==(before+1)&65535,(name,'extra or missing ROM key',before,after)
             report['events'].append(dict(key=name,target=target,keys_before=before,keys_after=after));save()
@@ -370,7 +388,7 @@ def main():
                 (work/(label+'-restored-vram.bin')).write_bytes(restored)
                 (work/(label+'-restore-checkpoint.bin')).write_bytes(checkpoint)
                 assert restored==snapshot,'app VDC RAM was not restored before desktop handoff'
-                assert bytes(mon.read_mem(0x3d20,0x3d20))==b'\x20'
+                assert bytes(mon.read_mem(0x3d20,0x3d20,bank=banks['ram00']))==b'\x20'
                 restore.update(app=app,checkpoint_address=entry,checkpoint_hex=checkpoint.hex(),
                     lifetime='app snapshot still owned; VRAM restored before register restoration')
                 report.setdefault('vdc_app_restores',[]).append(restore);save()
@@ -502,7 +520,7 @@ def main():
             report['editor_frames'].append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=kwargs,position=xy,rectangle=rectangle,mode=mode,vdc=vdc));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
             print('PASS: Editor VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
-        def editor_click(index,point=None):
+        def editor_click(index,point=None,*,timeout=120):
             x0,y0,x1,y1=EDITOR_RECTS[index]
             move_to(*(point or ((x0+x1)//2,(y0+y1)//2)))
             before=int.from_bytes(read(0x3d13,2),'little')
@@ -515,7 +533,7 @@ def main():
             entry=symbol('ed_get_key')
             error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
             assert not error
-            checkpoint_id=checkpoint[:4];deadline=time.monotonic()+120
+            checkpoint_id=checkpoint[:4];deadline=time.monotonic()+timeout
             try:
                 # The bank-1 REU transfer code can have the same numeric PC.
                 # Restrict this stop to the foreground Editor's bank-0 map.
@@ -532,7 +550,7 @@ def main():
                                 button=index,address=entry,condition=condition.decode(),registers_hex=registers.hex()))
                             break
                     assert time.monotonic()<deadline,'editor click ready'
-                    time.sleep(.02)
+                    time.sleep(.2 if timeout>120 else .02)
             finally:
                 error,_=mon._recv(mon._send(0x13,checkpoint_id));mon.resume();assert not error
             after=int.from_bytes(read(0x3d13,2),'little')
@@ -722,7 +740,7 @@ def main():
             (work/(name+'-restored-vram.bin')).write_bytes(restored)
             (work/(name+'-restore-checkpoint.bin')).write_bytes(checkpoint)
             assert restored==snapshot,'VDC snapshot was not fully restored before app handoff'
-            assert bytes(mon.read_mem(0x3d20,0x3d20))==b'\x20'
+            assert bytes(mon.read_mem(0x3d20,0x3d20,bank=banks['ram00']))==b'\x20'
             restore.update(checkpoint_address=entry,checkpoint_hex=checkpoint.hex(),lifetime='desktop snapshot still owned; VRAM restored before register restoration')
             report.setdefault('vdc_restores',[]).append(restore);save()
             error,_=mon._recv(mon._send(0x13,checkpoint_id));assert not error
@@ -738,6 +756,59 @@ def main():
                 for char in ('c','1','2','8','space','t','e','x','t'):key(char,'editor')
                 document=b'C128 TEXT';editor_view('editor-typed',document,len(document),dirty=True)
                 editor_reu_document('editor-typed-reu',document,loaded=True)
+                if args.editor_clipboard:
+                    def editor_control(letter):
+                        # Pause immediately after the ROM-fed event counter
+                        # increments, so a slow module read cannot turn a held
+                        # host shortcut into an unintended repeated command.
+                        before=int.from_bytes(read(0x3d13,2),'little')
+                        entry=lst_symbol(kernel_prefix+'/uos128','native_key_done')
+                        error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
+                        assert not error
+                        checkpoint_id=checkpoint[:4]
+                        def sampled():
+                            deadline=time.monotonic()+120
+                            while True:
+                                count=int.from_bytes(mon.read_mem(0x3d13,0x3d14,bank=banks['ram00']),'little')
+                                if count!=before:break
+                                assert time.monotonic()<deadline,'clipboard ROM shortcut sampled'
+                                mon.resume();time.sleep(.01)
+                            assert count==(before+1)&65535
+                            report.setdefault('clipboard_key_checkpoints',[]).append(dict(key=letter,address=entry,before=before,after=count))
+                        try:
+                            with mouse.held_key('Control_L'):key(letter,'editor',after_key=sampled)
+                        finally:
+                            error,_=mon._recv(mon._send(0x13,checkpoint_id));mon.resume()
+                    editor_control('a');editor_selection_expected=(0,len(document))
+                    editor_control('c')
+                    editor_view('editor-clipboard-copy',document,len(document),dirty=True,status=20)
+                    meta=capture.capture('clipboard-metadata',address=0x3de5,count=27)
+                    token=meta[6:10];assert meta[:3]==bytes([1,0,1]) and 1<=token[0]<=32
+                    record=capture.capture('clipboard-record',address=0x3c00+(token[0]-1)*8,count=8)
+                    assert record[:2]==bytes([31,1]) and record[4:7]==token[1:]
+                    assert capture.capture('clipboard-text',address=record[2]*256,count=len(document),bank=1)==document
+                    editor_control('g');editor_selection_expected=None
+                    original=document
+                    editor_control('v');document+=original
+                    if args.reu_kib:reu_documents.insert(len(original),original)
+                    editor_view('editor-clipboard-paste',document,len(document),dirty=True,status=21)
+                    editor_control('a');editor_selection_expected=(0,len(document))
+                    editor_control('v')
+                    if args.reu_kib:reu_documents.replace(0,len(document),original)
+                    document=original;editor_selection_expected=None
+                    editor_view('editor-clipboard-replace',document,len(document),dirty=True,status=21)
+                    editor_control('a');editor_selection_expected=(0,len(document))
+                    editor_control('x')
+                    if args.reu_kib:reu_documents.replace(0,len(document),b'')
+                    editor_selection_expected=None
+                    editor_view('editor-clipboard-cut',b'',0,dirty=True,status=20)
+                    editor_control('v')
+                    if args.reu_kib:reu_documents.insert(0,document)
+                    editor_view('editor-clipboard-restored',document,len(document),dirty=True,status=21)
+                    editor_control('k')
+                    editor_view('editor-clipboard-cleared',document,len(document),dirty=True,status=26)
+                    assert capture.capture('clipboard-cleared',address=0x3de7,count=8)[:5]==bytes(5)
+                    report['editor_clipboard']=True;save()
                 if args.editor_selection:
                     with mouse.held_key('Control_L'):key('b','editor')
                     for _ in range(3):key('Left','editor')
@@ -795,11 +866,12 @@ def main():
                 report['editor_destination_device']=editor_device
                 report['editor_saved_hex']=document.hex();save()
                 if args.editor_large:
+                    report['editor_large_io_deadline_seconds']=600;save()
                     # Host F5 maps to native New; host F7 maps to Go To.
                     key('F5','editor')
                     editor_click(1)
                     for char in 'large':key(char,'editor')
-                    editor_click(12)
+                    editor_click(12,timeout=600)
                     editor_view('editor-large-open',editor_large,0,name='LARGE')
                     editor_reu_document('editor-large-input-reu',editor_large,loaded=True)
                     key('F7','editor')
@@ -819,13 +891,13 @@ def main():
                     picker_view('editor-large-picker',entries,mode=2,fmt=boot_format)
                     editor_reu_document('editor-large-picker-reu',edited)
                     picker_click(18)
-                    editor_click(12)
+                    editor_click(12,timeout=600)
                     editor_view('editor-large-saved',edited,edit_at+5,name='REUCOPY',status=1)
                     editor_reu_document('editor-large-saved-reu',edited)
                     key('F5','editor')
                     editor_click(1)
                     for char in 'reucopy':key(char,'editor')
-                    editor_click(12)
+                    editor_click(12,timeout=600)
                     editor_view('editor-large-reopened',edited,0,name='REUCOPY')
                     editor_reu_document('editor-large-reopened-reu',edited,loaded=True)
                     (work/'expected-reu-copy.seq').write_bytes(edited)
@@ -983,7 +1055,7 @@ def main():
                 picker_click(16);paint_view('paint-loaded',paint_document,dirty=0,status=2)
                 report['paint_filtered_line_samples']=int.from_bytes(app_read(symbol('pk_rejects'),2),'little');save()
             else:
-                current=bytes(read(0xd000+at)[0] for at in (0,1,2,3,0x10,0x15,0x17,0x1b,0x1c,0x1d,0x27,0x28))
+                current=bytes(read(0xd000+at,bank=banks['io'])[0] for at in (0,1,2,3,0x10,0x15,0x17,0x1b,0x1c,0x1d,0x27,0x28))
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
@@ -1077,7 +1149,8 @@ def main():
             try:emu.wait(timeout=2)
             except subprocess.TimeoutExpired:emu.terminate();emu.wait(timeout=5)
         xv.stop();log.close()
-        report['all_host_processes_terminal']=emu is None or emu.poll() is not None
+        report['xvfb_terminal']=xv.proc.poll() is not None
+        report['all_host_processes_terminal']=(emu is None or emu.poll() is not None) and report['xvfb_terminal']
         report['system_disk_unchanged']=disk.read_bytes()==(image/disk_name).read_bytes()
         save()
 

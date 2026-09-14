@@ -536,7 +536,7 @@ native_code_end:
 * = NHANDLES
         .fill 256,0
 * = N_OWNER
-        .fill $e5,0
+        .fill $100,0            ; includes the session clipboard; reset on native boot
 * = N_BROWSERNAME
         .fill 256,0
 * = N_SOURCEPATH

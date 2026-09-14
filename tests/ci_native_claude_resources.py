@@ -97,6 +97,26 @@ def run(case,size,kib):
         assert c.m.stats()==(175,251,32) and not c.io.handles and not c.chip.serial_writes
         c.check_restored()
         done('absent VDC returns N_PLATFORM after a bounded wait and restores keys, mapping and all pages',c)
+    elif case=='font':
+        for operation,entry in (('read',0x1c26),('free',0x1c23)):
+            c=Claude();c.key(13);c.check()
+            token=bytes(c.ram[c.symbol('sf_token'):c.symbol('sf_token')+4])
+            original=c.cpu.step;failed=[]
+            def step():
+                if c.cpu.pc==entry and bytes(c.ram[0x3d04:0x3d08])==token:
+                    failed.append(c.cpu.pc);c.cpu.pc=(c.cpu.stPopWord()+1)&65535
+                    c.cpu.a=9;c.cpu.p|=1;return
+                original()
+            c.cpu.step=step
+            try:
+                c.feed(bytes([9,0x5a]))
+                assert c.value('cg_retiring') and c.value('cg_recovery') and not c.value('serialOwned')
+                assert bytes(c.ram[c.symbol('sf_token'):c.symbol('sf_token')+4])==token
+                retained=c.m.stats();c.key(27);assert c.m.stats()==retained
+            finally:c.cpu.step=original
+            assert failed
+            c.key(27,exited=True);c.restored()
+            done('original-font '+operation+' refusal retains its token and retries without stale reads',c)
     elif case=='reu':
         from native_reu_bus import REUBusMixin
         from ci_native_reu_calc import PROBE,component,COMPONENT_PAGES
@@ -110,7 +130,7 @@ def run(case,size,kib):
         pages=c.value('vd_pages');token=bytes(c.ram[c.symbol('vs_token'):c.symbol('vs_token')+8])
         assert component(c,'vs_token',8)==token and component(c,'ru_cookie',4)==token[4:]
         assert c.bus.reu_ram[pages*256:]==c.bus.reu_original[pages*256:]
-        assert sum(c.m.stats()[:2])==426-c.image[12]-36-16-16-COMPONENT_PAGES
+        assert sum(c.m.stats()[:2])==426-c.image[12]-36-16-16-16-COMPONENT_PAGES
         c.key(13);c.check();c.key(255);c.check()
         c.feed(bytes([3,24,79,15,1,65,5]));c.check();assert c.terminal()[0][-1:]==b'A'
         # The serial receiver stays owned while failed screen reads are retried.
@@ -126,7 +146,7 @@ def run(case,size,kib):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case',choices=('fallback','source-close','startup','reu'),required=True)
+    parser.add_argument('--case',choices=('fallback','source-close','startup','reu','font'),required=True)
     parser.add_argument('--size',type=int,choices=(16,64),default=64)
     parser.add_argument('--reu-kib',type=int,choices=(128,512,16384),default=512)
     parser.add_argument('--report',type=Path,required=True);args=parser.parse_args()

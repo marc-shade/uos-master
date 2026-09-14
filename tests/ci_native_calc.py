@@ -12,6 +12,7 @@ from ci_native_apps import RUN
 from ci_native_files import StreamIEC
 sys.path.insert(0,str(ROOT))
 from hwlib import lst_symbol
+from native_clipboard_check import released_stats
 
 
 class Calculator:
@@ -29,6 +30,7 @@ class Calculator:
         if image_name=='editor':
             self.io.files[8,b'EDPICK.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edpick.prg').read_bytes()
             self.io.files[8,b'EDFIND.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edfind.prg').read_bytes()
+            if image_prefix=='native-desktop':self.io.files[8,b'EDCLIP.PRG',b'P']=(ROOT/'target'/self.image_prefix/'edclip.prg').read_bytes()
         if image_name=='files':
             for name in ('fspick','fsview'):
                 self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
@@ -51,6 +53,7 @@ class Calculator:
             if source_path is not None and image_name=='editor':
                 data[source_path.rsplit(b'/',1)[0]+b'/EDPICK.PRG']=(ROOT/'target'/self.image_prefix/'edpick.prg').read_bytes()
                 data[source_path.rsplit(b'/',1)[0]+b'/EDFIND.PRG']=(ROOT/'target'/self.image_prefix/'edfind.prg').read_bytes()
+                if image_prefix=='native-desktop':data[source_path.rsplit(b'/',1)[0]+b'/EDCLIP.PRG']=(ROOT/'target'/self.image_prefix/'edclip.prg').read_bytes()
             if source_path is not None and image_name=='files':
                 for name in ('fspick','fsview'):
                     data[source_path.rsplit(b'/',1)[0]+b'/'+name.upper().encode()+b'.PRG']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
@@ -112,7 +115,7 @@ class Calculator:
             if cpu.pc==0xb00 and cpu.sp==0xe0:
                 assert exited,'calculator exited unexpectedly'
                 assert self.ram[0x3d20]==0 and self.ram[0x3d23:0x3d25]==bytes([0,self.expected_exit_code])
-                assert self.m.stats()==(175,251,32) and not self.io.handles
+                assert self.m.stats()==released_stats(self.m) and not self.io.handles
                 self.instructions+=steps;return
             if cpu.pc==0xffe4 and not self.keys:
                 if self.ram[0x3d12]==1:

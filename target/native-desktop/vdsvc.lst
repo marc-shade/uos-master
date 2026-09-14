@@ -1,17 +1,17 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -B -o /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/target/native-desktop/vdsvc.prg -l /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/target/native-desktop/vdsvc.sym -L /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/target/native-desktop/vdsvc.lst /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
-; Mon Sep 14 05:15:33 2026
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/target/native-desktop/vdsvc.prg -l /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/target/native-desktop/vdsvc.sym -L /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/target/native-desktop/vdsvc.lst /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
+; Mon Sep 14 11:23:44 2026
 
 ;Offset	;Hex		;Monitor	;Source
 
-;******  Processing input file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Processing input file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/api.inc
 
 =1					N_ABI_MAJOR = 1
-=12					N_ABI_MINOR = 12
+=13					N_ABI_MINOR = 13
 =$1c20					N_ALLOC         = $1c20
 =$1c23					N_FREE          = $1c23
 =$1c26					N_READ          = $1c26
@@ -77,6 +77,8 @@
 =$3d2c					N_APPFORMAT     = $3d2c          ; launch/source backend: 0 D64 / 1 D71 / 2 D81 / 3 ULT
 =$3d2d					N_BOOTDEVICE    = $3d2d          ; boot IEC device; independent of app source
 =$3de4					N_BOOTFORMAT    = $3de4          ; ABI 1.12: boot geometry, 0 D64 / 1 D71 / 2 D81
+=$3de5					N_CLIPBOARD     = $3de5          ; ABI 1.13: 27 session bytes; clipboard library only
+=31					N_CLIPOWNER     = 31             ; clipboard allocations survive foreground cleanup
 =$3d2e					N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
 =$3d2f					N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude / 5 Paint
 =$3d30					N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
@@ -169,7 +171,7 @@
 =$50					N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
 =$04					N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 =$6000					BK_BASE=$6000
 =1					RU_BANKED=1
@@ -441,7 +443,7 @@
 >6225	c0 1c				        .word row*320
 >6227	00 1e				        .word row*320
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/banked-client.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/banked-client.inc
 
 .6229					bk_native:
 .6229	08		php		        php
@@ -487,13 +489,13 @@
 >626a	00				bk_client_result: .byte 0
 >626b	00				bk_client_carry: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/shared-memory-service.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/shared-memory-service.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/shared-memory-api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/shared-memory-api.inc
 
 =6					SM_INFO=6                    ; TOKEN: version, lease, active, probe-live, pending
 =7					SM_OPEN=7                    ; acquire lease / retry a retained probe restore
@@ -512,7 +514,7 @@
 =1					SM_VERSION=1
 =33					SM_OWNER=N_APPOWNER+1
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/shared-memory-service.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/shared-memory-service.inc
 
 .626c					bm_entry:
 .626c	c9 06		cmp #$06	        cmp #SM_INFO
@@ -821,10 +823,10 @@
 >64f1	00 00 00			bm_offset: .fill 3,0
 >64f4	00 00 00			bm_bound: .fill 3,0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-reu.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-reu.inc
 
 =$64f7					vd_storage_alloc=vs_alloc
 =$654e					vd_storage_read=vs_read
@@ -928,7 +930,7 @@
 >65b1	00				vs_reu: .byte 0
 >65b2	00 00 00 00 00 00 00 00		vs_token: .fill 8,0
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/../reu.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/../reu.inc
 
 =0					RU_BANKED = 0                 ; banked.inc owns the temporary common-RAM map
 =0					RU_INCLUDE_RESIZE = 0         ; opt-in growth for shared document extents
@@ -1832,13 +1834,13 @@
 >6e8a	00 00 00 00 00 00 00 00
 .6e92					ru_end_library:
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-reu.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-reu.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-mirror.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-mirror.inc
 
 =1					VM_INCLUDE_COMMON=1
 =1					VM_INCLUDE_DIRTY=1
@@ -2053,10 +2055,10 @@
 >7099	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >70a9	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/desktop/vdc.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/desktop/vdc.inc
 
 =1					VD_DESKTOP_COMMON=1
 =0					VD_USE_STATUS_SURFACE=0
@@ -2246,7 +2248,7 @@
 .724c	d0 ed		bne $723b	        bne vd_status_row
 .724e	60		rts		        rts
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/desktop/vdc-scene.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/desktop/vdc-scene.inc
 
 .724f					vd_scene:
 >724f	7f 00 7f 00 fb 7e 00 ff		        .byte $7f,$00,$7f,$00,$fb,$7e,$00,$ff,$84,$00,$ff,$84,$00,$ff,$84,$00
@@ -2552,13 +2554,13 @@
 .7ba8					vd_scene_end:
 >7ba8	00 40 60 70 78 70 60 40		vd_arrow: .byte $00,$40,$60,$70,$78,$70,$60,$40
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/desktop/vdc.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/desktop/vdc.inc
 
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-lifetime.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-lifetime.inc
 
 =$1c20					vd_storage_alloc=N_ALLOC
 =$1c26					vd_storage_read=N_READ
@@ -2933,10 +2935,10 @@
 .7ef1	d0 f4		bne $7ee7	        bne -
 .7ef3	60		rts		        rts
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-pointer.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-pointer.inc
 
 .7ef4					vd_xy:
 .7ef4	8e 95 80	stx $8095	        stx vd_column
@@ -3103,10 +3105,10 @@
 .8067	8d ac 80	sta $80ac	        sta vd_pointer_at
 .806a	60		rts		        rts
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-state.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-state.inc
 
 >806b	0a 0c 0d 12 13 14 15 18		vd_registers: .byte 10,12,13,18,19,20,21,24,25,26,27,28,32,33
 >8073	19 1a 1b 1c 20 21
@@ -3150,17 +3152,17 @@
 >80c8	00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 >80d8	00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/graphics/vdc-pointer-shape.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/graphics/vdc-pointer-shape.inc
 
 >80e0	80 c0 e0 f0 f8 fc fe ff		vd_pointer_hi: .byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff,$ff,$ff,$fe,$ef,$cf,$87,$07,$03
 >80e8	ff ff fe ef cf 87 07 03
 >80f0	00 00 00 00 00 00 00 00		vd_pointer_lo: .byte $00,$00,$00,$00,$00,$00,$00,$00,$80,$c0,$00,$00,$00,$80,$80,$00
 >80f8	80 c0 00 00 00 80 80 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-claude-displays-rqrctpn7/src/native/vdc-service.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-shared-clipboard-memv91z6/src/native/vdc-service.asm
 
 .8100					bv_end:
 

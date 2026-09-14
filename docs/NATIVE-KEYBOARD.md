@@ -20,19 +20,29 @@ pages. This resident guard did not change the app images, including Claude.
 
 ## Pointer clients
 
-Desktop, graphical Calculator and Paint additionally own the complete ROM
-function-key table while their controls are active. They install ten one-byte
-function definitions and a small shared filter at `$1014` in the unused table
-tail. That code remains visible during the ROM scan and chains the resident
-guard. It does not change an IRQ vector, zero-page workspace or MMU mapping.
+All seven graphical suite apps own the complete ROM function-key table while
+their controls are active. They install ten one-byte function definitions and
+a shared filter at `$1014` in the unused table tail. That code remains visible
+during the ROM scan and chains the resident guard. It does not change an IRQ
+vector, zero-page workspace or MMU mapping.
 
-The port-1 mouse button shares keyboard row bit 4. A transition during the
-multi-column scan can otherwise decode as an ordinary key. The filter rejects
-ambiguous row-4 candidates while the button is held, and checks the candidate's
-physical matrix column after release. Genuine keys chain with their registers
-and flags preserved. CIA columns are restored. The previous callback and all
-256 table bytes are restored together when the client closes. Paint retains
-this ownership while using its text file picker.
+The filter rechecks every decoded key with interrupts masked. A row must be
+high with all columns released and low with the candidate's column selected.
+This rejects mouse/joystick signals and stale scan results. Accepted keys
+chain with A/X/Y/P preserved; CIA columns are restored. The previous callback
+and all 256 table bytes are restored together when the client closes. Editor,
+Files and Paint retain key ownership while changing their views or dialogs.
+
+The original C128 ROM enables interrupts before scanning. A nested scan can
+clear the outer scan's extended-matrix flag, causing Control alone to decode
+as keypad 5, minus or period. A VICE 16 KiB/D64 Copy run captured period at the
+ROM queue store with index 82, modifiers 4 and CIA columns `$f7`. Explicitly
+nesting the original ROM scanner reproduces that state and all three false
+characters. The matrix check rejects them while retaining actual keypad keys.
+The [clipboard qualification](validation/2026-09-14-native-shared-clipboard/README.md)
+checks all 11 nested scan positions and all 88 key positions with plain,
+Shift and Control input in both mappings for every graphical app. The CPU
+fixture models the nested scanner, not the raster/IEC timing that triggers it.
 
 The [Paint and shared-input qualification](validation/2026-09-13-native-paint/README.md)
 covers 768 filter cases in both ROM and app mappings, Calculator and Paint

@@ -137,6 +137,10 @@ def main():
             m.ram[0x3de4]=2
             m.check_load(seal_module(abi12,m.parent));m.call(CALL,2,0,flags=8,irq=True)
             done(f'{fmt}-abi-1.12-reads-system-format',m)
+            m=Modules(fmt)
+            abi13=bytearray(module_image(m.parent,b'\xad\xe5\x3d\x18\x60'));abi13[8]=13
+            m.check_load(seal_module(abi13,m.parent));m.call(CALL,0,0,flags=8,irq=True)
+            done(f'{fmt}-abi-1.13-reads-empty-clipboard-session',m)
             for size in (17,127,128,255,510,511,512,513,END-BASE):
                 m=Modules(fmt)
                 code=(b'\x60' if size==17 else b'\xa9\x2a\x18\x60')+bytes(max(0,size-20))
@@ -144,7 +148,7 @@ def main():
                 m.check_load(full);m.call(CALL,0 if size==17 else 42,0,irq=True)
                 assert m.ram[BASE+size:END]==b'\xcc'*(END-BASE-size)
                 done(f'{fmt}-extent-{size}',m)
-            for label,offset,value in [('origin',0,0),('magic',2,0),('format',6,2),('abi',7,2),('minor',8,13),
+            for label,offset,value in [('origin',0,0),('magic',2,0),('format',6,2),('abi',7,2),('minor',8,14),
                     ('minor-too-old',8,6),('flags',9,1),('parent',12,0),('entry-header',14,15),('entry-past-end',14,20),('extent-high',11,3)]:
                 m=Modules(fmt);bad=bytearray(m.module);bad[offset]=value
                 if label=='parent':bad[offset]^=m.module[offset]^0xff

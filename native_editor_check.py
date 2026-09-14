@@ -31,6 +31,13 @@ STATUS=(
     'REPLACED (HEX): ',
     'CANCELLED; CHANGES KEPT (HEX): ',
     'NO MEMORY; CHANGES KEPT (HEX): ',
+    'COPIED TO CLIPBOARD',
+    'PASTED FROM CLIPBOARD',
+    'SELECT TEXT TO COPY OR CUT',
+    'CLIPBOARD IS EMPTY',
+    'CLIPBOARD LIMIT: 15 KIB',
+    'CLIPBOARD ERROR; TEXT RETAINED',
+    'CLIPBOARD CLEARED',
 )
 
 
@@ -50,7 +57,7 @@ def editor_screen(columns,data,cursor,*,name='',dirty=False,device=8,fmt=0,
     def tail(text,limit):
         visible=''.join(char if 32<=ord(char)<127 else '.' for char in text)
         return visible if len(visible)<=limit else '<'+visible[-(limit-1):]
-    message=STATUS[status]+(f'{replacements:06X}' if status>=16 else '')
+    message=STATUS[status]+(f'{replacements:06X}' if 16<=status<20 else '')
     focused=bool(mode and mode not in (5,9) and status not in (3,4,9) and status<12)
     case='ANY: ' if search_case else 'CASE: '
     prefix=('OPEN: ','SAVE AS: ','BYTE (HEX): ','DOS CONTEXT: ' if fmt==3 else 'IEC DEVICE: ',

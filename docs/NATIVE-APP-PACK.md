@@ -1,8 +1,8 @@
 # Packed native app startup
 
 The desktop suite stores the launcher and six apps as standard NAPP files
-with a checked LZSA2 startup wrapper. The D64 suite has **124 free blocks**
-and D81 has **2,620**. Packing preserves the thirteen disk entries, resident
+with a checked LZSA2 startup wrapper. The D64 suite has **103 free blocks**
+and D81 has **2,599**. Packing preserves the fourteen disk entries, resident
 kernel, 426-page heap and each expanded application's allocation. The diagnostic native
 disks continue to use their original app files.
 
@@ -12,8 +12,9 @@ Paint's VDC view uses another six disk blocks and ten separately owned scratch
 pages; its executable still occupies 96 pages. Files adds VDC graphics within
 its 96-page executable allocation using sixteen owned scratch pages; its
 smaller graphics/picker modules recover six disk blocks. Editor adds VDC and
-REU document support. Claude now uses 94 app pages plus separately owned
-terminal/font/bitmap buffers; its packed image occupies 43 disk blocks.
+REU document support. Claude now uses 96 app pages plus separately owned original/live fonts,
+terminal cells and bitmap buffers. Shared clipboard bytes have a separate
+session lifetime, and Editor loads `EDCLIP.PRG` for transfers.
 
 The kernel validates the complete outer file and closes its source before
 executing the wrapper. Startup expands the original app body into its owned
@@ -23,16 +24,16 @@ cleanup before any original program instruction executes.
 
 | Suite program | Original PRG bytes | Packed PRG bytes | App pages |
 |---|---:|---:|---:|
-| Desktop | 8,835 | 7,362 | 35 |
-| Calculator | 12,430 | 9,275 | 49 |
-| Editor | 14,125 | 9,820 | 96 |
-| Files | 13,998 | 9,829 | 96 |
-| Ultimate | 24,320 | 15,863 | 96 |
-| Claude | 15,872 | 10,676 | 94 |
-| Paint | 24,442 | 16,730 | 96 |
+| Desktop | 8,843 | 7,369 | 35 |
+| Calculator | 12,438 | 9,278 | 49 |
+| Editor | 14,069 | 9,906 | 96 |
+| Files | 14,006 | 9,833 | 96 |
+| Ultimate | 23,025 | 16,708 | 91 |
+| Claude | 20,316 | 12,442 | 96 |
+| Paint | 24,450 | 16,737 | 96 |
 
-PRG sizes include the two-byte load address. This saves 34,467 file bytes and
-136 disk blocks. Packing creates disk space; the expanded apps retain their
+PRG sizes include the two-byte load address. This saves 34,874 file bytes and
+138 disk blocks. Packing creates disk space; the expanded apps retain their
 existing code and document limits. The current apps now have graphical VDC controls, and Editor uses shared REU
 documents. Wider desktop features and backing stores remain roadmap work.
 

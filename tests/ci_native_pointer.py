@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import ci_native_heap as heap
 from native_display_bus import DisplayBus
+from native_clipboard_check import released_stats
 
 
 class PointerBus(DisplayBus):
@@ -104,7 +105,7 @@ class Pointer(calc.Calculator):
         if bytes(self.ram[at:at+2])!=bytes(2):
             assert bytes(self.ram[0x033c:0x033e])==bytes(self.ram[at:at+2])
             at=self.symbol('nk_saved_keys');assert bytes(self.ram[0x1000:0x1100])==bytes(self.ram[at:at+256])
-        assert self.m.stats()==(175,251,32)
+        assert self.m.stats()==released_stats(self.m)
 
 
 def main():

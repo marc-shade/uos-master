@@ -28,12 +28,13 @@ def build(out=None):
         r'^(\w+)\s*=\s*\$([0-9a-fA-F]+)\s*$',(out/'claude-gui.sym').read_text(),re.M)}
     exports = {name:value for name,value in symbols.items() if name.startswith(
         ('cg_','pm_','pk_','gui_','bk_','bp_','vd_','vm_','vs_','ru_'))}
-    exports.update({'_gui_'+name:symbols['gui_'+name] for name in ('begin','poll','key','end','dirty_all')})
+    exports.update({'_gui_'+name:symbols['gui_'+name] for name in ('begin','poll','key','end','dirty_all','clip_prepare','clip_chunk')})
+    exports['_gui_clip_length']=symbols['cp_length']
     exports['_gui_vdc_end']=symbols['cg_vdc_close']
     exports.update({'_gui_'+name:symbols['cg_'+name] for name in
                     ('live','dirty','top','controls_dirty','font_hi','bitmap','font_ram',
                      'terminal_read','terminal_restore','view','cursor_row','cursor_col',
-                     'vdc_owned','recovery','retiring')})
+                     'vdc_owned','recovery','retiring','clip_count','clip_status','paste_active')})
     glue = ['.segment "GUI"', '.incbin '+json.dumps(str(obj/'gui.bin'))]
     glue += [f'.export {name} := ${value:04x}' for name,value in sorted(exports.items())]
     (obj/'gui.s').write_text('\n'.join(glue)+'\n')

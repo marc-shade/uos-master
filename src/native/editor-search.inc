@@ -120,7 +120,7 @@ ed_search_start:
 .if !NATIVE_EDITOR_GRAPHICS
         jsr ed_paint_fields
 .endif
-        #doc_copy3 ed_cursor,ed_probe
+        #ed_move3 ed_cursor,ed_probe
         lda ed_s_action
         cmp #2
         bne +
@@ -133,8 +133,8 @@ ed_search_start:
         #doc_cmp3 ed_probe,ed_length
         bcs +
         #doc_add3 ed_one,ed_probe
-+       #doc_copy3 ed_probe,ed_s_start
-        #doc_copy3 ed_length,ed_s_limit
++       #ed_move3 ed_probe,ed_s_start
+        #ed_move3 ed_length,ed_s_limit
 .if NATIVE_EDITOR_GRAPHICS
         ; Publish the actual starting byte and stop a failed first redraw
         ; before scanning or replacing anything in the document.
@@ -172,7 +172,7 @@ ed_search_advance:
 +       lda ed_s_matched
         cmp ed_s_length
         bne ed_search_scan
-        #doc_copy3 ed_probe,ed_s_match
+        #ed_move3 ed_probe,ed_s_match
         #doc_sub3 ed_s_length,ed_s_match
         lda ed_s_action
         beq ed_search_found
@@ -181,13 +181,13 @@ ed_search_advance:
         jsr ed_search_replace
         bcs ed_search_replace_error
         #doc_add3 ed_one,ed_s_count
-        #doc_copy3 ed_s_match,ed_cursor
+        #ed_move3 ed_s_match,ed_cursor
         lda ed_s_action
         cmp #1
         beq ed_search_replaced
-        #doc_copy3 ed_s_match,ed_probe
+        #ed_move3 ed_s_match,ed_probe
         #doc_add3 ed_s_new_length,ed_probe
-        #doc_copy3 ed_length,ed_s_limit
+        #ed_move3 ed_length,ed_s_limit
         lda #0
         sta ed_s_matched
         jsr ed_cancel_check
@@ -206,12 +206,12 @@ ed_search_exhausted:
         beq ed_search_not_found
         ; Include tails of matches starting before the original cursor. A
         ; start-only upper bound would miss overlaps crossing that position.
-        #doc_copy3 ed_s_start,ed_s_limit
+        #ed_move3 ed_s_start,ed_s_limit
         #doc_add3 ed_s_length,ed_s_limit
         #doc_sub3 ed_one,ed_s_limit
         #doc_cmp3 ed_s_limit,ed_length
         bcc +
-        #doc_copy3 ed_length,ed_s_limit
+        #ed_move3 ed_length,ed_s_limit
 +       lda #0
         sta ed_probe
         sta ed_probe+1
@@ -219,7 +219,7 @@ ed_search_exhausted:
         sta ed_s_matched
         jmp ed_search_scan
 ed_search_found:
-        #doc_copy3 ed_s_match,ed_cursor
+        #ed_move3 ed_s_match,ed_cursor
         lda #13
         clc
         adc ed_s_wrapped
@@ -268,9 +268,9 @@ ed_search_input:
         lda ed_s_replacement,x
         sta d_input,x
         jmp ed_search_input
-+       #doc_copy3 ed_s_match,d_pos
-        #doc_copy3 ed_s_length,d_count
-        #doc_copy3 ed_s_new_length,d_replace_count
++       #ed_move3 ed_s_match,d_pos
+        #ed_move3 ed_s_length,d_count
+        #ed_move3 ed_s_new_length,d_replace_count
         jsr doc_replace
         bcs +
         #doc_load3 D_LEN,ed_length

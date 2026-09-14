@@ -247,8 +247,11 @@ eg_initialize:
         jsr eg_draw
         bcs eg_failed
         jsr eg_surface
+        lda eg_bitmap
+        bne +
         jsr N_VSHOW
         bcs eg_failed
++
         lda #1
         sta eg_bitmap
         jsr pm_install
@@ -265,6 +268,9 @@ eg_failed:
         jmp eg_release_surface
 eg_vclose:
         jsr pm_close
+        lda ed_module_wanted
+        cmp #3
+        beq eg_done
         jsr N_VCLOSE
         lda #0
         sta eg_bitmap
@@ -745,7 +751,14 @@ eg_enabled:
         sec
         rts
 eg_enabled_more:
-        cmp #2
+        cmp #3
+        bne +
+        cpx #24
+        bcc eg_enabled_no
+        cpx #27
+        bcc eg_enabled_yes
+        bcs eg_enabled_no
++       cmp #2
         bne +
         cpx #21
         bcc eg_enabled_no
@@ -900,7 +913,7 @@ eg_document_action:
 eg_more_toggle:
         inc eg_more
         lda eg_more
-        cmp #3
+        cmp #4
         bcc +
         lda #0
         sta eg_more

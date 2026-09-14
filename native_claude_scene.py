@@ -17,7 +17,10 @@ VIEW_NAMES = ['Panel','Left','Right']
 VDC_COLORS = [0,11,6,14,5,13,3,3,2,10,4,4,9,7,15,1]
 STATUS = ['Tab selects; Enter activates.', 'Terminal input / Help repaints',
           'Closing... F8 forces return', 'Controls: Tab/Enter; Esc terminal',
-          'Display paused; Esc/Desktop retries']
+          'Display paused; Esc/Desktop retries',
+          'Copied to clipboard', 'Pasting; Esc cancels', 'Paste accepted',
+          'Clipboard unavailable', 'Paste rejected: unsupported text', 'Paste cancelled',
+          'Bridge needs update', 'Paste unconfirmed']
 
 
 def text(data, x, y, value):
@@ -29,16 +32,16 @@ def text(data, x, y, value):
 
 
 def enabled(index, live=0, top=0, model=True, menu=0):
-    return index == 2 or index == 0 and live == 0 or index == 1 and live == 1 or index == 3 and top == 9 or index == 4 and top == 0 or index == 5 and model or index == 6 and live == 1 and menu
+    return index == 2 or index == 0 and (live == 0 or live == 1 and menu and model) or index == 1 and live == 1 or index == 3 and top == 9 or index == 4 and top == 0 or index == 5 and model or index == 6 and live == 1 and menu
 
 
 def surface(panel=None, colors=None, glyphs=None, *, live=0, menu=0, top=0, focus=0,
-            view=0, model=True, terminal=None, cursor=(255,255),recovery=False):
+            view=0, model=True, terminal=None, cursor=(255,255),recovery=False,clip_status=0):
     """All 9,216 owned bytes, using actual terminal glyphs for raw panel codes."""
     assert top in (0,9) and live in (0,1,2) and view in (0,1,2)
     data = bytearray(bytes(8192)+b'\x16'*1024)
     text(data,1,0,'uOS / Claude')
-    text(data,1,4,STATUS[4 if recovery else 3 if live == 1 and menu else live])
+    text(data,1,4,STATUS[4 if recovery else clip_status if menu and clip_status else 3 if live == 1 and menu else live])
     text(data,1,24,'Ctrl+Help / right-click: controls')
     for index, (x0,y0,x1,y1) in enumerate(CELLS):
         color = 7 if index == focus and enabled(index,live,top,model,menu) else 0x1b if enabled(index,live,top,model,menu) else 0xb6
@@ -55,7 +58,7 @@ def surface(panel=None, colors=None, glyphs=None, *, live=0, menu=0, top=0, focu
         label_row = y0 if index == 6 else y0+1
         at = label_row*320+(x0+1)*8
         data[at:at+8] = ICONS[index]
-        label = VIEW_NAMES[view]+' '+('10-25' if top else '01-16') if index == 5 else LABELS[index]
+        label = VIEW_NAMES[view]+' '+('10-25' if top else '01-16') if index == 5 else ('Copy' if index==0 else 'Paste') if menu and index<2 else LABELS[index]
         text(data,x0+3,label_row,label)
     if panel is not None:
         assert len(panel) == len(colors) == 1000 and len(glyphs) == 4096
@@ -103,6 +106,8 @@ def packed(data):
 def write_assembly(directory):
     directory = Path(directory)
     blocks = [('cg_scene',surface())]
+    for mode in (0,1):
+        blocks.append((f'cg_header_{mode}',surface(live=1,menu=mode)[320:1280]))
     for index, value in enumerate(STATUS):
         data = bytearray(320);text(data,1,0,value)
         blocks.append((f'cg_status_{index}',bytes(data)))
@@ -115,4 +120,10 @@ def write_assembly(directory):
         lines.append(name+':')
         data = packed(data)
         for at in range(0,len(data),24):lines.append(' .byte '+','.join(map(str,data[at:at+24])))
+    import sys
+    sys.path.insert(0,str(Path(__file__).resolve().parent/'apps/claude/host'))
+    import petscii
+    inverse=petscii.inverse_map()
+    table=bytes(ord(inverse[i]) if i in inverse and len(inverse[i])==1 and 32<=ord(inverse[i])<=126 else 63 for i in range(256))
+    (directory/'clipboard-ascii.inc').write_text('; Generated from the bridge glyph map; non-ASCII cells become question marks.\ncg_clip_ascii:\n'+''.join(' .byte '+','.join(map(str,table[i:i+16]))+'\n' for i in range(0,256,16)))
     (directory/'scene.inc').write_text('\n'.join(lines)+'\n')

@@ -5,7 +5,8 @@ decodes it with a resumable state machine in about 200 bytes of C, because bytes
 arrive from an NMI ring buffer in arbitrary chunks and any command can be split
 across two reads.
 
-All multi-byte values are single bytes; there is no endianness to get wrong.
+Coordinates and run counts use single bytes. Clipboard lengths use two bytes,
+least significant byte first.
 
 ## Host → client
 
@@ -21,6 +22,8 @@ All multi-byte values are single bytes; there is no endianness to get wrong.
 | `$08` | `HELLO` | `cols, rows` |
 | `$09` | `BYE` | `magic` — must be `$5A` to act |
 | `$0A` | `GLYPH` | `code`, then 8 bitmap bytes → redefine a VDC character |
+| `$0D` | `CAPABILITIES` | feature bits; bit 0 permits framed text paste |
+| `$0E` | `PASTE_RESULT` | 0 accepted into host input, 1 rejected |
 | `$0B` | `SCROLL` | `top, bot, n` — shift rows `top..bot` by `n & $7F`; bit 7 of `n` set means downward |
 
 `BYE` takes a magic byte because a bare opcode is one bit-flip away from ending
@@ -57,6 +60,34 @@ input happens on the host, so the key map can change without reflashing a disk.
 | `$00 $01` | `RESYNC` — "repaint everything, I may have missed bytes" |
 | `$00 $02` | `BYE` — client is shutting down |
 | `$00 $03` | `CREDIT` — "I have consumed 64 more bytes" |
+
+### Native text clipboard extension
+
+The native client queries `$00 $04` on each Paste request. Only a host that
+returns `$0D $01` is eligible for clipboard transfer; older hosts receive no
+clipboard payload. Legacy clients never request this extension and receive no
+new opcodes.
+
+| Sequence | Payload and meaning |
+|---|---|
+| `$00 $04` | Request capabilities |
+| `$00 $06 lo hi` | Begin a paste of 1–16384 bytes |
+| `$00 $05 count data...` | Append 1–64 literal bytes; control escapes have no meaning inside this counted payload |
+| `$00 $07` | End and validate the complete paste; host replies with `PASTE_RESULT` |
+| `$00 $08` | Abandon the staged paste without delivery |
+
+The host accepts printable ASCII, tab, CR and LF, normalizes CRLF/CR to LF,
+and rejects other controls, ESC, NUL and high bytes. It stages the whole item
+before queuing one standard bracketed paste (`ESC[200~...ESC[201~`) in key
+order, without a trailing Return. A rejected or incomplete item is not sent
+to the PTY. Credits may occur between complete packets. BYE drops a draft.
+
+The native RAM clipboard currently holds up to 15 KiB. The client keeps
+draining output and sending credits during a paste. Escape cancels before
+End; after End the outcome may already be accepted and is reported as
+unconfirmed if the acknowledgement is missing. The 20-second/65535-poll
+timeout never retries input automatically. Acceptance confirms the host
+input queue, not processing or execution by the terminal application.
 
 ### Native shutdown handshake
 

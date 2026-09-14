@@ -14,6 +14,7 @@ import ci_native_calc as calc
 from ci_native_heap import Machine
 from ci_vdc_protocol import VDC
 from native_claude_check import landing_screen
+from native_clipboard_check import released_stats
 
 
 class LogicalVideo:
@@ -138,7 +139,7 @@ class Client(calc.Calculator):
                                      keys=bytes(self.ram[0x1000:0x1100]))
             if cpu.pc == 0xb00 and cpu.sp == 0xe0:
                 assert exited, 'unexpected app exit'
-                assert self.m.stats() == (175, 251, 32) and not self.io.handles
+                assert self.m.stats() == released_stats(self.m) and not self.io.handles
                 assert self.ram[0x3d20] == 0 and self.ram[0x3d23] == 0
                 self.check_restored()
                 self.instructions+=steps

@@ -62,7 +62,7 @@ blue graphical launchers on both displays: 320×200 VIC and
 Files, Ultimate, Claude and Paint with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
 The same build also creates `target/native-desktop/uos128.d81` for a 1581,
-with 2,614 free blocks for documents and future apps. ABI 1.12 remembers the
+with 2,599 free blocks for documents and future apps. ABI 1.12 remembers the
 system volume's format across app launches and data-disk browsing. Use the
 matching D64 or D81 image; see [native boot media](docs/NATIVE-BOOT-MEDIA.md).
 Boot still uses IEC. Movable windows, app switching,
@@ -85,6 +85,7 @@ controls inside their apps. Paint adds connected mouse
 strokes, a visible keyboard brush, colors, undo, and verified picture files.
 Files adds graphical lists, byte viewing, editable paths and verified copy
 controls. Editor adds keyboard marking, mouse range selection and replacement,
+Copy/Cut/Paste through the [session clipboard](docs/NATIVE-CLIPBOARD.md),
 graphical Open/Save As and Find/Replace while keeping banked documents and
 verified saves. The
 [shared picker](docs/NATIVE-PICKER-GUI.md) carries those controls through file

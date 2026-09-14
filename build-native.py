@@ -36,7 +36,7 @@ def build(*, out=None, desktop_boot=False):
     core=seal(editor[:core_size+2])
     (out/'editor.prg').write_bytes(core)
     position=core_size+2
-    for name in ('edpick','edfind'):
+    for name in (('edpick','edfind','edclip') if desktop_boot else ('edpick','edfind')):
         size=int.from_bytes(editor[position+8:position+10],'little')
         module=(0x6000+core_size).to_bytes(2,'little')+editor[position:position+size]
         (out/f'{name}.prg').write_bytes(seal_module(module,core))
@@ -49,7 +49,8 @@ def build(*, out=None, desktop_boot=False):
         create_boot_disk(out/f'uos128.{disk_format}', out/'boot.prg', {
             'u': kernel_dir/'uos128-boot.prg', 'calc': out/'calc.prg',
             'browse': out/'browse.prg', 'editor': out/'editor.prg',
-            'edpick.prg': out/'edpick.prg', 'edfind.prg': out/'edfind.prg'})
+            'edpick.prg': out/'edpick.prg', 'edfind.prg': out/'edfind.prg',
+            **({'edclip.prg':out/'edclip.prg'} if desktop_boot else {})})
     report = {p.relative_to(out).as_posix(): dict(bytes=p.stat().st_size,
                 sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(out.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
