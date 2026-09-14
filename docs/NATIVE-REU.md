@@ -1,10 +1,10 @@
 # Native REU memory
 
-Desktop, Calculator, Ultimate, Paint and Files use an available REU for their saved VDC screens
+Desktop, Calculator, Ultimate, Paint, Files and Editor use an available REU for their saved VDC screens
 through the [shared bank-1 VDC component](NATIVE-VDC-SERVICE.md). The same blue
 controls work without an REU, using the existing main-RAM backup. With an REU,
-Desktop leaves 325, Calculator 309, Ultimate 264, Paint 182 and Files 211 of 426 main-RAM
-pages free (Files includes its IEC browser cache) on either
+Desktop leaves 322, Calculator 306, Ultimate 261, Paint 179, Files 208 and Editor 245 of 426 main-RAM
+pages free (Files includes its IEC browser cache; Editor is empty) on either
 VDC size. The RAM fallback uses another 64 pages with a 16 KiB VDC or 72 with
 a 64 KiB VDC. Calculator history, Paint's picture/undo and all VIC surfaces retain their
 native heap ownership. Ultimate, Paint and Files keep the same VDC backup while the
@@ -15,15 +15,16 @@ demand; Paint keeps ten scratch pages and Files sixteen for their complete app l
 release, statistics and bounded byte transfers. This is an app-core library
 for the current single-foreground-app lifecycle. Include it exactly once in
 the retained core; modules call that copy. It does not add a second native
-heap bank or grow the resident kernel. Other apps do not yet use REU storage.
-Documents, clipboard, caches, suspended apps and a shared scheduled driver
-remain separate roadmap work.
+heap bank or grow the resident kernel. Editor also uses this arena for documents,
+through the [shared memory service](NATIVE-SHARED-MEMORY.md). Clipboard, caches,
+suspended apps and a shared scheduled driver remain separate roadmap work.
 
 The [banked SDK example](../examples/native-banked/README.md) also runs this
 arena in a retained bank-1 component. Set `RU_BANKED = 1` only under the
 [banked executor](NATIVE-BANKED.md): it selects physical bank 1 for the private
-probe buffer and bank 0 for `N_BUFFER`. The shipped Desktop, Calculator, Ultimate, Paint and Files use that mapping inside
-`VDSVC.PRG`. Editor documents and Paint pictures still use main RAM.
+probe buffer and bank 0 for `N_BUFFER`. The six display clients use that mapping inside
+`VDSVC.PRG`. Editor retains the component while REU documents are live, including
+after display close. Paint pictures still use main RAM.
 
 ## Ownership and calls
 
@@ -38,6 +39,7 @@ codes in A with carry set, or A=0/carry clear.
 | `ru_open` | Detect an idle REU; `ru_total` returns capacity in 4 KiB pages |
 | `ru_alloc` | `ru_owner` 1–254, `ru_pages` LE16; returns `ru_page` and `ru_handle` |
 | `ru_reserve` | Same, with an explicit `ru_page` LE16 start |
+| `ru_resize` (optional) | Matching owner/token and requested total `ru_pages`; grow in place or preserve the original extent on failure |
 | `ru_free` | Matching `ru_owner` and eight-byte `ru_handle` |
 | `ru_release` | Release every allocation with this arena's `ru_owner` |
 | `ru_stats` | `ru_available` LE16 pages and `ru_slots` reusable descriptors |
@@ -52,6 +54,13 @@ maximum retires the slot until the app allocation ends. Closing/reopening an
 arena does not reset generations. The native app handle prevents a token
 from becoming valid again after an app reload. A module must keep its arena
 and descriptors outside its replaceable window.
+
+Set `RU_INCLUDE_RESIZE=1` to include growth. Equal size succeeds; zero or
+shrinking returns `N_BADARG`. Growth beyond capacity or into another extent
+returns `N_NOMEM`. A successful resize changes only the descriptor's page
+count, preserving its token and every REU byte. The shared service can fall
+back to allocate/copy/free when in-place growth is blocked. Other clients
+omit this optional code and retain the earlier library's emitted bytes.
 
 `ru_actual` reports the completed transfer prefix. It is zero after validation
 or platform refusal, and counts only successful DMA chunks after a transfer

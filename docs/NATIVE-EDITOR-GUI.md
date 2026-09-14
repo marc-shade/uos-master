@@ -60,31 +60,37 @@ replacements and any new output file bytes remain available.
 
 ## Storage and presentation lifetime
 
-The suite requires ABI 1.12. Its expanded core PRG contains 14,076 bytes
-(9,500 packed) and reserves 96 bank-0 pages (`$6000..$bfff`) for code,
-persistent state and one checked module window at `$96fa`.
+The suite requires ABI 1.12. Its expanded core PRG contains 14,125 bytes
+(9,820 packed) and reserves 96 bank-0 pages (`$6000..$bfff`) for code,
+persistent state and one checked module window at `$972b`.
 `EDPICK.PRG` has a 10,223-byte module payload; `EDFIND.PRG` contains the search
-engine and graphical renderer in 9,634 bytes. The picker ends at `$bee9`,
-leaving 279 bytes before `$c000`; the search/graphics module ends at `$bc9c`.
+engine and graphical renderer in 9,668 bytes. The picker ends at `$bf1a`,
+leaving 230 bytes before `$c000`; the search/graphics module ends at `$bcef`.
 Both modules bind to this core's checksum and load from the original app's
 source device/context and directory, even after changing the document device.
 For USB, install all three matching files and `VDSVC.PRG` together.
 
 Before installing keys or initializing documents, Editor reserves and clears
 16 bank-0 pages at `$5000..$5fff`. Transfer buffers, read caches and saved keys
-occupy the lower half. Graphics body/cache and inactive picker scratch share
-the upper half. Another owner's reservation causes startup to refuse cleanly.
+occupy `$5000..$56ff`; the two document contexts occupy `$5700..$57ff`.
+Graphics body/cache and inactive picker scratch share `$5800..$5f17`.
+Document scratch uses `$5f18..$5f3e`, VDC status `$5f40..$5f68`, line offsets
+`$5f69..$5f9b`, and text scratch `$5fc0..$5fff`. Another owner's reservation
+causes startup to refuse cleanly. This layout retains the existing 16-page
+workspace while making room for the REU client in the executable.
 
 The VIC surface reserves 36 pages at `$c000..$e3ff`; the shared VDC component
-uses 30 bank-1 pages. An empty Editor has 248 free heap pages with REU screen
-backing, 184 with a RAM-backed 16 KiB VDC snapshot, or 176 with a RAM-backed
-64 KiB VDC snapshot. Document chunks still use main RAM in 4 KiB allocations.
-The earlier 66,057-byte graphical-document result predates the VDC provider;
-that document does not fit with the provider active. Available capacity also
-depends on fragmentation, other allocations and the old document retained
-during transactional Open. A failed Open preserves that old document.
-The kernel and 426-page heap are unchanged. REU and disk-backed documents
-remain required roadmap work.
+uses 33 bank-1 pages. An empty Editor has 245 free heap pages with REU screen
+backing, 181 with a RAM-backed 16 KiB VDC snapshot, or 173 with a RAM-backed
+64 KiB VDC snapshot. When an REU is available, documents use one resizable
+extent each in the same arena as the snapshot; growth leaves those 245 main-RAM
+pages free. REU documents can exceed 96 KiB. A clean optional-service refusal
+keeps the 4 KiB RAM-chunk path, whose capacity depends on remaining heap and
+fragmentation. Staged Open retains the old document until complete input and
+CLOSE succeed, so it can need more capacity than opening after New.
+The kernel and 426-page heap are unchanged. Disk-backed documents remain
+roadmap work. The [shared memory contract](NATIVE-SHARED-MEMORY.md) describes
+growth, ownership and the 24-bit capacity limit.
 
 Keyboard ownership, the surface descriptor, document state, fields and query
 remain in the core while picker and graphics replace one another. A missing or
@@ -96,7 +102,11 @@ source close similarly retains ownership until checked cleanup succeeds.
 The VDC provider, screen backup and surface descriptor survive successful
 picker swaps. Failed restoration blocks further input, transfers, replacement
 and owner release. After restoration, Editor repaints the complete text view
-before publishing readiness; Ctrl-L can reacquire graphics.
+before publishing readiness; Ctrl-L can reacquire graphics. The memory lease
+keeps REU documents and the provider alive across that restore/reopen cycle.
+An REU probe failure without an active VDC has its own retained recovery state
+and Esc retry message. New and controlled exit explicitly dispose documents;
+a failed transfer poisons its context and prevents a false successful save.
 
 Ordinary edits repaint changed glyph cells and the old/new caret. Search
 calls the renderer within its existing module invocation. Readiness is cleared
@@ -124,3 +134,9 @@ complete VIC/VDC images, keyboard and mouse input, picker swaps, RAM/REU screen
 backing, retained display failures, module fallback and memory-limit rollback,
 with an independent rebuild and disk audit. Physical qualification of these
 images remains pending.
+
+The [REU document qualification](validation/2026-09-14-native-editor-reu-documents/README.md)
+covers shared arena ownership, documents beyond 1 MiB, a 131,118-byte cold-boot
+edit/save/reopen workflow, complete physical REU comparisons, RAM fallback,
+retained failures and the other apps using the same provider. This software
+build has not been deployed to physical hardware.

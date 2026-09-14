@@ -18,6 +18,7 @@ def lst_symbol(module, name):
       ">1f31  bb bb   name: .byte"   data label with bytes on the line
       ".1f31           name:"         label alone (data on the next line)
       "=$1f31          name = *"      assignment-style label
+      "=24385          name = base+1" decimal-valued address alias
       ".3e00  1300     name:"         file offset followed by runtime PC
     """
     path = os.path.join(UOS, f"target/{module}.lst")
@@ -33,6 +34,9 @@ def lst_symbol(module, name):
         m = re.search(p, lst, re.M)
         if m:
             return int(m.group(1), 16)
+    m = re.search(r"^=([0-9]+)\s+%s\s*=" % re.escape(name), lst, re.M)
+    if m and 0 <= int(m.group(1)) <= 65535:
+        return int(m.group(1))
     raise SystemExit(f"FAIL: {name} not found in {module} listing ({path})")
 
 

@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from ci_native_vdc_paint import Paint,GraphicalPaint,heap
-from ci_native_reu_calc import CalculatorBus,component
+from ci_native_reu_calc import CalculatorBus,component,COMPONENT_PAGES
 from ci_native_paint_files import pattern
 from native_paint_format import encode
 
@@ -30,7 +30,7 @@ def main():
             assert p.bus.reu_ram[pages*256:]==p.bus.reu_original[pages*256:]
             token=bytes(p.ram[p.symbol('vs_token'):p.symbol('vs_token')+8])
             assert component(p,'vs_token',8)==token
-            free=sum(p.m.stats()[:2]);assert free==426-p.image[12]-72-36-30-10
+            free=sum(p.m.stats()[:2]);assert free==426-p.image[12]-72-36-COMPONENT_PAGES-10
             p.key(ord('O'));p.mirror();p.key(13);p.check();p.clean()
             assert p.document()==pattern(61) and component(p,'vs_token',8)==token
             assert sum(p.m.stats()[:2])==free

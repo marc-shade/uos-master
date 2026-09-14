@@ -28,6 +28,11 @@ eg_paused_notice:
         bcs eg_notice_return
         lda #<eg_pause_text
         ldx #>eg_pause_text
+        ldy dm_fault
+        beq +
+        lda #<eg_memory_pause_text
+        ldx #>eg_memory_pause_text
++
         jsr eg_text_source
         lda #8
         ldy #192
@@ -36,6 +41,7 @@ eg_notice_return:
         rts
 eg_notice_bounds: .word 8,192,312,200
 eg_pause_text: .byte 86,68,67,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,115,116,111,114,101,115,0
+eg_memory_pause_text: .byte 82,69,85,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,115,116,111,114,101,115,0
 
 eg_update:
         lda #0

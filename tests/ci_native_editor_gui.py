@@ -233,7 +233,8 @@ def main():
                 # Explicitly reacquire it after the retained stream recovers.
                 e.bus.original=None;e.key(12);e.check(want,len(want),False,status=1,name='COPY')
                 providers=[c for c in e.ultimate.commands if c[1]==2 and c[3:].endswith(b'/VDSVC.PRG')]
-                assert len(providers)==2 and all(c[0]==2 and c[3:]==b'/Apps/Original/VDSVC.PRG' for c in providers)
+                assert len(providers)==(1 if e.value('dm_lease') else 2)
+                assert all(c[0]==2 and c[3:]==b'/Apps/Original/VDSVC.PRG' for c in providers)
             e.exit();e.restored()
         elif a.case=='reservation':
             assert not e.value('eg_bitmap') and e.value('eg_error')==2

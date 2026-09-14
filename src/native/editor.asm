@@ -8,8 +8,13 @@ ED_ABI=12
 ED_PAGES=96
 DOC_INPUT_STORAGE=$5000
 DOC_OUTPUT_STORAGE=$5200
+DOC_STATE_STORAGE=$5700
+DOC_TRANSIENT_STORAGE=$5f18
+DOC_EXTERNAL_MEMORY=1
+doc_storage_read=dm_read
+doc_storage_write=dm_write
 NK_SAVED_BUFFER=$5600
-GFX_TEXT_STORAGE=$5700
+GFX_TEXT_STORAGE=$5fc0
 .else
 ED_ABI=7
 ED_PAGES=79
@@ -71,6 +76,7 @@ ed_source_default:
         jmp ed_refresh
 cloop:
 .if NATIVE_EDITOR_GRAPHICS
+        jsr dm_ensure
         jsr eg_repair_text
 .endif
         lda #1
@@ -194,8 +200,13 @@ ed_confirmed:
         beq ed_new_document
  .if NATIVE_EDITOR_GRAPHICS
         jsr eg_close
-        bcs cloop
+        bcs ed_doc_error
+        jsr ed_close_owned
+        bcs ed_exit          ; native exit quarantines an uncertain file owner
+        jsr dm_cleanup
+        bcs ed_doc_error
  .endif
+ed_exit:
         jsr ed_keys_restore
         lda #0
         jmp N_EXIT
@@ -1743,7 +1754,11 @@ ed_blank_left: .byte 0
 ed_document_changed: .byte 0
 ed_edit_delta: .byte 0
 ed_adjust_row: .byte 0
+.if NATIVE_EDITOR_GRAPHICS
+ed_row_starts=$5f69
+.else
 ed_row_starts: .fill 51,0
+.endif
 ed_other_base: .fill 3,0
 ed_other_valid: .byte 0
 .if NATIVE_EDITOR_GRAPHICS
@@ -1759,7 +1774,10 @@ ed_other_page: .fill 512,0
 .include "editor/workspace.inc"
 .include "input/keys.inc"
 .include "editor/vdc.inc"
+.include "editor/memory.inc"
 BP_MODE=0
+BP_SHARED_MEMORY=1
+BP_STATE_STORAGE=$5f40
 BP_POINTER_STATE=eg_pointer_visible
 BP_POINTER_X=eg_pointer_x
 BP_POINTER_Y=eg_pointer_y

@@ -6,7 +6,8 @@ from pathlib import Path
 
 from ci_native_vdc_editor_recovery import RecoveryEditor,ignored
 from ci_native_vdc_editor import gui
-from ci_native_reu_calc import CalculatorBus,component
+from ci_native_reu_calc import CalculatorBus,component,COMPONENT_PAGES
+from native_document_reu import extent
 from native_picker_fixture import Picker
 from ci_native_browser import expected
 
@@ -35,9 +36,12 @@ def main():
                 assert p.bus.reu_ram[pages*256:]==p.bus.reu_original[pages*256:]
                 tokens=p.data('vs_token',8)+p.data('bk_handle',4)+p.data('eg_handle',4)
                 assert component(p,'vs_token',8)==tokens[:8]
-                free=bytes(p.ram[0x3800:0x3a00]).count(0);assert free==248
+                free=bytes(p.ram[0x3800:0x3a00]).count(0)
+                assert free==426-96-16-36-COMPONENT_PAGES
+                assert p.value('dm_mode')==2 and p.value('dm_lease')==1
                 p.prompt(0x85,'SOURCE');p.check(raw,0,False,name='SOURCE')
-                assert p.state()['chunks']==2
+                assert p.state()['backing']==1 and p.state()['chunks']==1
+                document_start,count=extent(p,p.state())
                 p.key(0x86);p.type('COPY');preferences=Picker(p).preferences();p.key(0x88)
                 rows=expected(p.io.files,9)
                 for row in rows:row['app']=False
@@ -49,7 +53,9 @@ def main():
                 assert bytes(p.io.files[9,b'COPY',b'S'])==raw and bytes(p.io.files[9,b'SOURCE',b'S'])==raw
                 assert p.data('vs_token',8)+p.data('bk_handle',4)+p.data('eg_handle',4)==tokens
                 p.exit();p.restored()
-                assert p.bus.reu_ram[pages*256:]==p.bus.reu_original[pages*256:]
+                assert p.bus.reu_ram[pages*256:document_start]==p.bus.reu_original[pages*256:document_start]
+                assert p.bus.reu_ram[document_start+count:]==p.bus.reu_original[document_start+count:]
+                assert not p.value('dm_lease')
                 done(f'{size} KiB VDC / {kib} KiB REU retains documents, picker and exact display backup',p,free_pages=free,file_bytes=len(raw))
         if args.group in ('all','recovery'):
             p=start(size=64);p.check(b'',0,False)

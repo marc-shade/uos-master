@@ -1,14 +1,14 @@
 # Shared native VDC service
 
-Desktop, Calculator, Ultimate, Paint and Files load the same `VDSVC.PRG` from their original app
+Desktop, Calculator, Ultimate, Paint, Files and Editor load the same `VDSVC.PRG` from their original app
 source. It supplies both the native 640×200 desktop layout and the incremental
-VIC-to-VDC presenter used by Calculator, Ultimate, Paint and Files, including the latter three apps' file
+VIC-to-VDC presenter used by Calculator, Ultimate, Paint, Files and Editor, including their file
 pickers. The blue interface, app icons, focus colors and pointer behavior
-remain consistent. All five apps can save their original
+remain consistent. All six apps can save their original
 VDC screen in an available REU, with main RAM as the fallback.
 
 The component is included on both D64/D81 suite and workspace disks. When
-copying Desktop, Calculator, Ultimate, Paint or Files to another IEC disk or Ultimate directory, copy
+copying any of these apps to another IEC disk or Ultimate directory, copy
 `VDSVC.PRG` beside it. A data-device selection or file-dialog path does not
 redirect component loading. Ultimate paths retain the original directory,
 including spaces and case, in either source context. A missing, damaged or
@@ -16,31 +16,31 @@ unavailable component leaves the VIC controls and VDC text fallback usable.
 
 ## Memory and lifetime
 
-[`vdc-service.asm`](../src/native/vdc-service.asm) is a 7,592-byte NBK1
-component, reserved in 30 bank-1 pages at `$6000..$7dff`. The retained
+[`vdc-service.asm`](../src/native/vdc-service.asm) is an 8,448-byte NBK1
+component, reserved in 33 bank-1 pages at `$6000..$80ff`. The retained
 [`vdc-client.inc`](../src/native/graphics/vdc-client.inc) uses the
 [checked banked loader and executor](NATIVE-BANKED.md). It closes the component
 stream before executing any provider code. The resident kernel and 426-page
 managed heap are unchanged.
 
-| Allocation while graphics are open | Desktop | Calculator | Ultimate | Paint | Files |
-|---|---:|---:|---:|---:|---:|
-| Bank-0 app | 35 pages | 49 pages | 96 pages | 96 pages | 96 pages |
-| Bank-1 component | 30 pages | 30 pages | 30 pages | 30 pages | 30 pages |
-| VIC surface | 36 pages | 36 pages | 36 pages | 36 pages | 36 pages |
-| History | 0 | 2 pages | 0 | 0 | 0 |
-| Picture and undo | 0 | 0 | 0 | 72 pages | 0 |
-| Retained scratch | 0 | 0 | 0 | 10 pages | 16 pages |
-| IEC browser cache | 0 | 0 | 0 | 0 | 37 pages |
-| Free main-RAM pages with REU backing | 325 | 309 | 264 | 182 | 211 |
-| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 | 200 | 118 | 147 |
-| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 | 192 | 110 | 139 |
+| Allocation while graphics are open | Desktop | Calculator | Ultimate | Paint | Files | Editor |
+|---|---:|---:|---:|---:|---:|---:|
+| Bank-0 app | 35 pages | 49 pages | 96 pages | 96 pages | 96 pages | 96 pages |
+| Bank-1 component | 33 pages | 33 pages | 33 pages | 33 pages | 33 pages | 33 pages |
+| VIC surface | 36 pages | 36 pages | 36 pages | 36 pages | 36 pages | 36 pages |
+| History | 0 | 2 pages | 0 | 0 | 0 | 0 |
+| Picture and undo | 0 | 0 | 0 | 72 pages | 0 | 0 |
+| Retained scratch | 0 | 0 | 0 | 10 pages | 16 pages | 16 pages |
+| IEC browser cache | 0 | 0 | 0 | 0 | 37 pages | 0 |
+| Free main-RAM pages with REU backing | 322 | 306 | 261 | 179 | 208 | 245 |
+| Free main-RAM pages with 16 KiB VDC RAM backing | 258 | 242 | 197 | 115 | 144 | 181 |
+| Free main-RAM pages with 64 KiB VDC RAM backing | 250 | 234 | 189 | 107 | 136 | 173 |
 
 Moving the display code saved eight pages in Desktop and Calculator's executable allocations.
-The separate component adds 30 pages while loaded; this is code-space headroom
-for further app migration, not a reduction in total RAM use on every machine.
-Editor documents, its module window and other app views still require separate
-backing-store work before they can adopt the component.
+The separate component occupies 33 pages while loaded. Its shared memory
+operations add three pages to the earlier display-only component. Editor
+documents use REU extents when available; its free main-RAM count then stays
+constant as a document grows. RAM documents still consume separate 4 KiB chunks.
 
 Ultimate keeps one component and saved VDC screen while its picker borrows the
 same VIC surface. Its picker allocates four scratch pages only while open and
@@ -63,6 +63,13 @@ coordinates copied from whichever module currently owns the pointer. A failed
 display pauses copy/verification at its current chunk without releasing streams
 or changing launch identity. Escape restores before cancellation or app handoff.
 
+Editor likewise retains the provider, snapshot and surface through its checked
+picker/graphics module swaps. Its document memory lease keeps the shared arena
+and provider alive after a screen restore. The display can reopen against that
+same arena. Documents and snapshots have distinct REU owners; each releases its
+own storage before the final component unload. See the
+[shared memory contract](NATIVE-SHARED-MEMORY.md).
+
 Input, application logic and the VIC surface stay in bank 0. Calls clear
 `N_READY` before preparing the mailbox or changing banks. The normal app input
 loop publishes readiness again. The checked executor temporarily exposes
@@ -70,10 +77,11 @@ loop publishes readiness again. The checked executor temporarily exposes
 mapping for the duration of the service. The REU probe buffer is in physical
 bank 1; DMA transfers through `N_BUFFER` use physical bank 0.
 
-Close restores all owned VDC memory and registers before releasing its snapshot,
-REU arena and executable allocation. Display and REU recovery failures retain
+Close restores all owned VDC memory and registers before releasing its snapshot.
+The arena and executable remain loaded while a document memory lease is active.
+Display and REU recovery failures retain
 the component and block app handoff until restoration succeeds. A clean VDC
-setup refusal immediately releases the unused component. An uncertain source
+setup refusal releases the component when no memory lease needs it. An uncertain source
 close retains the native file record and executable; repeated exits do not
 retry I/O through a poisoned stream or discard its owner.
 
@@ -81,7 +89,7 @@ retry I/O through a poisoned stream or discard its owner.
 
 This is the suite's internal component interface under native ABI 1.12. Calls
 use `bk_call` with A equal to an operation and return the native A/carry result.
-The parent retrieves status after each completed operation. A checked-executor
+The display parent retrieves status after each completed display operation. A checked-executor
 failure leaves a conservative recovery phase until cleanup can be verified.
 
 | Operation | Meaning |
@@ -92,6 +100,7 @@ failure leaves a conservative recovery phase until cleanup can be verified.
 | 3 | Update the clipped pointer |
 | 4 | Restore and close, retaining recovery on failure |
 | 5 | Copy the 41-byte status record into `N_BUFFER` |
+| 6–14 | Shared memory version/lease/allocation/transfer/resize operations; use the transient heap mailbox, preserving the 512-byte payload |
 
 Operations 1–3 consume this packet in bank-0 `N_BUFFER`:
 
@@ -138,4 +147,6 @@ component has not been deployed to or qualified on physical hardware.
 Paint's [graphical VDC qualification](validation/2026-09-13-native-paint-vdc/README.md)
 adds complete picture and picker canvases, keyboard-brush visibility, panning,
 connected strokes, owned scratch, both backing stores and failure recovery.
-The shared provider and other apps retain their previous executable bytes.
+That checkpoint retained the shared provider's executable bytes. The document
+memory extension changes the provider; the other app programs retain their
+previous executable bytes.

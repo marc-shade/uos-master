@@ -72,12 +72,18 @@ class Document:
         at=self.symbols['d_states']+slot;raw=self.ram[at:at+128]
         return dict(length=int.from_bytes(raw[:3],'little'),gap=int.from_bytes(raw[3:6],'little'),
                     end=int.from_bytes(raw[6:9],'little'),capacity=int.from_bytes(raw[9:12],'little'),
-                    dirty=raw[12],chunks=raw[13],fault=raw[14],handles=bytes(raw[16:112]))
+                    dirty=raw[12],chunks=raw[13],fault=raw[14],backing=raw[15],handles=bytes(raw[16:112]))
 
     def bytes(self,slot=0):
         state=self.state(slot);assert not state['fault']
-        assert 0<=state['gap']<=state['end']<=state['capacity']==state['chunks']*4096
+        assert 0<=state['gap']<=state['end']<=state['capacity']
         assert state['length']==state['capacity']-(state['end']-state['gap'])
+        if state['backing']:
+            from native_document_reu import physical_bytes
+            data=physical_bytes(self,state)
+            self.banks={'reu'}
+            return bytes(data[:state['gap']]+data[state['end']:])
+        assert state['capacity']==state['chunks']*4096
         data=bytearray();banks=set()
         for index in range(state['chunks']):
             handle=state['handles'][index*4:index*4+4]

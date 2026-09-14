@@ -95,8 +95,11 @@ def main():
     parser.add_argument('--controls-only',action='store_true')
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--editor-only',action='store_true')
+    parser.add_argument('--editor-large',action='store_true',help='edit/save/reopen a 128 KiB REU document on the private D81')
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
+    if args.editor_large:
+        assert args.editor_only and args.d81 and args.reu_kib and args.reu_kib>=512
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
     print('Native pointer VICE:',work,flush=True)
     shutil.copy2(__file__,work/'run.py')
@@ -105,6 +108,10 @@ def main():
     kernel_prefix='native-desktop/d81' if args.d81 else 'native-desktop'
     disk=work/('suite.d81' if args.d81 else 'suite.d64')
     shutil.copy2(ROOT/'target/native-desktop'/disk_name,disk)
+    if args.editor_large:
+        editor_large=(b'0123456789ABCDEF\r\n'*8000)[:131113]
+        source=work/'large-input.seq';source.write_bytes(editor_large)
+        subprocess.run(['c1541','-attach',str(disk),'-write',str(source),'large,s'],check=True,capture_output=True)
     data_disk=work/'data-9.d64'
     subprocess.run(['c1541','-format','picker data,09','d64',str(data_disk)],check=True,capture_output=True)
     shutil.copy2(data_disk,work/'initial-data-9.d64')
@@ -134,6 +141,8 @@ def main():
         if args.reu_kib:
             from native_reu_check import initial_memory,snapshot as reu_dump
             reu_initial=initial_memory(args.reu_kib)
+            from native_reu_document_check import ReuDocumentOracle
+            reu_documents=ReuDocumentOracle(reu_initial)
             (work/'initial.reu').write_bytes(reu_initial)
             command.extend(['-reu','-reusize',str(args.reu_kib),'-reuimage',str(work/'initial.reu'),'+reuimagerw'])
         report['command']=command;save()
@@ -298,8 +307,13 @@ def main():
         def reu_snapshot(label):
             with paused.paused(label+'-reu'):
                 memory,info=reu_dump(mon,work/(label+'-reu.vsf'))
-            assert memory[72*256:]==reu_initial[72*256:], 'REU bytes outside foreground VDC backups'
+            assert memory[72*256:]==reu_documents.expected[72*256:], 'complete REU bytes outside VDC backups, including document data and unused capacity'
             return memory,info
+        def editor_reu_document(label,logical,*,loaded=False):
+            if not args.reu_kib:return
+            evidence=reu_documents.capture(capture,app_read,work,label,reu_snapshot,logical,loaded=loaded)
+            report.setdefault('editor_reu_documents',[]).append(evidence);save()
+            print('PASS: independent REU document and every unrelated byte:',label,len(logical),flush=True)
         def restore_checkpoint():
             entry=lst_symbol('native-desktop/vdsvc','vd_restore_registers')
             error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
@@ -463,6 +477,8 @@ def main():
             assert state['cursor']==cursor,(label,state,cursor)
             assert state['ed_mode']==expected.get('mode',0) and state['ed_status']==expected.get('status',0),(label,state)
             kwargs=dict(focus=focus,fmt=boot_format,**expected)
+            kwargs.setdefault('view',int.from_bytes(app_read(symbol('ed_view'),3),'little'))
+            kwargs.setdefault('horizontal',int.from_bytes(app_read(symbol('ed_horizontal'),3),'little'))
             wanted=editor_surface(data,cursor,**kwargs)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
@@ -678,8 +694,11 @@ def main():
                 move_to(164,172);editor_view('editor-open',b'',0)
                 for char in ('c','1','2','8','space','t','e','x','t'):key(char,'editor')
                 document=b'C128 TEXT';editor_view('editor-typed',document,len(document),dirty=True)
+                editor_reu_document('editor-typed-reu',document,loaded=True)
                 editor_click(6,(28,60));editor_view('editor-caret',document,2,dirty=True)
                 key('x','editor');document=b'C1X28 TEXT';editor_view('editor-insert',document,3,dirty=True)
+                if args.reu_kib:reu_documents.insert(2,b'X')
+                editor_reu_document('editor-insert-reu',document)
                 editor_click(2)
                 for char in 'guinote':key(char,'editor')
                 field=dict(mode=2,field='GUINOTE',field_caret=7,field_view=0,dirty=True)
@@ -707,6 +726,43 @@ def main():
                 editor_click(12);editor_view('editor-found',document,8,name='GUINOTE',status=13,device=editor_device)
                 report['editor_destination_device']=editor_device
                 report['editor_saved_hex']=document.hex();save()
+                if args.editor_large:
+                    # Host F5 maps to native New; host F7 maps to Go To.
+                    key('F5','editor')
+                    editor_click(1)
+                    for char in 'large':key(char,'editor')
+                    editor_click(12)
+                    editor_view('editor-large-open',editor_large,0,name='LARGE')
+                    editor_reu_document('editor-large-input-reu',editor_large,loaded=True)
+                    key('F7','editor')
+                    for char in '018001':key(char,'editor')
+                    key('Return','editor')
+                    edit_at=98305+(editor_large[98304:98306]==b'\r\n')
+                    for char in 'reu96':key(char,'editor')
+                    reu_documents.insert(edit_at,b'REU96')
+                    edited=editor_large[:edit_at]+b'REU96'+editor_large[edit_at:]
+                    editor_view('editor-large-edited',edited,edit_at+5,name='LARGE',dirty=True)
+                    editor_reu_document('editor-large-edit-reu',edited)
+                    editor_click(2)
+                    for char in 'reucopy':key(char,'editor')
+                    editor_click(14)
+                    entries=disk_records(disk.read_bytes(),boot_format)
+                    for entry in entries:entry['app']=False
+                    picker_view('editor-large-picker',entries,mode=2,fmt=boot_format)
+                    editor_reu_document('editor-large-picker-reu',edited)
+                    picker_click(18)
+                    editor_click(12)
+                    editor_view('editor-large-saved',edited,edit_at+5,name='REUCOPY',status=1)
+                    editor_reu_document('editor-large-saved-reu',edited)
+                    key('F5','editor')
+                    editor_click(1)
+                    for char in 'reucopy':key(char,'editor')
+                    editor_click(12)
+                    editor_view('editor-large-reopened',edited,0,name='REUCOPY')
+                    editor_reu_document('editor-large-reopened-reu',edited,loaded=True)
+                    (work/'expected-reu-copy.seq').write_bytes(edited)
+                    report['editor_large_bytes']=len(edited)
+                    report['editor_large_sha256']=hashlib.sha256(edited).hexdigest();save()
             elif name=='calc':
                 pointer_app='calc'
                 assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
@@ -884,6 +940,13 @@ def main():
         # Independently export each created file and preserve every shipped file.
         contents=exact_disk_files(disk.read_bytes(),boot_format)
         before_files=exact_disk_files((image/disk_name).read_bytes(),boot_format)
+        if args.editor_large:
+            assert contents.pop(b'LARGE')==(1,editor_large)
+            assert contents.pop(b'REUCOPY')==(1,(work/'expected-reu-copy.seq').read_bytes())
+            exported=work/'exported-reu-copy.seq'
+            subprocess.run(['c1541','-attach',str(disk),'-read','reucopy,s,r',str(exported)],check=True,capture_output=True)
+            assert exported.read_bytes()==(work/'expected-reu-copy.seq').read_bytes()
+            report['editor_large_independent_export_matches']=True
         if 'calc' in ran_apps:assert contents.pop(b'GUIHIST')==(1,b'42\r')
         data_contents=exact_d64_files(data_disk.read_bytes())
         if 'editor' in ran_apps:

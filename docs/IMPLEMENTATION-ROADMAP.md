@@ -84,7 +84,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 |---|---|---|---|
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Native boot/kernel, two-screen workspace, banked files/apps and keyboard graphical desktop at 1 MHz; owned display lifetime and KERNAL gateways | Remaining desktop/app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
-| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) with 4 KiB allocations and generation tokens, used for Desktop, Calculator, Ultimate, Paint and Files VDC snapshots with main-RAM fallback | REU-backed documents/caches and larger app heaps; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
+| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) for Desktop, Calculator, Ultimate, Paint, Files and Editor VDC snapshots; [shared REU Editor documents](NATIVE-SHARED-MEMORY.md) with resizable extents, separate display lifetime and RAM fallback | REU-backed clipboard/caches and larger app heaps; disk-backed documents; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher on VIC and 640×200 VDC, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
@@ -729,9 +729,21 @@ After restoration, a complete text repaint precedes new input. Ctrl-L retries
 VDC graphics. The original diagnostic Editor and the other app programs remain
 unchanged.
 
-Editor documents still consume main RAM in 4 KiB chunks. The active VDC service
+At that VDC checkpoint, Editor documents still consumed main RAM in 4 KiB chunks. The active VDC service
 reduces their capacity; the prior 66 KiB graphical-document result no longer
-applies with that service loaded. Memory-limit Open preserves the old document,
-and REU-backed documents remain an unfinished requirement. Claude VDC controls,
+applied with that service loaded. Memory-limit Open preserved the old document,
+and REU-backed documents were the next memory requirement. Claude VDC controls,
 clipboard, undo, window management, scheduling, office apps, printing, expansion
 drivers, physical qualification and the rest of this roadmap also remain open.
+
+The shared REU document implementation now gives Editor one resizable extent
+per context, using the same arena as the VDC snapshot. A memory lease retains
+documents and the provider after display close; graphics can reopen without
+losing them. The 24-bit document path passes software tests beyond 1 MiB, and
+staged Open on a 128 KiB REU preserves a dirty original when capacity runs out.
+A clean REU refusal keeps the existing RAM path. Failed transfers poison the
+context and refuse Save As; uncertain probe and temporary-allocation cleanup
+retain their owners for recovery. The service adds three bank-1 pages, while
+REU document growth consumes no additional main RAM. Physical qualification,
+live expansion reconfiguration, disk-backed documents, clipboard, undo,
+scheduling and the remaining app/desktop work are still open.

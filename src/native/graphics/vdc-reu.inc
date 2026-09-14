@@ -10,6 +10,7 @@ vs_native_alloc=N_ALLOC
 vs_native_read=N_READ
 vs_native_write=N_WRITE
 vs_native_free=N_FREE
+vs_arena_close=ru_close
 .endweak
 
 vs_alloc:
@@ -48,7 +49,7 @@ vs_reu_alloc:
         clc
         rts
 vs_ram_close:
-        jsr ru_close
+        jsr vs_arena_close
         bcs vs_return
 vs_ram:
         lda #0
@@ -93,7 +94,7 @@ vs_select:
 vs_close:
         lda vs_reu
         beq +
-        jsr ru_close
+        jsr vs_arena_close
         bcs vs_return
         lda #0
         sta vs_reu

@@ -4,15 +4,26 @@
 BP_POINTER_STATE=pm_seen
 BP_POINTER_X=pm_x
 BP_POINTER_Y=pm_y
+BP_SHARED_MEMORY=0
+BP_STATE_STORAGE=0
 .endweak
 vd_open:
         lda #0
         sta N_READY
         sta vd_fault
         lda bk_state
+.if BP_SHARED_MEMORY
+        cmp #2
+        bne +
+        lda dm_lease
+        bne bp_loaded
+        beq bp_open_bad
++       lda bk_state
+.endif
         bne bp_open_bad
         jsr bp_load
         bcs bp_open_failed
+bp_loaded:
         lda #1
         sta bp_started
         sta vd_phase          ; conservative until the returned state is copied
@@ -48,6 +59,10 @@ vd_close:
         lda #0
         sta bp_started
 bp_dispose:
+.if BP_SHARED_MEMORY
+        lda dm_lease
+        bne bp_closed
+.endif
         jsr bk_close
         bcs bp_close_failed
         lda bp_file
@@ -322,7 +337,11 @@ bp_result: .byte 0
 bp_carry: .byte 0
 bp_error: .byte 0
 bp_name: .text "vdsvc.prg"
+.if BP_STATE_STORAGE
+bp_state=BP_STATE_STORAGE
+.else
 bp_state: .fill 41,0
+.endif
 vd_phase=bp_state
 vd_live=bp_state+1
 vd_color=bp_state+2

@@ -71,12 +71,18 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--size',type=int,choices=(16,64),required=True)
     parser.add_argument('--addressing',type=int,choices=(16,64),default=16)
+    parser.add_argument('--reu-kib',type=int,choices=(128,512,16384))
     parser.add_argument('--case',choices=('keyboard','mouse','search','picker','cancel_write','cancel_verify','longfields','source'),required=True)
     parser.add_argument('--report',type=Path,required=True)
     args=parser.parse_args()
     original_bus,original_app,argv=gui.PointerBus,gui.GraphicalEditor,sys.argv
     try:
-        gui.PointerBus=type('EditorVDC',(VDCBus,),dict(size=args.size,addressing=args.addressing))
+        base=VDCBus
+        options=dict(size=args.size,addressing=args.addressing)
+        if args.reu_kib:
+            from ci_native_reu_calc import CalculatorBus
+            base=CalculatorBus;options['reu_kib']=args.reu_kib
+        gui.PointerBus=type('EditorVDC',(base,),options)
         if args.case=='source':
             from ci_native_vdc_editor_recovery import RecoveryEditor
             gui.GraphicalEditor=RecoveryEditor
@@ -85,6 +91,7 @@ def main():
         gui.main()
         report=json.loads(args.report.read_text());report['vdc_kib']=args.size
         report['initial_addressing']=args.addressing
+        report['reu_kib']=args.reu_kib
         report['complete_vic_and_vdc_canvases']=sum(case['checked'] for case in report['cases'])
         args.report.write_text(json.dumps(report,indent=2)+'\n')
     finally:

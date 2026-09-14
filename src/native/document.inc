@@ -12,6 +12,11 @@
 .weak
 DOC_INPUT_STORAGE=0
 DOC_OUTPUT_STORAGE=0
+DOC_STATE_STORAGE=0
+DOC_TRANSIENT_STORAGE=0
+DOC_EXTERNAL_MEMORY=0
+doc_storage_read=N_READ
+doc_storage_write=N_WRITE
 .endweak
 D_LEN = 0
 D_GAP = 3
@@ -20,6 +25,7 @@ D_CAP = 9
 D_DIRTY = 12
 D_CHUNKS = 13
 D_FAULT = 14
+D_BACKING = 15               ; 0 main RAM; 1 shared REU extent (opt-in)
 D_HANDLES = 16
 D_MAXCHUNKS = 24
 
@@ -121,6 +127,17 @@ doc_context:
         and #$7f
         bne doc_badarg
         ldx d_slot
+.if DOC_EXTERNAL_MEMORY
+        lda d_states+D_BACKING,x
+        cmp #2
+        bcs doc_corrupt
+        cmp #1
+        bne +
+        lda d_states+D_CHUNKS,x
+        cmp #1
+        bne doc_corrupt
++
+.endif
         lda d_states+D_FAULT,x
         bne doc_corrupt
         jmp doc_ok
@@ -153,6 +170,10 @@ doc_dispose:
         and #$7f
         bne doc_badarg
         ldx d_slot
+.if DOC_EXTERNAL_MEMORY
+        lda d_states+D_BACKING,x
+        bne dm_dispose
+.endif
         lda d_states+D_CHUNKS,x
         cmp #D_MAXCHUNKS+1
         bcs doc_corrupt
@@ -208,6 +229,11 @@ doc_get_handle:
 
 ; Select a physical range already bounded by the caller to one 4 KiB chunk.
 doc_select:
+.if DOC_EXTERNAL_MEMORY
+        ldx d_slot
+        lda d_states+D_BACKING,x
+        bne dm_select
+.endif
         lda d_at+2
         asl
         asl
@@ -331,12 +357,12 @@ doc_move_piece:
         #doc_copy3 d_src,d_at
         jsr doc_select
         bcs doc_fault
-        jsr N_READ
+        jsr doc_storage_read
         bcs doc_fault
         #doc_copy3 d_dst,d_at
         jsr doc_select
         bcs doc_fault
-        jsr N_WRITE
+        jsr doc_storage_write
         bcs doc_fault
         rts
 
@@ -368,9 +394,20 @@ doc_seek_left:
 
 doc_grow:
         ldx d_slot
+.if DOC_EXTERNAL_MEMORY
+        lda d_states+D_BACKING,x
+        bne dm_grow
+        lda d_states+D_CHUNKS,x
+        bne +
+        lda dm_mode
+        cmp #2
+        beq dm_grow
++
+.endif
         lda d_states+D_CHUNKS,x
         cmp #D_MAXCHUNKS
         bcc doc_allocate
+doc_nomem:
         lda #N_NOMEM
         sec
         rts
@@ -396,6 +433,7 @@ doc_allocate:
         sta d_states+D_HANDLES+2,x
         lda N_HANDLE+3
         sta d_states+D_HANDLES+3,x
+doc_grown:
         #doc_load3 D_CAP,d_src
         #doc_copy3 d_src,d_dst
         clc
@@ -456,7 +494,7 @@ doc_insert_loop:
         jsr doc_input_to_buffer
         jsr doc_select
         bcs doc_fault
-        jsr N_WRITE
+        jsr doc_storage_write
         bcs doc_fault
         #doc_add3 d_n,d_at
         #doc_sub3 d_n,d_left
@@ -529,7 +567,7 @@ doc_read_mapped:
         jsr doc_forward_limit
         jsr doc_select
         bcs doc_fault
-        jsr N_READ
+        jsr doc_storage_read
         bcs doc_fault
         jsr doc_buffer_to_output
         #doc_add3 d_n,d_cur
@@ -594,6 +632,24 @@ doc_local_write:
         bne doc_local_read
         rts
 
+.if DOC_TRANSIENT_STORAGE
+d_slot=DOC_TRANSIENT_STORAGE
+d_owner=d_slot+1
+d_pos=d_slot+2
+d_count=d_slot+5
+d_actual=d_slot+8
+d_at=d_slot+10
+d_cur=d_slot+13
+d_src=d_slot+16
+d_dst=d_slot+19
+d_left=d_slot+22
+d_n=d_slot+25
+d_limit=d_slot+28
+d_bound3=d_slot+31
+d_bound=d_slot+34
+d_bytes=d_slot+36
+d_index=d_slot+38
+.else
 d_slot: .byte 0
 d_owner: .byte 0
 d_pos: .fill 3,0
@@ -610,7 +666,12 @@ d_bound3: .fill 3,0
 d_bound: .word 0
 d_bytes: .word 0
 d_index: .byte 0
+.endif
+.if DOC_STATE_STORAGE
+d_states=DOC_STATE_STORAGE
+.else
 d_states: .fill 256,0
+.endif
 .if DOC_INPUT_STORAGE
 d_input=DOC_INPUT_STORAGE
 .else

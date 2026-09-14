@@ -108,12 +108,15 @@ older kernels reject this image before executing it.
 ## Memory and storage behavior
 
 [`document.inc`](../src/native/document.inc) implements a gap buffer with two
-independent document contexts. Each context owns up to 24 allocations of 4 KiB.
+independent document contexts. RAM contexts own up to 24 allocations of 4 KiB.
 Logical length, cursor and gap boundaries are 24-bit values; local transfers
-use at most 512 bytes. The format can address 96 KiB per context, but actual
+use at most 512 bytes. The RAM format can address 96 KiB per context, but actual
 capacity is lower when the application, workspace allocations, a second
-document or fragmentation consume the heap. This is RAM-backed editing;
-REU/disk-backed documents remain to be implemented.
+document or fragmentation consume the heap. The graphical suite also uses
+[shared REU extents](NATIVE-SHARED-MEMORY.md) when available. Each REU context
+has one resizable extent and can exceed 96 KiB without consuming additional
+main RAM. Documents retain their storage when VDC graphics closes. Disk-backed
+documents remain to be implemented; the diagnostic editor keeps its RAM path.
 
 Open fills the pending context while retaining the current document. Only
 complete input and a successful CLOSE permit the switch. Missing files,
@@ -173,19 +176,22 @@ host monitoring; they are not isolated keyboard or CPU benchmarks.
 Allocation failure occurs before an edit mutates logical bytes. Unexpected
 handle/transfer failure poisons that context; subsequent reads/edits/saves
 reject it instead of treating uncertain memory as a valid document. Cleanup
-retains failed handles for a later release attempt. Ordinary application exit
-uses the kernel's owner cleanup for both contexts and the application image.
+retains failed handles for a later release attempt. Controlled graphical exit
+frees both documents, ends the memory lease and closes the provider. An
+uncertain file owner remains quarantined with its document storage. The
+diagnostic editor uses kernel owner cleanup for its RAM contexts.
 
 The diagnostic editor reserves 79 heap pages for code, local state and either
 module. The graphical suite uses 96 app pages, a 16-page owned workspace,
-a 36-page surface and a 30-page VDC provider plus its RAM/REU screen backup;
+a 36-page surface and a 33-page VDC/memory provider plus its RAM/REU screen backup;
 its [memory and lifetime contract](NATIVE-EDITOR-GUI.md#storage-and-presentation-lifetime)
 accounts for those allocations separately.
 Saving reuses the insertion buffer for its reopen comparison. The picker
 borrows three idle 512-byte buffers and allocates additional cache blocks of
 at most four pages
-only while browsing. Document capacity still depends on the remaining heap
-and 4 KiB allocation fragmentation. The workspace's bank-0 block now sits at
+only while browsing. RAM document capacity depends on the remaining heap
+and 4 KiB allocation fragmentation. REU capacity depends on free extents and
+temporary space for relocation or staged Open. The workspace's bank-0 block sits at
 the top of managed RAM, keeping the free region below it contiguous.
 The kernel reserves 4 KiB for Ultimate services and manages 426 heap pages.
 The existing public file entries dispatch both backends; ABI 1.3 adds the

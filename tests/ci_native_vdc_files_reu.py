@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 from ci_native_vdc_files import Files,gui
-from ci_native_reu_calc import CalculatorBus,component
+from ci_native_reu_calc import CalculatorBus,component,COMPONENT_PAGES
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
             assert p.bus.reu_ram[:pages*256]==p.bus.original[0][base:base+pages*256]
             assert p.bus.reu_ram[pages*256:]==p.bus.reu_original[pages*256:]
             token=p.data('vs_token',8);assert component(p,'vs_token',8)==token
-            free=sum(p.m.stats()[:2]);assert free==426-p.image[12]-36-30-16-37
+            free=sum(p.m.stats()[:2]);assert free==426-p.image[12]-36-COMPONENT_PAGES-16-37
             p.key(ord('C'));p.rename('COPY');p.copy(b'SOURCE',b'COPY')
             p.key(0x88);p.mirror();p.key(27);p.copy(b'SOURCE',b'COPY')
             assert component(p,'vs_token',8)==token and sum(p.m.stats()[:2])==free

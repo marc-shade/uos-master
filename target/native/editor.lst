@@ -1,14 +1,14 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
-; 64tass -a -B -o /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/target/native/editor.prg -L /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/target/native/editor.lst /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
-; Mon Sep 14 02:14:57 2026
+; 64tass -a -B -o /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/target/native/editor.prg -L /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/target/native/editor.lst /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
+; Mon Sep 14 03:30:18 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
-;******  Processing input file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Processing input file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/api.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/api.inc
 
 =1						N_ABI_MAJOR = 1
 =12						N_ABI_MINOR = 12
@@ -169,7 +169,7 @@
 =$50						N_FIRST0        = $50            ; bank 0 $5000..$feff: 175 pages
 =$04						N_FIRST1        = $04            ; bank 1 $0400..$feff: 251 pages
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 =0						NATIVE_EDITOR_GRAPHICS=0
 =7						ED_ABI=7
@@ -186,10 +186,15 @@
 >601c		00 00 00 00			        .fill N_APPBASE+32-*,0
 =1						DOC_REPLACE_EXTERNAL = 1
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/document.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/document.inc
 
 =0						DOC_INPUT_STORAGE=0
 =0						DOC_OUTPUT_STORAGE=0
+=0						DOC_STATE_STORAGE=0
+=0						DOC_TRANSIENT_STORAGE=0
+=0						DOC_EXTERNAL_MEMORY=0
+=$1c26						doc_storage_read=N_READ
+=$1c29						doc_storage_write=N_WRITE
 =0						D_LEN = 0
 =3						D_GAP = 3
 =6						D_END = 6
@@ -197,6 +202,7 @@
 =12						D_DIRTY = 12
 =13						D_CHUNKS = 13
 =14						D_FAULT = 14
+=15						D_BACKING = 15               ; 0 main RAM; 1 shared REU extent (opt-in)
 =16						D_HANDLES = 16
 =24						D_MAXCHUNKS = 24
 .6020						doc_init:
@@ -536,7 +542,7 @@
 .6332		20 2b 61	jsr $612b	        jsr doc_select
 .6335		90 03		bcc $633a	        bcs doc_fault
 .6337		4c 42 60	jmp $6042
-.633a		20 26 1c	jsr $1c26	        jsr N_READ
+.633a		20 26 1c	jsr $1c26	        jsr doc_storage_read
 .633d		b0 f8		bcs $6337	        bcs doc_fault
 .633f		ad ee 69	lda $69ee	        lda d_dst
 .6342		8d e5 69	sta $69e5	        sta d_at
@@ -546,7 +552,7 @@
 .634e		8d e7 69	sta $69e7	        sta d_at+2
 .6351		20 2b 61	jsr $612b	        jsr doc_select
 .6354		b0 e1		bcs $6337	        bcs doc_fault
-.6356		20 29 1c	jsr $1c29	        jsr N_WRITE
+.6356		20 29 1c	jsr $1c29	        jsr doc_storage_write
 .6359		b0 dc		bcs $6337	        bcs doc_fault
 .635b		60		rts		        rts
 .635c						doc_seek_gap:
@@ -662,6 +668,7 @@
 .6490		bd 0f 6a	lda $6a0f,x	        lda d_states+D_CHUNKS,x
 .6493		c9 18		cmp #$18	        cmp #D_MAXCHUNKS
 .6495		90 04		bcc $649b	        bcc doc_allocate
+.6497						doc_nomem:
 .6497		a9 02		lda #$02	        lda #N_NOMEM
 .6499		38		sec		        sec
 .649a		60		rts		        rts
@@ -687,6 +694,7 @@
 .64ce		9d 14 6a	sta $6a14,x	        sta d_states+D_HANDLES+2,x
 .64d1		ad 07 3d	lda $3d07	        lda N_HANDLE+3
 .64d4		9d 15 6a	sta $6a15,x	        sta d_states+D_HANDLES+3,x
+.64d7						doc_grown:
 .64d7		ae db 69	ldx $69db	        ldx d_slot
 .64da		bd 0b 6a	lda $6a0b,x	        lda d_states+D_CAP,x
 .64dd		8d eb 69	sta $69eb	        sta d_src
@@ -856,7 +864,7 @@
 .669f		20 2b 61	jsr $612b	        jsr doc_select
 .66a2		90 03		bcc $66a7	        bcs doc_fault
 .66a4		4c 42 60	jmp $6042
-.66a7		20 29 1c	jsr $1c29	        jsr N_WRITE
+.66a7		20 29 1c	jsr $1c29	        jsr doc_storage_write
 .66aa		b0 f8		bcs $66a4	        bcs doc_fault
 .66ac		18		clc		        clc
 .66ad		ad e5 69	lda $69e5	        lda d_at
@@ -1087,7 +1095,7 @@
 .690f		20 2b 61	jsr $612b	        jsr doc_select
 .6912		90 03		bcc $6917	        bcs doc_fault
 .6914		4c 42 60	jmp $6042
-.6917		20 26 1c	jsr $1c26	        jsr N_READ
+.6917		20 26 1c	jsr $1c26	        jsr doc_storage_read
 .691a		b0 f8		bcs $6914	        bcs doc_fault
 .691c		20 8f 69	jsr $698f	        jsr doc_buffer_to_output
 .691f		18		clc		        clc
@@ -1197,7 +1205,7 @@
 ;		...repeated 30 times (480 bytes)...
 >6efa		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 .6f02						editor_entry:
 .6f02		d8		cld		        cld
@@ -1365,6 +1373,7 @@
 .706e		4c d4 8a	jmp $8ad4
 .7071		c9 05		cmp #$05	        cmp #5
 .7073		f0 08		beq $707d	        beq ed_new_document
+.7075						ed_exit:
 .7075		20 97 7f	jsr $7f97	        jsr ed_keys_restore
 .7078		a9 00		lda #$00	        lda #0
 .707a		4c 3e 1c	jmp $1c3e	        jmp N_EXIT
@@ -3357,7 +3366,7 @@
 ;		...repeated 30 times (480 bytes)...
 >899f		00 00 00 00 00 00 00 00
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor-search-gate.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor-search-gate.inc
 
 .89a7						ed_search_launch:
 .89a7		8d 65 8a	sta $8a65	        sta ed_s_request
@@ -3399,10 +3408,10 @@
 >8a64		00				ed_s_running: .byte 0
 >8a65		00				ed_s_request: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor-files.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor-files.inc
 
 .8a66						ed_close_owned:
 .8a66		ad dc 69	lda $69dc	        lda d_owner
@@ -3941,10 +3950,10 @@
 >8f72		00 00				ed_nl_left: .word 0
 =$6b02						ed_verify_data = d_input
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor-dialog.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor-dialog.inc
 
 .8f74						ed_browse:
 .8f74		a9 01		lda #$01	        lda #1
@@ -4088,7 +4097,7 @@
 >9099		00				ed_module_kind: .byte 0
 >909a		00				ed_module_wanted: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 =1						FD_EMBEDDED = 1
 =6						FD_DIRECT_PAGES = 6
@@ -4107,7 +4116,7 @@
 >90a7		10 00				        .word fd_run-editor_module
 >90a9		00 00				        .word 0                ; build seals the independent module CRC
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/file-dialog.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/file-dialog.inc
 
 =8						FD_DIRECT_PAGES = 8
 =0						FD_GUI_SHARED = 0
@@ -4594,7 +4603,7 @@
 .94b9						fd_cursors_done:
 .94b9		60		rts		        rts
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/file-browser.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/file-browser.inc
 
 =0						B_COPY = 0
 =0						B_GUI = 0
@@ -4991,7 +5000,7 @@
 .9805		8e 86 3d	stx $3d86	        stx N_FNAMELEN
 .9808		60		rts		        rts
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/browser-ui.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/browser-ui.inc
 
 .9809						b_draw:
 .9809		a9 00		lda #$00	        lda #0
@@ -5360,10 +5369,10 @@
 >9cd9		00				b_num_started: .byte 0
 >9cda		00				b_digit: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/file-browser.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/file-browser.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/browser-usb.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/browser-usb.inc
 
 .9cdb						b_usb_begin:
 .9cdb		a9 02		lda #$02	        lda #2
@@ -5555,10 +5564,10 @@
 ;		...repeated 14 times (224 bytes)...
 >9f8f		00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/file-browser.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/file-browser.inc
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/browser-ultimate.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/browser-ultimate.inc
 
 .9f91						bu_path_validate:
 .9f91		ad 2e 3d	lda $3d2e	        lda N_BROWSERLEN
@@ -6545,7 +6554,7 @@
 ;		...repeated 14 times (224 bytes)...
 >aa24		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/file-browser.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/file-browser.inc
 
 >aa2c		00 60 4e 41 50 50		b_app_magic: .byte 0,$60,$4e,$41,$50,$50
 .aa32						b_cache:
@@ -6581,7 +6590,7 @@
 ;		...repeated 14 times (224 bytes)...
 >ab8e		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/file-dialog.inc
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/file-dialog.inc
 
 >ab96		02 6b 02 6d			fd_scratch: .word FD_SCRATCH0,FD_SCRATCH1
 >ab9a		a7 87				        .word FD_SCRATCH2
@@ -6627,7 +6636,7 @@
 ;		...repeated 14 times (224 bytes)...
 >aecc		00 00 00 00 00 00 00 00
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 .aed4						editor_end:
 .aed4	909b					editor_search_module:
@@ -6638,7 +6647,7 @@
 >aee0	90a7	10 00				        .word ed_search_entry-editor_search_module
 >aee2	90a9	00 00				        .word 0
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor-search.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor-search.inc
 
 .aee4	90ab					ed_search_entry:
 .aee4	90ab	ad 65 8a	lda $8a65	        lda ed_s_request
@@ -7163,10 +7172,10 @@
 >b531	96f8	00				ed_s_ticks: .byte 0
 >b532	96f9	00				ed_s_byte: .byte 0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 
-;******  Processing file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/document-replace.inc
+;******  Processing file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/document-replace.inc
 
 .b533	96fa					doc_replace:
 .b533	96fa	ad c4 98	lda $98c4	        lda d_replace_count+2
@@ -7335,7 +7344,7 @@
 .b6f8	98bf	4c 7b 66	jmp $667b	        jmp doc_dirty
 >b6fb	98c2	00 00 00			d_replace_count: .fill 3,0
 
-;******  Return to file: /var/tmp/arc-scratch/uos-editor-vdc-finalize-lesjk351/src/native/editor.asm
+;******  Return to file: /var/tmp/arc-scratch/uos-editor-reu-documents-mvg7j_eh/src/native/editor.asm
 
 .b6fe	98c5					editor_search_end:
 

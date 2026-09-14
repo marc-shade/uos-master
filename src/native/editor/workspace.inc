@@ -1,7 +1,9 @@
 ; Retained document buffers and keyboard backup precede mutually exclusive
 ; graphical body/cache and picker paths. Reserve before keys or documents.
-; $5000..$55ff document input/output/read cache, $5600 keys, $5700 text;
-; $5800..$5fff graphical body/cache or inactive picker records/retained paths.
+; $5000..$55ff document buffers, $5600 keys, $5700 document contexts;
+; $5800..$5f17 graphical body/cache or inactive picker records/retained paths;
+; $5f18..$5f3e document scratch, $5f40..$5f68 VDC status, $5f69..$5f9b
+; editor row starts, $5fc0..$5fff text scratch. All remain owned across modules.
 eg_workspace:
         lda N_CURRENT
         sta N_OWNER

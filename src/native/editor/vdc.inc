@@ -64,10 +64,13 @@ eg_vdc_return:
 ; recovery is pending. Key zero would let ed_cancel_check continue the work.
 eg_vdc_guard:
         sta eg_guard_key
+        lda dm_fault
+        bne eg_guard_warning
         lda vd_phase
         beq eg_guard_return
         lda vd_fault
         beq eg_guard_return
+eg_guard_warning:
         lda ed_module_kind
         cmp #2
         bne eg_guard_key_ready
@@ -83,6 +86,11 @@ eg_guard_key_ready:
         lda eg_guard_key
         cmp #27
         bne eg_guard_wait
+        lda dm_fault
+        beq +
+        jsr dm_stop
+        bcs eg_guard_wait
++
         jsr eg_vdc_close
         bcc eg_guard_return
 eg_guard_wait:

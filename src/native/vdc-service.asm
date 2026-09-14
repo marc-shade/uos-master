@@ -2,6 +2,8 @@
 .include "api.inc"
 BK_BASE=$6000
 RU_BANKED=1
+RU_INCLUDE_RESIZE=1
+vs_arena_close=bm_display_close
 VM_INCLUDE_COMMON=0
 VM_INCLUDE_DIRTY=0
 VD_DESKTOP_COMMON=0
@@ -26,6 +28,8 @@ bv_image:
         .word 0
         .fill 8,0
 bv_entry:
+        cmp #6
+        bcs bm_entry
         cmp #5
         beq bv_status
         cmp #4
@@ -57,9 +61,13 @@ bv_check_y:
         cmp #1
         bne +
         lda vd_phase
-        ora ru_active
         ora ru_probe_live
         bne bv_argument
+        lda ru_active
+        beq +
+        lda bm_lease
+        beq bv_argument
++
         lda N_BUFFER
         sta bv_mode
         ldx #3
@@ -112,6 +120,8 @@ bv_empty:
         lda vd_phase
         ora ru_active
         ora ru_probe_live
+        ora bm_lease
+        ora bm_pending
         bne bv_argument
         jmp vd_success
 bv_argument:
@@ -239,6 +249,7 @@ gfx_rows:
         .word row*320
  .endfor
 .include "banked-client.inc"
+.include "shared-memory-service.inc"
 .include "graphics/vdc-reu.inc"
 .include "graphics/vdc-mirror.inc"
 .include "desktop/vdc.inc"

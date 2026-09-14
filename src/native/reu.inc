@@ -6,6 +6,7 @@
 ; Modules call this retained copy; they must not instantiate another arena.
 .weak
 RU_BANKED = 0                 ; banked.inc owns the temporary common-RAM map
+RU_INCLUDE_RESIZE = 0         ; opt-in growth for shared document extents
 .endweak
 
 ru_open:
@@ -346,6 +347,82 @@ ru_other_owner:
         lda #N_WRONGOWNER
         sec
         rts
+
+.if RU_INCLUDE_RESIZE
+; Grow an extent in place, preserving its token and every REU byte. ru_pages
+; is the requested total size in 4K pages. Equal size succeeds; shrinking or
+; zero is BADARG. N_NOMEM leaves the original extent intact, allowing callers
+; to allocate/copy/free a replacement. No DMA or generation changes occur.
+ru_resize:
+        php
+        jsr ru_enter
+        bcs ru_enter_failed
+        jsr ru_validate
+        bcs ru_finish
+        stx ru_slot
+        lda ru_pages
+        ora ru_pages+1
+        beq ru_argument
+        lda ru_pages
+        cmp ru_records+3,x
+        lda ru_pages+1
+        sbc ru_records+4,x
+        bcc ru_argument
+        lda ru_records+1,x
+        sta ru_first
+        sta ru_page
+        lda ru_records+2,x
+        sta ru_first+1
+        sta ru_page+1
+        clc
+        lda ru_first
+        adc ru_pages
+        sta ru_limit
+        lda ru_first+1
+        adc ru_pages+1
+        sta ru_limit+1
+        bcs ru_nomem
+        lda ru_total
+        cmp ru_limit
+        lda ru_total+1
+        sbc ru_limit+1
+        bcc ru_nomem
+        ldx #0
+ru_resize_scan:
+        cpx ru_slot
+        beq ru_resize_next
+        lda ru_records,x
+        beq ru_resize_next
+        lda ru_records+1,x
+        cmp ru_limit
+        lda ru_records+2,x
+        sbc ru_limit+1
+        bcs ru_resize_next
+        clc
+        lda ru_records+1,x
+        adc ru_records+3,x
+        sta ru_last
+        lda ru_records+2,x
+        adc ru_records+4,x
+        sta ru_last+1
+        lda ru_first
+        cmp ru_last
+        lda ru_first+1
+        sbc ru_last+1
+        bcc ru_nomem
+ru_resize_next:
+        txa
+        clc
+        adc #8
+        tax
+        bne ru_resize_scan
+        ldx ru_slot
+        lda ru_pages
+        sta ru_records+3,x
+        lda ru_pages+1
+        sta ru_records+4,x
+        jmp ru_success
+.endif
 
 ru_free:
         php
