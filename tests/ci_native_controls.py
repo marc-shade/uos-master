@@ -68,7 +68,7 @@ FOOTER = ['', 'R REFRESH   ESC DESKTOP', 'LEFT/RIGHT: TARGET OR INTERFACE']
 
 
 class Panel(calc.Calculator):
-    instruction_limit = 12000000
+    instruction_limit = 16000000
 
     def __init__(self, configure=lambda device: None):
         PanelMachine.configure = staticmethod(configure)
@@ -156,7 +156,7 @@ def run():
     cases.append('network lengths checked before interpreting addresses')
 
     p = Panel(); p.key(ord('T'))
-    p.check(['CARTRIDGE RTC', '', '2026/09/12 13:00:00', 'R REFRESHES THIS CLOCK READING.'])
+    p.check(['CARTRIDGE RTC', '', '2026/09/12 13:00:00', 'S SET TIME  R REFRESH CLOCK READING.'])
     for valid in (b'2000/02/29 23:59:59', b'2024/02/29 00:00:00', b'2100/02/28 00:00:00',
                   b'2026/04/30 01:02:03', b'2026/12/31 23:59:59'):
         p.device.time = valid; p.key(ord('R'))

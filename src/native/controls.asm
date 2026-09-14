@@ -1,6 +1,8 @@
 ; Native Ultimate controls. GPL v3.
 ; Device access uses the shared, bounded query and command services.
 .include "api.inc"
+NK_SAVED_BUFFER=$5400
+GFX_TEXT_STORAGE=$5ac0
 PM_KEYS_OWNED=1               ; retain keyboard ownership across the picker
 * = N_APPBASE
 uc_image:
@@ -14,7 +16,10 @@ uc_image:
         .fill N_APPBASE+32-*,0
 uc_entry:
         cld
-        jsr ud_init
+        jsr ug_workspace
+        bcc +
+        jmp N_EXIT
++       jsr ud_init
         lda #0
         sta uc_page
         sta uc_interface
@@ -412,6 +417,14 @@ uc_draw:
         jsr uc_emit
         lda ug_mode
         beq +
+        cmp #2
+        bne uc_drive_dialog
+        lda #<ut_heading
+        ldx #>ut_heading
+        jsr uc_puts
+        jsr ut_body
+        jmp uc_draw_end
+uc_drive_dialog:
         lda #<ug_confirm_heading
         ldx #>ug_confirm_heading
         jsr uc_puts
@@ -791,7 +804,7 @@ uc_address_lo: .byte <uc_ip_title,<uc_mask_title,<uc_gateway_title
 uc_address_hi: .byte >uc_ip_title,>uc_mask_title,>uc_gateway_title
 uc_network_hint: .text 13,"configured addresses; link untested.",13,0
 uc_clock_title: .text "cartridge rtc",13,13,0
-uc_clock_hint: .text "r refreshes this clock reading.",13,0
+uc_clock_hint: .text "s set time  r refresh clock reading.",13,0
 uc_failed: .text "unavailable: ",0
 uc_dos_title: .text "  dos ",0
 uc_transport_title: .text "  link ",0
@@ -826,9 +839,11 @@ uc_text_any: .byte 0
 uc_text_left: .byte 0
 uc_text_limit: .byte 0
 uc_column: .byte 0
-uc_model: .fill 64,0
-uc_status: .fill 32,0
-uc_data: .fill 512,0
+uc_model=$5a20
+uc_status=$5a60
+uc_data=$5000
+.include "controls/workspace.inc"
+.include "controls/clock.inc"
 .include "controls/drives.inc"
 .include "controls/view.inc"
 .include "controls/input.inc"
@@ -854,6 +869,8 @@ FD_VDC_FULL=ug_vdc_full
 FD_VDC_CLOSE=vd_close
 B_COPY=0
 FD_DIRECT_PAGES=6
+FD_RETAINED_STORAGE=$5500
+FD_BUFFER_BASE=$5800
 FD_NAME_BUFFER=ud_name
 FD_SCRATCH0=uc_data
 FD_SCRATCH1=0                  ; patched only after allocating picker scratch

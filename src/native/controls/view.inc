@@ -175,8 +175,13 @@ ug_draw_control:
         jsr ui_paint
         bcs ug_draw_done
         lda ug_index
+        cmp #17
+        beq ug_draw_next
+        cmp #16
+        beq +
         cmp #12
         bcs ug_draw_next
++
         asl
         asl
         asl
@@ -239,7 +244,7 @@ ug_draw_control:
 ug_draw_next:
         inc ug_index
         lda ug_index
-        cmp #16
+        cmp #18
         bne ug_draw_control
         lda #<ug_body
         sta ug_body_read+1
@@ -287,8 +292,15 @@ ug_row_next:
         bne ug_draw_row
         lda ug_mode
         beq +
+        cmp #2
+        bne ug_drive_question
+        lda #<ut_question
+        ldx #>ut_question
+        bne ug_draw_question
+ug_drive_question:
         lda #<ug_question
         ldx #>ug_question
+ug_draw_question:
         jsr ug_copy_text
         lda #16
         ldy #32
@@ -333,10 +345,15 @@ ug_text_xword:
 
 ; C clear means a currently visible control; X remains the index.
 ug_enabled:
-        cpx #16
+        cpx #18
         bcs ug_disabled
         lda ug_mode
         beq ug_main_enabled
+        cmp #2
+        bne +
+        cpx #17
+        beq ug_allowed
++
         cpx #10
         bcc ug_disabled
         cpx #12
@@ -344,6 +361,14 @@ ug_enabled:
         clc
         rts
 ug_main_enabled:
+        cpx #16
+        bne +
+        lda uc_page
+        cmp #3
+        beq ug_allowed
+        bne ug_disabled
++       cpx #17
+        beq ug_disabled
         cpx #8
         bcs ug_drive_enabled
         lda uc_page
@@ -461,7 +486,11 @@ ug_collect_drives:
         jsr ug_drive_body
         jmp ug_collected
 ug_collect_confirm:
-        jsr ug_confirm_body
+        cmp #2
+        bne +
+        jsr ut_body
+        jmp ug_collected
++       jsr ug_confirm_body
 ug_collected:
         lda #0
         sta ug_collect
@@ -481,4 +510,4 @@ ug_character: .byte 0
 ug_column: .byte 0
 ug_row: .byte 0
 ug_index: .byte 0
-ug_body: .fill 512,32
+ug_body=$5200

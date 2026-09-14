@@ -108,7 +108,13 @@ ug_console_footer:
         jsr uc_puts
         jmp ug_footer_focus
 ug_modal_footer:
-        lda #<ug_confirm_help
+        cmp #2
+        bne +
+        lda #<ut_help
+        ldx #>ut_help
+        jsr uc_puts
+        jmp ug_footer_focus
++       lda #<ug_confirm_help
         ldx #>ug_confirm_help
         jsr uc_puts
 ug_footer_focus:
@@ -116,6 +122,8 @@ ug_footer_focus:
         ldx #>ug_focus_title
         jsr uc_puts
         ldx ui_selected
+        cpx #16
+        bcs +
         cpx #12
         bcc +
         lda #<ug_drive_label

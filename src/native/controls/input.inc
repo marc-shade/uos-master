@@ -2,6 +2,10 @@
 ug_key:
         sta ug_key_value
         lda ug_mode
+        cmp #2
+        bne +
+        jmp ut_key
++       lda ug_mode
         beq ug_main_key
         lda ug_key_value
         cmp #27
@@ -36,7 +40,14 @@ ug_main_key:
         ldx ui_selected
         jmp ug_activate
 +       lda uc_page
-        cmp #1
+        cmp #3
+        bne +
+        lda ug_key_value
+        and #$df
+        cmp #$53
+        bne ug_unhandled
+        jmp ut_open
++       cmp #1
         bne ug_unhandled
         lda ug_key_value
         cmp #$91
@@ -59,7 +70,7 @@ ug_unhandled:
 ug_tab:
         ldx ui_selected
 -       inx
-        cpx #16
+        cpx #18
         bcc +
         ldx #0
 +       jsr ug_enabled
@@ -72,7 +83,22 @@ ug_handled:
 ug_activate:
         jsr ug_enabled
         bcs ug_handled
+        cpx #16
+        bne +
+        jmp ut_open
++       cpx #17
+        bne +
+        jmp ut_point
++
+        lda ug_mode
+        cmp #2
+        bne +
         cpx #10
+        bne ut_cancel_activate
+        jmp ut_confirm
+ut_cancel_activate:
+        jmp ut_cancel
++       cpx #10
         beq ug_confirm_dialog
         cpx #11
         beq ug_cancel_dialog
@@ -274,7 +300,15 @@ ug_notice_set:
         rts
 
 ug_focus:
-        lda ug_bitmap
+        lda ug_mode
+        cmp #2
+        bne +
+        cpx ui_selected
+        beq ug_return
+        stx ui_selected
+        jsr ug_update
+        jmp uc_draw_both
++       lda ug_bitmap
         beq +
         jsr ui_focus
         bcs ug_focus_failed
@@ -326,10 +360,10 @@ pm_find_hit:
         beq +
         lda #10
         sta ui_first
-        lda #12
+        lda #18
         bne ug_hit_limit
 +       sta ui_first
-        lda #16
+        lda #18
 ug_hit_limit:
         sta ui_limit
         lda pm_x
@@ -338,10 +372,15 @@ ug_hit_limit:
         sta ui_x+1
         lda pm_y
         sta ui_y
+ug_hit_next:
         jsr ui_hit
+        cpx #$ff
+        beq +
         jsr ug_enabled
         bcc +
-        ldx #$ff
+        inx
+        stx ui_first
+        jmp ug_hit_next
 +       rts
 
 ug_cleanup:

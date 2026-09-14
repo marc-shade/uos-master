@@ -139,7 +139,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Legacy browser and native blue drive controls, full-path picker, explicit confirmed IEC destinations, fresh inventory checks, power-state display, system-disk protection and mount/eject; native CPU/VICE qualification passes | Native physical mount/eject qualification; per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Foreground REU allocator and bounded DMA back Desktop, Calculator, Ultimate and Paint VDC screens through a shared bank-1 component; main-RAM fallback | Save/restore a session without corrupting owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client; native panel displays configured interface addresses | Native panel hardware qualification; download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
-| UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; native cartridge-clock panel validates calendar replies and supports refresh | Native panel hardware qualification; power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
+| UCI-TIME | RTC read/write and offline date/time | CIA/SNTP clock and advancing DOS GET_TIME readback; native cartridge-clock panel validates calendar replies, edits dates/times with keyboard/mouse, sends a confirmed binary SET_TIME request, and independently checks readback without replay | Native panel hardware qualification; power-cycle/backup retention and offline fallback; distinct system/cartridge clock status in the desktop panel |
 | UCI-AUDIO | SID selection/configuration, audio routing/mixer, playback/record capabilities | Absent | Real output and supported chip/model configuration; unavailable hardware excluded by capability checks |
 | UCI-PRINT | Printer selection, job status, output-file retrieval | Absent | Desktop print job produces a verified readable output file or physical page |
 | UCI-TAPE | Tape image playback/capture and file management | Absent | Start/stop/capture, verify files, preserve desktop before incompatible launches |
@@ -773,3 +773,29 @@ OS completion goal. Office apps, printing, clipboard/undo, window management,
 scheduling, generalized display switching, expansion drivers, physical
 qualification, authenticated Claude use and all other open checklist items
 still require implementation or evidence.
+
+### 2026-09-14 — Manual Ultimate clock controls
+
+The [clock software checkpoint](validation/2026-09-14-native-ultimate-clock/README.md)
+adds **Set time** to the Ultimate app's blue Clock page on both displays.
+The shared field supports keyboard editing and mouse caret placement. Calendar
+validation accepts 1980–2079, including Gregorian leap days. Confirm sends one
+binary SET_TIME packet; a separate validated GET_TIME reading must match the
+requested value within two advancing seconds before the app reports confirmed
+readback. Different or uncertain results are explicit, and Refresh only reads.
+Cancellation also reads the current clock again.
+
+The app uses 91 code pages, an initialized eleven-page bank-0 workspace and
+its existing 36-page surface. REU display backing leaves 255 managed main-RAM
+pages free; RAM backing leaves 191 with a 16 KiB VDC or 183 with 64 KiB. Workspace
+refusals preserve foreign allocations and leave keyboard/display state intact.
+Field edits update two VDC rows; pointer movement retains the rest of the panel.
+The resident kernels, shared VDC component and other app programs retain their
+bytes. Independent builds reproduce all 34 native program/disk images, and the
+suite retains 121 free D64 blocks or 2,617 free D81 blocks.
+
+This adds manual cartridge-clock control. Native physical RTC writes,
+power-cycle retention, system/cartridge clock status, offline system-clock
+fallback, window management, app switching and the other open roadmap items
+remain work. The blue native desktop remains the suite interface; the green
+legacy build and native diagnostic workspace retain their separate roles.

@@ -224,7 +224,7 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
                 # Native query occurs before its screen capture. Include the
                 # key quiet interval and command/REST observation latency.
                 observed, elapsed, bounds = rtc_observation(text,rtc,start,finish,key_quiet,previous)
-                body = ['CARTRIDGE RTC','',text,'R REFRESHES THIS CLOCK READING.']
+                body = ['CARTRIDGE RTC','',text,'S SET TIME  R REFRESH CLOCK READING.']
                 panel(label,body,3)
                 suite['ultimate'][-1].update(elapsed=elapsed,elapsed_bounds=bounds,
                     reference='independent legacy RTC query plus monotonic elapsed time')

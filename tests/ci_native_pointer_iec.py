@@ -93,11 +93,13 @@ def main():
     parser.add_argument('--calc-only',action='store_true')
     parser.add_argument('--paint-only',action='store_true')
     parser.add_argument('--controls-only',action='store_true')
+    parser.add_argument('--controls-clock',action='store_true',help='exercise manual clock fields without a physical cartridge')
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--editor-only',action='store_true')
     parser.add_argument('--editor-large',action='store_true',help='edit/save/reopen a 128 KiB REU document on the private D81')
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
+    if args.controls_clock:assert args.controls_only
     if args.editor_large:
         assert args.editor_only and args.d81 and args.reu_kib and args.reu_kib>=512
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
@@ -502,14 +504,22 @@ def main():
             wait(lambda:ready() and (value('ed_module_kind')!=2 or not value('eg_bitmap') or value('pm_buttons')==0),'editor click ready',120)
             after=int.from_bytes(read(0x3d13,2),'little')
             report['events'].append(dict(editor_button=index,point=point,keyboard_events_during_click=after-before));save();assert after==before
-        def controls_view(label,page,focus,notice=0):
+        def controls_view(label,page,focus,notice=0,*,clock_text=None,caret=0):
             wait(lambda:header('controls') and ready(),label,60)
             state={name:value(name) for name in ('ug_bitmap','ug_error','uc_page','ui_selected','ug_mode','ug_notice')}
             report.setdefault('controls_states',[]).append(dict(label=label,**state));save()
             assert (state['ug_bitmap'],state['uc_page'],state['ui_selected'])==(1,page,focus),state
-            assert value('ug_mode')==0 and value('ug_notice')==notice
+            dialog=2 if clock_text is not None else 0
+            assert value('ug_mode')==dialog and value('ug_notice')==notice
             body=absent_body(page)
-            wanted=controls_surface(body[2:] if page==1 else body,page=page,focus=focus,notice=notice)
+            if dialog:
+                expected=clock_text.encode()
+                assert app_read(symbol('ut_field'))==bytes([len(expected)])
+                assert app_read(symbol('ut_edit'),len(expected))==expected
+                assert app_read(symbol('ut_field')+1)==bytes([caret])
+                body=['YYYY/MM/DD HH:MM:SS  (1980-2079)','',clock_text]
+                if focus==17:body.append(' '*caret+'^')
+            wanted=controls_surface(body[2:] if page==1 else body,page=page,focus=focus,notice=notice,mode=dialog)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'Ultimate bitmap')
             for _ in range(20):
@@ -839,6 +849,16 @@ def main():
                 controls_click(2);controls_view('ultimate-network',2,2)
                 controls_click(3);controls_view('ultimate-clock',3,3)
                 controls_click(7);controls_view('ultimate-refresh',3,7)
+                if args.controls_clock:
+                    controls_click(16)
+                    controls_view('ultimate-clock-edit',3,17,clock_text='2000/01/01 00:00:00')
+                    key('Right','controls');key('BackSpace','controls');key('9','controls');key('Return','controls')
+                    controls_view('ultimate-clock-invalid',3,17,13,clock_text='9000/01/01 00:00:00',caret=1)
+                    key('F10','controls')
+                    controls_view('ultimate-clock-confirm-focus',3,10,13,clock_text='9000/01/01 00:00:00',caret=1)
+                    controls_click(11);controls_view('ultimate-clock-cancelled',3,16,2)
+                    controls_click(16);controls_click(10)
+                    controls_view('ultimate-clock-unavailable',3,16,14)
                 # Stock GTK symbolic mapping: host F10 is the C128 Tab key.
                 controls_click(0);key('F10','controls');controls_view('ultimate-tab',0,1)
                 key('Return','controls');controls_view('ultimate-enter',1,1)

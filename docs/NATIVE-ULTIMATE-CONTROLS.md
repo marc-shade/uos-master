@@ -5,7 +5,7 @@ Open **Ultimate** with U on the native desktop. The app is included as
 the blue suite controls and shared 1351 pointer. A 64 KiB VDC uses yellow focus;
 16 KiB uses reversed light controls. Unavailable graphics retain text controls.
 The four pages show identification, drive inventory, configured network
-addresses and a refreshable cartridge clock reading.
+addresses and a cartridge clock with manual date/time entry.
 
 | Key | Page/action |
 |---|---|
@@ -13,6 +13,7 @@ addresses and a refreshable cartridge clock reading.
 | D | Drive types, IEC addresses and power flags |
 | N | Network interface IP, mask and gateway |
 | T | Cartridge RTC snapshot |
+| S on Clock | Edit the cartridge date/time |
 | Tab / Enter | Focus / activate a visible control |
 | Left/right | Select target, drive or network interface |
 | Up/down on Drives | Select a drive |
@@ -52,6 +53,37 @@ clock dates and failed requests replace the previous page's data with an
 error. An unused identification target may return `NO TARGET`. Network
 addresses describe configuration; they do not prove connectivity.
 
+## Setting the cartridge clock
+
+Choose **Clock → Set time**, or press **T**, then **S**. The field uses
+`YYYY/MM/DD HH:MM:SS`. Type or edit with the shared field keys, use Tab to
+choose Confirm or Cancel, and press Enter to activate that button. Enter in
+the field validates the value and moves focus to Confirm. Clicking the field
+places its caret. Typing repaints only the date and caret rows. Escape cancels and reads the current clock again.
+
+The hardware year range is **1980–2079**. Month lengths, Gregorian leap years,
+hours, minutes and seconds are checked before any clock command. An invalid
+or unavailable initial reading starts the editor at `2000/01/01 00:00:00`;
+it is an editable default. The clock is changed only after Confirm is activated.
+
+The request contains six binary fields and sends the year relative to 1900.
+A successful command status is followed by a separate GET_TIME query. **Clock
+readback confirmed** means that validated reading matched the requested time,
+allowing up to two advancing seconds across calendar boundaries. A different
+reading is reported explicitly. Transport, status, invalid calendar and
+out-of-range readback failures report **Clock result unknown**. The result
+never establishes battery or power-cycle retention. No failed or uncertain
+request is replayed: R reads the clock; another write requires opening the
+editor and confirming again.
+
+This changes the cartridge RTC. It does not configure the uOS system clock,
+NTP or a timezone. A display failure freezes clock actions until the owned
+screen can be restored, using the same recovery path as drive operations.
+
+The command format and year origin follow the pinned
+[Ultimate DOS implementation](https://github.com/GideonZ/1541ultimate/blob/a01c04e8267a0d916b7203cb34dcf1127f75981d/software/filemanager/dos.cc#L526).
+The supported year range follows its two-digit RTC counter relative to 1980.
+
 ## Shared query service
 
 `N_UQUERY = $1c6e` uses the same ownership checks, file lock, packet transport,
@@ -90,24 +122,27 @@ No automatic retry is performed.
 
 The command service serializes packets; callers remain responsible for command
 semantics and affected resources. The Ultimate app adds the drive policy above
-and sends only FILE_INFO probes (`context 07`), mount
-(`context 23 IEC full-path`) and eject (`context 24 IEC`). The fixed query API
+and sends FILE_INFO probes (`context 07`), mount
+(`context 23 IEC full-path`), eject (`context 24 IEC`) and the validated clock
+request (`01 27 year-1900 month day hour minute second`, six body bytes). The fixed query API
 remains read only and continues rejecting operation numbers 9–255.
 
 The 56-byte command entry occupies existing reserved space after the query
 service. Relocating the 25-byte keyboard-input wrapper into presentation padding
-keeps the resident heap at 426 pages. The app occupies 96 pages and uses a
-separate 36-page VIC surface. Its [graphical file picker](NATIVE-PICKER-GUI.md)
-shares the display, font and pointer. The four-page picker scratch buffer is
+keeps the resident heap at 426 pages. The app occupies 91 pages, reserves
+11 bank-0 pages at `$5000..$5aff` for initialized buffers and key backup, and
+uses a separate 36-page VIC surface. The buffer reservation occurs before
+installing input or opening displays; a refusal exits through app-owner cleanup.
+Its [graphical file picker](NATIVE-PICKER-GUI.md) shares the display, font and pointer. The four-page picker scratch buffer is
 allocated in bank 0 when opening the picker and freed after its cursors and
 cache close. Allocation failure keeps the panel usable and permits a later retry.
 
 Copy `VDSVC.PRG` beside the app. The [shared VDC service](NATIVE-VDC-SERVICE.md)
 loads from the original app source and stays owned across picker transitions.
-It saves one original screen until final app exit. REU backing leaves 264
-main-RAM pages free; RAM backing leaves 200 with a 16 KiB VDC or 192 with 64 KiB.
+It saves one original screen until final app exit. REU backing leaves 255
+main-RAM pages free; RAM backing leaves 191 with a 16 KiB VDC or 183 with 64 KiB.
 Picker scratch and cache temporarily consume additional pages. Dirty rows and
-pointer movement update incrementally. A failed VDC transfer freezes drive
+pointer movement update incrementally. A failed VDC transfer freezes drive and clock
 actions; Escape retries restoration before any display, component or app owner
 is released. A clean setup refusal permits VIC graphics and VDC text fallback. A failed
 picker surface restores the VDC before using text controls; Refresh in the
@@ -140,10 +175,16 @@ and checks the saved VRAM before app handoff.
 The [frozen software record](validation/2026-09-13-native-ultimate-drives/README.md) retains the CPU,
 full mouse/keyboard VICE, serial shutdown and rebuild evidence. No physical
 drive operation has been attempted with these images. Native
-physical qualification, settings changes, network services and broader device
+physical qualification, further settings changes, network services and broader device
 management remain open. A physical suite run also requires a qualified
 observer that reads Claude shutdown state before its allocation is released.
 
 The [combined suite evidence](validation/2026-09-12-native-claude-suite/README.md)
 retains the exact query/panel binaries and reports, together with the added
 Claude app and five-entry desktop.
+
+`tests/ci_native_clock.py` executes calendar validation, keyboard/mouse editing,
+literal packets, independently modeled RTC readback, cancellation, error
+recovery and complete VIC/VDC canvases. The [clock software record](validation/2026-09-14-native-ultimate-clock/README.md)
+is kept separately from the earlier drive qualification. Native physical RTC writes,
+power-cycle retention and offline system-clock fallback remain open.

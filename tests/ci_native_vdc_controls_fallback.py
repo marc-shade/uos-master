@@ -73,12 +73,13 @@ def main():
         if args.group in ('all','memory'):
             p=start();p.key(ord('D'));p.key(0x11);p.check()
             stack=bytes(p.ram[0x100:0x200])
-            handles=[p.m.alloc(16,0,owner=77,page=0x50),p.m.alloc(27,0,owner=77,page=0xe4)]
+            ranges=[(0x5b00,0x6000),(0x6000+p.image[12]*256,0xc000),(0xe400,0xff00)]
+            handles=[p.m.alloc((end-start)//256,0,owner=77,page=start//256) for start,end in ranges if end>start]
             p.ram[0x100:0x200]=stack
-            before=(bytes(p.ram[0x5000:0x6000]),bytes(p.ram[0xe400:0xff00]))
+            before=[bytes(p.ram[start:end]) for start,end in ranges]
             p.key(ord('M'));p.check()
             assert p.value('ug_notice')==12 and not p.value('ug_picker_active') and not p.value('ug_scratch_handle')
-            assert before==(bytes(p.ram[0x5000:0x6000]),bytes(p.ram[0xe400:0xff00]))
+            assert before==[bytes(p.ram[start:end]) for start,end in ranges]
             assert not p.device.mutations
             stack=bytes(p.ram[0x100:0x200])
             for token in handles:p.m.select(token,77);p.m.invoke('free')

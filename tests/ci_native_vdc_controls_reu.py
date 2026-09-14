@@ -32,7 +32,7 @@ def main():
             assert p.bus.reu_ram[pages*256:]==p.bus.reu_original[pages*256:]
             token=bytes(p.ram[p.symbol('vs_token'):p.symbol('vs_token')+8])
             assert component(p,'vs_token',8)==token and component(p,'ru_cookie',4)==token[4:]
-            free=sum(p.m.stats()[:2]);assert free==426-p.image[12]-36-COMPONENT_PAGES
+            free=sum(p.m.stats()[:2]);assert free==426-p.image[12]-11-36-COMPONENT_PAGES
             p.key(ord('D'));p.check();p.key(0x11);p.check()
             p.key(ord('M'));p.mirror();p.key(27);p.check()
             assert sum(p.m.stats()[:2])==free

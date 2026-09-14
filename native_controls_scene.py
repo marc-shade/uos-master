@@ -7,16 +7,21 @@ RECTS=[(8,32,80,48),(88,32,160,48),(168,32,240,48),(248,32,312,48),
        (272,8,312,24),(8,160,72,176),(80,160,144,176),(152,160,248,176),
        (8,136,112,152),(120,136,224,152),(40,160,152,184),(168,160,280,184)]
 RECTS += [(8,72+16*i,312,88+16*i) for i in range(4)]
+LABELS += [b'']*4+[b'Set time',b'Date/time']
+RECTS += [(8,136,112,152),(8,72,232,96)]
 NOTICES=['Tab controls  Enter activate','Request accepted; R checks inventory',
          'Cancelled','System disk remains protected','Drive is off',
          'Drive unavailable or ambiguous','Inventory changed; choose again',
          'Choose an Ultimate disk image','Close open files to change media',
          'Command failed; R refreshes','Picker cleanup failed; R retries',
-         '80-col paused; Esc retries return','Not enough memory for the picker']
+         '80-col paused; Esc retries return','Not enough memory for the picker',
+         'Enter a valid date/time, 1980-2079','Clock result unknown; R reads again',
+         'Clock readback differs; R refreshes','Clock readback confirmed']
 
 
 def enabled(index,page,mode,count):
-    if mode:return index in (10,11)
+    if mode:return index in (10,11) or (mode==2 and index==17)
+    if index>=16:return index==16 and page==3
     if index<8:return not (page==3 and index in (5,6))
     return page==1 and (index in (8,9) or 12<=index<12+count)
 
@@ -60,11 +65,11 @@ def surface(body,*,page=0,focus=0,mode=0,count=0,notice=0):
         x0,y0,x1,y1=bounds
         for y in range(y0//8,y1//8):
             data[8192+y*40+x0//8:8192+y*40+x1//8]=bytes([7 if index==focus else 0x1b])*((x1-x0)//8)
-        if index>=12:continue
+        if 12<=index<16 or index==17:continue
         rect(bounds,1);rect((x0+1,y0+1,x1-1,y1-1),0)
         label=LABELS[index];text((x0+x1-len(label)*8)//2,(y0+y1-8)//2,label)
     for row,line in enumerate(body):text(16,56+row*8,line.encode('ascii'))
-    if mode:text(16,32,b'Change drive media?')
+    if mode:text(16,32,b'Set cartridge clock' if mode==2 else b'Change drive media?')
     text(8,192,NOTICES[notice].encode('ascii'))
     data[8000:8128]=pointer_shape();data[9208:9210]=b'\x7d\x7e'
     return bytes(data)
@@ -72,7 +77,7 @@ def surface(body,*,page=0,focus=0,mode=0,count=0,notice=0):
 
 def write_assembly(directory):
     directory.mkdir(parents=True,exist_ok=True)
-    lines=['ui_button_count=16','ui_rects:']
+    lines=['ui_button_count=18','ui_rects:']
     lines+=['        .word '+','.join(map(str,bounds)) for bounds in RECTS]
     for prefix,values in [('ug_labels',[s.decode() for s in LABELS]),('ug_notices',NOTICES)]:
         for index,value in enumerate(values):
@@ -80,8 +85,8 @@ def write_assembly(directory):
             lines += [f'{prefix}_{index}: .byte '+','.join(map(str,value.encode()+b'\0'))]
         for suffix,op in [('lo','<'),('hi','>')]:
             lines += [f'{prefix}_{suffix}: .byte '+','.join(f'{op}{prefix}_{i}' for i in range(len(values)))]
-    for name,value in [('ug_title',b'uOS Ultimate'),('ug_question',b'Change drive media?')]:
+    for name,value in [('ug_title',b'uOS Ultimate'),('ug_question',b'Change drive media?'),('ut_question',b'Set cartridge clock')]:
         lines += [name+': .byte '+','.join(map(str,value+b'\0'))]
     lines+=['ug_label_x: .word '+','.join(str((x0+x1-len(label)*8)//2) for (x0,y0,x1,y1),label in zip(RECTS,LABELS)),
-            'ug_label_y: .byte '+','.join(str((y0+y1-8)//2) for (x0,y0,x1,y1) in RECTS[:12])]
+            'ug_label_y: .byte '+','.join(str((y0+y1-8)//2) for (x0,y0,x1,y1) in RECTS)]
     (directory/'buttons.inc').write_text('\n'.join(lines)+'\n')

@@ -62,10 +62,10 @@ blue graphical launchers on both displays: 320×200 VIC and
 Files, Ultimate, Claude and Paint with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
 The same build also creates `target/native-desktop/uos128.d81` for a 1581,
-with 2,620 free blocks for documents and future apps. ABI 1.12 remembers the
+with 2,617 free blocks for documents and future apps. ABI 1.12 remembers the
 system volume's format across app launches and data-disk browsing. Use the
 matching D64 or D81 image; see [native boot media](docs/NATIVE-BOOT-MEDIA.md).
-Boot still uses IEC. Shared window/widget input, the remaining VDC app views,
+Boot still uses IEC. Movable windows, app switching,
 persistent desktop state and the broader OS roadmap remain open. Physical desktop
 qualification of ABI 1.9 passed in the [physical record](docs/validation/2026-09-12-native-desktop-abi19-hardware/README.md).
 ABI 1.11 adds a shared Ultimate command service and graphical drive controls.
@@ -78,7 +78,7 @@ installed build after a test does not change the native desktop's direction.
 The green native memory workspace is also retained for diagnostics: Escape
 from the blue launcher opens it, and B returns to the suite desktop.
 [Calculator](docs/NATIVE-CALCULATOR.md), [Paint](docs/NATIVE-PAINT.md),
-[Files](docs/NATIVE-FILES-GUI.md), [Editor](docs/NATIVE-EDITOR-GUI.md) and
+[Files](docs/NATIVE-FILES-GUI.md), [Editor](docs/NATIVE-EDITOR-GUI.md),
 [Ultimate](docs/NATIVE-ULTIMATE-CONTROLS.md) and
 [Claude](docs/NATIVE-CLAUDE-GUI.md) use the blue bitmap and yellow
 controls inside their apps. Paint adds connected mouse
@@ -99,7 +99,7 @@ Keep `VDSVC.PRG` beside each app when copying it. Editor also stores its documen
 in the shared REU arena, with main RAM as the fallback. Clipboard, caches and
 future applications still need expansion-memory integration.
 Calculator shows its keypad, history and save dialog graphically on the VDC.
-Ultimate shows its panels, picker and drive confirmation there. Paint shows its
+Ultimate shows its panels, picker, drive confirmation and manual clock editor there. Paint shows its
 picture viewport, tools, keyboard brush and file dialogs on both displays.
 Files shows its lists, byte viewer, fields, copy progress and destination picker there too.
 Editor shows its document, caret, search controls and file dialogs on both displays.

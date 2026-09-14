@@ -1,4 +1,4 @@
-ui_button_count=16
+ui_button_count=18
 ui_rects:
         .word 8,32,80,48
         .word 88,32,160,48
@@ -16,6 +16,8 @@ ui_rects:
         .word 8,88,312,104
         .word 8,104,312,120
         .word 8,120,312,136
+        .word 8,136,112,152
+        .word 8,72,232,96
 ug_labels_0: .byte 73,110,102,111,0
 ug_labels_1: .byte 68,114,105,118,101,115,0
 ug_labels_2: .byte 78,101,116,119,111,114,107,0
@@ -28,8 +30,14 @@ ug_labels_8: .byte 77,111,117,110,116,0
 ug_labels_9: .byte 69,106,101,99,116,0
 ug_labels_10: .byte 67,111,110,102,105,114,109,0
 ug_labels_11: .byte 67,97,110,99,101,108,0
-ug_labels_lo: .byte <ug_labels_0,<ug_labels_1,<ug_labels_2,<ug_labels_3,<ug_labels_4,<ug_labels_5,<ug_labels_6,<ug_labels_7,<ug_labels_8,<ug_labels_9,<ug_labels_10,<ug_labels_11
-ug_labels_hi: .byte >ug_labels_0,>ug_labels_1,>ug_labels_2,>ug_labels_3,>ug_labels_4,>ug_labels_5,>ug_labels_6,>ug_labels_7,>ug_labels_8,>ug_labels_9,>ug_labels_10,>ug_labels_11
+ug_labels_12: .byte 0
+ug_labels_13: .byte 0
+ug_labels_14: .byte 0
+ug_labels_15: .byte 0
+ug_labels_16: .byte 83,101,116,32,116,105,109,101,0
+ug_labels_17: .byte 68,97,116,101,47,116,105,109,101,0
+ug_labels_lo: .byte <ug_labels_0,<ug_labels_1,<ug_labels_2,<ug_labels_3,<ug_labels_4,<ug_labels_5,<ug_labels_6,<ug_labels_7,<ug_labels_8,<ug_labels_9,<ug_labels_10,<ug_labels_11,<ug_labels_12,<ug_labels_13,<ug_labels_14,<ug_labels_15,<ug_labels_16,<ug_labels_17
+ug_labels_hi: .byte >ug_labels_0,>ug_labels_1,>ug_labels_2,>ug_labels_3,>ug_labels_4,>ug_labels_5,>ug_labels_6,>ug_labels_7,>ug_labels_8,>ug_labels_9,>ug_labels_10,>ug_labels_11,>ug_labels_12,>ug_labels_13,>ug_labels_14,>ug_labels_15,>ug_labels_16,>ug_labels_17
 ug_notices_0: .byte 84,97,98,32,99,111,110,116,114,111,108,115,32,32,69,110,116,101,114,32,97,99,116,105,118,97,116,101,0
 ug_notices_1: .byte 82,101,113,117,101,115,116,32,97,99,99,101,112,116,101,100,59,32,82,32,99,104,101,99,107,115,32,105,110,118,101,110,116,111,114,121,0
 ug_notices_2: .byte 67,97,110,99,101,108,108,101,100,0
@@ -43,9 +51,14 @@ ug_notices_9: .byte 67,111,109,109,97,110,100,32,102,97,105,108,101,100,59,32,82
 ug_notices_10: .byte 80,105,99,107,101,114,32,99,108,101,97,110,117,112,32,102,97,105,108,101,100,59,32,82,32,114,101,116,114,105,101,115,0
 ug_notices_11: .byte 56,48,45,99,111,108,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,116,114,105,101,115,32,114,101,116,117,114,110,0
 ug_notices_12: .byte 78,111,116,32,101,110,111,117,103,104,32,109,101,109,111,114,121,32,102,111,114,32,116,104,101,32,112,105,99,107,101,114,0
-ug_notices_lo: .byte <ug_notices_0,<ug_notices_1,<ug_notices_2,<ug_notices_3,<ug_notices_4,<ug_notices_5,<ug_notices_6,<ug_notices_7,<ug_notices_8,<ug_notices_9,<ug_notices_10,<ug_notices_11,<ug_notices_12
-ug_notices_hi: .byte >ug_notices_0,>ug_notices_1,>ug_notices_2,>ug_notices_3,>ug_notices_4,>ug_notices_5,>ug_notices_6,>ug_notices_7,>ug_notices_8,>ug_notices_9,>ug_notices_10,>ug_notices_11,>ug_notices_12
+ug_notices_13: .byte 69,110,116,101,114,32,97,32,118,97,108,105,100,32,100,97,116,101,47,116,105,109,101,44,32,49,57,56,48,45,50,48,55,57,0
+ug_notices_14: .byte 67,108,111,99,107,32,114,101,115,117,108,116,32,117,110,107,110,111,119,110,59,32,82,32,114,101,97,100,115,32,97,103,97,105,110,0
+ug_notices_15: .byte 67,108,111,99,107,32,114,101,97,100,98,97,99,107,32,100,105,102,102,101,114,115,59,32,82,32,114,101,102,114,101,115,104,101,115,0
+ug_notices_16: .byte 67,108,111,99,107,32,114,101,97,100,98,97,99,107,32,99,111,110,102,105,114,109,101,100,0
+ug_notices_lo: .byte <ug_notices_0,<ug_notices_1,<ug_notices_2,<ug_notices_3,<ug_notices_4,<ug_notices_5,<ug_notices_6,<ug_notices_7,<ug_notices_8,<ug_notices_9,<ug_notices_10,<ug_notices_11,<ug_notices_12,<ug_notices_13,<ug_notices_14,<ug_notices_15,<ug_notices_16
+ug_notices_hi: .byte >ug_notices_0,>ug_notices_1,>ug_notices_2,>ug_notices_3,>ug_notices_4,>ug_notices_5,>ug_notices_6,>ug_notices_7,>ug_notices_8,>ug_notices_9,>ug_notices_10,>ug_notices_11,>ug_notices_12,>ug_notices_13,>ug_notices_14,>ug_notices_15,>ug_notices_16
 ug_title: .byte 117,79,83,32,85,108,116,105,109,97,116,101,0
 ug_question: .byte 67,104,97,110,103,101,32,100,114,105,118,101,32,109,101,100,105,97,63,0
-ug_label_x: .word 28,100,176,260,288,24,96,172,40,152,68,200
-ug_label_y: .byte 36,36,36,36,12,164,164,164,140,140,168,168
+ut_question: .byte 83,101,116,32,99,97,114,116,114,105,100,103,101,32,99,108,111,99,107,0
+ug_label_x: .word 28,100,176,260,288,24,96,172,40,152,68,200,160,160,160,160,28,84
+ug_label_y: .byte 36,36,36,36,12,164,164,164,140,140,168,168,76,92,108,124,140,80

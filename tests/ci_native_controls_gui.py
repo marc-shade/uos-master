@@ -44,7 +44,12 @@ class GraphicalPanel(DrivePanel):
         selected=self.value('ud_selected');notice=self.value('ug_notice')
         records=[tuple(self.device.inventory[i:i+3]) for i in range(1,len(self.device.inventory),3)]
         count=len(records);partial=count!=self.device.inventory[0]
-        if mode:
+        if mode==2:
+            at=self.symbol('ut_edit');length=self.value('ut_field')
+            text=bytes(self.ram[at:at+length]).decode()
+            body=graphical=['YYYY/MM/DD HH:MM:SS  (1980-2079)','',text]
+            if focus==17:body.append(' '*self.ram[self.symbol('ut_field')+1]+'^')
+        elif mode:
             mount=self.value('ud_pending')==0x23
             body=[('MOUNT IMAGE ON IEC ' if mount else 'EJECT IMAGE FROM IEC ')+str(records[selected][1]),'']
             if mount:
@@ -79,7 +84,7 @@ class GraphicalPanel(DrivePanel):
                     'GATEWAY: '+addresses[2],'','CONFIGURED ADDRESSES; LINK UNTESTED.']
             else:body+=['NO INTERFACES AVAILABLE']
             graphical=body
-        else:body=graphical=['CARTRIDGE RTC','',self.device.time.decode(),'R REFRESHES THIS CLOCK READING.']
+        else:body=graphical=['CARTRIDGE RTC','',self.device.time.decode(),'S SET TIME  R REFRESH CLOCK READING.']
         if graphical_override is not None:graphical=graphical_override
         bitmap=self.value('ug_bitmap')
         if bitmap:

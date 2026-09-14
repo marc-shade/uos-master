@@ -11,10 +11,11 @@ def absent_body(page):
 
 def panel_screen(columns, body, *, page=0, focus=0, mode=0, selected=0, notice=0):
     from native_controls_scene import LABELS, NOTICES
-    title = ['UOS ULTIMATE', '', 'CHANGE DRIVE MEDIA?', ''] if mode else TITLE
-    footer = (['TAB CHOOSE  ENTER CONFIRMS', 'ESC CANCELS'] if mode else
+    title = ['UOS ULTIMATE', '', 'SET CARTRIDGE CLOCK' if mode==2 else 'CHANGE DRIVE MEDIA?', ''] if mode else TITLE
+    footer = (['TAB CHOOSE  ENTER APPLIES', 'ESC CANCELS  CTRL-U CLEARS FIELD'] if mode==2 else
+              ['TAB CHOOSE  ENTER CONFIRMS', 'ESC CANCELS'] if mode else
               (['UP/DOWN SELECT  M MOUNT  E EJECT'] if page==1 else [])+FOOTER)
-    label = LABELS[focus].decode().upper() if focus<12 else f'DRIVE {selected+1}'
+    label = LABELS[focus].decode().upper() if focus<12 or focus>=16 else f'DRIVE {selected+1}'
     lines = title+body+['']+footer+['FOCUS: '+label, NOTICES[notice].upper()]
     assert columns in (40, 80) and len(lines) <= 25
     result = bytearray(b' '*(columns*25))
