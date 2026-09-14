@@ -9,26 +9,30 @@ RECTS += [(8,64+8*i,312,72+8*i) for i in range(8)]
 RECTS += [(8,24,72,40),(80,24,144,40),(152,24,216,40),(224,24,280,40),
           (192,144,248,160),(256,144,312,160),(8,104,312,120),
           (192,144,248,160),(256,144,312,160)]
-RECTS += [(136,8,192,24),(200,8,272,24)]
+RECTS += [(168,8,216,24),(224,8,280,24),(88,8,160,24)]
 LABELS=['X','Device','Format','Path','Parent','R','Prev','Next','Open','View','Copy']
 LABELS += ['']*8+['Device','Format','Type','Browse','Copy','Back','','OK','Cancel']
-LABELS += ['Edit','Paint']
+LABELS += ['Edit','Paint','New dir']
 ROWS={0:[(2,48),(3,56)]+[(5+i,64+8*i) for i in range(8)]+[(19,168),(20,176),(21,184)],
       1:[(2,48),(3,56),(5,80),(7,104),(14,128),(15,136),(16,168),(17,176),(18,184)],
       2:[(0,48),(1,56),(7,104),(9,168)],
       5:[(0,32),(1,40)]+[(3+i,48+8*i) for i in range(16)]+[(21,184)],
-      6:[(2,48),(3,56)]+[(6+i,64+8*i) for i in range(8)]+[(4,128),(19,168),(20,176),(21,184)]}
+      6:[(2,48),(3,56)]+[(6+i,64+8*i) for i in range(8)]+[(4,128),(19,168),(20,176),(21,184)],
+      7:[(0,48),(1,64),(2,72),(7,104),(9,168),(10,176),(11,184)]}
 
-def enabled(index,view,*,count=0,ultimate=False,phase=0):
+def enabled(index,view,*,count=0,ultimate=False,phase=0,folder_sent=False):
     if view==0:
+        if index==30:return ultimate
         if index in (28,29):return count>0
         if index in (3,4):return ultimate
         return index<11 or 11<=index<11+count
     if view==1:return index==24 if phase else index==0 or 19<=index<=25
     if view==5:return index in (0,22)
+    if view==7:return index in (0,27) or not folder_sent and index in (25,26)
     return 25<=index<=27 or view==3 and index==19
 
 def label(index,view,phase=0):
+    if view==7 and index in (26,27):return 'Create' if index==26 else 'Back'
     if view==5 and index==22:return 'Next'
     if view==3 and index==19:return 'DOS'
     if view==1 and index==24 and phase:return 'Cancel'
@@ -75,7 +79,7 @@ def copy_console(source,name,*,focus=25,caret=None,field_view=None,**kwargs):
     body=copy_screen(80,source,name,caret=caret,view=field_view,graphical_controls=True,**kwargs)
     return focus_console(body,focus,view=1,phase=kwargs.get('phase',0))
 
-def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None,help_text=b'Tab controls  Enter activate'):
+def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None,help_text=b'Tab controls  Enter activate',folder_sent=False):
     assert len(rows)==25 and all(len(row)==40 for row in rows)
     data=bytearray(bytes(8192)+b'\x16'*1024);glyphs=font()
     def rect(bounds,ink):
@@ -91,10 +95,10 @@ def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None,hel
             for dy,bits in enumerate(glyphs[(code-32)*8:][:8]):
                 for dx in range(8):
                     if bits&(128>>dx):rect((x+column*8+dx,y+dy,x+column*8+dx+1,y+dy+1),1)
-    title=['uOS Files','Copy a file','Choose device','Directory path','Copy device','File bytes'][view]
+    title=['uOS Files','Copy a file','Choose device','Directory path','Copy device','File bytes','','New folder'][view]
     text(8,8,title.encode())
     for index,bounds in enumerate(RECTS):
-        if not enabled(index,view,count=count,ultimate=ultimate,phase=phase):continue
+        if not enabled(index,view,count=count,ultimate=ultimate,phase=phase,folder_sent=folder_sent):continue
         x0,y0,x1,y1=bounds
         for y in range(y0//8,y1//8):
             data[8192+y*40+x0//8:8192+y*40+x1//8]=bytes([7 if index==focus else 0x1b])*((x1-x0)//8)
@@ -112,17 +116,17 @@ def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None,hel
 
 def write_assembly(directory):
     directory.mkdir(parents=True,exist_ok=True)
-    lines=['ui_button_count=30','ui_rects:']
+    lines=['ui_button_count=31','ui_rects:']
     lines+=['        .word '+','.join(map(str,r)) for r in RECTS]
-    strings={'fv_title_'+str(i):s for i,s in enumerate(['uOS Files','Copy a file','Choose device','Directory path','Copy device','File bytes'])}
+    strings={'fv_title_'+str(i):s for i,s in enumerate(['uOS Files','Copy a file','Choose device','Directory path','Copy device','File bytes','','New folder'])}
     strings.update({'fv_label_'+str(i):s for i,s in enumerate(LABELS)})
     strings.update(fv_next='Next',fv_dos='DOS',fv_cancel='Cancel',fv_help='Tab controls  Enter activate',
                    fv_focus='Focus: ',fv_row_label='File row',fv_field_label='Name / value',
                    fv_device_caption='DEVICE: 8 TO 30',fv_copy_device_caption='DEVICE / DOS CONTEXT',
                    fv_path_caption='DIRECTORY PATH; F1 CHANGES DOS',fv_dos_caption='DOS: ')
     for name,s in strings.items():lines += [name+': .byte '+','.join(map(str,s.encode()+b'\0'))]
-    for prefix,count in [('fv_title',6),('fv_label',30)]:
+    for prefix,count in [('fv_title',8),('fv_label',31)]:
         for suffix,op in [('lo','<'),('hi','>')]:lines += [prefix+'_'+suffix+': .byte '+','.join(op+prefix+'_'+str(i) for i in range(count))]
     for view,values in ROWS.items():lines += ['fv_rows_'+str(view)+': .byte '+','.join(str(n) for pair in values for n in pair)+',255']
-    for suffix,op in [('lo','<'),('hi','>')]:lines += ['fv_rows_'+suffix+': .byte '+','.join(op+'fv_rows_'+str(v if v in ROWS else 2) for v in range(7))]
+    for suffix,op in [('lo','<'),('hi','>')]:lines += ['fv_rows_'+suffix+': .byte '+','.join(op+'fv_rows_'+str(v if v in ROWS else 2) for v in range(8))]
     (directory/'buttons.inc').write_text('\n'.join(lines)+'\n')

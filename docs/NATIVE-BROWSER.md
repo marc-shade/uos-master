@@ -28,6 +28,7 @@ applications. The same file list and byte viewer appear on the complete
 | F1 / Tab | On ULT, switch DOS context 1 / 2 with F1 in suite Files, or Tab in the diagnostic browser |
 | L | Enter an absolute Ultimate app path |
 | C | In the suite Files app, copy the selected file |
+| Ctrl-K | In graphical suite Files on ULT, create a folder in the current directory |
 | Esc | Return to the suite desktop, or to the standalone diagnostic workspace |
 
 The list shows the stored name, file type and allocated block count. `*` marks
@@ -114,7 +115,7 @@ Build with `python3 -B build-native-desktop.py`. Both suite disks contain the
 Files core, `fsview.prg` graphics module and `fspick.prg` destination picker.
 Files reserves 96 bank-0 app pages, sixteen scratch pages, its 36-page graphical
 surface and the usual 37-page IEC browser cache in bank 1. Its shared VDC
-component uses thirty bank-1 pages and retains one screen backup in REU or
+component uses 39 bank-1 pages and retains one screen backup in REU or
 main RAM. The modules share one checked window
 and load from the original app source folder, independently of the selected
 data device or DOS context. Scratch storage must be available at `$5000..$5fff`;
@@ -181,7 +182,11 @@ The [field checkpoint](validation/2026-09-10-native-fields/README.md) also quali
 middle edits, both clipped viewports and the full 255-byte browser path through
 the shared ABI 1.6 controls, without increasing the 28-page app allocation.
 
-Native rename/delete, zero-byte IEC creation, file associations, richer document
+The graphical suite's [New dir dialog](NATIVE-FOLDERS.md) creates Ultimate
+folders, checks the result and refreshes the parent listing. Files also opens
+text and UPNT documents through [Editor/Paint associations](NATIVE-DOCUMENT-LAUNCH.md).
+
+Native rename/delete, zero-byte IEC creation, configurable file associations, richer document
 editing, broader widgets, scheduling and migration of remaining Ultimate desktop
 services remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 

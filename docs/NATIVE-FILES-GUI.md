@@ -69,7 +69,7 @@ allocation. A conflicting owner refuses startup before keyboard or display
 ownership. All scratch pages are released through normal app cleanup.
 
 The suite app and its three matching modules require ABI 1.14. Its packed
-PRG is 10,089 bytes. Install `FSOPEN.PRG` together with Files and its other
+PRG is 10,088 bytes. Install `FSOPEN.PRG` together with Files and its other
 modules; an unavailable association module reports an error before publishing
 an app replacement request.
 
@@ -86,13 +86,20 @@ The graphical surface uses 36 pages at `$c000..$e3ff`. The IEC browser cache use
 37 bank-1 pages; Ultimate and picker caches are allocated as needed. Ordinary
 field edits update changed glyph cells and the old/new caret. Pointer polling
 enters the module only while a new or unfinished sample needs attention; the
-app publishes readiness after the complete module call returns.
+app publishes readiness after the complete module call returns. The New folder
+modal dialog instead publishes readiness at its own keyboard loop while its
+module remains active.
 
 The VDC service uses the existing owned display contract. Document launch adds
 the ABI 1.14 request fields and dispatcher return path. All 426 managed pages
 remain available after app and workspace allocations are released.
 
 ## Current scope
+
+**New dir / Ctrl-K** opens [Ultimate folder creation](NATIVE-FOLDERS.md) in the
+current directory. Its modal call keeps the graphics module resident through
+editing and command completion; the listing refresh happens after the module
+returns. Both suite disks include it in `FSVIEW.PRG`.
 
 The [document launch qualification](validation/2026-09-14-native-open-with/README.md)
 checks Files-to-Editor/Paint handoffs, exact identities and returned selections

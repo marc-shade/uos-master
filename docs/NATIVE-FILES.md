@@ -30,7 +30,7 @@ desktop retains separate legacy APIs during migration.
 
 Include [`api.inc`](../src/native/api.inc) and declare required ABI minor **1**
 for streams or **2** for directory pages in the application manifest.
-The current ABI 1.11 kernel accepts required minors 0 through 11.
+The current ABI 1.14 kernel accepts required minors 0 through 14.
 Use the active `N_CURRENT` owner for file and memory allocations. File arguments
 use their own mailbox; `N_FOWNER` is independent of the heap's `N_OWNER`.
 
