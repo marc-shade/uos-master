@@ -15,6 +15,8 @@ DOC_OUTPUT_STORAGE=0
 DOC_STATE_STORAGE=0
 DOC_TRANSIENT_STORAGE=0
 DOC_EXTERNAL_MEMORY=0
+DOC_COMPACT=0
+DOC_HISTORY=0
 doc_storage_read=N_READ
 doc_storage_write=N_WRITE
 .endweak
@@ -29,13 +31,17 @@ D_BACKING = 15               ; 0 main RAM; 1 shared REU extent (opt-in)
 D_HANDLES = 16
 D_MAXCHUNKS = 24
 
-doc_copy3 .macro source, dest
+doc_copy3 .macro source,dest
+ .if DOC_COMPACT
+        #es_copy3 \source,\dest
+ .else
         lda \source
         sta \dest
         lda \source+1
         sta \dest+1
         lda \source+2
         sta \dest+2
+ .endif
 .endm
 doc_load3 .macro field, dest
         ldx d_slot
@@ -55,7 +61,10 @@ doc_store3 .macro source, field
         lda \source+2
         sta d_states+\field+2,x
 .endm
-doc_add3 .macro source, dest
+doc_add3 .macro source,dest
+ .if DOC_COMPACT
+        #es_add3 \source,\dest
+ .else
         clc
         lda \dest
         adc \source
@@ -66,8 +75,12 @@ doc_add3 .macro source, dest
         lda \dest+2
         adc \source+2
         sta \dest+2
+ .endif
 .endm
-doc_sub3 .macro source, dest
+doc_sub3 .macro source,dest
+ .if DOC_COMPACT
+        #es_sub3 \source,\dest
+ .else
         sec
         lda \dest
         sbc \source
@@ -78,8 +91,12 @@ doc_sub3 .macro source, dest
         lda \dest+2
         sbc \source+2
         sta \dest+2
+ .endif
 .endm
-doc_cmp3 .macro left, right
+doc_cmp3 .macro left,right
+ .if DOC_COMPACT
+        #es_cmp3 \left,\right
+ .else
         lda \left+2
         cmp \right+2
         bne +
@@ -89,6 +106,7 @@ doc_cmp3 .macro left, right
         lda \left
         cmp \right
 +
+ .endif
 .endm
 
 doc_init:
@@ -420,7 +438,21 @@ doc_allocate:
         lda #$ff
         sta N_BANK
         jsr N_ALLOC
+.if DOC_HISTORY
+        bcc doc_allocated
+        pha
+        jsr eh_relieve
+        bcc doc_retry_allocate
+        pla
+        sec
+        rts
+doc_retry_allocate:
+        pla
+        jmp doc_allocate
+.else
         bcs doc_return
+.endif
+doc_allocated:
         ldx d_slot
         lda d_states+D_CHUNKS,x
         sta d_index

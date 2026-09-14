@@ -104,6 +104,10 @@ class VDCBus(PointerBus):
 
 
 class Desktop(Pointer):
+    # Include the larger checked VDC/history component load in startup.
+    # Keep the same finite budget as the shared graphical Calculator fixture.
+    instruction_limit = 16000000
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.checked = 0

@@ -18,9 +18,9 @@ allocations remains unsupported.
 
 The [foreground REU arena](NATIVE-REU.md) has one descriptor table, capacity
 probe and app-generation cookie. Display snapshots use owner 32. Document
-extents use owner 33, still tied to the foreground native app's generation.
+extents and undo records use owner 33, still tied to the foreground native app's generation.
 The memory API cannot free a display token. Memory close refuses live
-documents. Display close frees its snapshot but leaves an active memory
+documents or history records. Display close frees its snapshot but leaves an active memory
 lease intact. The provider can be unloaded only after both lifetimes end and
 any probe or temporary-allocation recovery succeeds.
 
@@ -43,7 +43,8 @@ Relocation needs enough free space for both allocations during the copy.
 The document engine reserves storage before an insertion or replacement
 changes logical data. Suite Editor replacements can remove a validated 24-bit
 span while inserting at most 512 bytes. Removing a large selection reuses its
-existing extent, and zero-byte removal permits insertion at any valid position.
+existing document extent; [undo history](NATIVE-HISTORY.md) can allocate a
+separate record for the removed bytes, and zero-byte removal permits insertion at any valid position.
 Failed transfers poison that document so Save As
 cannot report success from uncertain bytes. New and controlled exit release
 the owned extent explicitly. An uncertain file CLOSE follows the native

@@ -271,7 +271,11 @@ ed_search_input:
 +       #ed_move3 ed_s_match,d_pos
         #ed_move3 ed_s_length,d_count
         #ed_move3 ed_s_new_length,d_replace_count
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eh_replace
+.else
         jsr doc_replace
+.endif
         bcs +
         #doc_load3 D_LEN,ed_length
         jsr ed_invalidate_pages

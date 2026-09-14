@@ -45,10 +45,10 @@ has separate checked handles and never overlaps the bank-1 display service.
 The resident kernel and 426-page heap are unchanged.
 
 `VDSVC.PRG` supplies VDC graphics from the app's original system volume. Keep it
-beside Claude when copying the app. Its 33-page bank-1 image owns a 64-page
+beside Claude when copying the app. Its 39-page bank-1 image owns a 64-page
 monochrome or 72-page color screen snapshot, using the shared REU arena when
 available and checked main RAM otherwise. With REU backing, Claude leaves
-213 main-RAM pages free; with a RAM snapshot it leaves 149 or 141 pages.
+207 main-RAM pages free; with a RAM snapshot it leaves 143 or 135 pages.
 These counts assume an empty clipboard.
 A clean model allocation refusal retains the original VDC terminal and VIC
 status panel. A missing or invalid display service keeps the VIC controls and
@@ -86,7 +86,7 @@ The TCP/PTY fixture sends deterministic terminal output; it sends no model
 requests. Both cold-boot display choices return to the blue suite desktop with
 font, keys, NMI and all app pages restored.
 
-The current suite keeps 103 free D64 blocks and 2,599 free D81 blocks. This work does not
+The current suite keeps 96 free D64 blocks and 2,592 free D81 blocks. This work does not
 install a physical build. Physical serial/mouse qualification, an authenticated
 Claude session, wider display modes, independent desktop windows, REU/image clipboard formats
 and the remaining [OS roadmap](IMPLEMENTATION-ROADMAP.md) remain open.

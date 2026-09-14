@@ -97,12 +97,14 @@ def main():
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--editor-only',action='store_true')
     parser.add_argument('--editor-clipboard',action='store_true',help='exercise shared Copy/Cut/Paste/Clear with ROM modifier keys')
+    parser.add_argument('--editor-history',action='store_true',help='add keyboard and retained-toolbar Undo/Redo to the clipboard workflow')
     parser.add_argument('--editor-selection',action='store_true',help='exercise text selection and replacement with ROM keyboard and 1351 input')
     parser.add_argument('--editor-large',action='store_true',help='edit/save/reopen a 128 KiB REU document on the private D81')
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     if args.controls_clock:assert args.controls_only
     if args.editor_selection or args.editor_clipboard:assert args.editor_only
+    if args.editor_history:assert args.editor_only and args.editor_clipboard
     if args.editor_large:
         assert args.editor_only and args.d81 and args.reu_kib and args.reu_kib>=512
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
@@ -149,7 +151,7 @@ def main():
             from native_reu_check import initial_memory,snapshot as reu_dump
             reu_initial=initial_memory(args.reu_kib)
             from native_reu_document_check import ReuDocumentOracle
-            reu_documents=ReuDocumentOracle(reu_initial)
+            reu_documents=ReuDocumentOracle(reu_initial,history=True)
             (work/'initial.reu').write_bytes(reu_initial)
             command.extend(['-reu','-reusize',str(args.reu_kib),'-reuimage',str(work/'initial.reu'),'+reuimagerw'])
         report['command']=command;save()
@@ -263,7 +265,10 @@ def main():
                     # A single position read can precede queued host deltas.
                     time.sleep(.2)
                     settled=position();samples.append(list(settled))
-                    if settled==(x,y) and ready():
+                    # Readiness was observed above. A second separate sample
+                    # can miss its brief pulse as VDC drawing resumes, even
+                    # though the pointer has settled inside the target.
+                    if settled==(x,y):
                         report.setdefault('mouse_routes',[]).append(dict(app=pointer_app,target=[tx,ty],samples=samples));save()
                         return x,y
                     continue
@@ -494,7 +499,7 @@ def main():
         def editor_view(label,data,cursor,*,focus=6,**expected):
             expected.setdefault('selection',editor_selection_expected)
             wait(lambda:header('editor') and ready(),label,90)
-            state={name:value(name) for name in ('eg_bitmap','eg_error','ed_module_kind','ed_mode','ed_status','ui_selected')}
+            state={name:value(name) for name in ('eg_bitmap','eg_error','ed_module_kind','ed_mode','ed_status','ui_selected','eg_more')}
             assert (state['eg_bitmap'],state['ed_module_kind'],state['ui_selected'])==(1,2,focus),(label,state)
             state['cursor']=int.from_bytes(app_read(symbol('ed_cursor'),3),'little')
             state['selection']=(tuple(int.from_bytes(app_read(symbol(name),3),'little')
@@ -503,6 +508,7 @@ def main():
             report.setdefault('editor_states',[]).append(dict(label=label,**state));save()
             assert state['cursor']==cursor,(label,state,cursor)
             assert state['ed_mode']==expected.get('mode',0) and state['ed_status']==expected.get('status',0),(label,state)
+            assert state['eg_more']==expected.get('more',0),(label,'toolbar page',state)
             kwargs=dict(focus=focus,fmt=boot_format,**expected)
             kwargs.setdefault('view',int.from_bytes(app_read(symbol('ed_view'),3),'little'))
             kwargs.setdefault('horizontal',int.from_bytes(app_read(symbol('ed_horizontal'),3),'little'))
@@ -755,6 +761,8 @@ def main():
                 move_to(164,172);editor_view('editor-open',b'',0)
                 for char in ('c','1','2','8','space','t','e','x','t'):key(char,'editor')
                 document=b'C128 TEXT';editor_view('editor-typed',document,len(document),dirty=True)
+                if args.reu_kib:
+                    for offset,char in enumerate(document):reu_documents.history.edit(offset,b'',bytes([char]))
                 editor_reu_document('editor-typed-reu',document,loaded=True)
                 if args.editor_clipboard:
                     def editor_control(letter):
@@ -809,6 +817,28 @@ def main():
                     editor_view('editor-clipboard-cleared',document,len(document),dirty=True,status=26)
                     assert capture.capture('clipboard-cleared',address=0x3de7,count=8)[:5]==bytes(5)
                     report['editor_clipboard']=True;save()
+                if args.editor_history:
+                    editor_control('z')
+                    if args.reu_kib:reu_documents.replace(*reu_documents.history.replay(),record=False)
+                    editor_view('editor-history-key-undo',b'',0,dirty=True,status=27)
+                    editor_reu_document('editor-history-key-undo-reu',b'')
+                    editor_control('y')
+                    if args.reu_kib:reu_documents.replace(*reu_documents.history.replay(True),record=False)
+                    editor_view('editor-history-key-redo',document,len(document),dirty=True,status=28)
+                    editor_reu_document('editor-history-key-redo-reu',document)
+                    for _ in range(4):editor_click(5)
+                    editor_view('editor-history-toolbar',document,len(document),dirty=True,focus=5,more=4,status=28)
+                    editor_click(27)
+                    if args.reu_kib:reu_documents.replace(*reu_documents.history.replay(),record=False)
+                    editor_view('editor-history-mouse-undo',b'',0,dirty=True,status=27,more=4)
+                    editor_reu_document('editor-history-mouse-undo-reu',b'')
+                    editor_click(28)
+                    if args.reu_kib:reu_documents.replace(*reu_documents.history.replay(True),record=False)
+                    editor_view('editor-history-mouse-redo',document,len(document),dirty=True,status=28,more=4)
+                    editor_reu_document('editor-history-mouse-redo-reu',document)
+                    editor_click(5);editor_click(6,(84,60))
+                    editor_view('editor-history-return',document,len(document),dirty=True)
+                    report['editor_history']=True;save()
                 if args.editor_selection:
                     with mouse.held_key('Control_L'):key('b','editor')
                     for _ in range(3):key('Left','editor')
@@ -859,6 +889,7 @@ def main():
                     field['device']=9
                     editor_view('editor-data-destination',document,3,focus=11,**field)
                 editor_click(12);editor_view('editor-saved',document,3,name='GUINOTE',status=1,device=editor_device)
+                if args.reu_kib:reu_documents.history.save()
                 editor_click(3);key('x','editor')
                 editor_view('editor-find',document,3,name='GUINOTE',mode=6,field='X',field_caret=1,field_view=0,focus=11,device=editor_device)
                 editor_click(12);editor_selection_expected=None
@@ -869,6 +900,7 @@ def main():
                     report['editor_large_io_deadline_seconds']=600;save()
                     # Host F5 maps to native New; host F7 maps to Go To.
                     key('F5','editor')
+                    reu_documents.history.clear()
                     editor_click(1)
                     for char in 'large':key(char,'editor')
                     editor_click(12,timeout=600)
@@ -879,7 +911,7 @@ def main():
                     key('Return','editor')
                     edit_at=98305+(editor_large[98304:98306]==b'\r\n')
                     for char in 'reu96':key(char,'editor')
-                    reu_documents.insert(edit_at,b'REU96')
+                    for offset,char in enumerate(b'REU96'):reu_documents.insert(edit_at+offset,bytes([char]))
                     edited=editor_large[:edit_at]+b'REU96'+editor_large[edit_at:]
                     editor_view('editor-large-edited',edited,edit_at+5,name='LARGE',dirty=True)
                     editor_reu_document('editor-large-edit-reu',edited)
@@ -893,8 +925,10 @@ def main():
                     picker_click(18)
                     editor_click(12,timeout=600)
                     editor_view('editor-large-saved',edited,edit_at+5,name='REUCOPY',status=1)
+                    reu_documents.history.save()
                     editor_reu_document('editor-large-saved-reu',edited)
                     key('F5','editor')
+                    reu_documents.history.clear()
                     editor_click(1)
                     for char in 'reucopy':key(char,'editor')
                     editor_click(12,timeout=600)

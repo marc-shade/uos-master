@@ -4,6 +4,8 @@
 NATIVE_EDITOR_GRAPHICS=0
 .endweak
 .if NATIVE_EDITOR_GRAPHICS
+DOC_COMPACT=1
+DOC_HISTORY=1
 ED_ABI=13
 .include "editor/selection-macros.inc"
 ED_PAGES=96
@@ -113,6 +115,7 @@ ed_get_key:
         lda #0
         sta ed_structure
         sta ed_document_changed
+        sta eh_warning
 .endif
         jsr N_KEYIN
 .if NATIVE_EDITOR_GRAPHICS
@@ -142,6 +145,12 @@ ed_get_key:
         cmp #22
         beq ed_clip_launch
         cmp #11
+        beq ed_clip_launch
+        cmp #26
+        beq ed_clip_launch
+        cmp #25
+        beq ed_clip_launch
+        cmp #21
         beq ed_clip_launch
 .endif
         cmp #27
@@ -264,6 +273,7 @@ ed_new_document:
         jmp ed_refresh
 ed_reset_view:
 .if NATIVE_EDITOR_GRAPHICS
+        jsr eh_reset
         jsr es_clear
 .endif
         lda #0
@@ -512,7 +522,11 @@ ed_enter:
         sta d_count+1
 ed_insert:
         #ed_move3 ed_cursor,d_pos
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eh_insert
+.else
         jsr doc_insert
+.endif
         bcs ed_doc_error
         lda #1
         sta ed_document_changed
@@ -531,7 +545,11 @@ ed_backspace:
         #ed_move3 ed_scan,d_pos
         #ed_move3 ed_cursor,d_count
         #doc_sub3 ed_scan,d_count
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eh_delete
+.else
         jsr doc_delete
+.endif
         bcs ed_doc_error
         lda #1
         sta ed_document_changed
@@ -828,6 +846,9 @@ ed_refresh_edit:
         jsr ed_invalidate_pages
         jsr ed_adjust_lines
 ed_refresh_prepare:
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eh_notice
+.endif
         lda ed_active
         sta d_slot
         #doc_load3 D_LEN,ed_length
@@ -1747,6 +1768,7 @@ ed_status_lo: .byte <ed_ready_text,<ed_saved_text,<ed_io_error,<ed_memory_text,<
               .byte <ed_replaced_text,<ed_search_cancel_text,<ed_search_memory_text
 .if NATIVE_EDITOR_GRAPHICS
               .byte <ed_clip_copied,<ed_clip_pasted,<ed_clip_select,<ed_clip_empty,<ed_clip_large,<ed_clip_error,<ed_clip_cleared
+              .byte <eh_undone,<eh_redone,<eh_cleared,<eh_unavailable,<eh_empty
 .endif
 ed_status_hi: .byte >ed_ready_text,>ed_saved_text,>ed_io_error,>ed_memory_text,>ed_range_text
               .byte >ed_fault_text,>ed_exists_text,>ed_partial_text,>ed_cancelled_text,>ed_close_text
@@ -1755,6 +1777,7 @@ ed_status_hi: .byte >ed_ready_text,>ed_saved_text,>ed_io_error,>ed_memory_text,>
               .byte >ed_replaced_text,>ed_search_cancel_text,>ed_search_memory_text
 .if NATIVE_EDITOR_GRAPHICS
               .byte >ed_clip_copied,>ed_clip_pasted,>ed_clip_select,>ed_clip_empty,>ed_clip_large,>ed_clip_error,>ed_clip_cleared
+              .byte >eh_undone,>eh_redone,>eh_cleared,>eh_unavailable,>eh_empty
 .endif
 ed_one: .byte 1,0,0
 .if NATIVE_EDITOR_GRAPHICS
@@ -1844,12 +1867,14 @@ ed_other_page: .fill 512,0
 .if NATIVE_EDITOR_GRAPHICS
 .include "editor/selection-state.inc"
 .include "editor/clipboard-gate.inc"
+.include "editor/history.inc"
 .include "editor/presentation.inc"
 .include "editor/workspace.inc"
 .include "input/keys.inc"
 .include "editor/vdc.inc"
 .include "editor/memory.inc"
 BP_MODE=0
+BP_HISTORY=1
 BP_SHARED_MEMORY=1
 BP_STATE_STORAGE=$5f40
 BP_POINTER_STATE=eg_pointer_visible

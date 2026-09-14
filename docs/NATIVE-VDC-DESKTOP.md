@@ -40,11 +40,11 @@ all eight lines: its last-raster value is inclusive, so seven is sufficient.
 | Allocation | 16 KiB VDC | 64 KiB VDC |
 |---|---:|---:|
 | Launcher app | 35 pages | 35 pages |
-| Bank-1 VDC component | 30 pages | 30 pages |
+| Bank-1 VDC component | 39 pages | 39 pages |
 | VIC surface | 36 pages | 36 pages |
 | Saved VDC memory without REU | 64 pages | 72 pages |
-| Free managed pages without REU | 261 | 253 |
-| Free managed pages with REU | 325 | 325 |
+| Free managed pages without REU | 252 | 244 |
+| Free managed pages with REU | 316 | 316 |
 | Bitmap address | `$0000` | `$4000` |
 | Attribute address | Disabled | `$8000` |
 | Entire saved address range | `$0000..$3fff` | `$4000..$87ff` |
@@ -52,7 +52,7 @@ all eight lines: its last-raster value is inclusive, so seven is sufficient.
 The expanded desktop program contains 8,833 bytes; its packed PRG is 7,362
 bytes including the load address. The
 [suite disks](NATIVE-BOOT-MEDIA.md) contain thirteen shipping files, including
-`VDSVC.PRG`, with 140 free blocks on D64 and 2,636 on D81 before user documents. Use a
+`VDSVC.PRG`, with 96 free blocks on D64 and 2,592 on D81 before user documents. Use a
 separate data disk or Ultimate storage for larger documents and pictures.
 Qualification saves the small Calculator sample on the system disk. On D64,
 Editor selects device 9 through the file picker; on D81 its sample also fits

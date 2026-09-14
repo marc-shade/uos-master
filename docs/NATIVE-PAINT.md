@@ -92,9 +92,9 @@ The host codec is [`native_paint_format.py`](../native_paint_format.py).
 Display controls, sprites, and memory padding are excluded from the file.
 
 Paint uses 96 app pages, two 36-page document allocations, a 36-page VIC
-surface, ten bank-0 scratch pages and the shared 30-page VDC component. REU
-screen backing leaves 182 of the 426 managed pages free while drawing. Main-RAM
-backing leaves 118 pages with a 16 KiB VDC or 110 with 64 KiB. Open needs
+surface, ten bank-0 scratch pages and the shared 39-page VDC component. REU
+screen backing leaves 173 of the 426 managed pages free while drawing. Main-RAM
+backing leaves 109 pages with a 16 KiB VDC or 101 with 64 KiB. Open needs
 another 36 bank-1 pages temporarily; the [graphical picker](NATIVE-PICKER-GUI.md)
 shares the display, font and pointer and uses transient directory caches.
 

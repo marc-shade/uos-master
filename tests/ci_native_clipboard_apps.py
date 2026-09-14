@@ -21,7 +21,7 @@ def case_editor(large=False):
     e.key(22);e.check(raw,0,False,status=23)
     e.key(1);e.key(3);e.check(raw,len(raw),False,status=20,selection=(0,len(raw)));clip(e,raw)
     print('copied',len(raw),flush=True)
-    e.key(7);e.key(22);e.check(raw*2,len(raw)*2,True,status=21);clip(e,raw)
+    e.key(7);e.key(22);e.check(raw*2,len(raw)*2,True,status=30 if large else 21);clip(e,raw)
     print('pasted',len(raw)*2,flush=True)
     if not large:
         e.frame();e.click(5);e.click(5);e.click(5);e.click(26)
@@ -33,6 +33,9 @@ def case_editor(large=False):
         e.key(22);e.check(want,len(want),False,status=23)
         e.exit()
     else:
+        # This RAM-only paste reclaims optional history to make room for the
+        # full document. It must announce that loss and refuse stale replay.
+        e.key(26);e.check(raw*2,len(raw)*2,True,status=31);clip(e,raw)
         # An oversized Copy and Cut must keep both the selected document and
         # the previous clipboard. Clear releases the retained item explicitly.
         e.key(1);e.key(3);e.check(raw*2,len(raw)*2,True,status=24,selection=(0,len(raw)*2));clip(e,raw)
@@ -44,7 +47,9 @@ def case_editor(large=False):
 
 def case_capacity():
     raw=(b'ROW 0123456789\r'*400)[:5000]
-    e=GraphicalEditor({(9,b'INPUT',b'S'):raw},device=9)
+    # Keep this capacity-refusal fixture independent of the optional history
+    # provider, which can now be reclaimed to satisfy document growth.
+    e=GraphicalEditor({(9,b'INPUT',b'S'):raw},device=9,vdc_component=False)
     e.prompt(0x85,'INPUT');e.key(1);e.key(3);clip(e,raw);e.key(7)
     e.key(0x87);e.check(b'',0,False)
     stack=bytes(e.ram[0x100:0x200]);held=[];keep=None
@@ -65,7 +70,7 @@ def case_capacity():
     assert e.state()['capacity']==4096,e.state()
     for bank,start,data in held:assert e.m.bus.ram[bank][start:start+len(data)]==data
     stack=bytes(e.ram[0x100:0x200]);e.m.set(0x3d00,77);e.m.invoke('release');e.ram[0x100:0x200]=stack
-    e.key(22);e.check(raw,len(raw),True,status=21);clip(e,raw)
+    e.key(22);e.check(raw,len(raw),True,status=30);clip(e,raw)
     e.key(11);e.exit(dirty=True);e.restored()
     return dict(name='partial capacity acquisition refuses Paste without changing text, then retries',instructions=e.instructions,canvases=e.checked)
 

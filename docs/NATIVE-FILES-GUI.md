@@ -65,10 +65,10 @@ ownership. All scratch pages are released through normal app cleanup.
 
 The core retains one [VDC component](NATIVE-VDC-SERVICE.md) and original-screen
 backup across GUI/picker module swaps. Copy `VDSVC.PRG` beside Files when moving
-the app to another disk or Ultimate folder. The provider uses 30 bank-1 pages;
+the app to another disk or Ultimate folder. The provider uses 39 bank-1 pages;
 screen backing uses 64 or 72 additional main-RAM pages, or an available REU.
-With the 37-page IEC cache, Files leaves 211 managed pages with REU backing,
-147 with 16 KiB VDC RAM backing, or 139 with 64 KiB VDC RAM backing, before
+With the 37-page IEC cache, Files leaves 202 managed pages with REU backing,
+138 with 16 KiB VDC RAM backing, or 130 with 64 KiB VDC RAM backing, before
 additional directory caches. Only changed rows and pointer pixels are sent
 to the VDC. Text output resumes after the saved display has been restored.
 

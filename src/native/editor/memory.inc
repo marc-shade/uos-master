@@ -11,6 +11,20 @@ dm_ensure:
         jsr bp_load
         bcs dm_optional_close
 dm_check:
+        lda #H_INFO
+        jsr bk_call
+        bcs dm_optional_close
+        lda N_BUFFER+3
+        cmp #1
+        bne dm_optional_close
+        ldx ed_active
+        lda d_states+D_DIRTY,x
+        sta N_BUFFER
+        lda #H_CLEAR
+        jsr bk_call
+        bcs dm_optional_close
+        lda #1
+        sta eh_available
         lda #SM_INFO
         jsr bk_call
         bcs dm_optional_close
@@ -46,6 +60,8 @@ dm_failed:
         sec
         rts
 dm_cleanup:
+        jsr eh_close
+        bcs dm_return
         lda #0
         sta d_slot
         jsr doc_dispose

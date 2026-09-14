@@ -7,6 +7,7 @@ BP_POINTER_Y=pm_y
 BP_SHARED_MEMORY=0
 BP_STATE_STORAGE=0
 BP_TRACK_DIRTY=1
+BP_HISTORY=0
 .endweak
 vd_open:
         lda #0
@@ -60,6 +61,10 @@ vd_close:
         lda #0
         sta bp_started
 bp_dispose:
+.if BP_HISTORY
+        lda eh_available
+        bne bp_closed
+.endif
 .if BP_SHARED_MEMORY
         lda dm_lease
         bne bp_closed

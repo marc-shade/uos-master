@@ -2,7 +2,7 @@
 
 `python3 -B build-native-desktop.py` builds the same six native apps for a
 1541/D64 and a 1581/D81. Both cold-boot into the blue graphical launcher.
-The D64 suite has 103 free data blocks; the D81 has **2,599** (660,146 bytes
+The D64 suite has 96 free data blocks; the D81 has **2,592** (658,368 bytes
 of sequential-file payload, before any additional directory allocation).
 
 | Image under `target/` | Startup | Files |
@@ -34,7 +34,7 @@ and reloads the build's boot format.
 
 The 426 managed RAM pages, API entry addresses, application slot and Editor
 module window are unchanged. Both suites include the shared `VDSVC.PRG` beside
-the apps. Deployment metadata reports its 33-page allocation and available
+the apps. Deployment metadata reports its 39-page allocation and available
 desktop pages for REU backing and both VDC RAM fallback sizes.
 
 The boot block occupies track 1, sector 0 and is outside every file chain.

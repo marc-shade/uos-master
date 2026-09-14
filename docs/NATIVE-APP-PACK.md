@@ -1,8 +1,8 @@
 # Packed native app startup
 
 The desktop suite stores the launcher and six apps as standard NAPP files
-with a checked LZSA2 startup wrapper. The D64 suite has **103 free blocks**
-and D81 has **2,599**. Packing preserves the fourteen disk entries, resident
+with a checked LZSA2 startup wrapper. The D64 suite has **96 free blocks**
+and D81 has **2,592**. Packing preserves the fourteen disk entries, resident
 kernel, 426-page heap and each expanded application's allocation. The diagnostic native
 disks continue to use their original app files.
 
@@ -14,7 +14,7 @@ its 96-page executable allocation using sixteen owned scratch pages; its
 smaller graphics/picker modules recover six disk blocks. Editor adds VDC and
 REU document support. Claude now uses 96 app pages plus separately owned original/live fonts,
 terminal cells and bitmap buffers. Shared clipboard bytes have a separate
-session lifetime, and Editor loads `EDCLIP.PRG` for transfers.
+session lifetime, and Editor loads `EDCLIP.PRG` for transfers and undo/redo replay.
 
 The kernel validates the complete outer file and closes its source before
 executing the wrapper. Startup expands the original app body into its owned
@@ -26,14 +26,14 @@ cleanup before any original program instruction executes.
 |---|---:|---:|---:|
 | Desktop | 8,843 | 7,369 | 35 |
 | Calculator | 12,438 | 9,278 | 49 |
-| Editor | 14,069 | 9,906 | 96 |
+| Editor | 14,194 | 10,032 | 96 |
 | Files | 14,006 | 9,833 | 96 |
 | Ultimate | 23,025 | 16,708 | 91 |
 | Claude | 20,316 | 12,442 | 96 |
 | Paint | 24,450 | 16,737 | 96 |
 
-PRG sizes include the two-byte load address. This saves 34,874 file bytes and
-138 disk blocks. Packing creates disk space; the expanded apps retain their
+PRG sizes include the two-byte load address. This saves 34,873 file bytes and
+137 disk blocks. Packing creates disk space; the expanded apps retain their
 existing code and document limits. The current apps now have graphical VDC controls, and Editor uses shared REU
 documents. Wider desktop features and backing stores remain roadmap work.
 

@@ -185,7 +185,7 @@ diagnostic editor uses kernel owner cleanup for its RAM contexts.
 
 The diagnostic editor reserves 79 heap pages for code, local state and either
 module. The graphical suite uses 96 app pages, a 16-page owned workspace,
-a 36-page surface and a 33-page VDC/memory provider plus its RAM/REU screen backup;
+a 36-page surface and a 39-page VDC/memory/history provider plus its RAM/REU screen backup;
 its [memory and lifetime contract](NATIVE-EDITOR-GUI.md#storage-and-presentation-lifetime)
 accounts for those allocations separately.
 Saving reuses the insertion buffer for its reopen comparison. The picker
@@ -300,7 +300,8 @@ the saved record's header and reserved bytes as well.
 
 The [suite build](NATIVE-EDITOR-GUI.md) supplies graphical controls, mouse
 caret placement and 24-bit keyboard/mouse selection with range replacement.
-Clipboard, undo/redo, document associations,
+The suite also supplies [shared clipboard](NATIVE-CLIPBOARD.md) exchange and
+[sixteen-step undo/redo](NATIVE-HISTORY.md). Document associations,
 multiple open tabs and session recovery remain open. Fonts,
 styles, pagination, images, spelling and printing belong to the word processor
 work. The [completion roadmap](IMPLEMENTATION-ROADMAP.md) retains those

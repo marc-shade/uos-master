@@ -751,6 +751,14 @@ eg_enabled:
         sec
         rts
 eg_enabled_more:
+        cmp #4
+        bne +
+        cpx #27
+        bcc eg_enabled_no
+        cpx #30
+        bcc eg_enabled_yes
+        bcs eg_enabled_no
++
         cmp #3
         bne +
         cpx #24
@@ -913,7 +921,7 @@ eg_document_action:
 eg_more_toggle:
         inc eg_more
         lda eg_more
-        cmp #4
+        cmp #5
         bcc +
         lda #0
         sta eg_more
@@ -1296,7 +1304,7 @@ eg_started: .byte 0
 eg_busy: .byte 0
 eg_view: .byte 0
 eg_last_view: .byte 255
-eg_more: .byte 0
+eg_more=$5fb5                 ; retain the selected toolbar across module loads
 eg_last_more: .byte 0
 eg_last_phase: .byte 0
 eg_full_draw: .byte 0

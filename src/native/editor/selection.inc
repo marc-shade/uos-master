@@ -130,7 +130,7 @@ es_replace:
         #es_sub3 es_first,d_count
         lda ed_active
         sta d_slot
-        jsr doc_replace
+        jsr eh_replace
         bcs es_replace_error
         #es_copy3 es_first,ed_cursor
         #es_add3 d_replace_count,ed_cursor

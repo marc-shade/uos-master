@@ -186,6 +186,10 @@ eg_error: .byte 0
 eg_key: .byte 0
 
 ed_graphics_retry:
+        lda eh_available
+        bne +
+        sta dm_mode
++
         lda vd_phase
         bne +
         lda #0

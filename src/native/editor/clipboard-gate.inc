@@ -17,3 +17,8 @@ ed_clip_empty: .text "clipboard is empty",0
 ed_clip_large: .text "clipboard limit: 15 kib",0
 ed_clip_error: .text "clipboard error; text retained",0
 ed_clip_cleared: .text "clipboard cleared",0
+eh_undone: .text "undone",0
+eh_redone: .text "redone",0
+eh_cleared: .text "undo history cleared",0
+eh_unavailable: .text "edited; undo unavailable",0
+eh_empty: .text "no undo or redo available",0

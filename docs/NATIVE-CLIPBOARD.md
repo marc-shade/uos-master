@@ -93,7 +93,7 @@ paste results use opcodes 13 and 14. Legacy clients do not request the
 extension, so they receive no new opcodes. The host's protocol bound is
 16 KiB; the current RAM clipboard's bound is 15 KiB.
 
-REU-backed scraps, image formats, terminal scrollback selection, Editor undo,
+REU-backed scraps, image formats, terminal scrollback selection, grouped Editor undo,
 persistence across restarts and physical C128 qualification remain on the
 [roadmap](IMPLEMENTATION-ROADMAP.md).
 

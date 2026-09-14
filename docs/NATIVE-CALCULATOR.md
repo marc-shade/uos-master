@@ -27,12 +27,12 @@ fixed; desktop window management is still open.
 
 ## Memory and shared controls
 
-The suite Calculator uses 49 app pages, the 30-page bank-1
+The suite Calculator uses 49 app pages, the 39-page bank-1
 [shared VDC component](NATIVE-VDC-SERVICE.md), a two-page history in bank 1 and the
 existing 36-page VIC surface at bank 0 `$c000..$e3ff`. Saving the original VDC
-contents uses an available [REU](NATIVE-REU.md), leaving 309 of the 426 managed
+contents uses an available [REU](NATIVE-REU.md), leaving 300 of the 426 managed
 main-RAM pages free. Without an REU it takes another 64 pages on a 16 KiB VDC
-or 72 on a 64 KiB VDC, leaving 245 or 237 pages free. Display and mouse ownership end
+or 72 on a 64 KiB VDC, leaving 236 or 228 pages free. Display and mouse ownership end
 before app exit or a history failure. A stalled VDC restore retains all owners
 and blocks exit; Escape retries it. A fatal history error also retains its
 original exit code and accepts only Escape until recovery succeeds.

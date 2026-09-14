@@ -1,9 +1,18 @@
 ; A third checked module stages clipboard transfers while the renderer is
 ; unloaded. All selection bounds and document contexts remain in the core.
 ec_entry:
+        lda #0
+        sta ec_history
+        sta ec_left+2
         lda ed_active
         sta d_slot
         lda ed_clip_key
+        cmp #26
+        beq ec_undo
+        cmp #25
+        beq ec_undo
+        cmp #21
+        beq ec_forget
         cmp #11
         bne +
         jsr cp_clear
@@ -92,7 +101,7 @@ ec_cut:
         sta ec_insert
         sta ec_insert+1
         sta ec_insert+2
-        jsr ec_replace
+        jsr eh_clip
         bcs ec_error
         lda #20
         jmp ec_changed
@@ -113,7 +122,7 @@ ec_paste:
         lda cp_length
         bne ec_error
 +       #es_copy3 cp_length,ec_insert
-        jsr ec_replace
+        jsr eh_clip
         bcs ec_error
         lda #21
 ec_changed:
@@ -144,6 +153,58 @@ ec_error:
 +       stx ed_status
         clc
         rts
+
+ec_forget:
+        ldx ed_active
+        lda d_states+D_DIRTY,x
+        sta N_BUFFER
+        lda #H_CLEAR
+        jsr bk_call
+        bcs ec_error
+        lda #29
+        jmp ec_status
+ec_undo:
+        lda eh_available
+        beq ec_no_history
+        lda ed_active
+        sta d_slot
+        jsr doc_context
+        bcs ec_error
+        lda #H_UNDO
+        ldx ed_clip_key
+        cpx #26
+        beq +
+        lda #H_REDO
++       jsr bk_call
+        bcs ec_no_history
+        inc ec_history
+        ldx #8
+-       lda N_BUFFER,x
+        sta ec_start,x
+        dex
+        bpl -
+        jsr ec_replace
+        bcc +
+        pha
+        lda #H_ABORT
+        jsr bk_call
+        pla
+        jmp ec_error
++       lda #H_APPLIED
+        jsr bk_call
+        bcs ec_fault
+        ldx ed_active
+        lda N_BUFFER
+        sta d_states+D_DIRTY,x
+        lda #27
+        ldx ed_clip_key
+        cpx #26
+        beq +
+        lda #28
++       jmp ec_changed
+ec_no_history:
+        lda #31
+        jmp ec_status
 
 ; Reserve capacity before removing any logical bytes. The source is read in
 ; bounded chunks. As with ordinary document writes, an uncertain transfer
@@ -184,11 +245,25 @@ ec_paste_loop:
         lda ec_insert+1
         sbc ec_offset+1
         sta ec_left+1
+        lda ec_insert+2
+        sbc ec_offset+2
+        sta ec_left+2
+        ora ec_left+1
         ora ec_left
         beq ec_publish
         jsr ec_chunk
-        #es_copy3 ec_offset,cp_offset
+        lda ec_history
+        beq +
+        lda cp_count
+        sta H_COUNT
+        lda cp_count+1
+        sta H_COUNT+1
+        lda #H_READ
+        jsr bk_call
+        jmp ++
++       #es_copy3 ec_offset,cp_offset
         jsr cp_read
++
         bcs ec_fault
         ldx #0
 -       lda N_BUFFER,x
@@ -214,6 +289,9 @@ ec_paste_loop:
         lda ec_offset+1
         adc cp_count+1
         sta ec_offset+1
+        bcc +
+        inc ec_offset+2
++
         jmp ec_paste_loop
 ec_publish:
         #doc_store3 ec_dest,D_GAP
@@ -233,10 +311,13 @@ ec_range:
 ec_return:
         rts
 ec_chunk:
+        lda ec_left+2
+        bne ec_chunk_full
         lda ec_left
         ldx ec_left+1
         cpx #2
         bcc +
+ec_chunk_full:
         lda #0
         ldx #2
 +       sta cp_count
@@ -267,5 +348,6 @@ ec_insert: .fill 3,0
 ec_position: .fill 3,0
 ec_dest: .fill 3,0
 ec_offset: .fill 3,0
-ec_left: .word 0
+ec_left: .fill 3,0
+ec_history: .byte 0
 .include "../clipboard.inc"

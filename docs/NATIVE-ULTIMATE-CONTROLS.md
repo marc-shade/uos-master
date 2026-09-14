@@ -139,8 +139,8 @@ cache close. Allocation failure keeps the panel usable and permits a later retry
 
 Copy `VDSVC.PRG` beside the app. The [shared VDC service](NATIVE-VDC-SERVICE.md)
 loads from the original app source and stays owned across picker transitions.
-It saves one original screen until final app exit. REU backing leaves 255
-main-RAM pages free; RAM backing leaves 191 with a 16 KiB VDC or 183 with 64 KiB.
+It saves one original screen until final app exit. REU backing leaves 249
+main-RAM pages free; RAM backing leaves 185 with a 16 KiB VDC or 177 with 64 KiB.
 Picker scratch and cache temporarily consume additional pages. Dirty rows and
 pointer movement update incrementally. A failed VDC transfer freezes drive and clock
 actions; Escape retries restoration before any display, component or app owner

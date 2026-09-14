@@ -80,6 +80,11 @@ def main():
     result=dict(passed=False,physical_hardware_io=False,cases=[],images={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for folder in ('target/native','target/native-desktop') for p in (ROOT/folder).iterdir() if p.suffix in ('.prg','.d64')})
     try:
         raw=(b'0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n'*1800)[:66053]
+        if a.case=='large':
+            # The 96-page graphical app leaves room for sixteen complete
+            # RAM document chunks. Exercise the exact 64 KiB length boundary;
+            # larger positions/spans use the separate REU workflows.
+            raw=raw[:65532]
         files={(9,b'SOURCE',b'S'):b'ONE "QUOTE"\r\nTWO\n'+bytes([0,255]),(9,b'LARGE',b'S'):raw}
         options={}
         if a.case=='reservation':
@@ -155,11 +160,12 @@ def main():
             e.key(27);e.exit();e.restored()
         elif a.case=='large':
             e.prompt(0x85,'LARGE');e.check(raw,0,False,name='LARGE')
-            e.prompt(0x88,'010001');at=65537
+            e.prompt(0x88,'00FFF1');at=65521
             if raw[at-1:at+1]==b'\r\n':at+=1
             e.check(raw,at,False,name='LARGE');e.type('C128');want=raw[:at]+b'C128'+raw[at:]
             e.check(want,at+4,True);e.prompt(0x86,'COPY');e.check(want,at+4,False,status=1,name='COPY')
             assert bytes(e.io.files[9,b'COPY',b'S'])==want
+            e.key(0x8a);e.check(want,65536,False,name='COPY')
             e.exit();e.restored()
         elif a.case=='fallback':
             assert not e.value('eg_bitmap') and e.value('ed_module_kind')==0
@@ -243,7 +249,7 @@ def main():
                 # Explicitly reacquire it after the retained stream recovers.
                 e.bus.original=None;e.key(12);e.check(want,len(want),False,status=1,name='COPY')
                 providers=[c for c in e.ultimate.commands if c[1]==2 and c[3:].endswith(b'/VDSVC.PRG')]
-                assert len(providers)==(1 if e.value('dm_lease') else 2)
+                assert len(providers)==(1 if e.value('dm_lease') or e.value('eh_available') else 2)
                 assert all(c[0]==2 and c[3:]==b'/Apps/Original/VDSVC.PRG' for c in providers)
             e.exit();e.restored()
         elif a.case=='reservation':

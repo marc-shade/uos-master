@@ -290,6 +290,9 @@ ed_verify_done:
         ldx ed_active
         lda #0
         sta d_states+D_DIRTY,x
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eh_save
+.endif
         jsr ed_keep_name
         lda #1
         sta ed_status

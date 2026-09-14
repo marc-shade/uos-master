@@ -10,17 +10,17 @@ RECTS=[(288,8,312,24),(8,24,56,40),(64,24,136,40),(144,24,192,40),
        (8,24,56,40),(64,24,120,40),(128,24,192,40),(200,24,264,40),
        (8,96,312,112),(176,144,232,160),(240,144,312,160),(8,144,88,160),
        (240,144,312,160),(144,144,232,160),(8,144,88,160),(96,144,168,160),
-       (0,0,0,0),(240,144,312,160),(8,24,88,40),(96,24,168,40),(176,24,264,40),(8,24,88,40),(96,24,168,40),(176,24,264,40)]
+       (0,0,0,0),(240,144,312,160),(8,24,88,40),(96,24,168,40),(176,24,264,40),(8,24,88,40),(96,24,168,40),(176,24,264,40),(8,24,88,40),(96,24,168,40),(176,24,264,40)]
 LABELS=['X','Open','Save As','Find','Replace','...','','New','Go To','Device','Format',
-        '', 'OK','Cancel','Browse','Keep','Discard','One','All','','Cancel','Mark','All','Clear','Copy','Cut','Paste']
-KEYS=[27,0x85,0x86,6,18,0,0,0x87,0x88,0x8c,0x8b,13,13,27,9,ord('N'),ord('Y'),ord('O'),ord('A'),0,27,2,1,7,3,24,22]
+        '', 'OK','Cancel','Browse','Keep','Discard','One','All','','Cancel','Mark','All','Clear','Copy','Cut','Paste','Undo','Redo','Forget']
+KEYS=[27,0x85,0x86,6,18,0,0,0x87,0x88,0x8c,0x8b,13,13,27,9,ord('N'),ord('Y'),ord('O'),ord('A'),0,27,2,1,7,3,24,22,26,25,21]
 TITLES=['','Open a file','Save As a new file','Go to byte (hex)','Choose device / DOS',
         'Discard document changes?','Find text','Replace text','Replace with','Choose replacement',
         'File operation','Searching document']
 
 def enabled(index,mode=0,more=False,busy=0):
     if busy:return index==20
-    if not mode:return index in (0,5,6) or (24<=index<=26 if more==3 else 21<=index<=23 if more==2 else 7<=index<=10 if more else 1<=index<=4)
+    if not mode:return index in (0,5,6) or (27<=index<=29 if more==4 else 24<=index<=26 if more==3 else 21<=index<=23 if more==2 else 7<=index<=10 if more else 1<=index<=4)
     if mode==5:return index in (15,16)
     if mode==9:return index in (13,17,18)
     return index in (11,12,13) or index==14 and mode in (1,2,6,7)

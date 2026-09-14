@@ -28,6 +28,8 @@ bv_image:
         .word 0
         .fill 8,0
 bv_entry:
+        cmp #15
+        bcs bh_entry
         cmp #6
         bcs bm_entry
         cmp #5
@@ -122,6 +124,7 @@ bv_empty:
         ora ru_probe_live
         ora bm_lease
         ora bm_pending
+        ora bh_live
         bne bv_argument
         jmp vd_success
 bv_argument:
@@ -250,6 +253,7 @@ gfx_rows:
  .endfor
 .include "banked-client.inc"
 .include "shared-memory-service.inc"
+.include "history-service.inc"
 .include "graphics/vdc-reu.inc"
 .include "graphics/vdc-mirror.inc"
 .include "desktop/vdc.inc"
