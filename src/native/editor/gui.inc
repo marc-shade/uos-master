@@ -9,7 +9,33 @@ eg_entry:
         beq ed_search_entry
         cmp #7
         beq eg_footer_draw
+        cmp #8
+        beq eg_paused_notice
         jmp eg_update
+
+eg_paused_notice:
+        jsr eg_surface
+        jsr gfx_bind
+        bcs eg_notice_return
+        ldx #7
+-       lda eg_notice_bounds,x
+        sta gfx_x0,x
+        dex
+        bpl -
+        lda #0
+        sta gfx_pen
+        jsr gfx_rect
+        bcs eg_notice_return
+        lda #<eg_pause_text
+        ldx #>eg_pause_text
+        jsr eg_text_source
+        lda #8
+        ldy #192
+        jmp eg_text
+eg_notice_return:
+        rts
+eg_notice_bounds: .word 8,192,312,200
+eg_pause_text: .byte 86,68,67,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,115,116,111,114,101,115,0
 
 eg_update:
         lda #0
@@ -117,16 +143,25 @@ eg_focus_valid:
         ora #128
         sta eg_body+960,x
 +       lda eg_busy
-        cmp #1
-        bne +
+        beq +
         lda #6
         sta eg_row
         lda #0
         sta eg_column
+        lda eg_busy
+        cmp #1
+        bne eg_search_position
         lda #<eg_bytes
         ldx #>eg_bytes
         jsr ed_puts
         #doc_copy3 ed_io_pos,ed_print_number
+        jmp eg_progress_number
+eg_search_position:
+        lda #<eg_search_byte
+        ldx #>eg_search_byte
+        jsr ed_puts
+        #doc_copy3 ed_probe,ed_print_number
+eg_progress_number:
         jsr ed_hex24
 -       lda eg_column
         cmp #40
@@ -218,11 +253,16 @@ eg_done:
         rts
 eg_failed:
         sta eg_error
+        jsr eg_vdc_close
+        jsr eg_vclose
+        jmp eg_release_surface
 eg_vclose:
         jsr pm_close
         jsr N_VCLOSE
         lda #0
         sta eg_bitmap
+        jmp eg_done
+eg_release_surface:
         lda eg_handle
         beq eg_done
         jsr eg_surface
@@ -518,6 +558,10 @@ eg_copy_return:
         rts
 
 eg_write_cell:
+        ldx eg_target_row
+        lda #1
+        sta vm_rows,x
+        sta vm_pending
         lda eg_cell
         and #127
         sec
@@ -967,6 +1011,8 @@ pm_find_hit:
 +       rts
 
 eg_footer_draw:
+        lda vd_phase
+        bne eg_footer_done
         lda eg_bitmap
         beq eg_footer_done
         lda #1
@@ -1244,8 +1290,8 @@ eg_field_capacity: .byte 0
 eg_field_column: .byte 0
 eg_field_index: .byte 0
 ui_selected: .byte 6
-eg_body: .fill 1024,32
-eg_cache: .fill 792,32
+eg_body=$5800
+eg_cache=$5c00
 eg_cache_lo: .byte <(eg_cache+0),<(eg_cache-5),<(eg_cache+34),<(eg_cache+0),<(eg_cache+0),<(eg_cache+0),<(eg_cache+74),<(eg_cache+114),<(eg_cache+154),<(eg_cache+194),<(eg_cache+234),<(eg_cache+274),<(eg_cache+314),<(eg_cache+354),<(eg_cache+394),<(eg_cache+434),<(eg_cache+474),<(eg_cache+514),<(eg_cache+554),<(eg_cache+594),<(eg_cache+634),<(eg_cache+674),<(eg_cache+714),<(eg_cache+0),<(eg_cache+754)
 eg_cache_hi: .byte >(eg_cache+0),>(eg_cache-5),>(eg_cache+34),>(eg_cache+0),>(eg_cache+0),>(eg_cache+0),>(eg_cache+74),>(eg_cache+114),>(eg_cache+154),>(eg_cache+194),>(eg_cache+234),>(eg_cache+274),>(eg_cache+314),>(eg_cache+354),>(eg_cache+394),>(eg_cache+434),>(eg_cache+474),>(eg_cache+514),>(eg_cache+554),>(eg_cache+594),>(eg_cache+634),>(eg_cache+674),>(eg_cache+714),>(eg_cache+0),>(eg_cache+754)
 eg_frame: .word 0,0,320,200

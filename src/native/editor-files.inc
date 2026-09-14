@@ -74,6 +74,9 @@ ed_open_file:
         lda #1
         sta ed_io_phase
         jsr ed_progress
+.if NATIVE_EDITOR_GRAPHICS
+        bcs ed_open_cancelled
+.endif
         lda #0
         jsr ed_file_open
         bcs ed_open_failed
@@ -105,6 +108,9 @@ ed_open_empty_chunk:
         ora ed_io_size+1
         beq ed_open_failed
         jsr ed_progress_maybe
+.if NATIVE_EDITOR_GRAPHICS
+        bcs ed_open_cancelled
+.endif
         jmp ed_open_read
 ed_open_close:
         jsr N_FCLOSE
@@ -173,6 +179,9 @@ ed_save_file:
         lda #2
         sta ed_io_phase
         jsr ed_progress
+.if NATIVE_EDITOR_GRAPHICS
+        bcs ed_save_cancelled
+.endif
         lda #1
         jsr ed_file_open
         bcc ed_save_write
@@ -218,6 +227,9 @@ ed_save_write:
         jsr ed_cancel_check
         bcs ed_save_cancelled
         jsr ed_progress_maybe
+.if NATIVE_EDITOR_GRAPHICS
+        bcs ed_save_cancelled
+.endif
         jmp ed_save_write
 ed_save_written:
         jsr N_FCLOSE
@@ -226,6 +238,9 @@ ed_save_written:
         lda #3
         sta ed_io_phase
         jsr ed_progress
+.if NATIVE_EDITOR_GRAPHICS
+        bcs ed_save_cancelled
+.endif
         lda #0
         jsr ed_file_open
         bcs ed_save_failed
@@ -263,6 +278,9 @@ ed_verify_read:
         ora ed_io_size+1
         beq ed_save_failed
         jsr ed_progress_maybe
+.if NATIVE_EDITOR_GRAPHICS
+        bcs ed_save_cancelled
+.endif
         jmp ed_verify_read
 ed_verify_done:
         #doc_cmp3 ed_io_pos,ed_length
@@ -435,7 +453,11 @@ ed_progress_maybe:
         and #31
         bne +
         jmp ed_progress
-+       rts
++
+.if NATIVE_EDITOR_GRAPHICS
+        clc
+.endif
+        rts
 ed_progress:
 .if NATIVE_EDITOR_GRAPHICS
         lda #6
@@ -447,6 +469,9 @@ ed_progress:
         sta ed_screen
 ed_progress_screen:
 .if NATIVE_EDITOR_GRAPHICS
+        lda ed_screen
+        cmp #2
+        bcs ed_progress_done
         lda eg_collect
         bne ed_progress_selected
 .endif
@@ -490,6 +515,16 @@ ed_progress_selected:
         bne ed_progress_screen
 .if NATIVE_EDITOR_GRAPHICS
 +
+ed_progress_done:
+        ; A failed progress redraw must pause before the next file transfer.
+        ; Return Escape to the caller's existing cancel/rollback path.
+        lda #0
+        jsr eg_vdc_guard
+        cmp #27
+        beq +
+        clc
+        rts
++       sec
 .endif
         rts
 ed_opening: .text "opening: ",0

@@ -430,7 +430,7 @@ def main():
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'picker bitmap')
             vdc=None
-            if pointer_app not in ('paint','controls','files'):
+            if pointer_app not in ('paint','controls','files','editor'):
                 text_vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
                 assert text_vdc==picker_console(entries,selected=selected,device=device,fmt=fmt),(label,'picker VDC')
             for _ in range(20):
@@ -440,7 +440,7 @@ def main():
             display=modes.snapshot(label+'-mode');assert display['vic_sprites']==3
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            if pointer_app in ('paint','controls','files'):vdc=mirrored_vdc(label,wanted,pv('pg_focus'))
+            if pointer_app in ('paint','controls','files','editor'):vdc=mirrored_vdc(label,wanted,pv('pg_focus'))
             report.setdefault('picker_frames',[]).append(dict(label=label,app=pointer_app,expected=expected,vdc=vdc,
                 entries=[dict(name_hex=row['name'].hex(),type=row['type'],blocks=row['blocks'],flags=row.get('flags',128)) for row in entries],
                 position=xy,rectangle=rectangle,mode=display));save()
@@ -466,8 +466,6 @@ def main():
             wanted=editor_surface(data,cursor,**kwargs)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-            assert vdc==editor_console(data,cursor,**kwargs),(label,'editor VDC')
             for _ in range(20):
                 xy=position();time.sleep(.2)
                 if position()==xy:break
@@ -475,9 +473,10 @@ def main():
             mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            report['editor_frames'].append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=kwargs,position=xy,rectangle=rectangle,mode=mode));save()
+            vdc=mirrored_vdc(label,wanted,focus)
+            report['editor_frames'].append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=kwargs,position=xy,rectangle=rectangle,mode=mode,vdc=vdc));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
-            print('PASS: graphical editor, VDC and 64000 pointer pixels:',label,flush=True)
+            print('PASS: Editor VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
         def editor_click(index,point=None):
             x0,y0,x1,y1=EDITOR_RECTS[index]
             move_to(*(point or ((x0+x1)//2,(y0+y1)//2)))
@@ -854,7 +853,7 @@ def main():
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
-            restore_labels={'calc':'calculator-close','controls':'ultimate-close','paint':'paint-app-close','files':'files-app-close'}
+            restore_labels={'calc':'calculator-close','controls':'ultimate-close','paint':'paint-app-close','files':'files-app-close','editor':'editor-app-close'}
             after_key=watch_app_vdc_restore(name,restore_labels[name]) if name in restore_labels else None
             key('F8' if name=='claude' else 'F9','desktop',after_key=after_key)
             pointer_app='desktop'

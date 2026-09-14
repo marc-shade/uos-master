@@ -9,6 +9,10 @@
 ; d_input. It reserves any extra capacity before changing the original span.
 ; C/A follow the heap ABI. Allocation failure leaves the document unchanged.
 ; A transfer/handle failure poisons the context, preventing false save success.
+.weak
+DOC_INPUT_STORAGE=0
+DOC_OUTPUT_STORAGE=0
+.endweak
 D_LEN = 0
 D_GAP = 3
 D_END = 6
@@ -607,5 +611,13 @@ d_bound: .word 0
 d_bytes: .word 0
 d_index: .byte 0
 d_states: .fill 256,0
+.if DOC_INPUT_STORAGE
+d_input=DOC_INPUT_STORAGE
+.else
 d_input: .fill 512,0
+.endif
+.if DOC_OUTPUT_STORAGE
+d_output=DOC_OUTPUT_STORAGE
+.else
 d_output: .fill 512,0
+.endif

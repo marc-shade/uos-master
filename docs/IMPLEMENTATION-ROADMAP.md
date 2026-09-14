@@ -88,7 +88,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher on VIC and 640×200 VDC, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
-| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator, Ultimate, Paint and Files, including pictures and file pickers, through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
+| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator, Ultimate, Paint, Files and Editor, including pictures, documents and file pickers, through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes; native reversible 16/64 KiB detection and 640×200 launcher, with color cards on 64 KiB | Further bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
@@ -716,3 +716,22 @@ The shared picker's text fallback currently retains the graphical Tab-focus
 help line even when bitmap controls are unavailable. Its text Enter/R/D/F/S
 shortcuts remain functional; selecting help text for the active presentation
 is a remaining shared-picker cleanup item.
+
+
+The [Editor VDC qualification](validation/2026-09-14-native-editor-vdc/README.md)
+extends the blue document, caret, search/file controls and shared picker to both
+monitors. The component and screen backup survive picker swaps. An owned,
+zeroed sixteen-page workspace keeps transfer buffers and saved keys separate
+from module code. Failed display updates pause file transfers and search at
+visible progress boundaries; failed restoration retains document bytes,
+completed replacements, output position, stream ownership and stack state.
+After restoration, a complete text repaint precedes new input. Ctrl-L retries
+VDC graphics. The original diagnostic Editor and the other app programs remain
+unchanged.
+
+Editor documents still consume main RAM in 4 KiB chunks. The active VDC service
+reduces their capacity; the prior 66 KiB graphical-document result no longer
+applies with that service loaded. Memory-limit Open preserves the old document,
+and REU-backed documents remain an unfinished requirement. Claude VDC controls,
+clipboard, undo, window management, scheduling, office apps, printing, expansion
+drivers, physical qualification and the rest of this roadmap also remain open.

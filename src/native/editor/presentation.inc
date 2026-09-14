@@ -9,7 +9,9 @@ eg_render:
         sta eg_operation
         jsr eg_ensure
         bcs eg_return
-        jmp eg_call
+        jsr eg_call
+        bcs eg_return
+        jmp eg_vdc_sync
 eg_ensure:
         lda ed_module_kind
         cmp #2
@@ -48,6 +50,7 @@ eg_call:
 eg_direct:
         jmp eg_entry
 eg_input:
+        jsr eg_vdc_guard
         sta eg_key
         lda eg_bitmap
         beq eg_key_return
@@ -72,9 +75,13 @@ eg_input_call:
         bcs eg_key_return
         sta eg_key
 eg_key_return:
+        jsr eg_vdc_sync
         lda eg_key
-        rts
+        jmp eg_vdc_guard
 eg_close:
+        jsr eg_vdc_close
+        bcs eg_return
+eg_close_view:
         lda ed_module_kind
         cmp #2
         bne eg_return
@@ -84,11 +91,18 @@ eg_close:
 eg_screen_start:
         lda eg_collect
         bne +
+        lda vd_phase
+        beq eg_screen_bitmap
+        lda #2
+        rts
+eg_screen_bitmap:
         lda eg_bitmap
         rts
 +       lda #0
         rts
 eg_footer:
+        lda vd_phase
+        bne eg_return
         lda eg_collect
         bne eg_return
         lda eg_bitmap
@@ -150,6 +164,12 @@ eg_error: .byte 0
 eg_key: .byte 0
 
 ed_graphics_retry:
+        lda vd_phase
+        bne +
+        lda #0
+        sta eg_vdc_attempted
+        sta eg_vdc_warned
++
         lda #0
         sta eg_attempted
         lda eg_bitmap

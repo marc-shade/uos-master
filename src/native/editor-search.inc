@@ -114,7 +114,9 @@ ed_search_start:
         sta ed_goal_valid
         lda #16
         sta ed_status
+.if !NATIVE_EDITOR_GRAPHICS
         jsr ed_paint_fields
+.endif
         #doc_copy3 ed_cursor,ed_probe
         lda ed_s_action
         cmp #2
@@ -130,6 +132,13 @@ ed_search_start:
         #doc_add3 ed_one,ed_probe
 +       #doc_copy3 ed_probe,ed_s_start
         #doc_copy3 ed_length,ed_s_limit
+.if NATIVE_EDITOR_GRAPHICS
+        ; Publish the actual starting byte and stop a failed first redraw
+        ; before scanning or replacing anything in the document.
+        jsr ed_paint_fields
+        jsr ed_cancel_check
+        bcs ed_search_cancel
+.endif
 ed_search_scan:
         #doc_cmp3 ed_probe,ed_s_limit
         bcs ed_search_exhausted

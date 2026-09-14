@@ -33,7 +33,7 @@ class Calculator:
             for name in ('fspick','fsview'):
                 self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
         provider = None
-        if image_prefix=='native-desktop' and image_name in ('calc','desktop','controls','paint','files') and vdc_component is not False:
+        if image_prefix=='native-desktop' and image_name in ('calc','desktop','controls','paint','files','editor') and vdc_component is not False:
             provider = ((ROOT/'target/native-desktop/vdsvc.prg').read_bytes()
                         if vdc_component is True else bytes(vdc_component))
             self.io.files[8,b'VDSVC.PRG',b'P']=provider
@@ -102,6 +102,7 @@ class Calculator:
                 consumed=int.from_bytes(self.ram[0x3d13:0x3d15],'little')
                 if consumed==self.observation_target and self.ram[0x3d12]==1:
                     ready_pc=self.symbol('b_get_key') if self.image_name in ('browse','files') else self.symbol('cloop')+5
+                    if self.image_name=='editor':ready_pc=self.symbol('ed_get_key')
                     if self.image_name=='files' and self.value('fc_active'):
                         ready_pc=self.symbol('fc_picker_get_key') if self.value('fc_picker_active') else self.symbol('fc_get_key')
                     if self.image_name=='editor' and self.value('fd_active'):

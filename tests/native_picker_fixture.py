@@ -47,7 +47,7 @@ class Picker:
         args=dict(fmt=fmt,device=device,selected=selected,prompt=prompt,field=field,caret=caret,**kw)
         want=surface(records,mode=mode,focus=focus,view=v0,**args);actual=bytes(self.ram[0xc000:0xe400])
         assert actual==want,('picker surface',[(i,a,b) for i,(a,b) in enumerate(zip(actual,want)) if a!=b][:24],args,focus)
-        if self.app.image_name in ('controls','paint','files') and self.app.value('vd_phase'):
+        if self.app.image_name in ('controls','paint','files','editor') and self.app.value('vd_phase'):
             from native_vdc_mirror import bitmap,attributes
             assert self.app.value('vd_phase')==2 and self.app.value('vd_live')==1
             assert not self.app.value('vd_fault') and not self.app.value('vm_pending')

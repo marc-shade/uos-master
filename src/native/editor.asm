@@ -4,8 +4,12 @@
 NATIVE_EDITOR_GRAPHICS=0
 .endweak
 .if NATIVE_EDITOR_GRAPHICS
-ED_ABI=10
-ED_PAGES=(editor_search_end-editor_image+255)/256
+ED_ABI=12
+ED_PAGES=96
+DOC_INPUT_STORAGE=$5000
+DOC_OUTPUT_STORAGE=$5200
+NK_SAVED_BUFFER=$5600
+GFX_TEXT_STORAGE=$5700
 .else
 ED_ABI=7
 ED_PAGES=79
@@ -25,6 +29,12 @@ DOC_REPLACE_EXTERNAL = 1
 
 editor_entry:
         cld
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_workspace
+        bcc +
+        jmp N_EXIT
++
+.endif
         jsr ed_keys_install
         jsr doc_init
         lda #0
@@ -60,8 +70,12 @@ ed_source_default:
         sta ed_format
         jmp ed_refresh
 cloop:
+.if NATIVE_EDITOR_GRAPHICS
+        jsr eg_repair_text
+.endif
         lda #1
         sta N_READY
+ed_get_key:
         jsr N_KEYIN
 .if NATIVE_EDITOR_GRAPHICS
         jsr eg_input
@@ -180,6 +194,7 @@ ed_confirmed:
         beq ed_new_document
  .if NATIVE_EDITOR_GRAPHICS
         jsr eg_close
+        bcs cloop
  .endif
         jsr ed_keys_restore
         lda #0
@@ -923,6 +938,11 @@ ed_paint_fields:
 .endif
         sta ed_screen
 ed_field_screen:
+.if NATIVE_EDITOR_GRAPHICS
+        lda ed_screen
+        cmp #2
+        bcs ed_field_screens_done
+.endif
         jsr ed_select_screen
         jsr ed_paint_status
  .if NATIVE_EDITOR_GRAPHICS
@@ -937,6 +957,7 @@ ed_field_screen:
 +
  .endif
 .if NATIVE_EDITOR_GRAPHICS
+ed_field_screens_done:
         jsr eg_footer
 .endif
         rts
@@ -951,6 +972,11 @@ ed_show:
 .endif
         sta ed_screen
 ed_show_screen:
+.if NATIVE_EDITOR_GRAPHICS
+        lda ed_screen
+        cmp #2
+        bcs ed_show_screens_done
+.endif
         jsr ed_select_screen
         lda #$93
         jsr ed_chrout
@@ -992,6 +1018,13 @@ ed_show_row:
 +
  .endif
 .if NATIVE_EDITOR_GRAPHICS
+ed_show_screens_done:
+        lda vd_phase
+        bne +
+        lda eg_collect
+        bne +
+        sta eg_text_pending
++
         jsr eg_footer
 .endif
         rts
@@ -1018,6 +1051,11 @@ ed_show_partial:
 .endif
         sta ed_screen
 ed_partial_screen:
+.if NATIVE_EDITOR_GRAPHICS
+        lda ed_screen
+        cmp #2
+        bcs ed_partial_screens_done
+.endif
         jsr ed_select_screen
         ldx #1
         ldy #0
@@ -1079,6 +1117,7 @@ ed_partial_next:
 +
  .endif
 .if NATIVE_EDITOR_GRAPHICS
+ed_partial_screens_done:
         jsr eg_footer
 .endif
         rts
@@ -1707,19 +1746,42 @@ ed_adjust_row: .byte 0
 ed_row_starts: .fill 51,0
 ed_other_base: .fill 3,0
 ed_other_valid: .byte 0
+.if NATIVE_EDITOR_GRAPHICS
+ed_other_page=$5400
+.else
 ed_other_page: .fill 512,0
+.endif
 .include "editor-search-gate.inc"
 .include "editor-files.inc"
 .include "editor-dialog.inc"
 .if NATIVE_EDITOR_GRAPHICS
 .include "editor/presentation.inc"
+.include "editor/workspace.inc"
 .include "input/keys.inc"
+.include "editor/vdc.inc"
+BP_MODE=0
+BP_POINTER_STATE=eg_pointer_visible
+BP_POINTER_X=eg_pointer_x
+BP_POINTER_Y=eg_pointer_y
+bp_select_surface=eg_select_surface
+.include "graphics/vdc-client.inc"
 .endif
 FD_EMBEDDED = 1
 FD_DIRECT_PAGES = 6
 FD_GUI = NATIVE_EDITOR_GRAPHICS
 .if NATIVE_EDITOR_GRAPHICS
 FD_GUI_SURFACE = eg_handle
+FD_BUFFER_BASE = $5800
+FD_RETAINED_STORAGE = $5b00
+FD_VDC=1
+FD_VDC_PHASE=vd_phase
+FD_VDC_FAULT=vd_fault
+FD_VDC_ROWS=vm_rows
+FD_VDC_PENDING=vm_pending
+FD_VDC_FULL=eg_vdc_full
+FD_VDC_SYNC=eg_vdc_sync
+FD_VDC_CLOSE=eg_vdc_close
+FD_VDC_GUARD=eg_vdc_guard
 .endif
 FD_NAME_BUFFER = ed_field
 FD_SCRATCH0 = d_input

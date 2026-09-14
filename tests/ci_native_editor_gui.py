@@ -65,8 +65,9 @@ class GraphicalEditor(Editor):
         expected=surface(want,at,focus=focus,more=bool(self.value('eg_more')),field_view=self.ram[self.symbol('ed_field_views')],**kw)
         actual=bytes(self.ram[0xc000:0xe400])
         assert actual==expected,('bitmap',[(i,a,b) for i,(a,b) in enumerate(zip(actual,expected)) if a!=b][:25])
-        expected=console(want,at,focus=focus,field_view=self.ram[self.symbol('ed_field_views')+1],**kw)
-        assert self.screens[1]==expected,('vdc',[(i,a,b) for i,(a,b) in enumerate(zip(self.screens[1],expected)) if a!=b][:25])
+        if not self.value('vd_phase'):
+            expected=console(want,at,focus=focus,field_view=self.ram[self.symbol('ed_field_views')+1],**kw)
+            assert self.screens[1]==expected,('vdc',[(i,a,b) for i,(a,b) in enumerate(zip(self.screens[1],expected)) if a!=b][:25])
         if released:assert not self.io.handles and self.ram[0x3de0:0x3de4]==bytes(4)
         self.checked+=1
 
@@ -217,7 +218,7 @@ def main():
             e.check(want,len(want),True,mode=2)
             opened=[command for command in e.ultimate.commands if command[1]==2]
             assert [command[3:] for command in opened]==[b'/Apps/Original/EDITOR',b'/Apps/Original/EDFIND.PRG',
-                b'/Apps/Original/EDPICK.PRG',b'/Apps/Original/EDFIND.PRG']
+                b'/Apps/Original/VDSVC.PRG',b'/Apps/Original/EDPICK.PRG',b'/Apps/Original/EDFIND.PRG']
             assert all(command[0]==2 for command in opened)
             e.ultimate.inject[3]=lambda command,reply:[(b'',b'71,CLOSE ERROR')]
             e.key(0x88);assert e.value('ed_module_kind')==0 and e.ram[0x3d1b]==4 and not e.value('eg_bitmap')
@@ -227,6 +228,12 @@ def main():
             assert e.value('fd_active');e.key(27);e.check(want,len(want),True,mode=2)
             e.key(13);e.check(want,len(want),False,status=1,name='COPY')
             assert bytes(e.io.files[10,b'COPY',b'S'])==want
+            if getattr(e,'vdc_expected',False):
+                # The failed module-source close restored VDC into text.
+                # Explicitly reacquire it after the retained stream recovers.
+                e.bus.original=None;e.key(12);e.check(want,len(want),False,status=1,name='COPY')
+                providers=[c for c in e.ultimate.commands if c[1]==2 and c[3:].endswith(b'/VDSVC.PRG')]
+                assert len(providers)==2 and all(c[0]==2 and c[3:]==b'/Apps/Original/VDSVC.PRG' for c in providers)
             e.exit();e.restored()
         elif a.case=='reservation':
             assert not e.value('eg_bitmap') and e.value('eg_error')==2

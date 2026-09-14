@@ -41,7 +41,7 @@ def console(data,cursor,*,focus=6,**kwargs):
     footer=screen_bytes(80,['']*23+['Tab controls  Enter activate  F7 file picker','Focus: '+name])
     return s[:23*80]+footer[23*80:]
 
-def surface(data,cursor,*,focus=6,more=False,busy=0,phase=0,io_bytes=0,**kwargs):
+def surface(data,cursor,*,focus=6,more=False,busy=0,phase=0,io_bytes=0,search_byte=0,help_text=b'Tab controls  Enter activate',**kwargs):
     mode=kwargs.get('mode',0);status=kwargs.get('status',0);field=kwargs.get('field','')
     plain={**kwargs,'mode':0};plain.pop('field_caret',None);plain.pop('field_view',None)
     body=bytearray(decode(editor_screen(40,data,cursor,**plain)))
@@ -50,6 +50,7 @@ def surface(data,cursor,*,focus=6,more=False,busy=0,phase=0,io_bytes=0,**kwargs)
         cells=decode(field_cells(field,38,kwargs.get('field_caret'),kwargs.get('field_view')))
         body[960:998]=cells if focus==11 else bytes(c&127 for c in cells)
     if busy==1:body[240:280]=('BYTES: '+f'{io_bytes:06X}').encode().ljust(40,b' ')
+    if busy==2:body[240:280]=('BYTE: '+f'{search_byte:06X}').encode().ljust(40,b' ')
     pixels=bytearray(bytes(8192)+b'\x16'*1024);glyphs=font()
     def rect(bounds,ink):
         x0,y0,x1,y1=bounds
@@ -89,7 +90,7 @@ def surface(data,cursor,*,focus=6,more=False,busy=0,phase=0,io_bytes=0,**kwargs)
         if mode not in (5,9) or busy:row(24,12,start=0,count=38,x=8)
         if mode in (6,7):text(16,88,b'Ignore ASCII case' if kwargs.get('search_case',0) else b'Exact case')
     else:row(6,23)
-    text(8,192,b'Tab controls  Enter activate')
+    text(8,192,help_text)
     pixels[8000:8128]=pointer_shape();pixels[9208:9210]=b'\x7d\x7e'
     return bytes(pixels)
 
@@ -100,7 +101,7 @@ def write_assembly(directory):
     strings={**{'eg_label_'+str(i):v for i,v in enumerate(LABELS)},**{'eg_title_'+str(i):v for i,v in enumerate(TITLES)}}
     strings.update(eg_case='Case',eg_case_exact='Exact case',eg_case_any='Ignore ASCII case',
                    eg_help='Tab controls  Enter activate',eg_focus_caption='Focus: ',eg_document='Document',eg_field_label='Name / value',
-                   eg_console_help='Tab controls  Enter activate  F7 file picker',eg_bytes='BYTES: ',
+                   eg_console_help='Tab controls  Enter activate  F7 file picker',eg_bytes='BYTES: ',eg_search_byte='BYTE: ',
                    eg_opening='Opening file',eg_saving='Saving new file',eg_verifying='Verify saved file')
     for name,value in strings.items():lines.append(name+': .byte '+','.join(map(str,value.encode()+b'\0')))
     for prefix,count in [('eg_label',len(LABELS)),('eg_title',len(TITLES))]:

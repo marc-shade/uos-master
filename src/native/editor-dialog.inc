@@ -83,7 +83,7 @@ ed_module_cache_check:
         bpl ed_module_cache_check
 ed_module_replace:
 .if NATIVE_EDITOR_GRAPHICS
-        jsr eg_close
+        jsr eg_close_view
         lda #0
         sta eg_attempted
 .endif
@@ -126,6 +126,14 @@ ed_module_token:
         bpl ed_module_token
         clc
 ed_module_return:
+.if NATIVE_EDITOR_GRAPHICS
+        bcc +
+        pha
+        jsr eg_vdc_close
+        pla
+        sec
++
+.endif
         rts
 ed_module_retained:
         lda #N_IOERROR

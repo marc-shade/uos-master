@@ -7,8 +7,8 @@ RAM banks, with a 24-bit byte position and length. Both displays show the
 same document and cursor; the 80-column display shows more of each line.
 
 The desktop suite instead opens the [blue graphical Editor](NATIVE-EDITOR-GUI.md),
-with mouse caret placement, visible file/search controls and VDC text. It
-requires ABI 1.10; Tab moves focus, F7 opens Browse inside Open/Save As,
+with mouse caret placement and visible file/search controls on VIC and VDC. It
+requires ABI 1.12; Tab moves focus, F7 opens Browse inside Open/Save As,
 and the Case button toggles search case. The key table below describes the diagnostic text interface.
 
 The [module loader](NATIVE-MODULES.md) loads the picker from `EDPICK.PRG`
@@ -177,7 +177,8 @@ retains failed handles for a later release attempt. Ordinary application exit
 uses the kernel's owner cleanup for both contexts and the application image.
 
 The diagnostic editor reserves 79 heap pages for code, local state and either
-module. The graphical suite uses 96 app pages and an optional 36-page surface;
+module. The graphical suite uses 96 app pages, a 16-page owned workspace,
+a 36-page surface and a 30-page VDC provider plus its RAM/REU screen backup;
 its [memory and lifetime contract](NATIVE-EDITOR-GUI.md#storage-and-presentation-lifetime)
 accounts for those allocations separately.
 Saving reuses the insertion buffer for its reopen comparison. The picker
