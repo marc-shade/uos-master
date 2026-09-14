@@ -2,6 +2,9 @@
 ; gfx_text_buffer[0..gfx_text_length) is at most 64 bytes. Nonprintable
 ; bytes draw '?'. Uses gfx_pen 0..3 and x0/y0; advances x0, saturating at
 ; 32767. Colors are unchanged. D/I preserved; other graphics args clobbered.
+.weak
+GFX_TEXT_STORAGE=0
+.endweak
 gfx_text:
         php
         cld
@@ -83,7 +86,11 @@ gfx_text_done:
         jmp gfx_finish
 
 gfx_text_length:.byte 0
+.if GFX_TEXT_STORAGE
+gfx_text_buffer=GFX_TEXT_STORAGE
+.else
 gfx_text_buffer:.fill 64,0
+.endif
 gfx_text_left:  .byte 0
 gfx_text_index: .byte 0
 gfx_text_high:  .byte 0

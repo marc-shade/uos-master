@@ -4,10 +4,11 @@ Paint is the sixth app on the native blue desktop. Press **P**, or click its
 brush icon. Both `target/native-desktop/uos128.d64` and `workspace.d64` include
 the app; build them with `python3 -B build-native-desktop.py`.
 
-Paint keeps a complete 320×200 hires picture in bank 1. The VIC shows a
-256×144 viewport, tool buttons, and a 16-color ink palette. The VDC shows
-coordinates, tool, color, file controls, and status. Picture preview still
-requires the VIC display.
+Paint keeps a complete 320×200 hires picture in bank 1. Both displays show
+the same 256×144 viewport, tool buttons, ink palette and file dialogs. The VDC
+scales each horizontal pixel to two pixels. A 64 KiB VDC shows colors and yellow
+focus; a 16 KiB VDC uses contrasting monochrome graphics. The keyboard brush
+is visible without a mouse. Keep `VDSVC.PRG` beside Paint when copying the app.
 
 ## Drawing
 
@@ -18,6 +19,7 @@ requires the VIC display.
 | Color chip; + / − | Choose ink color |
 | Cursor keys | Move the visible keyboard brush by one pixel; scroll at viewport edges |
 | Home | Move to the picture's top-left |
+| R | Refresh the picture and retry VDC setup after fallback |
 | Space | Draw or erase one pixel at the keyboard brush |
 | Tab, then Enter | Select and activate a control |
 | Undo / U | Toggle the most recent edit between undo and redo |
@@ -44,7 +46,7 @@ In Save As, enter a name and press Enter or click Save. **Tab** opens the
 Use **S** in the picker to choose the current device/folder. Back in Save As,
 edit the proposed name before saving. Ctrl-U clears the field; cursor keys,
 Home, insertion, and deletion use the shared field editor. Esc or Cancel
-returns to the picture. The picker currently uses text controls on both displays.
+returns to the picture. The picker uses the same blue graphical controls on both displays.
 
 Files are created exclusively. An existing destination is preserved. A save
 succeeds only after closing the file, reopening it, comparing every byte and
@@ -89,17 +91,34 @@ An attribute has foreground in the high nibble and paper in the low nibble.
 The host codec is [`native_paint_format.py`](../native_paint_format.py).
 Display controls, sprites, and memory padding are excluded from the file.
 
-Paint uses 96 app pages, two 36-page document allocations, and 36 display pages,
-leaving 222 of the 426 managed pages free while drawing. Open needs another
-36 bank-1 pages temporarily; the [graphical picker](NATIVE-PICKER-GUI.md)
-shares the display, font and pointer and uses separate transient directory caches.
+Paint uses 96 app pages, two 36-page document allocations, a 36-page VIC
+surface, ten bank-0 scratch pages and the shared 30-page VDC component. REU
+screen backing leaves 182 of the 426 managed pages free while drawing. Main-RAM
+backing leaves 118 pages with a 16 KiB VDC or 110 with 64 KiB. Open needs
+another 36 bank-1 pages temporarily; the [graphical picker](NATIVE-PICKER-GUI.md)
+shares the display, font and pointer and uses transient directory caches.
 
-The [software validation record](validation/2026-09-13-native-paint/README.md)
-records exact images, CPU cases, VICE workflows, and the independent rebuild.
+The app reserves `$5000..$59ff` before installing input controls. It stores
+picker scratch, file comparison data, saved function keys and rendering buffers
+there. A conflicting allocation refuses startup without changing that owner's
+data. Editable filename/path fields stay inside the app allocation.
+
+Paint retains one VDC component and original-screen backup through drawing,
+dialogs and the picker. If a VDC transfer fails, edits and file actions pause.
+Escape retries screen restoration; it still follows the normal dirty-picture
+confirmation once restoration succeeds. The picture and undo remain owned.
+R can then reopen the graphical VDC view. A failed picker surface restores
+the VDC before drawing fallback text. Missing hardware or components retain
+VIC drawing and text controls.
+
+The [original software record](validation/2026-09-13-native-paint/README.md)
+records the first Paint app. The [graphical VDC qualification](validation/2026-09-13-native-paint-vdc/README.md)
+retains the current program, complete dual-display workflows, screen and REU
+restoration evidence, scratch ownership checks and the independent rebuild.
 Physical Paint timing, mouse behavior, and file/device qualification remain
-open. So do VDC bitmap editing, more tools and patterns, selection/clipboard,
+open. So do native-width VDC tools, more drawing tools and patterns, selection/clipboard,
 zoom, multiple undo levels, printing, and GEOS/Commodore image import/export.
-This first app does not complete APP-PAINT or the wider OS roadmap.
+These display changes do not complete APP-PAINT or the wider OS roadmap.
 
 ## Keyboard and mouse line sharing
 

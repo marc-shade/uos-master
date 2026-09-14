@@ -16,7 +16,17 @@ pa_normal_controls:
         sta pm_arm
         rts
 pa_key:
-        ldx pa_mode
+        ldx vd_phase
+        beq +
+        ldx vd_fault
+        beq +
+        cmp #27
+        bne pa_vdc_key_blocked
+        pha
+        jsr vd_close
+        pla
+        bcs pa_vdc_key_blocked
++       ldx pa_mode
         beq pa_main_key
         cpx #2
         beq pa_save_key
@@ -47,7 +57,9 @@ pa_main_key:
         cmp #$7b
         bcs +
         and #$df
-+       ldx #6
++       cmp #$52
+        beq pa_display_refresh
+        ldx #6
 -       cmp pa_button_keys,x
         beq pa_activate
         dex
@@ -194,6 +206,13 @@ pa_keyboard_point:
         bcs pa_drawing_error
 +       jsr pa_cursor
         jmp pa_refresh_labels
+pa_display_refresh:
+        lda vd_phase
+        bne +
+        lda #0
+        sta pa_vdc_attempted
++       jmp pa_redraw
+pa_vdc_key_blocked:
 pa_input_done:
         rts
 pa_drawing_error:
@@ -315,7 +334,11 @@ pa_cursor:
         rts
 
 pa_mouse:
-        lda #0
+        lda vd_phase
+        beq +
+        lda vd_fault
+        bne pa_input_done
++       lda #0
         sta pm_moved
         jsr pm_poll
         lda N_READY

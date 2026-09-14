@@ -1,5 +1,8 @@
 ; Retained parent of the shared bank-1 VDC service. All UI/input stays in bank 0.
 ; BP_MODE = 0 VIC mirror, 1 native Desktop scene. bp_select_surface is supplied.
+.weak
+BP_POINTER_STATE=pm_seen
+.endweak
 vd_open:
         lda #0
         sta N_READY
@@ -113,10 +116,10 @@ vd_poll:
         beq bp_ok
         lda vd_fault
         bne bp_ok
-        lda pm_seen
+        lda BP_POINTER_STATE
         cmp vd_pointer_visible
         bne bp_pointer
-        lda pm_seen
+        lda BP_POINTER_STATE
         beq bp_ok
         lda pm_x
         cmp vd_pointer_x
@@ -179,7 +182,7 @@ bp_arguments:
         sta N_BUFFER+5
         sta N_BUFFER+6
  .endif
-        lda pm_seen
+        lda BP_POINTER_STATE
         sta N_BUFFER+7
         lda pm_x
         sta N_BUFFER+8

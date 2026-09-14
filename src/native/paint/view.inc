@@ -51,6 +51,7 @@ pa_view_initialize:
 pa_view_failed:
         sta pa_view_error
         jsr pa_view_close
+        bcs pa_view_return
         lda pa_handle
         beq pa_view_return
         jsr pa_select_view
@@ -61,10 +62,14 @@ pa_view_failed:
 pa_view_return:
         rts
 pa_view_close:
+        jsr vd_close
+        bcs pa_view_return
+pa_surface_close:
         jsr pm_close
         jsr N_VCLOSE
         lda #0
         sta pa_bitmap
+        clc
         rts
 pa_select_view:
         lda N_CURRENT
@@ -138,6 +143,7 @@ pa_transfer_done:
         rts
 
 pa_blit:
+        jsr pa_vdc_full
         lda #0
         sta pa_row
 pa_blit_row:
@@ -209,6 +215,10 @@ pa_cell:
         clc
         adc #4
         sta pa_local_y
+        tax
+        lda #1
+        sta vm_rows,x
+        sta vm_pending
         ldx pa_cell_y
         ldy pa_cell_x
         jsr pa_bitmap_address

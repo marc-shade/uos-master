@@ -5,6 +5,7 @@ B_COPY = 0
 B_GUI = 0
 FD_GUI = 0
 FD_VDC = 0
+FD_BUFFER_BASE = 0
 .endweak
 B_RECORD_BYTES=32-12*FD_GUI
 .if !FD_EMBEDDED
@@ -754,5 +755,10 @@ b_device_cursor: .byte 0
 b_device_views: .fill 2,0
         .byte 1
 b_device_text: .fill 3,0
+.if FD_BUFFER_BASE
+b_record=FD_BUFFER_BASE+512
+b_page_data=FD_BUFFER_BASE
+.else
 b_record: .fill B_RECORD_BYTES,0
 b_page_data: .fill 256,0
+.endif

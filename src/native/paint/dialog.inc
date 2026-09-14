@@ -156,7 +156,7 @@ pa_pick:
         sta pa_picker_mode
         jsr pa_cleanup
         bcs pa_cleanup_error
-        jsr pa_view_close
+        jsr pa_surface_close
         lda pa_picker_mode
         sta paint_picker.fd_mode
         lda pf_device
@@ -263,7 +263,9 @@ pa_exit:
         jsr pa_cleanup
         bcs pa_cleanup_error
         jsr pa_view_close
-        jsr pa_keys_restore
+        bcc +
+        jmp pa_console
++       jsr pa_keys_restore
         lda #0
         jmp N_EXIT
 

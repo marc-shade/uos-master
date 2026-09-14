@@ -30,6 +30,7 @@ class GraphicalPaint(FilePaint):
             actual=bytes(self.ram[0xc000:0xe400])
             assert actual==wanted,('bitmap',state,message,[(i,a,b) for i,(a,b) in enumerate(zip(actual,wanted)) if a!=b][:24])
         for bank in ((1,) if bitmap else (0,1)):
+            if bank and self.value('vd_phase'):continue
             wanted=console((40,80)[bank],bitmap=bitmap,message=message,view=self.ram[self.symbol('pa_field')+5+bank],**state)
             assert self.screens[bank]==wanted,('console',bank,state,message,
                 [(i,a,b) for i,(a,b) in enumerate(zip(self.screens[bank],wanted)) if a!=b][:24])

@@ -2,8 +2,8 @@
 
 The desktop suite's Editor, Files, Paint and Ultimate use one blue bitmap file
 picker. The selected control turns yellow, and a 1351 mouse on port 1 can
-select rows, press buttons and position the path-field caret. Ultimate also
-shows the picker graphically on the VDC, using yellow focus with 64 KiB and
+select rows, press buttons and position the path-field caret. Ultimate and Paint also
+show the picker graphically on the VDC, using yellow focus with 64 KiB and
 reversed light controls with 16 KiB. The other callers retain VDC text views.
 
 A row click selects a file. **Choose** opens a folder or returns a file to the
@@ -37,9 +37,10 @@ descriptor remains in the calling app, including across a failed release.
 Editor and Files load the picker into their existing checked module window.
 Paint and Ultimate share their already resident font and pointer code.
 
-The picker closes its VIC pointer and display before returning. Ultimate
-retains its shared VDC component and original screen backup across the picker
-and confirmation, releasing them only when the app exits. An unavailable
+The picker closes its VIC pointer and display before returning. Ultimate and
+Paint retain their shared VDC component and original screen backup across the
+picker and app dialogs, releasing them when the app exits or explicitly
+restores a failed graphical display. An unavailable
 surface or display falls back to the existing text consoles. Refresh retries
 display acquisition. Directory/stream cleanup retains its existing checked
 ownership: a failed close or free cannot produce a successful selection or
@@ -59,7 +60,7 @@ Twelve records occupy each cache page without crossing its boundary. The full
 296-entry D81 root therefore needs 25 pages. The diagnostic text picker keeps
 its original 32-byte record format.
 
-Editor and Paint lend three idle 512-byte buffers. Ultimate lends one and
+Editor and Paint lend three idle 512-byte buffers; Paint keeps them in its separately owned scratch allocation. Ultimate lends one and
 allocates two more in a four-page bank-0 heap extent while the picker is open.
 Files lends two;
 its copy and verification operations still use their complete 512-byte

@@ -16,12 +16,12 @@ for (x0,y0,x1,y1),label,key in BUTTONS:
     OPS += [(0,(x0,y0,x1,y1),1),(0,(x0+1,y0+1,x1-1,y1-1),0)]
     TEXT.append(((x0+x1-len(label)*8)//2,(y0+y1-8)//2,1,label))
 
-MESSAGES=['Arrows move Space draw +/- ink','Saved and verified',
+MESSAGES=['Arrows move Space draw R refresh','Saved and verified',
           'Opened; Undo restores old image','Cancelled','File exists; choose another name',
           'Invalid picture; picture kept','Checksum wrong; picture kept','Readback differs; file kept',
           'File error; file may be partial','Drawing unavailable',
           'Saving... Esc cancels','Opening... Esc cancels','File picker unavailable',
-          'Close failed; S/O/X retries']
+          'Close failed; S/O/X retries','VDC paused; Esc restores']
 STRINGS={'pa_help':MESSAGES[0], 'pa_discard':'Discard','pa_open_label':'Open',
          'pa_close_question':'Discard changes and close?', 'pa_open_question':'Open another picture?',
          'pa_destination_template':'Device:000 D64','pa_formats':'D64 D71 D81 ULT '}

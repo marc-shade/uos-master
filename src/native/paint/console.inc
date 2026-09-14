@@ -1,10 +1,16 @@
 ; The VDC mirrors controls/status. If VIC presentation is unavailable, both
 ; text consoles retain file operations and coordinate-based keyboard tools.
 pa_console:
+        jsr pa_vdc_sync
         lda pa_bitmap
         sta pa_screen
 pa_console_next:
-        lda $d7
+        lda pa_screen
+        beq +
+        lda vd_phase
+        beq +
+        rts
++       lda $d7
         rol
         lda #0
         rol

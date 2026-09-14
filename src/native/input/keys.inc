@@ -1,6 +1,9 @@
 ; Foreground ownership of the ROM function-key table and mouse-line KEYCHK
 ; filter. A client that keeps a text picker active may own this independently
 ; of its sprite/display lifetime; ordinary pointer clients install/close here.
+.weak
+NK_SAVED_BUFFER=0
+.endweak
 nk_install:
         lda nk_active
         bne nk_return
@@ -65,6 +68,10 @@ nk_close:
         rts
 nk_active: .byte 0
 nk_codes: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84
+.if NK_SAVED_BUFFER
+nk_saved_keys=NK_SAVED_BUFFER
+.else
 nk_saved_keys: .fill 256,0
+.endif
 nk_saved_callback: .word 0
 .include "key-filter.inc"

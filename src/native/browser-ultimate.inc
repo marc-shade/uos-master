@@ -1107,4 +1107,8 @@ bu_draw_row: .byte 0
 bu_power: .byte 0
 bu_started: .byte 0
 bu_digit: .byte 0
+.if FD_BUFFER_BASE
+bu_path=FD_BUFFER_BASE+256
+.else
 bu_path: .fill 256,0
+.endif

@@ -1,14 +1,14 @@
 # Shared native VDC service
 
-Desktop, Calculator and Ultimate load the same `VDSVC.PRG` from their original app
+Desktop, Calculator, Ultimate and Paint load the same `VDSVC.PRG` from their original app
 source. It supplies both the native 640×200 desktop layout and the incremental
-VIC-to-VDC presenter used by Calculator and Ultimate, including Ultimate's
-file picker. The blue interface, app icons, focus colors and pointer behavior
-remain consistent. All three apps can save their original
+VIC-to-VDC presenter used by Calculator, Ultimate and Paint, including the latter two apps' file
+pickers. The blue interface, app icons, focus colors and pointer behavior
+remain consistent. All four apps can save their original
 VDC screen in an available REU, with main RAM as the fallback.
 
 The component is included on both D64/D81 suite and workspace disks. When
-copying Desktop, Calculator or Ultimate to another IEC disk or Ultimate directory, copy
+copying Desktop, Calculator, Ultimate or Paint to another IEC disk or Ultimate directory, copy
 `VDSVC.PRG` beside it. A data-device selection or file-dialog path does not
 redirect component loading. Ultimate paths retain the original directory,
 including spaces and case, in either source context. A missing, damaged or
@@ -23,15 +23,17 @@ component, reserved in 30 bank-1 pages at `$6000..$7dff`. The retained
 stream before executing any provider code. The resident kernel and 426-page
 managed heap are unchanged.
 
-| Allocation while graphics are open | Desktop | Calculator | Ultimate |
-|---|---:|---:|---:|
-| Bank-0 app | 35 pages | 49 pages | 96 pages |
-| Bank-1 component | 30 pages | 30 pages | 30 pages |
-| VIC surface | 36 pages | 36 pages | 36 pages |
-| History | 0 | 2 pages | 0 |
-| Free main-RAM pages with REU backing | 325 | 309 | 264 |
-| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 | 200 |
-| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 | 192 |
+| Allocation while graphics are open | Desktop | Calculator | Ultimate | Paint |
+|---|---:|---:|---:|---:|
+| Bank-0 app | 35 pages | 49 pages | 96 pages | 96 pages |
+| Bank-1 component | 30 pages | 30 pages | 30 pages | 30 pages |
+| VIC surface | 36 pages | 36 pages | 36 pages | 36 pages |
+| History | 0 | 2 pages | 0 | 0 |
+| Picture and undo | 0 | 0 | 0 | 72 pages |
+| Retained scratch | 0 | 0 | 0 | 10 pages |
+| Free main-RAM pages with REU backing | 325 | 309 | 264 | 182 |
+| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 | 200 | 118 |
+| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 | 192 | 110 |
 
 Moving the display code saved eight pages in Desktop and Calculator's executable allocations.
 The separate component adds 30 pages while loaded; this is code-space headroom
@@ -43,6 +45,14 @@ Ultimate keeps one component and saved VDC screen while its picker borrows the
 same VIC surface. Its picker allocates four scratch pages only while open and
 releases them after closing its cursors and cache. No provider reload or VDC
 restoration occurs between the panel, picker and confirmation dialog.
+
+Paint likewise retains the provider and snapshot through drawing, file dialogs
+and the picker. Its ten scratch pages live outside the executable window;
+editable field buffers remain inside the app's loader allocation. A display
+fault pauses edits and file actions until Escape restores the screen, while
+the picture and undo remain owned. R retries graphics after fallback.
+The client accepts an optional `BP_POINTER_STATE` byte (default `pm_seen`);
+Paint supplies actual cursor visibility so its keyboard brush is shown too.
 
 Input, application logic and the VIC surface stay in bank 0. Calls clear
 `N_READY` before preparing the mailbox or changing banks. The normal app input
@@ -115,3 +125,8 @@ The breakpoint condition checks the MMU configuration so an identical bank-0
 program address cannot satisfy the observation. Cold-boot and disk-chain
 checks cover all six generated images. These are software checks; this
 component has not been deployed to or qualified on physical hardware.
+
+Paint's [graphical VDC qualification](validation/2026-09-13-native-paint-vdc/README.md)
+adds complete picture and picker canvases, keyboard-brush visibility, panning,
+connected strokes, owned scratch, both backing stores and failure recovery.
+The shared provider and other apps retain their previous executable bytes.

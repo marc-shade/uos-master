@@ -281,9 +281,15 @@ def main():
             # scans under load. Keep it down until the ROM-fed native counter
             # acknowledges it, then release even when an assertion fails.
             with mouse.held_key(name):
-                wait(lambda:int.from_bytes(read(0x3d13,2),'little')!=before,
-                    name+' sampled by native keyboard',120)
-            if after_key is not None:after_key()
+                if after_key is None:
+                    wait(lambda:int.from_bytes(read(0x3d13,2),'little')!=before,
+                        name+' sampled by native keyboard',120)
+                else:
+                    # Counter polling resumes the CPU and can run past the
+                    # requested checkpoint. Capture first, then release the
+                    # host key while the callback still holds the CPU stopped.
+                    after_key()
+            if after_key is not None:mon.resume()
             wait(lambda:(read(0x3d20)==b'\0' if target=='workspace' else header(target)) and ready() and int.from_bytes(read(0x3d13,2),'little')!=before,
                 name+' reaches '+target,120)
             after=int.from_bytes(read(0x3d13,2),'little')
@@ -307,18 +313,39 @@ def main():
             assert not error
             mon.resume()
             return entry,checkpoint_id
+        def await_restore_checkpoint(entry,checkpoint_id,label):
+            # Hit counts persist after a resume. Read the actual PC and MMU
+            # while stopped before accepting a banked restoration checkpoint.
+            # Register catalogs/responses: https://vice-emu.sourceforge.io/vice_13.html
+            error,catalog=mon._recv(mon._send(0x83,b'\0'));assert not error
+            at=2;pc_id=None
+            for _ in range(int.from_bytes(catalog[:2],'little')):
+                size=catalog[at];item=catalog[at+1:at+1+size];at+=size+1
+                if item[3:3+item[2]]==b'PC':pc_id=item[0]
+            assert pc_id is not None
+            deadline=time.monotonic()+120
+            while True:
+                error,checkpoint=mon._recv(mon._send(0x11,checkpoint_id));assert not error
+                error,registers=mon._recv(mon._send(0x31,b'\0'));assert not error
+                at=2;pc=None
+                for _ in range(int.from_bytes(registers[:2],'little')):
+                    size=registers[at];item=registers[at+1:at+1+size];at+=size+1
+                    if item[0]==pc_id:pc=int.from_bytes(item[1:],'little')
+                mmu=bytes(mon.read_mem(0xd500,0xd500,bank=banks['io']))[0]
+                observation=dict(pc=pc,mmu=mmu,checkpoint_hex=checkpoint.hex(),
+                    register_catalog_hex=catalog.hex(),registers_hex=registers.hex())
+                (work/(label+'-restore-observation.json')).write_text(json.dumps(observation,indent=2)+'\n')
+                if pc==entry and mmu==0x4e:
+                    assert int.from_bytes(checkpoint[13:17],'little')>0
+                    return checkpoint
+                assert time.monotonic()<deadline,('VDC restore checkpoint was not reached',observation)
+                mon.resume();time.sleep(.1)
         def watch_app_vdc_restore(app,label):
             snapshot,restore=vdc_snapshot(capture,app_read,work,label,image_prefix='native-desktop/'+app,
                 reu_snapshot=reu_snapshot if args.reu_kib else None)
             entry,checkpoint_id=restore_checkpoint()
             def finish():
-                deadline=time.monotonic()+120
-                while True:
-                    error,checkpoint=mon._recv(mon._send(0x11,checkpoint_id));assert not error
-                    if int.from_bytes(checkpoint[13:17],'little'):break
-                    mon.resume();assert time.monotonic()<deadline,'app VDC restore checkpoint was not reached'
-                    time.sleep(.1)
-                assert bytes(mon.read_mem(0xd500,0xd500,bank=banks['io']))==b'\x4e'
+                checkpoint=await_restore_checkpoint(entry,checkpoint_id,label)
                 base=restore['base']
                 restored=bytes(mon.read_mem(base,base+len(snapshot)-1,bank=banks['vdc']))
                 (work/(label+'-restored-vram.bin')).write_bytes(restored)
@@ -329,7 +356,7 @@ def main():
                     lifetime='app snapshot still owned; VRAM restored before register restoration')
                 report.setdefault('vdc_app_restores',[]).append(restore);save()
                 error,_=mon._recv(mon._send(0x13,checkpoint_id));assert not error
-                mon.resume()
+                # key() releases the host key before resuming the app.
             return finish
         def screens(label,oracle):
             for mode,columns,address in ((0,40,0x400),(1,80,0)):
@@ -385,6 +412,12 @@ def main():
             wait(ready,'calculator click ready',60)
             assert int.from_bytes(read(0x3d13,2),'little')==before
             report['events'].append(dict(calculator_button=index,keyboard_events_during_click=0));save()
+        def mirrored_vdc(label,wanted,focus):
+            def canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            return vdc_capture(capture,app_read,canvas,work,label,focus,color=args.vdc64,
+                               surface_data=wanted,image_prefix='native-desktop/'+pointer_app)
         def picker_view(label,entries,*,selected=0,mode=1,device=8,fmt=0):
             wait(lambda:ready() and app_read(picker_symbol(pointer_app,'pg_bitmap'))==b'\1',label,90)
             wait(lambda:value('pm_seen')==1,'picker pointer attached',20)
@@ -396,8 +429,10 @@ def main():
             wanted=picker_surface(entries,**expected)
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'picker bitmap')
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-            assert vdc==picker_console(entries,selected=selected,device=device,fmt=fmt),(label,'picker VDC')
+            vdc=None
+            if pointer_app not in ('paint','controls'):
+                text_vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
+                assert text_vdc==picker_console(entries,selected=selected,device=device,fmt=fmt),(label,'picker VDC')
             for _ in range(20):
                 xy=position();time.sleep(.2)
                 if position()==xy:break
@@ -405,7 +440,8 @@ def main():
             display=modes.snapshot(label+'-mode');assert display['vic_sprites']==3
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            report.setdefault('picker_frames',[]).append(dict(label=label,app=pointer_app,expected=expected,
+            if pointer_app in ('paint','controls'):vdc=mirrored_vdc(label,wanted,pv('pg_focus'))
+            report.setdefault('picker_frames',[]).append(dict(label=label,app=pointer_app,expected=expected,vdc=vdc,
                 entries=[dict(name_hex=row['name'].hex(),type=row['type'],blocks=row['blocks'],flags=row.get('flags',128)) for row in entries],
                 position=xy,rectangle=rectangle,mode=display));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
@@ -566,11 +602,7 @@ def main():
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
                 count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'Paint bitmap')
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-            state={k:v for k,v in expected.items() if k not in ('view_x','view_y','field_view')}
-            state['name']=name
             field_view=app_read(symbol('pa_field')+6)[0]
-            assert vdc==paint_console(80,bitmap=True,message=status,view=field_view,**state),(label,'Paint VDC')
             for _ in range(20):
                 xy=position();time.sleep(.2)
                 if position()==xy:break
@@ -579,10 +611,11 @@ def main():
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
             rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
+            vdc=mirrored_vdc(label,wanted,value('ui_selected'))
             report['paint_frames'].append(dict(label=label,expected=expected,status=status,console_field_view=field_view,
-                document_sha256=hashlib.sha256(document).hexdigest(),position=xy,rectangle=rectangle,mode=display));save()
+                document_sha256=hashlib.sha256(document).hexdigest(),position=xy,rectangle=rectangle,mode=display,vdc=vdc));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
-            print('PASS: complete Paint document, bitmap, VDC and 64000 pointer pixels:',label,flush=True)
+            print('PASS: complete Paint document, VIC/VDC graphics and 192000 pointer pixels:',label,flush=True)
         def paint_click(index):
             x0,y0,x1,y1=PAINT_RECTS[index];move_to((x0+x1)//2,(y0+y1)//2)
             before=int.from_bytes(read(0x3d13,2),'little')
@@ -626,13 +659,7 @@ def main():
             before=int.from_bytes(read(0x3d13,2),'little')
             mouse.button(True);assert header('desktop') and value('pm_arm')==index
             mouse.button(False)
-            deadline=time.monotonic()+120
-            while True:
-                error,checkpoint=mon._recv(mon._send(0x11,checkpoint_id));assert not error
-                if int.from_bytes(checkpoint[13:17],'little'):break
-                mon.resume();assert time.monotonic()<deadline,'VDC restore checkpoint was not reached'
-                time.sleep(.1)
-            assert bytes(mon.read_mem(0xd500,0xd500,bank=banks['io']))==b'\x4e'
+            checkpoint=await_restore_checkpoint(entry,checkpoint_id,name+'-close')
             base=restore['base']
             restored=bytes(mon.read_mem(base,base+len(snapshot)-1,bank=banks['vdc']))
             (work/(name+'-restored-vram.bin')).write_bytes(restored)
@@ -828,7 +855,7 @@ def main():
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
-            after_key=watch_app_vdc_restore(name,'calculator-close' if name=='calc' else 'ultimate-close') if name in ('calc','controls') else None
+            after_key=watch_app_vdc_restore(name,{'calc':'calculator-close','controls':'ultimate-close','paint':'paint-app-close'}[name]) if name in ('calc','controls','paint') else None
             key('F8' if name=='claude' else 'F9','desktop',after_key=after_key)
             pointer_app='desktop'
             desktop(name+'-returned',index)

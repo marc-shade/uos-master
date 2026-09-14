@@ -516,4 +516,4 @@ pf_crc: .word 0
 pf_wanted_crc: .word 0
 pf_crc_left: .word 0
 pf_check_left: .word 0
-pf_compare: .fill 512,0
+pf_compare=$5400

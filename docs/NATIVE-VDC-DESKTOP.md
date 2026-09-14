@@ -17,8 +17,10 @@ each icon. It shares selection and input with the VIC; independent focus and
 extended desktop roles remain future work.
 
 The six apps and the shared file picker already use blue VIC controls.
-[Calculator](NATIVE-CALCULATOR.md) now presents those controls graphically on
-the VDC too. The other app views remain text, including Claude's full terminal.
+[Calculator](NATIVE-CALCULATOR.md), [Ultimate](NATIVE-ULTIMATE-CONTROLS.md)
+and [Paint](NATIVE-PAINT.md) present their controls graphically on the VDC too,
+including Paint's picture and both apps' shared picker. Editor, Files and
+Claude's full terminal still use VDC text views.
 App launch restores
 the original VDC memory and registers before loading the app, and app return
 reloads the graphical launcher. The older green legacy desktop is a separate
@@ -50,7 +52,7 @@ all eight lines: its last-raster value is inclusive, so seven is sufficient.
 The expanded desktop program contains 8,833 bytes; its packed PRG is 7,362
 bytes including the load address. The
 [suite disks](NATIVE-BOOT-MEDIA.md) contain thirteen shipping files, including
-`VDSVC.PRG`, with 140 free blocks on D64 and 2,636 on D81 before user documents. Use a
+`VDSVC.PRG`, with 134 free blocks on D64 and 2,630 on D81 before user documents. Use a
 separate data disk or Ultimate storage for larger documents and pictures.
 Qualification saves the small Calculator sample on the system disk. On D64,
 Editor selects device 9 through the file picker; on D81 its sample also fits
