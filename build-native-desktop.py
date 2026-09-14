@@ -14,6 +14,7 @@ OUT = ROOT/'target/native-desktop'
 from native_image import seal, validate
 from native_module import seal as seal_module, validate as validate_module
 from native_banked import seal as seal_banked, validate as validate_banked
+from native_app_pack import build as pack_app, information as packed_information
 
 
 def module(name, path):
@@ -45,7 +46,7 @@ def build():
     write_picker(ROOT/'src/native/picker')
     native.build()
     native.build(out=OUT, desktop_boot=True)
-    module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
+    claude = module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
     for name in ('desktop', 'files', 'controls', 'paint'):
         subprocess.run(['64tass', '-a', '-B', str(ROOT/f'src/native/{name}.asm'),
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
@@ -73,6 +74,21 @@ def build():
     provider = OUT/'vdsvc.prg'
     provider.write_bytes(seal_banked(provider.read_bytes()))
     vdc_component = validate_banked(provider.read_bytes())
+    packing = {}
+    for name in ('desktop','calc','editor','files','controls','claude','paint'):
+        path = OUT/f'{name}.prg'
+        packed = pack_app(path.read_bytes(), runtime_end=claude['runtime_end'] if name=='claude' else None,
+                          listing=OUT/f'{name}-pack.lst', symbols=OUT/f'{name}-pack.sym')
+        path.write_bytes(packed)
+        packing[name] = packed_information(packed)
+        # Module identity remains the original source's checked NAPP identity.
+        for part in {'editor':('edpick','edfind'),'files':('fspick','fsview')}.get(name,()):
+            module_path = OUT/f'{part}.prg'
+            module_path.write_bytes(seal_module(module_path.read_bytes(),packed))
+            validate_module(module_path.read_bytes(),packed)
+    claude.update(validate((OUT/'claude.prg').read_bytes()),startup=packing['claude'],
+                  sha256=packing['claude']['packed_sha256'])
+    (OUT/'claude.json').write_text(json.dumps(claude,indent=2)+'\n')
     for disk_format in ('d64', 'd81'):
         workspace = OUT/f'workspace.{disk_format}'
         shutil.copyfile(ROOT/f'target/native/uos128.{disk_format}', workspace)
@@ -110,7 +126,7 @@ def build():
                       controls=validate((OUT/'controls.prg').read_bytes()),
                       claude=validate((OUT/'claude.prg').read_bytes()),
                       paint=validate((OUT/'paint.prg').read_bytes()),
-                      surface_pages=36, vdc_component=vdc_component,
+                      surface_pages=36, vdc_component=vdc_component, packed_apps=packing,
                       free_pages_at_desktop={str(kib):426-36-pages-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages']
                                              for kib,pages in ((16,64),(64,72))},
                       free_pages_at_desktop_reu=426-36-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages'],

@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,507 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,643 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -665,3 +665,10 @@ source, retain recovery before discarding it, and share REU-backed VDC snapshots
 with RAM fallback. Each bank-0 app saves eight executable pages; the component
 uses thirty bank-1 pages while active. Editor document backing, remaining VDC
 app views, scheduled drivers and physical qualification remain open.
+
+The [packed app startup](NATIVE-APP-PACK.md) recovers 146 D64 blocks, leaving
+147 free blocks in the complete suite. Its temporary decoder and input storage
+are released before app entry. Original app bodies and module layouts remain
+exact, and the resident kernel and 426-page heap do not change. This removes
+the immediate distribution-space constraint; it does not increase the app
+code window or complete the remaining display and document migrations.

@@ -44,6 +44,11 @@ def build(out=None):
     image = out/'claude.prg'
     image.write_bytes(seal(image.read_bytes()))
     info = validate(image.read_bytes())
+    stack = re.search(r'^CSTACK\s+[0-9A-Fa-f]+\s+([0-9A-Fa-f]+)\s',
+                      (out/'claude.map').read_text(),re.M)
+    assert stack, 'Claude link map is missing the C stack extent'
+    info['runtime_end'] = int(stack[1],16)+1
+    assert 0x6000+info['bytes'] <= info['runtime_end'] <= 0x6000+info['pages']*256
     info['sha256'] = hashlib.sha256(image.read_bytes()).hexdigest()
     (out/'claude.json').write_text(json.dumps(info, indent=2)+'\n')
     print('Native Claude:', json.dumps(info))

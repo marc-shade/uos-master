@@ -665,8 +665,7 @@ def main():
                 editor_view('editor-picker-return',document,3,focus=11,**field)
                 editor_device=8 if args.d81 else 9
                 if editor_device==9:
-                    # Calculator history uses the D64 suite's final free block.
-                    # Select the data disk through the real picker while the
+                    # Select a separate data disk through the real picker while the
                     # app, its modules and the desktop keep their system source.
                     editor_click(14);picker_click(1)
                     key('9','editor');key('Return','editor')
