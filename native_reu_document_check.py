@@ -26,6 +26,16 @@ class ReuDocumentOracle:
         self.gap = position+len(data)
         self.logical = self.logical[:position]+data+self.logical[position:]
 
+    def replace(self, position, removed, data):
+        assert 0 <= position <= len(self.logical) and 0 <= removed <= len(self.logical)-position
+        assert len(data) <= self.end-self.gap+removed
+        original = self.logical
+        self.insert(position, b'')
+        self.expected[self.base+position:self.base+position+len(data)] = data
+        self.gap = position+len(data)
+        self.end += removed
+        self.logical = original[:position]+data+original[position+removed:]
+
     def capture(self, capture, read_app, folder, label, snapshot, logical, *, loaded=False):
         symbol = lambda name: lst_symbol('native-desktop/editor', name)
         active = bytes(read_app(symbol('ed_active'), 1))[0]

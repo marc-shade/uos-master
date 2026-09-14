@@ -1,6 +1,9 @@
 ; Replace one validated logical span. An allocation failure leaves its bytes,
 ; gap and length unchanged. No allocation is needed when the replacement fits
 ; in the current gap plus the removed span, even if the heap is exhausted.
+ .weak
+DOC_REPLACE_SPAN24=0
+ .endweak
 doc_replace:
         lda d_replace_count+2
         bne doc_badarg
@@ -10,7 +13,17 @@ doc_replace:
         bne doc_badarg
         lda d_replace_count
         bne doc_badarg
-+       jsr doc_prepare
++
+.if DOC_REPLACE_SPAN24
+        ; Selection removes a logical 24-bit span; only inserted payloads
+        ; are bounded by the 512-byte transfer buffer. Ordinary read/insert
+        ; calls retain their original bounded-count validation.
+        jsr doc_context
+        bcs doc_return
+        jsr doc_position
+.else
+        jsr doc_prepare
+.endif
         bcs doc_return
         #doc_sub3 d_pos,d_limit
         #doc_cmp3 d_limit,d_count

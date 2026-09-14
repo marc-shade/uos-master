@@ -44,8 +44,9 @@ class Document:
             at=self.symbols['d_input'];self.ram[at:at+len(data)]=data
             if operation=='replace':self.set('replace_count',len(data),3)
             else:count=len(data)
-        if count is not None:self.set('count',count,2)
-        arguments=self.value('pos',3),self.value('count',2)
+        count_bytes=getattr(self,'span_count_bytes',2) if operation=='replace' else 2
+        if count is not None:self.set('count',count,count_bytes)
+        arguments=self.value('pos',3),self.value('count',count_bytes)
         zero=bytes(self.ram[:256]);config=self.m.bus.config
         cpu=MPU(memory=self.m.bus,pc=self.symbols['doc_'+operation]);cpu.sp=0xe0;cpu.p=0x20
         cpu.stPushWord(0xaff);fault_calls=0
@@ -62,7 +63,7 @@ class Document:
         self.calls+=1;self.instructions+=steps
         assert (cpu.a,cpu.p&1)==(expected,int(bool(expected))),(operation,cpu.a,expected,hex(cpu.pc))
         assert bytes(self.ram[:256])==zero and self.m.bus.config==config
-        assert arguments==(self.value('pos',3),self.value('count',2))
+        assert arguments==(self.value('pos',3),self.value('count',count_bytes))
         for bank,page,data,_ in self.protected:
             assert self.m.bus.ram[bank][page*256:page*256+len(data)]==data
         if operation=='read' and not expected:

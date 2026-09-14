@@ -53,8 +53,30 @@ eg_input:
         jsr eg_vdc_guard
         sta eg_key
         lda eg_bitmap
+        bne +
+        lda es_active
         beq eg_key_return
+        lda ed_mode
+        bne eg_key_return
         lda eg_key
+        beq eg_key_return
+        cmp #12
+        beq eg_key_return
+        cmp #27
+        beq eg_selection_clear
+        cmp #7
+        beq eg_selection_clear
+        lda #12
+        sta ed_status
+        lda #254
+        bne eg_selection_result
+eg_selection_clear:
+        jsr es_clear
+        lda #255
+eg_selection_result:
+        sta eg_key
+        jmp eg_key_return
++       lda eg_key
         bne eg_input_call
         bit $d011
         bmi eg_key_return

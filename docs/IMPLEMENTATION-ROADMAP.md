@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,620 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,614 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -97,7 +97,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
 | FR-S4 shell | Commands, CAT, memory monitor, UCI navigation, HTTP socket GET | Shared FS integration, history/completion, scripts/pipes/redirection, jobs, useful errors, document/app launch | Scripted end-to-end workflow with removable media and network failures |
-| FR-S5 editor/calculator | Native blue banked text editor with mouse caret placement, file/search controls, 24-bit positions, transactional Open, verified exclusive Save As, shared picker and literal find/replace module; 768-byte legacy editor; native VIC/VDC graphical integer calculator with mouse/keyboard keypad, 32-result banked history and verified SEQ export dialog | Selection/clipboard/undo and document/session recovery; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
+| FR-S5 editor/calculator | Native blue banked text editor with keyboard/mouse range selection and replacement, file/search controls, 24-bit positions, transactional Open, verified exclusive Save As, shared picker and literal find/replace module; 768-byte legacy editor; native VIC/VDC graphical integer calculator with mouse/keyboard keypad, 32-result banked history and verified SEQ export dialog | Clipboard/undo and document/session recovery; calculator precision/scientific modes and history import/session persistence; standalone terminal | Save/reload documents beyond main RAM; arithmetic edge cases; interactive network/serial sessions |
 | FR-S6 SDK | Legacy application guide plus native ABI, manifest/image validator/sealer, calculator and [standalone module example](../examples/native-module/README.md); 15 separate module-example CPU workflows reproduce from archived sources | Broader versioned APIs, docs generated from exports, clean-checkout third-party workflow and portable test tooling | Build and run a third-party app from a clean checkout; no hardcoded developer-home dependencies |
 | FR-S7 appearance | Shared blue bitmap controls and yellow focus across the launcher, native apps and file picker; basic background colors | Backdrops, font/theme/pointer selection, screen saver, desktop arrangements and persistence | Change/restart/restore; memory budgets and low-RAM fallback |
 
@@ -799,3 +799,28 @@ power-cycle retention, system/cartridge clock status, offline system-clock
 fallback, window management, app switching and the other open roadmap items
 remain work. The blue native desktop remains the suite interface; the green
 legacy build and native diagnostic workspace retain their separate roles.
+
+### 2026-09-14 — Editor text selection
+
+The [selection checkpoint](validation/2026-09-14-native-editor-selection/README.md)
+adds Ctrl-B marking, Ctrl-A Select All and Ctrl-G/Escape clearing to the blue
+Editor on both displays. A third toolbar page exposes Mark, All and Clear.
+Mouse drags select text and scroll at document edges; keyboard commands cancel
+the pending drag release. Typing or Return replaces the range, and Del removes
+it. Selection uses 24-bit byte positions, preserves CRLF boundaries, and stays
+available across Save As and picker swaps. Save As continues to save the full
+document.
+
+Large deletions reuse document storage. Replacement reserves any required
+growth first, so a refused allocation retains both bytes and selection.
+Renderer fallback and display-restoration failures retain the document until
+input can resume. The app keeps its 96-page code allocation and 16-page
+workspace; the suite has 118 free D64 blocks or 2,614 free D81 blocks.
+Independent builds reproduce all 34 images, with only Editor, its matching
+modules and the four suite/workspace disks changing from the clock checkpoint.
+
+The software record includes 22 CPU jobs covering 25 cases, both VICE startup
+displays, full saved-file and REU comparisons, and a standalone archive audit.
+Shared clipboard exchange, Editor undo, session recovery, window management,
+app switching and the remaining parity requirements remain open. This build
+has not been installed on the physical C128.

@@ -49,7 +49,7 @@ class GraphicalEditor(Editor):
         x0,y0,x1,y1=RECTS[index];self.move((x0+x1)//2,(y0+y1)//2)
         self.frame(down=True);self.frame(down=False,exited=exited)
 
-    def check(self,want,cursor=None,dirty=None,status=None,name=None,mode=None,released=True):
+    def check(self,want,cursor=None,dirty=None,status=None,name=None,mode=None,released=True,selection=None):
         assert self.contents()==want
         at=self.number('ed_cursor')
         if cursor is not None:assert at==cursor,(at,cursor)
@@ -61,8 +61,11 @@ class GraphicalEditor(Editor):
         kw=dict(name=self.string('ed_name'),dirty=bool(self.state()['dirty']),device=self.value('ed_device'),fmt=self.value('ed_format'),
                 view=self.number('ed_view'),horizontal=self.number('ed_horizontal'),mode=self.value('ed_mode'),field=self.string('ed_field'),
                 field_caret=self.value('ed_field_cursor'),status=self.value('ed_status'),search_case=self.value('ed_s_pending_case'),replacements=self.number('ed_s_count'))
+        actual_selection=(self.number('es_first'),self.number('es_limit')) if self.value('es_active') else None
+        assert actual_selection==selection,(actual_selection,selection)
+        kw['selection']=selection
         focus=self.value('ui_selected')
-        expected=surface(want,at,focus=focus,more=bool(self.value('eg_more')),field_view=self.ram[self.symbol('ed_field_views')],**kw)
+        expected=surface(want,at,focus=focus,more=self.value('eg_more'),field_view=self.ram[self.symbol('ed_field_views')],**kw)
         actual=bytes(self.ram[0xc000:0xe400])
         assert actual==expected,('bitmap',[(i,a,b) for i,(a,b) in enumerate(zip(actual,expected)) if a!=b][:25])
         if not self.value('vd_phase'):
@@ -217,8 +220,14 @@ def main():
             e.key(0x86);e.type('COPY');e.key(0x88);e.type('D10');e.key(13);e.type('S')
             e.check(want,len(want),True,mode=2)
             opened=[command for command in e.ultimate.commands if command[1]==2]
-            assert [command[3:] for command in opened]==[b'/Apps/Original/EDITOR',b'/Apps/Original/EDFIND.PRG',
-                b'/Apps/Original/VDSVC.PRG',b'/Apps/Original/EDPICK.PRG',b'/Apps/Original/EDFIND.PRG']
+            # Without a VDC, display refusal closes the optional provider.
+            # The document memory client then probes it once for REU backing.
+            providers=1 if getattr(e,'vdc_expected',False) else 2
+            expected=[b'/Apps/Original/EDITOR',b'/Apps/Original/EDFIND.PRG']+[
+                b'/Apps/Original/VDSVC.PRG']*providers+[
+                b'/Apps/Original/EDPICK.PRG',b'/Apps/Original/EDFIND.PRG']
+            result['source_opens']=[command.hex() for command in opened]
+            assert [command[3:] for command in opened]==expected,result['source_opens']
             assert all(command[0]==2 for command in opened)
             e.ultimate.inject[3]=lambda command,reply:[(b'',b'71,CLOSE ERROR')]
             e.key(0x88);assert e.value('ed_module_kind')==0 and e.ram[0x3d1b]==4 and not e.value('eg_bitmap')

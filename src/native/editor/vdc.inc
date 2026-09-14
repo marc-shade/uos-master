@@ -92,7 +92,18 @@ eg_guard_key_ready:
         bcs eg_guard_wait
 +
         jsr eg_vdc_close
-        bcc eg_guard_return
+        bcs eg_guard_wait
+        ; A recovered Escape reaches the core without another module input
+        ; dispatch. Honor the document's selection before considering exit.
+        lda ed_mode
+        bne eg_guard_return
+        lda es_active
+        beq eg_guard_return
+        jsr es_clear
+        lda #255
+        sta eg_last_view       ; replace the pause notice when staying in the document
+        sta eg_guard_key
+        bne eg_guard_return
 eg_guard_wait:
         lda #1
         sta N_READY

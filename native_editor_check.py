@@ -45,7 +45,7 @@ def document_lines(data):
 
 def editor_screen(columns,data,cursor,*,name='',dirty=False,device=8,fmt=0,
                   view=0,horizontal=0,mode=0,field='',status=0,field_caret=None,field_view=None,
-                  search_case=0,replacements=0):
+                  search_case=0,replacements=0,selection=None):
     assert 0<=cursor<=len(data) and columns in (40,80)
     def tail(text,limit):
         visible=''.join(char if 32<=ord(char)<127 else '.' for char in text)
@@ -75,6 +75,8 @@ def editor_screen(columns,data,cursor,*,name='',dirty=False,device=8,fmt=0,
     if focused:
         at=6*columns+len(prefix)
         screen[at:at+field_width]=field_cells(field,field_width,field_caret,field_view)
+    if selection is not None:
+        assert 0<=selection[0]<=selection[1]<=len(data),selection
     lines=document_lines(data);starts=[line[0] for line in lines]
     assert view in starts,(view,starts[:20])
     first=starts.index(view);width=columns-2;caret=False
@@ -87,6 +89,13 @@ def editor_screen(columns,data,cursor,*,name='',dirty=False,device=8,fmt=0,
         screen[base+1:base+1+len(visible)]=bytes(code(value if 32<=value<127 else 46) for value in visible)
         screen[base+columns-1]=ord('>') if len(content)>horizontal+width else 32
         end=start+len(content)
+        if selection is not None:
+            low,high=selection
+            for col in range(len(visible)):
+                if low<=start+horizontal+col<high:screen[base+1+col]|=128
+            end_column=len(content)-horizontal
+            if separator and low<=end<high and 0<=end_column<=width:
+                screen[base+1+end_column]|=128
         owns_cursor=start<=cursor<end+len(separator) or (not separator and start<=cursor<=end)
         if owns_cursor and not caret:
             column=min(cursor-start,len(content))-horizontal

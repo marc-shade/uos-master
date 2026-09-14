@@ -96,10 +96,12 @@ def main():
     parser.add_argument('--controls-clock',action='store_true',help='exercise manual clock fields without a physical cartridge')
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--editor-only',action='store_true')
+    parser.add_argument('--editor-selection',action='store_true',help='exercise text selection and replacement with ROM keyboard and 1351 input')
     parser.add_argument('--editor-large',action='store_true',help='edit/save/reopen a 128 KiB REU document on the private D81')
     parser.add_argument('--claude-only',action='store_true');args=parser.parse_args()
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     if args.controls_clock:assert args.controls_only
+    if args.editor_selection:assert args.editor_only
     if args.editor_large:
         assert args.editor_only and args.d81 and args.reu_kib and args.reu_kib>=512
     work=Path(tempfile.mkdtemp(prefix='uos-native-pointer-iec-',dir='/var/tmp/arc-scratch'))
@@ -123,6 +125,7 @@ def main():
         images={p.relative_to(image).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in image.rglob('*') if p.suffix in ('.prg','.d64','.d81')})
     def save():(work/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     pointer_app='desktop'
+    editor_selection_expected=None
     claude_labels={m[2]:int(m[1],16) for m in re.finditer(r'^al ([0-9A-Fa-f]+) \.(\S+)',(image/'claude.lbl').read_text(),re.M)}
     def symbol(name):
         if pointer_app=='claude':return claude_labels[name]
@@ -471,10 +474,14 @@ def main():
             report['events'].append(dict(picker_button=index,app=pointer_app,keyboard_events_during_click=after-before));save()
 
         def editor_view(label,data,cursor,*,focus=6,**expected):
+            expected.setdefault('selection',editor_selection_expected)
             wait(lambda:header('editor') and ready(),label,90)
             state={name:value(name) for name in ('eg_bitmap','eg_error','ed_module_kind','ed_mode','ed_status','ui_selected')}
             assert (state['eg_bitmap'],state['ed_module_kind'],state['ui_selected'])==(1,2,focus),(label,state)
             state['cursor']=int.from_bytes(app_read(symbol('ed_cursor'),3),'little')
+            state['selection']=(tuple(int.from_bytes(app_read(symbol(name),3),'little')
+                                      for name in ('es_first','es_limit')) if value('es_active') else None)
+            assert state['selection']==expected['selection'],(label,state,expected['selection'])
             report.setdefault('editor_states',[]).append(dict(label=label,**state));save()
             assert state['cursor']==cursor,(label,state,cursor)
             assert state['ed_mode']==expected.get('mode',0) and state['ed_status']==expected.get('status',0),(label,state)
@@ -501,7 +508,33 @@ def main():
             before=int.from_bytes(read(0x3d13,2),'little')
             mouse.button(True);wait(lambda:value('pm_arm')==index,'editor button armed',30)
             mouse.button(False)
-            wait(lambda:ready() and (value('ed_module_kind')!=2 or not value('eg_bitmap') or value('pm_buttons')==0),'editor click ready',120)
+            # VICE services monitor requests at frame boundaries. A short
+            # N_READY pulse between VDC presents can fall between every poll.
+            # Stop at the real input loop, then inspect one CPU context; this
+            # also distinguishes a completed click from a still-held button.
+            entry=symbol('ed_get_key')
+            error,checkpoint=mon._recv(mon._send(0x12,entry.to_bytes(2,'little')*2+bytes([1,1,4,0,0])))
+            assert not error
+            checkpoint_id=checkpoint[:4];deadline=time.monotonic()+120
+            try:
+                # The bank-1 REU transfer code can have the same numeric PC.
+                # Restrict this stop to the foreground Editor's bank-0 map.
+                condition=b'@io:$d500 == $0e'
+                error,_=mon._recv(mon._send(0x22,checkpoint_id+bytes([len(condition)])+condition))
+                assert not error
+                while True:
+                    with paused.paused('editor-click-idle'):
+                        idle=ready()
+                        released=value('ed_module_kind')!=2 or not value('eg_bitmap') or value('pm_buttons')==0
+                        if idle and released:
+                            error,registers=mon._recv(mon._send(0x31,b'\0'));assert not error
+                            report.setdefault('editor_click_checkpoints',[]).append(dict(
+                                button=index,address=entry,condition=condition.decode(),registers_hex=registers.hex()))
+                            break
+                    assert time.monotonic()<deadline,'editor click ready'
+                    time.sleep(.02)
+            finally:
+                error,_=mon._recv(mon._send(0x13,checkpoint_id));mon.resume();assert not error
             after=int.from_bytes(read(0x3d13,2),'little')
             report['events'].append(dict(editor_button=index,point=point,keyboard_events_during_click=after-before));save();assert after==before
         def controls_view(label,page,focus,notice=0,*,clock_text=None,caret=0):
@@ -705,10 +738,34 @@ def main():
                 for char in ('c','1','2','8','space','t','e','x','t'):key(char,'editor')
                 document=b'C128 TEXT';editor_view('editor-typed',document,len(document),dirty=True)
                 editor_reu_document('editor-typed-reu',document,loaded=True)
+                if args.editor_selection:
+                    with mouse.held_key('Control_L'):key('b','editor')
+                    for _ in range(3):key('Left','editor')
+                    editor_selection_expected=(6,9)
+                    editor_view('editor-keyboard-selection',document,6,dirty=True)
+                    key('e','editor');editor_selection_expected=None
+                    document=b'C128 TE'
+                    if args.reu_kib:reu_documents.replace(6,3,b'E')
+                    editor_view('editor-selection-replaced',document,7,dirty=True)
+                    editor_reu_document('editor-selection-replaced-reu',document)
+                    for char in 'xt':
+                        if args.reu_kib:reu_documents.insert(len(document),char.upper().encode())
+                        key(char,'editor');document+=char.upper().encode()
+                    editor_view('editor-selection-continued',document,9,dirty=True)
+                    editor_reu_document('editor-selection-continued-reu',document)
                 editor_click(6,(28,60));editor_view('editor-caret',document,2,dirty=True)
                 key('x','editor');document=b'C1X28 TEXT';editor_view('editor-insert',document,3,dirty=True)
                 if args.reu_kib:reu_documents.insert(2,b'X')
                 editor_reu_document('editor-insert-reu',document)
+                if args.editor_selection:
+                    move_to(8,60);mouse.button(True)
+                    wait(lambda:value('es_drag')==1,'document drag armed',30)
+                    # move_to accepts a two-pixel tolerance; aim inside the
+                    # fourth cell, not at its boundary with the third cell.
+                    move_to(36,60);mouse.button(False)
+                    wait(lambda:ready() and value('es_drag')==0 and value('pm_buttons')==0,'document drag completed',90)
+                    editor_selection_expected=(0,3)
+                    editor_view('editor-mouse-selection',document,3,dirty=True)
                 editor_click(2)
                 for char in 'guinote':key(char,'editor')
                 field=dict(mode=2,field='GUINOTE',field_caret=7,field_view=0,dirty=True)
@@ -733,7 +790,8 @@ def main():
                 editor_click(12);editor_view('editor-saved',document,3,name='GUINOTE',status=1,device=editor_device)
                 editor_click(3);key('x','editor')
                 editor_view('editor-find',document,3,name='GUINOTE',mode=6,field='X',field_caret=1,field_view=0,focus=11,device=editor_device)
-                editor_click(12);editor_view('editor-found',document,8,name='GUINOTE',status=13,device=editor_device)
+                editor_click(12);editor_selection_expected=None
+                editor_view('editor-found',document,8,name='GUINOTE',status=13,device=editor_device)
                 report['editor_destination_device']=editor_device
                 report['editor_saved_hex']=document.hex();save()
                 if args.editor_large:
@@ -1000,6 +1058,8 @@ def main():
                         if bytes(paused.read_mem(0x3d60,0x3d7f))==(image/(name+'.prg')).read_bytes()[2:34]:
                             data=bytes(paused.read_mem(0x6000,0xbfff,bank=banks['ram00']))
                             (work/('failure-'+name+'-ram.bin')).write_bytes(data)
+                            workspace=bytes(paused.read_mem(0x5000,0x5fff,bank=banks['ram00']))
+                            (work/('failure-'+name+'-workspace.bin')).write_bytes(workspace)
                             report['failure_app']=name
                             break
             except BaseException as diagnostic:report['diagnostic_error']=repr(diagnostic)

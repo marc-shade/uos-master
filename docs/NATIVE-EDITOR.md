@@ -296,8 +296,9 @@ The native app may use RAM occupied by the inactive legacy settings record.
 After rebooting the legacy desktop, the harness checks its active settings fields and restores
 the saved record's header and reserved bytes as well.
 
-The [suite build](NATIVE-EDITOR-GUI.md) supplies graphical controls and mouse
-caret placement. Selection, clipboard, undo/redo, document associations,
+The [suite build](NATIVE-EDITOR-GUI.md) supplies graphical controls, mouse
+caret placement and 24-bit keyboard/mouse selection with range replacement.
+Clipboard, undo/redo, document associations,
 multiple open tabs and session recovery remain open. Fonts,
 styles, pagination, images, spelling and printing belong to the word processor
 work. The [completion roadmap](IMPLEMENTATION-ROADMAP.md) retains those

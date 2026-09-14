@@ -100,6 +100,9 @@ ed_find_first:
         lda #0
 ed_search_start:
         sta ed_s_action          ; 0=find, 1=replace one, 2=all, 3=next
+.if NATIVE_EDITOR_GRAPHICS
+        jsr es_clear
+.endif
         lda ed_active
         sta d_slot
         #doc_load3 D_LEN,ed_length

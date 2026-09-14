@@ -32,6 +32,7 @@ class Parent(Banked):
 
 
 class SharedDocument(Document):
+    span_count_bytes = 3
     def __init__(self, kib=2048):
         packed = (ROOT/'target/native-desktop/editor.prg').read_bytes()
         core = decode(packed)
@@ -127,8 +128,19 @@ def main():
             assert len(d.m.bus.reu_transactions) == transactions
             d.ram[context_at:context_at+128] = original_context
         assert d.state() == state
+        d.call('replace', pos=0xffff, count=0x20003, data=b'\0BIG\xff', interrupt=True)
+        want[0xffff:0xffff+0x20003] = b'\0BIG\xff'
+        d.check(want)
+        d.call('replace', pos=len(want), count=0, data=b'TAIL')
+        want.extend(b'TAIL')
+        d.check(want)
+        state = d.state()
+        d.call('replace', pos=0, count=len(want)+1, data=b'NO', expected=6)
+        assert d.state() == state and d.bytes() == want
+        d.call('replace', pos=0, count=len(want), data=b'')
+        d.check(b'')
         d.dispose()
-        done('document beyond 1 MiB: 24-bit reads/edits, 16-bit page count, IRQs, metadata refusal and exact bytes', d)
+        done('document beyond 1 MiB: 24-bit removal, zero-length insertion and range refusal; 24-bit reads/edits, 16-bit page count, IRQs, metadata refusal and exact bytes', d)
 
         d = SharedDocument(kib=512)
         first = bytearray(bytes(range(256))*16)

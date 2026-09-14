@@ -11,8 +11,9 @@ focus; a 16 KiB VDC uses white on blue with reversed focus.
 The [banked editor](NATIVE-EDITOR.md) supplies the document, search and file
 operations. This is plain-text editing with 24-bit byte positions, preserved
 imported bytes, transactional Open and exclusive, reopened-verified Save As.
-Selection, clipboard, undo, styled pages, printing and session recovery remain
-roadmap work.
+Selection supports keyboard marking, mouse dragging and replacing the selected
+bytes. Clipboard exchange, undo, styled pages, printing and session recovery
+remain roadmap work.
 
 ## Controls
 
@@ -22,7 +23,10 @@ roadmap work.
 | Save As / F3 | Create a new file and compare every byte after reopening it |
 | Find / Ctrl-F | Enter a literal query, with exact or ignored ASCII case |
 | Replace / Ctrl-R | Enter a query and replacement, then choose One or All |
-| `...` | Show New, Go To, Device and Format controls |
+| `...` | Cycle file, New/Go To/Device/Format, and Mark/All/Clear controls |
+| Mark / Ctrl-B | Start or end keyboard marking at the caret |
+| All / Ctrl-A | Select the complete document |
+| Clear / Ctrl-G | Clear the selection without changing document bytes |
 | New / F5 | Start an empty document after confirming unsaved changes |
 | Go To / F7 in the document | Enter a hexadecimal byte offset |
 | Device / F8 | Select an IEC device or Ultimate DOS context |
@@ -30,7 +34,7 @@ roadmap work.
 | Tab / Enter | Move focus among enabled controls / activate the focused control |
 | Browse / F7 in Open or Save As | Open the shared file picker |
 | Case in a search query | Toggle exact case and ignoring ASCII letter case |
-| X / Esc | Close the app or cancel the current dialog or operation |
+| X / Esc | Close the app; Escape first clears an active selection, or cancels the current dialog/operation |
 | Ctrl-L | Redraw; explicitly retry unavailable graphics |
 
 Moving the mouse selects a control. Press and release on the same control to
@@ -58,14 +62,45 @@ update failure pauses editing, file transfers and search until Esc can restore
 the saved screen. Esc then follows the normal cancellation path. Completed
 replacements and any new output file bytes remain available.
 
+## Selecting and replacing text
+
+Drag from a character to select a range. Moving above or below the document
+view scrolls through logical lines; the left and right edges let the caret
+follow horizontally clipped text. Releasing outside the document completes
+the range without activating a toolbar control. Disconnecting the pointer
+ends the drag at its last observed range.
+
+With the keyboard, **Ctrl-B** sets an anchor. Move with the normal arrows,
+Home, Ctrl-E, Top or End, then press Ctrl-B again to stop extending the range.
+**Ctrl-A** selects everything. Once marking ends, Left/Right collapse the range
+to its beginning/end; other navigation clears it and performs the requested
+move. Ctrl-G or Escape clears it. Go To and a started search clear the old
+range. New or a successful Open starts a new selection state.
+
+Selected glyphs and line endings appear reversed on both displays. Selection
+uses 24-bit byte boundaries and keeps CRLF together. Nonprintable imported
+bytes remain exact even though they display as dots. Typing or Return replaces
+the selected bytes; Del removes them. An empty mark retains ordinary typing
+and backspace behavior. Replacement reserves any extra capacity before changing
+the document. A refused allocation retains the original bytes and selection.
+Large removal spans need no second document-sized allocation.
+
+The anchor and bounds survive Save As and the file-picker module swap. Save As
+still writes the entire document. If the renderer cannot reload while a range
+is active, document input waits for Ctrl-L to retry or Ctrl-G/Escape to clear
+that range; typing cannot bypass it. Display-restoration failures retain the
+existing pause/retry behavior. Selection does not yet copy text between apps;
+a persistent shared clipboard and undo remain separate roadmap work.
+
 ## Storage and presentation lifetime
 
-The suite requires ABI 1.12. Its expanded core PRG contains 14,125 bytes
-(9,820 packed) and reserves 96 bank-0 pages (`$6000..$bfff`) for code,
-persistent state and one checked module window at `$972b`.
+The suite requires ABI 1.12. Its expanded core PRG contains 14,068 bytes
+(9,885 packed) and reserves 96 bank-0 pages (`$6000..$bfff`) for code,
+persistent state and one checked module window at `$96f2`.
 `EDPICK.PRG` has a 10,223-byte module payload; `EDFIND.PRG` contains the search
-engine and graphical renderer in 9,668 bytes. The picker ends at `$bf1a`,
-leaving 230 bytes before `$c000`; the search/graphics module ends at `$bcef`.
+engine and graphical renderer in 10,499 bytes. The picker ends at `$bee1`,
+leaving 287 bytes before `$c000`; the search/graphics module ends at `$bff5`,
+leaving 11 bytes.
 Both modules bind to this core's checksum and load from the original app's
 source device/context and directory, even after changing the document device.
 For USB, install all three matching files and `VDSVC.PRG` together.
@@ -140,3 +175,13 @@ covers shared arena ownership, documents beyond 1 MiB, a 131,118-byte cold-boot
 edit/save/reopen workflow, complete physical REU comparisons, RAM fallback,
 retained failures and the other apps using the same provider. This software
 build has not been deployed to physical hardware.
+
+The [selection qualification](validation/2026-09-14-native-editor-selection/README.md)
+covers marking, Select All, mouse dragging and edge scrolling, CRLF boundaries,
+replacement and deletion, zero-free-page refusal, ranges beyond 64 KiB and
+document operations beyond 1 MiB. It also checks selection across Save As,
+picker swaps and renderer/display recovery, plus original module-source
+loading with RAM and REU backing. Actual VICE mouse/ROM-key workflows compare
+both displays, complete saved files and REU snapshots. The independent build
+reproduces all 34 native program/disk images. Physical qualification remains
+pending; clipboard and undo are still separate work.

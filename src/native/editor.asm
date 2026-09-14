@@ -5,6 +5,7 @@ NATIVE_EDITOR_GRAPHICS=0
 .endweak
 .if NATIVE_EDITOR_GRAPHICS
 ED_ABI=12
+.include "editor/selection-macros.inc"
 ED_PAGES=96
 DOC_INPUT_STORAGE=$5000
 DOC_OUTPUT_STORAGE=$5200
@@ -30,7 +31,17 @@ editor_image:
         .text "text editor",0
         .fill N_APPBASE+32-*,0
 DOC_REPLACE_EXTERNAL = 1
+DOC_REPLACE_SPAN24 = NATIVE_EDITOR_GRAPHICS
 .include "document.inc"
+
+; UI navigation can trade a few loop cycles for a smaller executable.
+ed_move3 .macro source,dest
+ .if NATIVE_EDITOR_GRAPHICS
+        #es_copy3 \source,\dest
+ .else
+        #doc_copy3 \source,\dest
+ .endif
+.endm
 
 editor_entry:
         cld
@@ -82,6 +93,11 @@ cloop:
         lda #1
         sta N_READY
 ed_get_key:
+.if NATIVE_EDITOR_GRAPHICS
+        lda #0
+        sta ed_structure
+        sta ed_document_changed
+.endif
         jsr N_KEYIN
 .if NATIVE_EDITOR_GRAPHICS
         jsr eg_input
@@ -89,9 +105,12 @@ ed_get_key:
         beq cloop
         ldx #0
         stx N_READY
+.if !NATIVE_EDITOR_GRAPHICS
         stx ed_structure
         stx ed_document_changed
-.if NATIVE_EDITOR_GRAPHICS
+.else
+        cmp #$fe
+        beq ed_refresh
         cmp #$ff
         beq ed_cursor_changed
 .endif
@@ -220,6 +239,9 @@ ed_new_document:
         jsr ed_reset_view
         jmp ed_refresh
 ed_reset_view:
+.if NATIVE_EDITOR_GRAPHICS
+        jsr es_clear
+.endif
         lda #0
         ldx #2
 ed_reset_positions:
@@ -368,6 +390,9 @@ ed_hex_shift:
         bne ed_hex_parse
         #doc_cmp3 ed_length,ed_number
         bcc ed_bad_position
+ .if NATIVE_EDITOR_GRAPHICS
+        jsr es_clear
+ .endif
         #doc_copy3 ed_number,ed_cursor
         jsr ed_normalize_cursor
         lda #0
@@ -514,57 +539,57 @@ ed_top:
         sta ed_cursor+2
         jmp ed_cursor_changed
 ed_bottom:
-        #doc_copy3 ed_length,ed_cursor
+        #ed_move3 ed_length,ed_cursor
         jmp ed_cursor_changed
 ed_home:
-        #doc_copy3 ed_line_start,ed_cursor
+        #ed_move3 ed_line_start,ed_cursor
         jmp ed_cursor_changed
 ed_end:
-        #doc_copy3 ed_line_end,ed_cursor
+        #ed_move3 ed_line_end,ed_cursor
         jmp ed_cursor_changed
 ed_left:
-        #doc_copy3 ed_cursor,ed_scan
+        #ed_move3 ed_cursor,ed_scan
         jsr ed_previous_end
         bcs cloop
-        #doc_copy3 ed_scan,ed_cursor
+        #ed_move3 ed_scan,ed_cursor
         jmp ed_cursor_changed
 ed_right:
         #doc_cmp3 ed_cursor,ed_length
         bcs cloop
-        #doc_copy3 ed_cursor,ed_fetch
+        #ed_move3 ed_cursor,ed_fetch
         jsr ed_next_token
-        #doc_copy3 ed_fetch,ed_cursor
+        #ed_move3 ed_fetch,ed_cursor
         jmp ed_cursor_changed
 ed_keep_column:
         lda ed_goal_valid
         bne +
-        #doc_copy3 ed_column,ed_goal
+        #ed_move3 ed_column,ed_goal
         inc ed_goal_valid
 +       rts
 ed_up:
         jsr ed_keep_column
-        #doc_copy3 ed_line_start,ed_scan
+        #ed_move3 ed_line_start,ed_scan
         jsr ed_previous_end
         bcs cloop
-        #doc_copy3 ed_scan,ed_target_end
+        #ed_move3 ed_scan,ed_target_end
         jsr ed_backward_start
         jmp ed_vertical_target
 ed_down:
         jsr ed_keep_column
-        #doc_copy3 ed_line_end,ed_scan
+        #ed_move3 ed_line_end,ed_scan
         #doc_cmp3 ed_scan,ed_length
         bcs cloop
         jsr ed_after_line
-        #doc_copy3 ed_scan,ed_target_start
+        #ed_move3 ed_scan,ed_target_start
         jsr ed_forward_end
-        #doc_copy3 ed_scan,ed_target_end
-        #doc_copy3 ed_target_start,ed_scan
+        #ed_move3 ed_scan,ed_target_end
+        #ed_move3 ed_target_start,ed_scan
 ed_vertical_target:
         #doc_add3 ed_goal,ed_scan
         #doc_cmp3 ed_target_end,ed_scan
         bcs +
-        #doc_copy3 ed_target_end,ed_scan
-+       #doc_copy3 ed_scan,ed_cursor
+        #ed_move3 ed_target_end,ed_scan
++       #ed_move3 ed_scan,ed_cursor
         lda #0
         sta ed_status
         jmp ed_refresh_edit
@@ -765,7 +790,15 @@ ed_refresh:
         jmp ed_refresh_prepare
 ed_refresh_edit:
         lda ed_structure
+.if NATIVE_EDITOR_GRAPHICS
+        ora es_active
+        ora es_dirty
+.endif
         sta ed_full
+.if NATIVE_EDITOR_GRAPHICS
+        lda #0
+        sta es_dirty
+.endif
         lda ed_document_changed
         beq ed_refresh_prepare
         jsr ed_invalidate_pages
@@ -789,23 +822,23 @@ ed_refresh_prepare:
 ed_refresh_draw:
         jsr ed_show
 ed_refresh_done:
-        #doc_copy3 ed_view,ed_last_view
-        #doc_copy3 ed_horizontal,ed_last_horizontal
+        #ed_move3 ed_view,ed_last_view
+        #ed_move3 ed_horizontal,ed_last_horizontal
         lda ed_cursor_row
         sta ed_last_row
         jmp cloop
 ed_locate:
-        #doc_copy3 ed_cursor,ed_scan
+        #ed_move3 ed_cursor,ed_scan
         jsr ed_backward_start
-        #doc_copy3 ed_scan,ed_line_start
-        #doc_copy3 ed_cursor,ed_column
+        #ed_move3 ed_scan,ed_line_start
+        #ed_move3 ed_cursor,ed_column
         #doc_sub3 ed_scan,ed_column
-        #doc_copy3 ed_cursor,ed_scan
+        #ed_move3 ed_cursor,ed_scan
         jsr ed_forward_end
-        #doc_copy3 ed_scan,ed_line_end
+        #ed_move3 ed_scan,ed_line_end
         #doc_cmp3 ed_column,ed_horizontal
         bcc ed_scroll_left
-        #doc_copy3 ed_column,ed_number
+        #ed_move3 ed_column,ed_number
         #doc_sub3 ed_horizontal,ed_number
         lda ed_number+1
         ora ed_number+2
@@ -814,11 +847,11 @@ ed_locate:
         cmp #38
         bcc ed_fit_vertical
 ed_scroll_right:
-        #doc_copy3 ed_column,ed_horizontal
+        #ed_move3 ed_column,ed_horizontal
         #doc_sub3 ed_width_minus_one,ed_horizontal
         jmp ed_fit_vertical
 ed_scroll_left:
-        #doc_copy3 ed_column,ed_horizontal
+        #ed_move3 ed_column,ed_horizontal
 ed_fit_vertical:
         lda ed_full
         bne ed_find_view
@@ -844,7 +877,7 @@ ed_cached_next:
 ed_find_view:
         #doc_cmp3 ed_line_start,ed_view
         bcc ed_view_at_cursor
-        #doc_copy3 ed_view,ed_scan
+        #ed_move3 ed_view,ed_scan
         lda #16
         sta ed_scan_rows
 ed_view_check:
@@ -856,7 +889,7 @@ ed_view_check:
         jsr ed_after_line
         jmp ed_view_check
 ed_view_bottom:
-        #doc_copy3 ed_line_start,ed_scan
+        #ed_move3 ed_line_start,ed_scan
         lda #15
         sta ed_scan_rows
 ed_view_back:
@@ -866,14 +899,14 @@ ed_view_back:
         dec ed_scan_rows
         bne ed_view_back
 ed_view_save:
-        #doc_copy3 ed_scan,ed_view
+        #ed_move3 ed_scan,ed_view
         lda #15
         sec
         sbc ed_scan_rows
         sta ed_cursor_row
         rts
 ed_view_at_cursor:
-        #doc_copy3 ed_line_start,ed_view
+        #ed_move3 ed_line_start,ed_view
         lda #0
         sta ed_cursor_row
         rts
@@ -1005,7 +1038,7 @@ ed_show_screen:
         lda #0
         sta ed_row
         sta ed_caret_drawn
-        #doc_copy3 ed_view,ed_fetch
+        #ed_move3 ed_view,ed_fetch
 ed_show_row:
         jsr ed_remember_row
         jsr ed_text_row
@@ -1153,7 +1186,7 @@ ed_text_row:
         lda #0
         sta ed_row_ended
         sta ed_col
-        #doc_copy3 ed_horizontal,ed_skip
+        #ed_move3 ed_horizontal,ed_skip
 ed_skip_columns:
         lda ed_skip
         ora ed_skip+1
@@ -1215,7 +1248,7 @@ ed_column_done:
         bne ed_text_column
         lda ed_row_ended
         bne ed_margin_blank
-        #doc_copy3 ed_fetch,ed_probe
+        #ed_move3 ed_fetch,ed_probe
         jsr ed_byte_at
         bcs ed_margin_token
         cmp #13
@@ -1223,10 +1256,10 @@ ed_column_done:
         cmp #10
         beq ed_margin_token
         ; Clip long logical lines; both displays share the horizontal origin.
-        #doc_copy3 ed_fetch,ed_scan
+        #ed_move3 ed_fetch,ed_scan
         jsr ed_forward_end
         jsr ed_after_line
-        #doc_copy3 ed_scan,ed_fetch
+        #ed_move3 ed_scan,ed_fetch
         lda #$3e
         jsr ed_chrout
         jmp ed_row_done
@@ -1374,6 +1407,10 @@ ed_tail_cleared:
 
 ed_cursor_glyph:
         sta ed_glyph
+.if NATIVE_EDITOR_GRAPHICS
+        jsr es_glyph
+        bcc ed_inverse_glyph
+.endif
         lda ed_caret_drawn
         bne ed_plain_glyph
         #doc_cmp3 ed_cursor,ed_token_start
@@ -1388,6 +1425,7 @@ ed_caret_eof:
         bne ed_plain_glyph
 ed_caret_here:
         inc ed_caret_drawn
+ed_inverse_glyph:
         lda #$12
         jsr ed_chrout
         lda ed_glyph
@@ -1770,6 +1808,7 @@ ed_other_page: .fill 512,0
 .include "editor-files.inc"
 .include "editor-dialog.inc"
 .if NATIVE_EDITOR_GRAPHICS
+.include "editor/selection-state.inc"
 .include "editor/presentation.inc"
 .include "editor/workspace.inc"
 .include "input/keys.inc"
@@ -1839,7 +1878,7 @@ editor_search_module:
 .include "editor/gui.inc"
 .endif
 editor_search_end:
-        .cerror * > N_APPBASE+ED_PAGES*256, "search exceeds the editor module window"
+        .cerror * > N_APPBASE+ED_PAGES*256, "search exceeds the editor module window: ", editor_search_end, " core ", editor_module
         .here
 
 .if NATIVE_EDITOR_GRAPHICS

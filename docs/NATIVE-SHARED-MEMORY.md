@@ -41,7 +41,10 @@ temporary free retains its token and is retried before the next operation.
 Relocation needs enough free space for both allocations during the copy.
 
 The document engine reserves storage before an insertion or replacement
-changes logical data. Failed transfers poison that document so Save As
+changes logical data. Suite Editor replacements can remove a validated 24-bit
+span while inserting at most 512 bytes. Removing a large selection reuses its
+existing extent, and zero-byte removal permits insertion at any valid position.
+Failed transfers poison that document so Save As
 cannot report success from uncertain bytes. New and controlled exit release
 the owned extent explicitly. An uncertain file CLOSE follows the native
 owner-quarantine path while retaining document and provider memory.

@@ -156,6 +156,7 @@ doc_count_small:
         lda d_count
         ora d_count+1
         beq doc_badarg
+doc_position:
         #doc_load3 D_LEN,d_limit
         #doc_cmp3 d_limit,d_pos
         bcc doc_range

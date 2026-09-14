@@ -44,6 +44,7 @@ eg_pause_text: .byte 86,68,67,32,112,97,117,115,101,100,59,32,69,115,99,32,114,1
 eg_memory_pause_text: .byte 82,69,85,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,115,116,111,114,101,115,0
 
 eg_update:
+        jsr es_bounds
         lda #0
         sta eg_busy
         lda eg_operation
@@ -160,13 +161,13 @@ eg_focus_valid:
         lda #<eg_bytes
         ldx #>eg_bytes
         jsr ed_puts
-        #doc_copy3 ed_io_pos,ed_print_number
+        #es_copy3 ed_io_pos,ed_print_number
         jmp eg_progress_number
 eg_search_position:
         lda #<eg_search_byte
         ldx #>eg_search_byte
         jsr ed_puts
-        #doc_copy3 ed_probe,ed_print_number
+        #es_copy3 ed_probe,ed_print_number
 eg_progress_number:
         jsr ed_hex24
 -       lda eg_column
@@ -568,10 +569,6 @@ eg_write_cell:
         lda #1
         sta vm_rows,x
         sta vm_pending
-        lda eg_cell
-        and #127
-        sec
-        sbc #32
         lda #0
         sta eg_glyph_address+1
         lda eg_cell
@@ -748,7 +745,14 @@ eg_enabled:
         sec
         rts
 eg_enabled_more:
-        cpx #7
+        cmp #2
+        bne +
+        cpx #21
+        bcc eg_enabled_no
+        cpx #24
+        bcc eg_enabled_yes
+        bcs eg_enabled_no
++       cpx #7
         bcc eg_enabled_no
         cpx #11
         bcc eg_enabled_yes
@@ -806,8 +810,12 @@ eg_input_entry:
         jmp eg_input_zero
 +       lda eg_key
         beq eg_mouse
+        lda #0
+        sta es_drag
         lda #255
         sta pm_arm
+        jsr es_key
+        bcs eg_input_return
         lda eg_key
         cmp #9
         beq eg_tab
@@ -829,6 +837,10 @@ eg_input_entry:
         jmp eg_input_return
 eg_mouse:
         jsr pm_poll
+        lda pm_pending
+        bne eg_input_zero
+        jsr es_mouse
+        bcs eg_input_return
         lda pm_event
         beq eg_input_zero
         ldx pm_hit
@@ -846,6 +858,9 @@ eg_activate:
         beq eg_field_action
         lda ui_keys,x
         sta eg_key
+        cpx #0                 ; Close retains its normal app-exit action
+        beq eg_input_return
+        jsr es_key
         jmp eg_input_return
 eg_field_action:
         lda eg_key
@@ -883,9 +898,13 @@ eg_document_action:
         sta eg_key
         jmp eg_input_return
 eg_more_toggle:
+        inc eg_more
         lda eg_more
-        eor #1
+        cmp #3
+        bcc +
+        lda #0
         sta eg_more
++
         lda #1
         sta eg_full_draw
         jsr eg_draw
@@ -977,7 +996,7 @@ eg_document_click:
         lda eg_click_column
         beq +
         dec eg_click_column
-+       #doc_copy3 ed_horizontal,ed_number
++       #es_copy3 ed_horizontal,ed_number
         clc
         lda ed_number
         adc eg_click_column
@@ -986,11 +1005,13 @@ eg_document_click:
         inc ed_number+1
         bne +
         inc ed_number+2
-+       #doc_copy3 eg_click_start,ed_cursor
-        #doc_add3 ed_number,ed_cursor
-        #doc_cmp3 ed_cursor,ed_scan
++
+eg_click_position:
+        #es_copy3 eg_click_start,ed_cursor
+        #es_add3 ed_number,ed_cursor
+        #es_cmp3 ed_cursor,ed_scan
         bcc +
-        #doc_copy3 ed_scan,ed_cursor
+        #es_copy3 ed_scan,ed_cursor
 +       jmp ed_normalize_cursor
 
 pm_control_count=ui_button_count
@@ -1309,6 +1330,7 @@ eg_maps: .byte 1,1,5,1,34,2,5,0,0,40
          .byte 11,11,0,0,40,12,12,0,0,40,13,13,0,0,40,14,14,0,0,40
          .byte 15,15,0,0,40,16,16,0,0,40,17,17,0,0,40,18,18,0,0,40
          .byte 19,19,0,0,40,20,20,0,0,40,21,21,0,0,40,22,22,0,0,40,255
+.include "selection.inc"
 .include "buttons.inc"
 .include "../graphics/buttons.inc"
 .include "../graphics/graphics-core.inc"
