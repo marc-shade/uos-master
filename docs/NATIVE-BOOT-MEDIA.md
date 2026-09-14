@@ -2,7 +2,7 @@
 
 `python3 -B build-native-desktop.py` builds the same six native apps for a
 1541/D64 and a 1581/D81. Both cold-boot into the blue graphical launcher.
-The D64 suite has 134 free data blocks; the D81 has **2,630** (668,020 bytes
+The D64 suite has 140 free data blocks; the D81 has **2,636** (669,544 bytes
 of sequential-file payload, before any additional directory allocation).
 
 | Image under `target/` | Startup | Files |
@@ -73,7 +73,7 @@ The compression checkpoint recovered thirteen D64 blocks, increasing free
 space from 2 to 15 while preserving the unpacked kernel and every app payload
 at that checkpoint. The current shared VDC component uses that space; the full
 suite had one free D64 block at that checkpoint. [Packed app startup](NATIVE-APP-PACK.md)
-now leaves 134 free blocks while preserving all seven expanded programs and
+now leaves 140 free blocks while preserving all seven expanded programs and
 their existing allocations. App-bound modules are resealed to their packed
 parents; resident kernels and packed boot files retain their bytes.
 

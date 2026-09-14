@@ -2,9 +2,9 @@
 
 The desktop suite's Editor, Files, Paint and Ultimate use one blue bitmap file
 picker. The selected control turns yellow, and a 1351 mouse on port 1 can
-select rows, press buttons and position the path-field caret. Ultimate and Paint also
+select rows, press buttons and position the path-field caret. Ultimate, Paint and Files also
 show the picker graphically on the VDC, using yellow focus with 64 KiB and
-reversed light controls with 16 KiB. The other callers retain VDC text views.
+reversed light controls with 16 KiB. Editor retains its VDC text view.
 
 A row click selects a file. **Choose** opens a folder or returns a file to the
 calling app. **Enter** activates the focused control or file row. **Tab** moves
@@ -37,8 +37,8 @@ descriptor remains in the calling app, including across a failed release.
 Editor and Files load the picker into their existing checked module window.
 Paint and Ultimate share their already resident font and pointer code.
 
-The picker closes its VIC pointer and display before returning. Ultimate and
-Paint retain their shared VDC component and original screen backup across the
+The picker closes its VIC pointer and display before returning. Ultimate,
+Paint and Files retain their shared VDC component and original screen backup across the
 picker and app dialogs, releasing them when the app exits or explicitly
 restores a failed graphical display. An unavailable
 surface or display falls back to the existing text consoles. Refresh retries
@@ -62,7 +62,7 @@ its original 32-byte record format.
 
 Editor and Paint lend three idle 512-byte buffers; Paint keeps them in its separately owned scratch allocation. Ultimate lends one and
 allocates two more in a four-page bank-0 heap extent while the picker is open.
-Files lends two;
+Files lends two from its separately owned scratch allocation;
 its copy and verification operations still use their complete 512-byte
 transfer buffer. Remaining cache pages are allocated lazily in blocks of up
 to four, from either RAM bank. The final block size uses the complete IEC
@@ -76,7 +76,7 @@ additional allocation is needed for a bitmap text cache.
 
 The Editor core and picker occupy 24,574 bytes of their 24,576-byte window;
 the build rejects a module that exceeds it. The complete suite D64 has twelve
-entries. Adding Claude's graphical frame leaves 24 free blocks. The full mouse
+entries plus the shared VDC component. The current suite leaves 140 free D64 blocks. The full mouse
 workflow selects a separate data disk for its module copy and Paint image;
 the boot disk retains its Editor and calculator sample files.
 

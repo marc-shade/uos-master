@@ -12,15 +12,17 @@ from ci_native_directory_ultimate import DirectoryDOS
 from ci_native_ultimate import UltimateBus
 from native_browser_check import browser_screen,ultimate_browser_screen
 from native_files_copy_check import copy_screen
+from native_picker_scene import console as picker_console
 
 
 class CopyFiles(Calculator):
     instruction_limit=120000000
     allow_busy_poll=True
 
-    def __init__(self,files=None,device=9,fmt=0,*,usb=None,directories=None,source_path=None,source_context=1):
+    def __init__(self,files=None,device=9,fmt=0,*,usb=None,directories=None,source_path=None,source_context=1,vdc_component=True):
         super().__init__('files',files,loader_name=b'FILES',device=device,fmt=fmt,image_prefix='native-desktop',
-            ultimate_files=usb if source_path is not None else None,source_path=source_path,source_context=source_context)
+            ultimate_files=usb if source_path is not None else None,source_path=source_path,source_context=source_context,
+            vdc_component=vdc_component)
         self.frames=0
         if usb is not None or directories is not None or source_path is not None:
             previous=getattr(self,'ultimate',None)
@@ -113,7 +115,9 @@ def main():
                 before=b.preferences();b.rename('COPY');b.key(9)
                 assert b.value('fc_picker_active')
                 for screen,columns in zip(b.screens,(40,80)):
-                    assert screen==browser_screen(columns,expected(source,9),device=9,fmt=fmt,picker=True)
+                    wanted=picker_console(expected(source,9),device=9,fmt=fmt,columns=columns)
+                    assert screen==wanted,('picker console',columns,
+                        [(i,a,z) for i,(a,z) in enumerate(zip(screen,wanted)) if a!=z][:30])
                     b.frames+=1
                 b.type('D10');b.key(13);b.type('S')
                 assert b.preferences()==before

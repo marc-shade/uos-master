@@ -204,4 +204,11 @@ b_next_offset: .fill 4,0
 b_view_line: .byte 0
 b_view_column: .byte 0
 b_line_offset: .byte 0
+.weak
+B_VIEW_STORAGE=0
+.endweak
+.if B_VIEW_STORAGE
+b_view_data=B_VIEW_STORAGE
+.else
 b_view_data: .fill 128,0
+.endif

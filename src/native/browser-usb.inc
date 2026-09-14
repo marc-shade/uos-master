@@ -73,6 +73,10 @@ b_usb_launch:
         jmp bu_prompt_directory
 +
 .if !FD_EMBEDDED
+ .if B_GUI
+        jsr fg_exit
+        bcs b_loop
+ .endif
         lda b_usb_length
         sta N_NAMELEN
         lda b_usb_device
@@ -86,9 +90,6 @@ b_usb_copy:
         inx
         cpx b_usb_length
         bne b_usb_copy
-.if B_GUI
-        jsr fg_exit
-.endif
         jmp N_REPLACE
 .else
         jmp b_loop

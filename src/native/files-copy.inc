@@ -893,7 +893,11 @@ fc_draw:
         sta b_screen
 fc_draw_screen:
 .if B_GUI
-        lda fg_collect
+        lda b_screen
+        beq +
+        lda vd_phase
+        bne fc_screen_done
++       lda fg_collect
         bne fc_screen_selected
 .endif
         lda $d7
@@ -1232,13 +1236,25 @@ fc_eof: .byte 0
 fc_width: .byte 0
 fc_copied: .fill 4,0
 fc_verified: .fill 4,0
+.weak
+FC_SOURCE_STORAGE=0
+FC_DATA_STORAGE=0
+.endweak
+.if FC_SOURCE_STORAGE
+fc_source=FC_SOURCE_STORAGE
+.else
 fc_source: .fill 256,0
+.endif
 fc_name: .fill 256,0
+.if FC_DATA_STORAGE
+fc_data=FC_DATA_STORAGE
+.else
 fc_data:
 .if B_GUI
         .fill 1024,0            ; copy/verify use 512; picker borrows two buffers
 .else
         .fill 2048,0
+.endif
 .endif
 .if !B_GUI
 fc_key_codes: .byte $85,$89,$86,$8a,$87,$8b,$88,$8c,$83,$84

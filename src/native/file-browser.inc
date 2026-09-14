@@ -5,6 +5,7 @@ B_COPY = 0
 B_GUI = 0
 FD_GUI = 0
 FD_VDC = 0
+FD_VDC_GUARD = 0
 FD_BUFFER_BASE = 0
 .endweak
 B_RECORD_BYTES=32-12*FD_GUI
@@ -54,6 +55,7 @@ b_device_valid:
 b_format_valid:
 .if B_GUI
         jsr fg_init
+        bcs b_exit_error
 .endif
 .if FD_GUI
         jsr pg_init
@@ -91,6 +93,11 @@ b_get_key:
 .endif
 .if FD_GUI
         jsr pg_input
+.if FD_VDC_GUARD
+        ; A focus/pointer redraw can fail while pg_input is handling a key.
+        ; Recover before its returned action can open a directory or select.
+        jsr FD_VDC_GUARD
+.endif
 .endif
         beq b_loop
 b_have_key:
@@ -147,6 +154,7 @@ b_have_key:
 b_workspace:
 .if B_GUI
         jsr fg_exit
+        bcs b_loop
 .endif
 .if FD_EMBEDDED
         jmp fd_cancel
@@ -163,6 +171,7 @@ b_exit_error:
         pha
         jsr fg_exit
         pla
+        bcs b_loop
 .endif
 .if FD_EMBEDDED
         jmp fd_failure
@@ -382,6 +391,10 @@ b_enter:
 .else
         lda b_record+20
         beq b_view_open
+.if B_GUI
+        jsr fg_exit
+        bcs b_loop
+.endif
         jsr b_filename
         lda N_FNAMELEN
         sta N_NAMELEN
@@ -395,9 +408,6 @@ b_launch_name:
         sta N_DEVICE
         lda N_BROWSERFMT
         sta N_APPFORMAT
-.if B_GUI
-        jsr fg_exit
-.endif
         jmp N_REPLACE
 b_inspect:
         lda b_total

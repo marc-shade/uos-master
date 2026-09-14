@@ -1,14 +1,14 @@
 # Shared native VDC service
 
-Desktop, Calculator, Ultimate and Paint load the same `VDSVC.PRG` from their original app
+Desktop, Calculator, Ultimate, Paint and Files load the same `VDSVC.PRG` from their original app
 source. It supplies both the native 640×200 desktop layout and the incremental
-VIC-to-VDC presenter used by Calculator, Ultimate and Paint, including the latter two apps' file
+VIC-to-VDC presenter used by Calculator, Ultimate, Paint and Files, including the latter three apps' file
 pickers. The blue interface, app icons, focus colors and pointer behavior
-remain consistent. All four apps can save their original
+remain consistent. All five apps can save their original
 VDC screen in an available REU, with main RAM as the fallback.
 
 The component is included on both D64/D81 suite and workspace disks. When
-copying Desktop, Calculator, Ultimate or Paint to another IEC disk or Ultimate directory, copy
+copying Desktop, Calculator, Ultimate, Paint or Files to another IEC disk or Ultimate directory, copy
 `VDSVC.PRG` beside it. A data-device selection or file-dialog path does not
 redirect component loading. Ultimate paths retain the original directory,
 including spaces and case, in either source context. A missing, damaged or
@@ -23,17 +23,18 @@ component, reserved in 30 bank-1 pages at `$6000..$7dff`. The retained
 stream before executing any provider code. The resident kernel and 426-page
 managed heap are unchanged.
 
-| Allocation while graphics are open | Desktop | Calculator | Ultimate | Paint |
-|---|---:|---:|---:|---:|
-| Bank-0 app | 35 pages | 49 pages | 96 pages | 96 pages |
-| Bank-1 component | 30 pages | 30 pages | 30 pages | 30 pages |
-| VIC surface | 36 pages | 36 pages | 36 pages | 36 pages |
-| History | 0 | 2 pages | 0 | 0 |
-| Picture and undo | 0 | 0 | 0 | 72 pages |
-| Retained scratch | 0 | 0 | 0 | 10 pages |
-| Free main-RAM pages with REU backing | 325 | 309 | 264 | 182 |
-| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 | 200 | 118 |
-| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 | 192 | 110 |
+| Allocation while graphics are open | Desktop | Calculator | Ultimate | Paint | Files |
+|---|---:|---:|---:|---:|---:|
+| Bank-0 app | 35 pages | 49 pages | 96 pages | 96 pages | 96 pages |
+| Bank-1 component | 30 pages | 30 pages | 30 pages | 30 pages | 30 pages |
+| VIC surface | 36 pages | 36 pages | 36 pages | 36 pages | 36 pages |
+| History | 0 | 2 pages | 0 | 0 | 0 |
+| Picture and undo | 0 | 0 | 0 | 72 pages | 0 |
+| Retained scratch | 0 | 0 | 0 | 10 pages | 16 pages |
+| IEC browser cache | 0 | 0 | 0 | 0 | 37 pages |
+| Free main-RAM pages with REU backing | 325 | 309 | 264 | 182 | 211 |
+| Free main-RAM pages with 16 KiB VDC RAM backing | 261 | 245 | 200 | 118 | 147 |
+| Free main-RAM pages with 64 KiB VDC RAM backing | 253 | 237 | 192 | 110 | 139 |
 
 Moving the display code saved eight pages in Desktop and Calculator's executable allocations.
 The separate component adds 30 pages while loaded; this is code-space headroom
@@ -53,6 +54,14 @@ fault pauses edits and file actions until Escape restores the screen, while
 the picture and undo remain owned. R retries graphics after fallback.
 The client accepts an optional `BP_POINTER_STATE` byte (default `pm_seen`);
 Paint supplies actual cursor visibility so its keyboard brush is shown too.
+
+Files retains the same provider and screen backup while its checked graphics
+and picker modules alternate in bank 0. Sixteen owned scratch pages outside
+the executable window make room for its retained VDC client. Optional
+`BP_POINTER_X`/`BP_POINTER_Y` symbols default to `pm_x`/`pm_y`; Files supplies
+coordinates copied from whichever module currently owns the pointer. A failed
+display pauses copy/verification at its current chunk without releasing streams
+or changing launch identity. Escape restores before cancellation or app handoff.
 
 Input, application logic and the VIC surface stay in bank 0. Calls clear
 `N_READY` before preparing the mailbox or changing banks. The normal app input

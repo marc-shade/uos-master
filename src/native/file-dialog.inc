@@ -548,10 +548,21 @@ fd_leaf_at: .byte 0
 fd_cache_at: .byte 0
 fd_iec_handle: .fill 4,0
 fd_last_length: .byte 0
+.weak
+FD_RETAINED_STORAGE=0
+.endweak
+.if FD_RETAINED_STORAGE
+fd_last_path=FD_RETAINED_STORAGE
+fd_desktop_path=FD_RETAINED_STORAGE+256
+fd_desktop_name=FD_RETAINED_STORAGE+512
+.else
 fd_last_path: .fill 256,0
+.endif
 fd_preferences: .fill 12,0
+.if !FD_RETAINED_STORAGE
 fd_desktop_path: .fill 256,0
 fd_desktop_name: .fill 256,0
+.endif
 
 .if FD_GUI
 picker_gui .block

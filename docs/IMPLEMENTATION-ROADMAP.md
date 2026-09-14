@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-13. This is the current completion checklist. The older
+Updated 2026-09-14. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -84,11 +84,11 @@ physically unavailable; unavailable capabilities must remain visible as such.
 |---|---|---|---|
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Native boot/kernel, two-screen workspace, banked files/apps and keyboard graphical desktop at 1 MHz; owned display lifetime and KERNAL gateways | Remaining desktop/app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
-| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) with 4 KiB allocations and generation tokens, used for Desktop, Calculator, Ultimate and Paint VDC snapshots with main-RAM fallback | REU-backed documents/caches and larger app heaps; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
+| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) with 4 KiB allocations and generation tokens, used for Desktop, Calculator, Ultimate, Paint and Files VDC snapshots with main-RAM fallback | REU-backed documents/caches and larger app heaps; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher on VIC and 640×200 VDC, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
-| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator, Ultimate and Paint, including pictures and file pickers, through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
+| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator, Ultimate, Paint and Files, including pictures and file pickers, through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes; native reversible 16/64 KiB detection and 640×200 launcher, with color cards on 64 KiB | Further bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
@@ -691,3 +691,28 @@ RAM. Display failures retain unsaved artwork while restoration is retried.
 The full suite has 134 free D64 blocks and 2,630 D81 blocks. Editor, Files and
 Claude VDC migration, document backing, scheduling, physical qualification
 and the remaining application parity requirements are still open.
+
+
+### 2026-09-14 — Files on both graphical displays
+
+The [Files VDC qualification](validation/2026-09-14-native-files-vdc/README.md)
+extends the blue interface through the file list, byte viewer, editable fields,
+copy/verification progress and destination picker on both displays. One retained
+VDC component and screen backup survive graphics/picker module swaps. Sixteen
+owned scratch pages make room for the client within the unchanged 96-page app
+allocation; fields remain inside the checked loader allocation. Files leaves
+211 main-RAM pages with REU backing before additional directory caches.
+
+Display failures pause an active copy at its current chunk, preserving streams,
+source bytes and the exact destination prefix until Escape can restore the
+screen. Picker input is guarded before and after redraws. Module failures keep
+their error codes through VDC restoration; app replacement preserves Files'
+launch identity until cleanup succeeds. Refresh reacquires graphics after a
+usable text fallback. The suite has 140 free D64 blocks and 2,636 D81 blocks.
+Editor and Claude VDC migration, document backing, scheduling, physical
+qualification and every other unimplemented roadmap item remain open.
+
+The shared picker's text fallback currently retains the graphical Tab-focus
+help line even when bitmap controls are unavailable. Its text Enter/R/D/F/S
+shortcuts remain functional; selecting help text for the active presentation
+is a remaining shared-picker cleanup item.

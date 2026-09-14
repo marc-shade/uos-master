@@ -1,9 +1,11 @@
 # Native graphical Files
 
-The suite Files app uses the same blue VIC bitmap, yellow focus and port-1
+The suite Files app uses the same blue bitmap, yellow focus and port-1
 1351 mouse as the desktop, Calculator, Paint and Ultimate. Open it with the
-Files icon or **F** on the desktop. The VDC retains its text view and names the
-currently focused control. Both suite disks include this interface.
+Files icon or **F** on the desktop. Its file list, byte viewer, fields, copy
+dialog and destination picker appear on both displays: 320×200 VIC and
+640×200 VDC. A 64 KiB VDC uses color and yellow focus; a 16 KiB VDC uses
+white graphics on blue with reversed focus. Both suite disks include this interface.
 
 ## Controls
 
@@ -32,11 +34,19 @@ to the file list. Esc from the list returns to the blue desktop. An unavailable
 graphics module or occupied bitmap range leaves text controls usable; Refresh
 retries graphics. The text fallback also accepts Tab for the destination picker.
 
+If the VDC or its saved-screen backing fails, Files pauses actions until
+**Esc** can restore the original screen. The VIC shows “VDC paused; Esc
+restores” in the main app. An active copy or verification keeps its exact
+progress and open streams while paused. After restoration, Esc cancels the
+operation normally, preserving the new destination bytes. Return to the file
+list and press **R** to reacquire graphics. A failed restoration also prevents
+app replacement and preserves the original Files launch source.
+
 ## Memory and module lifetime
 
 Files declares 96 bank-0 app pages, with a resident core followed by one checked
-module window at `$92b6`, following a 12,982-byte core. `fsview.prg` contains graphics, font, controls and pointer code;
-`fspick.prg` contains the 11,446-byte destination picker. The two modules alternate. Both
+module window at `$96ac`, following a 13,996-byte core. `fsview.prg` contains graphics, font, controls and pointer code;
+`fspick.prg` contains the 10,221-byte destination picker. The two modules alternate. Both
 are bound to the exact core checksum and loaded from the original app's device,
 format and folder, even after the data destination changes.
 
@@ -46,23 +56,41 @@ close before their module can be replaced. An uncertain module-source close
 also blocks new file operations until cleanup succeeds. The app restores the
 original keyboard callback, function-key table and display/pointer state on exit.
 
+Sixteen bank-0 pages at `$5000..$5fff` hold explicitly reserved, zeroed scratch
+storage. The inactive GUI and picker share their body/path buffers there;
+the copy buffer, raw source name, byte viewer and saved function keys remain
+separate. Editable field buffers and descriptors stay inside the app's loader
+allocation. A conflicting owner refuses startup before keyboard or display
+ownership. All scratch pages are released through normal app cleanup.
+
+The core retains one [VDC component](NATIVE-VDC-SERVICE.md) and original-screen
+backup across GUI/picker module swaps. Copy `VDSVC.PRG` beside Files when moving
+the app to another disk or Ultimate folder. The provider uses 30 bank-1 pages;
+screen backing uses 64 or 72 additional main-RAM pages, or an available REU.
+With the 37-page IEC cache, Files leaves 211 managed pages with REU backing,
+147 with 16 KiB VDC RAM backing, or 139 with 64 KiB VDC RAM backing, before
+additional directory caches. Only changed rows and pointer pixels are sent
+to the VDC. Text output resumes after the saved display has been restored.
+
 The graphical surface uses 36 pages at `$c000..$e3ff`. The IEC browser cache uses
 37 bank-1 pages; Ultimate and picker caches are allocated as needed. Ordinary
 field edits update changed glyph cells and the old/new caret. Pointer polling
 enters the module only while a new or unfinished sample needs attention; the
 app publishes readiness after the complete module call returns.
 
-No kernel code or ABI change is required. The app requires ABI 1.10 and ships
-with the current ABI 1.11 suite. All 426 managed pages remain available after
+No kernel code or ABI change is required. The core and modules require the
+current ABI 1.12 suite. All 426 managed pages remain available after
 app and workspace allocations are released.
 
 ## Current scope
 
-The [frozen software qualification](validation/2026-09-13-native-files-gui/README.md) retains the CPU, full
-mouse/keyboard VICE, copy, serial and independent rebuild results. This build
-has not been installed or qualified on the physical C128. The shared picker
-now has a [graphical implementation](NATIVE-PICKER-GUI.md), and the VDC remains
-a text companion. Rename/delete, sorting, multi-selection,
+The [frozen VDC qualification](validation/2026-09-14-native-files-vdc/README.md) retains
+CPU, full mouse/keyboard VICE, exact file-copy and independent rebuild results.
+The earlier [Files GUI record](validation/2026-09-13-native-files-gui/README.md)
+retains its original copy and serial regression evidence. This build
+has not been installed or qualified on the physical C128. The VDC integration
+extends the [shared graphical picker](NATIVE-PICKER-GUI.md) to both displays.
+Rename/delete, sorting, multi-selection,
 directory copying, media identity, interrupted-copy recovery, REL/VLIR and
 zero-byte IEC creation remain backend or file-manager work.
 

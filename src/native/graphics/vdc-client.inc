@@ -2,6 +2,8 @@
 ; BP_MODE = 0 VIC mirror, 1 native Desktop scene. bp_select_surface is supplied.
 .weak
 BP_POINTER_STATE=pm_seen
+BP_POINTER_X=pm_x
+BP_POINTER_Y=pm_y
 .endweak
 vd_open:
         lda #0
@@ -121,13 +123,13 @@ vd_poll:
         bne bp_pointer
         lda BP_POINTER_STATE
         beq bp_ok
-        lda pm_x
+        lda BP_POINTER_X
         cmp vd_pointer_x
         bne bp_pointer
-        lda pm_x+1
+        lda BP_POINTER_X+1
         cmp vd_pointer_x+1
         bne bp_pointer
-        lda pm_y
+        lda BP_POINTER_Y
         cmp vd_pointer_y
         beq bp_ok
 bp_pointer:
@@ -184,11 +186,11 @@ bp_arguments:
  .endif
         lda BP_POINTER_STATE
         sta N_BUFFER+7
-        lda pm_x
+        lda BP_POINTER_X
         sta N_BUFFER+8
-        lda pm_x+1
+        lda BP_POINTER_X+1
         sta N_BUFFER+9
-        lda pm_y
+        lda BP_POINTER_Y
         sta N_BUFFER+10
  .if BP_MODE == 0
         ldx #24

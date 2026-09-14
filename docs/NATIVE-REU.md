@@ -1,15 +1,15 @@
 # Native REU memory
 
-Desktop, Calculator, Ultimate and Paint use an available REU for their saved VDC screens
+Desktop, Calculator, Ultimate, Paint and Files use an available REU for their saved VDC screens
 through the [shared bank-1 VDC component](NATIVE-VDC-SERVICE.md). The same blue
 controls work without an REU, using the existing main-RAM backup. With an REU,
-Desktop leaves 325, Calculator 309, Ultimate 264 and Paint 182 of 426 main-RAM
-pages free on either
+Desktop leaves 325, Calculator 309, Ultimate 264, Paint 182 and Files 211 of 426 main-RAM
+pages free (Files includes its IEC browser cache) on either
 VDC size. The RAM fallback uses another 64 pages with a 16 KiB VDC or 72 with
 a 64 KiB VDC. Calculator history, Paint's picture/undo and all VIC surfaces retain their
-native heap ownership. Ultimate and Paint keep the same VDC backup while the
+native heap ownership. Ultimate, Paint and Files keep the same VDC backup while the
 picker borrows their display surface. Ultimate allocates picker scratch on
-demand; Paint keeps ten scratch pages for its complete app lifetime.
+demand; Paint keeps ten scratch pages and Files sixteen for their complete app lifetimes.
 
 `src/native/reu.inc` provides allocation, explicit reservation, free, owner
 release, statistics and bounded byte transfers. This is an app-core library
@@ -22,7 +22,7 @@ remain separate roadmap work.
 The [banked SDK example](../examples/native-banked/README.md) also runs this
 arena in a retained bank-1 component. Set `RU_BANKED = 1` only under the
 [banked executor](NATIVE-BANKED.md): it selects physical bank 1 for the private
-probe buffer and bank 0 for `N_BUFFER`. The shipped Desktop, Calculator, Ultimate and Paint use that mapping inside
+probe buffer and bank 0 for `N_BUFFER`. The shipped Desktop, Calculator, Ultimate, Paint and Files use that mapping inside
 `VDSVC.PRG`. Editor documents and Paint pictures still use main RAM.
 
 ## Ownership and calls

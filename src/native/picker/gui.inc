@@ -587,6 +587,9 @@ pg_hit_next:
 pg_hit_done:
         rts
 pg_input:
+.if FD_VDC_GUARD
+        jsr FD_VDC_GUARD
+.endif
         sta pg_key
 .if FD_VDC
         lda FD_VDC_PHASE

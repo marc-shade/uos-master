@@ -28,17 +28,18 @@ def enabled(index,*,fmt=0,mode=1,prompt=0,busy=False,count=0,selected=0):
 
 
 def console(records=(),*,fmt=0,device=9,selected=0,path=b'/',entries=(),base=0,more=False,error=None,
-            prompt=0,field='',caret=None,view=None,prompt_device=None,path_error=0):
+            prompt=0,field='',caret=None,view=None,prompt_device=None,path_error=0,columns=80):
+    assert columns in (40,80)
     if fmt==3:
-        data=ultimate_browser_screen(80,path,entries,base,selected,device,more,error,picker=True,
+        data=ultimate_browser_screen(columns,path,entries,base,selected,device,more,error,picker=True,
               path_prompt=field if prompt>=2 else None,prompt_device=prompt_device,field_caret=caret,field_view=view,path_error=path_error)
         lines={16:'TAB CONTROLS  ENTER ACTIVATE',17:'G PATH  P PARENT  F1 DOS  F FORMAT'}
         if prompt>=2 and not path_error:lines[21]='ENTER BROWSE F1 DOS CTRL-U CLR ESC'
     else:
-        data=browser_screen(80,records,selected,device,fmt,error,prompt=field if prompt==1 else None,picker=True,field_caret=caret,field_view=view)
+        data=browser_screen(columns,records,selected,device,fmt,error,prompt=field if prompt==1 else None,picker=True,field_caret=caret,field_view=view)
         lines={15:'TAB CONTROLS  ENTER ACTIVATE'}
     data=bytearray(data)
-    for row,line in lines.items():data[row*80:(row+1)*80]=screen_bytes(80,[line])[:80]
+    for row,line in lines.items():data[row*columns:(row+1)*columns]=screen_bytes(columns,[line])[:columns]
     return bytes(data)
 
 

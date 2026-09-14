@@ -72,7 +72,7 @@ def copy_console(source,name,*,focus=25,caret=None,field_view=None,**kwargs):
     body=copy_screen(80,source,name,caret=caret,view=field_view,graphical_controls=True,**kwargs)
     return focus_console(body,focus,view=1,phase=kwargs.get('phase',0))
 
-def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None):
+def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None,help_text=b'Tab controls  Enter activate'):
     assert len(rows)==25 and all(len(row)==40 for row in rows)
     data=bytearray(bytes(8192)+b'\x16'*1024);glyphs=font()
     def rect(bounds,ink):
@@ -103,7 +103,7 @@ def surface(rows,*,view=0,focus=11,count=0,ultimate=False,phase=0,caret=None):
     for source,y in ROWS.get(mapped,ROWS[2]):text(8,y,rows[source][:38].rstrip(b' '))
     if caret is not None and focus==25 and not phase:
         rect((8+caret*8,111,16+caret*8,112),1)
-    text(8,192,b'Tab controls  Enter activate')
+    text(8,192,help_text)
     data[8000:8128]=pointer_shape();data[9208:9210]=b'\x7d\x7e'
     return bytes(data)
 

@@ -35,8 +35,8 @@ from native_picker_check import picker_symbol
 from native_browser_check import browser_screen,disk_records
 from native_controls_check import panel_screen,absent_body
 from native_controls_scene import surface as controls_surface,RECTS as CONTROLS_RECTS
-from native_files_scene import (browser_surface as files_surface,browser_console as files_console,
-    copy_surface as files_copy_surface,copy_console as files_copy_console,RECTS as FILES_RECTS)
+from native_files_scene import (browser_surface as files_surface,
+    copy_surface as files_copy_surface,RECTS as FILES_RECTS)
 from native_claude_check import landing_screen,capture_frame as claude_capture
 from native_claude_scene import RECTS as CLAUDE_RECTS
 from paint_scene import surface as paint_surface,console as paint_console,RECTS as PAINT_RECTS,MESSAGES as PAINT_MESSAGES
@@ -146,7 +146,7 @@ def main():
             except OSError:
                 if time.monotonic()>deadline:raise
                 time.sleep(.1)
-        banks=mon.banks();mon.resume();paused=PausedViceMonitor(mon)
+        banks=mon.banks();mon.resume();paused=PausedViceMonitor(mon,signature_bank=banks['ram00'])
         def read(at,n=1,bank=0):
             data=bytes(paused.read_mem(at,at+n-1,bank=bank));paused.resume();return data
         def app_read(at,n=1):
@@ -430,7 +430,7 @@ def main():
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'picker bitmap')
             vdc=None
-            if pointer_app not in ('paint','controls'):
+            if pointer_app not in ('paint','controls','files'):
                 text_vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
                 assert text_vdc==picker_console(entries,selected=selected,device=device,fmt=fmt),(label,'picker VDC')
             for _ in range(20):
@@ -440,7 +440,7 @@ def main():
             display=modes.snapshot(label+'-mode');assert display['vic_sprites']==3
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            if pointer_app in ('paint','controls'):vdc=mirrored_vdc(label,wanted,pv('pg_focus'))
+            if pointer_app in ('paint','controls','files'):vdc=mirrored_vdc(label,wanted,pv('pg_focus'))
             report.setdefault('picker_frames',[]).append(dict(label=label,app=pointer_app,expected=expected,vdc=vdc,
                 entries=[dict(name_hex=row['name'].hex(),type=row['type'],blocks=row['blocks'],flags=row.get('flags',128)) for row in entries],
                 position=xy,rectangle=rectangle,mode=display));save()
@@ -543,12 +543,12 @@ def main():
             if source is None:
                 entries=disk_records(disk.read_bytes(),boot_format)
                 expected=dict(selected=selected,focus=focus,fmt=boot_format,**kwargs)
-                wanted=files_surface(entries,**expected);console_wanted=files_console(entries,**expected)
+                wanted=files_surface(entries,**expected)
                 expected['records']=[dict(e,name=e['name'].hex()) for e in entries]
             else:
                 expected=dict(source_device=8,source_format=boot_format,device=8,fmt=boot_format,kind=1,focus=focus);expected.update(kwargs)
                 if expected['device']==9:expected['fmt']=0
-                wanted=files_copy_surface(source,name,**expected);console_wanted=files_copy_console(source,name,**expected)
+                wanted=files_copy_surface(source,name,**expected)
                 assert value('fc_source_device')==expected['source_device'] and value('fc_device')==expected['device']
                 assert value('fc_length')==len(name) and app_read(symbol('fc_name'),len(name))==name
                 for counter in ('copied','verified'):
@@ -558,8 +558,6 @@ def main():
             actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
                 count=min(2000,9216-offset)) for offset in range(0,9216,2000))
             (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'Files bitmap')
-            vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-            assert vdc==console_wanted,(label,'Files VDC')
             for _ in range(20):
                 xy=position();time.sleep(.2)
                 if position()==xy:break
@@ -568,9 +566,10 @@ def main():
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
             rectangle=check_canvas(raw,surface_pixels(wanted,*xy))
-            report['files_frames'].append(dict(label=label,expected=expected,position=xy,rectangle=rectangle,mode=mode));save()
+            vdc=mirrored_vdc(label,wanted,focus)
+            report['files_frames'].append(dict(label=label,expected=expected,position=xy,rectangle=rectangle,mode=mode,vdc=vdc));save()
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
-            print('PASS: Files bitmap, VDC and 64000 mouse pixels:',label,flush=True)
+            print('PASS: Files VIC/VDC graphics and 192000 pixels including both pointers:',label,flush=True)
         def files_click(index):
             x0,y0,x1,y1=FILES_RECTS[index];move_to((x0+x1)//2,(y0+y1)//2)
             before=int.from_bytes(read(0x3d13,2),'little')
@@ -855,7 +854,8 @@ def main():
                 assert current==saved_registers,(name,'sprite register leak',current.hex(),saved_registers.hex())
                 assert read(0xa04)==saved_init,(name,'BASIC sprite hook leak')
             # Stock GTK symbolic mapping: host F9 is the C128 Escape key.
-            after_key=watch_app_vdc_restore(name,{'calc':'calculator-close','controls':'ultimate-close','paint':'paint-app-close'}[name]) if name in ('calc','controls','paint') else None
+            restore_labels={'calc':'calculator-close','controls':'ultimate-close','paint':'paint-app-close','files':'files-app-close'}
+            after_key=watch_app_vdc_restore(name,restore_labels[name]) if name in restore_labels else None
             key('F8' if name=='claude' else 'F9','desktop',after_key=after_key)
             pointer_app='desktop'
             desktop(name+'-returned',index)

@@ -83,8 +83,9 @@ class PausedHardwareMonitor(HardwareMonitor):
 
 class PausedViceMonitor:
     """VICE monitor reads stop the CPU; suppress inner resumes until batch exit."""
-    def __init__(self, monitor):
+    def __init__(self, monitor, *, signature_bank=None):
         self.monitor = monitor
+        self.signature_bank = signature_bank
         self.batches = []
         self.in_batch = False
 
@@ -107,7 +108,13 @@ class PausedViceMonitor:
         self.batches.append(row)
         self.in_batch = True
         try:
-            assert bytes(self.monitor.read_mem(0x1c13, 0x1c18)) == b'UOS128'
+            # Read-only progress observations may stop inside a bank-1
+            # transfer. The caller can identify the kernel's physical bank;
+            # its presence does not imply that the CPU is idle or safe to borrow.
+            options={} if self.signature_bank is None else {'bank':self.signature_bank}
+            signature=bytes(self.monitor.read_mem(0x1c13,0x1c18,**options))
+            row.update(signature_bank=self.signature_bank,signature_hex=signature.hex())
+            assert signature==b'UOS128'
             row['pause_acknowledged'] = True
             yield
         finally:

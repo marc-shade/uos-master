@@ -66,12 +66,12 @@ class GraphicalFiles(CopyFiles):
         ending=screen_bytes(80,rows);screen[23*80:]=ending[23*80:]
         return bytes(screen)
 
-    def canvas(self,rows,*,count=0,ultimate=False,caret=None):
+    def canvas(self,rows,*,count=0,ultimate=False,caret=None,help_text=b'Tab controls  Enter activate'):
         assert self.value('fg_kind')==1 and self.value('fg_bitmap')
         actual=self.data('fv_body',1000);expected_body=b''.join(rows)
         assert actual==expected_body,('formatter',[(i,a,b) for i,(a,b) in enumerate(zip(actual,expected_body)) if a!=b][:24])
         want=surface(rows,view=self.value('fv_view'),focus=self.value('ui_selected'),count=count,
-            ultimate=ultimate,phase=self.value('fc_phase'),caret=caret)
+            ultimate=ultimate,phase=self.value('fc_phase'),caret=caret,help_text=help_text)
         actual=bytes(self.ram[0xc000:0xe400])
         assert actual==want,('palette',[(i,a,b) for i,(a,b) in enumerate(zip(actual,want)) if a!=b][:24])
         self.checked+=1
@@ -80,15 +80,17 @@ class GraphicalFiles(CopyFiles):
         records=expected(self.io.files,device)
         want=browser_screen(40,records,selected,device,fmt,error,files_app=True)
         self.canvas(ascii_rows(want),count=min(8,max(0,len(records)-selected//8*8)))
-        assert self.screens[1]==self.footer(browser_screen(80,records,selected,device,fmt,error,files_app=True))
+        if not self.value('vd_phase'):
+            assert self.screens[1]==self.footer(browser_screen(80,records,selected,device,fmt,error,files_app=True))
 
     def copy(self,source,name,**kwargs):
         view0=self.ram[self.symbol('fc_views')];view1=self.ram[self.symbol('fc_views')+1]
         caret=self.value('fc_caret')
         want=copy_screen(40,source,name,caret=caret,view=view0,graphical=True,**kwargs)
         self.canvas(ascii_rows(want),caret=caret-view0+7)
-        expected_console=self.footer(copy_screen(80,source,name,caret=caret,view=view1,graphical_controls=True,**kwargs))
-        assert self.screens[1]==expected_console,('copy console',[(i,a,b) for i,(a,b) in enumerate(zip(self.screens[1],expected_console)) if a!=b][:24])
+        if not self.value('vd_phase'):
+            expected_console=self.footer(copy_screen(80,source,name,caret=caret,view=view1,graphical_controls=True,**kwargs))
+            assert self.screens[1]==expected_console,('copy console',[(i,a,b) for i,(a,b) in enumerate(zip(self.screens[1],expected_console)) if a!=b][:24])
         assert self.name()==name and self.number('fc_copied')==kwargs.get('copied',0)
         assert self.number('fc_verified')==kwargs.get('verified',0)
         assert self.value('fc_status')==kwargs.get('status',0)
@@ -96,11 +98,13 @@ class GraphicalFiles(CopyFiles):
     def ultimate_browser(self,path,entries,*,base=0,selected=0,device=1,more=False,error=None):
         kw=dict(base=base,selected=selected,device=device,more=more,error=error,files_app=True)
         self.canvas(ascii_rows(ultimate_browser_screen(40,path,entries,**kw)),count=len(entries),ultimate=True)
-        assert self.screens[1]==self.footer(ultimate_browser_screen(80,path,entries,**kw))
+        if not self.value('vd_phase'):
+            assert self.screens[1]==self.footer(ultimate_browser_screen(80,path,entries,**kw))
 
     def preview(self,name,data,*,offset=0,eof=False):
         self.canvas(ascii_rows(preview_screen(40,name,data,offset,eof)))
-        assert self.screens[1]==self.footer(preview_screen(80,name,data,offset,eof))
+        if not self.value('vd_phase'):
+            assert self.screens[1]==self.footer(preview_screen(80,name,data,offset,eof))
 
     def form(self,view,value,*,caret=None,context=1):
         if caret is None:caret=len(value)
@@ -278,7 +282,7 @@ def main():
             p.copy(b'SOURCE',b'COPY',device=10)
             opened=[command for command in p.loaded_source_commands+p.ultimate.commands if command[1]==2]
             assert [command[3:] for command in opened]==[path,b'/Apps/Original/FSVIEW.PRG',
-                b'/Apps/Original/FSPICK.PRG',b'/Apps/Original/FSVIEW.PRG']
+                b'/Apps/Original/VDSVC.PRG',b'/Apps/Original/FSPICK.PRG',b'/Apps/Original/FSVIEW.PRG']
             assert all(command[0]==2 for command in opened)
             p.ultimate.inject[3]=lambda command,reply:[(b'',b'71,CLOSE ERROR')]
             p.key(0x88);assert p.value('fg_kind')==0 and p.ram[0x3d1b]==4 and not p.value('fg_bitmap')

@@ -2,8 +2,9 @@
 
 Press **F** on the native suite desktop to open Files. Its **C** command copies
 the selected file, and **Esc** returns to the desktop on both IEC and Ultimate.
-The [suite interface](NATIVE-FILES-GUI.md) uses a blue VIC bitmap with yellow
-mouse/keyboard focus, plus the VDC text view. Tab cycles its enabled controls
+The [suite interface](NATIVE-FILES-GUI.md) uses blue graphics on both displays,
+with yellow focus on the VIC and color VDC, and reversed focus on a 16 KiB VDC.
+VDC text remains available as a fallback. Tab cycles its enabled controls
 and Enter activates the focused control; clicking a row selects it.
 The standalone diagnostic disk retains its read-only browser:
 press **B** in the native memory workspace to browse files and launch native
@@ -111,10 +112,12 @@ comparison detected it. Native zero-byte IEC creation remains a backend gap.
 
 Build with `python3 -B build-native-desktop.py`. Both suite disks contain the
 Files core, `fsview.prg` graphics module and `fspick.prg` destination picker.
-Files reserves 93 bank-0 app pages plus its 36-page graphical surface and the
-usual 37-page IEC browser cache in bank 1. The modules share one checked window
+Files reserves 96 bank-0 app pages, sixteen scratch pages, its 36-page graphical
+surface and the usual 37-page IEC browser cache in bank 1. Its shared VDC
+component uses thirty bank-1 pages and retains one screen backup in REU or
+main RAM. The modules share one checked window
 and load from the original app source folder, independently of the selected
-data device or DOS context. Both 8 KiB workspace allocations can be retained;
+data device or DOS context. Scratch storage must be available at `$5000..$5fff`;
 an occupied bitmap range leaves usable text controls. Copy size is not limited
 by the transfer buffers. No new kernel service is required.
 The [copy checkpoint](validation/2026-09-12-native-files-copy/README.md) retains

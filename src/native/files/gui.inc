@@ -9,10 +9,36 @@ fg_gui_entry:
         beq fv_close
         cmp #3
         beq fv_footer
+        cmp #5
+        beq fv_paused_notice
         lda #0
         sta fv_attempted
         clc
         rts
+fv_paused_notice:
+        jsr fv_surface
+        jsr gfx_bind
+        bcs fv_notice_return
+        ldx #7
+-       lda fv_notice_bounds,x
+        sta gfx_x0,x
+        dex
+        bpl -
+        lda #0
+        sta gfx_pen
+        jsr gfx_rect
+        bcs fv_notice_return
+        lda #<fv_pause_text
+        ldx #>fv_pause_text
+        jsr fv_text_source
+        lda #8
+        ldy #192
+        jmp fv_text
+fv_notice_return:
+        rts
+fv_notice_bounds: .word 8,192,312,200
+fv_pause_text: .byte 86,68,67,32,112,97,117,115,101,100,59,32,69,115,99,32,114,101,115,116,111,114,101,115,0
+
 fv_close:
         jsr pm_close
         jsr N_VCLOSE
@@ -1220,6 +1246,8 @@ fv_label:
         pla
         rts
 fv_footer:
+        lda vd_phase
+        bne fv_no_key
         ldx #24
         ldy #0
         clc
@@ -1326,8 +1354,8 @@ fv_source_row: .byte 0
 fv_cell: .byte 0
 fv_old_character: .byte 0
 fv_new_character: .byte 0
-fv_body: .fill 1024,32
-fv_old_body: .fill 1024,32
+fv_body=$5000
+fv_old_body=$5400
 .include "buttons.inc"
 .include "../graphics/buttons.inc"
 .include "../graphics/graphics-core.inc"

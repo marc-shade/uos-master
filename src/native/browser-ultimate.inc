@@ -785,15 +785,16 @@ bu_app_header:
         dex
         bpl bu_app_header
         jsr b_close_file
+.if B_GUI
+        jsr fg_exit
+        bcs b_loop
+.endif
         lda bu_full_length
         sta N_NAMELEN
         lda N_BROWSERDEV
         sta N_DEVICE
         lda #3
         sta N_APPFORMAT
-.if B_GUI
-        jsr fg_exit
-.endif
         jmp N_REPLACE
 bu_show_file:
         lda #1

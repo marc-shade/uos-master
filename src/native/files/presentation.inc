@@ -1,6 +1,8 @@
 ; Files retains all browser/copy state in its core. The graphics and picker
 ; occupy one checked module window; never replace a picker with live handles.
 fg_init:
+        jsr fg_workspace
+        bcs fg_return
         jsr nk_install
         lda #0
         sta fg_attempted
@@ -9,9 +11,15 @@ fg_init:
         sta fg_picker_active
         sta fg_error
         jsr fg_ensure_gui
+        clc
         rts
 fg_retry:
+        lda vd_phase
+        bne +
         lda #0
+        sta fg_vdc_attempted
+        sta fg_vdc_warned
++       lda #0
         sta fg_attempted
         lda fg_bitmap
         bne +
@@ -39,7 +47,9 @@ fg_draw:
         bcs fg_return
         lda #0
         sta fg_operation
-        jmp fg_call
+        jsr fg_call
+        bcs fg_return
+        jmp fg_vdc_sync
 fg_ensure_gui:
         lda fg_kind
         cmp #1
@@ -57,6 +67,7 @@ fg_unavailable:
 fg_return:
         rts
 fg_input:
+        jsr fg_vdc_guard
         sta fg_key
         lda fg_bitmap
         beq fg_key_return
@@ -86,8 +97,9 @@ fg_input_call:
         bcs fg_key_return
         sta fg_key
 fg_key_return:
+        jsr fg_vdc_sync
         lda fg_key
-        rts
+        jmp fg_vdc_guard
 fg_close_view:
         lda fg_kind
         cmp #1
@@ -101,6 +113,8 @@ fg_close_done:
         sta fg_bitmap
         rts
 fg_exit:
+        jsr vd_close
+        bcs fg_return
         jsr fg_close_view
         jmp nk_close
 
@@ -167,6 +181,8 @@ fg_token:
         rts
 fg_failed:
         sta fg_error
+        jsr vd_close
+        lda fg_error
         sec
         rts
 fg_call:
@@ -176,8 +192,12 @@ fg_field_output:
         lda fg_collect
         beq +
         jmp fv_field
-+       jmp N_FDRAW
++       lda vd_phase
+        bne fg_return
+        jmp N_FDRAW
 fg_focus_footer:
+        lda vd_phase
+        bne fg_return
         lda fg_bitmap
         beq fg_return
         lda #3
