@@ -1,5 +1,11 @@
 ; Shared complete-screen rendering for the VIC and VDC native consoles.
 b_draw:
+.if B_GUI
+        lda fg_searching         ; the resident search modal owns presentation
+        beq +
+        rts
++
+.endif
 .if FD_GUI
         jsr pg_draw
 .endif

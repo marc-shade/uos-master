@@ -797,5 +797,9 @@ b_record=FD_BUFFER_BASE+512
 b_page_data=FD_BUFFER_BASE
 .else
 b_record: .fill B_RECORD_BYTES,0
+ .if B_GUI
+b_page_data=B_PAGE_STORAGE
+ .else
 b_page_data: .fill 256,0
+ .endif
 .endif

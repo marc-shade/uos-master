@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,589 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,577 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -92,7 +92,7 @@ physically unavailable; unavailable capabilities must remain visible as such.
 | FR-D3/D4 enhanced video | VDC module and hardware probes; native reversible 16/64 KiB detection and 640×200 launcher, with color cards on 64 KiB | Further bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
-| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages, ABI 1.5 owned Ultimate cursors/folder navigation and byte viewer; shared blue file picker; blue suite Files list, byte viewer, focused paths and cross-backend copy with reopened comparison, progress/cancel and destination picker; [Ultimate folder creation](NATIVE-FOLDERS.md) | Native registry and media identity; faster IEC enumeration; zero-byte IEC create, rename/delete and append/replace; sorting/search; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
+| FR-F1/FR-S2 storage/file manager | Legacy IEC directory/copy and cartridge backend; native owned IEC/Ultimate streams and checked app loading, verified Ultimate writes and 255-byte launch paths, IEC directory pages, ABI 1.5 owned Ultimate cursors/folder navigation and byte viewer; shared blue file picker; blue suite Files list, byte viewer, focused paths and cross-backend copy with reopened comparison, progress/cancel and destination picker; [Ultimate folder creation](NATIVE-FOLDERS.md); [current-directory filename search](NATIVE-FIND.md) | Native registry and media identity; faster IEC enumeration; zero-byte IEC create, rename/delete and append/replace; sorting, recursive search and persistent filters; multi-select/batch actions; interrupted-copy recovery; REL/VLIR support; folders/partitions; disk info/format/validate; recoverable trash | Large/malformed/empty directories; all file types; byte-exact copies; disk full/unplug/error/cancel; reliable navigation and status |
 | FR-F2 devices | Legacy manual 8–11 selection; native browser 8–30 with explicit D64/D71/D81 geometry; system-app source restored after data-device app launch | Inventory, type/capability handshake, hot presence, broader physical qualification | Real and emulated drives; absent device returns to UI; last-used device never changes system-app source accidentally |
 | FR-F3/F4 advanced storage | Standard KERNAL IEC | CMD/1581 partitions, SD2IEC/IDE64 adapters, REU native RAM disks; C128 burst/JiffyDOS/fastload negotiation | Per-backend workflows and timing benchmarks; safe fallback without the expansion/ROM |
 | FR-S3 preferences | Display/background/quarter-hour timezone persisted | Driver/device/boot preferences, atomic versioned records, recovery defaults, DST/calendar policy, appearance/accessibility | Power-cycle each setting; corrupt/old records and failed writes recover predictably |
@@ -135,7 +135,7 @@ save/restore; loading a new REU image must not destroy active OS allocations.
 | ID | Desktop feature | Current state | Completion gate |
 |---|---|---|---|
 | UCI-BASE | Hardware/firmware identification, target/version discovery, command queue, timeout/abort, status/error display | Packet streaming, 16-bit command length, explicit clipping, bounded polling/abort; physical DOS/control identification; shared native read-only queries, ABI 1.11 serialized packets and blue Ultimate controls; bounded handling of the reference cartridge's partial drive reply | Native panel hardware qualification; shared capability registry, missing peripheral records, observed completion of native-owned aborts, interrupted operations and per-firmware protocol coverage |
-| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.6 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access, shared picker and focused fields; native Ultimate folder creation | Reusable file-management controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
+| UCI-FILES | USB/flash/temp browser, full paths, directories, file read/write/copy/move/rename/delete/create | Desktop browser, paged binary viewer and exclusive file-copy dialog with progress/cancel/final reopened comparison; shared legacy two-context API with verified writes, 32-bit seeks, handle cleanup and modal Open/Save As; native ABI 1.6 owned app loading, directory cursors/navigation with retained full names, calculator export, editor access, shared picker and focused fields; native Ultimate folder creation and current-directory filename search | Reusable file-management controls; safe replace/rename/delete workflows, copy resume/partial cleanup/batch/folder picking, mounted-file protection, text/image/media viewers, faster sorted/indexed directories, longer paths, selector integration in other apps, Unicode display |
 | UCI-DRIVES | A/B drive inventory, image mount/eject/create, drive type/power/address/ROM controls, write protection, save changes | Legacy browser and native blue drive controls, full-path picker, explicit confirmed IEC destinations, fresh inventory checks, power-state display, system-disk protection and mount/eject; native CPU/VICE qualification passes | Native physical mount/eject qualification; per-model D64/D71/D81/G64/G71 compatibility; mounted-media identity, remaining drive settings, write protection, dirty-media handling, system-volume replacement/recovery and unsaved work |
 | UCI-MEMORY | REU size/configuration, RAM-disk management, REU image save/load, snapshots and restore | Foreground REU allocator and bounded DMA back Desktop, Calculator, Ultimate and Paint VDC screens through a shared bank-1 component; main-RAM fallback | Save/restore a session without corrupting owned banks; live size changes handle active allocations |
 | UCI-NET | Network setup/status, DNS, sockets, transfers, firmware HTTP offload | TCP/UDP, SNTP, IP and simple HTTP socket client; native panel displays configured interface addresses | Native panel hardware qualification; download/upload files; recover DNS/network/server errors; negotiate newer HTTP target where present |
@@ -890,3 +890,27 @@ The suite still contains fifteen disk entries, with 86 free D64 blocks or
 2,582 free D81 blocks. Rename/delete, IEC folders and partitions, media identity,
 recursive copying, physical qualification and the wider completion roadmap
 remain required.
+
+
+## 2026-09-14 — Filename search in the blue Files app
+
+[Find / Ctrl-F](NATIVE-FIND.md) selects the next filename containing the entered
+text and wraps at the end. IEC searches the complete retained directory snapshot;
+Ultimate streams full names using 32-bit positions and a second page buffer.
+Cancellation, absent matches and errors preserve the published selection.
+The shared modal keeps its graphics module resident, supports both displays
+and accepts keyboard or 1351 Back/X cancellation while scanning.
+
+The matcher has independent byte-string oracle coverage, including all single
+byte values, ASCII/PETSCII case folding, 127-byte queries and end-of-name matches.
+Directory workflows cover 296 IEC entries, 521 Ultimate entries, full 255-byte
+names and both DOS contexts. The [search software checkpoint](validation/2026-09-14-native-file-search/README.md)
+retains the executed inputs, complete displays, private VICE workflows and
+independent clean build.
+
+Files retains its 96-page app allocation and the kernel keeps all 426 managed
+pages. The sixteen-page workspace shares inactive copy scratch with IEC directory
+page staging. All three Files modules remain paired with the matching core.
+The suite still has fifteen entries, with 81 free D64 blocks or 2,577 free D81
+blocks. Recursive search, sorting, persistent filters, picker integration,
+physical qualification and the wider desktop/office/expansion roadmap remain open.

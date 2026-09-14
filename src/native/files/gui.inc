@@ -291,7 +291,7 @@ fv_button:
 fv_button_next:
         inc fv_index
         lda fv_index
-        cmp #31
+        cmp #32
         bne fv_button
 fv_rows_begin:
         ldx fv_view
@@ -903,7 +903,7 @@ fv_check_focus:
 -       jsr fv_enabled
         bcc +
         inx
-        cpx #31
+        cpx #32
         bne -
         ldx #0
 +       stx ui_selected
@@ -912,7 +912,7 @@ fv_focus_done:
 fv_enabled:
         lda fv_view
         cmp #7
-        bne +
+        bcc +
         jmp fm_enabled
 +       lda fv_view
         beq fv_browser_enabled
@@ -949,6 +949,8 @@ fv_copy_enabled:
         bcc fv_enabled_yes
         bcs fv_enabled_no
 fv_browser_enabled:
+        cpx #31
+        beq fv_enabled_yes
         cpx #30
         beq fv_usb_button
         cpx #28
@@ -1014,7 +1016,10 @@ fv_input:
         lda fv_view
         bne +
         lda fg_key
-        cmp #11                 ; Ctrl-K: create an Ultimate folder
+        cmp #6                  ; Ctrl-F: find a filename
+        bne +
+        jmp fn_begin
++       cmp #11                 ; Ctrl-K: create an Ultimate folder
         bne +
         jmp fm_begin
 +
@@ -1059,7 +1064,7 @@ fv_passthrough:
 fv_tab:
         ldx ui_selected
 -       inx
-        cpx #31
+        cpx #32
         bcc +
         ldx #0
 +       jsr fv_enabled
@@ -1191,6 +1196,10 @@ fv_caret_write:
         sta $ffff,x
         jmp fv_redraw_key
 fv_button_activate:
+        cpx #31
+        bne +
+        jmp fn_begin
++
         cpx #30
         bne +
         jmp fm_begin
@@ -1229,7 +1238,7 @@ fv_input_return:
         clc
         rts
 pm_select_surface = fv_surface
-pm_control_count = 31
+pm_control_count = 32
 pm_find_hit:
         lda pm_x
         sta ui_x
@@ -1239,7 +1248,7 @@ pm_find_hit:
         sta ui_y
         lda #0
         sta ui_first
-        lda #31
+        lda #32
         sta ui_limit
 -       jsr ui_hit
         cpx #255
@@ -1254,7 +1263,15 @@ pm_find_hit:
 fv_label:
         lda fv_view
         cmp #7
-        bne fm_label_other
+        bcc fm_label_other
+        cmp #8
+        bne +
+        cpx #26
+        bne +
+        lda #<fn_find_text
+        ldx #>fn_find_text
+        rts
++
         cpx #26
         bne fm_label_back
         lda #<fm_create_text
@@ -1365,7 +1382,7 @@ fv_console_emit:
 
 fv_button_keys: .byte 27,$44,$46,$47,$50,$52,$42,$4e,13,$49,$43
         .fill 8,0
-        .byte $85,$86,$87,$88,13,27,13,13,27,5,16,11
+        .byte $85,$86,$87,$88,13,27,13,13,27,5,16,11,6
 fv_frame: .word 0,0,320,200
 fv_cells: .word 0,0,40,25
 fv_attempted: .byte 0
@@ -1411,6 +1428,7 @@ fv_new_character: .byte 0
 fv_body=$5000
 fv_old_body=$5400
 .include "new-folder.inc"
+.include "find-name.inc"
 .include "buttons.inc"
 .include "../graphics/buttons.inc"
 .include "../graphics/graphics-core.inc"

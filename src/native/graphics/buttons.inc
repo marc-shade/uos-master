@@ -1,10 +1,10 @@
 ; Foreground button focus and hit testing on an owned VIC surface.
 ; Caller supplies ui_rects: eight bytes per half-open unsigned pixel rectangle,
-; ui_button_count (<32), ui_first/ui_limit, ui_selected and gfx binding.
+; ui_button_count (at most 32), ui_first/ui_limit, ui_selected and gfx binding.
 ; Rectangles must be on-screen; ui_paint requires 8-pixel-aligned edges.
 ; ui_hit: ui_x (word), ui_y (byte) -> X=index or $ff. No heap transfers.
 ; ui_paint: X=index -> gfx_colors status; all registers/heap args scratch.
-.cerror ui_button_count >= 32, "button table exceeds indexed coordinate range"
+.cerror ui_button_count > 32, "button table exceeds indexed coordinate range"
 ui_hit:
         ldx ui_first
 ui_hit_next:

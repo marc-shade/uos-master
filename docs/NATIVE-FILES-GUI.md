@@ -69,7 +69,7 @@ allocation. A conflicting owner refuses startup before keyboard or display
 ownership. All scratch pages are released through normal app cleanup.
 
 The suite app and its three matching modules require ABI 1.14. Its packed
-PRG is 10,088 bytes. Install `FSOPEN.PRG` together with Files and its other
+PRG is 10,110 bytes. Install `FSOPEN.PRG` together with Files and its other
 modules; an unavailable association module reports an error before publishing
 an app replacement request.
 
@@ -87,14 +87,23 @@ The graphical surface uses 36 pages at `$c000..$e3ff`. The IEC browser cache use
 field edits update changed glyph cells and the old/new caret. Pointer polling
 enters the module only while a new or unfinished sample needs attention; the
 app publishes readiness after the complete module call returns. The New folder
-modal dialog instead publishes readiness at its own keyboard loop while its
-module remains active.
+and Find modal dialogs instead publish readiness at their own keyboard loops
+while the module remains active. Find clears readiness during scanning and
+handles Back/X/Escape through the same keyboard and pointer controls.
 
 The VDC service uses the existing owned display contract. Document launch adds
 the ABI 1.14 request fields and dispatcher return path. All 426 managed pages
 remain available after app and workspace allocations are released.
 
 ## Current scope
+
+**Find / Ctrl-F** [searches filenames](NATIVE-FIND.md) in the complete current
+directory, selects the next match and wraps at the end. The graphics module
+stays resident during the scan. No additional heap allocation is needed:
+the core's IEC directory-page staging buffer now shares `$5b00..$5bff` with
+inactive copy/compare scratch. Directory refresh and file copying never use
+that buffer concurrently. Keep all three app-bound Files modules with the
+matching Files program when updating either suite disk.
 
 **New dir / Ctrl-K** opens [Ultimate folder creation](NATIVE-FOLDERS.md) in the
 current directory. Its modal call keeps the graphics module resident through

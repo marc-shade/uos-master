@@ -339,6 +339,12 @@ bu_close_error:
         sec
         rts
 bu_poll:
+.if B_GUI
+        lda fg_searching
+        beq +
+        jmp fn_poll
++
+.endif
         lda bu_pending_key
         bne bu_poll_ready
         jsr N_KEYIN
@@ -485,7 +491,11 @@ bu_read_entry:
 .else
         jsr N_WRITE
 .endif
+ .if B_GUI
+        bcs bu_scan_failed       ; preserve the published page on cache errors
+ .else
         bcs b_exit_error
+ .endif
         inc bu_new_count
         lda bu_end
         bne bu_scan_complete
@@ -521,6 +531,15 @@ bu_scan_complete:
         beq bu_commit
         lda bu_found
         bne bu_commit
+.if B_GUI
+        lda bu_search
+        cmp #2
+        bne +
+        jsr fn_wrap
+        bcs bu_scan_end
+        jmp bu_scan_restart
++
+.endif
         jsr bu_zero_target      ; selected name disappeared: show the first page
         sta bu_new_count
         jmp bu_scan_restart
@@ -572,6 +591,13 @@ bu_scan_end:
         rts
 
 bu_match_saved:
+.if B_GUI
+        lda bu_search
+        cmp #2
+        bne +
+        jmp fn_ultimate_match
++
+.endif
         lda bu_search
         beq bu_match_done
         lda N_BUFFER+510

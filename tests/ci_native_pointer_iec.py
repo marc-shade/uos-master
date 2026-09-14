@@ -37,6 +37,7 @@ from native_controls_check import panel_screen,absent_body
 from native_controls_scene import surface as controls_surface,RECTS as CONTROLS_RECTS
 from native_files_scene import (browser_surface as files_surface,
     copy_surface as files_copy_surface,RECTS as FILES_RECTS)
+from native_files_find_check import bitmap as files_find_surface
 from native_claude_check import landing_screen,capture_frame as claude_capture
 from native_claude_scene import RECTS as CLAUDE_RECTS
 from paint_scene import surface as paint_surface,console as paint_console,RECTS as PAINT_RECTS,MESSAGES as PAINT_MESSAGES
@@ -96,6 +97,7 @@ def main():
     parser.add_argument('--controls-clock',action='store_true',help='exercise manual clock fields without a physical cartridge')
     parser.add_argument('--files-only',action='store_true')
     parser.add_argument('--files-open-with',action='store_true',help='open private text/UPNT fixtures from Files and return to their selection')
+    parser.add_argument('--files-find',action='store_true',help='find private documents beyond the visible page, wrap and preserve a missing match')
     parser.add_argument('--editor-only',action='store_true')
     parser.add_argument('--editor-clipboard',action='store_true',help='exercise shared Copy/Cut/Paste/Clear with ROM modifier keys')
     parser.add_argument('--editor-history',action='store_true',help='add keyboard and retained-toolbar Undo/Redo to the clipboard workflow')
@@ -105,6 +107,7 @@ def main():
     assert sum((args.calc_only,args.paint_only,args.controls_only,args.files_only,args.editor_only,args.claude_only))<=1
     if args.controls_clock:assert args.controls_only
     if args.files_open_with:assert args.files_only and not args.reu_kib
+    if args.files_find:assert args.files_only and args.files_open_with
     if args.editor_selection or args.editor_clipboard:assert args.editor_only
     if args.editor_history:assert args.editor_only and args.editor_clipboard
     if args.editor_large:
@@ -625,7 +628,7 @@ def main():
                 state.update(ready=read(0x3d12)[0],module_state=read(0x3d1b)[0])
             report.setdefault('files_states',[]).append(dict(label=label,**state));save()
             return state
-        def files_view(label,*,selected=0,focus=11,source=None,name=None,**kwargs):
+        def files_view(label,*,selected=0,focus=11,source=None,name=None,search_query=None,search_result=7,**kwargs):
             wait(lambda:header('files') and ready(),label,120)
             state=files_state(label)
             assert value('fg_kind')==1 and value('fg_bitmap')==1
@@ -633,7 +636,16 @@ def main():
                 (work/(label+'-unexpected-surface.bin')).write_bytes(app_read(0xc000,9216))
                 (work/(label+'-unexpected-vdc.bin')).write_bytes(read(0,2000,bank=banks['vdc']))
                 raise AssertionError((label,'Files focus',state,focus))
-            if source is None:
+            if search_query is not None:
+                assert value('fm_active')==2 and value('fm_result')==search_result
+                assert read(0x3d1b)==b'\x03', 'search modal remains inside the checked module'
+                assert value('fm_length')==len(search_query)
+                if search_query:
+                    assert app_read(symbol('fm_name'),len(search_query))==search_query
+                assert app_read(symbol('fm_state')+1)==bytes([len(search_query)])
+                expected=dict(query_hex=search_query.hex(),focus=focus,result=search_result,device=8)
+                wanted=files_find_surface(search_query,focus=focus,result=search_result,device=8)
+            elif source is None:
                 entries=disk_records(disk.read_bytes(),boot_format)
                 expected=dict(selected=selected,focus=focus,fmt=boot_format,**kwargs)
                 wanted=files_surface(entries,**expected)
@@ -974,6 +986,28 @@ def main():
                 move_to(310,180);key('Home','files');files_view('files-open')
                 files_click(7);files_view('files-next-page',selected=8,focus=7)
                 files_click(6);files_view('files-previous-page',focus=6)
+                if args.files_find:
+                    entries=disk_records(disk.read_bytes(),boot_format)
+                    doc=next(i for i,e in enumerate(entries) if e['name'].rstrip(b'\xa0')==b'DOC.TXT')
+                    browse=next(i for i,e in enumerate(entries) if e['name'].rstrip(b'\xa0')==b'BROWSE')
+                    assert doc>=8 and browse<8
+                    files_click(31);files_view('files-find-dialog',search_query=b'',focus=25)
+                    for char in 'doc':key(char,'files')
+                    files_view('files-find-query',search_query=b'DOC',focus=25)
+                    files_click(26);files_view('files-found-document',selected=doc,focus=11+doc%8)
+                    files_click(31)
+                    for _ in range(3):key('BackSpace','files')
+                    for char in 'browse':key(char,'files')
+                    files_click(26);files_view('files-find-wrapped',selected=browse,focus=11+browse)
+                    files_click(31)
+                    for _ in range(6):key('BackSpace','files')
+                    for char in 'zznomatch':key(char,'files')
+                    files_click(26)
+                    files_view('files-find-missing',search_query=b'ZZNOMATCH',search_result=8,focus=25)
+                    files_click(27);files_view('files-find-kept-selection',selected=browse,focus=11+browse)
+                    report['filename_search']=dict(document=b'DOC.TXT'.hex(),document_ordinal=doc,
+                        wrapped_to=b'BROWSE'.hex(),wrapped_ordinal=browse,missing_kept_selection=True)
+                    save()
                 entries=disk_records(disk.read_bytes(),boot_format);source=b'EDFIND.PRG'
                 chosen=next(i for i,e in enumerate(entries) if e['name'].rstrip(b'\xa0')==source)
                 assert chosen<8

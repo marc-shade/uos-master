@@ -29,6 +29,7 @@ applications. The same file list and byte viewer appear on the complete
 | L | Enter an absolute Ultimate app path |
 | C | In the suite Files app, copy the selected file |
 | Ctrl-K | In graphical suite Files on ULT, create a folder in the current directory |
+| Ctrl-F | In graphical suite Files, find the next filename containing the entered text |
 | Esc | Return to the suite desktop, or to the standalone diagnostic workspace |
 
 The list shows the stored name, file type and allocated block count. `*` marks
@@ -75,6 +76,15 @@ included. The header shows a 32-bit byte offset; row labels show its low
 file. Empty files and a final short page report end of file and close their
 streams. A read failure shows the accepted prefix and an error. The current
 viewer is forward-only; seek, previous-page navigation and editing remain open.
+
+## Finding filenames
+
+**Find / Ctrl-F** opens the [filename search dialog](NATIVE-FIND.md). It finds
+literal text anywhere in a stored name, ignores letter case and wraps once at
+the end. IEC uses the complete retained directory snapshot; Ultimate streams
+complete names across page boundaries. Back, X or Escape cancels scanning and
+keeps the published page and selection. A successful search selects the matching
+row for Open, View, Copy, Edit or Paint.
 
 ## Copying from the suite Files app
 

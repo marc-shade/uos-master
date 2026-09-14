@@ -30,6 +30,7 @@ FD_EMBEDDED = 0
 FD_RETURN_TO_DESKTOP = 1
 B_COPY = 1
 B_GUI = 1
+B_PAGE_STORAGE = $5b00
 PM_KEYS_OWNED = 1
 PM_KEYS_EXTERNAL = 1
 .include "file-browser.inc"

@@ -10,6 +10,7 @@ fg_init:
         sta fg_bitmap
         sta fg_picker_active
         sta fg_error
+        sta fg_searching
         jsr fg_ensure_gui
         clc
         rts
@@ -265,4 +266,5 @@ fg_error: .byte 0
 fg_mode: .byte 0
 fg_key: .byte 0
 fg_collect: .byte 0
+fg_searching: .byte 0
 fg_surface: .fill 4,0

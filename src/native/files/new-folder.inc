@@ -17,6 +17,7 @@ fm_begin:
         sta fm_dos
         sta fm_status
         sta fm_length
+        sta fn_valid
         sta N_UIKEY
         jsr fm_field
 fm_draw:
@@ -52,13 +53,25 @@ fm_input:
         cmp #14
         beq fm_draw
         cmp #13
-        beq fm_create
+        bne +
+        ldx fm_active
+        cpx #2
+        bne fm_create
+        jmp fn_search
++
         ldx fm_sent
         bne fm_loop
         sta N_UIKEY
         jsr fm_field
         lda #0
-        sta fm_result
+        ldx fm_active
+        cpx #2
+        bne +
+        sta fm_error
+        sta fm_dos
+        sta fm_status
+        lda #7
++       sta fm_result
         jmp fm_draw
 fm_pointer:
         jsr fg_vdc_sync
@@ -84,7 +97,8 @@ fm_enabled:
         beq fv_enabled_yes
         cpx #27
         beq fv_enabled_yes
-        lda fm_sent
+        lda fg_searching
+        ora fm_sent
         bne fv_enabled_no
         cpx #25
         beq fv_enabled_yes
@@ -309,6 +323,11 @@ fm_too_long:
         rts
 
 fm_collect:
+        lda fm_active
+        cmp #2
+        bne +
+        jmp fn_collect
++
         lda #7
         sta fv_view
         lda #<fm_prompt
@@ -317,6 +336,7 @@ fm_collect:
         inc fv_row
         lda #0
         sta fv_column
+fm_collect_path:
         lda N_BROWSERLEN
         sec
         sbc #37
@@ -337,6 +357,7 @@ fm_collect:
         lda N_BROWSERDEV
         ldx #0
         jsr b_number
+fm_collect_field:
         lda #7
         sta fv_row
         lda #0
@@ -369,6 +390,9 @@ fm_collect:
         jsr b_puts
         lda fm_error
         jsr b_hex
+        lda fm_active
+        cmp #2
+        beq fm_collected
         lda #<fm_dos_text
         ldx #>fm_dos_text
         jsr b_puts
@@ -467,5 +491,11 @@ fm_message_3: .text "folder created and checked",0
 fm_message_4: .text "create failed; back refreshes",0
 fm_message_5: .text "result unknown; back refreshes",0
 fm_message_6: .text "close directory failed; back retries",0
-fm_messages_lo: .byte <fm_message_0,<fm_message_1,<fm_message_2,<fm_message_3,<fm_message_4,<fm_message_5,<fm_message_6
-fm_messages_hi: .byte >fm_message_0,>fm_message_1,>fm_message_2,>fm_message_3,>fm_message_4,>fm_message_5,>fm_message_6
+fm_message_7: .text "find part of a name; wraps at the end",0
+fm_message_8: .text "no matching name in this directory",0
+fm_message_9: .text "searching; back or esc cancels",0
+fm_message_10: .text "search cancelled; selection kept",0
+fm_message_11: .text "search failed; selection kept",0
+fm_message_12: .text "enter part of a filename",0
+fm_messages_lo: .byte <fm_message_0,<fm_message_1,<fm_message_2,<fm_message_3,<fm_message_4,<fm_message_5,<fm_message_6,<fm_message_7,<fm_message_8,<fm_message_9,<fm_message_10,<fm_message_11,<fm_message_12
+fm_messages_hi: .byte >fm_message_0,>fm_message_1,>fm_message_2,>fm_message_3,>fm_message_4,>fm_message_5,>fm_message_6,>fm_message_7,>fm_message_8,>fm_message_9,>fm_message_10,>fm_message_11,>fm_message_12
