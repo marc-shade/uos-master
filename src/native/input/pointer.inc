@@ -8,6 +8,7 @@
 .weak
 PM_KEYS_OWNED=0
 PM_KEYS_EXTERNAL=0
+PM_SECONDARY=0
 .endweak
 pm_install:
  .if !PM_KEYS_OWNED
@@ -175,6 +176,13 @@ pm_settling:
         sta $dc00
         sta $d02f
         lda $dc01
+ .if PM_SECONDARY
+        pha
+        and #1                ; 1351 right button is port 1 Up
+        eor #1
+        sta pm_secondary_down
+        pla
+ .endif
         and #$10              ; port 1 fire is the left mouse button
         eor #$10
         sta pm_down
@@ -363,6 +371,9 @@ pm_old: .word 0
 pm_pots: .word 0
 pm_buttons: .byte 0
 pm_down: .byte 0
+ .if PM_SECONDARY
+pm_secondary_down: .byte 0
+ .endif
 pm_arm: .byte $ff
 pm_hit: .byte $ff
 pm_event: .byte 0             ; 0=idle, 1=focus hit, 2=activate hit

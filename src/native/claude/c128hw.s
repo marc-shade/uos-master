@@ -26,6 +26,14 @@
         ; Link diagnostics: exported so the emulator harness and the on-screen
         ; status panel can see whether bytes are actually arriving.
         .export _rxHead, _rxTail, _rxCount, _nmiCount, _rxOverruns, _rxDropped
+        .import _tm_begin, _tm_end, _tm_run, _tm_fill, _tm_clear, _tm_scroll
+        .import _tm_cursor, _tm_glyph
+        .import _tm_read, _tm_live
+        .import _gui_vdc_owned, _gui_vdc_end, _gui_recovery
+        .import _gui_cursor_row, _gui_cursor_col
+        .export _scr_sync, videoPhase, videoFault
+        .export _mirrorError
+        .include "../api.inc"
 
 VDC_ADDR        = $D600         ; register select / status
 VDC_DATA        = $D601         ; register data
@@ -80,6 +88,12 @@ savedScreen: .res 1
 savedKeys: .res 256
 savedVdc: .res 37
 savedFont: .res 4096
+videoPhase: .res 1
+videoFault: .res 1
+videoStack: .res 1
+videoWait: .res 2
+syncRow: .res 1
+syncPlane: .res 1
 savedControl: .res 1
 savedCommand: .res 1
 serialOwned: .res 1
@@ -118,6 +132,7 @@ _kbCount:       .res 2          ; keys read from the keyboard, for diagnostics
 ; reads it back out of ordinary memory.
 _lastAttr:      .res 1          ; last attribute byte scr_run wrote
 _mirrorBuf:     .res 2048
+_mirrorError:   .res 1
 
 rxHead          = _rxHead
 rxTail          = _rxTail
@@ -134,9 +149,46 @@ rxBuf:          .res 256
 ; ---------------------------------------------------------------------------
 scrRegWrite:
         stx VDC_ADDR
-@wait:  bit VDC_ADDR
-        bpl @wait
+        jsr scrWait
         sta VDC_DATA
+        rts
+
+; Every foreground hardware entry installs an unwind boundary. NMI only
+; queues serial bytes and cannot alter these counters or the VDC selector.
+scrGate:
+        tsx
+        inx
+        inx
+        stx videoStack
+        lda videoFault
+        beq @ready
+        ldx videoStack
+        txs
+        sec
+@ready:
+        rts
+scrWait:
+        pha
+        lda #0
+        sta videoWait
+        sta videoWait+1
+@poll: bit VDC_ADDR
+        bmi @ready
+        dec videoWait
+        bne @poll
+        dec videoWait+1
+        bne @poll
+        ldx videoStack
+        txs
+        lda #1
+        sta _native_quit
+        sta _gui_recovery
+        lda #N_PLATFORM
+        sta videoFault
+        sec
+        rts
+@ready:pla
+        clc
         rts
 
 ; ---------------------------------------------------------------------------
@@ -156,16 +208,14 @@ scrSetAddr:
         ; very first data write can be issued against the previous update
         ; address, which lost cell 0 of every full-screen clear.
 @settle:
-        bit VDC_ADDR
-        bpl @settle
+        jsr scrWait
         rts
 
 ; ---------------------------------------------------------------------------
 ; scrPut: A = byte -> data port (address auto-increments)
 ; ---------------------------------------------------------------------------
 scrPut:
-@wait:  bit VDC_ADDR
-        bpl @wait
+        jsr scrWait
         sta VDC_DATA
         rts
 
@@ -194,8 +244,7 @@ attrToVdc:
 ; ---------------------------------------------------------------------------
 scrRegRead:
         stx VDC_ADDR
-@wait:  bit VDC_ADDR
-        bpl @wait
+        jsr scrWait
         lda VDC_DATA
         rts
 
@@ -213,8 +262,7 @@ fillChunk:
         stx fillCount
         ldy #VDC_R_DATA
         sty VDC_ADDR
-@w1:    bit VDC_ADDR
-        bpl @w1
+@w1:    jsr scrWait
         lda fillByte
         sta VDC_DATA            ; first copy, address auto-increments
         ldx fillCount
@@ -222,8 +270,7 @@ fillChunk:
         beq @done
         ldy #VDC_R_COUNT
         sty VDC_ADDR
-@w2:    bit VDC_ADDR
-        bpl @w2
+@w2:    jsr scrWait
         txa
         sta VDC_DATA            ; block-fill the remainder
 @done:  rts
@@ -307,6 +354,12 @@ calcOffset:
 ;           then the same span in attribute RAM with scrAttr.
 ; ---------------------------------------------------------------------------
 _scr_run:
+        jsr _tm_run
+        jsr scrGate
+        lda _gui_vdc_owned
+        beq @hardware
+        rts
+@hardware:
         jsr clipSpan
         bcc @valid
         rts
@@ -344,6 +397,12 @@ _scr_run:
 ; _scr_fill: scrLen copies of scrChar at (scrRow,scrCol) with scrAttr
 ; ---------------------------------------------------------------------------
 _scr_fill:
+        jsr _tm_fill
+        jsr scrGate
+        lda _gui_vdc_owned
+        beq @hardware
+        rts
+@hardware:
         jsr clipSpan
         bcc @valid
         rts
@@ -374,6 +433,12 @@ _scr_fill:
 ; VDC block fill rather than a per-cell loop.
 ; ---------------------------------------------------------------------------
 _scr_clear:
+        jsr _tm_clear
+        jsr scrGate
+        lda _gui_vdc_owned
+        beq @hardware
+        rts
+@hardware:
         lda #0
         sta offsetLo
         sta offsetHi
@@ -419,6 +484,12 @@ _scr_clear:
 ; next full repaint recovers it.
 ; ---------------------------------------------------------------------------
 _scr_scroll:
+        jsr _tm_scroll
+        jsr scrGate
+        lda _gui_vdc_owned
+        beq @hardware
+        rts
+@hardware:
         lda _scrRow
         sta scrTop
         lda _scrCol
@@ -539,6 +610,12 @@ copyRow80:
 ; _scr_place_cursor: VDC registers 14/15 hold the cursor position
 ; ---------------------------------------------------------------------------
 _scr_place_cursor:
+        jsr _tm_cursor
+        jsr scrGate
+        lda _gui_vdc_owned
+        beq @hardware
+        rts
+@hardware:
         lda _scrRow
         cmp #25
         bcs @hide
@@ -562,6 +639,7 @@ _scr_place_cursor:
 ; _scr_init: leave the KERNAL's 80-column setup in place and just clear.
 ; ---------------------------------------------------------------------------
 _scr_init:
+        jsr scrGate
         ; Register 24 bit 7 chooses block COPY (1) or block FILL (0). The
         ; KERNAL may leave either set, and every fill below depends on it.
         ldx #VDC_R_VSCROLL
@@ -818,6 +896,18 @@ _kb_get:
 ; how the VDC is actually configured (where the screen and attribute RAM live,
 ; and whether attributes are enabled at all).
 _scr_mirror:
+        lda #N_PLATFORM
+        sta _mirrorError
+        lda _gui_vdc_owned
+        beq @hardware
+        lda _scrChar
+        cmp #2
+        bcs @refused
+        jmp scrMirrorModel
+@refused:
+        rts
+@hardware:
+        jsr scrGate
         lda #<_mirrorBuf
         sta ptr1
         lda #>_mirrorBuf
@@ -846,6 +936,8 @@ _scr_mirror:
         inx
         cpx #37
         bne @reg
+        lda #0
+        sta _mirrorError
         rts
 @plane:
         lda #0
@@ -861,14 +953,12 @@ _scr_mirror:
         ; The VDC data port is pipelined: the first read after setting the
         ; update address returns the previously latched byte, not the one at
         ; the new address. Throw it away, then re-point and read for real.
-@pre:   bit VDC_ADDR
-        bpl @pre
+@pre:   jsr scrWait
         lda VDC_DATA
         jsr scrSetAddr
         ldx #8                          ; 8 pages = 2048 bytes
 @page:  ldy #0
-@byte:  bit VDC_ADDR
-        bpl @byte
+@byte:  jsr scrWait
         lda VDC_DATA
         sta (ptr1),y
         iny
@@ -876,7 +966,44 @@ _scr_mirror:
         inc ptr1+1
         dex
         bne @page
+        lda #0
+        sta _mirrorError
         rts
+
+scrMirrorModel:
+        lda #<_mirrorBuf
+        sta ptr1
+        lda #>_mirrorBuf
+        sta ptr1+1
+        lda #0
+        sta syncRow
+        ldx #47
+@pad:  sta _mirrorBuf+2000,x
+        dex
+        bpl @pad
+@row:  lda syncRow
+        ldx _scrChar
+        jsr _tm_read
+        bcs @return
+        ldy #0
+@copy: lda N_BUFFER,y
+        sta (ptr1),y
+        iny
+        cpy #80
+        bne @copy
+        lda ptr1
+        clc
+        adc #80
+        sta ptr1
+        bcc @next
+        inc ptr1+1
+@next: inc syncRow
+        lda syncRow
+        cmp #25
+        bne @row
+        lda #0
+        sta _mirrorError
+@return:rts
 
 ; ---------------------------------------------------------------------------
 ; _scr_setglyph: redefine one character in the lowercase bank.
@@ -889,6 +1016,12 @@ _scr_mirror:
 ; are cleared so a previous definition cannot bleed through.
 ; ---------------------------------------------------------------------------
 _scr_setglyph:
+        jsr _tm_glyph
+        jsr scrGate
+        lda _gui_vdc_owned
+        beq @hardware
+        rts
+@hardware:
         ldx #VDC_R_CHARBASE
         jsr scrRegRead
         ; The base is (bits 7-5) << 13, so its high byte is exactly those bits
@@ -953,6 +1086,7 @@ clipSpan:
         rts
 
 _native_video_begin:
+        jsr scrGate
         ; Native GETIN expands the ROM's programmable keys. Deliver one
         ; protocol key each; in particular stock F8 expands to MONITOR+CR.
         php
@@ -977,6 +1111,8 @@ _native_video_begin:
         sta savedScreen
         lda $d020
         sta _native_border
+        lda #1
+        sta videoPhase
         ldx #0
 @save:  cpx #31                  ; never read the data port as a register
         beq @next
@@ -985,16 +1121,19 @@ _native_video_begin:
 @next:  inx
         cpx #37
         bne @save
+        lda #2
+        sta videoPhase
         lda savedScreen
         bpl @forty
         jsr $ff5f
 @forty: lda #$93
         jsr $ffd2
         jsr fontAddress
+        lda offsetHi
+        sta _gui_font_hi
         jsr scrSetAddr
         ; Prime the VDC read latch, then re-point as in upstream scr_mirror.
-@prime: bit VDC_ADDR
-        bpl @prime
+@prime: jsr scrWait
         lda VDC_DATA
         jsr scrSetAddr
         lda #<savedFont
@@ -1003,8 +1142,7 @@ _native_video_begin:
         sta ptr1+1
         ldx #16
 @page:  ldy #0
-@read:  bit VDC_ADDR
-        bpl @read
+@read:  jsr scrWait
         lda VDC_DATA
         sta (ptr1),y
         iny
@@ -1012,6 +1150,8 @@ _native_video_begin:
         inc ptr1+1
         dex
         bne @page
+        lda #3
+        sta videoPhase
         lda #0
         ldx #12
         jsr scrRegWrite
@@ -1032,6 +1172,10 @@ _native_video_begin:
         lda #0
         ldx #26
         jsr scrRegWrite
+        jsr _tm_begin
+        lda #0
+        tax
+        clc
         rts
 
 fontAddress:
@@ -1042,12 +1186,20 @@ fontAddress:
         clc
         adc #$10
         sta offsetHi
-        sta _gui_font_hi
         rts
 
 _native_video_end:
         jsr _acia_shutdown
-        jsr _gui_end            ; restore pointer/filter/display before VDC state
+        jsr _gui_vdc_end
+        bcc @display_closed
+        rts                    ; provider recovery retains all callbacks/buffers
+@display_closed:
+        lda #0
+        sta videoFault
+        jsr scrGate
+        lda videoPhase
+        cmp #3
+        bcc @font_restored
         jsr fontAddress
         jsr scrSetAddr
         lda #<savedFont
@@ -1063,16 +1215,26 @@ _native_video_end:
         inc ptr1+1
         dex
         bne @page
-        lda savedScreen
-        bpl @mode
-        jsr $ff5f
-@mode:  ldy #0
+@font_restored:
+        lda videoPhase
+        cmp #2
+        bcc @mode_restored
+        ldy #0
 @reg:   ldx restoreRegs,y
         lda savedVdc,x
         jsr scrRegWrite
         iny
         cpy #restoreCount
         bne @reg
+@mode_restored:
+        jsr _gui_end            ; release graphics only after the font/mode restore
+        lda videoPhase
+        beq @done
+        lda savedScreen
+        cmp $d7
+        beq @screen_restored
+        jsr $ff5f              ; ROM swapper only exchanges editor locals/maps
+@screen_restored:
         lda _native_border
         sta $d020
         php
@@ -1086,7 +1248,99 @@ _native_video_end:
         sta $d1
         sta $d2
         plp
+        jsr _tm_end
+        bcs @done
+        lda #0
+        sta videoPhase
+        sta _gui_recovery
+@done: lda #0
+        tax
+        clc
         rts
+
+; Paint the complete retained terminal after restoring a graphical overlay.
+; Parser arguments stay intact even when the view changes mid-command.
+_scr_sync:
+        lda #0
+        sta videoFault
+        jsr scrGate
+        lda _tm_live
+        bne @model
+        lda #N_BADARG
+        sec
+        rts
+@model:jsr fontAddress
+        jsr scrSetAddr
+        lda #0
+        sta ptr1
+        lda #$50
+        sta ptr1+1
+        ldx #16
+@page: ldy #0
+@font: lda (ptr1),y
+        jsr scrPut
+        iny
+        bne @font
+        inc ptr1+1
+        dex
+        bne @page
+        lda #0
+        sta syncPlane
+@plane:lda #0
+        sta syncRow
+@row:  lda syncRow
+        ldx syncPlane
+        jsr _tm_read
+        bcs @return
+        lda N_OFFSET
+        sta offsetLo
+        lda N_OFFSET+1
+        sta offsetHi
+        jsr scrSetAddr
+        ldy #0
+@cell: lda N_BUFFER,y
+        jsr scrPut
+        iny
+        cpy #80
+        bne @cell
+        inc syncRow
+        lda syncRow
+        cmp #25
+        bne @row
+        inc syncPlane
+        lda syncPlane
+        cmp #2
+        bne @plane
+        lda _gui_cursor_row
+        cmp #25
+        bcs @hide
+        lda _gui_cursor_col
+        cmp #80
+        bcs @hide
+        ; Read computes row*80 without changing the protocol argument globals.
+        lda _gui_cursor_row
+        ldx #0
+        jsr _tm_read
+        bcs @return
+        lda N_OFFSET
+        clc
+        adc _gui_cursor_col
+        pha
+        lda N_OFFSET+1
+        adc #0
+        ldx #14
+        jsr scrRegWrite
+        pla
+        inx
+        jsr scrRegWrite
+        lda #$60
+        bne @cursor
+@hide: lda #$20
+@cursor:ldx #10
+        jsr scrRegWrite
+        lda #0
+        clc
+@return:rts
 
 .rodata
         .import _gui_poll, _gui_key, _gui_end, _gui_font_hi

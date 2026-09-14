@@ -23,12 +23,13 @@
 extern volatile unsigned char native_quit;
 extern unsigned char native_border;
 unsigned char acia_open(void);
-void native_video_begin(void);
-void native_video_end(void);
+unsigned char native_video_begin(void);
+unsigned char native_video_end(void);
 void panel_clear(void);
 void gui_begin(void);
 void gui_dirty_all(void);
 extern unsigned char gui_live, gui_top, gui_controls_dirty, gui_dirty[25], gui_bitmap;
+extern unsigned char gui_recovery, gui_retiring;
 static void panel_text(unsigned char row, const char *text);
 
 /* --- hardware, implemented in c128hw.s ---------------------------------- */
@@ -505,7 +506,7 @@ static void landing(unsigned char error)
         "press return to open the modem first.",
         "then start the claude bridge on linux", "",
         "ultimate modem: de00/nmi, 38400 baud", "",
-        "return: connect", "f8 or esc: desktop", "",
+        "return: connect", "f8 or esc: desktop", "right click: local controls / terminal",
         "during session: help repaints",
         "f8 returns; esc goes to claude"
     };
@@ -529,21 +530,45 @@ static void landing(unsigned char error)
     scrRow = 255; scrCol = 255; scr_place_cursor();
 }
 
+static void finish(void)
+{
+    unsigned char key;
+    gui_retiring = 1;
+    while (native_video_end()) {
+        gui_recovery = 1;
+        gui_controls_dirty = 1;
+        panel_text(2, "display paused; esc or desktop retries");
+        do {
+            N_READY = 1;
+            key = kb_get();
+        } while (key != 27 && key != KEY_DESKTOP);
+    }
+}
+
 int main(void)
 {
     unsigned char budget;
 
     unsigned char key;
-    native_video_begin();
+    key = native_video_begin();
+    if (key) {
+        panel_clear();
+        finish();
+        return key;
+    }
     scrAttr = 0x0e;
     scr_init();
     landing(0);
+    if (native_quit) {
+        finish();
+        return 8;               /* N_PLATFORM: bounded VDC failure before controls */
+    }
     gui_begin();
     for (;;) {
         N_READY = 1;
         key = kb_get();
         if (key == KEY_DESKTOP || key == 27) {
-            native_video_end();
+            finish();
             return 0;
         }
         if (key == 13) {
@@ -644,6 +669,6 @@ int main(void)
 
     N_READY = 0;
     acia_shutdown();
-    native_video_end();
+    finish();
     return 0;
 }

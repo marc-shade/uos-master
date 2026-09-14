@@ -61,8 +61,9 @@ def main():
     try:
         linkport, monport = port(), port()
         fixture = ROOT/'tests/fixtures/claude-session.py'
+        fixture_control=work/'fixture-control.txt'
         host = [sys.executable, '-B', str(ROOT/'apps/claude/run.py'), '--listen', str(linkport),
-                '--command', shlex.join([sys.executable,'-B',str(fixture)]), '-v']
+                '--command', shlex.join([sys.executable,'-B',str(fixture),str(fixture_control)]), '-v']
         if not args.host_exit or args.mouse: host.append('--no-panel')
         bridge = subprocess.Popen(host, stdout=hostlog, stderr=subprocess.STDOUT)
         # Readiness from the bridge's actual log, without consuming its one connection.
@@ -129,6 +130,17 @@ def main():
             wait(lambda:ready() and app_read(labels['pm_buttons'])==b'\0','Claude mouse action',60)
             assert int.from_bytes(read(0x3d13,2),'little')==before
             result.setdefault('mouse_events',[]).append(dict(button=index,keyboard_events=0))
+        def right_click():
+            wait(ready,'right-button readiness',120)
+            before=int.from_bytes(read(0x3d13,2),'little');menu=app_read(labels['cg_menu'])[0]
+            mouse.button(True,3)
+            wait(lambda:ready() and app_read(labels['cg_menu'])==bytes([menu^1]),'right-button controls toggle',120)
+            time.sleep(.2);assert app_read(labels['cg_menu'])==bytes([menu^1])
+            mouse.button(False,3)
+            wait(lambda:ready() and app_read(labels['pm_secondary_down'])==b'\0','right-button release',120)
+            assert app_read(labels['cg_menu'])==bytes([menu^1])
+            assert int.from_bytes(read(0x3d13,2),'little')==before,'right button leaked a ROM key'
+            result.setdefault('mouse_events',[]).append(dict(button='right',menu=menu^1,keyboard_events=0))
         def rom_key(name,code):
             wait(ready,'ROM key readiness',120);before=int.from_bytes(read(0x3d13,2),'little')
             with mouse.held_key(name):
@@ -137,15 +149,24 @@ def main():
             assert int.from_bytes(read(0x3d13,2),'little')==(before+1)&65535
             assert read(0x3d15)==bytes([code]),(name,'wrong ROM key',read(0x3d15))
             result.setdefault('rom_keys',[]).append(dict(name=name,code=code,before=before,after=(before+1)&65535))
-        def frame(label,*,live=0,menu=0,top=0,focus=0):
+        def frame(label,*,live=0,menu=0,top=0,focus=0,view=0,terminal_chars=None):
             panel=waiting_panel(connected=True) if live else landing_screen(40)
-            actual,row=capture_frame(capture,app_read,labels,work,label,panel=panel,live=live,menu=menu,top=top,focus=focus)
+            actual,row=capture_frame(capture,app_read,labels,work,label,panel=panel,live=live,menu=menu,
+                                    top=top,focus=focus,view=view,terminal_chars=terminal_chars)
             xy=position()
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
             row.update(position=xy,pointer_visible=bool(app_read(labels['pm_seen'])[0]),
                 rectangle=check_canvas(raw,surface_pixels(actual,*xy,visible=bool(app_read(labels['pm_seen'])[0]))))
             result.setdefault('claude_frames',[]).append(row)
+            graphics=(live!=1 or menu==1)
+            assert app_read(labels['cg_vdc_owned'])==bytes([graphics])
+            if graphics:
+                def canvas():
+                    error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                    return raw
+                row['vdc']=vdc_capture(capture,app_read,canvas,work,label,0,color=args.vdc64,
+                                      surface_data=actual,image_prefix='native-desktop/claude-gui')
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/(label+'.png'))],check=True,capture_output=True)
             print('PASS: Claude bitmap, live font and 64000 VIC pixels:',label,flush=True)
         def key(value):
@@ -167,7 +188,7 @@ def main():
         saved_keys=read(0x1000,256);saved_callback=read(0x33c,2);repeat=read(0xa22)
         if args.mouse:
             mon.write_mem(0xa22,b'\x40');mon.resume()
-            mouse=Mouse(xv.display);result['private_x_windows']=mouse.windows
+            mouse=Mouse(xv.display,vdc_window=args.eighty);result['private_x_windows']=mouse.windows
             assert len(mouse.windows)==2,'the private display must contain only this C128 pair'
         original_font,original_state = saved_vdc_region(capture,app_read,work,'before-claude-font')
         result['original_vdc_snapshot']=original_state
@@ -176,7 +197,7 @@ def main():
         (work/'nmi-before.bin').write_bytes(original_nmi+original_gate)
         key(ord('A'))
         assert read(0x400,1000,banks['ram00'])==landing_screen(40)
-        assert read(0,2000,banks['vdc'])==landing_screen(80)
+        assert app_read(labels['cg_vdc_owned'])==b'\1'
         print('PASS: packaged app launch page',flush=True)
         if args.mouse:
             resource=b'Mouse'
@@ -185,7 +206,7 @@ def main():
             result['mouse_enabled_after_claude_launch']=True
             wait(lambda:app_read(labels['pm_seen'])==b'\1','Claude mouse attached',20)
             move_to(160,100)
-        frame('claude-landing')
+        frame('claude-landing',terminal_chars=landing_screen(80))
         if args.mouse:click(0)
         else:key(13)
         def row_text(row, text):
@@ -219,7 +240,7 @@ def main():
                 time.sleep(.1)
                 rom_key('End',255)
             assert app_read(labels['cg_menu'])==b'\1'
-            frame('claude-controls',live=1,menu=1,focus=1)
+            frame('claude-controls',live=1,menu=1,focus=1,terminal_chars=expected)
             rom_key('F10',9);rom_key('F10',9);rom_key('Return',13)
             frame('claude-bottom-panel',live=1,menu=1,top=9,focus=3)
             rom_key('F9',27);assert app_read(labels['cg_menu'])==b'\0'
@@ -229,6 +250,22 @@ def main():
             wait(lambda:int.from_bytes(app_read(labels['_rxCount'],2),'little')!=before_rx and
                  read(0,2000,banks['vdc'])==expected,'mouse Repaint completed',90)
             frame('claude-mouse-repaint',live=1,focus=1)
+            right_click()
+            frame('claude-right-button-controls',live=1,menu=1,focus=1,terminal_chars=expected)
+            click(5);frame('claude-left-terminal',live=1,menu=1,focus=5,view=1,terminal_chars=expected)
+            expected[1997:]=bytes(petscii.to_screen_code(char) for char in 'X❯Y')
+            token=app_read(labels['tm_cells'],4);record=app_read(0x3c00+(token[0]-1)*8,8)
+            assert record[:2]==b'\x20\1' and record[4:7]==token[1:]
+            fixture_control.write_text('update\n')
+            wait(lambda:read(record[2]*256+1997,3,banks['ram01'])==expected[1997:] and ready(),
+                 'PTY output retained while graphical controls cover the VDC',120)
+            click(4);click(5)
+            frame('claude-right-terminal-bottom',live=1,menu=1,top=9,focus=5,view=2,terminal_chars=expected)
+            click(6)
+            assert read(0,2000,banks['vdc'])==expected
+            frame('claude-full-terminal-return',live=1,top=9,focus=6,view=2,terminal_chars=expected)
+            right_click();right_click()
+            assert read(0,2000,banks['vdc'])==expected
 
         if args.cpu_capture:
             # The fixture is now stationary and --no-panel emits no timer
@@ -322,7 +359,7 @@ def main():
         raise
     finally:
         if mouse:
-            mouse.button(False);mouse.close()
+            mouse.button(False);mouse.button(False,3);mouse.close()
         if mon:
             try: mon.quit_emulator()
             except (OSError,EOFError): pass

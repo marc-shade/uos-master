@@ -16,6 +16,16 @@ from ci_vdc_protocol import VDC
 from native_claude_check import landing_screen
 
 
+class LogicalVideo:
+    """Observe logical addresses through the independent physical VDC model."""
+    def __init__(self,chip):self.chip=chip
+    def __len__(self):return 65536
+    def __getitem__(self,key):
+        if isinstance(key,slice):return bytes(self.chip.vread(i) for i in range(*key.indices(65536)))
+        if key>=65536:raise IndexError(key)
+        return self.chip.vread(key)
+
+
 class TerminalBus(VDC):
     def __init__(self, parent, present=True, busy=False, tx=True):
         self.parent = parent
@@ -31,6 +41,10 @@ class TerminalBus(VDC):
         self.last_data = 0
         self.port = {0xd020: 6, 0xdd0d: 0}
         self.colors = bytearray(1024)  # Color RAM is separate from bitmap RAM.
+        self.physical_vdc=parent if hasattr(parent,'video_ram') else None
+        if self.physical_vdc is not None:
+            self.video=LogicalVideo(parent)
+            self.reg=parent.reg
         self.saved_video, self.saved_regs = bytes(self.video), bytes(self.reg)
 
     @property
@@ -40,7 +54,9 @@ class TerminalBus(VDC):
 
     def __getitem__(self, address):
         if self.config&1: return self.parent[address]
-        if address in (0xd600, 0xd601): return super().__getitem__(address)
+        if address in (0xd600, 0xd601):
+            if self.physical_vdc is not None:return self.parent[address]
+            return super().__getitem__(address)
         if 0xd800 <= address < 0xdc00:return self.colors[address-0xd800]&15
         if address in self.port: return self.port[address]
         if 0xde00 <= address <= 0xde03:
@@ -56,6 +72,8 @@ class TerminalBus(VDC):
 
     def __setitem__(self, address, value):
         if self.config&1: return self.parent.__setitem__(address, value)
+        if address in (0xd600,0xd601) and self.physical_vdc is not None:
+            return self.parent.__setitem__(address,value)
         if address == 0xd600: return super().__setitem__(address, value)
         if address == 0xd601:
             if self.selected == 31: self.last_data = value
@@ -97,19 +115,23 @@ class Client(calc.Calculator):
     instruction_limit = 5000000
 
     def __init__(self, **options):
+        provider=options.pop('vdc_component',False)
         TerminalMachine.options = options
         calc.Machine = TerminalMachine
         self.labels = {m[2]: int(m[1],16) for m in re.finditer(r'^al ([0-9A-Fa-f]+) \.(\S+)',
                        (ROOT/'target/native-desktop/claude.lbl').read_text(), re.M)}
         self.borrowed = None
-        super().__init__('claude', loader_name=b'CLAUDE', image_prefix='native-desktop')
+        super().__init__('claude', loader_name=b'CLAUDE', image_prefix='native-desktop',vdc_component=provider)
         self.chip = self.m.bus
 
     def symbol(self, name): return self.labels[name]
 
     def loop(self, exited=False):
         cpu = self.cpu
-        for steps in range(self.instruction_limit):
+        # Loading, checking, unpacking and drawing the larger graphical app
+        # exceed the former five-million-instruction startup allowance.
+        limit=max(10000000,self.instruction_limit) if self.borrowed is None else self.instruction_limit
+        for steps in range(limit):
             if cpu.pc == self.symbol('native_entry') and self.borrowed is None:
                 self.borrowed = dict(zp=bytes(self.ram[2:28]), vector=bytes(self.ram[0x318:0x31a]),
                                      gate=bytes(self.ram[0x3d3e:0x3d40]), screen=self.ram[0xd7],
@@ -119,10 +141,12 @@ class Client(calc.Calculator):
                 assert self.m.stats() == (175, 251, 32) and not self.io.handles
                 assert self.ram[0x3d20] == 0 and self.ram[0x3d23] == 0
                 self.check_restored()
+                self.instructions+=steps
                 return
             if cpu.pc == 0xffe4 and not self.keys and not exited:
                 assert self.ram[0x3d12] == 1
                 assert self.ram[0x1000:0x1014] == bytes([1]*10+[0x85,0x89,0x86,0x8a,0x87,0x8b,0x88,0x8c,0x83,0x84])
+                self.instructions+=steps
                 return
             if self.io.stub(cpu): continue
             if cpu.pc == 0xffe4:

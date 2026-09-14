@@ -26,20 +26,24 @@ def build(out=None):
                     '-L',str(out/'claude-gui.lst')], check=True)
     symbols = {name:int(value,16) for name,value in re.findall(
         r'^(\w+)\s*=\s*\$([0-9a-fA-F]+)\s*$',(out/'claude-gui.sym').read_text(),re.M)}
-    exports = {name:value for name,value in symbols.items() if name.startswith(('cg_','pm_','pk_','gui_'))}
+    exports = {name:value for name,value in symbols.items() if name.startswith(
+        ('cg_','pm_','pk_','gui_','bk_','bp_','vd_','vm_','vs_','ru_'))}
     exports.update({'_gui_'+name:symbols['gui_'+name] for name in ('begin','poll','key','end','dirty_all')})
+    exports['_gui_vdc_end']=symbols['cg_vdc_close']
     exports.update({'_gui_'+name:symbols['cg_'+name] for name in
-                    ('live','dirty','top','controls_dirty','font_hi','bitmap')})
+                    ('live','dirty','top','controls_dirty','font_hi','bitmap','font_ram',
+                     'terminal_read','terminal_restore','view','cursor_row','cursor_col',
+                     'vdc_owned','recovery','retiring')})
     glue = ['.segment "GUI"', '.incbin '+json.dumps(str(obj/'gui.bin'))]
     glue += [f'.export {name} := ${value:04x}' for name,value in sorted(exports.items())]
     (obj/'gui.s').write_text('\n'.join(glue)+'\n')
     subprocess.run(['ca65','-o',str(obj/'gui.o'),str(obj/'gui.s')],check=True)
-    for name in ('main.c', 'c128hw.s', 'startup.s'):
+    for name in ('main.c', 'c128hw.s', 'terminal.s', 'startup.s'):
         subprocess.run(['cl65', '-t', 'c128', '-O', '-g', '-c', '-o',
                         str(obj/(Path(name).stem+'.o')), str(src/name)], check=True)
     subprocess.run(['ld65', '-C', str(src/'uos.cfg'), '-m', str(out/'claude.map'),
                     '-Ln', str(out/'claude.lbl'), '-o', str(out/'claude.prg'),
-                    str(obj/'startup.o'), str(obj/'gui.o'), str(obj/'main.o'), str(obj/'c128hw.o'),
+                    str(obj/'startup.o'), str(obj/'gui.o'), str(obj/'main.o'), str(obj/'c128hw.o'), str(obj/'terminal.o'),
                     'c128.lib'], check=True)
     image = out/'claude.prg'
     image.write_bytes(seal(image.read_bytes()))

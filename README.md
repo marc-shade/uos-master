@@ -62,7 +62,7 @@ blue graphical launchers on both displays: 320×200 VIC and
 Files, Ultimate, Claude and Paint with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
 The same build also creates `target/native-desktop/uos128.d81` for a 1581,
-with 2,636 free blocks for documents and future apps. ABI 1.12 remembers the
+with 2,620 free blocks for documents and future apps. ABI 1.12 remembers the
 system volume's format across app launches and data-disk browsing. Use the
 matching D64 or D81 image; see [native boot media](docs/NATIVE-BOOT-MEDIA.md).
 Boot still uses IEC. Shared window/widget input, the remaining VDC app views,
@@ -87,24 +87,27 @@ Files adds graphical lists, byte viewing, editable paths and verified copy
 controls. Editor adds mouse caret placement, graphical Open/Save As and
 Find/Replace while keeping banked documents and verified saves. The
 [shared picker](docs/NATIVE-PICKER-GUI.md) carries those controls through file
-selection. Claude adds Connect, Repaint, Desktop and status paging beside its
-full VDC terminal. The VDC launcher shows yellow selected cards with 64 KiB
+selection. Claude adds Connect, Repaint, Desktop and retained terminal views on
+the VIC. Ctrl+Help or right-click opens the blue VDC controls; Terminal returns
+to the full 80×25 screen. Incoming output is retained across those views.
+The VDC launcher shows yellow selected cards with 64 KiB
 of video RAM; a 16 KiB VDC uses white graphics on blue and a selection arrow.
-Desktop, Calculator, Ultimate, Paint and Files load the [shared VDC component](docs/NATIVE-VDC-SERVICE.md)
+Desktop, Calculator, Ultimate, Paint, Files, Editor and Claude load the [shared VDC component](docs/NATIVE-VDC-SERVICE.md)
 from their original source. Its [native REU backing](docs/NATIVE-REU.md) saves
 main RAM for their VDC screen backups, with ordinary RAM as the fallback.
-Keep `VDSVC.PRG` beside each app when copying it. Other apps and document
-storage still need expansion-memory integration.
+Keep `VDSVC.PRG` beside each app when copying it. Editor also stores its documents
+in the shared REU arena, with main RAM as the fallback. Clipboard, caches and
+future applications still need expansion-memory integration.
 Calculator shows its keypad, history and save dialog graphically on the VDC.
 Ultimate shows its panels, picker and drive confirmation there. Paint shows its
 picture viewport, tools, keyboard brush and file dialogs on both displays.
 Files shows its lists, byte viewer, fields, copy progress and destination picker there too.
+Editor shows its document, caret, search controls and file dialogs on both displays.
 The shared display layer updates changed rows and retains the saved screen
-if restoration needs a retry. Editor and Claude VDC views remain text while their
-graphical migration continues. A checked compressed kernel boot file keeps the
+if restoration needs a retry. A checked compressed kernel boot file keeps the
 complete suite on D64 without reducing application RAM. The bounded LZSA2 boot
 wrapper makes room for the shared component. [Packed app startup](docs/NATIVE-APP-PACK.md)
-now leaves 140 free D64 blocks while preserving application allocations and
+leaves 124 free D64 blocks in the current suite while preserving application allocations and
 the 426-page heap. Native disk builds need a host C compiler (`cc` or `CC`) for
 the bundled compressor.
 

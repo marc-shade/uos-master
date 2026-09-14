@@ -1,15 +1,15 @@
 # Claude for uOS
 
 Claude is a native C128 app in the uOS suite. Select **Claude** on the desktop,
-or press **A**. It uses the 80-column VDC as a terminal and the 40-column VIC
-screen for [graphical session controls](../../docs/NATIVE-CLAUDE-GUI.md) and
-all 25 rows of status information. Claude Code runs on your Linux host, using
+or press **A**. It provides [graphical session controls](../../docs/NATIVE-CLAUDE-GUI.md)
+on both displays, a complete 80-column VDC terminal, and paged left/right
+terminal views on the VIC. Claude Code runs on your Linux host, using
 that host's login, project directory and normal Claude permissions.
 
 Build the suite with `python3 -B build-native-desktop.py`. This requires cc65
 (`cl65` and `ld65`) in addition to Python 3, 64tass and VICE's `c1541`.
-Both `target/native-desktop/uos128.d64` and
-`target/native-desktop/workspace.d64` contain the native `CLAUDE` app.
+Both native desktop and workspace D64/D81 images contain `CLAUDE` and its
+`VDSVC.PRG` graphics service. Keep them together when copying the app.
 
 On the Linux host, install the bridge dependency in a virtual environment:
 
@@ -46,12 +46,17 @@ launch page.
 | Escape during a session | Send Escape to Claude |
 | Help during a session | Request a full repaint and rearm modem answering |
 | Ctrl+Help during a session | Enter or leave local graphical controls |
+| Right mouse button during a session | Enter or leave local graphical controls |
 | Tab/arrows in local controls | Select an enabled button |
 | Enter/Space in local controls | Activate the selected button |
 | Escape in local controls | Return keyboard focus to the terminal |
 
-Connect, Repaint and Desktop also accept a port-1 1351 mouse. Prev and Next
-show both status pages. The active control is yellow. Ordinary terminal keys,
+Connect, Repaint and Desktop also accept a port-1 1351 mouse. The view button
+cycles through the status panel and the left/right terminal halves. Prev/Next
+show rows 1–16 or 10–25. **Terminal** returns from the blue VDC controls to the
+complete text screen. Incoming output continues into the retained terminal
+while controls are open. The active VIC/color-VDC control is yellow; the
+16 KiB VDC uses reverse focus. Ordinary terminal keys,
 including Tab, Escape and F1–F7, retain their host meanings while local controls
 are closed. The 80-column terminal keeps its full 80×25 area.
 
@@ -63,7 +68,9 @@ reset the C128 or change Ultimate settings.
 On F8, the client continues receiving queued output until the host acknowledges
 shutdown. If the host does not respond, the client returns after at most 20
 seconds of the running C128 clock; a second F8 returns immediately. A stopped
-clock also has a bounded polling fallback.
+clock also has a bounded polling fallback. If the display cannot be restored,
+the app retains its saved state and waits for Escape or Desktop to retry before
+returning to uOS.
 
 The native port saves and restores the borrowed lowercase VDC font, affected
 display registers, console selection, border, cc65 zero page and NMI vector.
@@ -80,7 +87,7 @@ format. The upstream BASIC-started client and reset/bootstrap helpers are
 not part of the native launch path.
 
 Native qualification is tracked separately from upstream hardware claims.
-The earlier uOS ABI 1.9 physical pass does not qualify this ABI 1.10 serial app.
+The earlier uOS ABI 1.9 physical pass does not qualify this ABI 1.12 serial app.
 
 The [initial software qualification](../../docs/validation/2026-09-12-native-claude-suite/README.md)
 passes 30 native CPU suites, 34 host checks and four VICE workflows. The
@@ -108,6 +115,10 @@ The native client temporarily defines the ten C128 programmable keys as single
 key codes, including F8 and Help. This prevents the ROM's default `MONITOR` macro
 from replacing F8. All 256 bytes of the original definition table are restored
 on every exit, alongside the existing font, NMI, display and zero-page state.
-The graphical app reserves 75 pages plus its optional 36-page surface. The
+The graphical app reserves 94 pages, 16 pages for its live font, 16 for terminal
+cells/attributes and an optional 36-page surface. VDC controls also use the
+33-page shared component and a screen backup in REU or main RAM. See the
+[current display qualification](../../docs/validation/2026-09-14-native-claude-displays/README.md).
+The
 earlier [desktop pointer workflow](../../docs/validation/2026-09-12-native-pointer/README.md)
 checks real ROM F8 return after launching Claude with the mouse.

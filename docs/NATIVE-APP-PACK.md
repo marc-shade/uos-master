@@ -1,8 +1,8 @@
 # Packed native app startup
 
 The desktop suite stores the launcher and six apps as standard NAPP files
-with a checked LZSA2 startup wrapper. The D64 suite has **140 free blocks**
-and D81 has **2,636**. Packing preserves the thirteen disk entries, resident
+with a checked LZSA2 startup wrapper. The D64 suite has **124 free blocks**
+and D81 has **2,620**. Packing preserves the thirteen disk entries, resident
 kernel, 426-page heap and each expanded application's allocation. The diagnostic native
 disks continue to use their original app files.
 
@@ -11,7 +11,9 @@ client used seven more disk blocks and increased that app to 96 RAM pages.
 Paint's VDC view uses another six disk blocks and ten separately owned scratch
 pages; its executable still occupies 96 pages. Files adds VDC graphics within
 its 96-page executable allocation using sixteen owned scratch pages; its
-smaller graphics/picker modules recover six disk blocks.
+smaller graphics/picker modules recover six disk blocks. Editor adds VDC and
+REU document support. Claude now uses 94 app pages plus separately owned
+terminal/font/bitmap buffers; its packed image occupies 43 disk blocks.
 
 The kernel validates the complete outer file and closes its source before
 executing the wrapper. Startup expands the original app body into its owned
@@ -23,16 +25,16 @@ cleanup before any original program instruction executes.
 |---|---:|---:|---:|
 | Desktop | 8,835 | 7,362 | 35 |
 | Calculator | 12,430 | 9,275 | 49 |
-| Editor | 13,128 | 7,579 | 96 |
+| Editor | 14,125 | 9,820 | 96 |
 | Files | 13,998 | 9,829 | 96 |
 | Ultimate | 24,320 | 15,863 | 96 |
-| Claude | 11,059 | 7,298 | 75 |
+| Claude | 15,872 | 10,676 | 94 |
 | Paint | 24,442 | 16,730 | 96 |
 
-PRG sizes include the two-byte load address. This saves 34,276 file bytes and
+PRG sizes include the two-byte load address. This saves 34,467 file bytes and
 136 disk blocks. Packing creates disk space; the expanded apps retain their
-existing code and document limits. The remaining graphical VDC app views and
-larger document backing still require their own implementation work.
+existing code and document limits. The current apps now have graphical VDC controls, and Editor uses shared REU
+documents. Wider desktop features and backing stores remain roadmap work.
 
 ## Allocation and recovery
 

@@ -37,12 +37,42 @@ class GraphicalClient(Client):
         assert self.value('cg_bitmap') == 1 and not self.value('cg_error')
         assert self.value('cg_keys_owned') == 1 and self.value('pm_active') == 1
         assert bytes(self.ram[0x33c:0x33e]) == self.symbol('pk_entry').to_bytes(2,'little')
+        retained=self.value('_tm_live')
+        terminal=self.terminal() if retained else None
+        glyphs=bytes(self.ram[0x5000:0x6000]) if retained else bytes(self.chip.video[0x3000:0x4000])
+        if retained and not self.value('cg_vdc_owned'):
+            assert terminal==(bytes(self.chip.video[:2000]),bytes(self.chip.video[0x800:0xfd0]))
+            assert glyphs==bytes(self.chip.video[0x3000:0x4000])
         want = surface(bytes(self.ram[0x400:0x7e8]),bytes(self.chip.colors[:1000]),
-            bytes(self.chip.video[0x3000:0x4000]), live=self.value('cg_live'),menu=self.value('cg_menu'),
-            top=self.value('cg_top'),focus=self.value('cg_focus'))
+            glyphs, live=self.value('cg_live'),menu=self.value('cg_menu'),
+            top=self.value('cg_top'),focus=self.value('cg_focus'),model=bool(retained),
+            view=self.value('cg_view'),terminal=terminal,
+            cursor=(self.value('cg_cursor_row'),self.value('cg_cursor_col')),
+            recovery=bool(self.value('cg_recovery')))
         actual = bytes(self.ram[0xc000:0xe400])
         assert actual == want, ('Claude surface',[(i,a,b) for i,(a,b) in enumerate(zip(actual,want)) if a != b][:20])
         self.checked += 1
+
+    def terminal(self):
+        assert self.value('_tm_live')==self.value('cg_font_ram')==1
+        assert not self.value('_tm_error')
+        intervals=[]
+        for name,bank,page in (('tm_cells',1,None),('tm_font',0,0x50)):
+            token=bytes(self.ram[self.symbol(name):self.symbol(name)+4]);assert 1<=token[0]<=32
+            record=bytes(self.ram[0x3c00+(token[0]-1)*8:0x3c00+token[0]*8])
+            assert record[:2]==bytes([32,bank]) and record[3]==16 and record[4:7]==token[1:]
+            if page is not None:assert record[2]==page
+            start=record[2]*256
+            intervals.append((bank,start,start+4096))
+        for bank,start,end in intervals:
+            for index in range(32):
+                record=bytes(self.ram[0x3c00+index*8:0x3c08+index*8])
+                if not record[0] or record[1]!=bank:continue
+                first=record[2]*256;last=first+record[3]*256
+                assert (first,last)==(start,end) or end<=first or last<=start
+        _,start,_=intervals[0]
+        data=bytes(self.m.bus.ram[1][start:start+4096])
+        return data[:2000],data[2048:4048]
 
     def click(self, index, *, exited=False):
         before = self.events
@@ -116,6 +146,52 @@ def run(selected="all"):
         c.close();c.restored()
         done('keyboard controls and both panel pages preserve the complete terminal key stream',c)
 
+    if selected in ("all","terminal"):
+        c=GraphicalClient();c.check();c.key(13)
+        chars=bytearray(2000);attrs=bytearray(2000)
+        stream=bytearray([1,14])
+        for row in range(25):
+            data=bytes((row*80+col)*37&255 for col in range(80));attr=(row*13)&0x6f
+            chars[row*80:(row+1)*80]=data;attrs[row*80:(row+1)*80]=bytes([attr|128])*80
+            stream+=bytes([2,row,0,attr,80])+data
+        stream+=b'\5';c.feed(stream);assert c.terminal()==(chars,attrs)
+        font=bytearray(4096)
+        for code in range(256):
+            glyph=bytes((code*11+line*17)&255 for line in range(8))
+            font[code*16:code*16+8]=glyph
+            c.feed(bytes([10,code])+glyph)
+        c.feed(bytes([4,24,79,5]));assert bytes(c.ram[0x5000:0x6000])==font
+        c.frame();c.click(5);c.check();assert c.value('cg_view')==1
+        c.click(4);c.check();assert c.value('cg_top')==9
+        c.click(5);c.check();assert c.value('cg_view')==2
+        # Scroll the complete model while a different viewport is visible.
+        for top,bottom,count in ((0,24,1),(3,20,0x82),(0,24,24),(4,7,0x81)):
+            old_chars,old_attrs=bytes(chars),bytes(attrs);amount=count&127
+            for row in range(top,bottom+1):
+                source=row-amount if count&128 else row+amount
+                if top<=source<=bottom:
+                    chars[row*80:(row+1)*80]=old_chars[source*80:(source+1)*80]
+                    attrs[row*80:(row+1)*80]=old_attrs[source*80:(source+1)*80]
+            c.feed(bytes([11,top,bottom,count,5]));assert c.terminal()==(chars,attrs);c.check()
+        c.feed(bytes([3,24,77,0x6f,255,0xff,5]))
+        chars[1997:]=bytes([255])*3;attrs[1997:]=bytes([0xef])*3
+        assert c.terminal()==(chars,attrs);c.check()
+        saved=c.terminal()
+        for row,col in ((25,0),(255,255),(0,80)):
+            c.feed(bytes([2,row,col,15,3,1,2,3,3,row,col,15,255,32,5]))
+        assert c.terminal()==saved
+        c.click(5);c.check();assert c.value('cg_view')==0
+        c.key(255);c.key(0x9d);c.key(0x9d);c.key(0x9d)
+        # Select the view button directly through the complete keyboard cycle.
+        for _ in range(6):
+            if c.value('cg_focus')==5:break
+            c.key(9)
+        assert c.value('cg_focus')==5
+        before=bytes(c.chip.sent);c.key(13);c.check();assert c.value('cg_view')==1
+        c.key(27);c.key(27);assert c.chip.sent[len(before):]==b'\x1b'
+        c.close();c.restored()
+        done('retained 80x25 terminal: both column halves, all rows/glyphs/attributes, cursor, scroll, clipped spans and input focus',c)
+
     if selected in ("all","input"):
         c = GraphicalClient();c.check()
         # Invoke the ROM-visible callback with the scan's real A/X/Y contract.
@@ -125,11 +201,11 @@ def run(selected="all"):
         for modifiers in range(32):
             for code in (0x84,0x85,0x41):
                 cpu = MPU(memory=c.chip,pc=c.symbol('pk_entry'));cpu.sp=0xe0;cpu.p=0x30
-                cpu.a=code;cpu.x=modifiers;cpu.y=64;cpu.stPushWord(0xaff)
+                cpu.a=code;cpu.x=modifiers;cpu.y=65;cpu.stPushWord(0xaff)
                 for _ in range(100):
                     if cpu.pc == 0xb00:break
                     cpu.step()
-                assert (cpu.pc,cpu.a,cpu.x,cpu.y,cpu.p,cpu.sp) == (0xb00,255 if code==0x84 and modifiers&4 else code,modifiers,64,0x30,0xde)
+                assert (cpu.pc,cpu.a,cpu.x,cpu.y,cpu.p,cpu.sp) == (0xb00,255 if code==0x84 and modifiers&4 else code,modifiers,65,0x30,0xde)
         c.ram[at:at+2]=saved;c.ram[0x100:0x200]=stack
         c.key(27,exited=True);c.restored()
         done('Ctrl+Help is decoded in the owned ROM-visible filter; 96 modifier/key combinations',c)
@@ -234,7 +310,7 @@ def run(selected="all"):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser();parser.add_argument('--report',type=Path,required=True)
-    parser.add_argument('--case',choices=('all','core','input','stream','fallback'),default='all');args = parser.parse_args()
+    parser.add_argument('--case',choices=('all','core','input','stream','fallback','terminal'),default='all');args = parser.parse_args()
     report = dict(passed=False,physical_hardware_io=False,
         images={str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest()
                 for path in (ROOT/'target/native-desktop/claude.prg',heap.IMAGE)})

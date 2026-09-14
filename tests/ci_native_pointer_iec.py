@@ -69,8 +69,8 @@ class Mouse(Keyboard):
         self.t.XTestFakeRelativeMotionEvent(self.display,dx,dy,0)
         self.x.XFlush(self.display);time.sleep(.12)
 
-    def button(self,down):
-        self.t.XTestFakeButtonEvent(self.display,1,int(down),0)
+    def button(self,down,button=1):
+        self.t.XTestFakeButtonEvent(self.display,button,int(down),0)
         self.x.XFlush(self.display);time.sleep(.15)
 
     @contextmanager

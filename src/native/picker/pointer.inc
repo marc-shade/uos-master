@@ -9,6 +9,7 @@
 .weak
 PM_KEYS_OWNED=0
 PM_KEYS_EXTERNAL=0
+PM_SECONDARY=0
 .endweak
 pgm_install:
  .if !PM_KEYS_OWNED
@@ -176,6 +177,13 @@ pgm_settling:
         sta $dc00
         sta $d02f
         lda $dc01
+ .if PM_SECONDARY
+        pha
+        and #1                ; 1351 right button is port 1 Up
+        eor #1
+        sta pgm_secondary_down
+        pla
+ .endif
         and #$10              ; port 1 fire is the left mouse button
         eor #$10
         sta pgm_down
@@ -364,6 +372,9 @@ pgm_old: .word 0
 pgm_pots: .word 0
 pgm_buttons: .byte 0
 pgm_down: .byte 0
+ .if PM_SECONDARY
+pgm_secondary_down: .byte 0
+ .endif
 pgm_arm: .byte $ff
 pgm_hit: .byte $ff
 pgm_event: .byte 0             ; 0=idle, 1=focus hit, 2=activate hit

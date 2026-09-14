@@ -33,7 +33,7 @@ class Calculator:
             for name in ('fspick','fsview'):
                 self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
         provider = None
-        if image_prefix=='native-desktop' and image_name in ('calc','desktop','controls','paint','files','editor') and vdc_component is not False:
+        if image_prefix=='native-desktop' and image_name in ('calc','desktop','controls','paint','files','editor','claude') and vdc_component is not False:
             provider = ((ROOT/'target/native-desktop/vdsvc.prg').read_bytes()
                         if vdc_component is True else bytes(vdc_component))
             self.io.files[8,b'VDSVC.PRG',b'P']=provider

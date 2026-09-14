@@ -6,6 +6,7 @@ BP_POINTER_X=pm_x
 BP_POINTER_Y=pm_y
 BP_SHARED_MEMORY=0
 BP_STATE_STORAGE=0
+BP_TRACK_DIRTY=1
 .endweak
 vd_open:
         lda #0
@@ -299,6 +300,7 @@ bp_argument:
 
  .if BP_MODE == 0
 gfx_track_dirty=1
+ .if BP_TRACK_DIRTY
 vm_dirty:
         lda gfx_clipped+6
         sec
@@ -327,6 +329,7 @@ vm_dirty:
         jmp -
 +       rts
 vm_first: .byte 0
+ .endif
 vm_rows: .fill 25,0
 vm_pending: .byte 0
  .endif

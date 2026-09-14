@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,630 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,620 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -84,11 +84,11 @@ physically unavailable; unavailable capabilities must remain visible as such.
 |---|---|---|---|
 | FR-A1 discovery and FR-A2 drivers | Static GETCAP lookup repaired; VDC/UCI probes | Versioned per-class registry, bounded probes, resources/conflicts, optional drivers, boot report, persisted configuration | Cold boot with present/absent/conflicting devices; no hangs or writes to unrelated hardware |
 | Native C128 platform, FR-M3 | Native boot/kernel, two-screen workspace, banked files/apps and keyboard graphical desktop at 1 MHz; owned display lifetime and KERNAL gateways | Remaining desktop/app/Ultimate migration; safe 2 MHz regions, ROM/IRQ/DMA ownership and per-model qualification | Real C128 and C128D/DCR tests; bank isolation, I/O at both speeds, both displays live |
-| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) for Desktop, Calculator, Ultimate, Paint, Files and Editor VDC snapshots; [shared REU Editor documents](NATIVE-SHARED-MEMORY.md) with resizable extents, separate display lifetime and RAM fallback | REU-backed clipboard/caches and larger app heaps; disk-backed documents; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
+| Memory and FR-M1 | Native 426-page allocator with owner/generation checks and bounded transfers; [128 KiB–16 MiB foreground REU arena](NATIVE-REU.md) for Desktop, Calculator, Ultimate, Paint, Files, Editor and Claude VDC snapshots; [shared REU Editor documents](NATIVE-SHARED-MEMORY.md) with resizable extents, separate display lifetime and RAM fallback | REU-backed clipboard/caches and larger app heaps; disk-backed documents; scheduled shared arena; other expansion allocators; RAM disks and persistence | Large-document/app lifetimes across backing stores; concurrent ownership and live configuration recovery |
 | Process/app lifecycle | Native single foreground app: directory discovery, checked manifest/ABI/size/CRC, owned memory and IEC/Ultimate streams, cleanup before app handoff, browser return; legacy failed LOAD recovery | Cooperative scheduling, suspend/resume, app switcher, cleanup across remaining native handle/control backends | Switch among editor, terminal, file copy, clock; preserve buffers and release resources after errors |
 | Desktop and FR-S1 | Legacy menus/modal windows; native graphical keyboard/1351 launcher on VIC and 640×200 VDC, app handoff, text fallback and selection retained across app/workspace returns | Keyboard navigation everywhere; launcher scrolling/categories; shortcuts; draggable/resizable windows; focus/z-order; multiple desktops; context menus | Complete mouse and keyboard workflows; no stale controls; overlapping windows repaint correctly |
 | Shared desktop services | Shared cartridge Open/Save As library with directory recovery; qualified native IEC/Ultimate picker; qualified ABI 1.6 focused fields; shared native pointer and rectangle focus/hit testing used by graphical Calculator, Paint, Ultimate, Files, Editor and Claude | Broader widget/event toolkit; selectors for remaining backends; clipboard/scrap exchange; undo; open-with/file associations; progress/cancel; notifications; help | Copy text/image between apps; cancel file operations safely; select files from every backend |
-| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator, Ultimate, Paint, Files and Editor, including pictures, documents and file pickers, through a shared incremental VDC presenter | VDC graphics in the remaining apps; display backing storage; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
+| FR-D1/D2 display | Legacy persisted display selection; native owned VIC bitmap, clipped drawing/text and a [640×200 VDC launcher](NATIVE-VDC-DESKTOP.md) with owned snapshot/restore, plus graphical Calculator, Ultimate, Paint, Files, Editor and Claude through a shared incremental VDC presenter; retained Claude terminal and VIC left/right views | Wider modes and display backing stores; mirror/extended roles; live switching; independent focus; clipping and scroll surfaces | Operate all apps using only either monitor, then both; no invisible required controls |
 | FR-D3/D4 enhanced video | VDC module and hardware probes; native reversible 16/64 KiB detection and 640×200 launcher, with color cards on 64 KiB | Further bitmap/hires modes; supported FPGA features through model-specific drivers | 16/64 KiB VDC modes; supported monitor timings; fallback on absent features |
 | FR-I1 keyboard | GETIN, ESC and dedicated cursors; ROM scan bounds with counted rejections | Event queue, full keypad, TAB/ALT and modifiers, repeat policy, shortcuts, configurable mappings | Type while dragging and doing IEC/UCI I/O; no lost events or phantom keys |
 | FR-I2/I3 pointer | Legacy 1351 movement; native port-1 1351 sprite pointer, clamping/jitter filter, reconnect baseline, hover and click/release app buttons; VICE/CPU tests | Physical native mouse/adapters; port 2, two-button menus, drag/drop, acceleration; joystick and keyboard pointer drivers | Measured latency/jitter; real 1351 and adapters; simultaneous keyboard/serial traffic |
@@ -117,7 +117,7 @@ compatibility requirement from providing equivalent uOS applications.
 | APP-ORGANIZE | Calendar, appointments, alarms, contacts, notes and clock accessories | Clock plus editor | Persistent appointments; alarms while another app is active; timezone/date rollover tests |
 | APP-MEDIA | Image/document/text viewers, font browser, photo/text scrap managers, SID/audio player | Shell's short CAT and a paged cartridge hex/ASCII viewer | File association launch, scrolling/zoom, playlist, inter-app scraps, supported format round trips |
 | APP-COMMS | Terminal (PETSCII/ANSI), serial/modem and TCP/Telnet, file transfer; network resource browser | Socket driver, small HTTP GET and native Claude host-PTY client over SwiftLink; general terminal protocols remain open | Real BBS/LAN session, encoding negotiation, transfer integrity, reconnect and cancel |
-| APP-CLAUDE | Include marc-shade/claude-c128 as a native desktop suite app | Built into both suite disks with a blue graphical VIC companion, mouse/keyboard Connect/Repaint/Desktop and full status paging; full VDC terminal, handshake-controlled Linux bridge and acknowledged shutdown | Native physical serial session and actual authenticated Claude session; usable terminal controls on either display remain part of FR-D1/D2 |
+| APP-CLAUDE | Include marc-shade/claude-c128 as a native desktop suite app | Built into suite D64/D81 images with blue controls on both displays, a full retained VDC terminal, VIC left/right views, mouse/keyboard navigation, handshake-controlled bridge and acknowledged shutdown | Native physical serial/mouse and authenticated Claude sessions; clipboard, scrollback and session recovery |
 | APP-PRINT | Printer setup, spooler, preview, job queue and cancel; text/raster/PostScript/PDF where backend supports it | Absent | Print document/picture/table through declared physical and Ultimate printer backends; disk-full/disconnect recovery |
 | APP-ARCHIVE | Archive manager, disk-image tools, backup/restore, format conversion | Absent | Recover a backup after reset; malformed/truncated archive tests; byte-exact image/file verification |
 | APP-DEVELOP | Assembler/editor integration, monitor/debugger, build/run tools, API help | Shell PEEK/POKE only | Build and debug a small native app from uOS; preserve desktop/app state on exit |
@@ -747,3 +747,29 @@ retain their owners for recovery. The service adds three bank-1 pages, while
 REU document growth consumes no additional main RAM. Physical qualification,
 live expansion reconfiguration, disk-backed documents, clipboard, undo,
 scheduling and the remaining app/desktop work are still open.
+
+
+### 2026-09-14 — Claude controls on both displays
+
+The [Claude display qualification](validation/2026-09-14-native-claude-displays/README.md)
+completes the blue control interface across the six current suite apps. Claude
+retains all 80×25 terminal cells and attributes plus its live font in owned RAM.
+The VIC can show either terminal half and either row page. Ctrl+Help or the
+right mouse button opens blue controls on the VDC; Terminal/Escape returns to
+the complete current text screen. Pending protocol commands survive that handoff.
+
+Serial NMI continues during bank-1 graphics calls under the existing 192-byte
+host window. Bounded display waits and retained recovery prevent premature
+release of terminal bytes, snapshots, components or input callbacks. Clean
+model/service refusals retain usable terminal paths. VICE cold boots exercise
+both display choices, real mouse/ROM keys, incoming PTY output while controls
+are visible, acknowledged exit and complete desktop restoration. The 94-page
+app leaves 231 main-RAM pages with a REU screen backup. The suite retains 124
+free D64 blocks and 2,620 free D81 blocks. The resident kernel, VDC provider
+and other app programs remain byte-identical to the prior checkpoint.
+
+This completes the current apps' initial graphical display migration, not the
+OS completion goal. Office apps, printing, clipboard/undo, window management,
+scheduling, generalized display switching, expansion drivers, physical
+qualification, authenticated Claude use and all other open checklist items
+still require implementation or evidence.

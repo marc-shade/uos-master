@@ -8,9 +8,10 @@
 .segment "LOADADDR"
         .word $6000
 .segment "HEADER"
-        .byte $4e,$41,$50,$50,1,1,10,0
+        .byte $4e,$41,$50,$50,1,1,12,0
         .word __BSS_RUN__-$6000
-        .byte >(__CSTACK_RUN__+__CSTACK_SIZE__-$6000+$ff),0
+        ; The startup packer needs a separate 48-byte tail after the live stack.
+        .byte >(__CSTACK_RUN__+__CSTACK_SIZE__-$6000+$ff+48),0
         .word native_entry-$6000
         .word 0
         .byte $43,$4c,$41,$55,$44,$45,0,0,0,0,0,0,0,0,0,0
@@ -28,15 +29,17 @@ native_entry:
         lda #>(__CSTACK_RUN__+__CSTACK_SIZE__)
         sta sp+1
         jsr _main
+        sta native_exit_code
         ldx #25
 @restore:
         lda saved_zp,x
         sta $02,x
         dex
         bpl @restore
-        lda #0
+        lda native_exit_code
         jmp $1c3e               ; N_EXIT restores the dispatcher's CPU stack.
 .segment "DATA"
 saved_zp: .res 26,0              ; cannot be cleared by zerobss after the save
+native_exit_code: .byte 0
 .segment "CSTACK"
         .res 1024
