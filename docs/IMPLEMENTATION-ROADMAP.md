@@ -1,6 +1,6 @@
 # uOS completion roadmap and gap analysis
 
-Updated 2026-09-14. This is the current completion checklist. The older
+Updated 2026-09-15. This is the current completion checklist. The older
 [visual roadmap](roadmap.html) and [PRD](prd.html) retain the original
 milestones and requirements; their dated implementation claims are historical.
 
@@ -68,7 +68,7 @@ now reach a visible desktop in VICE from unchanged private disk copies with
 both initial display settings. Authentic input and application comparisons
 remain open; this is reference boot evidence, not uOS compatibility.
 
-The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,577 free disk blocks
+The [native D81 suite](NATIVE-BOOT-MEDIA.md) provides 2,529 free disk blocks
 while preserving the 426-page RAM budget. ABI 1.12 retains the system volume's
 format independently of browser preferences. Automatic media detection,
 D71 boot distribution, partitions, installer/recovery and dynamic system-volume
@@ -111,7 +111,7 @@ compatibility requirement from providing equivalent uOS applications.
 |---|---|---|---|
 | APP-WRITE | Word processor with fonts/styles, pagination, embedded pictures, search/replace, spelling, printing | Banked plain-text editor; no page layout | Create, save, reopen, edit, preview and print a multipage illustrated document; exchange supported geoWrite formats |
 | APP-PAINT | Bitmap editor, drawing tools, color/patterns, selection, zoom, clipboard, undo | [Native Paint](NATIVE-PAINT.md): 320×200 banked picture, graphical VIC/VDC viewport, connected pencil/eraser, 16 ink colors, keyboard brush and panning, undo/redo, staged Open and verified exclusive UPNT Save As through graphical IEC/Ultimate picker; retained display recovery | Native-width VDC tools; more tools/patterns, selection, zoom, clipboard, multiple undo, printing; physical round trips; declared GEOS/Commodore image import/export |
-| APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | [Native Sheet](NATIVE-SHEET.md): editable 8×32 banked workbook, VIC/VDC grid, integer formulas, references, SUM, cycle detection, transactional Open and verified exclusive USHT Save As; formatting, decimal types, shared picker, clipboard and printing remain open | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
+| APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | [Native Sheet](NATIVE-SHEET.md): editable 8×32 banked workbook, VIC/VDC grid, integer formulas, references, SUM, cycle detection, one-step cell Undo/Redo, transactional Open and verified exclusive USHT Save As; formatting, decimal types, shared picker, clipboard and printing remain open | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
 | APP-DATA | Database/address book with schema, records, sorting/filtering, forms/reports, import/export | Absent | Maintain and report a record set larger than main RAM; geoFile exchange matrix |
 | APP-PUBLISH | Page layout with text/image frames, columns, styles, preview, print/export | Absent | Complete a newsletter and reopen it without layout loss; geoPublish comparison fixtures |
 | APP-ORGANIZE | Calendar, appointments, alarms, contacts, notes and clock accessories | Clock plus editor | Persistent appointments; alarms while another app is active; timezone/date rollover tests |
@@ -932,3 +932,19 @@ blocks or 2,530 free D81 blocks.
 Decimal arithmetic, formatting, range/clipboard operations, undo, printing,
 picker integration, geoCalc/CSV exchange and physical qualification remain
 required. The broader OS, office and expansion objectives remain open.
+
+## 2026-09-15 — Sheet cell Undo/Redo
+
+Sheet now supports Ctrl-Z Undo and Ctrl-R Redo for the most recent cell edit
+or Clear. Complete source text is restored and formulas are recalculated.
+Unchanged edits keep history, new edits replace it, successful New/Open reset
+it and Save As preserves it. Both Undo and Redo mark the workbook unsaved.
+A failed source read retains retry history; an uncertain write blocks further
+mutation until the workbook is replaced.
+
+The [software checkpoint](validation/2026-09-15-native-sheet-undo/README.md)
+records focused history/failure tests, a VICE IEC round trip, disk validation
+and a clean rebuild of all 37 images. Sheet now reserves 94 app pages, with
+33 free D64 blocks or 2,529 free D81 blocks in the suite. Multi-step/range
+history, clipboard, decimal types, formatting, printing, picker integration
+and physical qualification remain open.

@@ -119,7 +119,7 @@ class Sheet(Pointer):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case', choices=('core', 'files', 'faults', 'mouse', 'ultimate', 'recovery'), default='core')
+    parser.add_argument('--case', choices=('core', 'files', 'faults', 'mouse', 'ultimate', 'recovery', 'undo', 'undo-faults'), default='core')
     parser.add_argument('--size', type=int, choices=(16,64), default=64)
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
@@ -154,6 +154,42 @@ def main():
             p.key(27); assert p.value('mode') == 3
             p.key(27); assert not p.value('mode') and p.value('wb_dirty')
             p.check(); p.exit(); done('editing, references, SUM, cycles, full grid navigation, source retention and discard protection', p)
+        elif args.case == 'undo':
+            p=Sheet();p.key(26);assert not p.value('wb_dirty')
+            p.edit('21');p.key(0x1d);p.edit('=A1*2')
+            p.key(0x13);p.key(26)
+            assert p.value('selected')==1 and p.values()[:2]==[21,0]
+            assert p.sources()==workbook({0:'21'})[16:]
+            p.key(26);assert p.values()[:2]==[21,0]  # one step only
+            p.key(18);assert p.values()[:2]==[21,42]
+            p.key(0x14);p.key(26);assert p.values()[1]==42  # undo Clear
+            p.key(13);p.key(13);assert p.value('wb_history')==2  # no-op edit
+            p.key(18);assert p.values()[1]==0
+            p.edit('7');p.key(18);assert p.values()[1]==7  # new edit drops redo
+            before=p.sources();p.save('HISTORY');assert not p.value('wb_dirty')
+            p.key(26);assert p.value('wb_dirty') and p.values()[1]==0
+            p.key(18);assert p.sources()==before
+            p.open('HISTORY');assert not p.value('wb_history') and not p.value('wb_dirty')
+            p.key(26);assert p.sources()==before and not p.value('wb_dirty')
+            p.edit('8');p.key(0x85);p.key(27);assert p.value('wb_history')==1
+            p.key(0x85);p.key(13);assert not p.value('wb_history') and p.sources()==bytes(8192)
+            p.check();p.exit();done('one-step cell undo/redo, Clear, no-op edits, save retention and New/Open reset',p)
+        elif args.case == 'undo-faults':
+            p=Sheet();p.edit('7');before=p.sources();stub=p.io.stub
+            injected=[];operation=0x1c26
+            def fail_once(cpu):
+                if not injected and cpu.pc==operation and bytes(p.ram[0x3d04:0x3d08])==p.bytes('wb_handle',4):
+                    injected.append(True);cpu.a=4;cpu.p|=1;cpu.pc=cpu.stPopWord()+1;return True
+                return stub(cpu)
+            p.io.stub=fail_once;p.key(26)
+            assert injected and p.value('wb_error') and p.value('wb_history')==1
+            assert p.sources()==before and not p.value('wb_poisoned')
+            p.io.stub=stub;p.key(26);assert p.sources()==bytes(8192)
+            p.key(18);assert p.sources()==before
+            operation=0x1c29;injected.clear();p.io.stub=fail_once;p.key(26)
+            assert injected and p.value('wb_poisoned') and p.sources()==before
+            p.io.stub=stub;p.key(26);assert p.value('wb_error') and p.sources()==before
+            p.check();p.exit();done('failed undo read retains retry history; failed undo write poisons storage and blocks further mutation',p)
         elif args.case == 'files':
             p = Sheet(); p.edit('123'); p.key(0x1d); p.edit('=A1*2'); p.save('BUDGET')
             data = workbook({0:'123',1:'=a1*2'})

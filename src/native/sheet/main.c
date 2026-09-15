@@ -142,7 +142,7 @@ static void render(void)
         else if (type < 11) put(19, 7, errors[type], 16);
         line(20, "Arrows: move   Enter: edit   Del: clear");
         line(21, "F1 New   F3 Open   F5 Save As   F7 Edit");
-        line(22, "Home: A1   Ctrl-L: retry 80-column view");
+        line(22, "Ctrl-Z Undo  Ctrl-R Redo  Home A1");
     }
     if (message) line(23, message);
     else line(23, "Numbers, text, =A1+B1, =SUM(A1:A12)");
@@ -317,6 +317,13 @@ int main(void)
             continue;
         }
         if (key == 27) action(5);
+        else if (key == 26 || key == 18) {
+            if (wb_history == (key == 18 ? 2 : 1)) {
+                error = wb_undo(key == 18); status(error);
+                if (!error) { selected = wb_history_cell; message = 0; move(0); }
+                else render();
+            }
+        }
         else if (key == 0x85) action(0);
         else if (key == 0x86) action(1);
         else if (key == 0x87) action(2);

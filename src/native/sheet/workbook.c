@@ -5,6 +5,9 @@
 
 uint8_t wb_handle[4], wb_stage[4], wb_file[4];
 uint8_t wb_dirty, wb_error, wb_poisoned;
+uint8_t wb_history, wb_history_cell;
+static char history_source[32], history_swap[32];
+static uint8_t history_revision;
 uint16_t wb_progress;
 uint8_t wb_device, wb_format;
 char wb_path[256];
@@ -80,6 +83,7 @@ static uint8_t publish(void)
     memcpy(wb_handle, wb_stage, 4);
     memset(wb_stage, 0, 4);
     wb_dirty = wb_poisoned = 0;
+    wb_history = 0;
     return 0;
 }
 
@@ -135,8 +139,25 @@ uint8_t wb_set(uint8_t cell, const char *source)
         wb_poisoned = 1;
         return wb_error = error;
     }
+    memcpy(history_source, record, 32);
+    wb_history_cell = cell;
+    wb_history = 1;
+    ++history_revision;
     wb_dirty = 1;
     return wb_error = sh_recalculate();
+}
+
+uint8_t __fastcall__ wb_undo(uint8_t redo)
+{
+    uint8_t error, revision = history_revision;
+    if (wb_poisoned) return wb_error = WB_RETAINED;
+    if (wb_history != (redo ? 2 : 1)) return 0;
+    /* wb_set captures the current source before replacing it. Keep its input
+     * separate from that capture so Undo and Redo exchange complete records. */
+    memcpy(history_swap, history_source, 32);
+    error = wb_set(wb_history_cell, history_swap);
+    if (history_revision != revision) wb_history = redo ? 1 : 2;
+    return error;
 }
 
 static void crc_add(const uint8_t *bytes, uint8_t count)
