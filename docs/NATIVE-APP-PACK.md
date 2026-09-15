@@ -1,6 +1,6 @@
 # Packed native app startup
 
-The desktop suite stores the launcher and six apps as standard NAPP files
+The desktop suite stores the launcher and seven apps as standard NAPP files
 with a checked LZSA2 startup wrapper. The D64 suite has **93 free blocks**
 and D81 has **2,589**. Packing preserves the fifteen disk entries, resident
 kernel, 426-page heap and each expanded application's allocation. The diagnostic native

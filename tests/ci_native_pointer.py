@@ -44,7 +44,7 @@ class PointerBus(DisplayBus):
 heap.Bus = PointerBus
 import ci_native_calc as calc
 from py65.devices.mpu6502 import MPU
-from launcher_scene import surface, console
+from launcher_scene import surface, console, CARDS
 
 
 class Pointer(calc.Calculator):
@@ -136,8 +136,8 @@ def main():
         p.frame();assert p.position==(160,160) and p.value('pm_seen')==1 and p.bus.video[0xd015]==3
         p.key(27,exited=True);p.restored();done('all 16384 circular counter pairs and stationary attach',p,counter_pairs=pairs)
 
-        for index,name in enumerate((b'CALC',b'EDITOR',b'FILES',b'ULTIMATE',b'CLAUDE',b'PAINT')):
-            p=Pointer();p.frame();p.move(100,40+index*24);p.check(index)
+        for index,name in enumerate((b'CALC',b'EDITOR',b'FILES',b'ULTIMATE',b'CLAUDE',b'PAINT',b'SHEET')):
+            p=Pointer();p.frame();p.move(100,CARDS[index]+8);p.check(index)
             p.frame(down=True);p.check(index);assert p.value('pm_arm')==index
             for _ in range(3):p.frame(down=True)
             assert p.ram[0x3d20]==32
@@ -161,8 +161,8 @@ def main():
         for target in ((0,0),(319,199),(0,199),(319,0)):
             p.move(*target);p.frame(dx=-31 if target[0]==0 else 31,dy=-31 if target[1]==0 else 31)
             assert p.position==target
-        for x,y,want in ((15,40,255),(16,32,0),(303,51,0),(304,40,255),(100,52,255),(100,55,255),(100,56,1),
-                         (100,147,4),(100,148,255),(100,152,5),(303,171,5),(100,172,255)):
+        for x,y,want in ((15,48,255),(16,40,0),(303,55,0),(304,48,255),(100,39,255),(100,56,1),
+                         (100,135,5),(100,136,6),(303,151,6),(100,152,255)):
             p.move(x,y);assert p.value('pm_hit')==want,(x,y,p.value('pm_hit'))
         p.key(27,exited=True);p.restored();done('four edges saturate and card hit bounds exclude gaps and borders outside',p)
 

@@ -48,6 +48,7 @@ def build():
     native.build()
     native.build(out=OUT, desktop_boot=True)
     claude = module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
+    sheet = module('sheet_builder', ROOT/'build-native-sheet.py').build(OUT)
     for name in ('desktop', 'files', 'controls', 'paint'):
         subprocess.run(['64tass', '-a', '-B', str(ROOT/f'src/native/{name}.asm'),
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
@@ -76,9 +77,10 @@ def build():
     provider.write_bytes(seal_banked(provider.read_bytes()))
     vdc_component = validate_banked(provider.read_bytes())
     packing = {}
-    for name in ('desktop','calc','editor','files','controls','claude','paint'):
+    for name in ('desktop','calc','editor','files','controls','claude','paint','sheet'):
         path = OUT/f'{name}.prg'
-        packed = pack_app(path.read_bytes(), runtime_end=claude['runtime_end'] if name=='claude' else None,
+        runtime_end = {'claude':claude['runtime_end'], 'sheet':sheet['runtime_end']}.get(name)
+        packed = pack_app(path.read_bytes(), runtime_end=runtime_end,
                           listing=OUT/f'{name}-pack.lst', symbols=OUT/f'{name}-pack.sym')
         path.write_bytes(packed)
         packing[name] = packed_information(packed)
@@ -90,6 +92,9 @@ def build():
     claude.update(validate((OUT/'claude.prg').read_bytes()),startup=packing['claude'],
                   sha256=packing['claude']['packed_sha256'])
     (OUT/'claude.json').write_text(json.dumps(claude,indent=2)+'\n')
+    sheet.update(validate((OUT/'sheet.prg').read_bytes()),startup=packing['sheet'],
+                 sha256=packing['sheet']['packed_sha256'])
+    (OUT/'sheet.json').write_text(json.dumps(sheet,indent=2)+'\n')
     for disk_format in ('d64', 'd81'):
         workspace = OUT/f'workspace.{disk_format}'
         shutil.copyfile(ROOT/f'target/native/uos128.{disk_format}', workspace)
@@ -107,6 +112,7 @@ def build():
                         '-write', str(OUT/'controls.prg'), 'ultimate',
                         '-write', str(OUT/'claude.prg'), 'claude',
                         '-write', str(OUT/'paint.prg'), 'paint',
+                        '-write', str(OUT/'sheet.prg'), 'sheet',
                         '-write', str(OUT/'vdsvc.prg'), 'vdsvc.prg'], check=True, capture_output=True)
         desktop = OUT/f'uos128.{disk_format}'
         shutil.copyfile(workspace, desktop)
@@ -129,6 +135,7 @@ def build():
                       controls=validate((OUT/'controls.prg').read_bytes()),
                       claude=validate((OUT/'claude.prg').read_bytes()),
                       paint=validate((OUT/'paint.prg').read_bytes()),
+                      sheet=validate((OUT/'sheet.prg').read_bytes()),
                       surface_pages=36, vdc_component=vdc_component, packed_apps=packing,
                       free_pages_at_desktop={str(kib):426-36-pages-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages']
                                              for kib,pages in ((16,64),(64,72))},
@@ -140,7 +147,7 @@ def build():
                                     'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg', 'fsopen.prg': 'fsopen.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',
                                     'edfind.prg': 'edfind.prg', 'edclip.prg':'edclip.prg',
-                                    'ultimate': 'controls.prg', 'claude': 'claude.prg', 'paint': 'paint.prg'})
+                                    'ultimate': 'controls.prg', 'claude': 'claude.prg', 'paint': 'paint.prg', 'sheet': 'sheet.prg'})
     (OUT/'deployment.json').write_text(json.dumps(deployment, indent=2)+'\n')
     print(f'Native graphical desktop disk: {desktop}')
     print(f'Native diagnostic workspace disk: {ROOT/"target/native/uos128.d64"}')

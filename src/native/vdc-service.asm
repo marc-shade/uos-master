@@ -45,7 +45,7 @@ bv_entry:
         cmp #2
         bcs bv_argument
         lda N_BUFFER+5
-        cmp #6
+        cmp #7
         bcs bv_argument
         lda N_BUFFER+9
         cmp #2
@@ -245,8 +245,8 @@ pm_x: .word 0
 pm_y: .byte 0
 gd_selected: .byte 0
 gd_launch_error: .byte 0
-gd_card_rows: .byte 4,7,10,13,16,19
-pm_tops: .byte 32,56,80,104,128,152
+gd_card_rows: .byte 5,7,9,11,13,15,17
+pm_tops: .byte 40,56,72,88,104,120,136
 gfx_rows:
  .for row=0, row<25, row+=1
         .word row*320

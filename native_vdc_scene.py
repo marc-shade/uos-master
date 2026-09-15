@@ -1,17 +1,8 @@
 """Native 640×200 launcher pixels, VDC attributes and lossless build packing."""
-from launcher_scene import OPS, POINTER
+from launcher_scene import OPS, POINTER, CARDS, LABELS
 from src.native.graphics.font import font
 
 WIDTH, HEIGHT = 640, 200
-CARDS = (32, 56, 80, 104, 128, 152)
-LABELS = (
-    (b'Calculator', b'Numbers and saved history'),
-    (b'Text editor', b'Documents on disk and USB'),
-    (b'Files', b'Drives, USB folders and apps'),
-    (b'Ultimate', b'Drives, network and clock'),
-    (b'Claude', b'Claude Code terminal'),
-    (b'Paint', b'Pictures, colors and undo'),
-)
 ARROW = bytes((0x00, 0x40, 0x60, 0x70, 0x78, 0x70, 0x60, 0x40))
 
 
@@ -34,23 +25,23 @@ def bitmap(selected=None, error=0):
     text(32, 8, b'uOS 128')
     text(496, 8, b'Desktop')
     for y, (name, description) in zip(CARDS, LABELS):
-        text(128, y+6, name)
-        text(280, y+6, description)
+        text(128, y+4, name)
+        text(280, y+4, description)
     text(32, 176, f'App could not open: {error:02X}'.encode() if error else
          b'Mouse opens apps.  Arrows/Tab select.  Enter opens.')
-    text(32, 188, b'C Calc  E Editor  F Files  U Ultimate  A Claude  P Paint   Esc workspace')
+    text(32, 188, b'C Calc  E Editor  F Files  U Ultimate  A Claude  P Paint  S Sheet  Esc back')
     if selected is not None:
-        assert 0 <= selected < 6
+        assert 0 <= selected < len(CARDS)
         for dy, bits in enumerate(ARROW):
-            data[(CARDS[selected]+6+dy)*80+13] = bits
+            data[(CARDS[selected]+4+dy)*80+13] = bits
     return bytes(data)
 
 
 def attributes(selected=0):
-    assert 0 <= selected < 6
+    assert 0 <= selected < len(CARDS)
     data = bytearray(b'\x2f'*2000)  # VDC bitmap: background high, foreground low.
     for index, top in enumerate(CARDS):
-        for row in range(top//8, top//8+3):
+        for row in range(top//8, top//8+2):
             data[row*80+4:row*80+76] = bytes([0xd0 if index == selected else 0x1f])*72
     return bytes(data)
 

@@ -1,22 +1,22 @@
 # Native VDC graphical desktop
 
-The native suite launcher now draws its blue desktop, six app icons and mouse
+The native suite launcher now draws its blue desktop, seven app cards and mouse
 pointer on the VDC at 640×200 as well as the VIC at 320×200. Calculator, Text
-Editor, Files, Ultimate, Claude and Paint use the same selection and launch
+Editor, Files, Ultimate, Claude, Paint and Sheet use the same selection and launch
 actions on both monitors. On a 64 KiB VDC the selected card is yellow. A
 16 KiB VDC shows white graphics on blue with an arrow beside the selection;
 the complete bitmap plus separate color attributes would exceed its RAM.
 
 Build with `python3 -B build-native-desktop.py` and boot
 `target/native-desktop/uos128.d64` in C128 native mode. Arrows and Tab select;
-Enter opens. C/E/F/U/A/P open the corresponding app. A 1351 mouse in control
+Enter opens. C/E/F/U/A/P/S open the corresponding app. A 1351 mouse in control
 port 1 moves both pointers; press and release on the same card to open it.
 Escape opens the diagnostic workspace, and B returns to the blue launcher.
 The VDC layout uses the extra width for app names and descriptions beside
 each icon. It shares selection and input with the VIC; independent focus and
 extended desktop roles remain future work.
 
-The six apps and the shared file picker already use blue VIC controls.
+The seven apps and the shared file picker already use blue VIC controls.
 [Calculator](NATIVE-CALCULATOR.md), [Ultimate](NATIVE-ULTIMATE-CONTROLS.md),
 [Paint](NATIVE-PAINT.md) and [Files](NATIVE-FILES-GUI.md) present their controls graphically on the VDC too,
 including Paint's picture and the shared pickers in Ultimate, Paint and Files. Editor and

@@ -129,11 +129,11 @@ vd_color_row:
 -       sta N_BUFFER,y
         dey
         bpl -
-        ldx #5
+        ldx #6
 -       lda vd_row
         sec
         sbc gd_card_rows,x
-        cmp #3
+        cmp #2
         bcc vd_color_card
         dex
         bpl -
@@ -162,7 +162,7 @@ vd_marker:
         ldx vd_index
         lda pm_tops,x
         clc
-        adc #6
+        adc #4
         ldx #13
         jsr vd_xy
         ldy #0
@@ -179,7 +179,7 @@ vd_marker:
         bne -
         inc vd_index
         lda vd_index
-        cmp #6
+        cmp #7
         bne vd_marker
         lda gd_launch_error
         beq vd_unpack_done

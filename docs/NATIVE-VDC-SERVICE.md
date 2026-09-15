@@ -1,8 +1,8 @@
 # Shared native VDC service
 
-Desktop, Calculator, Ultimate, Paint, Files, Editor and Claude load the same `VDSVC.PRG` from their original app
+Desktop, Calculator, Ultimate, Paint, Files, Editor, Claude and Sheet load the same `VDSVC.PRG` from their original app
 source. It supplies both the native 640×200 desktop layout and the incremental
-VIC-to-VDC presenter used by Calculator, Ultimate, Paint, Files, Editor and Claude, including their file
+VIC-to-VDC presenter used by Calculator, Ultimate, Paint, Files, Editor, Claude and Sheet, including their file
 pickers. The blue interface, app icons, focus colors and pointer behavior
 remain consistent. All seven apps can save their original
 VDC screen in an available REU, with main RAM as the fallback.

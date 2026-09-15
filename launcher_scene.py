@@ -1,40 +1,24 @@
 """Desktop layout data and an independent per-pixel surface oracle."""
 from src.native.graphics.font import font
 
+CARDS = (40, 56, 72, 88, 104, 120, 136)
+LABELS = (
+    (b'Calculator', b'Numbers and saved history'),
+    (b'Text editor', b'Documents on disk and USB'),
+    (b'Files', b'Drives, USB folders and apps'),
+    (b'Ultimate', b'Drives, network and clock'),
+    (b'Claude', b'Claude Code terminal'),
+    (b'Paint', b'Pictures, colors and undo'),
+    (b'Sheet', b'Cells, formulas and workbooks'),
+)
 OPS = [(0, (16, 27, 304, 28), 1)]
-for top in (32, 56, 80, 104, 128, 152):
-    OPS.extend([(0, (16, top, 304, top+20), 1),
-                (0, (17, top+1, 303, top+19), 0)])
-# Calculator, document, folder, cartridge and terminal silhouettes.
-OPS.extend([(0, (24, 34, 48, 50), 1), (0, (26, 36, 46, 41), 0)])
-for y in (43, 47):
-    for x in (27, 34, 41):
-        OPS.append((0, (x, y, x+4, y+2), 0))
-OPS.extend([(0, (27, 58, 46, 74), 1), (0, (28, 59, 45, 73), 0)])
-for y in (61, 65, 69): OPS.append((0, (31, y, 42, y+1), 1))
-OPS.extend([(0, (24, 87, 48, 98), 1), (0, (24, 83, 35, 88), 1),
-            (0, (26, 89, 46, 96), 0)])
-OPS.extend([(0, (24, 107, 48, 119), 1), (0, (26, 109, 46, 117), 0),
-            (0, (28, 119, 44, 122), 1), (0, (40, 111, 44, 114), 1)])
-OPS.extend([(0, (24, 131, 48, 145), 1), (0, (26, 133, 46, 143), 0),
-            (0, (28, 135, 30, 137), 1), (0, (30, 137, 32, 139), 1),
-            (0, (28, 139, 30, 141), 1), (0, (35, 140, 42, 141), 1)])
-# Paintbrush with a narrow handle and a broad bristle end.
-OPS.extend([(0, (35, 154, 41, 162), 1),(0, (36, 155, 40, 161), 0),
-            (0, (31, 161, 45, 164), 1),(0, (29, 164, 45, 170), 1),
-            (0, (32, 166, 33, 170), 0),(0, (36, 166, 37, 170), 0),
-            (0, (40, 166, 41, 170), 0)])
 TEXT = [(16, 8, 1, b'uOS 128'), (184, 8, 1, b'Desktop')]
-for top, name, description in [
-    (32, b'Calculator', b'Numbers and saved history'),
-    (56, b'Text editor', b'Documents on disk and USB'),
-    (80, b'Files', b'Drives, USB folders, apps'),
-    (104, b'Ultimate', b'Drives, network and clock'),
-    (128, b'Claude', b'Claude Code terminal'),
-    (152, b'Paint', b'Pictures, colors and undo'),
-]:
-    TEXT.extend([(64, top+2, 1, name), (64, top+11, 1, description)])
-TEXT.extend([(8, 176, 1, b'Mouse opens   C/E/F/U/A/P apps'),
+for index, (top, (name, description)) in enumerate(zip(CARDS, LABELS)):
+    OPS.extend([(0, (16, top, 304, top+16), 1),
+                (0, (17, top+1, 303, top+15), 0)])
+    TEXT.extend([(32, top+4, 1, str(index+1).encode()), (64, top+4, 1, name)])
+TEXT.extend([(8, 164, 1, b'Cells, documents, pictures and tools'),
+             (8, 176, 1, b'Mouse opens   C/E/F/U/A/P/S apps'),
              (8, 188, 1, b'Arrows/Tab/Enter   Esc workspace')])
 
 
@@ -59,7 +43,7 @@ def pointer_shape():
 
 
 def surface(selected=0, error=0):
-    assert 0 <= selected < 6 and 0 <= error <= 255
+    assert 0 <= selected < len(CARDS) and 0 <= error <= 255
     data = bytearray(bytes(8192) + b'\x16' * 1024)
     for mode, (x0, y0, x1, y1), value in OPS:
         assert mode == 0 and value in (0, 1)
@@ -80,8 +64,8 @@ def surface(selected=0, error=0):
                     x, y = x0+column*8+dx, y0+dy
                     if 0 <= x < 320 and 0 <= y < 200 and row & (128 >> dx):
                         data[y//8*320+x//8*8+y%8] |= 128 >> (x%8)
-    for index, top in enumerate((4, 7, 10, 13, 16, 19)):
-        for y in range(top, top+3):
+    for index, top in enumerate(top//8 for top in CARDS):
+        for y in range(top, top+2):
             for x in range(2, 38):
                 data[8192+y*40+x] = 0x07 if index == selected else 0x1b
     data[8000:8128] = pointer_shape()
@@ -98,9 +82,10 @@ def console(columns, selected=0, error=0, fallback=False):
         ('U  ULTIMATE', 'DRIVES, NETWORK AND CLOCK'),
         ('A  CLAUDE', 'CLAUDE CODE TERMINAL'),
         ('P  PAINT', 'PICTURES, COLORS AND UNDO'),
+        ('S  SHEET', 'CELLS, FORMULAS AND WORKBOOKS'),
     ]):
         lines.extend([('>' if selected == index else ' ') + ' ' + name, '    '+description])
-    lines.extend(['ARROWS/TAB SELECT. ENTER OPENS.', 'C/E/F/U/A/P APPS. ESC WORKSPACE.', ''])
+    lines.extend(['ARROWS/TAB SELECT. ENTER OPENS.', 'C/E/F/U/A/P/S APPS. ESC WORKSPACE.', ''])
     # Assembly prints no newline after the error value unless the fallback follows.
     lines.append(f'APP COULD NOT OPEN: {error:02X}' if error else '')
     if fallback:

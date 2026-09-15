@@ -111,7 +111,7 @@ compatibility requirement from providing equivalent uOS applications.
 |---|---|---|---|
 | APP-WRITE | Word processor with fonts/styles, pagination, embedded pictures, search/replace, spelling, printing | Banked plain-text editor; no page layout | Create, save, reopen, edit, preview and print a multipage illustrated document; exchange supported geoWrite formats |
 | APP-PAINT | Bitmap editor, drawing tools, color/patterns, selection, zoom, clipboard, undo | [Native Paint](NATIVE-PAINT.md): 320×200 banked picture, graphical VIC/VDC viewport, connected pencil/eraser, 16 ink colors, keyboard brush and panning, undo/redo, staged Open and verified exclusive UPNT Save As through graphical IEC/Ultimate picker; retained display recovery | Native-width VDC tools; more tools/patterns, selection, zoom, clipboard, multiple undo, printing; physical round trips; declared GEOS/Commodore image import/export |
-| APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | [Standalone calculation core](NATIVE-SHEET.md): 8×32 cells, checked signed integer formulas, references, SUM and cycle detection; desktop app, grid and files remain open | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
+| APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | [Native Sheet](NATIVE-SHEET.md): editable 8×32 banked workbook, VIC/VDC grid, integer formulas, references, SUM, cycle detection, transactional Open and verified exclusive USHT Save As; formatting, decimal types, shared picker, clipboard and printing remain open | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
 | APP-DATA | Database/address book with schema, records, sorting/filtering, forms/reports, import/export | Absent | Maintain and report a record set larger than main RAM; geoFile exchange matrix |
 | APP-PUBLISH | Page layout with text/image frames, columns, styles, preview, print/export | Absent | Complete a newsletter and reopen it without layout loss; geoPublish comparison fixtures |
 | APP-ORGANIZE | Calendar, appointments, alarms, contacts, notes and clock accessories | Clock plus editor | Persistent appointments; alarms while another app is active; timezone/date rollover tests |
@@ -914,3 +914,21 @@ page staging. All three Files modules remain paired with the matching core.
 The suite still has fifteen entries, with 81 free D64 blocks or 2,577 free D81
 blocks. Recursive search, sorting, persistent filters, picker integration,
 physical qualification and the wider desktop/office/expansion roadmap remain open.
+
+## 2026-09-14 — Native Sheet desktop app
+
+[Sheet](NATIVE-SHEET.md) now opens from the seventh desktop card or S shortcut.
+Its 8 × 32 workbook supports editing, checked integer formulas, scrolling,
+keyboard/1351 controls and both displays. Open stages and validates a complete
+workbook before publishing it. Save As exclusively creates a USHT file and
+reopens it for a full byte comparison before clearing the dirty flag.
+
+The [software checkpoint](validation/2026-09-14-native-sheet-desktop/README.md)
+records CPU workflows, two private VICE IEC round trips and a clean rebuild of
+all 37 program/disk images. The app needs 93 pages, with 32 more for its workbook
+and temporary staging during New/Open. The seven-app suite has 34 free D64
+blocks or 2,530 free D81 blocks.
+
+Decimal arithmetic, formatting, range/clipboard operations, undo, printing,
+picker integration, geoCalc/CSV exchange and physical qualification remain
+required. The broader OS, office and expansion objectives remain open.

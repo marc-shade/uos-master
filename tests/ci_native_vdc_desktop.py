@@ -174,7 +174,7 @@ def run(group):
             for size in (16, 64):
                 for addressing in (16, 64):
                     p = start(size, addressing); p.check(0)
-                    for selected in range(1, 6): p.key(9); p.check(selected)
+                    for selected in range(1, 7): p.key(9); p.check(selected)
                     p.key(9); p.check(0)
                     p.frame(); p.check(0)
                     for x, y in ((0,0),(319,199),(319,0),(0,199),(99,40),(103,64),(117,88)):
@@ -182,11 +182,11 @@ def run(group):
                     p.bus.pots = [255,255]; p.frame(); p.check(p.value('gd_selected'))
                     assert not p.value('vd_pointer_visible')
                     p.key(27, exited=True); p.restored()
-                    done(f'{size} KiB physical RAM, {addressing} KiB initial addressing, six selections, pointer edges and exact restore',p)
+                    done(f'{size} KiB physical RAM, {addressing} KiB initial addressing, seven selections, pointer edges and exact restore',p)
         if group in ('all', 'launch'):
             for size in (16, 64):
-                for index, name in enumerate((b'CALC',b'EDITOR',b'FILES',b'ULTIMATE',b'CLAUDE',b'PAINT')):
-                    p = start(size); p.frame(); p.move(100,40+index*24); p.check(index)
+                for index, name in enumerate((b'CALC',b'EDITOR',b'FILES',b'ULTIMATE',b'CLAUDE',b'PAINT',b'SHEET')):
+                    p = start(size); p.frame(); p.move(100,44+index*16); p.check(index)
                     before = p.events
                     p.frame(down=True); p.frame(down=False, exited=True); p.restored()
                     assert int.from_bytes(p.ram[0x3d13:0x3d15],'little') == before

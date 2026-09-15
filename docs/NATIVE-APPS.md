@@ -8,7 +8,7 @@ In the browser, **L** opens an absolute USB app path field.
 or launches the selected native app through the checked loader.
 Applications run in native C128 mode, use the kernel's owned RAM services and
 return with the workspace's existing allocations intact.
-The [blue native desktop](NATIVE-GRAPHICS.md) launches the current six-app
+The [blue native desktop](NATIVE-GRAPHICS.md) launches the current seven-app
 suite. Further Ultimate/productivity apps remain on the roadmap. This lifecycle supports one foreground application; scheduling and
 preserving suspended applications remain open.
 

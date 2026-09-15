@@ -89,7 +89,7 @@ N_BOOTFORMAT    = $3de4          ; ABI 1.12: boot geometry, 0 D64 / 1 D71 / 2 D8
 N_CLIPBOARD     = $3de5          ; ABI 1.13: 27 session bytes; clipboard library only
 N_CLIPOWNER     = 31             ; clipboard allocations survive foreground cleanup
 N_BROWSERLEN    = $3d2e          ; ABI 1.5: persistent Ultimate browser path length
-N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude / 5 Paint
+N_DESKTOPSEL    = $3d2f          ; session: 0 Calc / 1 Editor / 2 Files / 3 Ultimate / 4 Claude / 5 Paint / 6 Sheet
 N_BROWSERPOS    = $3d30          ; dword: selected Ultimate directory ordinal
 N_BROWSERNAME_LEN = $3d34        ; ABI 1.5: selected raw name length, 0 when empty
 ; ABI 1.6 field state is eight bytes inside the active app allocation:

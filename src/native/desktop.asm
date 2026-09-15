@@ -1,7 +1,7 @@
 ; Native graphical launcher with a port-1 1351 pointer and keyboard controls.
 ; GPL v3. Uses the existing app dispatcher and owned display lifetime.
 .include "api.inc"
-GD_APP_COUNT=6
+GD_APP_COUNT=7
 * = N_APPBASE
 gd_image:
         .text "napp"
@@ -136,6 +136,8 @@ gd_get_key:
         beq gd_claude
         cmp #$50
         beq gd_paint
+        cmp #$53
+        beq gd_sheet
         jmp gd_loop
 gd_idle:
         jsr pm_poll
@@ -167,6 +169,9 @@ gd_claude:
         bne gd_shortcut
 gd_paint:
         lda #5
+        bne gd_shortcut
+gd_sheet:
+        lda #6
 gd_shortcut:
         sta gd_selected
         sta N_DESKTOPSEL
@@ -256,7 +261,7 @@ gd_highlight_next:
         lda gd_card_rows,x
         sta gfx_y0
         clc
-        adc #3
+        adc #2
         sta gfx_y1
         lda #0
         sta gfx_x0+1
@@ -428,10 +433,10 @@ gd_launch_error: .byte 0
 gd_handle:       .fill 4,0
 gd_screen:       .byte 0
 gd_index:        .byte 0
-gd_card_rows:    .byte 4,7,10,13,16,19
-gd_name_lengths: .byte 4,6,5,8,6,5
-gd_name_offsets: .byte 0,4,10,15,23,29
-gd_names:       .text "calceditorfilesultimateclaudepaint"
+gd_card_rows:    .byte 5,7,9,11,13,15,17
+gd_name_lengths: .byte 4,6,5,8,6,5,5
+gd_name_offsets: .byte 0,4,10,15,23,29,34
+gd_names:       .text "calceditorfilesultimateclaudepaintsheet"
 gd_hex:         .text "0123456789abcdef"
 gd_title:       .text "uos desktop",13,13,0
 gd_item_calc:   .text " c  calculator",13,"    numbers and saved history",13,0
@@ -440,9 +445,10 @@ gd_item_files:  .text " f  files",13,"    drives, usb folders and apps",13,0
 gd_item_ultimate: .text " u  ultimate",13,"    drives, network and clock",13,0
 gd_item_claude: .text " a  claude",13,"    claude code terminal",13,0
 gd_item_paint: .text " p  paint",13,"    pictures, colors and undo",13,0
-gd_item_lo: .byte <gd_item_calc,<gd_item_editor,<gd_item_files,<gd_item_ultimate,<gd_item_claude,<gd_item_paint
-gd_item_hi: .byte >gd_item_calc,>gd_item_editor,>gd_item_files,>gd_item_ultimate,>gd_item_claude,>gd_item_paint
-gd_help: .text "arrows/tab select. enter opens.",13,"c/e/f/u/a/p apps. esc workspace.",13,13,0
+gd_item_sheet: .text " s  sheet",13,"    cells, formulas and workbooks",13,0
+gd_item_lo: .byte <gd_item_calc,<gd_item_editor,<gd_item_files,<gd_item_ultimate,<gd_item_claude,<gd_item_paint,<gd_item_sheet
+gd_item_hi: .byte >gd_item_calc,>gd_item_editor,>gd_item_files,>gd_item_ultimate,>gd_item_claude,>gd_item_paint,>gd_item_sheet
+gd_help: .text "arrows/tab select. enter opens.",13,"c/e/f/u/a/p/s apps. esc workspace.",13,13,0
 gd_text_error: .text "app could not open: ",0
 gd_fallback: .text 13,"graphics unavailable.",13,"text controls remain active.",0
 gd_error_label: .byte 65,112,112,32,99,111,117,108,100,32,110,111,116,32,111,112,101,110,58,32

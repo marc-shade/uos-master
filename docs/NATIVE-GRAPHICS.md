@@ -65,8 +65,8 @@ The builder retains three distinct boot disks:
 | `target/native/uos128.d64` | Diagnostic workspace | Original Files and Apps browser |
 
 Use arrows or Tab to select an app, Home to select Calculator, and Enter to
-open the selection. C, E, F, U, A and P open Calculator, Editor, Files, Ultimate,
-Claude and Paint directly. A 1351 mouse in control port 1 selects app cards on both displays on
+open the selection. C, E, F, U, A, P and S open Calculator, Editor, Files, Ultimate,
+Claude, Paint and Sheet directly. A 1351 mouse in control port 1 selects app cards on both displays on
 movement; press and release the left button on the same button to open it.
 Moving off the button before release cancels the launch. A stationary mouse
 preserves keyboard selection. The 64 KiB VDC highlights the selected card in
@@ -76,11 +76,11 @@ or the current display configuration is unsupported, the same desktop controls
 remain available as text on both consoles. A missing app reports its load error
 and returns to the desktop. A missing desktop leaves a usable workspace.
 
-Arrow/Tab selection and C/E/F/U/A/P shortcuts update `N_DESKTOPSEL` at `$3d2f`:
-0 Calculator, 1 Editor, 2 Files, 3 Ultimate, 4 Claude, 5 Paint. A reloaded desktop restores that selection
-in both graphics and text fallback; values outside 0–5 recover to Calculator.
+Arrow/Tab selection and C/E/F/U/A/P/S shortcuts update `N_DESKTOPSEL` at `$3d2f`:
+0 Calculator, 1 Editor, 2 Files, 3 Ultimate, 4 Claude, 5 Paint, 6 Sheet. A reloaded desktop restores that selection
+in both graphics and text fallback; values outside 0–6 recover to Calculator.
 Native restart clears the selection. This uses an existing mailbox byte and
-uses 35 app pages, 36 VIC surface pages and the shared VDC component. Selection is
+uses 34 app pages, 36 VIC surface pages and the shared VDC component. Selection is
 session state; preferences saved across restarts remain roadmap work.
 The [selection checkpoint](validation/2026-09-12-native-desktop-selection/README.md)
 records the ABI 1.9 build, compatibility checks and complete app/workspace
@@ -90,15 +90,15 @@ On a physical C128, mount the desktop disk on device 8 and boot in native mode.
 The Ultimate PRG runner enters C64 mode; use native disk boot for this kernel.
 The physical workflow in `hw_ultimate_check.py --native-desktop` is still
 admitted only for its frozen ABI 1.9 images. A new frozen candidate is required
-before qualifying the current ABI 1.12 suite and VDC desktop on the physical machine.
+before qualifying the current ABI 1.14 suite and VDC desktop on the physical machine.
 
-The desktop PRG occupies 35 app pages and reserves 36 VIC surface pages plus
-the 30-page [bank-1 VDC component](NATIVE-VDC-SERVICE.md). REU snapshot backing
-leaves 325 of the 426 managed pages free; RAM backing leaves 261 or 253 with
+The desktop PRG occupies 34 app pages and reserves 36 VIC surface pages plus
+the 39-page [bank-1 VDC component](NATIVE-VDC-SERVICE.md). REU snapshot backing
+leaves 317 of the 426 managed pages free; RAM backing leaves 253 or 245 with
 a 16 or 64 KiB VDC.
 All desktop allocations are released before an app handoff; VDC memory and
 registers are restored before the snapshot is freed. There is one foreground app; desktop preferences saved across restarts, broader widgets and menus,
-overlapping windows, VDC graphics inside apps and styled-document layout
+overlapping windows and styled-document layout
 remain roadmap work.
 
 ## Presentation lifetime

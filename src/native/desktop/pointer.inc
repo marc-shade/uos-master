@@ -17,11 +17,11 @@ pm_find_y:
 -       lda pm_y
         sec
         sbc pm_tops,x
-        cmp #20
+        cmp #16
         bcc pm_find_done
         dex
         bpl -
 pm_find_done:
         rts
-pm_tops: .byte 32,56,80,104,128,152
+pm_tops: .byte 40,56,72,88,104,120,136
 .include "../input/pointer.inc"

@@ -144,12 +144,12 @@ def main():
         case('smaller-declared-allocation-rejects',seal(altered),raw,expected_exit=16)
         if args.apps:
             report['sizes']={}
-            for name in ('desktop','calc','editor','files','controls','claude','paint'):
+            for name in ('desktop','calc','editor','files','controls','claude','paint','sheet'):
                 original=(ROOT/'target/native-desktop'/f'{name}.prg').read_bytes()
                 if original[34:38]==b'NPZ2':
                     image=original;original=decode(image)
                 else:
-                    runtime_end=json.loads((ROOT/'target/native-desktop/claude.json').read_text()).get('runtime_end',0xaaa3) if name=='claude' else None
+                    runtime_end=json.loads((ROOT/'target/native-desktop'/f'{name}.json').read_text())['runtime_end'] if name in ('claude','sheet') else None
                     image=build(original,runtime_end=runtime_end)
                 report['sizes'][name]=dict(raw=len(original),packed=len(image),sha256=hashlib.sha256(image).hexdigest())
                 case(name+'-body-and-cleanup',image,original)

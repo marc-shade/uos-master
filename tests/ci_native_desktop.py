@@ -63,7 +63,7 @@ def done(name, d):
 original_machine = calc.Machine
 try:
     d = Desktop();d.check()
-    for key, selected in [(9,1),(0x11,2),(0x1d,3),(9,4),(9,5),(9,0),(0x91,5),(0x9d,4),(0x9d,3),(0x13,0),(ord('?'),0)]:
+    for key, selected in [(9,1),(0x11,2),(0x1d,3),(9,4),(9,5),(9,6),(9,0),(0x91,6),(0x9d,5),(0x9d,4),(0x13,0),(ord('?'),0)]:
         d.key(key);d.check(selected)
     d.key(27, exited=True)
     assert d.ram[0x3d28] == 2 and not d.ram[heap.symbol('v_tag')]
@@ -74,10 +74,10 @@ try:
             def __init__(self):
                 super().__init__();self.ram[0x3d2f]=saved
         calc.Machine=SelectedMachine
-        d=Desktop();d.check(saved if saved<6 else 0);d.key(27,exited=True)
+        d=Desktop();d.check(saved if saved<7 else 0);d.key(27,exited=True)
         done('restore or repair saved desktop selection '+str(saved),d)
     calc.Machine=original_machine
-    for selected in range(6):
+    for selected in range(7):
         d=Desktop()
         for _ in range(selected):d.key(9)
         d.check(selected);d.key(27,exited=True)
@@ -90,12 +90,12 @@ try:
         d.key(27,exited=True)
         done('desktop reload retains selection and releases both allocations '+str(selected),d)
         calc.Machine=original_machine
-    for key, name in [(13,b'CALC'),(ord('c'),b'CALC'),(ord('E'),b'EDITOR'),(ord('f'),b'FILES'),(ord('u'),b'ULTIMATE'),(ord('a'),b'CLAUDE'),(ord('p'),b'PAINT')]:
+    for key, name in [(13,b'CALC'),(ord('c'),b'CALC'),(ord('E'),b'EDITOR'),(ord('f'),b'FILES'),(ord('u'),b'ULTIMATE'),(ord('a'),b'CLAUDE'),(ord('p'),b'PAINT'),(ord('s'),b'SHEET')]:
         d = Desktop();d.key(key, exited=True)
         assert d.ram[0x3d28] == 1 and d.ram[0x3d21:0x3d23] == bytes([8,len(name)])
         assert d.ram[0x3d2c] == (2 if args.d81 else 0) and bytes(d.ram[0x3d40:0x3d40+len(name)]) == name
         assert not d.ram[heap.symbol('v_tag')] and d.m.bus.video[0xd011] == 0x1b
-        assert d.ram[0x3d2f] == {b'CALC':0,b'EDITOR':1,b'FILES':2,b'ULTIMATE':3,b'CLAUDE':4,b'PAINT':5}[name]
+        assert d.ram[0x3d2f] == {b'CALC':0,b'EDITOR':1,b'FILES':2,b'ULTIMATE':3,b'CLAUDE':4,b'PAINT':5,b'SHEET':6}[name]
         done('owned app handoff '+name.decode()+' key '+str(key), d)
     class ErrorMachine(original_machine):
         def __init__(self):

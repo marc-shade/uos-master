@@ -1,13 +1,13 @@
 # Native D64 and D81 boot media
 
-`python3 -B build-native-desktop.py` builds the same six native apps for a
+`python3 -B build-native-desktop.py` builds the same seven native apps for a
 1541/D64 and a 1581/D81. Both cold-boot into the blue graphical launcher.
-The D64 suite has 93 free data blocks; the D81 has **2,589** (657,606 bytes
+The D64 suite has 34 free data blocks; the D81 has **2,530** (642,620 bytes
 of sequential-file payload, before any additional directory allocation).
 
 | Image under `target/` | Startup | Files |
 |---|---|---|
-| `native-desktop/uos128.d64` / `.d81` | Blue launcher | Six apps and their modules |
+| `native-desktop/uos128.d64` / `.d81` | Blue launcher | Seven apps and their modules |
 | `native-desktop/workspace.d64` / `.d81` | Memory workspace; B opens the launcher | Same suite |
 | `native/uos128.d64` / `.d81` | Memory workspace; B opens text Files and Apps | Diagnostic Calculator, browser, Editor and modules |
 
