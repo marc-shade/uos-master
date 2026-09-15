@@ -151,10 +151,11 @@ static int32_t cell_value(uint8_t index, uint8_t in_sum)
 
 static int32_t expression(void);
 
-/* SUM accepts one rectangular range; text and empty cells are ignored. */
-static int32_t sum(void)
+/* Aggregates accept one rectangle, ignoring empty/text cells. All resolve
+ * dependencies and propagate cell errors, including COUNT. Empty sets give 0. */
+static int32_t aggregate(uint8_t function)
 {
-    uint8_t first, last, x, y, x0, x1, y0, y1, swap;
+    uint8_t first, last, x, y, x0, x1, y0, y1, swap, index, found = 0;
     int32_t value = 0, item;
     spaces();
     if (source[position] != '(') { fail(SH_SYNTAX); return 0; }
@@ -172,8 +173,14 @@ static int32_t sum(void)
     if (y0 > y1) { swap = y0; y0 = y1; y1 = swap; }
     for (y = y0; y <= y1; ++y) {
         for (x = x0; x <= x1; ++x) {
-            item = cell_value(y * SH_COLUMNS + x, 1);
-            value = arithmetic(value, item, '+');
+            index = y * SH_COLUMNS + x;
+            item = cell_value(index, 1);
+            if (error) return 0;
+            if (sh_types[index] != SH_NUMBER) continue;
+            if (function == 0) value = arithmetic(value, item, '+');
+            else if (function == 3) ++value;
+            else if (!found || (function == 1 ? item < value : item > value)) value = item;
+            found = 1;
             if (error) return 0;
         }
     }
@@ -199,7 +206,14 @@ static int32_t primary(void)
         start = position;
         while (letter(source[position])) ++position;
         if (position - start == 3 && upper(source[start]) == 0x53 &&
-            upper(source[start+1]) == 0x55 && upper(source[start+2]) == 0x4d) return sum();
+            upper(source[start+1]) == 0x55 && upper(source[start+2]) == 0x4d) return aggregate(0);
+        if (position - start == 3 && upper(source[start]) == 0x4d) {
+            if (upper(source[start+1]) == 0x49 && upper(source[start+2]) == 0x4e) return aggregate(1);
+            if (upper(source[start+1]) == 0x41 && upper(source[start+2]) == 0x58) return aggregate(2);
+        }
+        if (position - start == 5 && upper(source[start]) == 0x43 &&
+            upper(source[start+1]) == 0x4f && upper(source[start+2]) == 0x55 &&
+            upper(source[start+3]) == 0x4e && upper(source[start+4]) == 0x54) return aggregate(3);
         position = start;
         index = reference();
         return cell_value(index, 0);

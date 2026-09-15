@@ -79,10 +79,10 @@ header and every cell before reporting success. Cancellation and errors keep
 the workbook; a newly created partial file is retained. Transfers poll for
 Escape and mouse Back at record boundaries and show progress.
 
-The current app reserves 94 pages for code, state and the C stack, plus its
+The current app reserves 96 pages for code, state and the C stack, plus its
 36-page VIC surface and the 39-page VDC component. With the 32-page workbook,
-RAM-backed 16/64 KiB VDC snapshots leave 161/153 managed pages free. The calculated budget for a supported
-REU-backed display snapshot leaves 225 (not yet tested with Sheet); staged Open/New need 32 additional
+RAM-backed 16/64 KiB VDC snapshots leave 159/151 managed pages free. The calculated budget for a supported
+REU-backed display snapshot leaves 223 (not yet tested with Sheet); staged Open/New need 32 additional
 pages. Source cells currently stay in main banked RAM.
 
 ## Workbook and formulas
@@ -104,16 +104,19 @@ Formulas begin with `=` and support:
 - Normal multiplication/division precedence and left-to-right evaluation
   within each precedence level. Division truncates toward zero.
 - Case-insensitive references such as `A1` or `h32`.
-- A single rectangular range per `SUM`, such as `=SUM(A1:B12)`.
-  Reversed endpoints describe the same rectangle. Empty and text cells in
-  the range are ignored; directly referencing text produces a value error.
+- `SUM`, `MIN`, `MAX` and `COUNT` each accept one rectangular range, such as
+  `=MIN(A1:B12)`. Reversed endpoints describe the same rectangle. Empty and
+  text cells are ignored. An empty numeric set returns zero. `COUNT` counts
+  numeric cells (including zero and calculated numbers); it resolves every
+  dependency and propagates cell errors, as do the other range functions.
+  Directly referencing text produces a value error.
 - Full recalculation after source edits, forward references, error
   propagation and detection of cycles, including cycles inside a range.
 
 Values range from −2,147,483,648 through 2,147,483,647. Each arithmetic step
 and running SUM must fit that range. Division by zero and overflow produce
 cell errors. There is no floating-point, decimal, currency, date or time
-type yet; for example, `1.25` is currently text. SUM lists, other functions,
+type yet; for example, `1.25` is currently text. Argument lists, other functions,
 multiple sheets, absolute references and formula rewriting on cell moves
 are not implemented.
 
@@ -173,7 +176,8 @@ corrections. No VICE, native app or physical hardware claim is made here.
 The [desktop checkpoint](validation/2026-09-14-native-sheet-desktop/README.md)
 records the native app's software qualification separately from that engine
 checkpoint. The [Undo/Redo checkpoint](validation/2026-09-15-native-sheet-undo/README.md)
-covers the subsequent one-cell history feature. Physical C128/Ultimate testing
+covers the subsequent one-cell history feature. The [range-function checkpoint](validation/2026-09-15-native-sheet-ranges/README.md)
+records MIN/MAX/COUNT qualification. Physical C128/Ultimate testing
 is still required.
 
 Remaining work includes the shared file picker, clipboard, multi-step/range undo, formatting,

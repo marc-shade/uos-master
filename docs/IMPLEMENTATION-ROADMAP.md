@@ -111,7 +111,7 @@ compatibility requirement from providing equivalent uOS applications.
 |---|---|---|---|
 | APP-WRITE | Word processor with fonts/styles, pagination, embedded pictures, search/replace, spelling, printing | Banked plain-text editor; no page layout | Create, save, reopen, edit, preview and print a multipage illustrated document; exchange supported geoWrite formats |
 | APP-PAINT | Bitmap editor, drawing tools, color/patterns, selection, zoom, clipboard, undo | [Native Paint](NATIVE-PAINT.md): 320×200 banked picture, graphical VIC/VDC viewport, connected pencil/eraser, 16 ink colors, keyboard brush and panning, undo/redo, staged Open and verified exclusive UPNT Save As through graphical IEC/Ultimate picker; retained display recovery | Native-width VDC tools; more tools/patterns, selection, zoom, clipboard, multiple undo, printing; physical round trips; declared GEOS/Commodore image import/export |
-| APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | [Native Sheet](NATIVE-SHEET.md): editable 8×32 banked workbook, VIC/VDC grid, integer formulas, references, SUM, cycle detection, one-step cell Undo/Redo, transactional Open and verified exclusive USHT Save As; formatting, decimal types, shared picker, clipboard and printing remain open | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
+| APP-SHEET | Spreadsheet with cell types, formulas, references, recalc, formatting, import/export, printing | [Native Sheet](NATIVE-SHEET.md): editable 8×32 banked workbook, VIC/VDC grid, integer formulas, references, SUM/MIN/MAX/COUNT, cycle detection, one-step cell Undo/Redo, transactional Open and verified exclusive USHT Save As; formatting, decimal types, shared picker, clipboard and printing remain open | Recalculate/save/reopen a useful workbook; formula cycles/errors and memory limits tested; geoCalc exchange matrix |
 | APP-DATA | Database/address book with schema, records, sorting/filtering, forms/reports, import/export | Absent | Maintain and report a record set larger than main RAM; geoFile exchange matrix |
 | APP-PUBLISH | Page layout with text/image frames, columns, styles, preview, print/export | Absent | Complete a newsletter and reopen it without layout loss; geoPublish comparison fixtures |
 | APP-ORGANIZE | Calendar, appointments, alarms, contacts, notes and clock accessories | Clock plus editor | Persistent appointments; alarms while another app is active; timezone/date rollover tests |
@@ -947,4 +947,18 @@ records focused history/failure tests, a VICE IEC round trip, disk validation
 and a clean rebuild of all 37 images. Sheet now reserves 94 app pages, with
 33 free D64 blocks or 2,529 free D81 blocks in the suite. Multi-step/range
 history, clipboard, decimal types, formatting, printing, picker integration
+and physical qualification remain open.
+
+## 2026-09-15 — Sheet range functions
+
+Sheet now calculates MIN, MAX and COUNT over rectangular ranges, alongside
+SUM. Empty/text cells are ignored; an empty numeric set returns zero. COUNT
+counts numeric values and resolves dependencies, propagating cell errors.
+All functions accept reversed endpoints and case-insensitive names.
+
+The [range-function checkpoint](validation/2026-09-15-native-sheet-ranges/README.md)
+records host/6502 oracle tests, a loaded-app save/reopen and undo workflow,
+a VICE file/display regression, media validation and a clean rebuild. The
+app uses 96 pages; suite disk space remains 33 D64 / 2,529 D81 blocks. Decimal
+types, further functions, formatting, clipboard/picker integration, printing
 and physical qualification remain open.

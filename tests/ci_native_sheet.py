@@ -119,7 +119,7 @@ class Sheet(Pointer):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case', choices=('core', 'files', 'faults', 'mouse', 'ultimate', 'recovery', 'undo', 'undo-faults'), default='core')
+    parser.add_argument('--case', choices=('core', 'files', 'faults', 'mouse', 'ultimate', 'recovery', 'undo', 'undo-faults', 'aggregates'), default='core')
     parser.add_argument('--size', type=int, choices=(16,64), default=64)
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
@@ -154,6 +154,17 @@ def main():
             p.key(27); assert p.value('mode') == 3
             p.key(27); assert not p.value('mode') and p.value('wb_dirty')
             p.check(); p.exit(); done('editing, references, SUM, cycles, full grid navigation, source retention and discard protection', p)
+        elif args.case == 'aggregates':
+            p=Sheet();p.edit('13');p.key(0x1d);p.edit('-7');p.key(0x1d)
+            p.edit('=MIN(A1:B1)');p.key(0x1d);p.edit('=MAX(A1:B1)')
+            p.key(0x1d);p.edit('=COUNT(A1:B1)')
+            assert p.values()[:5]==[13,-7,-7,13,2]
+            expected=workbook({0:'13',1:'-7',2:'=min(a1:b1)',3:'=max(a1:b1)',4:'=count(a1:b1)'})
+            p.save('RANGES');assert bytes(p.io.files[8,b'RANGES',b'S'])==expected
+            p.key(0x13);p.edit('99');assert p.values()[3]==99
+            p.key(26);assert p.values()[:5]==[13,-7,-7,13,2]
+            p.open('RANGES');assert p.sources()==expected[16:] and p.values()[:5]==[13,-7,-7,13,2]
+            p.check();p.exit();done('MIN/MAX/COUNT entry, dependency recalculation, undo and byte-exact save/reopen',p)
         elif args.case == 'undo':
             p=Sheet();p.key(26);assert not p.value('wb_dirty')
             p.edit('21');p.key(0x1d);p.edit('=A1*2')

@@ -195,6 +195,37 @@ def scalar_cases(random_count):
 
 
 def workbook_cases():
+    for function, operation in [('MIN', min), ('MAX', max), ('COUNT', len)]:
+        for numbers in ([7, 19, 3], [-7, -19, -3], [LO, HI, 0], []):
+            cells = ['']*256; want = [(EMPTY, 0)]*256
+            cells[255] = "'123"; want[255] = (TEXT, 0)
+            for index, number in enumerate(numbers, 8):
+                cells[index] = str(number); want[index] = (NUMBER, number)
+            cells[0] = '='+function.lower()+'(H32:A2)'
+            want[0] = (NUMBER, operation(numbers) if numbers else 0)
+            yield function+' reversed forward range '+str(numbers), cells, want, None
+        for source, error_type in [('=1/0', DIVZERO), ('=A1', CYCLE), ('=2147483647+1', OVERFLOW)]:
+            cells = ['']*256; want = [(EMPTY, 0)]*256
+            cells[0] = '='+function+'(B1:B1)';cells[1] = source
+            want[0] = want[1] = (error_type, 0)
+            yield function+' propagates '+source, cells, want, None
+        cells = ['']*256; want = [(EMPTY, 0)]*256
+        for index, suffix in enumerate(('()', '(B1)', '(B1:B2', '(B1,B2)', '(I1:B1)', '(A0:B1)')):
+            cells[index] = '='+function+suffix
+            want[index] = (SYNTAX if index < 4 else REFERENCE, 0)
+        yield function+' invalid ranges', cells, want, None
+    rng = random.Random(0x128a)
+    for trial in range(4):
+        cells=['']*256;want=[(EMPTY,0)]*256;numbers=[]
+        for index in range(8,256):
+            number=rng.randint(LO,HI)
+            if index%5:
+                cells[index]=str(number);want[index]=(NUMBER,number);numbers.append(number)
+            elif index%10:
+                cells[index]='text';want[index]=(TEXT,0)
+        for index,(function,result) in enumerate((('MIN',min(numbers)),('MAX',max(numbers)),('COUNT',len(numbers)))):
+            cells[index]='='+function+'(A2:H32)';want[index]=(NUMBER,result)
+        yield 'random aggregate workbook '+str(trial),cells,want,None
     cells = ['']*256; want = [(EMPTY, 0)]*256
     entries = {0:('120', NUMBER, 120), 1:('35', NUMBER, 35), 2:('=A1-B1', NUMBER, 85),
                3:('=C1*2', NUMBER, 170), 5:('=E1+7', NUMBER, 7), 8:('label', TEXT, 0),
