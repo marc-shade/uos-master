@@ -8,8 +8,9 @@ formulas. APP-SHEET remains open in the [completion roadmap](IMPLEMENTATION-ROAD
 
 Build the complete D64/D81 suite with `python3 -B build-native-desktop.py`.
 `python3 -B build-native-sheet.py` builds the standalone app. Keep
-`VDSVC.PRG` beside `SHEET` when copying the app to another disk or Ultimate
-folder. The app uses the checked native loader for either source.
+`SHFONT.PRG`, `SHCALC.PRG`, `SHCLIP.PRG` and `VDSVC.PRG` beside `SHEET`
+when copying the app to another disk or Ultimate folder. Keep the three
+`SH*.PRG` modules paired with the exact app build. The app uses the checked native loader for either source.
 
 ## Desktop controls
 
@@ -18,6 +19,7 @@ folder. The app uses the checked native loader for either source.
 | Arrows / Tab | Move between cells; the four-column, twelve-row viewport follows the selection |
 | Home | Return to A1 |
 | Ctrl-Z / Ctrl-R | Undo / redo the last cell edit or Clear |
+| Ctrl-C / Ctrl-X / Ctrl-V | Copy / cut / paste one complete cell source through the session clipboard |
 | Enter / F7 / Edit | Edit the selected cell's existing source |
 | Printable key | Start a replacement cell entry |
 | Enter while editing | Commit and recalculate the workbook |
@@ -50,6 +52,21 @@ history. A new edit replaces it; successful New/Open clears it. Save As keeps
 history available. Undo and Redo conservatively mark the workbook unsaved,
 even if its bytes match an earlier saved version. History is unavailable while
 a cell field or file dialog is open. Multi-step and range history remain work.
+
+## Shared clipboard
+
+Copy exports the selected cell's complete ASCII source, including a formula's
+leading `=`. Cut publishes that source before clearing the cell. Paste replaces
+the selected source and recalculates; Undo can restore the previous cell.
+References are copied literally, without relative-reference rewriting.
+These keys operate on cells outside field editing and modal dialogs.
+
+Sheet exchanges text with Editor and Claude through the existing session
+clipboard. It accepts only 1–31 printable ASCII bytes. Longer items, control
+bytes (including line endings), non-ASCII bytes and empty items are rejected
+without changing the workbook or clipboard. Copy/Cut on an empty cell also
+leave the previous clipboard intact. Clipboard data survives app exit and
+New/Open; kernel restart clears it. There is no range or tabular paste yet.
 
 ## Workbook files and ownership
 
@@ -84,6 +101,25 @@ The current app reserves 96 pages for code, state and the C stack, plus its
 RAM-backed 16/64 KiB VDC snapshots leave 159/151 managed pages free. The calculated budget for a supported
 REU-backed display snapshot leaves 223 (not yet tested with Sheet); staged Open/New need 32 additional
 pages. Source cells currently stay in main banked RAM.
+
+## Checked modules
+
+The 96-page app allocation includes a shared module window at `$b100..$bfff`.
+The core keeps source storage, calculation results, undo state, display owners
+and the C stack below it. `SHCALC.PRG` computes values; `SHFONT.PRG` supplies
+the display font; `SHCLIP.PRG` uses the shared clipboard library. Each module
+is checked for extent, CRC and parent-app identity and loaded from the original
+app's IEC device or Ultimate directory. A failed replacement cannot call an
+old module token. No resident kernel ABI change is required.
+
+A missing or corrupt calculation module preserves source cells and invalidates
+all displayed results. Restoring the matching file and accepting the same cell
+again retries calculation without replacing undo history. An unavailable font
+after editing latches the failure and retains the workbook and display owners.
+After restoring the file, Esc or Ctrl-L explicitly retries; unrelated input
+does not repeat source I/O. Startup refusal releases the blank app through normal cleanup.
+Module swaps add disk I/O when alternating edits, presentation and clipboard
+actions. Caching and a larger shared picker module remain future work.
 
 ## Workbook and formulas
 
@@ -177,10 +213,11 @@ The [desktop checkpoint](validation/2026-09-14-native-sheet-desktop/README.md)
 records the native app's software qualification separately from that engine
 checkpoint. The [Undo/Redo checkpoint](validation/2026-09-15-native-sheet-undo/README.md)
 covers the subsequent one-cell history feature. The [range-function checkpoint](validation/2026-09-15-native-sheet-ranges/README.md)
-records MIN/MAX/COUNT qualification. Physical C128/Ultimate testing
+records MIN/MAX/COUNT qualification. The [module/clipboard checkpoint](validation/2026-09-15-native-sheet-clipboard/README.md)
+records the modular app and session clipboard exchange. Physical C128/Ultimate testing
 is still required.
 
-Remaining work includes the shared file picker, clipboard, multi-step/range undo, formatting,
+Remaining work includes the shared file picker, range clipboard, multi-step/range undo, formatting,
 CSV and geoCalc exchange, decimal arithmetic, more functions, larger/multiple
 sheets, printing and session recovery. Recalculation is synchronous; background
 recalculation and cancellation of long dependency chains remain open. The

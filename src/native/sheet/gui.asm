@@ -18,6 +18,9 @@ sg_surface:
         bpl -
         rts
 sg_start:
+        lda #1
+        jsr sg_module
+        bcs sg_result
         lda #0
         sta N_BANK
         lda N_CURRENT
@@ -80,6 +83,8 @@ sg_close:
         sta sg_handle
         beq sg_result
 sg_reopen:
+        lda #0
+        sta sm_display_fault
         jsr vd_close
         bcs sg_result
         jsr vd_open
@@ -91,11 +96,19 @@ sg_reopen:
 sg_draw:
         lda #0
         sta N_READY
+        lda sm_display_fault
+        bne sg_result
         lda vd_phase
         beq +
         lda vd_fault
         bne sg_result
-+       lda #0
++       lda #1
+        jsr sg_module
+        bcc +
+        sta sm_display_fault
+        jmp sg_result
++
+        lda #0
         sta sg_row
         sta sg_changed
 -       ldx sg_row
@@ -380,4 +393,6 @@ sg_bitmap_rows:
         .for row=0,row<25,row+=1
         .word row*320
         .endfor
-sg_font: .binary "../graphics/font8.bin"
+sg_font=$b111
+sm_display_fault: .byte 0
+.include "modules.inc"

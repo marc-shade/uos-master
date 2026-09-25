@@ -4,6 +4,9 @@
  */
 #include "engine.h"
 #include <string.h>
+#ifdef SH_MODULE
+#define sh_recalculate sh_calculate
+#endif
 
 #define SH_MAX INT32_C(2147483647)
 #define SH_MIN (-SH_MAX - 1)
@@ -50,10 +53,16 @@ static void fail(uint8_t code)
     if (!error) error = code;
 }
 
+#ifdef SH_MODULE
+#pragma code-name(push, "CODE")
+#endif
 static uint32_t magnitude(int32_t value)
 {
     return value < 0 ? (uint32_t)(-(value + 1)) + 1 : (uint32_t)value;
 }
+#ifdef SH_MODULE
+#pragma code-name(pop)
+#endif
 
 static int32_t signed_value(uint32_t value, uint8_t negative)
 {
@@ -336,6 +345,9 @@ uint8_t sh_recalculate(void)
     return 0;
 }
 
+#ifdef SH_MODULE
+#pragma code-name("CODE")
+#endif
 void sh_format_number(int32_t value, char *out)
 {
     char reverse[10];

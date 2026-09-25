@@ -79,7 +79,7 @@ The PRG starts with little-endian load address `$6000`, followed by this
 | 0 | 4 | Unshifted bytes `NAPP` (`4e 41 50 50`) |
 | 4 | 1 | Image format: 1 |
 | 5 | 1 | Native kernel ABI major: 1 |
-| 6 | 1 | Required ABI minor: 0..13; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9; Ultimate queries/NMI bridge require 10; Ultimate commands require 11; boot-format field requires 12; shared clipboard session fields require 13 |
+| 6 | 1 | Required ABI minor: 0..14; IEC streams require 1, directory/handoff/source-format fields require 2, Ultimate streams/path mailboxes require 3, Ultimate app loading/boot-device field require 4, Ultimate directory cursors and retained browser paths/names require 5; shared focused fields require 6; application modules require 7; owned display presentation requires 8; desktop session selection requires 9; Ultimate queries/NMI bridge require 10; Ultimate commands require 11; boot-format field requires 12; shared clipboard session fields require 13; document launch requires 14 |
 | 7 | 1 | Zero for minor 0..6; minor 7 module-window offset low byte |
 | 8 | 2 | Image byte count, including the manifest, excluding the PRG address |
 | 10 | 1 | Total allocated pages, 1..96 |

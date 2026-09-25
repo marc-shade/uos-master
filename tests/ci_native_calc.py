@@ -34,6 +34,9 @@ class Calculator:
         if image_name=='files':
             for name in ('fspick','fsview','fsopen'):
                 self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
+        if image_name=='sheet':
+            for name in ('shfont','shcalc','shclip'):
+                self.io.files[8,name.upper().encode()+b'.PRG',b'P']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
         provider = None
         if image_prefix=='native-desktop' and image_name in ('calc','desktop','controls','paint','files','editor','claude','sheet') and vdc_component is not False:
             provider = ((ROOT/'target/native-desktop/vdsvc.prg').read_bytes()
@@ -60,6 +63,9 @@ class Calculator:
             if source_path is not None and provider is not None:
                 prefix = source_path.rsplit(b'/',1)[0]+b'/' if b'/' in source_path else b''
                 data[prefix+b'VDSVC.PRG']=provider
+            if source_path is not None and image_name=='sheet':
+                for name in ('shfont','shcalc','shclip'):
+                    data[source_path.rsplit(b'/',1)[0]+b'/'+name.upper().encode()+b'.PRG']=(ROOT/'target'/self.image_prefix/f'{name}.prg').read_bytes()
             self.ultimate=DOSFiles(data);self.ultimate.fragment=103
             self.ultimate.direct_write_corruption=True
             self.m.bus=UltimateBus(self.m.bus,self.ultimate)

@@ -9,6 +9,7 @@ import sys
 
 sys.dont_write_bytecode = True
 from native_image import seal, validate
+from native_module import seal as seal_module, validate as validate_module
 
 ROOT = Path(__file__).resolve().parent
 
@@ -30,14 +31,15 @@ def build(out=None):
             glue.append(f'.export _{name} := ${value:04x}')
     (obj/'gui.s').write_text('\n'.join(glue)+'\n')
     subprocess.run(['ca65', '-o', str(obj/'gui.o'), str(obj/'gui.s')], check=True)
-    for name in ('main.c', 'engine.c', 'workbook.c', 'bridge.s', 'startup.s'):
+    for name in ('main.c', 'engine.c', 'workbook.c', 'bridge.s', 'startup.s', 'calc-header.s'):
         # Identity character map: workbook records and graphical labels are
         # ASCII. PETSCII keyboard conversion happens at the app boundary.
-        subprocess.run(['cl65', '-t', 'none', '-O', '-g', '-c', '-o',
+        options = ['--code-name', 'ENGINE', '-D', 'SH_MODULE'] if name == 'engine.c' else []
+        subprocess.run(['cl65', '-t', 'none', '-O', '-g', *options, '-c', '-o',
                         str(obj/(Path(name).stem+'.o')), str(src/name)], check=True)
     subprocess.run(['ld65', '-C', str(src/'uos.cfg'), '-m', str(out/'sheet.map'),
                     '-Ln', str(out/'sheet.lbl'), '-o', str(out/'sheet.prg'),
-                    *[str(obj/(name+'.o')) for name in ('startup', 'gui', 'main', 'engine', 'workbook', 'bridge')],
+                    *[str(obj/(name+'.o')) for name in ('startup', 'gui', 'main', 'engine', 'workbook', 'bridge', 'calc-header')],
                     'none.lib'], check=True)
     path = out/'sheet.prg'
     path.write_bytes(seal(path.read_bytes()))
@@ -47,6 +49,15 @@ def build(out=None):
     assert stack, 'missing C stack extent'
     info['runtime_end'] = int(stack[1], 16)+1
     assert 0x6000+info['bytes'] <= info['runtime_end'] <= 0x6000+info['pages']*256 <= 0xc000
+    assert info['runtime_end'] <= info['window']
+    subprocess.run(['64tass', '-a', '-B', '-b', str(src/'font.asm'), '-o', str(out/'shfont.prg')], check=True)
+    (out/'shcalc.prg').write_bytes((out/'sheet.prg.calc').read_bytes())
+    (out/'sheet.prg.calc').unlink()
+    subprocess.run(['64tass', '-a', '-B', '-b', str(src/'clipboard.asm'), '-o', str(out/'shclip.prg')], check=True)
+    for name in ('shfont', 'shcalc', 'shclip'):
+        module = out/(name+'.prg')
+        module.write_bytes(seal_module(module.read_bytes(), path.read_bytes()))
+        validate_module(module.read_bytes(), path.read_bytes())
     (out/'sheet.json').write_text(json.dumps(info, indent=2)+'\n')
     print('Native Sheet:', json.dumps(info))
     return info

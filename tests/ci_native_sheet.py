@@ -119,7 +119,7 @@ class Sheet(Pointer):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case', choices=('core', 'files', 'faults', 'mouse', 'ultimate', 'recovery', 'undo', 'undo-faults', 'aggregates'), default='core')
+    parser.add_argument('--case', choices=('core', 'files', 'faults', 'mouse', 'ultimate', 'recovery', 'undo', 'undo-faults', 'aggregates', 'clipboard', 'clipboard-handoff', 'modules'), default='core')
     parser.add_argument('--size', type=int, choices=(16,64), default=64)
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
@@ -127,7 +127,9 @@ def main():
     heap.Bus = type('SheetBus', (VDCBus,), dict(size=args.size))
     report = dict(passed=False, physical_hardware_io=False, cases=[], images={
         str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in (ROOT/'target/native-desktop/sheet.prg', ROOT/'target/native-desktop/vdsvc.prg', heap.IMAGE)})
+        for p in (ROOT/'target/native-desktop/sheet.prg', ROOT/'target/native-desktop/vdsvc.prg',
+                  ROOT/'target/native-desktop/shfont.prg', ROOT/'target/native-desktop/shcalc.prg',
+                  ROOT/'target/native-desktop/shclip.prg', heap.IMAGE)})
     def done(name, p):
         report['cases'].append(dict(name=name, instructions=p.instructions, keys=p.events, frames=p.frames))
         print('PASS:', name, flush=True)
@@ -154,6 +156,69 @@ def main():
             p.key(27); assert p.value('mode') == 3
             p.key(27); assert not p.value('mode') and p.value('wb_dirty')
             p.check(); p.exit(); done('editing, references, SUM, cycles, full grid navigation, source retention and discard protection', p)
+        elif args.case == 'clipboard':
+            from native_clipboard_check import published
+            p=Sheet();p.key(22);assert p.value('wb_error') and not p.value('wb_dirty')
+            p.edit('42');p.key(3);assert published(p.m)[0]==b'42'
+            token=p.bytes('sh_clip_text',2)  # payload remains ASCII after Copy
+            assert token==b'42'
+            handle=p.ram[0x3deb];page=p.ram[0x3c00+(handle-1)*8+2]
+            # The shared provider permits opaque byte text. Inject an item
+            # another client could publish; Sheet must reject its control byte.
+            p.bus.ram[1][page*256]=10;before=p.sources();p.key(22)
+            assert p.value('wb_error') and p.sources()==before and published(p.m)[0]==b'\n2'
+            p.bus.ram[1][page*256]=ord('4')
+            p.key(0x1d);p.key(22);assert p.values()[:2]==[42,42]
+            p.key(24);assert p.values()[1]==0 and published(p.m)[0]==b'42'
+            p.key(26);assert p.values()[1]==42
+            before=p.sources();clip=p.io.files.pop((8,b'SHCLIP.PRG',b'P'))
+            p.key(24);assert p.value('wb_error') and p.sources()==before and published(p.m)[0]==b'42'
+            p.io.files[8,b'SHCLIP.PRG',b'P']=clip;p.key(24);assert p.values()[1]==0
+            p.key(3);assert p.value('wb_error') and published(p.m)[0]==b'42'
+            p.key(22);assert not p.value('wb_error') and p.values()[1]==42
+            p.check();p.exit();done('Copy/Paste/Cut, undo, empty clipboard and missing module retain workbook and clipboard',p)
+        elif args.case == 'clipboard-handoff':
+            from ci_native_editor_gui import GraphicalEditor
+            from native_clipboard_check import published
+            raw=b'=MAX(B1:C1)'
+            e=GraphicalEditor({(9,b'INPUT',b'S'):raw},device=9,existing_machine=calc.Machine())
+            e.prompt(0x85,'INPUT');e.key(1);e.key(3);e.key(7);e.exit();e.restored()
+            machine=calc.Machine;calc.Machine=lambda:e.m
+            try:p=Sheet()
+            finally:calc.Machine=machine
+            p.events=int.from_bytes(p.ram[0x3d13:0x3d15],'little')
+            p.key(22);assert p.sources()[:len(raw)]==raw
+            p.key(0x1d);p.edit('42');assert p.values()[0]==42
+            p.key(0x13);p.key(3);p.check();p.exit();assert published(p.m)[0]==raw
+            e2=GraphicalEditor(device=9,existing_machine=p.m)
+            e2.events=int.from_bytes(e2.ram[0x3d13:0x3d15],'little')
+            e2.key(22);e2.check(raw,len(raw),True,status=21)
+            e2.key(1);e2.type('X'*32);e2.key(1);e2.key(3);e2.key(7);e2.exit(dirty=True);e2.restored()
+            machine=calc.Machine;calc.Machine=lambda:e2.m
+            try:q=Sheet()
+            finally:calc.Machine=machine
+            q.events=int.from_bytes(q.ram[0x3d13:0x3d15],'little')
+            q.key(22);assert q.value('wb_error') and q.sources()==bytes(8192)
+            assert published(q.m)[0]==b'X'*32
+            q.check();q.exit();done('Editor -> Sheet formula -> Editor and oversized paste refusal on one kernel',q)
+        elif args.case == 'modules':
+            p=Sheet();p.edit('7');module=p.io.files.pop((8,b'SHCALC.PRG',b'P'))
+            p.type('8');p.key(13)
+            assert p.value('wb_error') and p.sources()[:2]==b'8\0'
+            assert p.bytes('sh_types',256)==bytes([10])*256 and p.values()==[0]*256
+            p.io.files[8,b'SHCALC.PRG',b'P']=module
+            p.key(13);assert not p.value('wb_error') and p.values()[0]==8
+            broken=bytearray(module);broken[-1]^=1;p.io.files[8,b'SHCALC.PRG',b'P']=bytes(broken)
+            p.type('9');p.key(13);assert p.value('wb_error') and p.values()==[0]*256
+            p.io.files[8,b'SHCALC.PRG',b'P']=module;p.key(13);assert p.values()[0]==9
+            font_module=p.io.files.pop((8,b'SHFONT.PRG',b'P'))
+            p.type('10');p.key(13);assert p.values()[0]==10 and p.value('wb_dirty')
+            assert p.value('sm_display_fault')
+            io_events=list(p.io.events);p.key(ord('9'));assert p.io.events==io_events
+            before=p.sources();owners=p.m.stats();p.key(27)
+            assert p.sources()==before and p.m.stats()==owners
+            p.io.files[8,b'SHFONT.PRG',b'P']=font_module;p.key(12)
+            p.check();p.exit();done('missing and corrupt calculation modules invalidate results and retry unchanged source safely',p)
         elif args.case == 'aggregates':
             p=Sheet();p.edit('13');p.key(0x1d);p.edit('-7');p.key(0x1d)
             p.edit('=MIN(A1:B1)');p.key(0x1d);p.edit('=MAX(A1:B1)')

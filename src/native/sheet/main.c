@@ -8,6 +8,7 @@ static uint8_t field[8];
 static char edit[32], cell_text[32], number[12], reference[4];
 static const char *message;
 static uint8_t exiting;
+char sh_clip_text[32];
 static const char *const errors[] = {
     "", "", "", "#SYNTAX", "#REF", "#DIV/0", "#OVERFLOW",
     "#VALUE", "#CYCLE", "#DEPTH", "#STORAGE"
@@ -146,7 +147,7 @@ static void render(void)
     }
     if (message) line(23, message);
     else line(23, "Numbers, text, =A1+B1, =SUM(A1:A12)");
-    line(24, edit_active ? "Enter accepts cell; Escape cancels edit" : "A-H / 1-32   Integer workbook   Esc back");
+    line(24, edit_active ? "Enter accepts cell; Escape cancels edit" : "Ctrl-C Copy  Ctrl-X Cut  Ctrl-V Paste");
     if (wb_error) {
         sh_format_number(wb_error, number); put(24, 31, "Err ", 4); put(24, 35, number, 3);
     }
@@ -317,6 +318,18 @@ int main(void)
             continue;
         }
         if (key == 27) action(5);
+        else if (key == 3 || key == 22 || key == 24) {
+            error = wb_poisoned ? WB_RETAINED : sh_read_cell(selected, sh_clip_text);
+            if (!error) error = sh_clipboard(key == 22);
+            if (!error && key != 3) {
+                if (key == 24) memset(sh_clip_text, 0, 32);
+                error = wb_set(selected, sh_clip_text);
+            }
+            message = error ? 0 : "Clipboard action complete";
+            status(error);
+            if (error == 1 && key == 22) message = "Paste needs 1-31 printable characters";
+            render();
+        }
         else if (key == 26 || key == 18) {
             if (wb_history == (key == 18 ? 2 : 1)) {
                 error = wb_undo(key == 18); status(error);

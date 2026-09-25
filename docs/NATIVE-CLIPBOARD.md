@@ -1,6 +1,6 @@
 # Native shared text clipboard
 
-The blue Editor and Claude apps exchange text through one session clipboard.
+The blue Editor, Claude and Sheet apps exchange text through one session clipboard.
 It survives app exits and returns to the launcher or diagnostic workspace.
 Restarting the native kernel clears it. Clipboard bytes stay in managed RAM;
 no disk file, serial port or Ultimate configuration is changed by Copy.
@@ -34,6 +34,17 @@ or saved it. Escape cancels a transfer before its final packet. Once that
 packet has been sent, an absent acknowledgement is reported as unconfirmed;
 the client never retries the paste automatically. An older bridge leaves the
 clipboard untouched and reports that an update is needed.
+
+## Sheet cells
+
+Sheet uses Ctrl-C/ Ctrl-X/ Ctrl-V outside field editing and dialogs to copy,
+cut or replace one cell's complete ASCII source. It accepts 1–31 printable
+bytes, rejects other clipboard items without truncation, and recalculates
+formulas after Paste. Cut publishes before clearing. Empty Copy/Cut preserves
+the old item, and Undo restores a changed cell. Formula references stay literal;
+range operations and relative-reference rewriting remain open. Its checked
+`SHCLIP.PRG` module shares the calculation/font window and uses the same
+owner-31 session provider as Editor and Claude.
 
 ## RAM and lifetime
 

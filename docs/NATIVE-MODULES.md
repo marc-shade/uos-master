@@ -13,7 +13,7 @@ search into the same window. The accepted query and case choice remain in the
 core across module switches. Missing or damaged modules keep the document.
 Install **EDPICK.PRG**, **EDFIND.PRG** and the graphical Editor’s
 **EDCLIP.PRG** beside the editor on USB; both suite
-disks contain the core and both modules from the same build.
+disks contain the core and matching modules from the same build.
 
 The earlier picker-only checkpoint passed all 22 CPU suites, ten emulator workflows and complete physical USB/IEC
 workflows pass on the [frozen checkpoint images](validation/2026-09-11-native-modules/README.md),
@@ -29,6 +29,15 @@ qualifies the two-module editor in CPU models and VICE. Module switches refuse
 to discard a picker that retains a cursor or cache handle after failed cleanup;
 an explicit picker retry can release those resources. This build has no new
 physical-hardware qualification.
+
+The [Sheet app](NATIVE-SHEET.md) also uses this service. Its `$b100..$bfff`
+window alternates between `SHCALC.PRG`, `SHFONT.PRG` and `SHCLIP.PRG`.
+Source cells, calculated values, history, display ownership and the C stack
+stay outside the window. Its cc65 linker places calculation code in a separate
+output segment while keeping library routines and persistent data in the core.
+The builder checks the runtime extent against the window and binds all three
+modules to the final packed core. This software-only qualification is separate
+from the historical physical Editor checkpoints below.
 
 ## App and module manifests
 
@@ -47,7 +56,7 @@ Offsets exclude the two-byte PRG address.
 | 0 | 4 | `NMOD` bytes `4e 4d 4f 44` |
 | 4 | 1 | Module format 1 |
 | 5 | 1 | ABI major 1 |
-| 6 | 1 | Required module ABI minor 7..11; presentation calls require 8; desktop selection requires 9; shared keyboard input requires 10 |
+| 6 | 1 | Required module ABI minor 7..14; presentation calls require 8; desktop selection requires 9; shared keyboard input requires 10 |
 | 7 | 1 | Reserved, zero |
 | 8 | 2 | Complete module extent including this manifest |
 | 10 | 2 | Sealed parent core's CRC16 |

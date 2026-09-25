@@ -30,6 +30,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--80col', dest='eighty', action='store_true')
     parser.add_argument('--vdc64', action='store_true')
+    parser.add_argument('--clipboard', action='store_true')
     args = parser.parse_args()
     work = Path(tempfile.mkdtemp(prefix='uos-sheet-vice-', dir='/var/tmp/arc-scratch'))
     print('Sheet VICE evidence:', work, flush=True)
@@ -43,6 +44,8 @@ def main():
     report = dict(passed=False, physical_hardware_io=False, options=vars(args), events=[], frames=[],
                   inputs={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (
                       ROOT/'target/native-desktop/uos128.d81', ROOT/'target/native-desktop/sheet.prg',
+                      ROOT/'target/native-desktop/shfont.prg', ROOT/'target/native-desktop/shcalc.prg',
+                      ROOT/'target/native-desktop/shclip.prg',
                       ROOT/'target/native-desktop/desktop.prg', ROOT/'target/native-desktop/vdsvc.prg')})
     (work/'initial-suite.d81').write_bytes(disk.read_bytes())
     shutil.copy2(__file__, work/'run.py')
@@ -133,6 +136,15 @@ def main():
         for index,text in {0:b'12',1:b'30',2:b'=a1+b1'}.items():records[index*32:index*32+len(text)]=text
         assert sources()==records
         capture('calculated-sheet')
+        if args.clipboard:
+            key(3);key(0x1d);key(22)
+            assert read(sym('sh_values')+12,4)==(42).to_bytes(4,'little')
+            assert sources()[96:128]==records[64:96]
+            capture('clipboard-paste')
+            key(24);assert read(sym('sh_values')+12,4)==bytes(4)
+            key(26);assert read(sym('sh_values')+12,4)==(42).to_bytes(4,'little')
+            key(0x14);key(0x9d);assert sources()==records
+            capture('clipboard-cut-undo-clear')
         key(0x87);key(0x86)  # Save As; data drive 8 -> 9, system D81 geometry retained.
         for code in b'BUDGET':key(code)
         key(13);assert not value('wb_dirty') and not value('wb_error');capture('verified-save')

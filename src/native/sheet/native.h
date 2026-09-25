@@ -26,6 +26,7 @@
 enum { ALLOC, FREE, READ, WRITE, FILL, STATS, RELEASE, RESERVE,
        LAUNCH, KEYIN, EXIT, FOPEN, FREAD, FWRITE, FCLOSE };
 uint8_t __fastcall__ sh_api(uint8_t index);
+uint8_t __fastcall__ sh_clipboard(uint8_t paste);
 uint8_t sg_begin(void);
 uint8_t sg_present(void);
 uint8_t sg_end(void);

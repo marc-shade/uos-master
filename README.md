@@ -62,7 +62,7 @@ blue graphical launchers on both displays: 320×200 VIC and
 Files, Ultimate, Claude, Paint and Sheet with keyboard selection or a port-1 1351 mouse. Escape opens the diagnostic workspace; B returns to the
 desktop on this disk. Unsupported graphics leave usable text controls.
 The same build also creates `target/native-desktop/uos128.d81` for a 1581,
-with 2,529 free blocks for documents and future apps. ABI 1.12 remembers the
+with 2,512 free blocks for documents and future apps. ABI 1.12 remembers the
 system volume's format across app launches and data-disk browsing. Use the
 matching D64 or D81 image; see [native boot media](docs/NATIVE-BOOT-MEDIA.md).
 Boot still uses IEC. Movable windows, app switching,
@@ -82,9 +82,10 @@ In Ultimate directories, **New dir** or **Ctrl-K** opens the shared blue
 current directory, selects the next match and wraps at the end.
 
 [Sheet](docs/NATIVE-SHEET.md) adds an editable 8×32 workbook, integer formulas,
-references and SUM, plus staged Open and verified Save As on IEC or Ultimate
-storage. It is the first spreadsheet app; formatting, decimal arithmetic,
-clipboard, printing and format exchange remain work.
+references, SUM/MIN/MAX/COUNT, one-cell Undo/Redo and shared cell Copy/Cut/Paste,
+plus staged Open and verified Save As on IEC or Ultimate storage. Checked
+modules share its app window. Formatting, decimal arithmetic, range clipboard,
+printing and format exchange remain work.
 
 The blue native desktop is the interface being developed for the unified app
 suite. The older green desktop remains a separate legacy build; restoring that
@@ -124,7 +125,7 @@ The shared display layer updates changed rows and retains the saved screen
 if restoration needs a retry. A checked compressed kernel boot file keeps the
 complete suite on D64 without reducing application RAM. The bounded LZSA2 boot
 wrapper makes room for the shared component. [Packed app startup](docs/NATIVE-APP-PACK.md)
-leaves 33 free D64 blocks in the current suite while preserving application allocations and
+leaves 16 free D64 blocks in the current suite while preserving application allocations and
 the 426-page heap. Native disk builds need a host C compiler (`cc` or `CC`) for
 the bundled compressor.
 

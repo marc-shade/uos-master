@@ -129,7 +129,7 @@ uint8_t wb_set(uint8_t cell, const char *source)
     if (!valid_record((const uint8_t *)source)) return wb_error = WB_BADFILE;
     error = sh_read_cell(cell, (char *)record);
     if (error) return wb_error = error;
-    if (!memcmp(record, source, 32)) return 0;
+    if (!memcmp(record, source, 32)) return wb_error = sh_recalculate();
     select_memory(wb_handle, (uint16_t)cell * 32, 32);
     memcpy(BUFFER, source, 32);
     error = sh_api(WRITE);

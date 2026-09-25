@@ -85,7 +85,7 @@ def build():
         path.write_bytes(packed)
         packing[name] = packed_information(packed)
         # Module identity remains the original source's checked NAPP identity.
-        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview','fsopen')}.get(name,()):
+        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview','fsopen'),'sheet':('shfont','shcalc','shclip')}.get(name,()):
             module_path = OUT/f'{part}.prg'
             module_path.write_bytes(seal_module(module_path.read_bytes(),packed))
             validate_module(module_path.read_bytes(),packed)
@@ -113,6 +113,9 @@ def build():
                         '-write', str(OUT/'claude.prg'), 'claude',
                         '-write', str(OUT/'paint.prg'), 'paint',
                         '-write', str(OUT/'sheet.prg'), 'sheet',
+                        '-write', str(OUT/'shfont.prg'), 'shfont.prg',
+                        '-write', str(OUT/'shcalc.prg'), 'shcalc.prg',
+                        '-write', str(OUT/'shclip.prg'), 'shclip.prg',
                         '-write', str(OUT/'vdsvc.prg'), 'vdsvc.prg'], check=True, capture_output=True)
         desktop = OUT/f'uos128.{disk_format}'
         shutil.copyfile(workspace, desktop)
@@ -143,6 +146,7 @@ def build():
                       selection_state_address=0x3d2f, selection_lifetime='until native restart',
                       disk_entries={'u': 'uos128-boot.prg', 'browse': 'desktop.prg',
                                     'vdsvc.prg': 'vdsvc.prg',
+                                    'shfont.prg': 'shfont.prg', 'shcalc.prg': 'shcalc.prg', 'shclip.prg': 'shclip.prg',
                                     'files': 'files.prg', 'calc': 'calc.prg',
                                     'fspick.prg': 'fspick.prg', 'fsview.prg': 'fsview.prg', 'fsopen.prg': 'fsopen.prg',
                                     'editor': 'editor.prg', 'edpick.prg': 'edpick.prg',

@@ -11,7 +11,7 @@
         .byte $4e,$41,$50,$50,1,1,13,0
         .word __BSS_RUN__-$6000
         ; The startup packer needs a separate 48-byte tail after the live stack.
-        .byte >(__CSTACK_RUN__+__CSTACK_SIZE__-$6000+$ff+48),0
+        .byte 96,$51             ; module window offset $5100, full app window
         .word native_entry-$6000
         .word 0
         .byte $53,$48,$45,$45,$54,0,0,0,0,0,0,0,0,0,0,0
