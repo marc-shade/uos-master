@@ -68,10 +68,12 @@ Built but not yet covered by tests: fulled, moved and sized answers.
   entry's full path, then `FILE_STAT`; only DOS 82 with an empty reply proves
   the removal, otherwise an alert says so. A full folder is refused by the
   drive, and the refusal is shown.
-- Documents: an IEC SEQ file, or a USB file ending in `.TXT` or `.SEQ`, opens
-  in the Editor through the [document contract](NATIVE-DOCUMENT-LAUNCH.md).
-  Closing the Editor returns to GEMDESK, and its windows come back. Other
-  files go to the dispatcher, which runs native programs.
+- Documents, decided as Files decides ([document contract](NATIVE-DOCUMENT-LAUNCH.md)):
+  GEMDESK reads the first four bytes of an IEC SEQ file or any USB file. `UPNT`
+  opens it in Paint. Otherwise an IEC SEQ file, or a USB file ending in `.TXT`
+  or `.SEQ`, opens in the Editor. Closing the app returns to GEMDESK, and its
+  windows come back. Other files (IEC PRG and USR included) go to the
+  dispatcher, which runs native programs.
 - A listing holds up to 195 entries: the snapshot is 16 pages, sorted in a
   bank-0 workspace at `$5000` reserved like Files'. Larger directories show
   their first 195.

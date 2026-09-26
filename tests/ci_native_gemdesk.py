@@ -150,6 +150,7 @@ def main():
         files = {(8, b'AESVC.PRG', b'P'): AESVC}
         for i in range(20):                               # 20 entries: the window scrolls
             files[8, f'FILE{i:02}'.encode(), b'S'] = bytes(100+i*200)
+        files[8, b'FILE01', b'S'] = b'UPNT'+bytes(296)    # a Paint picture (Paint saves SEQ)
         p = Gem(files)
         entries = entries_for(p.io.files)          # the disk as the harness built it
         p.expect(scene.desktop(), 'startup')
@@ -216,6 +217,16 @@ def main():
         assert back.ram[0x3d28] == 1 and back.ram[0x3d22] == 9 and bytes(back.ram[0x3d40:0x3d49]) == b'AESVC.PRG'
         assert back.ram[0x3d9a] == 0 and back.ram[0x3d21] == 8, 'a program: no document request'
         done('double-clicking a PRG hands it to the dispatcher (device 8) without a document request', back)
+
+        qp = Gem(files)
+        qp.cell(35, 3); qp.click(double=True)
+        qp.cell(3, g['wy']+entries.index(next(e for e in entries if e['name'] == b'FILE01')))
+        qp.frame(down=True); qp.frame(down=False)
+        qp.frame(down=True, exited=True)
+        assert qp.ram[0x3d28] == 1 and bytes(qp.ram[0x3d40:0x3d45]) == b'PAINT' and qp.ram[0x3d22] == 5
+        assert (qp.ram[0x3d9a], qp.ram[0x3d9b], qp.ram[0x3d9c], qp.ram[0x3d9d]) == (0x80, 2, 0, 0), 'a staged Paint document'
+        assert qp.ram[0x3d29] == 8 and qp.ram[0x3d34] == 6 and bytes(qp.ram[0x3e00:0x3e06]) == b'FILE01'
+        done('a SEQ file starting with UPNT opens in Paint as a document (the signature decides, as in Files)', qp)
 
         # An unsorted directory, a second drive with a scrolling listing.
         # 'MIKE ' (a trailing space) precedes 'MIKE' on disk; name order puts the
@@ -539,8 +550,8 @@ def main():
                 b'/Usb0': [b'\x10GAMES', b'\x20CALC.PRG', b'\x20'+long, b'\x20notes.txt'],
                 b'/Usb0/GAMES': [b'\x20TETRIS.PRG'],
                 b'/shell': [], b'/browser': []}
-        us = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
-                 usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10)}))
+        us = Gem({(8, b'AESVC.PRG', b'P'): AESVC},       # the launch reads the program's first bytes
+                 usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10), b'/Usb0/'+long: b'\x01\x60'+bytes(8)}))
         us.expect(scene.desktop(usb=True), 'usb icon')
         wu = dict(id=1, x=1, y=2, w=28, h=16, title=b'USB /', top=0)
         us.cell(35, 11); us.click(double=True)
@@ -574,7 +585,7 @@ def main():
         done('a USB file launches with its full path (past 16 characters); Show Info says it is not available on USB', us)
 
         ud = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
-                 usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10)}))
+                 usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10), b'/Usb0/notes.txt': b'Notes\r'}))
         ud.cell(35, 11); ud.click(double=True); ud.cell(3, 3); ud.click(double=True)
         wd = dict(id=1, x=1, y=2, w=28, h=16, title=b'USB /Usb0', top=0)
         calc_at = [e['name'] for e in usb0].index(b'CALC.PRG')
@@ -607,6 +618,17 @@ def main():
         done('Delete on USB: confirmed, DELETE_FILE then FILE_STAT (82) before listing again; a full folder is refused; '
              'a .txt file opens in the Editor with its folder', ud,
              refusal=text.decode())
+
+        pictures = {b'/': [b'\x10Usb0'], b'/Usb0': [b'\x20draw.txt'], b'/shell': [], b'/browser': []}
+        up = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
+                 usb=dict(dirs=pictures, files={b'/Usb0/draw.txt': b'UPNT'+bytes(9012)}))
+        up.cell(35, 11); up.click(double=True); up.cell(3, 3); up.click(double=True)
+        up.cell(3, 3); up.frame(down=True); up.frame(down=False); up.frame(down=True, exited=True)
+        assert bytes(up.ram[0x3d40:0x3d45]) == b'PAINT' and up.ram[0x3d22] == 5
+        assert (up.ram[0x3d9a], up.ram[0x3d9b], up.ram[0x3d9c], up.ram[0x3d9d]) == (0x80, 2, 0, 0)
+        assert (up.ram[0x3d29], up.ram[0x3d2a], up.ram[0x3d2e], up.ram[0x3d34]) == (1, 3, 5, 8)
+        assert bytes(up.ram[0x4a00:0x4a05]) == b'/Usb0' and bytes(up.ram[0x3e00:0x3e08]) == b'draw.txt'
+        done('a USB file starting with UPNT opens in Paint, even when named .txt (the signature first, as Files)', up)
 
         # Keyboard mouse and the Control Panel.
         kc = Gem(files4)

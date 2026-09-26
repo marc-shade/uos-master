@@ -2405,8 +2405,13 @@ gm_ult_open_entry:
         lda gm_ult_attr
         and #$10
         bne gm_ult_enter
-        jsr gm_text_suffix      ; .TXT or .SEQ: a text document
+        jsr gm_ult_peek         ; the signature first, as Files: UPNT is Paint's
+        lda gm_doc_kind
+        cmp #2
+        beq gm_ult_document
+        jsr gm_text_suffix      ; then .TXT or .SEQ: a text document
         bcs +
+gm_ult_document:
         jmp gm_usb_document
 +       lda N_FNAMELEN
         sta N_NAMELEN
@@ -2649,6 +2654,19 @@ gm_iec_document:                ; N_BUFFER = the record: IEC name and type
         sec
         sbc #1
         sta N_DOCTYPE
+        sta N_FTYPE             ; a UPNT picture (Paint saves SEQ) goes to Paint
+        lda N_BROWSERDEV
+        sta N_FDEVICE
+        lda N_BROWSERFMT
+        sta N_FFORMAT
+        ldx N_BROWSERNAME_LEN
+        stx N_FNAMELEN
+        dex
+-       lda N_BROWSERNAME,x
+        sta N_FNAME,x
+        dex
+        bpl -
+        jsr gm_peek
         jmp gm_document_launch
 gm_usb_document:                ; gm_name/gm_nlen = the leaf; the window's path
         ldx gm_slot
@@ -2677,20 +2695,28 @@ gm_usb_document:                ; gm_name/gm_nlen = the leaf; the window's path
         lda #0
         sta N_DOCTYPE
 gm_document_launch:
-        lda #1                  ; Editor text
+        lda gm_doc_kind         ; 1 Editor text, 2 Paint picture
         sta N_DOCKIND
         lda #0
         sta N_DOCRETURN         ; back to this desktop, not system Files
         lda #$80
         sta N_DOCREQUEST
-        ldx #5
--       lda gm_editor_name,x
+        ldx #5                  ; "editor"
+        ldy #5
+        lda gm_doc_kind
+        cmp #2
+        bne +
+        ldx #4                  ; "paint"
+        ldy #10
++       inx
+        stx N_NAMELEN
+        dex
+-       lda gm_editor_name,y
         sta N_APPNAME,x
+        dey
         dex
         bpl -
-        lda #6
-        sta N_NAMELEN
-        lda N_BOOTDEVICE        ; the Editor from the boot disk
+        lda N_BOOTDEVICE        ; the app from the boot disk
         sta N_DEVICE
         lda N_BOOTFORMAT
         sta N_APPFORMAT
@@ -2698,6 +2724,64 @@ gm_document_launch:
         jsr pm_close
         lda #0
         jmp N_REPLACE
+; The USB file in N_UPATH/N_FNAMELEN (from gm_ult_fullname): gm_peek on it.
+; The file service reads both and writes neither, so a program launch after
+; it still has the full path.
+gm_ult_peek:
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta N_FDEVICE
+        lda #3
+        sta N_FFORMAT
+        lda #0
+        sta N_FTYPE
+        jmp gm_peek
+; The file named for N_FOPEN (device, format, type, name): gm_doc_kind = 2
+; when its first four bytes are "UPNT", else 1. A file that cannot be opened
+; or read counts as 1: the app or dispatcher that opens it next reports the
+; error.
+gm_peek:
+        lda #1
+        sta gm_doc_kind
+        lda #N_APPOWNER
+        sta N_FOWNER
+        lda #0
+        sta N_FMODE
+        ldx #3
+-       sta N_FHANDLE,x
+        dex
+        bpl -
+        jsr N_FOPEN
+        bcs gm_peek_done
+        ldx #3
+-       lda N_FHANDLE,x
+        sta gm_file,x
+        dex
+        bpl -
+        lda #4
+        sta N_FCOUNT
+        lda #0
+        sta N_FCOUNT+1
+        jsr gm_file_select
+        jsr N_FREAD
+        bcs gm_peek_close
+        lda N_FACTUAL+1
+        bne gm_peek_close
+        lda N_FACTUAL
+        cmp #4
+        bne gm_peek_close
+        ldx #3
+-       lda N_BUFFER,x
+        cmp gm_upnt,x
+        bne gm_peek_close
+        dex
+        bpl -
+        lda #2
+        sta gm_doc_kind
+gm_peek_close:
+        jsr gm_close_file
+gm_peek_done:
+        rts
 ; gm_name/gm_nlen: carry clear when it ends in .TXT or .SEQ (any case).
 gm_text_suffix:
         lda gm_nlen
@@ -3574,7 +3658,9 @@ gm_full_alert: .byte 91,49,93,91,70,111,117,114,32,102,111,108,100,101,114,32,11
         .byte 111,119,115,124,97,114,101,32,97,108,114,101,97,100,121,32,111,112,101,110,46,93,91,79,75,93,0
 
 gm_confirm: .byte 1
-gm_editor_name: .text "editor"
+gm_editor_name: .text "editor", "paint"
+gm_upnt: .byte $55,$50,$4e,$54 ; "UPNT", Paint's picture signature
+gm_doc_kind: .byte 0
 gm_suffix: .fill 3,0
 gm_s_unproven: .byte 91,51,93,91,84,104,101,32,100,114,105,118,101,32,100,105,100,32,110,111,116,32,112,114,111,118,101,124,116,104,101,32,100,101,108,101,116,105,111,110,59,32,115,101,101,32,116,104,101,32,108,105,115,116,46,93,91,79,75,93,0   ; [3][The drive did not prove|the deletion; see the list.][OK]
 gm_icons_n: .byte 3

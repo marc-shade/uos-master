@@ -3,7 +3,8 @@
 boot gem.d81, compare the desktop with the CPU-test oracle, open drive 8 from
 the keyboard, launch Calculator, leave it, and check the AES session brings
 the window and its selection back, then open a SEQ file in the Editor as a
-document and return to the desktop."""
+document and return to the desktop, then open a UPNT picture (a SEQ file,
+as Paint saves it) in Paint."""
 import argparse
 import json
 import os
@@ -23,7 +24,12 @@ from native_capture_transport import PausedViceMonitor
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT)]
 from native_editor_scene import surface as editor_surface  # noqa: E402
+from paint_scene import surface as paint_surface, MESSAGES as PAINT_MESSAGES  # noqa: E402
+from native_paint_format import encode as paint_encode  # noqa: E402
+from hwlib import lst_symbol  # noqa: E402
 NOTE = b'GEMDESK opened this SEQ file.\rIt is an Editor document.\r'
+PICTURE = (bytes((i*7+i//320) & 255 for i in range(8000))+bytes(192)
+           + b'\x61'*1000+b'\x10'*24)     # UPNT keeps 1,000 attributes; Paint's page pads with $10
 
 
 def d81_entries(image):
@@ -54,6 +60,9 @@ def main():
     shutil.copy2(ROOT/'target/native-desktop/gem.d81', disk)
     (work/'note.seq').write_bytes(NOTE)       # a test-local document on the copy
     subprocess.run(['c1541', '-attach', str(disk), '-write', str(work/'note.seq'), 'note,s'],
+                   check=True, capture_output=True)
+    (work/'picture.seq').write_bytes(paint_encode(PICTURE))
+    subprocess.run(['c1541', '-attach', str(disk), '-write', str(work/'picture.seq'), 'picture,s'],
                    check=True, capture_output=True)
     entries = d81_entries(disk.read_bytes())
     report = dict(passed=False, physical_hardware_io=False, work=str(work), checks=[],
@@ -170,6 +179,42 @@ def main():
         key(27)
         expect(scene.picture([window], {1: ordered}), 'back-from-editor')
         check('leaving the Editor returns to GEMDESK with the document still selected')
+
+        pic = [e['name'] for e in ordered].index(b'PICTURE')
+        for _ in range(abs(pic-note)):
+            key(0x11 if pic > note else 0x91)
+        window['selected'] = pic
+        window['top'] = min(window['top'], pic)
+        window['top'] = max(window['top'], pic-g['wh']+1)
+        expect(scene.picture([window], {1: ordered}), 'picture-selected')
+        key(13)
+        paint = (ROOT/'target/native-desktop/paint.prg').read_bytes()[2:34]
+        wait(lambda: read(0x3d60, 32) == paint and ready(), 'Paint running', 120)
+        assert read(0x3d9a) == b'\0', 'Paint claimed the document request'
+
+        def value(name, n=1): return read(lst_symbol('native-desktop/paint', name), n)
+        wait(lambda: value('pa_status')[0] == 2 and ready(), 'Paint opened the picture', 120)
+        tag = value('pd_handles')[0]
+        allocation = read(0x3c00+(tag-1)*8, 8)
+        assert allocation[:2] == bytes([32, 1]) and allocation[3] == 36, allocation
+        document = read(allocation[2]*256, 9216, 'ram01')
+        if document != PICTURE:
+            (work/'paint-document.bin').write_bytes(document)
+            raise AssertionError(('the picture in Paint\'s document allocation',
+                                  [(i, a, b) for i, (a, b) in enumerate(zip(document, PICTURE)) if a != b][:12]))
+        name = value('pf_name', value('pf_length')[0])
+        assert name == b'PICTURE' and value('pd_dirty')[0] == 0, name
+        want = paint_surface(PICTURE, message=PAINT_MESSAGES[2], view_x=value('pa_view_x')[0], view_y=value('pa_view_y')[0],
+                             focus=value('ui_selected')[0], x=int.from_bytes(value('pd_x', 2), 'little'), y=value('pd_y')[0],
+                             pen=value('pd_pen')[0], color=value('pd_color')[0], dirty=False, mode=value('pa_mode')[0],
+                             action=value('pa_action')[0], name=name, caret=value('pa_field_caret')[0],
+                             field_view=value('pa_field_view')[0], device=value('pf_device')[0], fmt=value('pf_format')[0])
+        got = read(0xc000, 0x2400)
+        if got != want:
+            (work/'paint-actual.bin').write_bytes(got); (work/'paint-expected.bin').write_bytes(want)
+            raise AssertionError(('paint', [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]))
+        (work/'paint.surface').write_bytes(got)
+        check('Return on a UPNT picture (SEQ) opens it in Paint: the document bytes and the surface match')
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')

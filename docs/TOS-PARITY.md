@@ -44,7 +44,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Rename file | Partial | IEC: GEMDESK Show Info sends `R0:NEW=OLD` and reports the drive's refusal ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-R, also folders, checked with `FILE_STAT` |
 | Format disk | Partial | GEMDESK File:Format: drive 8/9, name and ID, confirmation, `N0:NAME,ID` ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no progress display or verify; IEC only |
 | Disk copy (drive onto drive) | Missing | |
-| Install Application (document type → app) | Partial | Fixed rules: Files `.TXT/.SEQ` → Editor and UPNT → Paint; GEMDESK IEC SEQ and USB `.TXT/.SEQ` → Editor ([record](validation/2026-09-26-gemdesk-usb/README.md)); no user-defined associations |
+| Install Application (document type → app) | Partial | Fixed rules: Files `.TXT/.SEQ` → Editor and UPNT → Paint; GEMDESK the same: UPNT signature → Paint, then IEC SEQ and USB `.TXT/.SEQ` → Editor ([record](validation/2026-09-26-gemdesk-usb/README.md), [record](validation/2026-09-26-gemdesk-paint/README.md)); no user-defined associations |
 | Install Icon | Missing | |
 | Set Preferences (confirm delete/copy/overwrite) | Partial | GEMDESK Preferences: confirm deletes, sort order, desktop colour; kept across launches and in DESKTOP.INF ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no copy in GEMDESK; overwrite is always refused |
 | Save Desktop (DESKTOP.INF) | Have | GEMDESK Options:Save Desktop writes a 64-byte DESKTOP.INF (preferences, colour, windows) on the boot drive; after a program returns, the AES session reopens the windows ([record](validation/2026-09-26-gemdesk-persistence/README.md)) |
