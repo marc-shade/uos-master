@@ -229,7 +229,17 @@ wn_remove:
 
 ; ---- set / get / find ---------------------------------------------------------
 wn_set:
-        jsr wn_handle
+        lda N_BUFFER+1          ; the desktop's colour: repaint every desktop
+        bne +                   ; cell and ask for its redraw
+        lda N_BUFFER+2
+        cmp #WF_DESKCOLOR
+        bne +
+        lda N_BUFFER+3
+        sta wn_desk_color
+        lda #1
+        sta wn_force
+        jmp wn_change
++       jsr wn_handle
         bcc +
         jmp wn_badarg
 +       stx wn_h_arg
@@ -666,7 +676,7 @@ wn_scan_next:
         jsr gfx_rect
         bcs wn_change_fail
         jsr it_cells
-        lda #WN_DESKTOP
+        lda wn_desk_color
         sta gfx_color
         jsr gfx_colors
         bcs wn_change_fail
@@ -705,6 +715,7 @@ wn_frames:
         jmp wn_done
 wn_change_fail:
         rts
+wn_desk_color: .byte WN_DESKTOP ; image RAM: the choice outlives app changes
 
 ; X = owner of the cell at wn_col/wn_row. Carry set when it is a frame cell
 ; of window X (never for the desktop).

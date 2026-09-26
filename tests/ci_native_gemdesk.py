@@ -65,6 +65,29 @@ class Gem(calc.Calculator):
             self.frame()
 
 
+class Relaunch(Gem):
+    """GEMDESK started again on the same machine (the AES stays resident), as the
+    dispatcher does when a launched program returns to "browse"."""
+    def __init__(self, previous):
+        from ci_native_files import StreamIEC
+        from py65.devices.mpu6502 import MPU
+        self._symbol_cache = {}
+        self.m, self.ram, self.bus = previous.m, previous.ram, previous.m.bus
+        self.image_name, self.image_prefix, self.image = 'gemdesk', 'native-desktop', previous.image
+        self.io = StreamIEC(self.m, {k: bytes(v) for k, v in previous.io.files.items()})
+        self.io.formats[8] = 0
+        self.ram[0x3d21:0x3d23] = bytes([8, 7]); self.ram[0x3d40:0x3d47] = b'GEMDESK'
+        self.ram[0x3d2c:0x3d2e] = bytes([0, 8])
+        self.cpu = MPU(memory=self.m.bus, pc=calc.RUN); self.cpu.sp, self.cpu.p = 0xe0, 0x20
+        self.cpu.stPushWord(0xaff)
+        self.screens = [bytearray(b' '*1000), bytearray(b' '*2000)]
+        self.reverse = [False, False]; self.row = [0, 0]; self.col = [0, 0]; self.keys = []
+        self.events = int.from_bytes(self.ram[0x3d13:0x3d15], 'little')   # kernel state
+        self.instructions = 0; self.frames = 0
+        self.observation_target = None; self.observation_done = False
+        self.loop()
+
+
 def entries_for(files, device=8):
     """Directory records as N_DIRPAGE normalizes them (types 1 SEQ 2 PRG 3 USR)."""
     out = []
@@ -123,7 +146,7 @@ def main():
         done('File:Close (Ctrl-W) closes the window and frees its listing', p)
 
         p.key(0x85); p.key(13)                                  # F1, Return: Desk:About
-        about = b'[1][uOS GEM desktop|AES 1.4 on the C128][OK]'
+        about = b'[1][uOS GEM desktop|AES 1.5 on the C128][OK]'
         p.expect(scene.scene.draw(scene.desktop(selected=0), about, 1, 1)[0], 'about alert')
         p.key(13)                                               # OK closes the alert
         p.expect(scene.desktop(selected=0), 'about closed')
@@ -144,6 +167,11 @@ def main():
         assert q.ram[0x3d28] == 1 and bytes(q.ram[0x3d40:0x3d46]) == b'FILE00'
         assert q.ram[0x3d22] == 6 and q.ram[0x3d21] == 8
         done('double-clicking a listed file hands it to the dispatcher (device 8)', q)
+
+        back = Relaunch(q)
+        window.update(top=0, selected=row)
+        back.expect(scene.picture([dict(window)], {1: entries}), 'windows back after the launch')
+        done('when the desktop returns, the AES session reopens its windows (rectangle, scroll, selection)', back)
 
         # An unsorted directory, a second drive with a scrolling listing.
         # 'MIKE ' (a trailing space) precedes 'MIKE' on disk; name order puts the
@@ -358,11 +386,11 @@ def main():
         d.key(32); d.expect(scene.prefs_dialog(before, False, 0), 'confirm unticked')
         d.key(9); d.expect(scene.prefs_dialog(before, False, 0, focus=3), 'tab skips the text')
         d.key(0x91); d.expect(scene.prefs_dialog(before, False, 0, focus=1), 'cursor up')
-        d.cell(5+18+2, 7+7); d.click()                              # the Cancel button
+        d.cell(5+18+2, 6+10); d.click()                             # the Cancel button
         d.expect(before, 'preferences cancelled')
         prefs(); d.expect(scene.prefs_dialog(before, True, 0), 'cancel kept the settings')
         d.key(32)
-        d.cell(10, 7+6); d.click()                                  # the Size radio button
+        d.cell(10, 6+6); d.click()                                  # the Size radio button
         d.expect(scene.prefs_dialog(before, False, 2, focus=5), 'size chosen')
         d.key(13)
         wd['selected'] = None
@@ -377,6 +405,68 @@ def main():
         d.expect(scene.picture([wd], {1: scene.ordered(entries_for({**d.io.files}), 2)}, selected_icon=0),
                  'deleted without asking')
         done('with Confirm deletes off, Ctrl-D deletes at once', d)
+
+        by_size = scene.ordered(entries_for({**d.io.files}), 2)
+        prefs(); before = scene.picture([wd], {1: by_size}, selected_icon=0)
+        d.expect(scene.prefs_dialog(before, False, 2), 'preferences again')
+        d.cell(5+12+1, 6+8); d.click()                              # Grey
+        d.key(13)
+        grey = scene.picture([wd], {1: by_size}, selected_icon=0, color=0x1c)
+        d.expect(grey, 'grey desktop')
+        done('Preferences: a desktop colour repaints the desktop and its icons', d)
+
+        mark = len(d.io.events)
+        d.key(0x85); d.key(0x1d); d.key(0x1d); d.key(0x1d); d.key(0x11); d.key(13)   # Options:Save Desktop
+        want = scene.record(0, 2, 0x1c, [dict(dev=8, fmt=0, x=1, y=2, w=28, h=16, top=0)])
+        assert bytes(d.io.files[8, b'DESKTOP.INF', b'S']) == want, bytes(d.io.files[8, b'DESKTOP.INF', b'S'])
+        assert ('dos', 8, b'S0:DESKTOP.INF') in d.io.events[mark:]
+        d.expect(grey, 'saved')
+        done('Options:Save Desktop writes DESKTOP.INF (preferences, colour, windows)', d, record=want.hex())
+
+        cold = Gem({k: bytes(v) for k, v in d.io.files.items() if k != (8, b'GEMDESK', b'P')})
+        listing_now = scene.ordered(entries_for({**cold.io.files}), 2)
+        cold.expect(scene.picture([dict(wd, selected=None)], {1: listing_now}, color=0x1c), 'cold start')
+        cold.cell(3, gd['wy']); cold.click(); cold.key(4)                       # confirm is off
+        assert [e for e in cold.io.events if e[0] == 'dos'][-1] == ('dos', 8, b'S0:'+listing_now[0]['name'].split(b'\xa0')[0])
+        done('a cold start (AES loaded fresh) reads DESKTOP.INF: windows, sort, colour, confirm setting', cold)
+
+        # File:Format on drive 9.
+        files4 = {(8, b'AESVC.PRG', b'P'): AESVC, (9, b'OLD1', b'S'): bytes(500),
+                  (9, b'OLD2', b'P'): bytes(900)}
+        fm = Gem(files4)
+        fm.io.locked.add((9, b'OLD1', b'S'))                       # formatting erases locked files too
+        w9 = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 9', top=0)
+        fm.cell(35, 7); fm.click(double=True)
+        before = scene.picture([w9], {1: scene.ordered(entries_for(files4, 9), 0)}, selected_icon=1)
+        fm.expect(before, 'drive 9 open')
+
+        def format_menu():
+            fm.key(0x85); fm.key(0x1d); fm.key(0x11); fm.key(0x11); fm.key(0x11); fm.key(13)
+        format_menu()
+        fm.expect(scene.format_dialog(before, 2), 'format dialog')
+        fm.key(13)                                                  # empty name and ID
+        need = b'[1][A disk needs a name|and an ID.][OK]'
+        fm.expect(scene.scene.draw(before, need, 1, 1)[0], 'name needed')
+        fm.key(13); fm.expect(before, 'need closed')
+        format_menu()
+        fm.key(0x11); fm.key(32)                                    # drive 9
+        fm.expect(scene.format_dialog(before, 3, drive8=False), 'drive 9 chosen')
+        fm.key(9)
+        for c in b'BLANK':
+            fm.key(c)
+        fm.key(9)
+        for c in b'B1':
+            fm.key(c)
+        fm.expect(scene.format_dialog(before, 7, drive8=False, name=b'BLANK', ident=b'B1'), 'name and id')
+        fm.key(13)
+        ask = b'[3][Format drive 9?|Every file on it|will be erased.][Format|Cancel]'
+        fm.expect(scene.scene.draw(before, ask, 2, 2)[0], 'format confirm')
+        assert not [e for e in fm.io.events if e[0] == 'dos']
+        fm.key(9); fm.key(13)
+        assert [e for e in fm.io.events if e[0] == 'dos'] == [('dos', 9, b'N0:BLANK,B1')]
+        assert not [k for k in fm.io.files if k[0] == 9]
+        fm.expect(scene.picture([w9], {1: []}, selected_icon=1), 'formatted and listed again')
+        done('File:Format asks for drive, name and ID, confirms, sends N0:NAME,ID and lists the drive again', fm)
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')

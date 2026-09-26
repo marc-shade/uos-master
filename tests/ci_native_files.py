@@ -29,7 +29,7 @@ class StreamIEC(IEC):
 
     def dos_command(self,device,command):
         """A DOS command sent as the name of an OPEN on secondary 15: CBM DOS
-        scratch (locked files are skipped and the count says so) and rename."""
+        scratch (locked files are skipped and the count says so), rename and format."""
         self.events.append(('dos',device,command))
         if self.fail_command is not None:
             code,text=self.fail_command
@@ -48,6 +48,10 @@ class StreamIEC(IEC):
                 self.files={renamed if k==key else k:v for k,v in self.files.items()}
                 if key in self.locked:self.locked.discard(key);self.locked.add(renamed)
                 code,text=0,'00, OK,00,00'
+        elif command.startswith(b'N0:') and b',' in command[3:]:
+            for k in [k for k in self.files if k[0]==device]:   # a new, empty disk
+                del self.files[k];self.locked.discard(k)
+            code,text=0,'00, OK,00,00'
         else:
             code,text=31,'31,SYNTAX ERROR,00,00'
         self.codes[device]=code;self.status_text[device]=text.encode()+b'\r'

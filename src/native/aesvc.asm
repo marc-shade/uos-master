@@ -22,7 +22,7 @@ aes_image:
 aes_identity:                 ; image offset 32, checked by bk_attach
         .text "naes"
         .byte AE_MAJOR,AE_MINOR
-        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW ; capability bits
+        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW|AE_CAP_SESSION ; capability bits
         .byte 0
         .cerror aes_identity-aes_image != 32, "AES identity must be at offset 32"
 
@@ -62,6 +62,9 @@ aes_entry:
 +       cmp #AE_OP_WINDOW
         bne +
         jmp wn_entry
++       cmp #AE_OP_SESSION
+        bne +
+        jmp aes_session
 +       cmp #AE_OP_ATTACH
         bne aes_reply
         ldx #3
@@ -108,7 +111,7 @@ aes_badarg:
         rts
 
 aes_state:
-        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW,0
+        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW|AE_CAP_SESSION,0
 aes_attaches: .word 0
 aes_apps: .word 0
 aes_changed: .byte 0
@@ -187,8 +190,36 @@ aes_shutdown:
 +       lda #0
         clc
         rts
+; SESSION: a 256-byte record that outlives app changes (cleared only when the
+; data segment is first reserved), so a desktop can restore itself on return.
+aes_session:
+        ldx #0
+        lda N_BUFFER+256
+        bne aes_session_write
+-       lda aes_session_record,x
+        sta N_BUFFER,x
+        inx
+        bne -
+        lda #0
+        clc
+        rts
+aes_session_write:
+        cmp #1
+        bne aes_session_bad
+-       lda N_BUFFER,x
+        sta aes_session_record,x
+        inx
+        bne -
+        lda #0
+        clc
+        rts
+aes_session_bad:
+        jmp aes_badarg
 aes_data_ok: .byte 0
 aes_data_handle: .fill 4,0
+        .section aesdata
+aes_session_record: .fill 256
+        .send aesdata
 .include "banked-client.inc"
 .include "aes-alert.inc"
 .include "aes-event.inc"

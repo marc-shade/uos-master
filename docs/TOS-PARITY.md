@@ -42,17 +42,17 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | New Folder | Partial | Ultimate paths ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); IEC has no directories |
 | Delete file / folder | Partial | IEC: GEMDESK Delete/Trash with confirmation and the drive's scratch count checked ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-D ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); GEMDESK has no Ultimate windows yet |
 | Rename file | Partial | IEC: GEMDESK Show Info sends `R0:NEW=OLD` and reports the drive's refusal ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-R, also folders, checked with `FILE_STAT` |
-| Format disk | Missing | |
+| Format disk | Partial | GEMDESK File:Format: drive 8/9, name and ID, confirmation, `N0:NAME,ID` ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no progress display or verify; IEC only |
 | Disk copy (drive onto drive) | Missing | |
 | Install Application (document type → app) | Partial | Fixed `.TXT/.SEQ` → Editor and UPNT → Paint (`src/native/files/open-with.inc`) |
 | Install Icon | Missing | |
-| Set Preferences (confirm delete/copy/overwrite) | Partial | GEMDESK Preferences: confirm deletes, sort order ([record](validation/2026-09-26-gemdesk-files/README.md)); not saved across restarts; no copy in GEMDESK; overwrite is always refused |
-| Save Desktop (DESKTOP.INF) | Missing | Only the selected card survives an app return |
+| Set Preferences (confirm delete/copy/overwrite) | Partial | GEMDESK Preferences: confirm deletes, sort order, desktop colour; kept across launches and in DESKTOP.INF ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no copy in GEMDESK; overwrite is always refused |
+| Save Desktop (DESKTOP.INF) | Have | GEMDESK Options:Save Desktop writes a 64-byte DESKTOP.INF (preferences, colour, windows) on the boot drive; after a program returns, the AES session reopens the windows ([record](validation/2026-09-26-gemdesk-persistence/README.md)) |
 | Show File (view/print) | Partial | Byte viewer and Editor open; no print |
 | Print Screen | Missing | No printer service |
-| Launch programs, parameter dialog (TTP) | Partial | GEMDESK double-click/Return launches through the checked dispatcher; no parameter dialog |
+| Launch programs, parameter dialog (TTP) | Partial | GEMDESK double-click/Return launches through the checked dispatcher, and its windows come back when the program returns ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no parameter dialog |
 | Menu keyboard shortcuts | Have | Desktop letters, Files/Editor/Sheet control keys |
-| Desktop pattern and colors | Missing | Fixed theme (legacy Settings had a persisted color) |
+| Desktop pattern and colors | Partial | GEMDESK Preferences: blue, grey or black desktop through the AES's `WF_DESKCOLOR`, saved with the desktop ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no patterns |
 
 ## B. GEM AES services
 
@@ -128,7 +128,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | System fonts in several sizes | Partial | 8×8 and 5-pixel fonts; no font service |
 | AUTO folder programs at boot | Missing | |
 | Accessories loaded at boot | Missing | |
-| Desktop configuration loaded at boot | Missing | |
+| Desktop configuration loaded at boot | Have | GEMDESK reads DESKTOP.INF when a fresh AES has no session ([record](validation/2026-09-26-gemdesk-persistence/README.md)) |
 | Crash display with return to desktop ("bombs") | Partial | Loader errors only; mapped to a BRK/NMI trap |
 | Warm reset key combination | Missing | |
 | Keyboard mouse emulation (Alt+cursor) | Missing | |

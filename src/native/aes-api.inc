@@ -7,11 +7,12 @@ AE_LIMIT = $c000
 AE_DATA = $5000                ; owner-30 RAM tables, reserved on first attach
 AE_DATA_PAGES = 16
 AE_MAJOR = 1
-AE_MINOR = 4
+AE_MINOR = 5
 AE_CAP_ALERT = 1              ; capability bit 0: form_alert (minor 1)
 AE_CAP_EVENT = 2              ; capability bit 1: evnt_multi/appl_write (minor 2)
 AE_CAP_MENU = 4               ; capability bit 2: menu bar (minor 3)
 AE_CAP_WINDOW = 8             ; capability bit 3: windows (minor 4)
+AE_CAP_SESSION = 16           ; capability bit 4: session record (minor 5)
 AE_OP_ATTACH = 0                  ; N_BUFFER[0..3] = app cookie -> version/status
 AE_OP_STATUS = 1                  ; version/status without registering an attach
 AE_OP_ALERT = 2                ; surface(4), default, "[i][lines][buttons]"
@@ -22,7 +23,8 @@ AE_OP_MENU = 6                 ; surface(4), "Title:item|item^K;..." (empty remo
 AE_OP_MENU_SET = 7             ; title, item, flags (1 checked, 2 disabled)
 AE_OP_WINDOW = 8               ; N_BUFFER[0] sub-op: create/open/close/delete/set/get/find/fill/surface
 AE_OP_SHUTDOWN = 9             ; discard overlays, free the data segment (before unload)
-AE_OP_COUNT = 10
+AE_OP_SESSION = 10             ; N_BUFFER+256: 0 read / 1 write the 256-byte record in N_BUFFER
+AE_OP_COUNT = 11
 
 ; GEM event masks, menu and window constants (shared by apps and the AES)
 MU_KEYBD = 1
@@ -58,6 +60,7 @@ WF_FIRSTXYWH = 11
 WF_NEXTXYWH = 12
 WF_HSLSIZE = 15
 WF_VSLSIZE = 16
+WF_DESKCOLOR = 17              ; handle 0 only: VIC colour of cleared desktop cells (minor 5)
 WM_REDRAW = 20
 WM_TOPPED = 21
 WM_CLOSED = 22

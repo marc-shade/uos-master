@@ -2,8 +2,8 @@
 import native_aes_scene as scene
 import native_forms_scene as forms
 
-MENU = (b'Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|-|Close^W;View:Name|Type|Size|Unsorted;'
-        b'Options:Preferences...|Launcher^L')
+MENU = (b'Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|Format...|-|Close^W;View:Name|Type|Size|Unsorted;'
+        b'Options:Preferences...|Save Desktop|Launcher^L')
 ICONS = [(2, b'Boot', 0), (6, b'Drive 9', 0), (20, b'Trash', 1)]
 DESK, ICON_SELECTED, PAPER, SELECTED = 0x16, 0x61, 0x61, 0x16
 ART = [
@@ -16,20 +16,22 @@ KIND = (scene.WK['NAME'] | scene.WK['CLOSER'] | scene.WK['FULLER'] | scene.WK['M
 TYPES = [b'DEL', b'SEQ', b'PRG', b'USR', b'REL']
 
 
-def draw_icons(s, selected=None):
+def draw_icons(s, selected=None, color=DESK):
     for index, (y, label, art) in enumerate(ICONS):
         for g in range(8):
             column, half = g & 3, g >> 2
             rows = [(ART[art][half*8+r] >> (24-8*column)) & 255 for r in range(8)]
             s.glyph(34+column, y+half, rows)
-        s.colors(34, y, 38, y+2, ICON_SELECTED if selected == index else DESK)
+        s.colors(34, y, 38, y+2, ICON_SELECTED if selected == index else color)
         s.rect(31*8, (y+2)*8, 320, (y+2)*8+8, 0)
         s.text(288-len(label)*4, (y+2)*8, label)
 
 
-def desktop(selected=None):
-    s = scene.Surface(bytes(8192)+bytes([DESK])*1024)
-    draw_icons(s, selected)
+def desktop(selected=None, color=DESK):
+    # The 24 bytes after the 1,000 cells keep GEMDESK's start-up fill: the AES
+    # repaints only visible desktop cells when the colour changes.
+    s = scene.Surface(bytes(8192)+bytes([color])*1000+bytes([DESK])*24)
+    draw_icons(s, selected, color)
     return scene.menu_draw(bytes(s.data), MENU)[0]
 
 
@@ -86,9 +88,9 @@ def slider(count, wh, top):
     return size, (0 if most == 0 else top*255//most)
 
 
-def picture(windows, entries_of, selected_icon=None):
+def picture(windows, entries_of, selected_icon=None, color=DESK):
     """windows: list (bottom->top) of dicts id/x/y/w/h/title/top/selected/entries."""
-    base = desktop(selected_icon)
+    base = desktop(selected_icon, color)
     out = []
     for w in windows:
         g = scene.geometry(dict(kind=KIND, **{k: w[k] for k in ('x', 'y', 'w', 'h')}))
@@ -122,7 +124,10 @@ def info_dialog(before, entry, focus=2, **kw):
     return forms.draw(before, 30, 10, info_objects(entry, **kw), focus)
 
 
-def prefs_objects(confirm, view):
+COLORS = [0x16, 0x1c, 0x10]
+
+
+def prefs_objects(confirm, view, color=DESK):
     f = forms
     radios = [(4, 5, 8, b'Name'), (14, 5, 8, b'Type'), (4, 6, 8, b'Size'), (14, 6, 12, b'Unsorted')]
     return ([f.obj(f.TEXT, 2, 1, 20, b'Preferences'),
@@ -130,9 +135,39 @@ def prefs_objects(confirm, view):
              f.obj(f.TEXT, 2, 4, 18, b'Sort windows by:')] +
             [f.obj(f.RADIO, x, y, w, t, flags=0x10, state=f.SELECTED if view == i else 0)
              for i, (x, y, w, t) in enumerate(radios)] +
-            [f.obj(f.BUTTON, 8, 7, 8, b'OK', flags=f.DEFAULT | f.EXIT),
-             f.obj(f.BUTTON, 18, 7, 8, b'Cancel', flags=f.CANCEL | f.EXIT)])
+            [f.obj(f.TEXT, 2, 7, 9, b'Desktop:')] +
+            [f.obj(f.RADIO, x, 8, w, t, flags=0x20, state=f.SELECTED if COLORS[i] == color else 0)
+             for i, (x, w, t) in enumerate([(4, 7, b'Blue'), (12, 7, b'Grey'), (20, 8, b'Black')])] +
+            [f.obj(f.BUTTON, 8, 10, 8, b'OK', flags=f.DEFAULT | f.EXIT),
+             f.obj(f.BUTTON, 18, 10, 8, b'Cancel', flags=f.CANCEL | f.EXIT)])
 
 
-def prefs_dialog(before, confirm, view, focus=1):
-    return forms.draw(before, 30, 10, prefs_objects(confirm, view), focus)
+def prefs_dialog(before, confirm, view, focus=1, color=DESK):
+    return forms.draw(before, 30, 13, prefs_objects(confirm, view, color), focus)
+
+
+def record(confirm, view, color, windows):
+    """The 64-byte desktop record (GEMDESK: session and DESKTOP.INF)."""
+    out = bytearray(b'GDS\x01'+bytes([confirm, view, color, 0, len(windows)]))
+    for w in windows:
+        out += bytes([w['dev'], w['fmt'], w['x'], w['y'], w['w'], w['h'], w['top'],
+                      255 if w.get('selected') is None else w['selected']])
+    return bytes(out.ljust(64, b'\0'))
+
+
+def format_objects(drive8=True, name=b'', ident=b''):
+    f = forms
+    return [f.obj(f.TEXT, 2, 1, 20, b'Format disk'),
+            f.obj(f.TEXT, 2, 3, 6, b'Drive:'),
+            f.obj(f.RADIO, 9, 3, 5, b'8', flags=0x10, state=f.SELECTED if drive8 else 0),
+            f.obj(f.RADIO, 15, 3, 5, b'9', flags=0x10, state=0 if drive8 else f.SELECTED),
+            f.obj(f.TEXT, 2, 4, 5, b'Name:'),
+            f.obj(f.FIELD, 9, 4, 17, field=dict(value=name, caret=len(name))),
+            f.obj(f.TEXT, 2, 5, 3, b'ID:'),
+            f.obj(f.FIELD, 9, 5, 3, field=dict(value=ident, caret=len(ident))),
+            f.obj(f.BUTTON, 6, 8, 10, b'Format', flags=f.DEFAULT | f.EXIT),
+            f.obj(f.BUTTON, 18, 8, 8, b'Cancel', flags=f.CANCEL | f.EXIT)]
+
+
+def format_dialog(before, focus, **kw):
+    return forms.draw(before, 30, 11, format_objects(**kw), focus)

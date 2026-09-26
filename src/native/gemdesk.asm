@@ -103,7 +103,7 @@ gm_surface_setup:
         ldx N_OFFSET+1
         cpx #$20
         bcc +
-        lda #GM_DESK
+        lda gm_desk_color
 +       sta N_VALUE
         jsr N_FILL
         bcs gm_setup_done
@@ -174,6 +174,7 @@ gm_aes_ready:
         ldx #>gm_menu
         jsr ae_menu_install
         bcs gm_aes_failed
+        jsr gm_restore          ; the desktop as it was left, or as saved
         jmp gm_view_checks
 gm_aes_failed:
         rts
@@ -456,7 +457,7 @@ gm_draw_icon:
         cmp #8
         bne --
         ldx gm_i                ; colours: selected icons inverted
-        lda #GM_DESK
+        lda gm_desk_color
         cpx gm_icon_sel
         bne +
         lda #GM_ICON_SELECTED
@@ -701,7 +702,10 @@ gm_menu_choice:
 +       cmp #3
         bne +
         jmp gm_delete
-+       cmp #5
++       cmp #4
+        bne +
+        jmp gm_format
++       cmp #6
         bne +
         jsr gm_top_slot         ; File: Close
         bcs +
@@ -716,6 +720,9 @@ gm_menu_options:
         bne +
         jmp gm_prefs
 +       cmp #1
+        bne +
+        jmp gm_save_desktop
++       cmp #2
         bne +
         jmp gm_launcher_leave
 +       rts
@@ -748,6 +755,8 @@ gm_open_drive:
         inx
         cpx #GM_WINDOWS
         bne -
+        lda gm_restoring        ; restoring: quietly open nothing
+        bne gm_open_quiet
         lda #<gm_full_alert
         ldx #>gm_full_alert
         ldy #1
@@ -755,6 +764,8 @@ gm_open_drive:
 +       stx gm_slot
         jsr gm_scan
         bcc +
+        ldx gm_restoring
+        bne gm_open_quiet
         jsr gm_hex_error
         lda #<gm_drive_alert
         ldx #>gm_drive_alert
@@ -827,12 +838,21 @@ gm_open_drive:
         sta N_BUFFER+4
         lda #16
         sta N_BUFFER+5
-        jsr gm_wcall
+        lda gm_restoring        ; restoring: the saved rectangle
+        beq +
+        ldx #3
+-       lda gm_orect,x
+        sta N_BUFFER+2,x
+        dex
+        bpl -
++       jsr gm_wcall
         bcs gm_open_fail
         jmp gm_update_slider    ; from the opened work area, not the full one
 gm_open_fail:
         ldx gm_slot
         jmp gm_free_slot
+gm_open_quiet:
+        rts
 
 ; X = drive icon -> gm_dev, gm_fmt
 gm_icon_drive:
@@ -1810,12 +1830,50 @@ gm_prefs:
         iny
         cpy #4
         bne -
+        ldx #0                  ; desktop colour radios: objects 8..10
+        ldy #0
+-       lda #0
+        pha
+        lda gm_desk_colors,y
+        cmp gm_desk_color
+        bne +
+        pla
+        lda #FOS_SELECTED
+        pha
++       pla
+        sta gm_pref_form+5+8*8+2,x
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #3
+        bne -
         lda #<gm_pref_form
         ldx #>gm_pref_form
         jsr gm_form
         bcs gm_dialog_fail
-        cmp #7                  ; OK
+        cmp #11                 ; OK
         bne gm_dialog_done
+        ldx #0                  ; the chosen colour
+        ldy #0
+-       lda gm_pref_form+5+8*8+2,x
+        and #FOS_SELECTED
+        bne +
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #3
+        bne -
+        beq gm_prefs_view
++       lda gm_desk_colors,y
+        cmp gm_desk_color
+        beq gm_prefs_view
+        sta gm_desk_color
+        jsr gm_restore_color    ; the AES repaints; WM_REDRAW brings the icons
+gm_prefs_view:
         lda gm_pref_form+5+1*8+2
         and #FOS_SELECTED
         sta gm_confirm
@@ -1861,6 +1919,46 @@ gm_form_close_error:            ; keep the first error, still restore
         rts
 
 gm_confirm: .byte 1
+gm_fname_field: .byte 0,0,16    ; N_FEDIT records: disk name and ID (IEC filename filter)
+        .word gm_fname_buf
+        .byte 0,0,3
+gm_fname_buf: .fill 17,0
+gm_fid_field: .byte 0,0,2
+        .word gm_fid_buf
+        .byte 0,0,3
+gm_fid_buf: .fill 3,0
+gm_format_form: .byte $ff,0,30,11,10
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_format
+        .byte FOT_TEXT,0,0,2,3,6
+        .word gm_t_drive
+        .byte FOT_RADIO,$10,0,9,3,5
+        .word gm_t_8
+        .byte FOT_RADIO,$10,0,15,3,5
+        .word gm_t_9
+        .byte FOT_TEXT,0,0,2,4,5
+        .word gm_t_name
+        .byte FOT_FIELD,0,0,9,4,17
+        .word gm_fname_field
+        .byte FOT_TEXT,0,0,2,5,3
+        .word gm_t_id
+        .byte FOT_FIELD,0,0,9,5,3
+        .word gm_fid_field
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,6,8,10
+        .word gm_t_formatb
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,8,8
+        .word gm_t_cancel
+gm_desk_color: .byte $16
+gm_restoring: .byte 0
+gm_orect: .fill 4,0
+gm_spos: .byte 0
+gm_sslot: .byte 0
+gm_stop: .byte 0
+gm_session: .fill 64,0
+gm_magic: .byte 71,68,83,1                           ; "GDS", version 1
+gm_inf_name: .byte 68,69,83,75,84,79,80,46,73,78,70  ; DESKTOP.INF
+gm_inf_scratch: .byte 83,48,58,68,69,83,75,84,79,80,46,73,78,70   ; S0:DESKTOP.INF
+gm_s_nosave: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,115,97,118,101,32,116,104,101,32,100,101,115,107,116,111,112,46,124,0   ; [3][Could not save the desktop.|
 gm_form_exit: .byte 0
 gm_form_ptr: .word 0
 gm_name_field: .byte 0,0,16     ; N_FEDIT record: length, caret, maximum,
@@ -1884,7 +1982,7 @@ gm_info_form: .byte $ff,0,30,10,7
         .word gm_t_ok
         .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,7,8
         .word gm_t_cancel
-gm_pref_form: .byte $ff,0,30,10,9
+gm_pref_form: .byte $ff,0,30,13,13
         .byte FOT_TEXT,0,0,2,1,20
         .word gm_t_prefs
         .byte FOT_CHECK,0,0,2,3,18
@@ -1899,13 +1997,37 @@ gm_pref_form: .byte $ff,0,30,10,9
         .word gm_t_ssize
         .byte FOT_RADIO,$10,0,14,6,12
         .word gm_t_sunsorted
-        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,7,8
+        .byte FOT_TEXT,0,0,2,7,9
+        .word gm_t_desktop
+        .byte FOT_RADIO,$20,0,4,8,7
+        .word gm_t_blue
+        .byte FOT_RADIO,$20,0,12,8,7
+        .word gm_t_grey
+        .byte FOT_RADIO,$20,0,20,8,8
+        .word gm_t_black
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,10,8
         .word gm_t_ok
-        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,7,8
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,10,8
         .word gm_t_cancel
 gm_t_info: .byte 73,116,101,109,32,73,110,102,111,114,109,97,116,105,111,110,0   ; Item Information
 gm_t_name: .byte 78,97,109,101,58,0   ; Name:
 gm_t_readonly: .byte 82,101,97,100,45,111,110,108,121,0   ; Read-only
+gm_t_desktop: .byte 68,101,115,107,116,111,112,58,0   ; Desktop:
+gm_t_blue: .byte 66,108,117,101,0                    ; Blue
+gm_t_grey: .byte 71,114,101,121,0                    ; Grey
+gm_t_black: .byte 66,108,97,99,107,0                 ; Black
+gm_desk_colors: .byte $16,$1c,$10                    ; white icons on blue, grey, black
+gm_t_format: .byte 70,111,114,109,97,116,32,100,105,115,107,0   ; Format disk
+gm_t_drive: .byte 68,114,105,118,101,58,0   ; Drive:
+gm_t_8: .byte 56,0   ; 8
+gm_t_9: .byte 57,0   ; 9
+gm_t_id: .byte 73,68,58,0   ; ID:
+gm_t_formatb: .byte 70,111,114,109,97,116,0   ; Format
+gm_s_noformat: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,102,111,114,109,97,116,32,116,104,101,32,100,105,115,107,46,124,0   ; [3][Could not format the disk.|
+gm_format_need: .byte 91,49,93,91,65,32,100,105,115,107,32,110,101,101,100,115,32,97,32,110,97,109,101,124,97,110,100,32,97,110,32,73,68,46,93,91,79,75,93,0   ; [1][A disk needs a name|and an ID.][OK]
+gm_format_ask: .byte 91,51,93,91,70,111,114,109,97,116,32,100,114,105,118,101,32
+gm_format_ask_drive: .byte 56
+        .byte 63,124,69,118,101,114,121,32,102,105,108,101,32,111,110,32,105,116,124,119,105,108,108,32,98,101,32,101,114,97,115,101,100,46,93,91,70,111,114,109,97,116,124,67,97,110,99,101,108,93,0
 gm_t_ok: .byte 79,75,0   ; OK
 gm_t_cancel: .byte 67,97,110,99,101,108,0   ; Cancel
 gm_t_prefs: .byte 80,114,101,102,101,114,101,110,99,101,115,0   ; Preferences
@@ -1916,6 +2038,422 @@ gm_t_stype: .byte 84,121,112,101,0   ; Type
 gm_t_ssize: .byte 83,105,122,101,0   ; Size
 gm_t_sunsorted: .byte 85,110,115,111,114,116,101,100,0   ; Unsorted
 gm_s_norename: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,114,101,110,97,109,101,124,0   ; [3][Could not rename|
+
+; ---- desktop persistence ------------------------------------------------------------
+; The desktop record (64 bytes): "GDS",1; confirm; view; colour; 0; window
+; count; then per window, bottom to top: device, format, x, y, w, h, top row,
+; selection. It goes to the AES session before a launch (restored when the
+; desktop returns) and to DESKTOP.INF with Options:Save Desktop.
+GM_RECORD_SIZE = 64
+gm_session_build:
+        ldx #GM_RECORD_SIZE-1
+        lda #0
+-       sta gm_session,x
+        dex
+        bpl -
+        ldx #3
+-       lda gm_magic,x
+        sta gm_session,x
+        dex
+        bpl -
+        lda gm_confirm
+        sta gm_session+4
+        lda gm_view
+        sta gm_session+5
+        lda gm_desk_color
+        sta gm_session+6
+        lda #9
+        sta gm_spos
+        jsr gm_top_slot         ; the top window goes last, so it reopens on top
+        bcc +
+        ldx #$ff
++       stx gm_stop
+        ldx #0
+-       stx gm_sslot
+        cpx gm_stop
+        beq +
+        jsr gm_session_window
++       ldx gm_sslot
+        inx
+        cpx #GM_WINDOWS
+        bne -
+        ldx gm_stop
+        bmi gm_session_built
+        stx gm_sslot
+; Append slot gm_sslot (if open) to the record.
+gm_session_window:
+        ldx gm_sslot
+        lda gm_win_handle,x
+        beq gm_session_built
+        lda #WS_GET
+        sta N_BUFFER
+        lda gm_win_handle,x
+        sta N_BUFFER+1
+        lda #WF_CURRXYWH
+        sta N_BUFFER+2
+        jsr gm_wcall
+        bcs gm_session_built
+        ldy gm_spos
+        ldx gm_sslot
+        lda gm_win_dev,x
+        sta gm_session,y
+        lda gm_win_fmt,x
+        sta gm_session+1,y
+        lda N_BUFFER
+        sta gm_session+2,y
+        lda N_BUFFER+1
+        sta gm_session+3,y
+        lda N_BUFFER+2
+        sta gm_session+4,y
+        lda N_BUFFER+3
+        sta gm_session+5,y
+        lda gm_win_top,x
+        sta gm_session+6,y
+        lda gm_win_sel,x
+        sta gm_session+7,y
+        tya
+        clc
+        adc #8
+        sta gm_spos
+        inc gm_session+8
+gm_session_built:
+        rts
+; Before leaving: keep the desktop in the AES for the return.
+gm_session_save:
+        jsr gm_session_build
+        ldx #0
+-       lda #0
+        cpx #GM_RECORD_SIZE
+        bcs +
+        lda gm_session,x
++       sta N_BUFFER,x
+        inx
+        bne -
+        jmp ae_session_write
+; At start: the AES session, else DESKTOP.INF, else the defaults.
+gm_restore:
+        jsr ae_session_read
+        bcs gm_restore_file
+        ldx #GM_RECORD_SIZE-1
+-       lda N_BUFFER,x
+        sta gm_session,x
+        dex
+        bpl -
+        jsr gm_session_valid
+        bcc gm_restore_apply
+gm_restore_file:
+        jsr gm_load_desktop
+        bcs gm_restore_color
+gm_restore_apply:
+        lda gm_session+4
+        and #1
+        sta gm_confirm
+        lda gm_session+5
+        sta gm_view
+        lda gm_session+6
+        sta gm_desk_color
+        lda #1
+        sta gm_restoring
+        lda #0
+        sta gm_sslot            ; record index
+        lda #9
+        sta gm_spos
+gm_restore_loop:
+        lda gm_sslot
+        cmp gm_session+8
+        bcs gm_restore_done
+        ldy gm_spos
+        lda gm_session,y
+        sta gm_dev
+        lda gm_session+1,y
+        sta gm_fmt
+        ldx #0
+-       lda gm_session+2,y
+        sta gm_orect,x
+        iny
+        inx
+        cpx #4
+        bne -
+        jsr gm_open_drive       ; nothing opens if the drive cannot be read now
+        ldx gm_slot
+        lda gm_win_handle,x
+        beq gm_restore_next
+        jsr gm_work
+        jsr gm_max_top
+        ldy gm_spos
+        cmp gm_session+6,y      ; the saved top row, if the listing still has it
+        bcc +
+        lda gm_session+6,y
++       ldx gm_slot
+        sta gm_win_top,x
+        lda gm_session+7,y
+        cmp gm_win_count,x
+        bcc +
+        lda #$ff
++       sta gm_win_sel,x
+        jsr gm_update_slider
+gm_restore_next:
+        lda gm_spos
+        clc
+        adc #8
+        sta gm_spos
+        inc gm_sslot
+        jmp gm_restore_loop
+gm_restore_done:
+        lda #0
+        sta gm_restoring
+gm_restore_color:
+        lda #WS_SET             ; the AES paints the desktop in this colour
+        sta N_BUFFER
+        lda #0
+        sta N_BUFFER+1
+        lda #WF_DESKCOLOR
+        sta N_BUFFER+2
+        lda gm_desk_color
+        sta N_BUFFER+3
+        jmp gm_wcall
+; gm_session: carry clear when it is a desktop record.
+gm_session_valid:
+        ldx #3
+-       lda gm_session,x
+        cmp gm_magic,x
+        bne +
+        dex
+        bpl -
+        lda gm_session+5
+        cmp #4
+        bcs +
+        lda gm_session+8
+        cmp #GM_WINDOWS+1
+        rts                     ; carry clear when at most four windows
++       sec
+        rts
+; DESKTOP.INF on the boot drive -> gm_session. Carry set if absent or invalid.
+gm_load_desktop:
+        lda #0
+        jsr gm_desktop_open
+        bcs gm_load_done
+        lda #GM_RECORD_SIZE
+        sta N_FCOUNT
+        lda #0
+        sta N_FCOUNT+1
+        jsr gm_file_select
+        jsr N_FREAD
+        bcs gm_load_close       ; (closing may reuse N_BUFFER and the counts)
+        ldx #GM_RECORD_SIZE-1
+-       lda N_BUFFER,x
+        sta gm_session,x
+        dex
+        bpl -
+        lda N_FACTUAL+1
+        bne +
+        lda N_FACTUAL
+        cmp #9
+        bcc gm_load_short
++       jsr gm_close_file
+        bcs gm_load_done
+        jmp gm_session_valid
+gm_load_short:
+        sec
+gm_load_close:
+        php
+        jsr gm_close_file
+        plp
+gm_load_done:
+        rts
+; A = mode (0 read, 1 create): open DESKTOP.INF on the boot drive.
+gm_desktop_open:
+        sta N_FMODE
+        lda N_CURRENT
+        sta N_FOWNER
+        lda N_BOOTDEVICE
+        sta N_FDEVICE
+        lda N_BOOTFORMAT
+        sta N_FFORMAT
+        ldx #10
+-       lda gm_inf_name,x
+        sta N_FNAME,x
+        dex
+        bpl -
+        lda #11
+        sta N_FNAMELEN
+        lda #0
+        sta N_FTYPE             ; SEQ
+        ldx #3
+-       sta N_FHANDLE,x
+        dex
+        bpl -
+        jsr N_FOPEN
+        bcs +
+        ldx #3
+-       lda N_FHANDLE,x
+        sta gm_file,x
+        dex
+        bpl -
+        clc
++       rts
+gm_file_select:
+        lda N_CURRENT
+        sta N_FOWNER
+        ldx #3
+-       lda gm_file,x
+        sta N_FHANDLE,x
+        dex
+        bpl -
+        rts
+; Options:Save Desktop: replace DESKTOP.INF on the boot drive.
+gm_save_desktop:
+        jsr gm_session_build
+        lda N_BOOTDEVICE        ; scratch the old one (none is not an error)
+        sta dc_device
+        ldx #13
+-       lda gm_inf_scratch,x
+        sta dc_text,x
+        dex
+        bpl -
+        lda #14
+        sta dc_length
+        jsr dc_command
+        bcs gm_save_error
+        cmp #1
+        bne gm_save_status
+        lda #1                  ; create
+        jsr gm_desktop_open
+        bcs gm_save_error
+        ldx #GM_RECORD_SIZE-1
+-       lda gm_session,x
+        sta N_BUFFER,x
+        dex
+        bpl -
+        lda #GM_RECORD_SIZE
+        sta N_FCOUNT
+        lda #0
+        sta N_FCOUNT+1
+        jsr gm_file_select
+        jsr N_FWRITE
+        bcs gm_save_write_error
+        jsr gm_close_file       ; a failed close is an error too
+        bcs gm_save_error
+        rts
+gm_save_write_error:
+        pha
+        jsr gm_close_file
+        pla
+gm_save_error:                  ; "[3][Could not save the|desktop: error $xx][OK]"
+        pha
+        lda #<gm_s_nosave
+        ldx #>gm_s_nosave
+        pha
+        lda #0
+        sta gm_alen
+        pla
+        jsr gm_astr
+        jmp gm_error_hex
+gm_save_status:
+        lda #<gm_s_nosave
+        ldx #>gm_s_nosave
+        pha
+        lda #0
+        sta gm_alen
+        pla
+        jsr gm_astr
+        jmp gm_status_text
+
+; File:Format: drive 8 or 9, disk name and ID, then a confirmation; the drive
+; gets "N0:NAME,ID" and every window of that drive is listed again.
+gm_format:
+        lda #0
+        sta gm_fname_field      ; empty name and ID each time
+        sta gm_fid_field
+        sta gm_fname_buf
+        sta gm_fid_buf
+        lda #FOS_SELECTED
+        sta gm_format_form+5+2*8+2
+        lda #0
+        sta gm_format_form+5+3*8+2
+        lda #<gm_format_form
+        ldx #>gm_format_form
+        jsr gm_form
+        bcc +
+        jmp gm_view_fail
++       cmp #8                  ; Format
+        bne gm_format_done
+        ldx gm_fname_field
+        beq gm_format_bad       ; a disk needs a name
+        lda gm_fid_field
+        beq gm_format_bad
+        lda #8                  ; the chosen drive
+        ldx gm_format_form+5+3*8+2
+        beq +
+        lda #9
++       sta dc_device
+        sta gm_dev
+        ldx #0                  ; format as the icon opens it
+        cmp N_BOOTDEVICE
+        bne +
+        ldx N_BOOTFORMAT
++       stx gm_fmt
+        clc                     ; "[3][Format drive 8?|Every file on it|will be erased.][Format|Cancel]"
+        adc #$30
+        sta gm_format_ask_drive
+        lda #<gm_format_ask
+        ldx #>gm_format_ask
+        ldy #2
+        jsr gm_alert
+        bcs gm_format_done
+        lda N_BUFFER
+        cmp #1
+        bne gm_format_done
+        ldy #3                  ; N0:NAME,ID
+        ldx #0
+-       lda gm_fname_buf,x
+        sta dc_text,y
+        iny
+        inx
+        cpx gm_fname_field
+        bne -
+        lda #$2c
+        sta dc_text,y
+        iny
+        ldx #0
+-       lda gm_fid_buf,x
+        sta dc_text,y
+        iny
+        inx
+        cpx gm_fid_field
+        bne -
+        sty dc_length
+        lda #$4e
+        sta dc_text
+        lda #$30
+        sta dc_text+1
+        lda #$3a
+        sta dc_text+2
+        jsr dc_command
+        bcs gm_format_error
+        cmp #0
+        bne gm_format_status
+        jmp gm_refresh_drive
+gm_format_done:
+        rts
+gm_format_bad:
+        lda #<gm_format_need
+        ldx #>gm_format_need
+        ldy #1
+        jmp gm_alert
+gm_format_error:
+        pha
+        jsr gm_format_head
+        jmp gm_error_hex
+gm_format_status:
+        jsr gm_format_head
+        jmp gm_status_text
+gm_format_head:
+        lda #0
+        sta gm_alen
+        lda #<gm_s_noformat
+        ldx #>gm_s_noformat
+        jmp gm_astr
 
 ; ---- windows: painting ----------------------------------------------------------------
 ; Clear the work area inside gm_clip, then draw the visible rows clipped to
@@ -2453,12 +2991,14 @@ gm_open_entry:
         sta N_DEVICE
         lda gm_win_fmt,x
         sta N_APPFORMAT
+        jsr gm_session_save     ; the windows come back when the desktop does
         jsr pm_close
         lda #0
         jmp N_REPLACE
 gm_launch_fail:
         rts
 gm_launcher_leave:
+        jsr gm_session_save
         jsr pm_close
 gm_launcher:
         lda N_BOOTFORMAT        ; the card launcher is "cards" on the boot disk
@@ -2679,15 +3219,16 @@ gm_icon_bits:
         .byte $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88
         .byte $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88
         .byte $12,$49,$24,$88, $10,$00,$00,$08, $1f,$ff,$ff,$f8, $00,$00,$00,$00
-; Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|-|Close
-; ^W;View:Name|Type|Size|Unsorted;Options:Preferences...|Launcher^L
+; Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|Format.
+; ..|-|Close^W;View:Name|Type|Size|Unsorted;Options:Preferences...|Save Desktop|Launcher^L
 gm_menu:
         .byte 68,101,115,107,58,65,98,111,117,116,32,117,79,83,46,46,46,59,70,105,108,101,58,79
         .byte 112,101,110,94,79,124,83,104,111,119,32,73,110,102,111,94,73,124,45,124,68,101,108,101
-        .byte 116,101,94,68,124,45,124,67,108,111,115,101,94,87,59,86,105,101,119,58,78,97,109,101
-        .byte 124,84,121,112,101,124,83,105,122,101,124,85,110,115,111,114,116,101,100,59,79,112,116,105
-        .byte 111,110,115,58,80,114,101,102,101,114,101,110,99,101,115,46,46,46,124,76,97,117,110,99
-        .byte 104,101,114,94,76,0
+        .byte 116,101,94,68,124,70,111,114,109,97,116,46,46,46,124,45,124,67,108,111,115,101,94,87
+        .byte 59,86,105,101,119,58,78,97,109,101,124,84,121,112,101,124,83,105,122,101,124,85,110,115
+        .byte 111,114,116,101,100,59,79,112,116,105,111,110,115,58,80,114,101,102,101,114,101,110,99,101
+        .byte 115,46,46,46,124,83,97,118,101,32,68,101,115,107,116,111,112,124,76,97,117,110,99,104
+        .byte 101,114,94,76,0
 ; Show Info alert pieces
 gm_s_head: .byte 91,49,93,91,0                          ; [1][
 gm_s_type: .byte 124,84,121,112,101,58,32,0             ; |Type:
@@ -2709,9 +3250,9 @@ gm_badname_alert: .byte 91,49,93,91,84,104,105,115,32,110,97,109,101,32,99,97,11
 gm_bad_chars: .byte $2a,$3f,$2c,$3d,$3a,$22,$40   ; * ? , = : " @: DOS syntax in a name
 gm_bad_chars_end:
 GM_GAP_COUNT = 6
-; [1][uOS GEM desktop|AES 1.4 on the C128][OK]
+; [1][uOS GEM desktop|AES 1.5 on the C128][OK]
 gm_about: .byte 91,49,93,91,117,79,83,32,71,69,77,32,100,101,115,107,116,111,112,124
-        .byte 65,69,83,32,49,46,52,32,111,110,32,116,104,101,32,67,49,50,56,93,91,79,75,93,0
+        .byte 65,69,83,32,49,46,53,32,111,110,32,116,104,101,32,67,49,50,56,93,91,79,75,93,0
 ; [3][Could not start that|program: error $xx][OK]
 gm_start_alert: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,115,116,97,114,116,32
         .byte 116,104,97,116,124,112,114,111,103,114,97,109,58,32,101,114,114,111,114,32,36
@@ -2787,9 +3328,7 @@ gm_mem1: .fill GM_WINDOWS,0
 gm_mem2: .fill GM_WINDOWS,0
 gm_mem3: .fill GM_WINDOWS,0
 gm_rec: .fill GM_RECORD,0
-gm_rows: .fill 512,0
 gm_dirpage: .fill 256,0
-gm_order: .fill GM_MAX_ENTRIES,0
 gm_addr_lo:
         .for i=0, i<GM_MAX_ENTRIES, i+=1
         .byte <(gm_sortbuf+i*GM_RECORD)
@@ -2799,6 +3338,12 @@ gm_addr_hi:
         .byte >(gm_sortbuf+i*GM_RECORD)
         .next
 gm_sortbuf: .fill GM_MAX_ENTRIES*GM_RECORD,0
+; Buffers that are never live together share storage: the visible rows are
+; read only while painting, the sort buffer only while scanning or sorting,
+; and the sort order only after a scan has finished with its directory page.
+gm_rows = gm_sortbuf
+gm_order = gm_dirpage
+.cerror GM_MAX_ENTRIES > 256 || 24*GM_RECORD > GM_MAX_ENTRIES*GM_RECORD, "shared buffers too small"
 .include "aes-client.inc"
 .include "dos-command.inc"
 .include "graphics/graphics-core.inc"

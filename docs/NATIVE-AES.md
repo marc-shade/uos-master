@@ -220,7 +220,11 @@ Set fields:
 - `WF_CURRXYWH` 5 (a new rectangle; moves or resizes an open window);
 - `WF_TOP` 10;
 - `WF_HSLIDE` 8 / `WF_VSLIDE` 9 (position 0–255);
-- `WF_HSLSIZE` 15 / `WF_VSLSIZE` 16 (size 0–255 of the track).
+- `WF_HSLSIZE` 15 / `WF_VSLSIZE` 16 (size 0–255 of the track);
+- `WF_DESKCOLOR` 17, handle 0 only (minor 5): the VIC colour byte of cleared
+  desktop cells. The AES repaints every visible desktop cell (pixels cleared)
+  and queues `WM_REDRAW` for handle 0 so the app redraws its icons. The
+  choice is kept in the image and outlives app changes.
 
 Get fields:
 - `WF_WORKXYWH` 4, `WF_CURRXYWH` 5, `WF_PREVXYWH` 6, `WF_FULLXYWH` 7;
@@ -291,6 +295,17 @@ The test oracle is the painter's algorithm. After any operation and the
 demo's redraw responses, the surface must equal drawing the desktop and then
 every window bottom to top from scratch. Missing or excess damage fails the
 comparison.
+
+## Session record
+
+`AE_OP_SESSION` (10, minor 5, capability bit 4) keeps a 256-byte record in
+the AES data segment. Put 0 in `N_BUFFER+256` to read it into
+`N_BUFFER[0..255]` (`ae_session_read`), or 1 to write it from there
+(`ae_session_write`). The data segment is cleared once, when first reserved,
+so a freshly loaded AES reads zeros. The record survives app changes, unlike
+the windows, menu and message queue. GEMDESK uses it to reopen its windows
+when a launched program returns ([GEM-DESKTOP](GEM-DESKTOP.md)). The AES
+does not interpret it; one record is shared by every app.
 
 ## Validation on attach
 

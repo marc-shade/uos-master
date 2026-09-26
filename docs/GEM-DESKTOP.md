@@ -10,9 +10,10 @@ v1's scope and acceptance. The status section below records what is built.
 
 The build adds `target/native-desktop/gem.d81`, a D81 with GEMDESK as
 `browse`, the card launcher as `cards`, and `aesvc.prg`.
-`tests/ci_native_gemdesk.py` (Py65) passes 27 cases against
+`tests/ci_native_gemdesk.py` (Py65) passes 32 cases against
 `tests/native_gemdesk_scene.py` ([first build](validation/2026-09-26-gemdesk/README.md),
-[files and views](validation/2026-09-26-gemdesk-files/README.md)).
+[files and views](validation/2026-09-26-gemdesk-files/README.md),
+[persistence and format](validation/2026-09-26-gemdesk-persistence/README.md)).
 
 Built and tested:
 - startup with the AES loaded from the boot folder;
@@ -28,8 +29,19 @@ Built and tested:
   as 63 FILE EXISTS, is shown), type, blocks and read-only. For a drive icon,
   it shows files and blocks used in an alert.
 - Options:Preferences, a dialog: Confirm deletes (a checkbox; off, Delete and
-  Trash skip the question) and the sort order (radio buttons, the same as
-  View). The settings last until GEMDESK is reloaded.
+  Trash skip the question), the sort order (radio buttons, the same as View),
+  and the desktop colour (blue, grey, black; the AES repaints the desktop).
+- Persistence. Before GEMDESK launches a program or hands over to the card
+  launcher, it writes a 64-byte desktop record to the AES session:
+  preferences, colour, and each window's drive, rectangle, scroll and
+  selection. When GEMDESK starts again with the AES resident, it reopens
+  those windows, the top one last. With a fresh AES it reads the same record
+  from DESKTOP.INF on the boot drive, which Options:Save Desktop writes
+  (scratch, then an exclusive create). A window whose drive cannot be read
+  now is skipped without an alert.
+- File:Format: a dialog for drive 8 or 9, name and ID, then a confirmation
+  (Cancel is the default). It sends `N0:NAME,ID` and lists the drive's
+  windows again.
 - Delete (Ctrl-D) and dropping a row on Trash. Both ask first, with Cancel
   as the default. The file is scratched with
   [`dos-command.inc`](NATIVE-DOS-COMMANDS.md), the drive's count of scratched
@@ -61,9 +73,9 @@ Desktop icons are redrawn on `WM_REDRAW` for handle 0.
 
 **Menu.**
 - `Desk: About uOS...`
-- `File: Open^O | Show Info^I | - | Delete^D | - | Close^W`
+- `File: Open^O | Show Info^I | - | Delete^D | Format... | - | Close^W`
 - `View: Name | Type | Size | Unsorted`
-- `Options: Preferences... | Launcher^L`
+- `Options: Preferences... | Save Desktop | Launcher^L`
 
 Choosing Launcher returns to the card launcher (`N_EXIT`).
 

@@ -107,7 +107,7 @@ def main():
         wait(ready, 'demo ready')
         status = value('demo_status', 13)
         assert value('demo_error') == b'\0' and value('demo_loaded') == b'\1', (value('demo_error'), status.hex())
-        assert status[0:3] == bytes([1, 4, 15]) and int.from_bytes(status[4:6], 'little') == 1
+        assert status[0:3] == bytes([1, 5, 31]) and int.from_bytes(status[4:6], 'little') == 1
         loaded = bytearray(component[2:]); loaded[22:24] = ps['ae_callback'].to_bytes(2, 'little')
         resident = read(AE_BASE, 64, 'ram01')
         assert resident[:22] == bytes(loaded[:22]) and resident[22:24] == bytes(loaded[22:24])

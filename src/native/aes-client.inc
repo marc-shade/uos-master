@@ -234,6 +234,15 @@ ae_menu_set:
         sty N_BUFFER+2
         lda #AE_OP_MENU_SET
         jmp ae_call
+; Session record (AES minor 5): 256 bytes in N_BUFFER. Carry set on error.
+ae_session_read:
+        lda #0
+        beq +
+ae_session_write:
+        lda #1
++       sta N_BUFFER+256
+        lda #AE_OP_SESSION
+        jmp ae_call
 ae_dirty: .fill 4,0             ; OR of redrawn cell rows; the app clears it
 ae_ev_params: .fill 16,0
 ae_ev_result: .fill 19,0
