@@ -2,12 +2,6 @@
 ; See docs/NATIVE-AES.md#events. The bank-0 client samples input and the
 ; jiffy clock and calls EVENT once per sample; this code keeps the state
 ; between samples of one wait: timer start, click counting, message queue.
-MU_KEYBD = 1
-MU_BUTTON = 2
-MU_M1 = 4
-MU_M2 = 8
-MU_MESAG = 16
-MU_TIMER = 32
 EV_QUEUE_SIZE = 16                 ; messages of 8 bytes
 EV_DCLICK = 20                ; double-click window in jiffies
 

@@ -8,7 +8,6 @@ MN_MAX_ITEMS = 48
 MN_MAX_PER_TITLE = 12
 MN_TEXT_MAX = 16
 MN_POOL_SIZE = 400
-MN_SELECTED = 10
 MN_KEY = $85                  ; F1 opens the first menu from the keyboard
 MN_GREY = $c1                 ; disabled items: grey ink on white
 MN_CHECKED = 1

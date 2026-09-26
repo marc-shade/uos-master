@@ -134,8 +134,10 @@ ae_event_sample:
         sta ae_pointer_x+1
         lda pm_y
         sta ae_pointer_y
-        lda pm_buttons
-        sta ae_pointer_buttons
+        lda pm_buttons          ; the 1351 module reports the left button
+        beq +                   ; as $10; the AES expects bit 0
+        lda #1
++       sta ae_pointer_buttons
 .fi
         ldx #15
 -       lda ae_ev_params,x

@@ -4,32 +4,6 @@
 ; compares it with the previous map, redraws the frames it uncovered or
 ; changed, clears uncovered desktop cells and queues WM_REDRAW for work areas.
 WN_MAX = 7
-WK_NAME = $0001
-WK_CLOSER = $0002
-WK_FULLER = $0004
-WK_MOVER = $0008
-WK_INFO = $0010
-WK_SIZER = $0020
-WK_UPARROW = $0040
-WK_DNARROW = $0080
-WK_VSLIDE = $0100
-WK_LFARROW = $0200
-WK_RTARROW = $0400
-WK_HSLIDE = $0800
-WF_NAME = 2
-WF_INFO = 3
-WF_WORKXYWH = 4
-WF_CURRXYWH = 5
-WF_PREVXYWH = 6
-WF_FULLXYWH = 7
-WF_HSLIDE = 8
-WF_VSLIDE = 9
-WF_TOP = 10
-WF_FIRSTXYWH = 11
-WF_NEXTXYWH = 12
-WF_HSLSIZE = 15
-WF_VSLSIZE = 16
-WM_REDRAW = 20
 WN_DESKTOP = $16             ; cleared desktop: blue paper, as the suite
 WN_TITLE_MAX = 16
 
@@ -1588,14 +1562,6 @@ wn_mul:
         rts
 
 ; ---- frame gadgets through the event wait ------------------------------------
-WM_TOPPED = 21
-WM_CLOSED = 22
-WM_FULLED = 23
-WM_ARROWED = 24
-WM_HSLID = 25
-WM_VSLID = 26
-WM_SIZED = 27
-WM_MOVED = 28
 WD_MOVE = 1
 WD_SIZE = 2
 WD_VSLIDE = 3
