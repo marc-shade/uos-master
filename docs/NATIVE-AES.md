@@ -365,6 +365,9 @@ The test runs several apps in one machine and checks:
 - an occupied `$8800` range is refused cleanly;
 - corrupt and missing `AESVC.PRG` files leave nothing resident.
 
+The [VICE record](validation/2026-09-26-native-aes-vice/README.md) runs the
+alert, menu and window demos on an emulated C128 against the same oracles.
+
 Not yet verified: the AES alongside VDSVC in one app, and physical hardware.
 
 The [qualification record](validation/2026-09-25-native-aes-persistent/README.md)
