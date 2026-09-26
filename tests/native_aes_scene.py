@@ -67,9 +67,12 @@ class Surface:
         self.data = bytearray(data)
         self.glyphs = font()
 
+    clip = (0, 0, 320, 200)
+
     def rect(self, x0, y0, x1, y1, ink):
-        for y in range(max(0, y0), min(200, y1)):
-            for x in range(max(0, x0), min(320, x1)):
+        cx0, cy0, cx1, cy1 = self.clip
+        for y in range(max(cy0, y0), min(cy1, y1)):
+            for x in range(max(cx0, x0), min(cx1, x1)):
                 at = y//8*320+x//8*8+y % 8; mask = 128 >> (x % 8)
                 if ink: self.data[at] |= mask
                 else: self.data[at] &= 255 ^ mask
@@ -308,11 +311,15 @@ def rectangles(owner, h, area):
     return out
 
 
-def windows_draw(windows, fills):
-    """Painter's algorithm: desktop, then each window bottom->top, frame and
-    work fill; the last window is on top."""
-    s = Surface(bytes(8192)+bytes([DESKTOP])*1024)
-    s.colors(0, 0, 40, 25, DESKTOP)
+def windows_draw(windows, fills, base=None, content=None, markers=True):
+    """Painter's algorithm: desktop (or base), then each window bottom->top,
+    frame and work fill (plus content(surface, win, geometry)); the last
+    window is on top."""
+    if base is None:
+        s = Surface(bytes(8192)+bytes([DESKTOP])*1024)
+        s.colors(0, 0, 40, 25, DESKTOP)
+    else:
+        s = Surface(base)
     for n, win in enumerate(windows):
         top = n == len(windows)-1
         g = geometry(win)
@@ -366,7 +373,9 @@ def windows_draw(windows, fills):
         pen, color = fills[win['id']]
         s.rect(g['wx']*8, g['wy']*8, (g['wx']+g['ww'])*8, (g['wy']+g['wh'])*8, pen)
         s.colors(g['wx'], g['wy'], g['wx']+g['ww'], g['wy']+g['wh'], color)
-        for (cx, cy), marker in (((g['wx'], g['wy']), 0xf2),
+        if content:
+            content(s, win, g)
+        for (cx, cy), marker in () if not markers else (((g['wx'], g['wy']), 0xf2),
                                  ((g['wx']+g['ww']-1, g['wy']+g['wh']-1), 0x2f)):
             s.rect(cx*8, cy*8, cx*8+8, cy*8+8, 1)    # the demo's position markers
             s.colors(cx, cy, cx+1, cy+1, marker)

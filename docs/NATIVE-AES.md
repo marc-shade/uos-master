@@ -121,7 +121,11 @@ Result bytes:
 | 7–14 | Message |
 
 The first sample is taken at the call, so the timer runs from the call.
-A button already in the wanted state fires at once, as in GEM. Presses into
+A button already in the wanted state fires at once, as in GEM,
+except after a press the menu bar or a window frame consumed. Like GEM's
+screen manager, the AES keeps such a press until the button is released,
+across waits, so an app never sees a click at an arrow or title it has just
+been told about. Presses into
 the wanted state are counted until the wanted number arrives or a 20-jiffy
 double-click window closes; the count is reported. Rectangle bounds are
 half-open cells. Several events can fire together. At most one message is

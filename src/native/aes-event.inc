@@ -33,11 +33,17 @@ ev_event:
         sta ev_clicks
         jsr al_clear_dirty
         jsr mn_input            ; the menu bar sees each sample first,
-        bcs +                   ; then the window frames
+        bcs ev_consumed         ; then the window frames
         jsr wn_input
-        bcc ++
-+       jmp ev_messages         ; one of them owned this sample: messages only
-+       lda N_BUFFER            ; keyboard
+        bcc ev_app_events
+ev_consumed:
+        lda N_BUFFER+20         ; like GEM's screen manager, a press the menu
+        and #1                  ; or a frame took stays theirs until the button
+        ora ev_suppress         ; is released, across waits: no app button event
+        sta ev_suppress
+        jmp ev_messages         ; one of them owned this sample: messages only
+ev_app_events:
+        lda N_BUFFER            ; keyboard
         and #MU_KEYBD
         beq +
         lda N_BUFFER+16
@@ -125,7 +131,14 @@ ev_fire:
 ; Count transitions into the wanted state. One click fires at once; more fire
 ; when enough arrive or the double-click window closes.
 ev_button:
+        lda ev_suppress         ; the rest of a consumed press
+        beq +
         lda N_BUFFER+20
+        and #1
+        bne ev_button_done
+        sta ev_suppress         ; released: normal events from the next press
+        sta ev_matched
++       lda N_BUFFER+20
         and N_BUFFER+2
         cmp N_BUFFER+3
         beq +
@@ -335,6 +348,7 @@ ev_merge_y1: .byte 0
 ; A new foreground app: its queue and wait state are meaningless now.
 ev_reset:
         lda #0
+        sta ev_suppress
         sta ev_count
         sta ev_head
         sta ev_counting
@@ -348,6 +362,7 @@ ev_math: .word 0
 ev_fired: .byte 0
 ev_clicks: .byte 0
 ev_matched: .byte 0
+ev_suppress: .byte 0
 ev_counting: .byte 0
 ev_press_count: .byte 0
 ev_cx: .byte 0
