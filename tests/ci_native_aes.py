@@ -106,7 +106,7 @@ class Demo(Calculator):
         at = self.symbol(name)
         return bytes(self.ram[at:at+length])
 
-    def check(self, *, attaches, apps, loaded, error=0, version=0x0102, choice=0):
+    def check(self, *, attaches, apps, loaded, error=0, version=0x0103, choice=0):
         status = self.data('demo_status', 13)
         assert self.value('demo_error') == error, (self.value('demo_error'), error)
         assert self.value('demo_loaded') == loaded
@@ -122,7 +122,8 @@ class Demo(Calculator):
                  'MESSAGE (HEX): '+self.data('ae_ev_result', 15)[7:].hex().upper(),
                  f'LAST ERROR (HEX): ${error:02X}', '',
                  'RETURN: AES STATUS', 'ESC: EXIT, AES STAYS RESIDENT', 'U: UNLOAD AES AND EXIT',
-                 'A: AES ALERT OVER THE VIC SURFACE', 'E: WAIT FOR EVENTS  P: POST A MESSAGE']
+                 'A: AES ALERT OVER THE VIC SURFACE', 'E: WAIT FOR EVENTS  P: POST A MESSAGE',
+                 'M: MENU BAR OVER THE VIC SURFACE']
         for screen, columns in zip(self.screens, (40, 80)):
             expected = bytearray(b' '*(columns*25))
             for row, line in enumerate(lines):
@@ -224,6 +225,7 @@ def main():
             done(f'{kind} AESVC.PRG refused; no resident image', demo, error=code)
         alert_cases(work, report, done)
         event_cases(work, report, done)
+        menu_cases(work, report, done)
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')
@@ -414,6 +416,74 @@ def event_cases(work, report, done):
     assert other.data('ae_ev_result', 1)[0] == 32, 'the previous app\'s messages were discarded'
     other.key(ord('U'), exited=True)
     done('a new app attaching finds an empty queue', other)
+
+
+MENU = b'Desk:About AES...;File:New^N|Open...^O|-|Quit^Q;Options:Grid|Snap'
+
+
+def menu_cases(work, report, done):
+    from native_display_bus import DisplayBus
+    heap.Bus = DisplayBus
+    demo = Demo(work, heap.Machine())
+    flags = {(1, 1): 2}                    # the demo disables File:Open...
+
+    def frame(**kwargs):
+        want, _ = scene.menu_draw(BLANK, MENU, flags=flags, **kwargs)
+        got = demo.surface()
+        assert got == want, [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]
+
+    def resume():
+        demo.observation_target = None
+        demo.keys.append(0)
+        demo.loop()
+
+    def point(x, y, buttons):
+        at = demo.symbol('ae_pointer_x')
+        demo.ram[at:at+2] = x.to_bytes(2, 'little')
+        demo.ram[demo.symbol('ae_pointer_y')] = y
+        demo.ram[demo.symbol('ae_pointer_buttons')] = buttons
+        resume()
+
+    def chosen():
+        return (demo.value('demo_menu_title'), demo.value('demo_menu_item'), demo.value('demo_menu_count'))
+
+    def saved_pages():
+        return [1 for i in range(32) if demo.ram[0x3c00+i*8] == AES_OWNER and demo.ram[0x3c02+i*8] != AE_BASE >> 8]
+
+    demo.key(ord('M')); frame()
+    demo.key(0x85); frame(open_title=0, hover=0)
+    assert len(saved_pages()) == 1, 'the drop-down owns one save-under allocation'
+    demo.key(0x1d); frame(open_title=1, hover=0)
+    demo.key(0x11); frame(open_title=1, hover=3)          # skips disabled Open and the separator
+    demo.key(0x91); frame(open_title=1, hover=0)
+    demo.key(0x91); frame(open_title=1, hover=3)          # wraps upward
+    demo.key(13); frame()
+    assert chosen() == (1, 3, 1) and not saved_pages()
+    done('F1, cursor keys skip disabled rows, Return chooses File:Quit and restores the bar', demo)
+
+    demo.key(14); frame(); assert chosen() == (1, 0, 2)   # Ctrl-N
+    demo.key(15); frame(); assert chosen() == (1, 0, 2)   # Ctrl-O is disabled: a plain key
+    assert demo.data('ae_ev_result', 2) == bytes([1, 15])
+    done('an enabled shortcut chooses without drawing; a disabled one reaches the app as a key', demo)
+
+    point(11*8+4, 3, 1); frame(open_title=2)               # press on Options
+    point(11*8+4, 3, 0); frame(open_title=2)               # release on the title keeps it open
+    point(12*8, 2*8+3, 0); frame(open_title=2, hover=0)    # hover Grid
+    point(12*8, 3*8+3, 0); frame(open_title=2, hover=1)    # hover Snap
+    point(12*8, 2*8+3, 1); point(12*8, 2*8+3, 0)           # click Grid
+    flags[(2, 0)] = 1
+    frame(); assert chosen() == (2, 0, 3) and demo.value('demo_grid') == 1
+    demo.key(0x85); demo.key(0x1d); demo.key(0x1d); frame(open_title=2, hover=0)   # check mark shown
+    point(300, 150, 1); frame(); point(300, 150, 0)        # a press elsewhere closes
+    assert chosen() == (2, 0, 3)
+    done('pointer: open on press, hover, release chooses; set draws the check; press outside closes', demo)
+
+    demo.key(0x85); demo.key(27); frame(); assert chosen() == (2, 0, 3)
+    demo.key(27)                                            # Escape with the menu closed ends the loop
+    assert not demo.ram[demo.symbol('demo_waiting')] and demo.value('demo_error') == 0
+    assert not saved_pages()
+    done('Escape closes an open drop-down first, then reaches the app', demo)
+    demo.key(27, exited=True)
 
 
 if __name__ == '__main__':

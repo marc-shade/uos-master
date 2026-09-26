@@ -145,6 +145,12 @@ input_loop:
         sta demo_error
         jsr demo_draw
         jmp input_loop
++       cmp #$4d              ; M: a menu bar over this app's VIC surface
+        bne +
+        jsr demo_menu_run
+        sta demo_error
+        jsr demo_draw
+        jmp input_loop
 +       cmp #$41              ; A: an AES alert over this app's VIC surface
         bne +
         jsr demo_alert_run
@@ -188,6 +194,16 @@ demo_leave:
 ; Key $ff stands for "pointer moved/clicked": this example has no pointer
 ; driver, so the host sets ae_pointer_* and sends $ff (example-only input).
 demo_alert_run:
+        jsr demo_surface_open
+        bcs demo_alert_done
+        lda #<demo_alert
+        ldx #>demo_alert
+        ldy #2                ; Cancel is the default
+        jsr ae_alert_open
+        bcs demo_alert_hide
+        jmp demo_alert_loop
+; Reserve/initialize the surface once, then present it. Carry set on error.
+demo_surface_open:
         lda demo_active
         bne +
         lda #N_BADHANDLE
@@ -237,13 +253,7 @@ demo_alert_show:
         sta N_HANDLE,x
         dex
         bpl -
-        jsr N_VSHOW
-        bcs demo_alert_done
-        lda #<demo_alert
-        ldx #>demo_alert
-        ldy #2                ; Cancel is the default
-        jsr ae_alert_open
-        bcs demo_alert_hide
+        jmp N_VSHOW
 demo_alert_loop:
         lda #1
         sta N_READY
@@ -269,6 +279,75 @@ demo_alert_hide:
         jsr N_VCLOSE
         pla
         sec
+        rts
+; Install the menu, wait for messages and keys until Escape, then remove it.
+; Options:Grid toggles its check mark. The last choice is shown afterwards.
+demo_menu_run:
+        jsr demo_surface_open
+        bcs demo_menu_done
+        lda #<demo_menu
+        ldx #>demo_menu
+        jsr ae_menu_install
+        bcs demo_menu_hide
+        lda #1                ; File:Open... starts disabled
+        ldx #1
+        ldy #2
+        jsr ae_menu_set
+        bcs demo_menu_hide
+        lda #16|1             ; messages and keys
+        sta ae_ev_params
+        lda #1
+        sta demo_waiting
+demo_menu_loop:
+        jsr ae_event
+        bcs demo_menu_end
+        lda ae_ev_result
+        and #16
+        beq demo_menu_key
+        lda ae_ev_result+7
+        cmp #10               ; MN_SELECTED
+        bne demo_menu_key
+        lda ae_ev_result+10
+        sta demo_menu_title
+        lda ae_ev_result+11
+        sta demo_menu_item
+        inc demo_menu_count
+        cmp #0                ; Options (title 2) : Grid (item 0) toggles
+        bne demo_menu_key
+        lda demo_menu_title
+        cmp #2
+        bne demo_menu_key
+        lda demo_grid
+        eor #1
+        sta demo_grid
+        tay
+        lda #2
+        ldx #0
+        jsr ae_menu_set
+        bcs demo_menu_end
+demo_menu_key:
+        lda ae_ev_result
+        and #1
+        beq demo_menu_loop
+        lda ae_ev_result+1
+        cmp #27
+        bne demo_menu_loop
+        lda #0
+demo_menu_end:
+        pha
+        lda #0
+        sta demo_waiting
+        lda #<demo_empty      ; remove the menu (its pixels stay the app's)
+        ldx #>demo_empty
+        jsr ae_menu_install
+        pla
+demo_menu_hide:
+        pha
+        jsr N_VCLOSE
+        pla
+        cmp #1
+        rts
+demo_menu_done:
         rts
 demo_reply:
         ldx #12
@@ -412,6 +491,12 @@ demo_error: .byte 0
 demo_screen: .byte 0
 demo_status: .fill 13,0
 demo_choice: .byte 0
+demo_menu_title: .byte 0
+demo_menu_item: .byte 0
+demo_menu_count: .byte 0
+demo_grid: .byte 0
+demo_empty: .byte 0
+demo_menu: .byte 68,101,115,107,58,65,98,111,117,116,32,65,69,83,46,46,46,59,70,105,108,101,58,78,101,119,94,78,124,79,112,101,110,46,46,46,94,79,124,45,124,81,117,105,116,94,81,59,79,112,116,105,111,110,115,58,71,114,105,100,124,83,110,97,112,0
 demo_waiting: .byte 0
 demo_ev_defaults: .byte 1|32,1,1,1, 0,0,0,0,0, 0,0,0,0,0, 60,0 ; keyboard or 60 jiffies
 demo_message: .byte 41,0,7,0,1,2,3,4    ; AC_OPEN-style: type, 0, sender 7, data
@@ -430,7 +515,8 @@ demo_help: .text 13,13,"return: aes status",13
            .text "esc: exit, aes stays resident",13
            .text "u: unload aes and exit",13
            .text "a: aes alert over the vic surface",13
-           .text "e: wait for events  p: post a message",13,0
+           .text "e: wait for events  p: post a message",13
+           .text "m: menu bar over the vic surface",13,0
 .include "aes-client.inc"
 app_end:
 .cerror app_end > N_APPLIMIT, "example parent exceeds its slot"

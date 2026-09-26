@@ -16,7 +16,7 @@ EV_DCLICK = 20                ; double-click window in jiffies
 ; rectangle 2, 14..15 timer jiffies, 16 key, 17..18 x, 19 y, 20 buttons,
 ; 21..23 jiffy clock ($a0..$a2 order), 24 = 1 on the first sample of a wait.
 ; Out: 0 fired mask (0 = keep waiting), 1 key, 2..3 x, 4 y, 5 buttons,
-; 6 click count, 7..14 message.
+; 6 click count, 7..14 message, 15..18 cell rows redrawn by the menu bar.
 ev_event:
         lda N_BUFFER+23         ; now, little-endian 24-bit
         sta ev_now
@@ -37,7 +37,11 @@ ev_event:
 +       lda #0
         sta ev_fired
         sta ev_clicks
-        lda N_BUFFER            ; keyboard
+        jsr al_clear_dirty
+        jsr mn_input            ; the menu bar sees each sample first
+        bcc +
+        jmp ev_messages         ; it owned this sample: messages only
++       lda N_BUFFER            ; keyboard
         and #MU_KEYBD
         beq +
         lda N_BUFFER+16
@@ -71,7 +75,9 @@ ev_event:
         bcc +
         lda #MU_TIMER
         jsr ev_fire
-+       lda N_BUFFER            ; one queued message per wake; it is returned
++
+ev_messages:
+        lda N_BUFFER            ; one queued message per wake; it is returned
         and #MU_MESAG           ; with any other events that fired together
         beq ev_reply
         lda ev_count
@@ -102,7 +108,12 @@ ev_reply:
         bpl -
         lda ev_clicks
         sta ev_out+6
-        ldx #14
+        ldx #3
+-       lda al_dirty,x          ; cell rows the menu redrew in this sample
+        sta ev_dirty,x
+        dex
+        bpl -
+        ldx #18
 -       lda ev_out,x
         sta N_BUFFER,x
         dex
@@ -227,6 +238,13 @@ ev_elapsed_yes:
 
 ; POST (appl_write). N_BUFFER 0..7: message. Carry set, N_NOMEM when full.
 ev_post:
+        ldx #7
+-       lda N_BUFFER,x
+        sta ev_msg_in,x
+        dex
+        bpl -
+; Queue the message in ev_msg_in (also used by the menu bar).
+ev_push:
         lda ev_count
         cmp #EV_QUEUE_SIZE
         bcc +
@@ -242,7 +260,7 @@ ev_post:
 +       and #EV_QUEUE_SIZE*8-1
         tax
         ldy #0
--       lda N_BUFFER,y
+-       lda ev_msg_in,y
         sta ev_queue,x
         inx
         iny
@@ -278,4 +296,6 @@ ev_count: .byte 0
 ev_head: .byte 0
 ev_out: .fill 7,0
 ev_message: .fill 8,0
+ev_dirty: .fill 4,0              ; contiguous with ev_out/ev_message
+ev_msg_in: .fill 8,0
 ev_queue: .fill EV_QUEUE_SIZE*8,0

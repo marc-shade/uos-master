@@ -22,7 +22,7 @@ aes_image:
 aes_identity:                 ; image offset 32, checked by bk_attach
         .text "naes"
         .byte AE_MAJOR,AE_MINOR
-        .byte AE_CAP_ALERT|AE_CAP_EVENT ; capability bits
+        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU ; capability bits
         .byte 0
         .cerror aes_identity-aes_image != 32, "AES identity must be at offset 32"
 
@@ -42,6 +42,12 @@ aes_entry:
 +       cmp #AE_OP_POST
         bne +
         jmp ev_post
++       cmp #AE_OP_MENU
+        bne +
+        jmp mn_install
++       cmp #AE_OP_MENU_SET
+        bne +
+        jmp mn_set
 +       cmp #AE_OP_ATTACH
         bne aes_reply
         ldx #3
@@ -63,6 +69,7 @@ aes_new_app:
         inc aes_apps+1
 +       jsr al_discard        ; the previous app's surface is gone
         jsr ev_reset          ; and so are its queued messages
+        jsr mn_reset          ; and its menu bar
         lda #1
 aes_count:
         sta aes_changed
@@ -86,7 +93,7 @@ aes_badarg:
         rts
 
 aes_state:
-        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT,0
+        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU,0
 aes_attaches: .word 0
 aes_apps: .word 0
 aes_changed: .byte 0
@@ -103,6 +110,7 @@ aes_heap_fill:
 .include "banked-client.inc"
 .include "aes-alert.inc"
 .include "aes-event.inc"
+.include "aes-menu.inc"
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 aes_end:

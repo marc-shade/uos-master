@@ -163,9 +163,15 @@ ae_event_sample:
         lda #AE_OP_EVENT
         jsr ae_call
         bcs ae_event_done
+        ldx #3
+-       lda N_BUFFER+15,x       ; rows the menu redrew, kept for a VDC mirror
+        ora ae_dirty,x
+        sta ae_dirty,x
+        dex
+        bpl -
         lda N_BUFFER
         beq ae_event_wait
-        ldx #14
+        ldx #18
 -       lda N_BUFFER,x
         sta ae_ev_result,x
         dex
@@ -177,8 +183,53 @@ ae_event_done:
 ae_post:
         lda #AE_OP_POST
         jmp ae_call
+
+; Menu bar (AES minor 3). ae_menu_install: A/X = NUL-terminated ASCII spec
+; "Title:item|item^K|-|item;Title:..." (at most 507 bytes), drawn on cell row
+; 0 of ae_surface; an empty spec removes the menu. Choices arrive as
+; MN_SELECTED (10) messages: byte 3 title, byte 4 item. ae_menu_set: A =
+; title, X = item, Y = flags (1 checked, 2 disabled).
+ae_menu_install:
+        sta ae_menu_read+1
+        stx ae_menu_read+2
+        ldx #3
+-       lda ae_surface,x
+        sta N_BUFFER,x
+        dex
+        bpl -
+        lda #<(N_BUFFER+4)
+        sta ae_menu_write+1
+        lda #>(N_BUFFER+4)
+        sta ae_menu_write+2
+ae_menu_read:
+        lda $ffff
+ae_menu_write:
+        sta N_BUFFER+4
+        beq ae_menu_copied
+        inc ae_menu_read+1
+        bne +
+        inc ae_menu_read+2
++       inc ae_menu_write+1
+        bne +
+        inc ae_menu_write+2
++       lda ae_menu_write+2
+        cmp #>(N_BUFFER+512)
+        bcc ae_menu_read
+        lda #N_BADARG           ; no terminator inside the packet
+        sec
+        rts
+ae_menu_copied:
+        lda #AE_OP_MENU
+        jmp ae_call
+ae_menu_set:
+        sta N_BUFFER
+        stx N_BUFFER+1
+        sty N_BUFFER+2
+        lda #AE_OP_MENU_SET
+        jmp ae_call
+ae_dirty: .fill 4,0             ; OR of redrawn cell rows; the app clears it
 ae_ev_params: .fill 16,0
-ae_ev_result: .fill 15,0
+ae_ev_result: .fill 19,0
 ae_ev_key: .byte 0
 ae_ev_first: .byte 0
 ae_surface: .fill 4,0

@@ -4,7 +4,8 @@ The AES is the shared service behind the [GEM layer](GEM-LAYER-DESIGN.md).
 It now provides a persistent bank-1 component that apps load once and later
 apps attach to (step 1), GEM-style alert boxes (step 2, AES minor 1) and an
 `evnt_multi`-style event wait with an application message queue (step 3,
-minor 2). Menus, windows and desk accessories are later steps.
+minor 2) and a GEM menu bar (step 4, minor 3). Windows and desk accessories
+are later steps.
 
 ## What persists
 
@@ -12,8 +13,8 @@ minor 2). Menus, windows and desk accessories are later steps.
 by owner 30 (`N_AESOWNER`). App cleanup releases only owner 32, so the image
 and its state stay resident after `N_EXIT`. The next app attaches to the same
 bytes instead of loading them again. `ae_unload` frees the image and returns
-its pages. With alerts, events and the shared graphics library the
-component is 25 pages (6,268 bytes).
+its pages. With alerts, events, menus and the shared graphics library
+the component is 38 pages (9,475 bytes) of its 48-page region.
 
 The component's identity block sits at image offset 32: `NAES`, major and
 minor version, capability bits. The AES version is independent of the kernel
@@ -130,6 +131,59 @@ otherwise from `ae_pointer_*`. Time comes from the ROM jiffy clock
 (`$a0..$a2`). Each sample is one banked call, so waiting is not free: the
 cost per sample has not been measured.
 
+## Menus
+
+`ae_menu_install` draws a GEM menu bar on cell row 0 of `ae_surface`. Pass
+the address of a NUL-terminated ASCII spec in A/X. The spec lists menus
+separated by `;`; each is a title, `:`, then items separated by `|`. For
+example:
+
+`Desk:About...;File:New^N|Open...^O|-|Quit^Q`
+
+In an item, a `^` suffix gives a Ctrl-letter shortcut and `-` alone is a
+separator line.
+
+Limits (anything else is refused with `N_BADARG`):
+- up to 8 menus and 48 items, 12 items per menu;
+- 16 characters per item;
+- 400 bytes of text in total;
+- every drop-down must fit the 38-column / 250-cell overlay limit;
+- an empty spec removes the menu.
+
+The bar's pixels stay on the app's surface, so the app must keep row 0 for
+it.
+
+`ae_menu_set` sets an item's state: A = menu, X = item, Y = flags
+(1 checked, 2 disabled).
+
+Menu input arrives through `ae_event`; the AES sees each sample before the
+app's events:
+
+| Input | Effect |
+|---|---|
+| F1 | Open the first menu |
+| Press on a title | Open that menu |
+| Hover | Highlight enabled items |
+| Release on an item, or Return | Choose it |
+| Cursor up/down | Move over enabled items, wrapping |
+| Cursor left/right | Switch menus |
+| Escape, or a press outside | Close the menu |
+| An enabled item's Ctrl shortcut | Choose it without opening anything |
+
+A disabled item's shortcut reaches the app as an ordinary key. While a menu
+is open it owns input, as GEM's screen manager does: no other events are
+reported. A choice closes the drop-down and queues `MN_SELECTED` (10), with
+the menu in byte 3 and the item in byte 4. The app receives it as a
+`MU_MESAG` event.
+
+Drop-downs sit under their titles and are moved left when they would pass
+column 40. They have a blank cell row above and below the items, so the
+one-pixel frame never crosses item text. They use the same exact save-under
+as alerts. Checked items show a check glyph; disabled items and separators
+are grey. Every sample reports the cell rows it redrew in result bytes
+15–18, and the client ORs them into `ae_dirty` for apps that mirror their
+surface to the VDC.
+
 ## Validation on attach
 
 Attach finds the single owner-30 allocation at bank 1 page `$90` in the
@@ -160,6 +214,20 @@ surfaces. It covers focus movement with row masks, every choosing key,
 pointer press/release, exact restoration of arbitrary pixels and colours,
 and refusal of malformed or oversized strings. Planted bugs in the paper
 colour, button spacing and restore path each fail it.
+
+The demo's M key installs
+`Desk:About AES...;File:New^N|Open...^O|-|Quit^Q;Options:Grid|Snap` with
+Open... disabled; Options:Grid toggles its check. The menu cases compare
+complete surfaces against `tests/native_aes_scene.py` for:
+- F1 and cursor navigation that skips disabled rows and wraps;
+- Return;
+- enabled and disabled shortcuts;
+- pointer open, hover, release-select and press-outside;
+- the check mark after a set;
+- Escape.
+
+Planted bugs that make disabled rows selectable, or move the separator one
+pixel, each fail the test.
 
 The demo's E key waits with the parameters in `ae_ev_params` (default:
 keyboard or 60 jiffies) and P posts a message. The event cases cover:
