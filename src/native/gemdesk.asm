@@ -888,11 +888,70 @@ gm_icon_drive:
         sta gm_fmt
         rts
 +       sta gm_dev
-        lda #0                  ; icon 1: device 9 as a D64
-        cpx #GM_USB
-        bne +
         lda #3                  ; USB: Ultimate DOS context 1
+        cpx #GM_USB
+        beq +
+        jsr gm_drive_format     ; icon 1: device 9 in the geometry its DOS names
 +       sta gm_fmt
+        rts
+; A = gm_dev's geometry (0 D64, 1 D71, 2 D81), from the drive's identity:
+; "UI" resets its DOS, which answers 73 with its ROM's name ("CBM DOS V2.6
+; 1541", "CBM DOS V3.0 1571", "COPYRIGHT CBM DOS V10 1581"). Known once per
+; run; a drive that answers with another name is read as a D64. A drive that
+; does not answer is read as a D64 and asked again next time; the listing
+; then reports its error.
+gm_drive_format:
+        lda gm_dev_format
+        bpl gm_df_done
+        lda gm_dev
+        sta dc_device
+        lda #$55                ; "UI"
+        sta dc_text
+        lda #$49
+        sta dc_text+1
+        lda #2
+        sta dc_length
+        jsr dc_command
+        bcs gm_df_none
+        cmp #73
+        bne gm_df_none
+        ldy #0                  ; answered: D64 unless the name says otherwise
+        ldx dc_status_length
+        cpx #4
+        bcc gm_df_found
+        dex                     ; X = the last start of "15?1"
+        dex
+        dex
+        dex
+gm_df_scan:
+        lda dc_status,x
+        cmp #$31
+        bne gm_df_next
+        lda dc_status+1,x
+        cmp #$35
+        bne gm_df_next
+        lda dc_status+3,x
+        cmp #$31
+        bne gm_df_next
+        lda dc_status+2,x
+        ldy #2
+        cmp #$38                ; 1581
+        beq gm_df_found
+        dey
+        cmp #$37                ; 1571
+        beq gm_df_found
+        dey                     ; 1541 or another model: D64
+        beq gm_df_found
+gm_df_next:
+        dex
+        bpl gm_df_scan
+gm_df_found:
+        sty gm_dev_format
+        tya
+gm_df_done:
+        rts
+gm_df_none:
+        lda #0
         rts
 ; Snapshot the directory of gm_dev/gm_fmt into a new owner-32 allocation.
 gm_scan:
@@ -3700,6 +3759,7 @@ gm_new_icon: .byte 0
 gm_slot: .byte 0
 gm_dev: .byte 0
 gm_fmt: .byte 0
+gm_dev_format: .byte $ff       ; device 9's detected geometry, $ff unknown
 gm_count: .byte 0
 gm_page: .byte 0
 gm_drag: .byte 0

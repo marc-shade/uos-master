@@ -30,7 +30,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 
 | TOS feature | Status | uOS evidence / missing piece |
 |---|---|---|
-| Drive icons on the desktop | Have | [GEMDESK](GEM-DESKTOP.md): Boot, Drive 9, Trash, and USB when the Ultimate's DOS answers ([record](validation/2026-09-26-gemdesk-usb/README.md)) |
+| Drive icons on the desktop | Have | [GEMDESK](GEM-DESKTOP.md): Boot, Drive 9 (D64/D71/D81 from its DOS identity), Trash, and USB when the Ultimate's DOS answers ([record](validation/2026-09-26-gemdesk-usb/README.md), [record](validation/2026-09-26-gemdesk-drive9/README.md)) |
 | Trash can (drag to delete) | Partial | GEMDESK: drop a listing row on Trash, confirm, delete on IEC (scratch count checked) or USB (`DELETE_FILE`, proven by `FILE_STAT` 82) ([record](validation/2026-09-26-gemdesk-files/README.md), [record](validation/2026-09-26-gemdesk-usb/README.md)); no drag outline |
 | Open drive/folder in a window | Have | GEMDESK: IEC drives, and USB folders that open in place, with the close box going up a level as in TOS ([record](validation/2026-09-26-gemdesk-usb/README.md)); listings hold 195 entries |
 | Several directory windows at once | Have | GEMDESK: four windows on drives 8 and 9, topping, a fifth refused ([record](validation/2026-09-26-gemdesk-files/README.md)) |

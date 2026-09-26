@@ -20,6 +20,10 @@ Built and tested:
 - icon selection, and the 8 and 9 keys, which open that drive's window;
 - drive windows for the boot drive and drive 9, four at once (a fifth is
   refused), staggered, topped by a click;
+- drive 9's geometry from its DOS: the first time it is opened, GEMDESK sends
+  `UI`. The drive's 73 reply names its ROM: 1581 reads as a D81, 1571 as a
+  D71, and any other name as a D64. The answer is kept for the run; a drive
+  that does not answer is asked again next time;
 - scrolling by arrow, track (a page) and thumb; row selection by click and by
   cursor keys;
 - View sorting: name (the default), type, size (largest first) and unsorted,
@@ -80,9 +84,10 @@ Built but not yet covered by tests: fulled, moved and sized answers.
 
 Not built yet, or limited:
 - USB rename and Show Info say "not available"; Files has them.
-- Paint pictures (UPNT) do not open from GEMDESK yet.
 - USB windows are not kept in the desktop record or session.
-- Drive 9 is always read as a D64.
+- Drive 9 is identified by drive model, not by the mounted image: a drive
+  that does not name 1571 or 1581 (an SD2IEC, for example) is read as a D64
+  whatever image it holds. `UI` resets the drive's DOS.
 - Dragging shows no outline, and Show Info cannot change read-only.
 
 Emulator: [the VICE run](validation/2026-09-26-gemdesk-vice/README.md) boots

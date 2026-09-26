@@ -26,6 +26,7 @@ class StreamIEC(IEC):
         self.formats={};self.blocks={};self.edit_blocks=None;self.fail_block=None
         self.command=bytearray();self.short_eoi_quirk=True
         self.locked=set();self.status_text={};self.fail_command=None
+        self.identity={}   # device -> the 73 line "UI" returns, instead of the ROM's for its format
 
     def listing(self,device):
         """The "$" file a CBM drive sends: a BASIC program whose line numbers
@@ -44,7 +45,8 @@ class StreamIEC(IEC):
 
     def dos_command(self,device,command):
         """A DOS command sent as the name of an OPEN on secondary 15: CBM DOS
-        scratch (locked files are skipped and the count says so), rename and format."""
+        scratch (locked files are skipped and the count says so), rename, format
+        and the UI reset with its identity line."""
         self.events.append(('dos',device,command))
         if self.fail_command is not None:
             code,text=self.fail_command
@@ -63,6 +65,9 @@ class StreamIEC(IEC):
                 self.files={renamed if k==key else k:v for k,v in self.files.items()}
                 if key in self.locked:self.locked.discard(key);self.locked.add(renamed)
                 code,text=0,'00, OK,00,00'
+        elif command==b'UI':          # DOS reset: 73 and the ROM's name (VICE 1541/1571/1581 ROMs)
+            code,text=73,self.identity.get(device,('73,CBM DOS V2.6 1541,00,00','73,CBM DOS V3.0 1571,00,00',
+                                                  '73,COPYRIGHT CBM DOS V10 1581,00,00')[self.formats.get(device,0)])
         elif command.startswith(b'N0:') and b',' in command[3:]:
             for k in [k for k in self.files if k[0]==device]:   # a new, empty disk
                 del self.files[k];self.locked.discard(k)

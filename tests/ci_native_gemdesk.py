@@ -516,12 +516,27 @@ def main():
         fm.key(13)
         ask = b'[3][Format drive 9?|Every file on it|will be erased.][Format|Cancel]'
         fm.expect(scene.scene.draw(before, ask, 2, 2)[0], 'format confirm')
-        assert not [e for e in fm.io.events if e[0] == 'dos']
+        assert [e for e in fm.io.events if e[0] == 'dos'] == [('dos', 9, b'UI')], 'nothing formatted before OK'
         fm.key(9); fm.key(13)
-        assert [e for e in fm.io.events if e[0] == 'dos'] == [('dos', 9, b'N0:BLANK,B1')]
+        assert [e for e in fm.io.events if e[0] == 'dos'] == [('dos', 9, b'UI'), ('dos', 9, b'N0:BLANK,B1')]
         assert not [k for k in fm.io.files if k[0] == 9]
         fm.expect(scene.picture([w9], {1: []}, selected_icon=1), 'formatted and listed again')
         done('the 9 key opens drive 9; File:Format asks for drive, name and ID, confirms, sends N0:NAME,ID and lists the drive again', fm)
+
+        for fmt, identity, want in ((2, None, 2), (1, None, 1), (0, '73,SD2IEC V1.0.0/M2I,00,00', 0)):
+            dg = Gem(files4)
+            dg.io.formats[9] = fmt
+            if identity:
+                dg.io.identity[9] = identity
+            dg.key(ord('9'))
+            dg.expect(before, f'drive 9 read as format {want}')
+            assert [e for e in dg.io.events if e[0] == 'dos'] == [('dos', 9, b'UI')]
+            assert dg.ram[dg.symbol('gm_dev_format')] == want
+            dg.cell(1, 2); dg.click()                               # close it; open it again
+            dg.expect(scene.desktop(selected=1), f'format {want}: closed')
+            dg.key(ord('9')); dg.expect(before, f'format {want}: again')
+            assert [e for e in dg.io.events if e[0] == 'dos'] == [('dos', 9, b'UI')], 'asked once per run'
+        done('drive 9 is read in the geometry its DOS names on UI (1581 D81, 1571 D71, another drive D64), asked once', dg)
 
         nm = Gem(files4)
         del nm.io.files[8, b'GDDLG.PRG', b'P']                    # the dialog module is missing

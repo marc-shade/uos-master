@@ -64,6 +64,13 @@ def main():
     (work/'picture.seq').write_bytes(paint_encode(PICTURE))
     subprocess.run(['c1541', '-attach', str(disk), '-write', str(work/'picture.seq'), 'picture,s'],
                    check=True, capture_output=True)
+    disk9 = work/'data9.d81'                  # device 9: a 1581 with a D81, to be detected
+    subprocess.run(['c1541', '-format', 'data nine,09', 'd81', str(disk9)], check=True, capture_output=True)
+    for name, data in (('alpha,s', b'A'*300), ('bravo,p', b'\x01\x08'+bytes(600))):
+        (work/'nine.bin').write_bytes(data)
+        subprocess.run(['c1541', '-attach', str(disk9), '-write', str(work/'nine.bin'), name],
+                       check=True, capture_output=True)
+    entries9 = d81_entries(disk9.read_bytes())
     entries = d81_entries(disk.read_bytes())
     report = dict(passed=False, physical_hardware_io=False, work=str(work), checks=[],
                   entries=[e['name'].decode('latin-1') for e in entries])
@@ -71,6 +78,7 @@ def main():
         sock.bind(('127.0.0.1', 0)); port = sock.getsockname()[1]
     xv = ci.cbm.Xvfb(); log = (work/'vice.log').open('w'); mon = None
     command = ['x128', '-default', '-8', str(disk), '-drive8true', '-drive8type', '1581',
+               '-9', str(disk9), '-drive9true', '-drive9type', '1581',
                '-sounddev', 'dummy', '-jamaction', '0', '-warp',
                '-binarymonitor', '-binarymonitoraddress', f'ip4://127.0.0.1:{port}']
     report['command'] = command
@@ -131,6 +139,16 @@ def main():
         wait(lambda: read(0x1c13, 6) == b'UOS128' and ready(), 'native boot')
         expect(scene.desktop(), 'desktop')
         check('cold boot of gem.d81: GEMDESK loads AESVC.PRG; the desktop matches the CPU oracle exactly')
+
+        w9 = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 9', top=0)
+        key(ord('9'))
+        expect(scene.picture([w9], {1: scene.ordered(entries9, 0)}, selected_icon=1), 'drive-9')
+        detected = read(lst_symbol('native-desktop/gemdesk', 'gm_dev_format'))[0]
+        assert detected == 2, ('the 1581 ROM answered UI; D81 expected', detected)
+        key(23)                                   # Ctrl-W: File:Close
+        expect(scene.desktop(selected=1), 'drive-9-closed')
+        check('drive 9, a 1581 with a D81, is detected from its DOS identity (UI) and listed as a D81',
+              entries=len(entries9))
 
         ordered = scene.ordered(entries, 0)
         window = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)
