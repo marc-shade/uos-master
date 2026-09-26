@@ -6,13 +6,15 @@ AE_POINTER = 1
 GM_WINDOWS = 4
 GM_RECORD = 21                 ; name 16, type, flags, blocks (word), directory ordinal
 GM_CHUNK = 24                  ; records per N_BUFFER transfer (504 bytes)
-GM_MAX_ENTRIES = 255
+GM_MAX_ENTRIES = 195            ; 16 pages of records: the $5000 workspace, a window's snapshot
+GM_WORKSPACE = $5000             ; bank-0 workspace reserved at start (like Files)
 GM_PAGES = (GM_MAX_ENTRIES*GM_RECORD+255)/256
 GM_PAPER = $61                 ; window work: blue ink on white
 GM_SELECTED = $16              ; selected row: white on blue
 GM_DESK = $16                  ; desktop: white icons on blue
 GM_ICON_SELECTED = $61
-GM_ICONS = 3
+GM_ICONS = 4                   ; Boot, Drive 9, Trash, and USB when the Ultimate answers
+GM_USB = 3
 GM_APP_PAGES = 96              ; the core, then the GDDLG.PRG module window
 GM_MOP_INFO = 1                ; module operations
 GM_MOP_PREFS = 2
@@ -83,6 +85,16 @@ gm_fatal_text:
 
 ; ---- surface, pointer ----------------------------------------------------------
 gm_surface_setup:
+        lda N_CURRENT           ; the sort workspace: bank 0 $5000..$5fff
+        sta N_OWNER
+        lda #0
+        sta N_BANK
+        lda #>GM_WORKSPACE
+        sta N_PAGE
+        lda #16
+        sta N_PAGES
+        jsr N_RESERVE
+        bcs gm_setup_done
         lda N_CURRENT
         sta N_OWNER
         lda #0
@@ -121,6 +133,7 @@ gm_surface_setup:
         jsr gm_bind
         bcs gm_setup_done
         jsr gfx_clip_defaults
+        jsr gm_ult_probe
         jsr gm_draw_icons
         bcs gm_setup_done
         jsr gm_select_surface
@@ -316,7 +329,7 @@ gm_message:
         jmp gm_wset_simple
 +       cmp #WM_CLOSED
         bne +
-        jmp gm_close_slot
+        jmp gm_close_or_up
 +       cmp #WM_FULLED
         bne +
         jmp gm_fulled
@@ -392,7 +405,7 @@ gm_draw_icons:
         lda #0
         sta gm_i
 -       lda gm_i
-        cmp #GM_ICONS
+        cmp gm_icons_n
         bcs +
         jsr gm_draw_icon
         bcs ++
@@ -556,7 +569,8 @@ gm_icon_hit:
         lda gm_cx
         cmp #31
         bcc ++
-        ldx #GM_ICONS-1
+        ldx gm_icons_n
+        dex
 -       lda gm_cy
         sec
         sbc gm_icon_y,x
@@ -774,8 +788,8 @@ gm_open_selection:
 ; ---- windows: open a drive ----------------------------------------------------------
 gm_open_icon:
         ldx gm_icon_sel
-        cpx #2                  ; Trash opens nothing yet (no deleted files kept)
-        bcc +
+        cpx #2                  ; Trash opens nothing (no deleted files kept)
+        bne +
         rts
 +       jsr gm_icon_drive
 gm_open_drive:
@@ -792,7 +806,11 @@ gm_open_drive:
         ldy #1
         jmp gm_alert
 +       stx gm_slot
-        jsr gm_scan
+        lda gm_fmt              ; a new USB window starts at the root
+        cmp #3
+        bne +
+        jsr gm_path_root
++       jsr gm_scan
         bcc +
         ldx gm_restoring
         bne gm_open_quiet
@@ -828,31 +846,7 @@ gm_open_drive:
         sta gm_win_top,x
         lda #$ff
         sta gm_win_sel,x
-        lda #WS_SET             ; title "Drive nn"
-        sta N_BUFFER
-        lda gm_win_handle,x
-        sta N_BUFFER+1
-        lda #WF_NAME
-        sta N_BUFFER+2
-        ldy #0
--       lda gm_drive_title,y
-        sta N_BUFFER+3,y
-        iny
-        cpy #6
-        bne -
-        lda gm_dev
-        jsr gm_decimal2
-        cpx #$30                ; one digit below 10
-        bne +
-        sta N_BUFFER+9
-        lda #0
-        sta N_BUFFER+10
-        beq ++
-+       sta N_BUFFER+10
-        stx N_BUFFER+9
-        lda #0
-        sta N_BUFFER+11
-+       jsr gm_wcall
+        jsr gm_set_title
         lda #WS_OPEN            ; staggered by slot
         sta N_BUFFER
         ldx gm_slot
@@ -884,7 +878,7 @@ gm_open_fail:
 gm_open_quiet:
         rts
 
-; X = drive icon -> gm_dev, gm_fmt
+; X = drive icon -> gm_dev, gm_fmt (3: Ultimate DOS)
 gm_icon_drive:
         lda gm_icon_dev_lo,x
         bne +
@@ -895,7 +889,10 @@ gm_icon_drive:
         rts
 +       sta gm_dev
         lda #0                  ; icon 1: device 9 as a D64
-        sta gm_fmt
+        cpx #GM_USB
+        bne +
+        lda #3                  ; USB: Ultimate DOS context 1
++       sta gm_fmt
         rts
 ; Snapshot the directory of gm_dev/gm_fmt into a new owner-32 allocation.
 gm_scan:
@@ -919,6 +916,10 @@ gm_scan:
         lda #0
         sta gm_count
         sta gm_page
+        lda gm_fmt
+        cmp #3
+        bne gm_scan_page
+        jmp gm_scan_ult
 gm_scan_page:
         lda N_CURRENT
         sta N_FOWNER
@@ -1310,7 +1311,11 @@ gm_show_info:
         lda gm_win_sel,x
         cmp #$ff
         beq gm_info_icon
-        jsr gm_read_record
+        lda gm_win_fmt,x        ; Show Info and rename are IEC for now
+        cmp #3
+        bne +
+        jmp gm_not_usb
++       jsr gm_read_record
         bcs gm_info_fail
         lda #GM_MOP_INFO
         jmp gm_module_run
@@ -1335,7 +1340,7 @@ gm_atype:
         jsr gm_astr
         lda gm_rec+16
         and #7
-        cmp #5
+        cmp #7
         bcc +
         lda #0
 +       sta gm_math
@@ -1373,7 +1378,10 @@ gm_info_fail:
 ; A drive icon: its file count and blocks used, from the directory pages.
 gm_info_icon:
         ldx gm_icon_sel
-        cpx #2
+        cpx #GM_USB
+        bne +
+        jmp gm_not_usb
++       cpx #2
         bcc +
         rts                     ; nothing selected, or Trash
 +       jsr gm_icon_drive
@@ -1518,7 +1526,11 @@ gm_delete:
         jsr gm_read_record
         bcc +
         jmp gm_view_fail
-+       ldx #0                  ; "S0:" and the exact name; no DOS pattern characters
++       ldx gm_slot             ; USB: any name; the drive gets the full path
+        lda gm_win_fmt,x
+        cmp #3
+        beq gm_del_ask
+        ldx #0                  ; "S0:" and the exact name; no DOS pattern characters
 gm_del_copy:
         lda gm_rec,x
         cmp #$a0
@@ -1544,6 +1556,7 @@ gm_del_named:
         sta dc_text+1
         lda #$3a
         sta dc_text+2
+gm_del_ask:
         lda gm_confirm          ; Preferences may turn the question off
         beq gm_del_go
         lda #0                  ; "[2][Delete NAME?|This cannot be undone.][Delete|Cancel]"
@@ -1567,7 +1580,11 @@ gm_del_named:
         bne gm_del_none
 gm_del_go:
         ldx gm_slot
-        lda gm_win_dev,x
+        lda gm_win_fmt,x
+        cmp #3
+        bne +
+        jmp gm_ult_delete
++       lda gm_win_dev,x
         sta dc_device
         sta gm_dev
         lda gm_win_fmt,x
@@ -1774,6 +1791,9 @@ gm_session_build:
 gm_session_window:
         ldx gm_sslot
         lda gm_win_handle,x
+        beq gm_session_built
+        lda gm_win_fmt,x        ; USB windows (paths) are not kept
+        cmp #3
         beq gm_session_built
         lda #WS_GET
         sta N_BUFFER
@@ -2146,6 +2166,581 @@ gm_module_fail:                 ; "[3][Could not load GDDLG.PRG.|error $xx][OK]"
         jsr gm_astr
         jmp gm_error_hex
 
+; ---- USB storage: the Ultimate's DOS through directory cursors -------------------
+; (docs/NATIVE-ULTIMATE.md). A USB window keeps its absolute path in
+; gm_win_path (a page per slot); records hold the first 16 name bytes and the
+; entry's position, so a full name is read again from the cursor when needed.
+gm_ult_probe:                   ; the USB icon only when DOS target 1 answers
+        lda #1
+        sta N_UARG
+        lda #N_U_IDENTIFY
+        sta N_UOP
+        lda N_CURRENT
+        sta N_FOWNER
+        jsr N_UQUERY
+        lda #3
+        bcs +
+        lda #4
++       sta gm_icons_n
+        rts
+; gm_slot's path page -> the self-modified load and store below.
+gm_path_page:
+        lda gm_slot
+        clc
+        adc #>gm_win_path
+        sta gm_pr+2
+        sta gm_pw+2
+        rts
+gm_pr:
+        lda $ff00,y
+        rts
+gm_pw:
+        sta $ff00,y
+        rts
+gm_path_root:                   ; gm_slot's path = "/"
+        jsr gm_path_page
+        ldy #0
+        lda #$2f
+        jsr gm_pw
+        ldx gm_slot
+        lda #1
+        sta gm_win_plen,x
+        rts
+gm_path_to_upath:               ; gm_slot's path -> N_UPATH, N_FNAMELEN
+        jsr gm_path_page
+        ldx gm_slot
+        lda gm_win_plen,x
+        sta N_FNAMELEN
+        ldy #0
+-       cpy N_FNAMELEN
+        beq +
+        jsr gm_pr
+        sta N_UPATH,y
+        iny
+        bne -
++       rts
+gm_upath_to_path:               ; N_UPATH, N_FNAMELEN -> gm_slot's path
+        jsr gm_path_page
+        ldx gm_slot
+        lda N_FNAMELEN
+        sta gm_win_plen,x
+        ldy #0
+-       cpy N_FNAMELEN
+        beq +
+        lda N_UPATH,y
+        jsr gm_pw
+        iny
+        bne -
++       rts
+; Open a directory cursor at gm_slot's path on DOS context gm_dev; the
+; canonical path the service returns becomes the window's path.
+gm_ult_open:
+        jsr gm_path_to_upath
+        lda N_CURRENT
+        sta N_FOWNER
+        lda gm_dev
+        sta N_FDEVICE
+        lda #3
+        sta N_FFORMAT
+        lda #2
+        sta N_FMODE
+        lda #0
+        sta N_FTYPE
+        ldx #3
+-       sta N_FHANDLE,x
+        dex
+        bpl -
+        jsr N_FOPEN
+        bcs +
+        ldx #3
+-       lda N_FHANDLE,x
+        sta gm_file,x
+        dex
+        bpl -
+        jsr gm_upath_to_path
+        clc
++       rts
+gm_ult_read:                    ; one packet: attribute, then the name
+        jsr gm_file_select
+        lda #0
+        sta N_FCOUNT
+        lda #2
+        sta N_FCOUNT+1
+        jmp N_FREAD
+; The listing (from gm_scan, after the allocation): records into gm_sortbuf.
+gm_scan_ult:
+        jsr gm_ult_open
+        bcs gm_ult_scan_fail0
+gm_ult_scan_next:
+        jsr gm_ult_read
+        bcs gm_ult_scan_fail
+        lda N_FACTUAL
+        ora N_FACTUAL+1
+        beq gm_ult_scan_done
+        ldy gm_count
+        cpy #GM_MAX_ENTRIES
+        bcs gm_ult_scan_done    ; the snapshot is full
+        lda gm_addr_lo,y
+        sta gm_rec_dst+1
+        lda gm_addr_hi,y
+        sta gm_rec_dst+2
+        lda N_FACTUAL           ; name length 1..255
+        sec
+        sbc #1
+        sta gm_nlen
+        ldy #0
+        ldx #0
+-       lda #$a0                ; the first 16 bytes, padded like a CBM name
+        cpx gm_nlen
+        bcs +
+        lda N_BUFFER+1,x
++       jsr gm_rec_put
+        inx
+        cpx #16
+        bne -
+        lda N_BUFFER            ; type 5 DIR or 6 file; the attribute as flags
+        and #$10
+        beq +
+        lda #5
+        bne ++
++       lda #6
++       jsr gm_rec_put
+        lda N_BUFFER
+        jsr gm_rec_put
+        lda #0                  ; no size in a directory packet
+        jsr gm_rec_put
+        jsr gm_rec_put
+        lda gm_count            ; the position in the cursor
+        jsr gm_rec_put
+        inc gm_count
+        jmp gm_ult_scan_next
+gm_ult_scan_done:
+        jsr gm_close_file
+        bcs gm_ult_scan_fail0
+        jmp gm_scan_end
+gm_ult_scan_fail:
+        pha
+        jsr gm_close_file
+        pla
+gm_ult_scan_fail0:
+        jmp gm_scan_fail
+; A = an entry's position in gm_slot's directory: N_UPATH/N_FNAMELEN = its
+; full path, gm_ult_attr = its attribute. Carry set: A = error.
+gm_ult_fullname:
+        sta gm_target
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta gm_dev
+        jsr gm_ult_open
+        bcs gm_fn_done
+        lda #0
+        sta gm_k
+gm_fn_next:
+        jsr gm_ult_read
+        bcs gm_fn_close
+        lda N_FACTUAL
+        ora N_FACTUAL+1
+        beq gm_fn_missing
+        lda gm_k
+        cmp gm_target
+        beq gm_fn_found
+        inc gm_k
+        jmp gm_fn_next
+gm_fn_found:
+        lda N_BUFFER
+        sta gm_ult_attr
+        lda N_FACTUAL
+        sec
+        sbc #1
+        sta gm_nlen
+        ldx #0
+-       lda N_BUFFER+1,x
+        sta gm_name,x
+        inx
+        cpx gm_nlen
+        bne -
+        jsr gm_close_file
+        bcs gm_fn_done
+        jsr gm_path_to_upath    ; the directory, then '/' if needed, then the name
+        ldx N_FNAMELEN
+        lda N_UPATH-1,x
+        cmp #$2f
+        beq +
+        lda #$2f
+        sta N_UPATH,x
+        inx
+        beq gm_fn_long
++       ldy #0
+-       lda gm_name,y
+        sta N_UPATH,x
+        inx
+        beq gm_fn_long
+        iny
+        cpy gm_nlen
+        bne -
+        stx N_FNAMELEN
+        clc
+        rts
+gm_fn_long:
+        lda #$23                ; the path would exceed 255 bytes
+        sec
+        rts
+gm_fn_missing:                  ; the listing changed under the window
+        lda #N_RANGE
+gm_fn_close:
+        pha
+        jsr gm_close_file
+        pla
+        sec
+gm_fn_done:
+        rts
+; Open the selected USB entry: a folder opens in the window, a file is
+; handed to the dispatcher with its full path (it checks the program).
+gm_ult_open_entry:
+        jsr gm_read_record
+        bcs gm_usb_error
+        lda gm_rec+20
+        jsr gm_ult_fullname
+        bcs gm_usb_error
+        lda gm_ult_attr
+        and #$10
+        bne gm_ult_enter
+        jsr gm_text_suffix      ; .TXT or .SEQ: a text document
+        bcs +
+        jmp gm_usb_document
++       lda N_FNAMELEN
+        sta N_NAMELEN
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta N_DEVICE
+        lda #3
+        sta N_APPFORMAT
+        jsr gm_session_save
+        jsr pm_close
+        lda #0
+        jmp N_REPLACE
+gm_ult_enter:
+        jsr gm_upath_to_path
+; List gm_slot's (new) path again in the same window.
+gm_ult_rescan:
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta gm_dev
+        lda #3
+        sta gm_fmt
+        jsr gm_free_mem
+        jsr gm_scan
+        bcc +
+        pha
+        jsr gm_close_slot
+        pla
+        jmp gm_usb_error
++       ldx gm_slot
+        lda #0
+        sta gm_win_top,x
+        lda #$ff
+        sta gm_win_sel,x
+        jsr gm_set_title
+        jsr gm_update_slider
+        jmp gm_repaint_all
+; The close box: on a USB folder below the root, go up one level (as TOS).
+gm_close_or_up:
+        ldx gm_slot
+        lda gm_win_fmt,x
+        cmp #3
+        bne gm_close_full
+        lda gm_win_plen,x
+        cmp #2
+        bcc gm_close_full
+        jsr gm_path_page
+        ldx gm_slot
+        ldy gm_win_plen,x
+        dey                     ; the last byte; a trailing '/' is skipped
+        jsr gm_pr
+        cmp #$2f
+        bne +
+        dey
++
+-       jsr gm_pr               ; back to the previous '/'
+        cmp #$2f
+        beq +
+        dey
+        bne -
++       iny                     ; keep that '/'
+        tya
+        ldx gm_slot
+        sta gm_win_plen,x
+        jmp gm_ult_rescan
+gm_close_full:
+        jmp gm_close_slot
+; gm_slot's title: "Drive nn", or "USB " and the end of the path.
+gm_set_title:
+        lda #WS_SET
+        sta N_BUFFER
+        ldx gm_slot
+        lda gm_win_handle,x
+        sta N_BUFFER+1
+        lda #WF_NAME
+        sta N_BUFFER+2
+        lda gm_win_fmt,x
+        cmp #3
+        beq gm_title_usb
+        ldy #0
+-       lda gm_drive_title,y
+        sta N_BUFFER+3,y
+        iny
+        cpy #6
+        bne -
+        ldx gm_slot
+        lda gm_win_dev,x
+        jsr gm_decimal2
+        cpx #$30                ; one digit below 10
+        bne +
+        sta N_BUFFER+9
+        lda #0
+        sta N_BUFFER+10
+        beq gm_title_set
++       sta N_BUFFER+10
+        stx N_BUFFER+9
+        lda #0
+        sta N_BUFFER+11
+gm_title_set:
+        jmp gm_wcall
+gm_title_usb:
+        ldy #3
+-       lda gm_usb_title,y
+        sta N_BUFFER+3,y
+        dey
+        bpl -
+        jsr gm_path_page
+        ldx gm_slot
+        lda gm_win_plen,x
+        sta gm_math
+        sec                     ; the last 12 path bytes
+        sbc #12
+        bcs +
+        lda #0
++       tay
+        ldx #7
+gm_title_char:
+        cpy gm_math
+        beq gm_title_end
+        jsr gm_pr
+        cmp #32
+        bcc gm_title_q
+        cmp #127
+        bcc gm_title_ok
+gm_title_q:
+        lda #$3f                ; not printable
+gm_title_ok:
+        sta N_BUFFER,x
+        inx
+        iny
+        bne gm_title_char
+gm_title_end:
+        lda #0
+        sta N_BUFFER,x
+        jmp gm_wcall
+gm_not_usb:
+        lda #<gm_s_notusb
+        ldx #>gm_s_notusb
+        ldy #1
+        jmp gm_alert
+gm_usb_error:                   ; "[3][Could not read USB|storage: error $xx][OK]"
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        tax
+        lda gm_hex_digits,x
+        sta gm_s_usbhex
+        pla
+        and #15
+        tax
+        lda gm_hex_digits,x
+        sta gm_s_usbhex+1
+        lda #<gm_s_usbfail
+        ldx #>gm_s_usbfail
+        ldy #1
+        jmp gm_alert
+gm_ult_attr: .byte 0
+
+; USB delete: DELETE_FILE with the entry's full path, then FILE_STAT; only
+; DOS 82 FILE NOT FOUND with an empty reply proves the removal (as Files).
+gm_ult_delete:
+        lda gm_rec+20
+        jsr gm_ult_fullname
+        bcs gm_ult_del_error
+        lda #$09                ; DELETE_FILE
+        jsr gm_ucmd
+        bcs gm_ult_del_error
+        lda N_FACTUAL
+        ora N_FACTUAL+1
+        bne gm_ult_del_unknown
+        lda #$08                ; FILE_STAT
+        jsr gm_ucmd
+        bcc gm_ult_del_unknown  ; still there
+        lda N_FACTUAL
+        ora N_FACTUAL+1
+        ora N_FSTATUS
+        bne gm_ult_del_unknown
+        lda N_FDOS
+        cmp #82
+        bne gm_ult_del_unknown
+        jmp gm_ult_rescan
+gm_ult_del_unknown:
+        lda #<gm_s_unproven
+        ldx #>gm_s_unproven
+        ldy #1
+        jsr gm_alert
+        jmp gm_ult_rescan
+gm_ult_del_error:
+        jmp gm_del_error
+; A = Ultimate DOS opcode: N_BUFFER = context, opcode, the path in N_UPATH
+; (FILE_STAT adds a NUL: its firmware handler takes the body as a C string).
+gm_ucmd:
+        sta N_BUFFER+1
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta N_BUFFER
+        lda N_CURRENT
+        sta N_FOWNER
+        ldx #0
+-       lda N_UPATH,x
+        sta N_BUFFER+2,x
+        inx
+        cpx N_FNAMELEN
+        bne -
+        stx N_FCOUNT
+        lda #0
+        sta N_FCOUNT+1
+        lda N_BUFFER+1
+        cmp #$08
+        bne +
+        lda #0
+        sta N_BUFFER+2,x
+        inc N_FCOUNT
+        bne +
+        inc N_FCOUNT+1
++       jmp N_UCOMMAND
+
+; ---- documents (docs/NATIVE-DOCUMENT-LAUNCH.md) ------------------------------------
+; A text file opens in the Editor through the one-launch document contract;
+; closing the Editor returns to "browse", this desktop, whose windows the AES
+; session brings back.
+gm_iec_document:                ; N_BUFFER = the record: IEC name and type
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta N_BROWSERDEV
+        lda gm_win_fmt,x
+        sta N_BROWSERFMT
+        ldx #0
+-       lda N_BUFFER,x
+        cmp #$a0
+        beq +
+        sta N_BROWSERNAME,x
+        inx
+        cpx #16
+        bne -
++       stx N_BROWSERNAME_LEN
+        lda N_BUFFER+16         ; SEQ 1, PRG 2, USR 3 -> 0, 1, 2
+        and #7
+        sec
+        sbc #1
+        sta N_DOCTYPE
+        jmp gm_document_launch
+gm_usb_document:                ; gm_name/gm_nlen = the leaf; the window's path
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta N_BROWSERDEV
+        lda #3
+        sta N_BROWSERFMT
+        jsr gm_path_page
+        ldx gm_slot
+        lda gm_win_plen,x
+        sta N_BROWSERLEN
+        ldy #0
+-       cpy N_BROWSERLEN
+        beq +
+        jsr gm_pr
+        sta N_BROWSERPATH,y
+        iny
+        bne -
++       ldx #0
+-       lda gm_name,x
+        sta N_BROWSERNAME,x
+        inx
+        cpx gm_nlen
+        bne -
+        stx N_BROWSERNAME_LEN
+        lda #0
+        sta N_DOCTYPE
+gm_document_launch:
+        lda #1                  ; Editor text
+        sta N_DOCKIND
+        lda #0
+        sta N_DOCRETURN         ; back to this desktop, not system Files
+        lda #$80
+        sta N_DOCREQUEST
+        ldx #5
+-       lda gm_editor_name,x
+        sta N_APPNAME,x
+        dex
+        bpl -
+        lda #6
+        sta N_NAMELEN
+        lda N_BOOTDEVICE        ; the Editor from the boot disk
+        sta N_DEVICE
+        lda N_BOOTFORMAT
+        sta N_APPFORMAT
+        jsr gm_session_save
+        jsr pm_close
+        lda #0
+        jmp N_REPLACE
+; gm_name/gm_nlen: carry clear when it ends in .TXT or .SEQ (any case).
+gm_text_suffix:
+        lda gm_nlen
+        cmp #5                  ; at least "X.TXT"
+        bcc gm_suffix_no
+        tax
+        lda gm_name-4,x
+        cmp #$2e
+        bne gm_suffix_no
+        lda gm_name-3,x         ; the three letters, upper-cased
+        and #$df
+        sta gm_suffix
+        lda gm_name-2,x
+        and #$df
+        sta gm_suffix+1
+        lda gm_name-1,x
+        and #$df
+        sta gm_suffix+2
+        lda gm_suffix
+        cmp #$54                ; TXT
+        bne +
+        lda gm_suffix+1
+        cmp #$58
+        bne gm_suffix_no
+        lda gm_suffix+2
+        cmp #$54
+        bne gm_suffix_no
+        clc
+        rts
++       cmp #$53                ; SEQ
+        bne gm_suffix_no
+        lda gm_suffix+1
+        cmp #$45
+        bne gm_suffix_no
+        lda gm_suffix+2
+        cmp #$51
+        bne gm_suffix_no
+        clc
+        rts
+gm_suffix_no:
+        sec
+        rts
+
 ; ---- windows: painting ----------------------------------------------------------------
 ; Clear the work area inside gm_clip, then draw the visible rows clipped to
 ; each visible rectangle.
@@ -2293,7 +2888,7 @@ gm_rec_src:
         sta gfx_text_buffer+16
         lda gm_rec+16           ; type
         and #7
-        cmp #5
+        cmp #7
         bcc +
         lda #0
 +       sta gm_math
@@ -2308,13 +2903,23 @@ gm_rec_src:
         sta gfx_text_buffer+19
         lda #32
         sta gfx_text_buffer+20
-        lda gm_rec+18           ; blocks, 4 digits right aligned
+        lda gm_rec+16           ; USB entries have no size in the listing
+        and #7
+        cmp #5
+        bcc +
+        lda #32
+        ldy #4
+-       sta gfx_text_buffer+20,y
+        dey
+        bne -
+        beq ++
++       lda gm_rec+18           ; blocks, 4 digits right aligned
         sta gm_num
         lda gm_rec+19
         sta gm_num+1
         ldy #24
         jsr gm_decimal4
-        lda #25
++       lda #25
         sta gfx_text_length
         rts
 ; Read the records of rows 0..wh-1 into gm_rows.
@@ -2651,7 +3256,11 @@ gm_select_index:
 ; Launch the selected entry through the dispatcher (it checks the program).
 gm_open_entry:
         ldx gm_slot
-        lda gm_win_sel,x
+        lda gm_win_fmt,x
+        cmp #3
+        bne +
+        jmp gm_ult_open_entry
++       lda gm_win_sel,x
         sta gm_item
         jsr gm_work
         ldx gm_slot             ; read the one record
@@ -2666,7 +3275,12 @@ gm_open_entry:
         jsr gm_select_mem
         jsr N_READ
         bcs gm_launch_fail
-        ldx #0
+        lda N_BUFFER+16         ; a SEQ file is a text document for the Editor
+        and #7
+        cmp #1
+        bne +
+        jmp gm_iec_document
++       ldx #0
 -       lda N_BUFFER,x
         cmp #$a0
         beq +
@@ -2892,14 +3506,16 @@ gm_aesvc_name: .text "aesvc.prg"
 gm_cards_name: .text "cards"
 gm_drive_title: .byte 68,114,105,118,101,32,0    ; "Drive "
 gm_types: .byte 68,69,76,83,69,81,80,82,71,85,83,82,82,69,76   ; DEL SEQ PRG USR REL
-gm_icon_y: .byte 2,6,20
-gm_icon_art: .byte 0,0,1
-gm_icon_dev_lo: .byte 0,9,0     ; 0: the boot drive
-gm_icon_label_lo: .byte <gm_label_boot,<gm_label_9,<gm_label_trash
-gm_icon_label_hi: .byte >gm_label_boot,>gm_label_9,>gm_label_trash
+        .byte 68,73,82,32,32,32            ; DIR, and a USB file (no CBM type)
+gm_icon_y: .byte 2,6,20,10
+gm_icon_art: .byte 0,0,1,0
+gm_icon_dev_lo: .byte 0,9,0,1   ; 0: the boot drive; USB: DOS context 1
+gm_icon_label_lo: .byte <gm_label_boot,<gm_label_9,<gm_label_trash,<gm_label_usb
+gm_icon_label_hi: .byte >gm_label_boot,>gm_label_9,>gm_label_trash,>gm_label_usb
 gm_label_boot: .byte 66,111,111,116,0                    ; Boot
 gm_label_9: .byte 68,114,105,118,101,32,57,0            ; Drive 9
 gm_label_trash: .byte 84,114,97,115,104,0               ; Trash
+gm_label_usb: .byte 85,83,66,0                        ; USB
 ; 32x16 icons, 4 bytes per row: drive, trash
 gm_icon_bits:
         .byte $7f,$ff,$ff,$fe, $40,$00,$00,$02, $40,$00,$00,$02, $47,$ff,$ff,$e2
@@ -2958,6 +3574,17 @@ gm_full_alert: .byte 91,49,93,91,70,111,117,114,32,102,111,108,100,101,114,32,11
         .byte 111,119,115,124,97,114,101,32,97,108,114,101,97,100,121,32,111,112,101,110,46,93,91,79,75,93,0
 
 gm_confirm: .byte 1
+gm_editor_name: .text "editor"
+gm_suffix: .fill 3,0
+gm_s_unproven: .byte 91,51,93,91,84,104,101,32,100,114,105,118,101,32,100,105,100,32,110,111,116,32,112,114,111,118,101,124,116,104,101,32,100,101,108,101,116,105,111,110,59,32,115,101,101,32,116,104,101,32,108,105,115,116,46,93,91,79,75,93,0   ; [3][The drive did not prove|the deletion; see the list.][OK]
+gm_icons_n: .byte 3
+gm_target: .byte 0
+gm_nlen: .byte 0
+gm_s_notusb: .byte 91,49,93,91,78,111,116,32,97,118,97,105,108,97,98,108,101,32,111,110,32,85,83,66,124,115,116,111,114,97,103,101,32,105,110,32,116,104,101,32,100,101,115,107,116,111,112,32,121,101,116,46,93,91,79,75,93,0   ; [1][Not available on USB|storage in the desktop yet.][OK]
+gm_s_usbfail: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,114,101,97,100,32,85,83,66,124,115,116,111,114,97,103,101,58,32,101,114,114,111,114,32,36
+gm_s_usbhex: .byte 48,48
+        .byte 93,91,79,75,93,0
+gm_usb_title: .byte 85,83,66,32
 gm_s_free: .byte 124,66,108,111,99,107,115,32,102,114,101,101,58,32,0   ; |Blocks free: 
 gm_desk_color: .byte $16
 gm_restoring: .byte 0
@@ -3043,6 +3670,10 @@ gm_mem2: .fill GM_WINDOWS,0
 gm_mem3: .fill GM_WINDOWS,0
 gm_rec: .fill GM_RECORD,0
 gm_dirpage: .fill 256,0
+gm_win_plen: .fill GM_WINDOWS,0
+gm_name: .fill 256,0             ; a full USB name
+        .align 256
+gm_win_path: .fill GM_WINDOWS*256,0   ; each USB window's absolute path
 gm_addr_lo:
         .for i=0, i<GM_MAX_ENTRIES, i+=1
         .byte <(gm_sortbuf+i*GM_RECORD)
@@ -3051,7 +3682,8 @@ gm_addr_hi:
         .for i=0, i<GM_MAX_ENTRIES, i+=1
         .byte >(gm_sortbuf+i*GM_RECORD)
         .next
-gm_sortbuf: .fill GM_MAX_ENTRIES*GM_RECORD,0
+gm_sortbuf = GM_WORKSPACE
+.cerror GM_MAX_ENTRIES*GM_RECORD > 16*256, "the sort workspace holds 16 pages"
 ; Buffers that are never live together share storage: the visible rows are
 ; read only while painting, the sort buffer only while scanning or sorting,
 ; and the sort order only after a scan has finished with its directory page.

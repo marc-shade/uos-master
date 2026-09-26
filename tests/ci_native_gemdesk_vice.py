@@ -2,7 +2,8 @@
 """GEMDESK in a real emulated C128 (VICE x128, 1581 true drive emulation):
 boot gem.d81, compare the desktop with the CPU-test oracle, open drive 8 from
 the keyboard, launch Calculator, leave it, and check the AES session brings
-the window and its selection back."""
+the window and its selection back, then open a SEQ file in the Editor as a
+document and return to the desktop."""
 import argparse
 import json
 import os
@@ -20,6 +21,9 @@ from launcher_scene import pointer_shape
 from native_capture_transport import PausedViceMonitor
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT)]
+from native_editor_scene import surface as editor_surface  # noqa: E402
+NOTE = b'GEMDESK opened this SEQ file.\rIt is an Editor document.\r'
 
 
 def d81_entries(image):
@@ -48,6 +52,9 @@ def main():
     work = Path(tempfile.mkdtemp(prefix='uos-gemdesk-vice-', dir='/var/tmp/arc-scratch'))
     disk = work/'gem.d81'
     shutil.copy2(ROOT/'target/native-desktop/gem.d81', disk)
+    (work/'note.seq').write_bytes(NOTE)       # a test-local document on the copy
+    subprocess.run(['c1541', '-attach', str(disk), '-write', str(work/'note.seq'), 'note,s'],
+                   check=True, capture_output=True)
     entries = d81_entries(disk.read_bytes())
     report = dict(passed=False, physical_hardware_io=False, work=str(work), checks=[],
                   entries=[e['name'].decode('latin-1') for e in entries])
@@ -137,6 +144,32 @@ def main():
         key(27)
         expect(scene.picture([window], {1: ordered}), 'back')
         check('leaving Calculator returns to GEMDESK, which reopens the window with its selection')
+
+        note = [e['name'] for e in ordered].index(b'NOTE')
+        for _ in range(abs(note-at)):
+            key(0x11 if note > at else 0x91)
+        window['selected'] = note
+        window['top'] = min(window['top'], note)             # the selection scrolls into view
+        window['top'] = max(window['top'], note-g['wh']+1)
+        expect(scene.picture([window], {1: ordered}), 'note-selected')
+        key(13)
+        editor = (ROOT/'target/native-desktop/editor.prg').read_bytes()[2:34]
+        wait(lambda: read(0x3d60, 32) == editor and ready(), 'Editor running', 120)
+        assert read(0x3d9a) == b'\0', 'the Editor claimed the document request'
+        want = editor_surface(NOTE, 0, name='NOTE', device=8, dirty=False, field='NOTE', fmt=2,
+                              view=0, horizontal=0, selection=None)
+        deadline = time.monotonic()+60
+        while (got := read(0xc000, 0x2400)) != want:
+            if time.monotonic() > deadline:
+                (work/'editor-actual.bin').write_bytes(got); (work/'editor-expected.bin').write_bytes(want)
+                raise AssertionError(('editor', [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]))
+            time.sleep(.2)
+        (work/'editor.surface').write_bytes(got)
+        check('Return on a SEQ file opens it in the Editor as a document: the surface matches the Editor oracle')
+
+        key(27)
+        expect(scene.picture([window], {1: ordered}), 'back-from-editor')
+        check('leaving the Editor returns to GEMDESK with the document still selected')
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')

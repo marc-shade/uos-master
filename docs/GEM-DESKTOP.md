@@ -58,10 +58,30 @@ Built and tested:
 
 Built but not yet covered by tests: fulled, moved and sized answers.
 
-Not built yet: the Ultimate icon with folder windows. Other limits:
-- dragging shows no outline;
-- Show Info cannot change read-only;
-- IEC free space is not shown.
+- USB storage: a USB icon appears when the Ultimate's DOS (target 1) answers
+  an identify query. Its window lists DOS context 1 from `/` through a
+  directory cursor. Folders (`DIR`) open in the same window; the close box goes
+  up a level, as in TOS, and closes the window at the root. A file launches
+  through the dispatcher with its full path, re-read from the cursor, so names
+  longer than the 16 characters shown still work.
+- USB delete (and Trash): after the same confirmation, `DELETE_FILE` with the
+  entry's full path, then `FILE_STAT`; only DOS 82 with an empty reply proves
+  the removal, otherwise an alert says so. A full folder is refused by the
+  drive, and the refusal is shown.
+- Documents: an IEC SEQ file, or a USB file ending in `.TXT` or `.SEQ`, opens
+  in the Editor through the [document contract](NATIVE-DOCUMENT-LAUNCH.md).
+  Closing the Editor returns to GEMDESK, and its windows come back. Other
+  files go to the dispatcher, which runs native programs.
+- A listing holds up to 195 entries: the snapshot is 16 pages, sorted in a
+  bank-0 workspace at `$5000` reserved like Files'. Larger directories show
+  their first 195.
+
+Not built yet, or limited:
+- USB rename and Show Info say "not available"; Files has them.
+- Paint pictures (UPNT) do not open from GEMDESK yet.
+- USB windows are not kept in the desktop record or session.
+- Drive 9 is always read as a D64.
+- Dragging shows no outline, and Show Info cannot change read-only.
 
 Emulator: [the VICE run](validation/2026-09-26-gemdesk-vice/README.md) boots
 `gem.d81` on an emulated 1581. It opens drive 8 with the 8 key, launches
@@ -74,8 +94,8 @@ dialogs are in two modules, each with its own copy of the forms library:
 `GDDLG.PRG` (Show Info, Format) and `GDSET.PRG` (Preferences, Control
 Panel). The one a dialog needs is loaded from the desktop's folder, replacing
 the other ([NATIVE-MODULES](NATIVE-MODULES.md)). If it is missing, an alert
-says so and the desktop goes on. The core ends at `$b098`; the modules end at
-`$bdcb` and `$bced` of the `$c000` limit.
+says so and the desktop goes on. The core ends at `$a569`; the modules end at
+`$b29c` and `$b1be` of the `$c000` limit.
 
 ## v1 scope
 

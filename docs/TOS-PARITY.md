@@ -30,9 +30,9 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 
 | TOS feature | Status | uOS evidence / missing piece |
 |---|---|---|
-| Drive icons on the desktop | Partial | [GEMDESK](GEM-DESKTOP.md) shows boot-drive and drive-9 icons (GEM profile disk); no Ultimate icon yet |
-| Trash can (drag to delete) | Partial | GEMDESK: drop an IEC listing row on Trash, confirm, scratch ([record](validation/2026-09-26-gemdesk-files/README.md)); no drag outline, no Ultimate windows yet |
-| Open drive/folder in a window | Partial | GEMDESK opens IEC drives in scrolling listing windows; Ultimate folders not yet |
+| Drive icons on the desktop | Have | [GEMDESK](GEM-DESKTOP.md): Boot, Drive 9, Trash, and USB when the Ultimate's DOS answers ([record](validation/2026-09-26-gemdesk-usb/README.md)) |
+| Trash can (drag to delete) | Partial | GEMDESK: drop a listing row on Trash, confirm, delete on IEC (scratch count checked) or USB (`DELETE_FILE`, proven by `FILE_STAT` 82) ([record](validation/2026-09-26-gemdesk-files/README.md), [record](validation/2026-09-26-gemdesk-usb/README.md)); no drag outline |
+| Open drive/folder in a window | Have | GEMDESK: IEC drives, and USB folders that open in place, with the close box going up a level as in TOS ([record](validation/2026-09-26-gemdesk-usb/README.md)); listings hold 195 entries |
 | Several directory windows at once | Have | GEMDESK: four windows on drives 8 and 9, topping, a fifth refused ([record](validation/2026-09-26-gemdesk-files/README.md)) |
 | Icon view / text view | Partial | Text list only |
 | Sort by name, date, size, type | Partial | GEMDESK View: name, type, size (largest first), unsorted ([record](validation/2026-09-26-gemdesk-files/README.md)); IEC has no dates |
@@ -40,15 +40,15 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Rubber-band and multiple selection | Missing | |
 | Show Info (size, date, rename, read-only) | Partial | GEMDESK Show Info dialog: editable name (renames on IEC), type, blocks, read-only; drive icons: files and blocks used ([record](validation/2026-09-26-gemdesk-files/README.md)); no date, free space, or changing read-only |
 | New Folder | Partial | Ultimate paths ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); IEC has no directories |
-| Delete file / folder | Partial | IEC: GEMDESK Delete/Trash with confirmation and the drive's scratch count checked ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-D ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); GEMDESK has no Ultimate windows yet |
+| Delete file / folder | Have | GEMDESK Delete/Trash with confirmation: IEC scratch with the count checked; USB files and empty folders with `DELETE_FILE` proven by `FILE_STAT`, a full folder refused ([record](validation/2026-09-26-gemdesk-usb/README.md)); Files Ctrl-D too ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)) |
 | Rename file | Partial | IEC: GEMDESK Show Info sends `R0:NEW=OLD` and reports the drive's refusal ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-R, also folders, checked with `FILE_STAT` |
 | Format disk | Partial | GEMDESK File:Format: drive 8/9, name and ID, confirmation, `N0:NAME,ID` ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no progress display or verify; IEC only |
 | Disk copy (drive onto drive) | Missing | |
-| Install Application (document type → app) | Partial | Fixed `.TXT/.SEQ` → Editor and UPNT → Paint (`src/native/files/open-with.inc`) |
+| Install Application (document type → app) | Partial | Fixed rules: Files `.TXT/.SEQ` → Editor and UPNT → Paint; GEMDESK IEC SEQ and USB `.TXT/.SEQ` → Editor ([record](validation/2026-09-26-gemdesk-usb/README.md)); no user-defined associations |
 | Install Icon | Missing | |
 | Set Preferences (confirm delete/copy/overwrite) | Partial | GEMDESK Preferences: confirm deletes, sort order, desktop colour; kept across launches and in DESKTOP.INF ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no copy in GEMDESK; overwrite is always refused |
 | Save Desktop (DESKTOP.INF) | Have | GEMDESK Options:Save Desktop writes a 64-byte DESKTOP.INF (preferences, colour, windows) on the boot drive; after a program returns, the AES session reopens the windows ([record](validation/2026-09-26-gemdesk-persistence/README.md)) |
-| Show File (view/print) | Partial | Byte viewer and Editor open; no print |
+| Show File (view/print) | Partial | Files' byte viewer; text opens in the Editor from Files and GEMDESK ([record](validation/2026-09-26-gemdesk-usb/README.md)); no print |
 | Print Screen | Missing | No printer service |
 | Launch programs, parameter dialog (TTP) | Partial | GEMDESK double-click/Return launches through the checked dispatcher, and its windows come back when the program returns ([record](validation/2026-09-26-gemdesk-persistence/README.md)); no parameter dialog |
 | Menu keyboard shortcuts | Have | Desktop letters, Files/Editor/Sheet control keys |

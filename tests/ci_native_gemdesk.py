@@ -11,6 +11,7 @@ sys.dont_write_bytecode = True
 from ci_native_pointer import Pointer, heap          # installs the 1351 bus
 import ci_native_calc as calc
 import ci_native_aes                                   # an owner-30 AES may stay resident
+from ci_native_folders import FolderDOS               # (before GemDOS patches ci_native_ultimate)
 import native_gemdesk_scene as scene
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +24,27 @@ class AnyChannel:
         return True
 
 
+class IdentifiedFolderDOS(FolderDOS):
+    """The folder model (directories, DELETE_FILE, FILE_STAT) that also answers
+    the DOS target's identify query, which GEMDESK uses to show the USB icon."""
+    def respond(self, command):
+        if command == bytes([1, 1]):
+            return [(b'ULTIMATE DOS', b'00,OK')]
+        return super().respond(command)
+
+
+class GemDOS:
+    """Built by the harness as its Ultimate model: IdentifiedFolderDOS with a tree."""
+    tree = None
+
+    def __new__(cls, files):
+        dos = IdentifiedFolderDOS()
+        dos.directories = {path: list(entries) for path, entries in cls.tree.items()}
+        dos.paths = {1: b'/', 2: b'/'}
+        dos.files.update(files)
+        return dos
+
+
 class Gem(calc.Calculator):
     instruction_limit = 60_000_000
     allow_busy_poll = True
@@ -31,12 +53,24 @@ class Gem(calc.Calculator):
     poll = Pointer.poll
     move = Pointer.move
 
-    def __init__(self, files):
+    def __init__(self, files, usb=None, fmt=0):
         files = {**files, (8, b'GDDLG.PRG', b'P'): (ROOT/'target/native-desktop/gddlg.prg').read_bytes(),
                  (8, b'GDSET.PRG', b'P'): (ROOT/'target/native-desktop/gdset.prg').read_bytes()}
-        super().__init__('gemdesk', files, loader_name=b'GEMDESK',
-                         image_prefix='native-desktop', vdc_component=False)
-        self.bus = self.m.bus
+        extra = {}
+        if usb is not None:                 # directories: {path: [attribute+name]}, files: {path: bytes}
+            import ci_native_ultimate
+            GemDOS.tree = usb['dirs']
+            saved, ci_native_ultimate.DOSFiles = ci_native_ultimate.DOSFiles, GemDOS
+            extra = dict(ultimate_files=usb['files'])
+        try:
+            super().__init__('gemdesk', files, loader_name=b'GEMDESK', fmt=fmt,
+                             image_prefix='native-desktop', vdc_component=False, **extra)
+        finally:
+            if usb is not None:
+                ci_native_ultimate.DOSFiles = saved
+        # Pointer.frame sets bus attributes (button, raster); with a USB model
+        # the machine's bus is an UltimateBus wrapper, so use the bus inside it.
+        self.bus = getattr(self.m.bus, 'native', self.m.bus)
         self.frames = 0
 
     def key(self, key, exited=False):
@@ -79,6 +113,7 @@ class Relaunch(Gem):
         self.io = StreamIEC(self.m, {k: bytes(v) for k, v in previous.io.files.items()})
         self.io.formats[8] = 0
         self.ram[0x3d21:0x3d23] = bytes([8, 7]); self.ram[0x3d40:0x3d47] = b'GEMDESK'
+        self.ram[0x3d9a] = 0     # the launch in between (the Editor) claimed or expired any request
         self.ram[0x3d2c:0x3d2e] = bytes([0, 8])
         self.cpu = MPU(memory=self.m.bus, pc=calc.RUN); self.cpu.sp, self.cpu.p = 0xe0, 0x20
         self.cpu.stPushWord(0xaff)
@@ -166,14 +201,21 @@ def main():
         q.cell(3, g['wy']+row)
         q.frame(down=True); q.frame(down=False)
         q.frame(down=True, exited=True)    # the second press is sampled on the settled poll and launches
-        assert q.ram[0x3d28] == 1 and bytes(q.ram[0x3d40:0x3d46]) == b'FILE00'
-        assert q.ram[0x3d22] == 6 and q.ram[0x3d21] == 8
-        done('double-clicking a listed file hands it to the dispatcher (device 8)', q)
+        assert q.ram[0x3d28] == 1 and bytes(q.ram[0x3d40:0x3d46]) == b'EDITOR' and q.ram[0x3d22] == 6
+        assert (q.ram[0x3d9a], q.ram[0x3d9b], q.ram[0x3d9c], q.ram[0x3d9d]) == (0x80, 1, 0, 0), 'a staged Editor document'
+        assert q.ram[0x3d29] == 8 and q.ram[0x3d34] == 6 and bytes(q.ram[0x3e00:0x3e06]) == b'FILE00'
+        done('double-clicking a SEQ file opens it in the Editor as a document (the Files contract)', q)
 
         back = Relaunch(q)
         window.update(top=0, selected=row)
         back.expect(scene.picture([dict(window)], {1: entries}), 'windows back after the launch')
         done('when the desktop returns, the AES session reopens its windows (rectangle, scroll, selection)', back)
+        back.cell(3, g['wy']+entries.index(next(e for e in entries if e['name'] == b'AESVC.PRG')))
+        back.frame(down=True); back.frame(down=False)
+        back.frame(down=True, exited=True)
+        assert back.ram[0x3d28] == 1 and back.ram[0x3d22] == 9 and bytes(back.ram[0x3d40:0x3d49]) == b'AESVC.PRG'
+        assert back.ram[0x3d9a] == 0 and back.ram[0x3d21] == 8, 'a program: no document request'
+        done('double-clicking a PRG hands it to the dispatcher (device 8) without a document request', back)
 
         # An unsorted directory, a second drive with a scrolling listing.
         # 'MIKE ' (a trailing space) precedes 'MIKE' on disk; name order puts the
@@ -480,6 +522,91 @@ def main():
         nm.expect(scene.scene.draw(shown, missing, 1, 1)[0], 'module missing')
         nm.key(13); nm.expect(shown, 'desktop goes on')
         done('a missing GDDLG.PRG gives an alert and the desktop goes on', nm)
+
+        big = {(8, b'AESVC.PRG', b'P'): AESVC}
+        for i in range(200):                                        # a D81 root holds up to 296
+            big[8, f'F{199-i:03}'.encode(), b'S'] = bytes(10)     # directory order is reversed name order
+        tr = Gem(big, fmt=2)                                        # the boot drive is a D81
+        tr.key(ord('8'))
+        kept = scene.ordered(entries_for(tr.io.files)[:195], 0)     # the first 195 on disk, then sorted
+        wt = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)
+        tr.expect(scene.picture([wt], {1: kept}, selected_icon=0), 'first 195 entries')
+        done('a directory over 195 entries lists its first 195 (the 16-page snapshot)', tr, first=kept[0]['name'].decode())
+
+        # USB storage (the Ultimate's DOS): icon, folders, parent, launch.
+        long = b'A VERY LONG PROGRAM NAME.PRG'
+        tree = {b'/': [b'\x10Usb0'],
+                b'/Usb0': [b'\x10GAMES', b'\x20CALC.PRG', b'\x20'+long, b'\x20notes.txt'],
+                b'/Usb0/GAMES': [b'\x20TETRIS.PRG'],
+                b'/shell': [], b'/browser': []}
+        us = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
+                 usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10)}))
+        us.expect(scene.desktop(usb=True), 'usb icon')
+        wu = dict(id=1, x=1, y=2, w=28, h=16, title=b'USB /', top=0)
+        us.cell(35, 11); us.click(double=True)
+        us.expect(scene.picture([wu], {1: scene.usb_entries(tree[b'/'])}, selected_icon=3, usb=True), 'usb root')
+        us.cell(3, 3); us.click(double=True)
+        wu['title'] = b'USB /Usb0'
+        usb0 = scene.ordered(scene.usb_entries(tree[b'/Usb0']), 0)
+        us.expect(scene.picture([wu], {1: usb0}, selected_icon=3, usb=True), 'usb0')
+        games = [e['name'] for e in usb0].index(b'GAMES')
+        us.cell(3, 3+games); us.click(double=True)
+        wu['title'] = b'USB /Usb0/GAMES'
+        us.expect(scene.picture([wu], {1: scene.usb_entries(tree[b'/Usb0/GAMES'])}, selected_icon=3, usb=True), 'games')
+        us.cell(1, 2); us.click()                                   # the close box: up one level
+        wu['title'] = b'USB /Usb0'
+        us.expect(scene.picture([wu], {1: usb0}, selected_icon=3, usb=True), 'back up')
+        done('the USB icon appears when the Ultimate answers; folders open in the window, the close box goes up', us)
+
+        at = [e['name'] for e in usb0].index(long[:16])
+        us.cell(3, 3+at); us.click(); us.key(9)                     # Show Info is IEC-only here
+        wu['selected'] = at
+        shown = scene.picture([wu], {1: usb0}, selected_icon=3, usb=True)
+        notusb = b'[1][Not available on USB|storage in the desktop yet.][OK]'
+        us.expect(scene.scene.draw(shown, notusb, 1, 1)[0], 'not on usb')
+        us.key(13)
+        us.cell(3, 3+at)
+        us.frame(down=True); us.frame(down=False)
+        us.frame(down=True, exited=True)                            # the second press launches
+        assert us.ram[0x3d28] == 1 and us.ram[0x3d2c] == 3 and us.ram[0x3d21] == 1
+        full = b'/Usb0/'+long
+        assert us.ram[0x3d22] == len(full) and bytes(us.ram[0x4e00:0x4e00+len(full)]) == full
+        done('a USB file launches with its full path (past 16 characters); Show Info says it is not available on USB', us)
+
+        ud = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
+                 usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10)}))
+        ud.cell(35, 11); ud.click(double=True); ud.cell(3, 3); ud.click(double=True)
+        wd = dict(id=1, x=1, y=2, w=28, h=16, title=b'USB /Usb0', top=0)
+        calc_at = [e['name'] for e in usb0].index(b'CALC.PRG')
+        ud.cell(3, 3+calc_at); ud.click()
+        wd['selected'] = calc_at
+        before = scene.picture([wd], {1: usb0}, selected_icon=3, usb=True)
+        ask = b'[2][Delete CALC.PRG?|This cannot be undone.][Delete|Cancel]'
+        ud.key(4); ud.expect(scene.scene.draw(before, ask, 2, 2)[0], 'usb confirm')
+        ud.key(9); ud.key(13)
+        dos = ud.ultimate
+        assert b'\x20CALC.PRG' not in dos.directories[b'/Usb0'] and dos.last_path == b'/Usb0/CALC.PRG'
+        left = scene.ordered(scene.usb_entries(dos.directories[b'/Usb0']), 0)
+        wd['selected'] = None
+        ud.expect(scene.picture([wd], {1: left}, selected_icon=3, usb=True), 'usb deleted')
+        games_at = [e['name'] for e in left].index(b'GAMES')
+        ud.cell(3, 3+games_at); ud.click()
+        wd['selected'] = games_at
+        before = scene.picture([wd], {1: left}, selected_icon=3, usb=True)
+        ud.key(4); ud.key(9); ud.key(13)                            # the drive refuses a full folder
+        text = bytes(ud.ram[ud.symbol('gm_abuf'):ud.symbol('gm_abuf')+60]).split(b'\0')[0]
+        assert text.startswith(b'[3][Could not delete|GAMES|error $'), text
+        ud.expect(scene.scene.draw(before, text, 1, 1)[0], 'full folder refused')
+        ud.key(13); ud.expect(before, 'refusal closed')
+        assert b'\x10GAMES' in dos.directories[b'/Usb0']
+        notes = [e['name'] for e in left].index(b'notes.txt')
+        ud.cell(3, 3+notes); ud.frame(down=True); ud.frame(down=False); ud.frame(down=True, exited=True)
+        assert bytes(ud.ram[0x3d40:0x3d46]) == b'EDITOR' and ud.ram[0x3d9a] == 0x80 and ud.ram[0x3d9b] == 1
+        assert (ud.ram[0x3d29], ud.ram[0x3d2a], ud.ram[0x3d2e], ud.ram[0x3d34]) == (1, 3, 5, 9)
+        assert bytes(ud.ram[0x4a00:0x4a05]) == b'/Usb0' and bytes(ud.ram[0x3e00:0x3e09]) == b'notes.txt'
+        done('Delete on USB: confirmed, DELETE_FILE then FILE_STAT (82) before listing again; a full folder is refused; '
+             'a .txt file opens in the Editor with its folder', ud,
+             refusal=text.decode())
 
         # Keyboard mouse and the Control Panel.
         kc = Gem(files4)

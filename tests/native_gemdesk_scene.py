@@ -13,11 +13,14 @@ ART = [
 ]
 KIND = (scene.WK['NAME'] | scene.WK['CLOSER'] | scene.WK['FULLER'] | scene.WK['MOVER'] |
         scene.WK['SIZER'] | scene.WK['UP'] | scene.WK['DN'] | scene.WK['VSLIDE'])
-TYPES = [b'DEL', b'SEQ', b'PRG', b'USR', b'REL']
+TYPES = [b'DEL', b'SEQ', b'PRG', b'USR', b'REL', b'DIR', b'   ']   # 5, 6: USB folder, file
 
 
-def draw_icons(s, selected=None, color=DESK):
-    for index, (y, label, art) in enumerate(ICONS):
+USB_ICON = (10, b'USB', 0)
+
+
+def draw_icons(s, selected=None, color=DESK, usb=False):
+    for index, (y, label, art) in enumerate(ICONS+([USB_ICON] if usb else [])):
         for g in range(8):
             column, half = g & 3, g >> 2
             rows = [(ART[art][half*8+r] >> (24-8*column)) & 255 for r in range(8)]
@@ -27,11 +30,11 @@ def draw_icons(s, selected=None, color=DESK):
         s.text(288-len(label)*4, (y+2)*8, label)
 
 
-def desktop(selected=None, color=DESK):
+def desktop(selected=None, color=DESK, usb=False):
     # The 24 bytes after the 1,000 cells keep GEMDESK's start-up fill: the AES
     # repaints only visible desktop cells when the colour changes.
     s = scene.Surface(bytes(8192)+bytes([color])*1000+bytes([DESK])*24)
-    draw_icons(s, selected, color)
+    draw_icons(s, selected, color, usb)
     return scene.menu_draw(bytes(s.data), MENU)[0]
 
 
@@ -63,8 +66,9 @@ def info_text(entry):
 
 def row_text(entry):
     name = bytes(32 if c == 0xa0 or (c & 0x7f) < 32 else c & 0x7f for c in entry['name'].ljust(16, b'\xa0'))
-    blocks = str(entry['blocks']).rjust(4).encode()
-    return name+b' '+TYPES[entry['type'] if entry['type'] < 5 else 0]+b' '+blocks
+    kind = entry['type'] if entry['type'] < 7 else 0
+    blocks = b'    ' if kind >= 5 else str(entry['blocks']).rjust(4).encode()   # USB: no size
+    return name+b' '+TYPES[kind]+b' '+blocks
 
 
 def listing(entries, window):
@@ -88,9 +92,9 @@ def slider(count, wh, top):
     return size, (0 if most == 0 else top*255//most)
 
 
-def picture(windows, entries_of, selected_icon=None, color=DESK):
+def picture(windows, entries_of, selected_icon=None, color=DESK, usb=False):
     """windows: list (bottom->top) of dicts id/x/y/w/h/title/top/selected/entries."""
-    base = desktop(selected_icon, color)
+    base = desktop(selected_icon, color, usb)
     out = []
     for w in windows:
         g = scene.geometry(dict(kind=KIND, **{k: w[k] for k in ('x', 'y', 'w', 'h')}))
@@ -192,3 +196,8 @@ def control_objects(repeat, speed):
 
 def control_dialog(before, repeat, speed, focus=2):
     return forms.draw(before, 30, 11, control_objects(repeat, speed), focus)
+
+
+def usb_entries(packets):
+    """Directory packets (attribute + name) as GEMDESK records them, in order."""
+    return [dict(name=p[1:17], type=5 if p[0] & 0x10 else 6, blocks=0) for p in packets]
