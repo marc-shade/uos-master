@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Paint's copied ROM-visible filter: fire transitions and genuine row-4 keys."""
+"""Paint's copied ROM-visible filter (input/key-filter.inc). Since 11d64e2 it
+rechecks every decoded key against the matrix: a key passes only when its row
+is low with its own column selected and not with no columns selected, so
+fire aliases on row 4 and phantom keys from nested ROM scans are rejected."""
 import argparse
 import hashlib
 import json
@@ -48,7 +51,7 @@ def main():
                         if cpu.pc in (0xb00,0xb10):break
                         cpu.step()
                     else:raise AssertionError(('filter did not return',hex(cpu.pc)))
-                    blocked=index<88 and index%8==4 and (down or not pressed)
+                    blocked=index<88 and (not pressed or (down and index%8==4))
                     assert cpu.pc==(0xb00 if blocked else 0xb10),(mapping,index,down,pressed,hex(cpu.pc))
                     assert p.bus.config==mapping and cpu.x==2 and cpu.y==index and cpu.p&0x0d==1
                     assert p.bus.video[0xd02f]==0xfb
@@ -64,7 +67,7 @@ def main():
         assert bytes(p.ram[0x1000:0x1100])==saved and bytes(p.ram[0x33c:0x33e])==original_callback
         report.update(passed=True,accepted=accepted,rejected=rejected,
             cases=['all 96 scan ordinals, fire and key combinations under ROM and app mappings',
-                   'genuine row-4 keys chain unchanged; held/released fire aliases rejected',
+                   'genuine keys chain unchanged; unpressed keys and held-fire row-4 aliases rejected',
                    'registers, MMU, CIA columns, stack, whole function table and prior callback preserved/restored'])
         print('PASS:',accepted,'accepted and',rejected,'rejected callback cases; complete restoration',flush=True)
     except BaseException as error:report['error']=repr(error);raise
