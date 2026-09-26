@@ -129,6 +129,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--host', default='192.168.1.237')
     parser.add_argument('--report', type=Path, required=True)
+    parser.add_argument('--mouse', action='store_true',
+                        help='interactive: a person moves and clicks the 1351 while this observes')
     args = parser.parse_args()
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-gem-'))
     print('GEM hardware evidence:', work, flush=True)
@@ -175,7 +177,7 @@ def main():
         ult.reset()
         print('Boot: 60 seconds without RAM DMA while the kernel and GEMDESK load', flush=True)
         time.sleep(60)
-        run_workflow(mon, work, entries, report, save)
+        (mouse_workflow if args.mouse else run_workflow)(mon, work, entries, report, save)
         report['workflow_passed'] = True; save()
     except BaseException as caught:
         error = caught
@@ -306,8 +308,11 @@ def run_workflow(mon, work, entries, report, save):
     paint = (IMAGES/'paint.prg').read_bytes()[2:34]
     wait(lambda: read(0x3d60, 32) == paint and ready(), 'Paint running', 180)
 
-    def value(name, n=1): return read(lst_symbol('native-desktop/paint', name), n)
-    wait(lambda: value('pa_status')[0] == 2 and ready(), 'Paint opened the picture', 180)
+    def value(name, n=1):
+        # Through the held CPU capture: a direct DMA read of app RAM can land while
+        # the AES has bank 1 mapped and return other bytes (seen as x=5616 readings).
+        return capture.capture(f'paint-{name}', address=lst_symbol('native-desktop/paint', name), count=n)
+    wait(lambda: ready() and read(0x3d91) == b'\0' and value('pa_status')[0] == 2, 'Paint opened the picture', 180)
     assert read(0x3d9a) == b'\0', 'Paint claimed the request'
     tag = value('pd_handles')[0]
     allocation = read(0x3c00+(tag-1)*8, 8)
@@ -326,6 +331,126 @@ def run_workflow(mon, work, entries, report, save):
     check('Return on a UPNT picture opens it in Paint: the banked document and the surface match',
           surface_sha256=settled(want, 'paint'))
     assert all(item.get('restored') for item in capture.records), 'every capture restored its borrowed RAM'
+
+
+
+def mouse_workflow(mon, work, entries, report, save):
+    """A person uses the 1351; each step waits (5 minutes at most) for what the
+    pointer module, GEMDESK and the screen must show, and says what to do next."""
+    capture = HeldCapture(mon, work)
+    report['captures'] = capture.records
+
+    def read(address, count=1):
+        return bytes(mon.read_mem(address, address+count-1))
+
+    def sym(name): return lst_symbol('native-desktop/gemdesk', name)
+
+    def ready(): return read(0x3d12) == b'\1' and read(0xd0, 2) == bytes(2)
+
+    def pointer():
+        return int.from_bytes(read(sym('pm_x'), 2), 'little'), read(sym('pm_y'))[0], read(sym('pm_buttons'))[0]
+
+    def step(text):
+        print('MOUSE:', text, flush=True)
+        report.setdefault('prompts', []).append(text); save()
+
+    def check(name, **extra):
+        report['checks'].append(dict(name=name, **extra)); save()
+        print('PASS:', name, flush=True)
+
+    def until(predicate, label, seconds=300, every=0.5):
+        deadline = time.monotonic()+seconds
+        while not predicate():
+            assert time.monotonic() < deadline, label
+            time.sleep(every)
+
+    def screen(label):
+        got = b''.join(capture.capture(f'{label}-{offset:04x}', address=0xc000+offset, count=min(2000, 9216-offset))
+                       for offset in range(0, 9216, 2000))
+        (work/f'{label}.surface').write_bytes(got)
+        return got
+
+    def oracle(picture):
+        want = bytearray(picture)
+        want[8000:8128] = pointer_shape(); want[9208:9210] = b'\x7d\x7e'
+        return bytes(want)
+
+    def settled(want, label, attempts=4):
+        for attempt in range(attempts):
+            got = screen(f'{label}-{attempt}')
+            if got == want:
+                return hashlib.sha256(got).hexdigest()
+            time.sleep(3)
+        raise AssertionError((label, [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]))
+
+    wait(lambda: read(0x1c13, 6) == b'UOS128' and ready(), 'native boot', 300)
+    check('GEMDESK is up', surface_sha256=settled(oracle(scene.desktop(usb=True)), 'desktop'))
+    start = pointer(); report['pointer_start'] = start; save()
+
+    samples = report.setdefault('pointer_samples', [])
+    shown = [None]
+
+    def sprite():
+        """Where the VIC draws the arrow: sprite 0, minus the pointer module's offsets."""
+        v = read(0xd000, 17)
+        return v[0] | (v[16] & 1) << 8, v[1]
+
+    def reach(test, label):
+        def seen():
+            x, y, b = pointer(); sx, sy = sprite()
+            samples.append((round(time.monotonic(), 2), x, y, b, sx, sy))
+            if shown[0] is None or abs(x-shown[0][0]) + abs(y-shown[0][1]) >= 12:
+                print(f'MOUSE-POS pm=({x},{y}) sprite=({sx-24},{sy-50}) buttons={b}', flush=True)
+                shown[0] = (x, y)
+            return test(x, y)
+        until(seen, label, seconds=600)
+        save()
+        return samples[-1]
+
+    step('move the pointer to the TOP-LEFT corner of the screen')
+    corner = reach(lambda x, y: x <= 8 and y <= 8, 'top-left corner')
+    step('now the BOTTOM-RIGHT corner')
+    far = reach(lambda x, y: x >= 311 and y >= 191, 'bottom-right corner')
+    assert far[1] <= 319 and far[2] <= 199, 'the pointer is clamped to the screen'
+    check('the 1351 moves the pointer across the whole screen',
+          top_left=corner[1:3], bottom_right=far[1:3], samples=len(samples))
+
+    step('DOUBLE-CLICK the Boot drive icon (top right)')
+    until(lambda: read(sym('gm_win_handle')) != b'\0' and ready(), 'a window opened')
+    ordered = scene.ordered(entries, 0)
+    window = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)
+    check('a double-click on the Boot icon opens drive 8',
+          surface_sha256=settled(oracle(scene.picture([window], {1: ordered}, selected_icon=0, usb=True)), 'opened'))
+
+    step('DRAG the window by its title bar to another place, then let go')
+    candidates = [(x, y) for y in range(1, 25-16+1) for x in range(0, 40-28+1) if (x, y) != (1, 2)]
+
+    def moved():
+        until(lambda: pointer()[2] != 0, 'button pressed on the title bar', every=0.05)
+        until(lambda: pointer()[2] == 0 and ready(), 'button released', every=0.1)
+        got = screen('drag')
+        for x, y in candidates:
+            if got == oracle(scene.picture([dict(window, x=x, y=y)], {1: ordered}, selected_icon=0, usb=True)):
+                return x, y
+        step('the window has not moved yet: drag it by the title bar')
+        return None
+    place = None
+    deadline = time.monotonic()+300
+    while place is None:
+        assert time.monotonic() < deadline, 'window moved'
+        place = moved()
+    window.update(x=place[0], y=place[1])
+    check('dragging the title bar moves the window; the screen matches the oracle at its new place',
+          x=place[0], y=place[1])
+
+    step('CLICK the close box (top-left corner of the window)')
+    until(lambda: read(sym('gm_win_handle')) == b'\0' and ready(), 'the window closed')
+    got = screen('closed')
+    shown = [label for label, selected in (('icon selected', 0), ('nothing selected', None))
+             if got == oracle(scene.desktop(selected=selected, usb=True))]
+    assert shown, 'the desktop after closing matches neither oracle'
+    check('the close box closes the window; the desktop matches the oracle', state=shown[0])
+    step('done: thank you. The machine is being put back now.')
 
 
 if __name__ == '__main__':
