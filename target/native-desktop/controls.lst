@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -o /home/marc/geos128/uos/target/native-desktop/controls.prg -l /home/marc/geos128/uos/target/native-desktop/controls.sym -L /home/marc/geos128/uos/target/native-desktop/controls.lst /home/marc/geos128/uos/src/native/controls.asm
-; Fri Sep 25 18:25:52 2026
+; Fri Sep 25 21:24:12 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -3330,6 +3330,9 @@
 ;******  Processing file: /home/marc/geos128/uos/src/native/graphics/graphics-core.inc
 
 =0						gfx_track_dirty=0
+=$1c26						gfx_heap_read=N_READ
+=$1c29						gfx_heap_write=N_WRITE
+=$1c2c						gfx_heap_fill=N_FILL
 .80aa						gfx_bind:
 .80aa		08		php		        php
 .80ab		d8		cld		        cld
@@ -3353,7 +3356,7 @@
 .80d3		8d 0a 3d	sta $3d0a	        sta N_COUNT
 .80d6		a9 00		lda #$00	        lda #0
 .80d8		8d 0b 3d	sta $3d0b	        sta N_COUNT+1
-.80db		20 26 1c	jsr $1c26	        jsr N_READ
+.80db		20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .80de		b0 0a		bcs $80ea	        bcs gfx_finish
 .80e0		a9 01		lda #$01	        lda #1
 .80e2		8d bb 86	sta $86bb	        sta gfx_bound
@@ -3652,7 +3655,7 @@
 .8312		20 86 86	jsr $8686	        jsr gfx_select
 .8315		ad b9 86	lda $86b9	        lda gfx_color
 .8318		8d 0c 3d	sta $3d0c	        sta N_VALUE
-.831b		20 2c 1c	jsr $1c2c	        jsr N_FILL
+.831b		20 2c 1c	jsr $1c2c	        jsr gfx_heap_fill
 .831e		b0 10		bcs $8330	        bcs gfx_failed
 .8320		ee ce 86	inc $86ce	        inc gfx_y
 .8323		ad ce 86	lda $86ce	        lda gfx_y
@@ -3742,7 +3745,7 @@
 .83e2		4c ba 84	jmp $84ba	        jmp gfx_band
 .83e5						gfx_read_row:
 .83e5		20 86 86	jsr $8686	        jsr gfx_select
-.83e8		20 26 1c	jsr $1c26	        jsr N_READ
+.83e8		20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .83eb		90 03		bcc $83f0	        bcs gfx_failed
 .83ed		4c 30 83	jmp $8330
 .83f0		ad cd 86	lda $86cd	        lda gfx_operation
@@ -3825,7 +3828,7 @@
 .849c		d0 f5		bne $8493	        bne gfx_column
 .849e						gfx_write_row:
 .849e		20 86 86	jsr $8686	        jsr gfx_select
-.84a1		20 29 1c	jsr $1c29	        jsr N_WRITE
+.84a1		20 29 1c	jsr $1c29	        jsr gfx_heap_write
 .84a4		90 03		bcc $84a9	        bcs gfx_failed
 .84a6		4c 30 83	jmp $8330
 .84a9		ee ce 86	inc $86ce	        inc gfx_y
@@ -3850,11 +3853,11 @@
 .84d6		f0 02		beq $84da	        beq +
 .84d8		a9 ff		lda #$ff	        lda #$ff
 .84da		8d 0c 3d	sta $3d0c	+       sta N_VALUE
-.84dd		20 2c 1c	jsr $1c2c	        jsr N_FILL
+.84dd		20 2c 1c	jsr $1c2c	        jsr gfx_heap_fill
 .84e0		b0 53		bcs $8535	        bcs gfx_band_failed
 .84e2		90 3d		bcc $8521	        bcc gfx_band_next
 .84e4						gfx_band_xor:
-.84e4		20 26 1c	jsr $1c26	        jsr N_READ
+.84e4		20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .84e7		b0 4c		bcs $8535	        bcs gfx_band_failed
 .84e9		a9 3a		lda #$3a	        lda #>N_BUFFER
 .84eb		8d f5 84	sta $84f5	        sta gfx_xor_load+2
@@ -3879,7 +3882,7 @@
 .8517		d0 da		bne $84f3	        bne gfx_xor_load
 .8519						gfx_band_write:
 .8519		20 38 85	jsr $8538	        jsr gfx_band_select
-.851c		20 29 1c	jsr $1c29	        jsr N_WRITE
+.851c		20 29 1c	jsr $1c29	        jsr gfx_heap_write
 .851f		b0 14		bcs $8535	        bcs gfx_band_failed
 .8521						gfx_band_next:
 .8521		18		clc		        clc
@@ -3906,7 +3909,7 @@
 .854f		8d eb 86	sta $86eb	        sta gfx_band_left+1
 .8552		60		rts		        rts
 .8553						gfx_band_masked:
-.8553		20 26 1c	jsr $1c26	        jsr N_READ
+.8553		20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .8556		b0 dd		bcs $8535	        bcs gfx_band_failed
 .8558		a9 3a		lda #$3a	        lda #>N_BUFFER
 .855a		8d 88 85	sta $8588	        sta gfx_band_load+2
@@ -3981,7 +3984,7 @@
 .85f9		ad b8 86	lda $86b8	        lda gfx_pen
 .85fc		c9 03		cmp #$03	        cmp #3
 .85fe		f0 35		beq $8635	        beq gfx_aligned_copy
-.8600		20 26 1c	jsr $1c26	        jsr N_READ
+.8600		20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .8603		90 03		bcc $8608	        bcs gfx_band_failed
 .8605		4c 35 85	jmp $8535
 .8608		a2 07		ldx #$07	        ldx #7
@@ -4015,7 +4018,7 @@
 .863e		10 f7		bpl $8637	        bpl gfx_aligned_copy_next
 .8640						gfx_aligned_write:
 .8640		20 86 86	jsr $8686	        jsr gfx_select
-.8643		20 29 1c	jsr $1c29	        jsr N_WRITE
+.8643		20 29 1c	jsr $1c29	        jsr gfx_heap_write
 .8646		4c ea 80	jmp $80ea	        jmp gfx_finish
 .8649						gfx_glyph_row:
 .8649		38		sec		        sec
@@ -8667,6 +8670,7 @@
 
 =$6000						BK_BASE = $6000
 =$c000						BK_LIMIT = $c000
+=32						BK_OWNER = N_APPOWNER         ; owner of the bank-1 code allocation
 .b3af						bk_call:
 .b3af		08		php		        php
 .b3b0		48		pha		        pha
@@ -8967,7 +8971,7 @@
 .b5f8		0a		asl a		        asl
 .b5f9		aa		tax		        tax
 .b5fa		bd 00 3c	lda $3c00,x	        lda NHANDLES,x
-.b5fd		c9 20		cmp #$20	        cmp #N_APPOWNER
+.b5fd		c9 20		cmp #$20	        cmp #BK_OWNER
 .b5ff		d0 e6		bne $b5e7	        bne bk_invalid
 .b601		bd 01 3c	lda $3c01,x	        lda NHANDLES+1,x
 .b604		c9 01		cmp #$01	        cmp #1
@@ -9142,7 +9146,7 @@
 .b786		8d ed b9	sta $b9ed	        sta bk_expected
 .b789		ad 11 3a	lda $3a11	        lda N_BUFFER+17
 .b78c		8d ee b9	sta $b9ee	        sta bk_expected+1
-.b78f		a9 20		lda #$20	        lda #N_APPOWNER
+.b78f		a9 20		lda #$20	        lda #BK_OWNER
 .b791		8d 00 3d	sta $3d00	        sta N_OWNER
 .b794		a9 01		lda #$01	        lda #1
 .b796		8d 02 3d	sta $3d02	        sta N_BANK
@@ -9330,7 +9334,7 @@
 .b937		38		sec		        sec
 .b938		60		rts		        rts
 .b939						bk_select_code:
-.b939		a9 20		lda #$20	        lda #N_APPOWNER
+.b939		a9 20		lda #$20	        lda #BK_OWNER
 .b93b		8d 00 3d	sta $3d00	        sta N_OWNER
 .b93e		a2 03		ldx #$03	        ldx #3
 .b940		bd 65 b6	lda $b665,x	-       lda bk_handle,x
@@ -9395,7 +9399,7 @@
 .b9d1		0d f2 b9	ora $b9f2	        ora bk_crc_left+1
 .b9d4		d0 bf		bne $b995	        bne bk_crc_get
 .b9d6		60		rts		        rts
->b9d7		00 60 4e 42 4b 31 01 01		bk_prefix: .byte 0,$60,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
+>b9d7		00 60 4e 42 4b 31 01 01		bk_prefix: .byte <BK_BASE,>BK_BASE,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
 >b9df		a2 0e 4c ab 02 00 00 00		bk_stub: .byte $a2,$0e,$4c,$ab,$02,0,0,0,0,0
 >b9e7		00 00
 >b9e9		00 00				bk_count: .word 0

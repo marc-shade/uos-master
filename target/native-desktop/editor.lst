@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -D NATIVE_EDITOR_GRAPHICS=1 -B -o /home/marc/geos128/uos/target/native-desktop/editor.prg -L /home/marc/geos128/uos/target/native-desktop/editor.lst /home/marc/geos128/uos/src/native/editor.asm
-; Fri Sep 25 18:25:52 2026
+; Fri Sep 25 21:24:12 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -5637,6 +5637,7 @@
 
 =$6000						BK_BASE = $6000
 =$c000						BK_LIMIT = $c000
+=32						BK_OWNER = N_APPOWNER         ; owner of the bank-1 code allocation
 .914e						bk_call:
 .914e		08		php		        php
 .914f		48		pha		        pha
@@ -5937,7 +5938,7 @@
 .9397		0a		asl a		        asl
 .9398		aa		tax		        tax
 .9399		bd 00 3c	lda $3c00,x	        lda NHANDLES,x
-.939c		c9 20		cmp #$20	        cmp #N_APPOWNER
+.939c		c9 20		cmp #$20	        cmp #BK_OWNER
 .939e		d0 e6		bne $9386	        bne bk_invalid
 .93a0		bd 01 3c	lda $3c01,x	        lda NHANDLES+1,x
 .93a3		c9 01		cmp #$01	        cmp #1
@@ -6112,7 +6113,7 @@
 .9525		8d 8c 97	sta $978c	        sta bk_expected
 .9528		ad 11 3a	lda $3a11	        lda N_BUFFER+17
 .952b		8d 8d 97	sta $978d	        sta bk_expected+1
-.952e		a9 20		lda #$20	        lda #N_APPOWNER
+.952e		a9 20		lda #$20	        lda #BK_OWNER
 .9530		8d 00 3d	sta $3d00	        sta N_OWNER
 .9533		a9 01		lda #$01	        lda #1
 .9535		8d 02 3d	sta $3d02	        sta N_BANK
@@ -6300,7 +6301,7 @@
 .96d6		38		sec		        sec
 .96d7		60		rts		        rts
 .96d8						bk_select_code:
-.96d8		a9 20		lda #$20	        lda #N_APPOWNER
+.96d8		a9 20		lda #$20	        lda #BK_OWNER
 .96da		8d 00 3d	sta $3d00	        sta N_OWNER
 .96dd		a2 03		ldx #$03	        ldx #3
 .96df		bd 04 94	lda $9404,x	-       lda bk_handle,x
@@ -6365,7 +6366,7 @@
 .9770		0d 91 97	ora $9791	        ora bk_crc_left+1
 .9773		d0 bf		bne $9734	        bne bk_crc_get
 .9775		60		rts		        rts
->9776		00 60 4e 42 4b 31 01 01		bk_prefix: .byte 0,$60,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
+>9776		00 60 4e 42 4b 31 01 01		bk_prefix: .byte <BK_BASE,>BK_BASE,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
 >977e		a2 0e 4c ab 02 00 00 00		bk_stub: .byte $a2,$0e,$4c,$ab,$02,0,0,0,0,0
 >9786		00 00
 >9788		00 00				bk_count: .word 0
@@ -12989,6 +12990,9 @@
 ;******  Processing file: /home/marc/geos128/uos/src/native/editor/../graphics/graphics-core.inc
 
 =0						gfx_track_dirty=0
+=$1c26						gfx_heap_read=N_READ
+=$1c29						gfx_heap_write=N_WRITE
+=$1c2c						gfx_heap_fill=N_FILL
 .da22	b233					gfx_bind:
 .da22	b233	08		php		        php
 .da23	b234	d8		cld		        cld
@@ -13012,7 +13016,7 @@
 .da4b	b25c	8d 0a 3d	sta $3d0a	        sta N_COUNT
 .da4e	b25f	a9 00		lda #$00	        lda #0
 .da50	b261	8d 0b 3d	sta $3d0b	        sta N_COUNT+1
-.da53	b264	20 26 1c	jsr $1c26	        jsr N_READ
+.da53	b264	20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .da56	b267	b0 0a		bcs $b273	        bcs gfx_finish
 .da58	b269	a9 01		lda #$01	        lda #1
 .da5a	b26b	8d 44 b8	sta $b844	        sta gfx_bound
@@ -13311,7 +13315,7 @@
 .dc8a	b49b	20 0f b8	jsr $b80f	        jsr gfx_select
 .dc8d	b49e	ad 42 b8	lda $b842	        lda gfx_color
 .dc90	b4a1	8d 0c 3d	sta $3d0c	        sta N_VALUE
-.dc93	b4a4	20 2c 1c	jsr $1c2c	        jsr N_FILL
+.dc93	b4a4	20 2c 1c	jsr $1c2c	        jsr gfx_heap_fill
 .dc96	b4a7	b0 10		bcs $b4b9	        bcs gfx_failed
 .dc98	b4a9	ee 57 b8	inc $b857	        inc gfx_y
 .dc9b	b4ac	ad 57 b8	lda $b857	        lda gfx_y
@@ -13401,7 +13405,7 @@
 .dd5a	b56b	4c 43 b6	jmp $b643	        jmp gfx_band
 .dd5d	b56e					gfx_read_row:
 .dd5d	b56e	20 0f b8	jsr $b80f	        jsr gfx_select
-.dd60	b571	20 26 1c	jsr $1c26	        jsr N_READ
+.dd60	b571	20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .dd63	b574	90 03		bcc $b579	        bcs gfx_failed
 .dd65	b576	4c b9 b4	jmp $b4b9
 .dd68	b579	ad 56 b8	lda $b856	        lda gfx_operation
@@ -13484,7 +13488,7 @@
 .de14	b625	d0 f5		bne $b61c	        bne gfx_column
 .de16	b627					gfx_write_row:
 .de16	b627	20 0f b8	jsr $b80f	        jsr gfx_select
-.de19	b62a	20 29 1c	jsr $1c29	        jsr N_WRITE
+.de19	b62a	20 29 1c	jsr $1c29	        jsr gfx_heap_write
 .de1c	b62d	90 03		bcc $b632	        bcs gfx_failed
 .de1e	b62f	4c b9 b4	jmp $b4b9
 .de21	b632	ee 57 b8	inc $b857	        inc gfx_y
@@ -13509,11 +13513,11 @@
 .de4e	b65f	f0 02		beq $b663	        beq +
 .de50	b661	a9 ff		lda #$ff	        lda #$ff
 .de52	b663	8d 0c 3d	sta $3d0c	+       sta N_VALUE
-.de55	b666	20 2c 1c	jsr $1c2c	        jsr N_FILL
+.de55	b666	20 2c 1c	jsr $1c2c	        jsr gfx_heap_fill
 .de58	b669	b0 53		bcs $b6be	        bcs gfx_band_failed
 .de5a	b66b	90 3d		bcc $b6aa	        bcc gfx_band_next
 .de5c	b66d					gfx_band_xor:
-.de5c	b66d	20 26 1c	jsr $1c26	        jsr N_READ
+.de5c	b66d	20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .de5f	b670	b0 4c		bcs $b6be	        bcs gfx_band_failed
 .de61	b672	a9 3a		lda #$3a	        lda #>N_BUFFER
 .de63	b674	8d 7e b6	sta $b67e	        sta gfx_xor_load+2
@@ -13538,7 +13542,7 @@
 .de8f	b6a0	d0 da		bne $b67c	        bne gfx_xor_load
 .de91	b6a2					gfx_band_write:
 .de91	b6a2	20 c1 b6	jsr $b6c1	        jsr gfx_band_select
-.de94	b6a5	20 29 1c	jsr $1c29	        jsr N_WRITE
+.de94	b6a5	20 29 1c	jsr $1c29	        jsr gfx_heap_write
 .de97	b6a8	b0 14		bcs $b6be	        bcs gfx_band_failed
 .de99	b6aa					gfx_band_next:
 .de99	b6aa	18		clc		        clc
@@ -13565,7 +13569,7 @@
 .dec7	b6d8	8d 74 b8	sta $b874	        sta gfx_band_left+1
 .deca	b6db	60		rts		        rts
 .decb	b6dc					gfx_band_masked:
-.decb	b6dc	20 26 1c	jsr $1c26	        jsr N_READ
+.decb	b6dc	20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .dece	b6df	b0 dd		bcs $b6be	        bcs gfx_band_failed
 .ded0	b6e1	a9 3a		lda #$3a	        lda #>N_BUFFER
 .ded2	b6e3	8d 11 b7	sta $b711	        sta gfx_band_load+2
@@ -13640,7 +13644,7 @@
 .df71	b782	ad 41 b8	lda $b841	        lda gfx_pen
 .df74	b785	c9 03		cmp #$03	        cmp #3
 .df76	b787	f0 35		beq $b7be	        beq gfx_aligned_copy
-.df78	b789	20 26 1c	jsr $1c26	        jsr N_READ
+.df78	b789	20 26 1c	jsr $1c26	        jsr gfx_heap_read
 .df7b	b78c	90 03		bcc $b791	        bcs gfx_band_failed
 .df7d	b78e	4c be b6	jmp $b6be
 .df80	b791	a2 07		ldx #$07	        ldx #7
@@ -13674,7 +13678,7 @@
 .dfb6	b7c7	10 f7		bpl $b7c0	        bpl gfx_aligned_copy_next
 .dfb8	b7c9					gfx_aligned_write:
 .dfb8	b7c9	20 0f b8	jsr $b80f	        jsr gfx_select
-.dfbb	b7cc	20 29 1c	jsr $1c29	        jsr N_WRITE
+.dfbb	b7cc	20 29 1c	jsr $1c29	        jsr gfx_heap_write
 .dfbe	b7cf	4c 73 b2	jmp $b273	        jmp gfx_finish
 .dfc1	b7d2					gfx_glyph_row:
 .dfc1	b7d2	38		sec		        sec

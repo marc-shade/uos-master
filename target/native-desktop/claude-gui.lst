@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -b -o /home/marc/geos128/uos/target/native-desktop/claude-build/gui.bin -l /home/marc/geos128/uos/target/native-desktop/claude-gui.sym -L /home/marc/geos128/uos/target/native-desktop/claude-gui.lst /home/marc/geos128/uos/src/native/claude/gui.asm
-; Fri Sep 25 18:25:56 2026
+; Fri Sep 25 21:24:16 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -2618,6 +2618,7 @@
 
 =$6000						BK_BASE = $6000
 =$c000						BK_LIMIT = $c000
+=32						BK_OWNER = N_APPOWNER         ; owner of the bank-1 code allocation
 .86c5						bk_call:
 .86c5		08		php		        php
 .86c6		48		pha		        pha
@@ -2918,7 +2919,7 @@
 .890e		0a		asl a		        asl
 .890f		aa		tax		        tax
 .8910		bd 00 3c	lda $3c00,x	        lda NHANDLES,x
-.8913		c9 20		cmp #$20	        cmp #N_APPOWNER
+.8913		c9 20		cmp #$20	        cmp #BK_OWNER
 .8915		d0 e6		bne $88fd	        bne bk_invalid
 .8917		bd 01 3c	lda $3c01,x	        lda NHANDLES+1,x
 .891a		c9 01		cmp #$01	        cmp #1
@@ -3093,7 +3094,7 @@
 .8a9c		8d 03 8d	sta $8d03	        sta bk_expected
 .8a9f		ad 11 3a	lda $3a11	        lda N_BUFFER+17
 .8aa2		8d 04 8d	sta $8d04	        sta bk_expected+1
-.8aa5		a9 20		lda #$20	        lda #N_APPOWNER
+.8aa5		a9 20		lda #$20	        lda #BK_OWNER
 .8aa7		8d 00 3d	sta $3d00	        sta N_OWNER
 .8aaa		a9 01		lda #$01	        lda #1
 .8aac		8d 02 3d	sta $3d02	        sta N_BANK
@@ -3281,7 +3282,7 @@
 .8c4d		38		sec		        sec
 .8c4e		60		rts		        rts
 .8c4f						bk_select_code:
-.8c4f		a9 20		lda #$20	        lda #N_APPOWNER
+.8c4f		a9 20		lda #$20	        lda #BK_OWNER
 .8c51		8d 00 3d	sta $3d00	        sta N_OWNER
 .8c54		a2 03		ldx #$03	        ldx #3
 .8c56		bd 7b 89	lda $897b,x	-       lda bk_handle,x
@@ -3346,7 +3347,7 @@
 .8ce7		0d 08 8d	ora $8d08	        ora bk_crc_left+1
 .8cea		d0 bf		bne $8cab	        bne bk_crc_get
 .8cec		60		rts		        rts
->8ced		00 60 4e 42 4b 31 01 01		bk_prefix: .byte 0,$60,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
+>8ced		00 60 4e 42 4b 31 01 01		bk_prefix: .byte <BK_BASE,>BK_BASE,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
 >8cf5		a2 0e 4c ab 02 00 00 00		bk_stub: .byte $a2,$0e,$4c,$ab,$02,0,0,0,0,0
 >8cfd		00 00
 >8cff		00 00				bk_count: .word 0
