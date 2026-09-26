@@ -1587,11 +1587,700 @@ wn_mul:
         bne -
         rts
 
+; ---- frame gadgets through the event wait ------------------------------------
+WM_TOPPED = 21
+WM_CLOSED = 22
+WM_FULLED = 23
+WM_ARROWED = 24
+WM_HSLID = 25
+WM_VSLID = 26
+WM_SIZED = 27
+WM_MOVED = 28
+WD_MOVE = 1
+WD_SIZE = 2
+WD_VSLIDE = 3
+WD_HSLIDE = 4
+
+; Called by the event wait with the sample in N_BUFFER (after the menu).
+; Carry set when the window manager consumed the sample.
+wn_input:
+        lda wn_drag
+        beq +
+        jmp wn_drag_step
++       lda wn_count
+        beq wn_not_ours
+        lda N_BUFFER+20         ; a new press only
+        and #1
+        tax
+        eor #1
+        and wn_prev_down
+        sta wn_math             ; (release; unused without a drag)
+        lda wn_prev_down
+        stx wn_prev_down
+        bne wn_not_ours
+        cpx #0
+        beq wn_not_ours
+        jsr wn_pointer_cell
+        cmp #40
+        bcs wn_not_ours
+        cpy #25
+        bcs wn_not_ours
+        jsr wn_cell_address
+        ldy #0
+        lda (wn_ptr),y
+        beq wn_not_ours         ; the desktop belongs to the app
+        sta wn_hit
+        cmp wn_order
+        beq wn_top_press
+        lda #WM_TOPPED          ; any press on a lower window tops it
+        jsr wn_send
+        sec
+        rts
+wn_not_ours:
+        clc
+        rts
+; A press on the top window: which part of its frame?
+wn_top_press:
+        ldx wn_hit
+        stx wn_frame_h
+        jsr wn_geometry
+        ldx wn_hit
+        lda wn_px_cell          ; inside the work area: the app's click
+        sec
+        sbc wn_wx
+        cmp wn_ww
+        bcs +
+        lda wn_py_cell
+        sec
+        sbc wn_wy
+        cmp wn_wh
+        bcs +
+        clc
+        rts
++       lda wn_has_title        ; title row
+        beq wn_press_below_title
+        lda wn_py_cell
+        cmp wn_y,x
+        bne wn_press_below_title
+        lda wn_kind_lo,x
+        and #<WK_CLOSER
+        beq +
+        lda wn_px_cell
+        cmp wn_x,x
+        bne +
+        lda #WM_CLOSED
+        jmp wn_send_consumed
++       lda wn_kind_lo,x
+        and #<WK_FULLER
+        beq +
+        lda wn_x,x
+        clc
+        adc wn_w,x
+        sec
+        sbc #1
+        cmp wn_px_cell
+        bne +
+        lda #WM_FULLED
+        jmp wn_send_consumed
++       lda wn_kind_lo,x
+        and #<WK_MOVER
+        beq wn_consumed
+        lda #WD_MOVE
+        jmp wn_drag_begin
+wn_press_below_title:
+        lda wn_kind_lo,x        ; the size box
+        and #<WK_SIZER
+        beq +
+        lda wn_x,x
+        clc
+        adc wn_w,x
+        sec
+        sbc #1
+        cmp wn_px_cell
+        bne +
+        lda wn_y,x
+        clc
+        adc wn_h,x
+        sec
+        sbc #1
+        cmp wn_py_cell
+        bne +
+        lda #WD_SIZE
+        jmp wn_drag_begin
++       lda wn_has_vbar         ; the right column
+        beq +
+        lda wn_x,x
+        clc
+        adc wn_w,x
+        sec
+        sbc #1
+        cmp wn_px_cell
+        bne +
+        jmp wn_press_vbar
++       lda wn_has_hbar         ; the bottom row
+        beq wn_consumed
+        lda wn_y,x
+        clc
+        adc wn_h,x
+        sec
+        sbc #1
+        cmp wn_py_cell
+        bne wn_consumed
+        jmp wn_press_hbar
+wn_consumed:
+        sec
+        rts
+wn_send_consumed:
+        jsr wn_send
+        sec
+        rts
+
+; Right column: arrows are line steps, the track beside the thumb pages,
+; the thumb starts a slider drag. WM_ARROWED byte 4: 0 page up, 1 page
+; down, 2 line up, 3 line down, 4 page left, 5 page right, 6 line left,
+; 7 line right (GEM WA_*).
+wn_press_vbar:
+        jsr wn_vbar_track       ; wn_track_y/wn_track and the thumb for X
+        lda wn_kind_lo,x
+        and #<WK_UPARROW
+        beq +
+        lda wn_py_cell
+        cmp wn_wy
+        bne +
+        lda #2
+        jmp wn_arrowed
++       lda wn_kind_lo,x
+        and #<WK_DNARROW
+        beq +
+        lda wn_track_y
+        clc
+        adc wn_track
+        cmp wn_py_cell
+        bne +
+        lda #3
+        jmp wn_arrowed
++       lda wn_py_cell          ; on the track
+        sec
+        sbc wn_track_y
+        cmp wn_track
+        bcs wn_consumed
+        cmp wn_thumb_at
+        bcs +
+        lda #0
+        jmp wn_arrowed
++       sec
+        sbc wn_thumb_at
+        cmp wn_thumb_len
+        bcc +
+        lda #1
+        jmp wn_arrowed
++       lda #WD_VSLIDE
+        jmp wn_drag_begin
+wn_press_hbar:
+        jsr wn_hbar_track
+        lda wn_kind_hi,x
+        and #>WK_LFARROW
+        beq +
+        lda wn_px_cell
+        cmp wn_wx
+        bne +
+        lda #6
+        jmp wn_arrowed
++       lda wn_kind_hi,x
+        and #>WK_RTARROW
+        beq +
+        lda wn_track_y
+        clc
+        adc wn_track
+        cmp wn_px_cell
+        bne +
+        lda #7
+        jmp wn_arrowed
++       lda wn_px_cell
+        sec
+        sbc wn_track_y
+        cmp wn_track
+        bcs wn_consumed
+        cmp wn_thumb_at
+        bcs +
+        lda #4
+        jmp wn_arrowed
++       sec
+        sbc wn_thumb_at
+        cmp wn_thumb_len
+        bcc +
+        lda #5
+        jmp wn_arrowed
++       lda #WD_HSLIDE
+        jmp wn_drag_begin
+wn_arrowed:
+        sta wn_msg_data
+        lda #WM_ARROWED
+        jmp wn_send_consumed
+
+; Track geometry of window X's right column / bottom row, as the frame
+; drawing computes it (arrows excluded), with the thumb.
+wn_vbar_track:
+        lda wn_wh
+        sta wn_track
+        lda wn_has_hbar
+        bne +
+        lda wn_kind_lo,x
+        and #<WK_SIZER
+        beq +
+        dec wn_track
++       lda wn_wy
+        sta wn_track_y
+        lda wn_kind_lo,x
+        and #<WK_UPARROW
+        beq +
+        inc wn_track_y
+        dec wn_track
++       lda wn_kind_lo,x
+        and #<WK_DNARROW
+        beq +
+        dec wn_track
++       lda wn_vsize,x
+        sta wn_slide_size
+        lda wn_vpos,x
+        sta wn_slide_pos
+        stx wn_math4
+        jsr wn_thumb
+        ldx wn_math4
+        rts
+wn_hbar_track:
+        lda wn_ww
+        sta wn_track
+        lda wn_has_vbar
+        bne +
+        lda wn_kind_lo,x
+        and #<WK_SIZER
+        beq +
+        dec wn_track
++       lda wn_wx
+        sta wn_track_y
+        lda wn_kind_hi,x
+        and #>WK_LFARROW
+        beq +
+        inc wn_track_y
+        dec wn_track
++       lda wn_kind_hi,x
+        and #>WK_RTARROW
+        beq +
+        dec wn_track
++       lda wn_hsize,x
+        sta wn_slide_size
+        lda wn_hpos,x
+        sta wn_slide_pos
+        stx wn_math4
+        jsr wn_thumb
+        ldx wn_math4
+        rts
+
+; Queue message A about window wn_hit: [A, 0, 0, handle, data/rect...].
+wn_send:
+        sta ev_msg_in
+        lda #0
+        sta ev_msg_in+1
+        sta ev_msg_in+2
+        lda wn_hit
+        sta ev_msg_in+3
+        ldx #3
+-       lda wn_msg_data,x
+        sta ev_msg_in+4,x
+        dex
+        bpl -
+        jsr ev_push
+        lda #0
+        ldx #3
+-       sta wn_msg_data,x
+        dex
+        bpl -
+        rts
+
+; ---- drags: XOR outline for move/size, pointer tracking for sliders ----------
+; A = drag kind; X = window. The pointer cell at the press is the anchor.
+wn_drag_begin:
+        sta wn_drag
+        sta wn_drag_kind_end
+        lda wn_px_cell
+        sta wn_anchor_x
+        lda wn_py_cell
+        sta wn_anchor_y
+        lda wn_x,x
+        sta wn_dx
+        lda wn_y,x
+        sta wn_dy
+        lda wn_w,x
+        sta wn_dw
+        lda wn_h,x
+        sta wn_dh
+        lda wn_drag
+        cmp #WD_VSLIDE
+        bcs +
+        jsr wn_outline          ; the starting outline
++       sec
+        rts
+; Each sample during a drag: follow the pointer; the release ends it.
+wn_drag_step:
+        jsr wn_pointer_cell
+        lda N_BUFFER+20
+        and #1
+        sta wn_prev_down
+        bne +
+        jmp wn_drag_end
++       lda wn_drag
+        cmp #WD_VSLIDE
+        bcc +
+        sec                     ; sliders report on release only
+        rts
++       jsr wn_drag_rect        ; candidate from the pointer
+        lda wn_cand_x           ; unchanged: nothing to redraw
+        cmp wn_dx
+        bne +
+        lda wn_cand_y
+        cmp wn_dy
+        bne +
+        lda wn_cand_w
+        cmp wn_dw
+        bne +
+        lda wn_cand_h
+        cmp wn_dh
+        beq wn_drag_held
++       jsr wn_outline          ; erase the old outline (XOR)...
+        lda wn_cand_x
+        sta wn_dx
+        lda wn_cand_y
+        sta wn_dy
+        lda wn_cand_w
+        sta wn_dw
+        lda wn_cand_h
+        sta wn_dh
+        jsr wn_outline          ; ...and draw the new one
+wn_drag_held:
+        sec
+        rts
+wn_drag_end:
+        lda wn_drag
+        ldx #0
+        stx wn_drag
+        cmp #WD_VSLIDE
+        bcs wn_drag_slider
+        pha
+        jsr wn_outline          ; erase
+        pla
+        ldx wn_hit
+        cmp #WD_MOVE
+        bne +
+        lda wn_dx               ; unmoved: no message
+        cmp wn_x,x
+        bne ++
+        lda wn_dy
+        cmp wn_y,x
+        beq wn_drag_done
+        bne ++
++       lda wn_dw
+        cmp wn_w,x
+        bne +
+        lda wn_dh
+        cmp wn_h,x
+        beq wn_drag_done
++       lda wn_dx
+        sta wn_msg_data
+        lda wn_dy
+        sta wn_msg_data+1
+        lda wn_dw
+        sta wn_msg_data+2
+        lda wn_dh
+        sta wn_msg_data+3
+        lda #WM_MOVED
+        ldy wn_drag_kind_end
+        cpy #WD_MOVE
+        beq +
+        lda #WM_SIZED
++       jsr wn_send
+wn_drag_done:
+        sec
+        rts
+; Slider release: position 0..255 from the pointer's place on the track.
+wn_drag_slider:
+        sta wn_math3
+        ldx wn_hit
+        jsr wn_geometry
+        ldx wn_hit
+        lda wn_math3
+        cmp #WD_VSLIDE
+        bne +
+        jsr wn_vbar_track
+        lda wn_py_cell
+        jmp ++
++       jsr wn_hbar_track
+        lda wn_px_cell
++       sec                     ; offset of the thumb's start on the track
+        sbc wn_track_y
+        bcs +
+        lda #0
++       sta wn_math
+        lda wn_track
+        sec
+        sbc wn_thumb_len
+        beq wn_slide_zero       ; nothing to scroll
+        sta wn_math2
+        lda wn_math
+        cmp wn_math2
+        bcc +
+        lda #255
+        bne wn_slide_send
++       ldx #255                ; pos = offset*255 / free cells
+        jsr wn_mul
+        lda wn_prod
+        ldx wn_prod+1
+        jsr wn_div_free
+        jmp wn_slide_send
+wn_slide_zero:
+        lda #0
+wn_slide_send:
+        sta wn_msg_data
+        lda #WM_VSLID
+        ldx wn_math3
+        cpx #WD_VSLIDE
+        beq +
+        lda #WM_HSLID
++       jsr wn_send
+        sec
+        rts
+; A/X (lo/hi) / wn_math2 -> A (quotient, < 256).
+wn_div_free:
+        sta wn_prod
+        stx wn_prod+1
+        lda #0
+        ldx #16
+-       asl wn_prod
+        rol wn_prod+1
+        rol
+        cmp wn_math2
+        bcc +
+        sbc wn_math2
+        inc wn_prod
++       dex
+        bne -
+        lda wn_prod
+        rts
+
+; Candidate rectangle from the pointer's offset to the anchor.
+wn_drag_rect:
+        ldx wn_hit
+        lda wn_x,x
+        sta wn_cand_x
+        lda wn_y,x
+        sta wn_cand_y
+        lda wn_w,x
+        sta wn_cand_w
+        lda wn_h,x
+        sta wn_cand_h
+        lda wn_px_cell
+        sec
+        sbc wn_anchor_x
+        sta wn_delta_x          ; signed
+        lda wn_py_cell
+        sec
+        sbc wn_anchor_y
+        sta wn_delta_y
+        lda wn_drag
+        sta wn_drag_kind_end
+        cmp #WD_MOVE
+        bne wn_drag_rect_size
+        lda wn_cand_x           ; move: clamp inside columns 0..39, rows 1..24
+        clc
+        adc wn_delta_x
+        bpl +
+        lda #0
++       sta wn_cand_x
+        clc
+        adc wn_cand_w
+        cmp #41
+        bcc +
+        lda #40
+        sec
+        sbc wn_cand_w
+        sta wn_cand_x
++       lda wn_cand_y
+        clc
+        adc wn_delta_y
+        bmi +
+        bne ++
++       lda #1
++       sta wn_cand_y
+        clc
+        adc wn_cand_h
+        cmp #26
+        bcc +
+        lda #25
+        sec
+        sbc wn_cand_h
+        sta wn_cand_y
++       rts
+wn_drag_rect_size:
+        lda wn_cand_w           ; size: at least 4x3, inside the screen
+        clc
+        adc wn_delta_x
+        bmi +
+        cmp #4
+        bcs ++
++       lda #4
++       sta wn_cand_w
+        clc
+        adc wn_cand_x
+        cmp #41
+        bcc +
+        lda #40
+        sec
+        sbc wn_cand_x
+        sta wn_cand_w
++       lda wn_cand_h
+        clc
+        adc wn_delta_y
+        bmi +
+        cmp #3
+        bcs ++
++       lda #3
++       sta wn_cand_h
+        clc
+        adc wn_cand_y
+        cmp #26
+        bcc +
+        lda #25
+        sec
+        sbc wn_cand_y
+        sta wn_cand_h
++       rts
+
+; XOR a one-pixel outline of wn_dx/dy/dw/dh (cells) onto the surface.
+wn_outline:
+        jsr wn_bind
+        bcs wn_outline_done
+        lda #2
+        sta gfx_pen
+        lda wn_dx               ; top edge
+        jsr al_times8
+        sta gfx_x0
+        stx gfx_x0+1
+        lda wn_dx
+        clc
+        adc wn_dw
+        jsr al_times8
+        sta gfx_x1
+        stx gfx_x1+1
+        lda wn_dy
+        jsr al_times8
+        sta gfx_y0
+        stx gfx_y0+1
+        clc
+        adc #1
+        sta gfx_y1
+        lda #0
+        sta gfx_y1+1
+        jsr gfx_rect
+        bcs wn_outline_done
+        lda wn_dy               ; bottom edge
+        clc
+        adc wn_dh
+        jsr al_times8
+        sec
+        sbc #1
+        sta gfx_y0
+        clc
+        adc #1
+        sta gfx_y1
+        jsr gfx_rect
+        bcs wn_outline_done
+        lda wn_dy               ; left edge, between the two lines
+        jsr al_times8
+        clc
+        adc #1
+        sta gfx_y0
+        lda wn_dy
+        clc
+        adc wn_dh
+        jsr al_times8
+        sec
+        sbc #1
+        sta gfx_y1
+        lda gfx_x0
+        clc
+        adc #1
+        sta gfx_x1
+        lda gfx_x0+1
+        adc #0
+        sta gfx_x1+1
+        jsr gfx_rect
+        bcs wn_outline_done
+        lda wn_dx               ; right edge
+        clc
+        adc wn_dw
+        jsr al_times8
+        sta gfx_x1
+        stx gfx_x1+1
+        sec
+        sbc #1
+        sta gfx_x0
+        txa
+        sbc #0
+        sta gfx_x0+1
+        jsr gfx_rect
+        bcs wn_outline_done
+        lda wn_dy
+        ldx wn_dh
+        jsr al_mark
+        clc
+wn_outline_done:
+        rts
+
+; Pointer cell of the sample: A = column (wn_px_cell), Y = row (wn_py_cell).
+wn_pointer_cell:
+        lda N_BUFFER+18
+        lsr
+        lda N_BUFFER+17
+        ror
+        lsr
+        lsr
+        sta wn_px_cell
+        lda N_BUFFER+19
+        lsr
+        lsr
+        lsr
+        sta wn_py_cell
+        tay
+        lda wn_px_cell
+        rts
+
+wn_drag: .byte 0
+wn_drag_kind_end: .byte 0
+wn_prev_down: .byte 0
+wn_hit: .byte 0
+wn_px_cell: .byte 0
+wn_py_cell: .byte 0
+wn_anchor_x: .byte 0
+wn_anchor_y: .byte 0
+wn_delta_x: .byte 0
+wn_delta_y: .byte 0
+wn_dx: .byte 0
+wn_dy: .byte 0
+wn_dw: .byte 0
+wn_dh: .byte 0
+wn_cand_x: .byte 0
+wn_cand_y: .byte 0
+wn_cand_w: .byte 0
+wn_cand_h: .byte 0
+wn_msg_data: .fill 4,0
+
 ; A new foreground app: its windows went with its surface.
 wn_reset:
         lda #0
         sta wn_count
         sta wn_top_old
+        sta wn_drag
+        sta wn_prev_down
         ldx #WN_MAX
 -       sta wn_flags,x
         sta wn_force,x

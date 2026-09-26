@@ -38,9 +38,11 @@ ev_event:
         sta ev_fired
         sta ev_clicks
         jsr al_clear_dirty
-        jsr mn_input            ; the menu bar sees each sample first
-        bcc +
-        jmp ev_messages         ; it owned this sample: messages only
+        jsr mn_input            ; the menu bar sees each sample first,
+        bcs +                   ; then the window frames
+        jsr wn_input
+        bcc ++
++       jmp ev_messages         ; one of them owned this sample: messages only
 +       lda N_BUFFER            ; keyboard
         and #MU_KEYBD
         beq +

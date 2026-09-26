@@ -66,8 +66,8 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Menu bar with drop-downs, checks, disabled items | Partial | [AES menu bar](NATIVE-AES.md#menus) with shortcuts, keyboard and pointer, CPU-qualified; no suite app uses it yet |
 | Event library (`evnt_multi`: key, button, rectangle, message, timer) | Partial | [AES event wait](NATIVE-AES.md#events) with all five sources, click counting and GEM state rules, CPU-qualified; suite apps still poll directly |
 | Application messages (`appl_write/read`) | Partial | AES 16-message queue; one foreground app, so messages come from itself or future accessories |
-| Window library (title, close, full, move, size, scroll bars, overlapping, redraw lists) | Partial | [AES windows](NATIVE-AES.md#windows): 7 overlapping windows, every GEM frame element, exact damage, `WM_REDRAW`, visible-rectangle lists, CPU-qualified; clicking/dragging gadgets not yet |
-| Graphics library (rubber/drag box, grow/shrink, slider, busy pointer) | Partial | 1351 pointer, hover, click and drag inside apps |
+| Window library (title, close, full, move, size, scroll bars, overlapping, redraw lists) | Partial | [AES windows](NATIVE-AES.md#windows): 7 overlapping windows, every GEM frame element with working gadgets (top, close, full, arrows, paging, sliders, move/size drags with XOR outline), exact damage, `WM_REDRAW`, visible-rectangle lists, CPU-qualified; no suite app uses them yet |
+| Graphics library (rubber/drag box, grow/shrink, slider, busy pointer) | Partial | 1351 pointer; AES drag box (XOR outline) and slider tracking for windows; no rubber-band box, grow/shrink effects or busy pointer |
 | Shell library (`shel_write`, environment) | Partial | `N_REPLACE` chains to another app; no environment |
 
 ## C. Desk accessories

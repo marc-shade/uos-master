@@ -420,7 +420,13 @@ demo_win_loop:
         and #16
         beq demo_win_keys
         lda ae_ev_result+7
-        cmp #20               ; WM_REDRAW
+        cmp #21               ; WM_TOPPED..WM_MOVED: frame gadgets
+        bcc +
+        cmp #29
+        bcs +
+        jsr demo_win_message
+        jmp demo_win_keys
++       cmp #20               ; WM_REDRAW
         bne demo_win_keys
         ldx ae_ev_result+10
         beq demo_win_keys     ; the AES already cleared the desktop
@@ -626,6 +632,137 @@ demo_win_open:
         inx
         cpx #4
         bne -
+        jmp demo_wcall
+; Answer the frame gadgets as a GEM app does: the AES only reports them.
+demo_win_message:
+        inc demo_gadgets
+        ldx ae_ev_result+10
+        stx demo_math2
+        stx N_BUFFER+1
+        cmp #21               ; WM_TOPPED
+        bne +
+        lda #4
+        sta N_BUFFER
+        lda #10
+        sta N_BUFFER+2
+        jmp demo_wcall
++       cmp #22               ; WM_CLOSED
+        bne +
+        lda #2
+        sta N_BUFFER
+        jmp demo_wcall
++       cmp #23               ; WM_FULLED: full size, or back to the last
+        bne demo_not_full
+        lda #5
+        sta N_BUFFER
+        lda #7                ; WF_FULLXYWH
+        sta N_BUFFER+2
+        jsr demo_wcall
+        ldx #3
+-       lda N_BUFFER,x
+        sta demo_work,x
+        dex
+        bpl -
+        lda #5
+        sta N_BUFFER
+        lda demo_math2
+        sta N_BUFFER+1
+        lda #5                ; WF_CURRXYWH
+        sta N_BUFFER+2
+        jsr demo_wcall
+        ldx #3
+-       lda N_BUFFER,x
+        cmp demo_work,x
+        bne demo_to_full
+        dex
+        bpl -
+        lda #5                ; already full: previous rectangle
+        sta N_BUFFER
+        lda demo_math2
+        sta N_BUFFER+1
+        lda #6                ; WF_PREVXYWH
+        sta N_BUFFER+2
+        jsr demo_wcall
+        ldx #3
+-       lda N_BUFFER,x
+        sta demo_work,x
+        dex
+        bpl -
+demo_to_full:
+        ldx #3
+-       lda demo_work,x
+        sta N_BUFFER+3,x
+        dex
+        bpl -
+        jmp demo_set_rect
+demo_not_full:
+        cmp #24               ; WM_ARROWED: move the slider
+        bne demo_not_arrowed
+        ldx ae_ev_result+11
+        lda demo_steps,x
+        sta demo_math
+        lda #9                ; WF_VSLIDE for actions 0..3
+        cpx #4
+        bcc +
+        lda #8                ; WF_HSLIDE for 4..7
++       sta demo_field
+        ldx demo_math2
+        lda demo_field
+        cmp #9
+        bne +
+        lda demo_vpos-1,x
+        jmp ++
++       lda demo_hpos-1,x
++       clc
+        adc demo_math         ; signed step, clamped to 0..255
+        bit demo_math
+        bmi +
+        bcc ++
+        lda #255
+        bne ++
++       bcs +
+        lda #0
++       jmp demo_set_slider
+demo_not_arrowed:
+        cmp #25               ; WM_HSLID
+        bne +
+        lda #8
+        sta demo_field
+        lda ae_ev_result+11
+        jmp demo_set_slider
++       cmp #26               ; WM_VSLID
+        bne +
+        lda #9
+        sta demo_field
+        lda ae_ev_result+11
+        jmp demo_set_slider
++       ldx #3                ; WM_SIZED / WM_MOVED: take the new rectangle
+-       lda ae_ev_result+11,x
+        sta N_BUFFER+3,x
+        dex
+        bpl -
+demo_set_rect:
+        lda #4
+        sta N_BUFFER
+        lda demo_math2
+        sta N_BUFFER+1
+        lda #5
+        sta N_BUFFER+2
+        jmp demo_wcall
+demo_set_slider:
+        ldx demo_math2
+        ldy demo_field
+        cpy #9
+        bne +
+        sta demo_vpos-1,x
+        jmp ++
++       sta demo_hpos-1,x
++       sta N_BUFFER+3
+        lda #4
+        sta N_BUFFER
+        stx N_BUFFER+1
+        lda demo_field
+        sta N_BUFFER+2
         jmp demo_wcall
 ; Marker cells at the work area's top-left ($f2) and bottom-right ($2f):
 ; content positioned relative to the window, so a missing move or resize
@@ -871,6 +1008,11 @@ demo_math2: .byte 0
 demo_redraws: .byte 0
 demo_handles: .fill 3,0
 demo_rect_count: .byte 0
+demo_gadgets: .byte 0
+demo_field: .byte 0
+demo_steps: .byte $c0,$40,$f0,$10,$c0,$40,$f0,$10   ; page -64/+64, line -16/+16
+demo_vpos: .byte 0,64,0
+demo_hpos: .byte 0,0,200
 demo_work: .fill 4,0
 demo_rects: .fill 64,0
 ; kind (word), x, y, w, h, slider field (0 none, 8 h, 9 v), 0

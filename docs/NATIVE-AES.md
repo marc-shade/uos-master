@@ -4,9 +4,8 @@ The AES is the shared service behind the [GEM layer](GEM-LAYER-DESIGN.md).
 It now provides a persistent bank-1 component that apps load once and later
 apps attach to (step 1), GEM-style alert boxes (step 2, AES minor 1) and an
 `evnt_multi`-style event wait with an application message queue (step 3,
-minor 2), a GEM menu bar (step 4, minor 3) and GEM windows (step 5, minor 4).
-Clicking and dragging window gadgets, objects and desk accessories are later
-steps.
+minor 2), a GEM menu bar (step 4, minor 3) and GEM windows with working frame
+gadgets (step 5, minor 4). Objects and desk accessories are later steps.
 
 ## What persists
 
@@ -15,13 +14,13 @@ by owner 30 (`N_AESOWNER`). App cleanup releases only owner 32, so the image
 and its state stay resident after `N_EXIT`. The next app attaches to the same
 bytes instead of loading them again. `ae_unload` frees the image and returns
 its pages. With alerts, events, menus, windows and the shared graphics
-library the image is 49 pages (12,450 bytes) of its 56-page region
+library the image is 55 pages (13,933 bytes) of its 56-page region
 (`$8800..$bfff`). Its RAM tables (cell maps, menu text, message queue,
 window records) live in a second owner-30 allocation, the 16-page data
 segment at bank-1 `$5000..$5fff`. The first attach reserves and clears it.
 `ae_unload` first calls `AE_OP_SHUTDOWN`, which closes any open drop-down,
 discards an open alert's buffer and frees the segment; it then frees the
-image. While resident, the AES therefore holds 49 + 16 pages of the bank-1
+image. While resident, the AES therefore holds 55 + 16 pages of the bank-1
 heap.
 
 The component's identity block sits at image offset 32: `NAES`, major and
@@ -257,6 +256,32 @@ area (handle 0: the desktop cells of rows 1–24): horizontal runs, extended
 downward while the rows below hold the same run. Width 0 ends the list, and
 any other window operation restarts it.
 
+### Frame gadgets
+
+Frame gadgets work through `ae_event`. After the menu bar, the window
+manager sees each sample, and like GEM's screen manager it only reports
+what happened; the app acts on it with `wind_set`. Messages are
+`[type, 0, 0, handle, data…]`:
+
+| Press on | Message |
+|---|---|
+| Any cell of a window below the top one | `WM_TOPPED` 21 |
+| Close box | `WM_CLOSED` 22 |
+| Full box | `WM_FULLED` 23 |
+| Arrow | `WM_ARROWED` 24, byte 4 = GEM `WA_*` (0/1 page up/down, 2/3 line up/down, 4/5 page left/right, 6/7 line left/right) |
+| Track beside the thumb | `WM_ARROWED` 24, page |
+| Title bar (mover), dragged | `WM_MOVED` 28 on release, bytes 4–7 = the new rectangle |
+| Size box, dragged | `WM_SIZED` 27 on release, bytes 4–7 = the new rectangle |
+| Thumb, dragged | `WM_VSLID` 26 / `WM_HSLID` 25 on release, byte 4 = position 0–255 |
+
+Title and size drags XOR a one-pixel outline that follows the pointer. The
+candidate is clamped to the screen (rows 1–24) and to a 4×3 minimum, and is
+erased on release. An unchanged drag sends nothing. Slider positions come
+from the pointer's cell on the track: the first free cell is 0 and the last
+is 255. While a drag is active the window manager owns input. A press in
+the top window's work area, or on the desktop, reaches the app as an
+ordinary button event.
+
 The test oracle is the painter's algorithm. After any operation and the
 demo's redraw responses, the surface must equal drawing the desktop and then
 every window bottom to top from scratch. Missing or excess damage fails the
@@ -298,7 +323,10 @@ The demo's W key opens `Alpha` (title bar, close and full boxes), `Beta`
 (horizontal bar with a slider at 200/64, size box). It fills each work area
 in its own pen and colour on every `WM_REDRAW`. 1–3 top a window, M moves
 and S grows the top window, C closes it, R records its visible rectangles,
-and Escape closes and deletes everything. The window cases check complete
+and Escape closes and deletes everything. The demo answers the gadget
+messages as a GEM app would: top, close, full/previous toggle, move/size to
+the reported rectangle, and slider steps (line ±16, page ±64, clamped) or
+positions. The window cases check complete
 surfaces against the painter's-algorithm oracle and the rectangle lists
 against an independent decomposition.
 

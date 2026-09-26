@@ -249,6 +249,7 @@ def main():
         event_cases(work, report, done)
         menu_cases(work, report, done)
         window_cases(work, report, done)
+        gadget_cases(work, report, done)
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')
@@ -573,6 +574,133 @@ def window_cases(work, report, done):
     demo.key(27)
     done('Escape closes and deletes all windows; slots are reusable', demo)
     demo.key(27, exited=True)
+
+
+def gadget_cases(work, report, done):
+    from native_display_bus import DisplayBus
+    heap.Bus = DisplayBus
+    demo = Demo(work, heap.Machine())
+    K = scene.WK
+    wins = {
+        1: dict(id=1, kind=K['NAME'] | K['CLOSER'] | K['FULLER'] | K['MOVER'],
+                x=1, y=2, w=20, h=10, title=b'Alpha'),
+        2: dict(id=2, kind=K['NAME'] | K['CLOSER'] | K['INFO'] | K['SIZER'] | K['UP'] | K['DN'] | K['VSLIDE'],
+                x=10, y=6, w=18, h=12, title=b'Beta', vpos=64, vsize=128),
+        3: dict(id=3, kind=K['NAME'] | K['SIZER'] | K['LF'] | K['RT'] | K['HSLIDE'],
+                x=5, y=14, w=24, h=8, title=b'Gamma', hpos=200, hsize=64),
+    }
+    fills = {1: (0, 0x15), 2: (1, 0xb0), 3: (0, 0x3e)}
+    order = [1, 2, 3]
+
+    def picture():
+        return scene.windows_draw([wins[h] for h in order], fills)
+
+    def expect(want=None):
+        want = want or picture()
+        got = demo.surface()
+        assert got == want, [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]
+
+    def point(cx, cy, down):
+        """Pointer at the centre of cell (cx, cy)."""
+        at = demo.symbol('ae_pointer_x')
+        demo.ram[at:at+2] = (cx*8+4).to_bytes(2, 'little')
+        demo.ram[demo.symbol('ae_pointer_y')] = cy*8+4
+        demo.ram[demo.symbol('ae_pointer_buttons')] = down
+        demo.observation_target = None
+        demo.keys.append(0)
+        demo.loop()
+
+    def click(cx, cy):
+        point(cx, cy, 1); point(cx, cy, 0)
+
+    def top(h):
+        order.remove(h); order.append(h)
+
+    def outline(rect):
+        x, y, w, h = rect
+        data = bytearray(picture())
+        def xor(x0, y0, x1, y1):
+            for py in range(y0, y1):
+                for px in range(x0, x1):
+                    data[py//8*320+px//8*8+py % 8] ^= 128 >> (px % 8)
+        X0, Y0, X1, Y1 = x*8, y*8, (x+w)*8, (y+h)*8
+        xor(X0, Y0, X1, Y0+1); xor(X0, Y1-1, X1, Y1)
+        xor(X0, Y0+1, X0+1, Y1-1); xor(X1-1, Y0+1, X1, Y1-1)
+        return bytes(data)
+
+    def vtrack(win):
+        g = scene.geometry(win); k = win['kind']
+        track, ty = g['wh'], g['wy']
+        if not g['hbar'] and k & K['SIZER']:
+            track -= 1
+        up = down = None
+        if k & K['UP']:
+            up = ty; ty += 1; track -= 1
+        if k & K['DN']:
+            down = ty+track-1; track -= 1
+        at, length = scene.thumb(track, win.get('vsize', 255), win.get('vpos', 0))
+        return dict(col=win['x']+win['w']-1, up=up, down=down, start=ty, track=track, at=at, len=length)
+
+    def htrack(win):
+        g = scene.geometry(win); k = win['kind']
+        track, tx = g['ww'], g['wx']
+        if not g['vbar'] and k & K['SIZER']:
+            track -= 1
+        left = right = None
+        if k & K['LF']:
+            left = tx; tx += 1; track -= 1
+        if k & K['RT']:
+            right = tx+track-1; track -= 1
+        at, length = scene.thumb(track, win.get('hsize', 255), win.get('hpos', 0))
+        return dict(row=win['y']+win['h']-1, left=left, right=right, start=tx, track=track, at=at, len=length)
+
+    demo.key(ord('W')); expect()
+    gadgets = lambda: demo.value('demo_gadgets')
+
+    click(3, 2); top(1); expect()                          # WM_TOPPED from a lower window's title
+    assert gadgets() == 1
+    point(5, 2, 1); expect(outline((1, 2, 20, 10)))        # press on the title: outline at the start
+    point(8, 4, 1); expect(outline((4, 4, 20, 10)))        # drag: the outline follows
+    point(8, 4, 0); wins[1].update(x=4, y=4); expect()     # release: WM_MOVED, the app moves it
+    click(23, 4); wins[1].update(x=1, y=2); expect()       # WM_FULLED: back to the full rectangle
+    assert gadgets() == 3
+    done('topping, dragging the title with an XOR outline, and the full box', demo)
+
+    click(24, 6); top(2); expect()                          # Beta's visible title cells
+    point(27, 17, 1); point(25, 15, 1); expect(outline((10, 6, 16, 10)))
+    point(25, 15, 0); wins[2].update(w=16, h=10); expect()  # WM_SIZED
+    v = vtrack(wins[2])
+    click(v['col'], v['up']); wins[2]['vpos'] = 48; expect()
+    click(v['col'], v['down']); wins[2]['vpos'] = 64; expect()
+    v = vtrack(wins[2])
+    click(v['col'], v['start']+v['at']+v['len']); wins[2]['vpos'] = 128; expect()   # page down
+    v = vtrack(wins[2])
+    click(v['col'], v['start']+v['at']-1 if v['at'] else v['start']); wins[2]['vpos'] = 64; expect()
+    v = vtrack(wins[2])
+    point(v['col'], v['start']+v['at'], 1); expect()        # the thumb: no outline for sliders
+    point(v['col'], v['start']+v['track']-1, 1); point(v['col'], v['start']+v['track']-1, 0)
+    wins[2]['vpos'] = 255; expect()                         # WM_VSLID at the end of the track
+    done('size box drag, arrows, paging and the vertical thumb drag', demo, gadgets=gadgets())
+
+    click(6, 14); top(3); expect()
+    hbar = htrack(wins[3])
+    click(hbar['left'], hbar['row']); wins[3]['hpos'] = 184; expect()
+    click(hbar['right'], hbar['row']); wins[3]['hpos'] = 200; expect()
+    hbar = htrack(wins[3])
+    point(hbar['start']+hbar['at'], hbar['row'], 1); point(hbar['start'], hbar['row'], 1)
+    point(hbar['start'], hbar['row'], 0); wins[3]['hpos'] = 0; expect()   # WM_HSLID 0
+    before = gadgets()
+    g = scene.geometry(wins[3])
+    click(g['wx']+2, g['wy']+1); expect()                    # the work area belongs to the app
+    click(0, 23); expect()                                   # and so does the desktop
+    assert gadgets() == before
+    done('horizontal arrows and thumb; work-area and desktop presses reach the app', demo)
+
+    click(24, 6); top(2); expect()
+    click(10, 6); order.remove(2); expect()                  # Beta's close box
+    demo.key(27)
+    demo.key(27, exited=True)
+    done('the close box closes the window through the app', demo)
 
 
 if __name__ == '__main__':
