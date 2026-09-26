@@ -54,19 +54,20 @@ def build():
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
                         '-L', str(OUT/f'{name}.lst')], check=True)
         path = OUT/f'{name}.prg'
-        if name == 'files':
+        module_parts = {'files': ('fspick', 'fsview', 'fsopen'), 'gemdesk': ('gddlg', 'gdset')}
+        if name in module_parts:
             combined = path.read_bytes()
             core_size = int.from_bytes(combined[10:12], 'little')
             core = seal(combined[:core_size+2])
             position = core_size+2
-            for part in ('fspick', 'fsview', 'fsopen'):
+            for part in module_parts[name]:
                 size = int.from_bytes(combined[position+8:position+10], 'little')
                 payload = (0x6000+core_size).to_bytes(2, 'little')+combined[position:position+size]
                 sealed = seal_module(payload, core)
                 validate_module(sealed, core)
                 (OUT/f'{part}.prg').write_bytes(sealed)
                 position += size
-            assert position == len(combined), 'unexpected trailing Files module data'
+            assert position == len(combined), f'unexpected trailing {name} module data'
             path.write_bytes(core)
         path.write_bytes(seal(path.read_bytes()))
         validate(path.read_bytes())
@@ -93,7 +94,7 @@ def build():
         path.write_bytes(packed)
         packing[name] = packed_information(packed)
         # Module identity remains the original source's checked NAPP identity.
-        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview','fsopen'),'sheet':('shfont','shcalc','shclip')}.get(name,()):
+        for part in {'editor':('edpick','edfind','edclip'),'files':('fspick','fsview','fsopen'),'sheet':('shfont','shcalc','shclip'),'gemdesk':('gddlg','gdset')}.get(name,()):
             module_path = OUT/f'{part}.prg'
             module_path.write_bytes(seal_module(module_path.read_bytes(),packed))
             validate_module(module_path.read_bytes(),packed)
@@ -137,6 +138,8 @@ def build():
                     '-write', str(OUT/'gemdesk.prg'), 'browse',
                     '-write', str(OUT/'desktop.prg'), 'cards',
                     '-write', str(OUT/'aesvc.prg'), 'aesvc.prg',
+                    '-write', str(OUT/'gddlg.prg'), 'gddlg.prg',
+                    '-write', str(OUT/'gdset.prg'), 'gdset.prg',
                     '-write', str(OUT/'vt52.prg'), 'vt52'], check=True, capture_output=True)
     images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}

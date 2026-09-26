@@ -75,7 +75,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | TOS feature | Status | uOS evidence / missing piece |
 |---|---|---|
 | Accessories usable while another app runs | Missing | Single foreground app; the persistent [AES component](NATIVE-AES.md) that will host them now survives app changes |
-| Control Panel (key repeat, double-click, colors, clock, click/bell) | Partial | Ultimate app sets the clock and drives; no input/sound/color settings |
+| Control Panel (key repeat, double-click, colors, clock, click/bell) | Partial | GEMDESK Desk:Control Panel sets key repeat (KERNAL `RPTFLG`) and double-click speed (AES `evnt_dclick`); the desktop colour is in Preferences; all kept with the desktop ([record](validation/2026-09-26-gemdesk-control/README.md)). It is a desktop dialog, not an accessory. The Ultimate app sets the clock; there is no key click or bell (no sound service). |
 | VT52 terminal | Partial | [VT52 app](NATIVE-VT52.md): Atari VT52 sequences on the 80-column VDC over the SwiftLink ACIA ([record](validation/2026-09-26-vt52/README.md)); a foreground app, not yet an accessory; CPU-level only |
 | Install Printer | Missing | |
 | RS-232 configuration | Missing | SwiftLink used only inside Claude |
@@ -131,7 +131,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Desktop configuration loaded at boot | Have | GEMDESK reads DESKTOP.INF when a fresh AES has no session ([record](validation/2026-09-26-gemdesk-persistence/README.md)) |
 | Crash display with return to desktop ("bombs") | Partial | Loader errors only; mapped to a BRK/NMI trap |
 | Warm reset key combination | Missing | |
-| Keyboard mouse emulation (Alt+cursor) | Missing | |
+| Keyboard mouse emulation (Alt+cursor) | Partial | ALT (or C=) + cursor keys move the pointer, ALT+Return clicks, in every app that uses the AES client ([record](validation/2026-09-26-gemdesk-control/README.md)); the suite apps outside the AES do not have it |
 | Hard disk partitions | Partial | Ultimate USB/SD paths; no CMD/SD2IEC partitions |
 | Resolution switching | Mapped | VIC 320×200 and VDC 640×200 are both driven |
 

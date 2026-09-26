@@ -296,6 +296,23 @@ demo's redraw responses, the surface must equal drawing the desktop and then
 every window bottom to top from scratch. Missing or excess damage fails the
 comparison.
 
+## Double-click speed and the keyboard mouse
+
+`AE_OP_DCLICK` (11, minor 6, capability bit 5) is GEM's `evnt_dclick`. Put
+0 in `N_BUFFER[0]` to read the speed, or 1 with a speed 0–4 in
+`N_BUFFER[1]` to set it; the reply's `N_BUFFER[0]` is the speed. The speeds
+are windows of 40, 30, 20 (the default), 15 and 10 jiffies. The setting is
+kept in the image and outlives app changes. The client's `ae_dclick` takes A
+= speed, or `$ff` to read.
+
+The client's event wait also emulates the mouse from the keyboard, as TOS
+does with Alt and the cursor keys. With ALT or C= held (KERNAL `SHFLAG`
+bits 8 and 2, checked in the C128 KERNAL `318020-05` key scan):
+- the cursor keys move the pointer 8 pixels, clamped to the screen;
+- Return presses the button for one sample and releases it on the next.
+
+Those keys are not delivered to the app.
+
 ## Session record
 
 `AE_OP_SESSION` (10, minor 5, capability bit 4) keeps a 256-byte record in

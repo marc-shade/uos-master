@@ -17,7 +17,7 @@ The build adds `target/native-desktop/gem.d81`, a D81 with GEMDESK as
 
 Built and tested:
 - startup with the AES loaded from the boot folder;
-- icon selection;
+- icon selection, and the 8 and 9 keys, which open that drive's window;
 - drive windows for the boot drive and drive 9, four at once (a fifth is
   refused), staggered, topped by a click;
 - scrolling by arrow, track (a page) and thumb; row selection by click and by
@@ -49,7 +49,12 @@ Built and tested:
   file the drive skips is reported. Names with DOS pattern characters are
   refused, and so is a drive whose command channel the kernel holds.
 - File:Close, Desk:About, Options:Launcher, and launching a listed file;
-- the drive and full-window error alerts.
+- the drive and full-window error alerts;
+- Desk:Control Panel: key repeat (all keys, cursor keys only, none) and
+  double-click speed 1–5, applied at once and kept with the desktop
+  (record version 2);
+- the keyboard mouse from the AES client: ALT or C= with the cursor keys
+  moves the pointer, and with Return clicks.
 
 Built but not yet covered by tests: fulled, moved and sized answers.
 
@@ -58,7 +63,19 @@ Not built yet: the Ultimate icon with folder windows. Other limits:
 - Show Info cannot change read-only;
 - IEC free space is not shown.
 
-Nothing has run in VICE or on hardware.
+Emulator: [the VICE run](validation/2026-09-26-gemdesk-vice/README.md) boots
+`gem.d81` on an emulated 1581. It opens drive 8 with the 8 key, launches
+Calculator, and returns with the window restored; every surface matches the
+CPU oracle. Pointer workflows and the dialogs have run only in the CPU model.
+Nothing has run on hardware.
+
+Memory: GEMDESK is a core plus one module window (NAPP bytes 7 and 11). The
+dialogs are in two modules, each with its own copy of the forms library:
+`GDDLG.PRG` (Show Info, Format) and `GDSET.PRG` (Preferences, Control
+Panel). The one a dialog needs is loaded from the desktop's folder, replacing
+the other ([NATIVE-MODULES](NATIVE-MODULES.md)). If it is missing, an alert
+says so and the desktop goes on. The core ends at `$b098`; the modules end at
+`$bdcb` and `$bced` of the `$c000` limit.
 
 ## v1 scope
 
@@ -72,7 +89,7 @@ Nothing has run in VICE or on hardware.
 Desktop icons are redrawn on `WM_REDRAW` for handle 0.
 
 **Menu.**
-- `Desk: About uOS...`
+- `Desk: About uOS... | - | Control Panel...`
 - `File: Open^O | Show Info^I | - | Delete^D | Format... | - | Close^W`
 - `View: Name | Type | Size | Unsorted`
 - `Options: Preferences... | Save Desktop | Launcher^L`

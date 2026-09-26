@@ -125,6 +125,9 @@ ae_event_wait:
         ldx #0
         stx N_READY
         sta ae_ev_key
+.if AE_POINTER
+        jsr ae_key_mouse
+.fi
 ae_event_sample:
 .if AE_POINTER
         jsr pm_poll
@@ -136,6 +139,11 @@ ae_event_sample:
         sta ae_pointer_y
         lda pm_buttons          ; the 1351 module reports the left button
         beq +                   ; as $10; the AES expects bit 0
+        lda #1
++       ldx ae_km_click         ; a keyboard click: pressed for one sample
+        beq +
+        dec ae_km_click
+        beq +
         lda #1
 +       sta ae_pointer_buttons
 .fi
@@ -187,6 +195,84 @@ ae_event_sample:
         clc
 ae_event_done:
         rts
+.if AE_POINTER
+; Keyboard mouse (TOS: Alt+cursor): with ALT or C= held, the cursor keys move
+; the pointer 8 pixels and Return clicks; the key itself is not delivered.
+ae_key_mouse:
+        lda ae_ev_key
+        beq ae_km_done
+        lda $d3                 ; KERNAL SHFLAG: 2 C=, 8 ALT
+        and #$0a
+        beq ae_km_done
+        lda ae_ev_key
+        ldx #3
+-       cmp ae_km_keys,x
+        beq ae_km_move
+        dex
+        bpl -
+        cmp #13
+        bne ae_km_done
+        lda #2                  ; pressed on the next sample, released after it
+        sta ae_km_click
+        bne ae_km_eaten
+ae_km_move:
+        lda ae_km_dx,x
+        beq ae_km_y
+        bmi ae_km_left
+        lda pm_x                ; right, at most 319
+        clc
+        adc #8
+        sta pm_x
+        bcc +
+        inc pm_x+1
++       lda pm_x+1
+        beq ae_km_y
+        lda pm_x
+        cmp #<320
+        bcc ae_km_y
+        lda #<319
+        sta pm_x
+        bne ae_km_y
+ae_km_left:
+        lda pm_x                ; left, at least 0
+        sec
+        sbc #8
+        sta pm_x
+        bcs ae_km_y
+        dec pm_x+1
+        bpl ae_km_y
+        lda #0
+        sta pm_x
+        sta pm_x+1
+ae_km_y:
+        lda ae_km_dy,x
+        beq ae_km_eaten
+        bmi ae_km_up
+        lda pm_y                ; down, at most 199
+        clc
+        adc #8
+        cmp #200
+        bcc ae_km_set_y
+        lda #199
+        bne ae_km_set_y
+ae_km_up:
+        lda pm_y                ; up, at least 0
+        sec
+        sbc #8
+        bcs ae_km_set_y
+        lda #0
+ae_km_set_y:
+        sta pm_y
+ae_km_eaten:
+        lda #0
+        sta ae_ev_key
+ae_km_done:
+        rts
+ae_km_keys: .byte $91,$11,$9d,$1d ; up, down, left, right
+ae_km_dx: .byte 0,0,$f8,8
+ae_km_dy: .byte $f8,8,0,0
+ae_km_click: .byte 0
+.fi
 ae_post:
         lda #AE_OP_POST
         jmp ae_call
@@ -243,6 +329,19 @@ ae_session_write:
 +       sta N_BUFFER+256
         lda #AE_OP_SESSION
         jmp ae_call
+; evnt_dclick (AES minor 6): A = speed 0..4 to set, or $ff to read. A = speed.
+ae_dclick:
+        ldx #0
+        cmp #$ff
+        beq +
+        sta N_BUFFER+1
+        inx
++       stx N_BUFFER
+        lda #AE_OP_DCLICK
+        jsr ae_call
+        bcs +
+        lda N_BUFFER
++       rts
 ae_dirty: .fill 4,0             ; OR of redrawn cell rows; the app clears it
 ae_ev_params: .fill 16,0
 ae_ev_result: .fill 19,0

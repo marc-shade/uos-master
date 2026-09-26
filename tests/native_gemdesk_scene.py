@@ -2,7 +2,7 @@
 import native_aes_scene as scene
 import native_forms_scene as forms
 
-MENU = (b'Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|Format...|-|Close^W;View:Name|Type|Size|Unsorted;'
+MENU = (b'Desk:About uOS...|-|Control Panel...;File:Open^O|Show Info^I|-|Delete^D|Format...|-|Close^W;View:Name|Type|Size|Unsorted;'
         b'Options:Preferences...|Save Desktop|Launcher^L')
 ICONS = [(2, b'Boot', 0), (6, b'Drive 9', 0), (20, b'Trash', 1)]
 DESK, ICON_SELECTED, PAPER, SELECTED = 0x16, 0x61, 0x61, 0x16
@@ -146,9 +146,9 @@ def prefs_dialog(before, confirm, view, focus=1, color=DESK):
     return forms.draw(before, 30, 13, prefs_objects(confirm, view, color), focus)
 
 
-def record(confirm, view, color, windows):
-    """The 64-byte desktop record (GEMDESK: session and DESKTOP.INF)."""
-    out = bytearray(b'GDS\x01'+bytes([confirm, view, color, 0, len(windows)]))
+def record(confirm, view, color, windows, repeat=0, dclick=2):
+    """The 64-byte desktop record, version 2 (GEMDESK: session and DESKTOP.INF)."""
+    out = bytearray(b'GDS\x02'+bytes([confirm, view, color, repeat, dclick, len(windows)]))
     for w in windows:
         out += bytes([w['dev'], w['fmt'], w['x'], w['y'], w['w'], w['h'], w['top'],
                       255 if w.get('selected') is None else w['selected']])
@@ -171,3 +171,24 @@ def format_objects(drive8=True, name=b'', ident=b''):
 
 def format_dialog(before, focus, **kw):
     return forms.draw(before, 30, 11, format_objects(**kw), focus)
+
+
+REPEAT = [0x80, 0x00, 0x40]          # all keys, cursor keys only, none (KERNAL RPTFLG)
+
+
+def control_objects(repeat, speed):
+    f = forms
+    chosen = REPEAT.index(repeat) if repeat in REPEAT else 1
+    return ([f.obj(f.TEXT, 2, 1, 20, b'Control Panel'),
+             f.obj(f.TEXT, 2, 3, 12, b'Key repeat:')] +
+            [f.obj(f.RADIO, x, 4, w, t, flags=0x10, state=f.SELECTED if chosen == i else 0)
+             for i, (x, w, t) in enumerate([(4, 6, b'All'), (11, 9, b'Cursor'), (21, 7, b'None')])] +
+            [f.obj(f.TEXT, 2, 5, 26, b'Double-click (slow-fast):')] +
+            [f.obj(f.RADIO, 4+5*i, 6, 4, str(i+1).encode(), flags=0x20, state=f.SELECTED if speed == i else 0)
+             for i in range(5)] +
+            [f.obj(f.BUTTON, 6, 8, 8, b'OK', flags=f.DEFAULT | f.EXIT),
+             f.obj(f.BUTTON, 18, 8, 8, b'Cancel', flags=f.CANCEL | f.EXIT)])
+
+
+def control_dialog(before, repeat, speed, focus=2):
+    return forms.draw(before, 30, 11, control_objects(repeat, speed), focus)

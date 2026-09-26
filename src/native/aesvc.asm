@@ -22,7 +22,7 @@ aes_image:
 aes_identity:                 ; image offset 32, checked by bk_attach
         .text "naes"
         .byte AE_MAJOR,AE_MINOR
-        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW|AE_CAP_SESSION ; capability bits
+        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW|AE_CAP_SESSION|AE_CAP_DCLICK ; capability bits
         .byte 0
         .cerror aes_identity-aes_image != 32, "AES identity must be at offset 32"
 
@@ -65,6 +65,9 @@ aes_entry:
 +       cmp #AE_OP_SESSION
         bne +
         jmp aes_session
++       cmp #AE_OP_DCLICK
+        bne +
+        jmp aes_dclick
 +       cmp #AE_OP_ATTACH
         bne aes_reply
         ldx #3
@@ -111,7 +114,7 @@ aes_badarg:
         rts
 
 aes_state:
-        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW|AE_CAP_SESSION,0
+        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW|AE_CAP_SESSION|AE_CAP_DCLICK,0
 aes_attaches: .word 0
 aes_apps: .word 0
 aes_changed: .byte 0
@@ -215,6 +218,28 @@ aes_session_write:
         rts
 aes_session_bad:
         jmp aes_badarg
+; DCLICK (evnt_dclick): the double-click window, speed 0 (slow) .. 4 (fast).
+; Kept in the image, so it outlives app changes like the desktop colour.
+aes_dclick:
+        lda N_BUFFER
+        beq aes_dclick_get
+        cmp #1
+        bne aes_session_bad
+        ldx N_BUFFER+1
+        cpx #5
+        bcs aes_session_bad
+        stx aes_dclick_speed
+        lda aes_dclick_jiffies,x
+        sta ev_dclick
+aes_dclick_get:
+        lda aes_dclick_speed
+        sta N_BUFFER
+        lda #0
+        clc
+        rts
+aes_dclick_jiffies: .byte 40,30,20,15,10
+aes_dclick_speed: .byte 2
+ev_dclick: .byte 20             ; jiffies (speed 2), read by the event step
 aes_data_ok: .byte 0
 aes_data_handle: .fill 4,0
         .section aesdata

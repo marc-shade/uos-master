@@ -3,7 +3,6 @@
 ; jiffy clock and calls EVENT once per sample; this code keeps the state
 ; between samples of one wait: timer start, click counting, message queue.
 EV_QUEUE_SIZE = 16                 ; messages of 8 bytes
-EV_DCLICK = 20                ; double-click window in jiffies
 
 ; EVENT. N_BUFFER in: 0 mask, 1 clicks wanted (1..3), 2 button mask, 3 button
 ; state, 4..8 rectangle 1 (0 enter / 1 leave, x, y, w, h in cells), 9..13
@@ -173,7 +172,7 @@ ev_button_window:
         lda ev_now+1
         sbc ev_click_at+1
         bne ev_button_fire
-        cpx #EV_DCLICK
+        cpx ev_dclick
         bcc ev_button_done
 ev_button_fire:
         lda ev_press_count

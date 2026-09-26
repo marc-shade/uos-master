@@ -127,7 +127,7 @@ class Demo(Calculator):
         at = self.symbol(name)
         return bytes(self.ram[at:at+length])
 
-    def check(self, *, attaches, apps, loaded, error=0, version=0x0105, choice=0):
+    def check(self, *, attaches, apps, loaded, error=0, version=0x0106, choice=0):
         status = self.data('demo_status', 13)
         assert self.value('demo_error') == error, (self.value('demo_error'), error)
         assert self.value('demo_loaded') == loaded

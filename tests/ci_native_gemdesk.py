@@ -32,6 +32,8 @@ class Gem(calc.Calculator):
     move = Pointer.move
 
     def __init__(self, files):
+        files = {**files, (8, b'GDDLG.PRG', b'P'): (ROOT/'target/native-desktop/gddlg.prg').read_bytes(),
+                 (8, b'GDSET.PRG', b'P'): (ROOT/'target/native-desktop/gdset.prg').read_bytes()}
         super().__init__('gemdesk', files, loader_name=b'GEMDESK',
                          image_prefix='native-desktop', vdc_component=False)
         self.bus = self.m.bus
@@ -114,7 +116,7 @@ def main():
         for i in range(20):                               # 20 entries: the window scrolls
             files[8, f'FILE{i:02}'.encode(), b'S'] = bytes(100+i*200)
         p = Gem(files)
-        entries = entries_for({**files, (8, b'GEMDESK', b'P'): p.image})
+        entries = entries_for(p.io.files)          # the disk as the harness built it
         p.expect(scene.desktop(), 'startup')
         assert ci_native_aes.resident_aes(p.m) is not None, 'the desktop loaded AESVC.PRG'
         done('startup: AES loaded from the boot folder, menu bar and desktop icons', p)
@@ -146,7 +148,7 @@ def main():
         done('File:Close (Ctrl-W) closes the window and frees its listing', p)
 
         p.key(0x85); p.key(13)                                  # F1, Return: Desk:About
-        about = b'[1][uOS GEM desktop|AES 1.5 on the C128][OK]'
+        about = b'[1][uOS GEM desktop|AES 1.6 on the C128][OK]'
         p.expect(scene.scene.draw(scene.desktop(selected=0), about, 1, 1)[0], 'about alert')
         p.key(13)                                               # OK closes the alert
         p.expect(scene.desktop(selected=0), 'about closed')
@@ -182,7 +184,7 @@ def main():
         for i in range(20):
             files2[9, f'NINE{i:02}'.encode(), b'S'] = bytes(300)
         r = Gem(files2)
-        disk8 = entries_for({**files2, (8, b'GEMDESK', b'P'): r.image})
+        disk8 = entries_for(r.io.files)
         disk9 = entries_for(files2, 9)
         w8 = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)
         r.cell(35, 3); r.click(double=True)
@@ -417,7 +419,7 @@ def main():
 
         mark = len(d.io.events)
         d.key(0x85); d.key(0x1d); d.key(0x1d); d.key(0x1d); d.key(0x11); d.key(13)   # Options:Save Desktop
-        want = scene.record(0, 2, 0x1c, [dict(dev=8, fmt=0, x=1, y=2, w=28, h=16, top=0)])
+        want = scene.record(0, 2, 0x1c, [dict(dev=8, fmt=0, x=1, y=2, w=28, h=16, top=0)], repeat=d.ram[0x0a22])
         assert bytes(d.io.files[8, b'DESKTOP.INF', b'S']) == want, bytes(d.io.files[8, b'DESKTOP.INF', b'S'])
         assert ('dos', 8, b'S0:DESKTOP.INF') in d.io.events[mark:]
         d.expect(grey, 'saved')
@@ -436,7 +438,7 @@ def main():
         fm = Gem(files4)
         fm.io.locked.add((9, b'OLD1', b'S'))                       # formatting erases locked files too
         w9 = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 9', top=0)
-        fm.cell(35, 7); fm.click(double=True)
+        fm.key(ord('9'))                                            # the 9 key opens drive 9
         before = scene.picture([w9], {1: scene.ordered(entries_for(files4, 9), 0)}, selected_icon=1)
         fm.expect(before, 'drive 9 open')
 
@@ -466,7 +468,58 @@ def main():
         assert [e for e in fm.io.events if e[0] == 'dos'] == [('dos', 9, b'N0:BLANK,B1')]
         assert not [k for k in fm.io.files if k[0] == 9]
         fm.expect(scene.picture([w9], {1: []}, selected_icon=1), 'formatted and listed again')
-        done('File:Format asks for drive, name and ID, confirms, sends N0:NAME,ID and lists the drive again', fm)
+        done('the 9 key opens drive 9; File:Format asks for drive, name and ID, confirms, sends N0:NAME,ID and lists the drive again', fm)
+
+        nm = Gem(files4)
+        del nm.io.files[8, b'GDDLG.PRG', b'P']                    # the dialog module is missing
+        nm.key(ord('9'))
+        nm.cell(3, 3); nm.click()                                   # the first entry: Show Info needs one
+        nm.key(9)
+        missing = b'[3][Could not load GDDLG.PRG.|error $11][OK]'
+        shown = scene.picture([dict(w9, selected=0)], {1: scene.ordered(entries_for(nm.io.files, 9), 0)}, selected_icon=1)
+        nm.expect(scene.scene.draw(shown, missing, 1, 1)[0], 'module missing')
+        nm.key(13); nm.expect(shown, 'desktop goes on')
+        done('a missing GDDLG.PRG gives an alert and the desktop goes on', nm)
+
+        # Keyboard mouse and the Control Panel.
+        kc = Gem(files4)
+        kc.cell(29, 21)                                             # just left of Trash
+        start = kc.position
+        kc.ram[0xd3] = 8                                            # ALT held (KERNAL SHFLAG)
+        kc.key(0x1d); kc.key(0x1d)
+        assert kc.position == (start[0]+16, start[1]), (start, kc.position)
+        kc.key(13)                                                  # ALT+Return clicks
+        kc.ram[0xd3] = 0
+        for _ in range(24):
+            kc.frame()
+        kc.expect(scene.desktop(selected=2), 'trash selected from the keyboard')
+        done('ALT+cursor moves the pointer 8 pixels and ALT+Return clicks; the keys are not delivered', kc)
+
+        def slow_double(cx, cy):                                    # presses 12 jiffies apart
+            kc.cell(cx, cy); kc.frame(down=True); kc.frame(down=False)
+            for _ in range(10):
+                kc.frame()
+            kc.frame(down=True); kc.frame(down=False)
+            for _ in range(24):
+                kc.frame()
+        slow_double(35, 3)                                          # speed 2 (20 jiffies): a double click
+        w8k = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)
+        kc.expect(scene.picture([w8k], {1: scene.ordered(entries_for(kc.io.files), 0)}, selected_icon=0), 'slow double opens')
+        kc.key(23)
+        kc.key(0x85); kc.key(0x11); kc.key(13)                      # Desk:Control Panel
+        before = scene.desktop(selected=0)
+        repeat = kc.ram[0x0a22]
+        kc.expect(scene.control_dialog(before, repeat, 2), 'control panel')
+        kc.cell(5+21+1, 7+4); kc.click()                            # repeat: None
+        kc.cell(5+24+1, 7+6); kc.click()                            # speed 5
+        kc.expect(scene.control_dialog(before, 0x40, 4, focus=10), 'none and fastest')
+        kc.key(13)
+        assert kc.ram[0x0a22] == 0x40
+        kc.expect(before, 'control panel closed')
+        slow_double(35, 3)                                          # speed 5 (10 jiffies): two clicks
+        kc.expect(scene.desktop(selected=0), 'slow double no longer opens')
+        done('Control Panel: key repeat goes to the KERNAL, double-click speed to the AES', kc,
+             repeat=hex(repeat))
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')

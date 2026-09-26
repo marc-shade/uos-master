@@ -13,12 +13,19 @@ GM_SELECTED = $16              ; selected row: white on blue
 GM_DESK = $16                  ; desktop: white icons on blue
 GM_ICON_SELECTED = $61
 GM_ICONS = 3
+GM_APP_PAGES = 96              ; the core, then the GDDLG.PRG module window
+GM_MOP_INFO = 1                ; module operations
+GM_MOP_PREFS = 2
+GM_MOP_FORMAT = 3
+GM_MOP_CONTROL = 4
+GM_REC_COUNT = 9               ; desktop record: window count, then windows
+GM_REC_WINDOWS = 10
 * = N_APPBASE
 gm_image:
         .text "napp"
-        .byte 1,1,14,0
-        .word gm_end-gm_image
-        .byte (gm_end-gm_image+48+255)/256,0
+        .byte 1,1,14,<(gm_module-gm_image)
+        .word gm_module-gm_image
+        .byte GM_APP_PAGES,>(gm_module-gm_image)
         .word gm_start-gm_image
         .word 0
         .text "gem desktop",0
@@ -90,7 +97,6 @@ gm_surface_setup:
 -       lda N_HANDLE,x
         sta gm_surface,x
         sta ae_surface,x
-        sta fo_surface,x
         dex
         bpl -
         lda #0
@@ -654,7 +660,11 @@ gm_key:
         cmp #13
         bne +
         jmp gm_open_selection
-+       cmp #$11                ; cursor down / up in the top window
++       cmp #$38                ; 8 or 9: select that drive's icon and open it
+        beq gm_key_drive
+        cmp #$39
+        beq gm_key_drive
+        cmp #$11                ; cursor down / up in the top window
         beq gm_key_move
         cmp #$91
         beq gm_key_move
@@ -683,15 +693,33 @@ gm_key_set:
         jmp gm_scroll_to_selection
 gm_key_done:
         rts
+gm_key_drive:
+        and #15
+        ldx #0                  ; the boot drive's icon
+        cmp N_BOOTDEVICE
+        beq +
+        ldx #1                  ; drive 9's icon
+        cmp #9
+        bne gm_key_done
++       cpx gm_icon_sel
+        beq +
+        stx gm_new_icon
+        jsr gm_repaint_icon_sel
++       jmp gm_open_icon
 
 ; ---- menu ------------------------------------------------------------------------------
 gm_menu_choice:
         lda ae_ev_result+10     ; title
         bne +
+        lda ae_ev_result+11     ; Desk: About, or the Control Panel
+        bne gm_menu_control
         lda #<gm_about
         ldx #>gm_about
         ldy #1
         jmp gm_alert
+gm_menu_control:
+        lda #GM_MOP_CONTROL
+        jmp gm_module_run
 +       cmp #1
         bne gm_menu_options
         lda ae_ev_result+11
@@ -704,7 +732,8 @@ gm_menu_choice:
         jmp gm_delete
 +       cmp #4
         bne +
-        jmp gm_format
+        lda #GM_MOP_FORMAT
+        jmp gm_module_run
 +       cmp #6
         bne +
         jsr gm_top_slot         ; File: Close
@@ -718,7 +747,8 @@ gm_menu_options:
         jmp gm_menu_view
 +       lda ae_ev_result+11
         bne +
-        jmp gm_prefs
+        lda #GM_MOP_PREFS
+        jmp gm_module_run
 +       cmp #1
         bne +
         jmp gm_save_desktop
@@ -1282,7 +1312,8 @@ gm_show_info:
         beq gm_info_icon
         jsr gm_read_record
         bcs gm_info_fail
-        jmp gm_info_dialog
+        lda #GM_MOP_INFO
+        jmp gm_module_run
 ; Append gm_rec's name, up to its padding, as printable alert text.
 gm_aname:
         ldy #0
@@ -1682,363 +1713,6 @@ gm_release:
 gm_release_done:
         rts
 
-; ---- dialogs (docs/NATIVE-FORMS.md) --------------------------------------------------
-; File:Show Info on an entry: name (editable), type and blocks, read-only.
-; OK with a changed name renames the file on the drive.
-gm_info_dialog:
-        ldx #0                  ; the name into the field
--       lda gm_rec,x
-        cmp #$a0
-        beq +
-        sta gm_name_buf,x
-        inx
-        cpx #16
-        bne -
-+       stx gm_name_field
-        lda #0
-        sta gm_name_buf,x
-        sta gm_alen             ; "Type: SEQ  Blocks: 1"
-        jsr gm_atype
-        ldx gm_alen
-        lda #0
-        sta gm_abuf,x
-        ldx #0
--       lda gm_abuf,x
-        sta gm_info_line,x
-        beq +
-        inx
-        bne -
-+       lda gm_rec+17           ; read-only: shown, not changeable on IEC
-        and #$40
-        beq +
-        lda #FOS_SELECTED
-+       ora #FOS_DISABLED
-        sta gm_info_form+5+4*8+2
-        lda #<gm_info_form
-        ldx #>gm_info_form
-        jsr gm_form
-        bcs gm_dialog_fail
-        cmp #5                  ; OK
-        bne gm_dialog_done
-        ldx #0                  ; the same name: nothing to do
--       cpx gm_name_field
-        beq +
-        lda gm_name_buf,x
-        cmp gm_rec,x
-        bne gm_rename
-        inx
-        bne -
-+       cpx #16
-        beq gm_dialog_done
-        lda gm_rec,x
-        cmp #$a0
-        bne gm_rename
-gm_dialog_done:
-        rts
-gm_dialog_fail:
-        jmp gm_view_fail
-; Rename: "R0:NEW=OLD" to the window's drive, then list it again.
-gm_rename:
-        lda gm_name_field
-        beq gm_rename_bad
-        ldy #3
-        ldx #0
--       lda gm_name_buf,x       ; the new name
-        jsr gm_dos_char
-        bcs gm_rename_bad
-        sta dc_text,y
-        iny
-        inx
-        cpx gm_name_field
-        bne -
-        lda #$3d                ; =
-        sta dc_text,y
-        iny
-        ldx #0
--       lda gm_rec,x            ; the old name
-        cmp #$a0
-        beq +
-        jsr gm_dos_char
-        bcs gm_rename_bad
-        sta dc_text,y
-        iny
-        inx
-        cpx #16
-        bne -
-+       sty dc_length
-        lda #$52                ; R0:
-        sta dc_text
-        lda #$30
-        sta dc_text+1
-        lda #$3a
-        sta dc_text+2
-        ldx gm_slot
-        lda gm_win_dev,x
-        sta dc_device
-        sta gm_dev
-        lda gm_win_fmt,x
-        sta gm_fmt
-        jsr dc_command
-        bcs gm_rename_error
-        cmp #0
-        bne gm_rename_status
-        jmp gm_refresh_drive
-gm_rename_bad:
-        jmp gm_del_badname
-gm_rename_error:
-        pha
-        lda #<gm_s_norename
-        ldx #>gm_s_norename
-        jsr gm_fail_head
-        jmp gm_error_hex
-gm_rename_status:
-        lda #<gm_s_norename
-        ldx #>gm_s_norename
-        jsr gm_fail_head
-        jmp gm_status_text
-; A = name byte: carry set for DOS syntax characters. Keeps X and Y.
-gm_dos_char:
-        stx gm_math4
-        ldx #gm_bad_chars_end-gm_bad_chars-1
--       cmp gm_bad_chars,x
-        beq +
-        dex
-        bpl -
-        ldx gm_math4
-        clc
-        rts
-+       ldx gm_math4
-        sec
-        rts
-; Options:Preferences: confirm deletes, and the sort order.
-gm_prefs:
-        lda gm_confirm
-        beq +
-        lda #FOS_SELECTED
-+       sta gm_pref_form+5+1*8+2
-        ldx #0
-        ldy #0
--       lda #0
-        cpy gm_view
-        bne +
-        lda #FOS_SELECTED
-+       sta gm_pref_form+5+3*8+2,x ; objects 3..6, 8 bytes apart
-        txa
-        clc
-        adc #8
-        tax
-        iny
-        cpy #4
-        bne -
-        ldx #0                  ; desktop colour radios: objects 8..10
-        ldy #0
--       lda #0
-        pha
-        lda gm_desk_colors,y
-        cmp gm_desk_color
-        bne +
-        pla
-        lda #FOS_SELECTED
-        pha
-+       pla
-        sta gm_pref_form+5+8*8+2,x
-        txa
-        clc
-        adc #8
-        tax
-        iny
-        cpy #3
-        bne -
-        lda #<gm_pref_form
-        ldx #>gm_pref_form
-        jsr gm_form
-        bcs gm_dialog_fail
-        cmp #11                 ; OK
-        bne gm_dialog_done
-        ldx #0                  ; the chosen colour
-        ldy #0
--       lda gm_pref_form+5+8*8+2,x
-        and #FOS_SELECTED
-        bne +
-        txa
-        clc
-        adc #8
-        tax
-        iny
-        cpy #3
-        bne -
-        beq gm_prefs_view
-+       lda gm_desk_colors,y
-        cmp gm_desk_color
-        beq gm_prefs_view
-        sta gm_desk_color
-        jsr gm_restore_color    ; the AES repaints; WM_REDRAW brings the icons
-gm_prefs_view:
-        lda gm_pref_form+5+1*8+2
-        and #FOS_SELECTED
-        sta gm_confirm
-        ldx #0
-        ldy #0
--       lda gm_pref_form+5+3*8+2,x
-        and #FOS_SELECTED
-        bne +
-        txa
-        clc
-        adc #8
-        tax
-        iny
-        cpy #4
-        bne -
-        rts
-+       tya
-        jmp gm_set_view
-; A/X = form: open it, run it, close it. A = the exit object.
-gm_form:
-        sta gm_form_ptr
-        stx gm_form_ptr+1
-        jsr gm_bind
-        bcs gm_form_done
-        jsr gfx_clip_defaults
-        lda gm_form_ptr
-        ldx gm_form_ptr+1
-        jsr fo_open
-        bcs gm_form_done
-        jsr fo_do
-        bcs gm_form_close_error
-        sta gm_form_exit
-        jsr fo_close
-        bcs gm_form_done
-        lda gm_form_exit
-gm_form_done:
-        rts
-gm_form_close_error:            ; keep the first error, still restore
-        pha
-        jsr fo_close
-        pla
-        sec
-        rts
-
-gm_confirm: .byte 1
-gm_fname_field: .byte 0,0,16    ; N_FEDIT records: disk name and ID (IEC filename filter)
-        .word gm_fname_buf
-        .byte 0,0,3
-gm_fname_buf: .fill 17,0
-gm_fid_field: .byte 0,0,2
-        .word gm_fid_buf
-        .byte 0,0,3
-gm_fid_buf: .fill 3,0
-gm_format_form: .byte $ff,0,30,11,10
-        .byte FOT_TEXT,0,0,2,1,20
-        .word gm_t_format
-        .byte FOT_TEXT,0,0,2,3,6
-        .word gm_t_drive
-        .byte FOT_RADIO,$10,0,9,3,5
-        .word gm_t_8
-        .byte FOT_RADIO,$10,0,15,3,5
-        .word gm_t_9
-        .byte FOT_TEXT,0,0,2,4,5
-        .word gm_t_name
-        .byte FOT_FIELD,0,0,9,4,17
-        .word gm_fname_field
-        .byte FOT_TEXT,0,0,2,5,3
-        .word gm_t_id
-        .byte FOT_FIELD,0,0,9,5,3
-        .word gm_fid_field
-        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,6,8,10
-        .word gm_t_formatb
-        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,8,8
-        .word gm_t_cancel
-gm_desk_color: .byte $16
-gm_restoring: .byte 0
-gm_orect: .fill 4,0
-gm_spos: .byte 0
-gm_sslot: .byte 0
-gm_stop: .byte 0
-gm_session: .fill 64,0
-gm_magic: .byte 71,68,83,1                           ; "GDS", version 1
-gm_inf_name: .byte 68,69,83,75,84,79,80,46,73,78,70  ; DESKTOP.INF
-gm_inf_scratch: .byte 83,48,58,68,69,83,75,84,79,80,46,73,78,70   ; S0:DESKTOP.INF
-gm_s_nosave: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,115,97,118,101,32,116,104,101,32,100,101,115,107,116,111,112,46,124,0   ; [3][Could not save the desktop.|
-gm_form_exit: .byte 0
-gm_form_ptr: .word 0
-gm_name_field: .byte 0,0,16     ; N_FEDIT record: length, caret, maximum,
-        .word gm_name_buf       ; buffer, 40/80-column views, IEC filename filter
-        .byte 0,0,3
-gm_name_buf: .fill 17,0
-gm_info_line: .fill 32,0
-; Show Info: x (centred), y, w, h, objects
-gm_info_form: .byte $ff,0,30,10,7
-        .byte FOT_TEXT,0,0,2,1,20
-        .word gm_t_info
-        .byte FOT_TEXT,0,0,2,3,5
-        .word gm_t_name
-        .byte FOT_FIELD,0,0,8,3,17
-        .word gm_name_field
-        .byte FOT_TEXT,0,0,2,4,26
-        .word gm_info_line
-        .byte FOT_CHECK,0,FOS_DISABLED,2,5,12
-        .word gm_t_readonly
-        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,7,8
-        .word gm_t_ok
-        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,7,8
-        .word gm_t_cancel
-gm_pref_form: .byte $ff,0,30,13,13
-        .byte FOT_TEXT,0,0,2,1,20
-        .word gm_t_prefs
-        .byte FOT_CHECK,0,0,2,3,18
-        .word gm_t_confirm
-        .byte FOT_TEXT,0,0,2,4,18
-        .word gm_t_sortby
-        .byte FOT_RADIO,$10,0,4,5,8
-        .word gm_t_sname
-        .byte FOT_RADIO,$10,0,14,5,8
-        .word gm_t_stype
-        .byte FOT_RADIO,$10,0,4,6,8
-        .word gm_t_ssize
-        .byte FOT_RADIO,$10,0,14,6,12
-        .word gm_t_sunsorted
-        .byte FOT_TEXT,0,0,2,7,9
-        .word gm_t_desktop
-        .byte FOT_RADIO,$20,0,4,8,7
-        .word gm_t_blue
-        .byte FOT_RADIO,$20,0,12,8,7
-        .word gm_t_grey
-        .byte FOT_RADIO,$20,0,20,8,8
-        .word gm_t_black
-        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,10,8
-        .word gm_t_ok
-        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,10,8
-        .word gm_t_cancel
-gm_t_info: .byte 73,116,101,109,32,73,110,102,111,114,109,97,116,105,111,110,0   ; Item Information
-gm_t_name: .byte 78,97,109,101,58,0   ; Name:
-gm_t_readonly: .byte 82,101,97,100,45,111,110,108,121,0   ; Read-only
-gm_t_desktop: .byte 68,101,115,107,116,111,112,58,0   ; Desktop:
-gm_t_blue: .byte 66,108,117,101,0                    ; Blue
-gm_t_grey: .byte 71,114,101,121,0                    ; Grey
-gm_t_black: .byte 66,108,97,99,107,0                 ; Black
-gm_desk_colors: .byte $16,$1c,$10                    ; white icons on blue, grey, black
-gm_t_format: .byte 70,111,114,109,97,116,32,100,105,115,107,0   ; Format disk
-gm_t_drive: .byte 68,114,105,118,101,58,0   ; Drive:
-gm_t_8: .byte 56,0   ; 8
-gm_t_9: .byte 57,0   ; 9
-gm_t_id: .byte 73,68,58,0   ; ID:
-gm_t_formatb: .byte 70,111,114,109,97,116,0   ; Format
-gm_s_noformat: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,102,111,114,109,97,116,32,116,104,101,32,100,105,115,107,46,124,0   ; [3][Could not format the disk.|
-gm_format_need: .byte 91,49,93,91,65,32,100,105,115,107,32,110,101,101,100,115,32,97,32,110,97,109,101,124,97,110,100,32,97,110,32,73,68,46,93,91,79,75,93,0   ; [1][A disk needs a name|and an ID.][OK]
-gm_format_ask: .byte 91,51,93,91,70,111,114,109,97,116,32,100,114,105,118,101,32
-gm_format_ask_drive: .byte 56
-        .byte 63,124,69,118,101,114,121,32,102,105,108,101,32,111,110,32,105,116,124,119,105,108,108,32,98,101,32,101,114,97,115,101,100,46,93,91,70,111,114,109,97,116,124,67,97,110,99,101,108,93,0
-gm_t_ok: .byte 79,75,0   ; OK
-gm_t_cancel: .byte 67,97,110,99,101,108,0   ; Cancel
-gm_t_prefs: .byte 80,114,101,102,101,114,101,110,99,101,115,0   ; Preferences
-gm_t_confirm: .byte 67,111,110,102,105,114,109,32,100,101,108,101,116,101,115,0   ; Confirm deletes
-gm_t_sortby: .byte 83,111,114,116,32,119,105,110,100,111,119,115,32,98,121,58,0   ; Sort windows by:
-gm_t_sname: .byte 78,97,109,101,0   ; Name
-gm_t_stype: .byte 84,121,112,101,0   ; Type
-gm_t_ssize: .byte 83,105,122,101,0   ; Size
-gm_t_sunsorted: .byte 85,110,115,111,114,116,101,100,0   ; Unsorted
-gm_s_norename: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,114,101,110,97,109,101,124,0   ; [3][Could not rename|
-
 ; ---- desktop persistence ------------------------------------------------------------
 ; The desktop record (64 bytes): "GDS",1; confirm; view; colour; 0; window
 ; count; then per window, bottom to top: device, format, x, y, w, h, top row,
@@ -2062,7 +1736,11 @@ gm_session_build:
         sta gm_session+5
         lda gm_desk_color
         sta gm_session+6
-        lda #9
+        lda $0a22               ; KERNAL RPTFLG: key repeat
+        sta gm_session+7
+        lda gm_dclick
+        sta gm_session+8
+        lda #GM_REC_WINDOWS
         sta gm_spos
         jsr gm_top_slot         ; the top window goes last, so it reopens on top
         bcc +
@@ -2115,7 +1793,7 @@ gm_session_window:
         clc
         adc #8
         sta gm_spos
-        inc gm_session+8
+        inc gm_session+GM_REC_COUNT
 gm_session_built:
         rts
 ; Before leaving: keep the desktop in the AES for the return.
@@ -2132,7 +1810,11 @@ gm_session_save:
         jmp ae_session_write
 ; At start: the AES session, else DESKTOP.INF, else the defaults.
 gm_restore:
-        jsr ae_session_read
+        lda #$ff                ; the AES's current double-click speed
+        jsr ae_dclick
+        bcs +
+        sta gm_dclick
++       jsr ae_session_read
         bcs gm_restore_file
         ldx #GM_RECORD_SIZE-1
 -       lda N_BUFFER,x
@@ -2152,15 +1834,20 @@ gm_restore_apply:
         sta gm_view
         lda gm_session+6
         sta gm_desk_color
+        lda gm_session+7
+        sta $0a22               ; key repeat
+        lda gm_session+8
+        sta gm_dclick
+        jsr ae_dclick
         lda #1
         sta gm_restoring
         lda #0
         sta gm_sslot            ; record index
-        lda #9
+        lda #GM_REC_WINDOWS
         sta gm_spos
 gm_restore_loop:
         lda gm_sslot
-        cmp gm_session+8
+        cmp gm_session+GM_REC_COUNT
         bcs gm_restore_done
         ldy gm_spos
         lda gm_session,y
@@ -2223,7 +1910,10 @@ gm_session_valid:
         lda gm_session+5
         cmp #4
         bcs +
-        lda gm_session+8
+        lda gm_session+8        ; double-click speed 0..4
+        cmp #5
+        bcs +
+        lda gm_session+GM_REC_COUNT
         cmp #GM_WINDOWS+1
         rts                     ; carry clear when at most four windows
 +       sec
@@ -2248,7 +1938,7 @@ gm_load_desktop:
         lda N_FACTUAL+1
         bne +
         lda N_FACTUAL
-        cmp #9
+        cmp #GM_REC_WINDOWS
         bcc gm_load_short
 +       jsr gm_close_file
         bcs gm_load_done
@@ -2359,101 +2049,90 @@ gm_save_status:
         jsr gm_astr
         jmp gm_status_text
 
-; File:Format: drive 8 or 9, disk name and ID, then a confirmation; the drive
-; gets "N0:NAME,ID" and every window of that drive is listed again.
-gm_format:
-        lda #0
-        sta gm_fname_field      ; empty name and ID each time
-        sta gm_fid_field
-        sta gm_fname_buf
-        sta gm_fid_buf
-        lda #FOS_SELECTED
-        sta gm_format_form+5+2*8+2
-        lda #0
-        sta gm_format_form+5+3*8+2
-        lda #<gm_format_form
-        ldx #>gm_format_form
-        jsr gm_form
-        bcc +
-        jmp gm_view_fail
-+       cmp #8                  ; Format
-        bne gm_format_done
-        ldx gm_fname_field
-        beq gm_format_bad       ; a disk needs a name
-        lda gm_fid_field
-        beq gm_format_bad
-        lda #8                  ; the chosen drive
-        ldx gm_format_form+5+3*8+2
+; ---- the dialog modules (GDDLG.PRG, GDSET.PRG) ------------------------------------
+; A = GM_MOP_*: run that dialog in the module window, loading its module from
+; this program's folder when another one (or none) is there.
+gm_module_run:
+        sta gm_mop
+        ldx #1                  ; Show Info and Format: GDDLG; the rest: GDSET
+        cmp #GM_MOP_INFO
         beq +
-        lda #9
-+       sta dc_device
-        sta gm_dev
-        ldx #0                  ; format as the icon opens it
-        cmp N_BOOTDEVICE
-        bne +
-        ldx N_BOOTFORMAT
-+       stx gm_fmt
-        clc                     ; "[3][Format drive 8?|Every file on it|will be erased.][Format|Cancel]"
-        adc #$30
-        sta gm_format_ask_drive
-        lda #<gm_format_ask
-        ldx #>gm_format_ask
-        ldy #2
-        jsr gm_alert
-        bcs gm_format_done
-        lda N_BUFFER
-        cmp #1
-        bne gm_format_done
-        ldy #3                  ; N0:NAME,ID
+        cmp #GM_MOP_FORMAT
+        beq +
+        inx
++       cpx gm_mloaded
+        beq gm_module_call
+        stx gm_mwanted
+        lda #0
+        sta gm_mloaded
+        lda N_MSTATE
+        beq +
+        jsr N_MCLOSE
+        bcs gm_module_fail
++       lda gm_mwanted          ; the file name
+        asl
+        asl
+        asl
+        clc
+        adc gm_mwanted          ; *9
+        tay
         ldx #0
--       lda gm_fname_buf,x
-        sta dc_text,y
+-       lda gm_mod_names-9,y
+        sta N_FNAME,x
         iny
         inx
-        cpx gm_fname_field
+        cpx #9
         bne -
-        lda #$2c
-        sta dc_text,y
-        iny
+        stx N_FNAMELEN
+        jsr N_MLOAD
+        bcs gm_module_fail
+        ldx #2
+-       lda N_MTOKEN,x
+        sta gm_mtoken,x
+        dex
+        bpl -
+        lda gm_mwanted
+        sta gm_mloaded
+gm_module_call:
+        ldx #2
+-       lda gm_mtoken,x
+        sta N_MTOKEN,x
+        dex
+        bpl -
+        jsr N_MCALL
+        bcc +
+        ldx N_MERROR            ; a gate error: load again next time
+        beq +
         ldx #0
--       lda gm_fid_buf,x
-        sta dc_text,y
-        iny
-        inx
-        cpx gm_fid_field
-        bne -
-        sty dc_length
-        lda #$4e
-        sta dc_text
-        lda #$30
-        sta dc_text+1
-        lda #$3a
-        sta dc_text+2
-        jsr dc_command
-        bcs gm_format_error
-        cmp #0
-        bne gm_format_status
-        jmp gm_refresh_drive
-gm_format_done:
-        rts
-gm_format_bad:
-        lda #<gm_format_need
-        ldx #>gm_format_need
-        ldy #1
-        jmp gm_alert
-gm_format_error:
+        stx gm_mloaded
+        lda N_MERROR
+        jmp gm_module_fail
++       rts
+gm_module_fail:                 ; "[3][Could not load GDDLG.PRG.|error $xx][OK]"
         pha
-        jsr gm_format_head
-        jmp gm_error_hex
-gm_format_status:
-        jsr gm_format_head
-        jmp gm_status_text
-gm_format_head:
         lda #0
         sta gm_alen
-        lda #<gm_s_noformat
-        ldx #>gm_s_noformat
-        jmp gm_astr
+        lda #<gm_s_nomodule
+        ldx #>gm_s_nomodule
+        jsr gm_astr
+        lda gm_mwanted          ; the module's name
+        asl
+        asl
+        asl
+        clc
+        adc gm_mwanted
+        tay
+        lda #9                  ; (gm_aput uses X)
+        sta gm_math4
+-       lda gm_mod_names-9,y
+        jsr gm_aput
+        iny
+        dec gm_math4
+        bne -
+        lda #<gm_s_nomodule2
+        ldx #>gm_s_nomodule2
+        jsr gm_astr
+        jmp gm_error_hex
 
 ; ---- windows: painting ----------------------------------------------------------------
 ; Clear the work area inside gm_clip, then draw the visible rows clipped to
@@ -3219,16 +2898,17 @@ gm_icon_bits:
         .byte $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88
         .byte $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88
         .byte $12,$49,$24,$88, $10,$00,$00,$08, $1f,$ff,$ff,$f8, $00,$00,$00,$00
-; Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|Format.
-; ..|-|Close^W;View:Name|Type|Size|Unsorted;Options:Preferences...|Save Desktop|Launcher^L
+; Desk:About uOS...|-|Control Panel...;File:Open^O|Show Info^I
+; |-|Delete^D|Format...|-|Close^W;View:Name|Type|Size|Unsorted
+; ;Options:Preferences...|Save Desktop|Launcher^L
 gm_menu:
-        .byte 68,101,115,107,58,65,98,111,117,116,32,117,79,83,46,46,46,59,70,105,108,101,58,79
-        .byte 112,101,110,94,79,124,83,104,111,119,32,73,110,102,111,94,73,124,45,124,68,101,108,101
-        .byte 116,101,94,68,124,70,111,114,109,97,116,46,46,46,124,45,124,67,108,111,115,101,94,87
-        .byte 59,86,105,101,119,58,78,97,109,101,124,84,121,112,101,124,83,105,122,101,124,85,110,115
-        .byte 111,114,116,101,100,59,79,112,116,105,111,110,115,58,80,114,101,102,101,114,101,110,99,101
-        .byte 115,46,46,46,124,83,97,118,101,32,68,101,115,107,116,111,112,124,76,97,117,110,99,104
-        .byte 101,114,94,76,0
+        .byte 68,101,115,107,58,65,98,111,117,116,32,117,79,83,46,46,46,124,45,124,67,111,110,116
+        .byte 114,111,108,32,80,97,110,101,108,46,46,46,59,70,105,108,101,58,79,112,101,110,94,79
+        .byte 124,83,104,111,119,32,73,110,102,111,94,73,124,45,124,68,101,108,101,116,101,94,68,124
+        .byte 70,111,114,109,97,116,46,46,46,124,45,124,67,108,111,115,101,94,87,59,86,105,101,119
+        .byte 58,78,97,109,101,124,84,121,112,101,124,83,105,122,101,124,85,110,115,111,114,116,101,100
+        .byte 59,79,112,116,105,111,110,115,58,80,114,101,102,101,114,101,110,99,101,115,46,46,46,124
+        .byte 83,97,118,101,32,68,101,115,107,116,111,112,124,76,97,117,110,99,104,101,114,94,76,0
 ; Show Info alert pieces
 gm_s_head: .byte 91,49,93,91,0                          ; [1][
 gm_s_type: .byte 124,84,121,112,101,58,32,0             ; |Type:
@@ -3250,9 +2930,9 @@ gm_badname_alert: .byte 91,49,93,91,84,104,105,115,32,110,97,109,101,32,99,97,11
 gm_bad_chars: .byte $2a,$3f,$2c,$3d,$3a,$22,$40   ; * ? , = : " @: DOS syntax in a name
 gm_bad_chars_end:
 GM_GAP_COUNT = 6
-; [1][uOS GEM desktop|AES 1.5 on the C128][OK]
+; [1][uOS GEM desktop|AES 1.6 on the C128][OK]
 gm_about: .byte 91,49,93,91,117,79,83,32,71,69,77,32,100,101,115,107,116,111,112,124
-        .byte 65,69,83,32,49,46,53,32,111,110,32,116,104,101,32,67,49,50,56,93,91,79,75,93,0
+        .byte 65,69,83,32,49,46,54,32,111,110,32,116,104,101,32,67,49,50,56,93,91,79,75,93,0
 ; [3][Could not start that|program: error $xx][OK]
 gm_start_alert: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,115,116,97,114,116,32
         .byte 116,104,97,116,124,112,114,111,103,114,97,109,58,32,101,114,114,111,114,32,36
@@ -3265,6 +2945,27 @@ gm_drive_alert_hex: .byte 48,48,93,91,79,75,93,0
 gm_full_alert: .byte 91,49,93,91,70,111,117,114,32,102,111,108,100,101,114,32,119,105,110,100
         .byte 111,119,115,124,97,114,101,32,97,108,114,101,97,100,121,32,111,112,101,110,46,93,91,79,75,93,0
 
+gm_confirm: .byte 1
+gm_desk_color: .byte $16
+gm_restoring: .byte 0
+gm_orect: .fill 4,0
+gm_spos: .byte 0
+gm_sslot: .byte 0
+gm_stop: .byte 0
+gm_session: .fill 64,0
+gm_magic: .byte 71,68,83,2                           ; "GDS", version 2
+gm_dclick: .byte 2                                   ; double-click speed 0..4
+gm_inf_name: .byte 68,69,83,75,84,79,80,46,73,78,70  ; DESKTOP.INF
+gm_inf_scratch: .byte 83,48,58,68,69,83,75,84,79,80,46,73,78,70   ; S0:DESKTOP.INF
+gm_s_nosave: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,115,97,118,101,32,116,104,101,32,100,101,115,107,116,111,112,46,124,0   ; [3][Could not save the desktop.|
+gm_mop: .byte 0
+gm_mtoken: .fill 3,0
+gm_mod_names: .byte 71,68,68,76,71,46,80,82,71   ; module 1
+        .byte 71,68,83,69,84,46,80,82,71   ; module 2
+gm_mloaded: .byte 0
+gm_mwanted: .byte 0
+gm_s_nomodule: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,108,111,97,100,32,0   ; [3][Could not load 
+gm_s_nomodule2: .byte 46,124,0   ; .|
 gm_surface: .fill 4,0
 gm_file: .fill 4,0
 gm_start_error: .byte 0
@@ -3349,6 +3050,648 @@ gm_order = gm_dirpage
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 .include "input/pointer.inc"
+; ---- module window (docs/NATIVE-MODULES.md) ------------------------------------------
+; Two modules share the window; each has its own copy of the forms library
+; (docs/NATIVE-FORMS.md). GDDLG.PRG: Show Info with rename, Format.
+; GDSET.PRG: Preferences, Control Panel. Entry: gm_mop selects the dialog.
+gm_module:
+gm_dlg:
+        .text "nmod"
+        .byte 1,1,14,0
+        .word gm_dlg_end-gm_dlg
+        .word 0
+        .word dlg.entry-gm_dlg
+        .word 0
+dlg .block
+entry:
+        ldx #3                  ; forms draw on the desktop's surface
+-       lda gm_surface,x
+        sta fo_surface,x
+        dex
+        bpl -
+        lda gm_mop
+        cmp #GM_MOP_INFO
+        bne +
+        jmp gm_info_dialog
++       jmp gm_format
+; File:Show Info on an entry: name (editable), type and blocks, read-only.
+; OK with a changed name renames the file on the drive.
+gm_info_dialog:
+        ldx #0                  ; the name into the field
+-       lda gm_rec,x
+        cmp #$a0
+        beq +
+        sta gm_name_buf,x
+        inx
+        cpx #16
+        bne -
++       stx gm_name_field
+        lda #0
+        sta gm_name_buf,x
+        sta gm_alen             ; "Type: SEQ  Blocks: 1"
+        jsr gm_atype
+        ldx gm_alen
+        lda #0
+        sta gm_abuf,x
+        ldx #0
+-       lda gm_abuf,x
+        sta gm_info_line,x
+        beq +
+        inx
+        bne -
++       lda gm_rec+17           ; read-only: shown, not changeable on IEC
+        and #$40
+        beq +
+        lda #FOS_SELECTED
++       ora #FOS_DISABLED
+        sta gm_info_form+5+4*8+2
+        lda #<gm_info_form
+        ldx #>gm_info_form
+        jsr gm_form
+        bcs gm_dialog_fail
+        cmp #5                  ; OK
+        bne gm_dialog_done
+        ldx #0                  ; the same name: nothing to do
+-       cpx gm_name_field
+        beq +
+        lda gm_name_buf,x
+        cmp gm_rec,x
+        bne gm_rename
+        inx
+        bne -
++       cpx #16
+        beq gm_dialog_done
+        lda gm_rec,x
+        cmp #$a0
+        bne gm_rename
+gm_dialog_done:
+        rts
+gm_dialog_fail:
+        jmp gm_view_fail
+; Rename: "R0:NEW=OLD" to the window's drive, then list it again.
+gm_rename:
+        lda gm_name_field
+        beq gm_rename_bad
+        ldy #3
+        ldx #0
+-       lda gm_name_buf,x       ; the new name
+        jsr gm_dos_char
+        bcs gm_rename_bad
+        sta dc_text,y
+        iny
+        inx
+        cpx gm_name_field
+        bne -
+        lda #$3d                ; =
+        sta dc_text,y
+        iny
+        ldx #0
+-       lda gm_rec,x            ; the old name
+        cmp #$a0
+        beq +
+        jsr gm_dos_char
+        bcs gm_rename_bad
+        sta dc_text,y
+        iny
+        inx
+        cpx #16
+        bne -
++       sty dc_length
+        lda #$52                ; R0:
+        sta dc_text
+        lda #$30
+        sta dc_text+1
+        lda #$3a
+        sta dc_text+2
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta dc_device
+        sta gm_dev
+        lda gm_win_fmt,x
+        sta gm_fmt
+        jsr dc_command
+        bcs gm_rename_error
+        cmp #0
+        bne gm_rename_status
+        jmp gm_refresh_drive
+gm_rename_bad:
+        jmp gm_del_badname
+gm_rename_error:
+        pha
+        lda #<gm_s_norename
+        ldx #>gm_s_norename
+        jsr gm_fail_head
+        jmp gm_error_hex
+gm_rename_status:
+        lda #<gm_s_norename
+        ldx #>gm_s_norename
+        jsr gm_fail_head
+        jmp gm_status_text
+; A = name byte: carry set for DOS syntax characters. Keeps X and Y.
+gm_dos_char:
+        stx gm_math4
+        ldx #gm_bad_chars_end-gm_bad_chars-1
+-       cmp gm_bad_chars,x
+        beq +
+        dex
+        bpl -
+        ldx gm_math4
+        clc
+        rts
++       ldx gm_math4
+        sec
+        rts
+; A/X = form: open it, run it, close it. A = the exit object.
+gm_form:
+        sta gm_form_ptr
+        stx gm_form_ptr+1
+        jsr gm_bind
+        bcs gm_form_done
+        jsr gfx_clip_defaults
+        lda gm_form_ptr
+        ldx gm_form_ptr+1
+        jsr fo_open
+        bcs gm_form_done
+        jsr fo_do
+        bcs gm_form_close_error
+        sta gm_form_exit
+        jsr fo_close
+        bcs gm_form_done
+        lda gm_form_exit
+gm_form_done:
+        rts
+gm_form_close_error:            ; keep the first error, still restore
+        pha
+        jsr fo_close
+        pla
+        sec
+        rts
+
+gm_fname_field: .byte 0,0,16    ; N_FEDIT records: disk name and ID (IEC filename filter)
+        .word gm_fname_buf
+        .byte 0,0,3
+gm_fname_buf: .fill 17,0
+gm_fid_field: .byte 0,0,2
+        .word gm_fid_buf
+        .byte 0,0,3
+gm_fid_buf: .fill 3,0
+gm_format_form: .byte $ff,0,30,11,10
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_format
+        .byte FOT_TEXT,0,0,2,3,6
+        .word gm_t_drive
+        .byte FOT_RADIO,$10,0,9,3,5
+        .word gm_t_8
+        .byte FOT_RADIO,$10,0,15,3,5
+        .word gm_t_9
+        .byte FOT_TEXT,0,0,2,4,5
+        .word gm_t_name
+        .byte FOT_FIELD,0,0,9,4,17
+        .word gm_fname_field
+        .byte FOT_TEXT,0,0,2,5,3
+        .word gm_t_id
+        .byte FOT_FIELD,0,0,9,5,3
+        .word gm_fid_field
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,6,8,10
+        .word gm_t_formatb
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,8,8
+        .word gm_t_cancel
+gm_form_exit: .byte 0
+gm_form_ptr: .word 0
+gm_name_field: .byte 0,0,16     ; N_FEDIT record: length, caret, maximum,
+        .word gm_name_buf       ; buffer, 40/80-column views, IEC filename filter
+        .byte 0,0,3
+gm_name_buf: .fill 17,0
+gm_info_line: .fill 32,0
+; Show Info: x (centred), y, w, h, objects
+gm_info_form: .byte $ff,0,30,10,7
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_info
+        .byte FOT_TEXT,0,0,2,3,5
+        .word gm_t_name
+        .byte FOT_FIELD,0,0,8,3,17
+        .word gm_name_field
+        .byte FOT_TEXT,0,0,2,4,26
+        .word gm_info_line
+        .byte FOT_CHECK,0,FOS_DISABLED,2,5,12
+        .word gm_t_readonly
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,7,8
+        .word gm_t_ok
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,7,8
+        .word gm_t_cancel
+gm_t_info: .byte 73,116,101,109,32,73,110,102,111,114,109,97,116,105,111,110,0   ; Item Information
+gm_t_name: .byte 78,97,109,101,58,0   ; Name:
+gm_t_readonly: .byte 82,101,97,100,45,111,110,108,121,0   ; Read-only
+gm_t_format: .byte 70,111,114,109,97,116,32,100,105,115,107,0   ; Format disk
+gm_t_drive: .byte 68,114,105,118,101,58,0   ; Drive:
+gm_t_8: .byte 56,0   ; 8
+gm_t_9: .byte 57,0   ; 9
+gm_t_id: .byte 73,68,58,0   ; ID:
+gm_t_formatb: .byte 70,111,114,109,97,116,0   ; Format
+gm_s_noformat: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,102,111,114,109,97,116,32,116,104,101,32,100,105,115,107,46,124,0   ; [3][Could not format the disk.|
+gm_format_need: .byte 91,49,93,91,65,32,100,105,115,107,32,110,101,101,100,115,32,97,32,110,97,109,101,124,97,110,100,32,97,110,32,73,68,46,93,91,79,75,93,0   ; [1][A disk needs a name|and an ID.][OK]
+gm_format_ask: .byte 91,51,93,91,70,111,114,109,97,116,32,100,114,105,118,101,32
+gm_format_ask_drive: .byte 56
+        .byte 63,124,69,118,101,114,121,32,102,105,108,101,32,111,110,32,105,116,124,119,105,108,108,32,98,101,32,101,114,97,115,101,100,46,93,91,70,111,114,109,97,116,124,67,97,110,99,101,108,93,0
+gm_t_ok: .byte 79,75,0   ; OK
+gm_t_cancel: .byte 67,97,110,99,101,108,0   ; Cancel
+gm_s_norename: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,114,101,110,97,109,101,124,0   ; [3][Could not rename|
+
+; File:Format: drive 8 or 9, disk name and ID, then a confirmation; the drive
+; gets "N0:NAME,ID" and every window of that drive is listed again.
+gm_format:
+        lda #0
+        sta gm_fname_field      ; empty name and ID each time
+        sta gm_fid_field
+        sta gm_fname_buf
+        sta gm_fid_buf
+        lda #FOS_SELECTED
+        sta gm_format_form+5+2*8+2
+        lda #0
+        sta gm_format_form+5+3*8+2
+        lda #<gm_format_form
+        ldx #>gm_format_form
+        jsr gm_form
+        bcc +
+        jmp gm_view_fail
++       cmp #8                  ; Format
+        bne gm_format_done
+        ldx gm_fname_field
+        beq gm_format_bad       ; a disk needs a name
+        lda gm_fid_field
+        beq gm_format_bad
+        lda #8                  ; the chosen drive
+        ldx gm_format_form+5+3*8+2
+        beq +
+        lda #9
++       sta dc_device
+        sta gm_dev
+        ldx #0                  ; format as the icon opens it
+        cmp N_BOOTDEVICE
+        bne +
+        ldx N_BOOTFORMAT
++       stx gm_fmt
+        clc                     ; "[3][Format drive 8?|Every file on it|will be erased.][Format|Cancel]"
+        adc #$30
+        sta gm_format_ask_drive
+        lda #<gm_format_ask
+        ldx #>gm_format_ask
+        ldy #2
+        jsr gm_alert
+        bcs gm_format_done
+        lda N_BUFFER
+        cmp #1
+        bne gm_format_done
+        ldy #3                  ; N0:NAME,ID
+        ldx #0
+-       lda gm_fname_buf,x
+        sta dc_text,y
+        iny
+        inx
+        cpx gm_fname_field
+        bne -
+        lda #$2c
+        sta dc_text,y
+        iny
+        ldx #0
+-       lda gm_fid_buf,x
+        sta dc_text,y
+        iny
+        inx
+        cpx gm_fid_field
+        bne -
+        sty dc_length
+        lda #$4e
+        sta dc_text
+        lda #$30
+        sta dc_text+1
+        lda #$3a
+        sta dc_text+2
+        jsr dc_command
+        bcs gm_format_error
+        cmp #0
+        bne gm_format_status
+        jmp gm_refresh_drive
+gm_format_done:
+        rts
+gm_format_bad:
+        lda #<gm_format_need
+        ldx #>gm_format_need
+        ldy #1
+        jmp gm_alert
+gm_format_error:
+        pha
+        jsr gm_format_head
+        jmp gm_error_hex
+gm_format_status:
+        jsr gm_format_head
+        jmp gm_status_text
+gm_format_head:
+        lda #0
+        sta gm_alen
+        lda #<gm_s_noformat
+        ldx #>gm_s_noformat
+        jmp gm_astr
+
 .include "forms.inc"
-gm_end:
-.cerror gm_end > N_APPLIMIT, "the GEM desktop exceeds its slot"
+.bend
+gm_dlg_end:
+.cerror gm_dlg_end > N_APPBASE+GM_APP_PAGES*256, "GDDLG.PRG exceeds the module window: ", gm_dlg_end
+
+        .logical gm_module
+gm_set:
+        .text "nmod"
+        .byte 1,1,14,0
+        .word gm_set_end-gm_set
+        .word 0
+        .word set.entry-gm_set
+        .word 0
+set .block
+gm_dialog_done:
+        rts
+gm_dialog_fail:
+        jmp gm_view_fail
+entry:
+        ldx #3                  ; forms draw on the desktop's surface
+-       lda gm_surface,x
+        sta fo_surface,x
+        dex
+        bpl -
+        lda gm_mop
+        cmp #GM_MOP_PREFS
+        bne +
+        jmp gm_prefs
++       jmp gm_control
+; Options:Preferences: confirm deletes, and the sort order.
+gm_prefs:
+        lda gm_confirm
+        beq +
+        lda #FOS_SELECTED
++       sta gm_pref_form+5+1*8+2
+        ldx #0
+        ldy #0
+-       lda #0
+        cpy gm_view
+        bne +
+        lda #FOS_SELECTED
++       sta gm_pref_form+5+3*8+2,x ; objects 3..6, 8 bytes apart
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #4
+        bne -
+        ldx #0                  ; desktop colour radios: objects 8..10
+        ldy #0
+-       lda #0
+        pha
+        lda gm_desk_colors,y
+        cmp gm_desk_color
+        bne +
+        pla
+        lda #FOS_SELECTED
+        pha
++       pla
+        sta gm_pref_form+5+8*8+2,x
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #3
+        bne -
+        lda #<gm_pref_form
+        ldx #>gm_pref_form
+        jsr gm_form
+        bcs gm_dialog_fail
+        cmp #11                 ; OK
+        bne gm_dialog_done
+        ldx #0                  ; the chosen colour
+        ldy #0
+-       lda gm_pref_form+5+8*8+2,x
+        and #FOS_SELECTED
+        bne +
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #3
+        bne -
+        beq gm_prefs_view
++       lda gm_desk_colors,y
+        cmp gm_desk_color
+        beq gm_prefs_view
+        sta gm_desk_color
+        jsr gm_restore_color    ; the AES repaints; WM_REDRAW brings the icons
+gm_prefs_view:
+        lda gm_pref_form+5+1*8+2
+        and #FOS_SELECTED
+        sta gm_confirm
+        ldx #0
+        ldy #0
+-       lda gm_pref_form+5+3*8+2,x
+        and #FOS_SELECTED
+        bne +
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #4
+        bne -
+        rts
++       tya
+        jmp gm_set_view
+; A/X = form: open it, run it, close it. A = the exit object.
+gm_form:
+        sta gm_form_ptr
+        stx gm_form_ptr+1
+        jsr gm_bind
+        bcs gm_form_done
+        jsr gfx_clip_defaults
+        lda gm_form_ptr
+        ldx gm_form_ptr+1
+        jsr fo_open
+        bcs gm_form_done
+        jsr fo_do
+        bcs gm_form_close_error
+        sta gm_form_exit
+        jsr fo_close
+        bcs gm_form_done
+        lda gm_form_exit
+gm_form_done:
+        rts
+gm_form_close_error:            ; keep the first error, still restore
+        pha
+        jsr fo_close
+        pla
+        sec
+        rts
+
+gm_form_exit: .byte 0
+gm_form_ptr: .word 0
+gm_pref_form: .byte $ff,0,30,13,13
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_prefs
+        .byte FOT_CHECK,0,0,2,3,18
+        .word gm_t_confirm
+        .byte FOT_TEXT,0,0,2,4,18
+        .word gm_t_sortby
+        .byte FOT_RADIO,$10,0,4,5,8
+        .word gm_t_sname
+        .byte FOT_RADIO,$10,0,14,5,8
+        .word gm_t_stype
+        .byte FOT_RADIO,$10,0,4,6,8
+        .word gm_t_ssize
+        .byte FOT_RADIO,$10,0,14,6,12
+        .word gm_t_sunsorted
+        .byte FOT_TEXT,0,0,2,7,9
+        .word gm_t_desktop
+        .byte FOT_RADIO,$20,0,4,8,7
+        .word gm_t_blue
+        .byte FOT_RADIO,$20,0,12,8,7
+        .word gm_t_grey
+        .byte FOT_RADIO,$20,0,20,8,8
+        .word gm_t_black
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,10,8
+        .word gm_t_ok
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,10,8
+        .word gm_t_cancel
+gm_t_desktop: .byte 68,101,115,107,116,111,112,58,0   ; Desktop:
+gm_t_blue: .byte 66,108,117,101,0                    ; Blue
+gm_t_grey: .byte 71,114,101,121,0                    ; Grey
+gm_t_black: .byte 66,108,97,99,107,0                 ; Black
+gm_desk_colors: .byte $16,$1c,$10                    ; white icons on blue, grey, black
+gm_t_ok: .byte 79,75,0   ; OK
+gm_t_cancel: .byte 67,97,110,99,101,108,0   ; Cancel
+gm_t_prefs: .byte 80,114,101,102,101,114,101,110,99,101,115,0   ; Preferences
+gm_t_confirm: .byte 67,111,110,102,105,114,109,32,100,101,108,101,116,101,115,0   ; Confirm deletes
+gm_t_sortby: .byte 83,111,114,116,32,119,105,110,100,111,119,115,32,98,121,58,0   ; Sort windows by:
+gm_t_sname: .byte 78,97,109,101,0   ; Name
+gm_t_stype: .byte 84,121,112,101,0   ; Type
+gm_t_ssize: .byte 83,105,122,101,0   ; Size
+gm_t_sunsorted: .byte 85,110,115,111,114,116,101,100,0   ; Unsorted
+; Desk:Control Panel: key repeat (KERNAL RPTFLG) and double-click speed (AES
+; evnt_dclick). Both are kept with the desktop.
+gm_control:
+        ldx #2                  ; key repeat radios: objects 2..4
+-       lda #0
+        ldy gm_rpt_values,x
+        cpy $0a22
+        bne +
+        lda #FOS_SELECTED
++       sta gm_ctrl_rpt_state,x
+        dex
+        bpl -
+        lda $0a22               ; another value: shown as cursor keys only
+        ldx #2
+-       cmp gm_rpt_values,x
+        beq +
+        dex
+        bpl -
+        lda #FOS_SELECTED
+        sta gm_ctrl_rpt_state+1
++       ldx #4                  ; speed radios: objects 6..10
+-       lda #0
+        cpx gm_dclick
+        bne +
+        lda #FOS_SELECTED
++       sta gm_ctrl_speed_state,x
+        dex
+        bpl -
+        ldx #0                  ; copy the states into the form's objects
+-       lda gm_ctrl_rpt_state,x
+        ldy gm_ctrl_rpt_offset,x
+        sta gm_ctrl_form,y
+        inx
+        cpx #3
+        bne -
+        ldx #0
+-       lda gm_ctrl_speed_state,x
+        ldy gm_ctrl_speed_offset,x
+        sta gm_ctrl_form,y
+        inx
+        cpx #5
+        bne -
+        lda #<gm_ctrl_form
+        ldx #>gm_ctrl_form
+        jsr gm_form
+        bcc +
+        jmp gm_view_fail
++       cmp #11                 ; OK
+        bne gm_control_done
+        ldx #2
+-       ldy gm_ctrl_rpt_offset,x
+        lda gm_ctrl_form,y
+        and #FOS_SELECTED
+        beq +
+        lda gm_rpt_values,x
+        sta $0a22
++       dex
+        bpl -
+        ldx #4
+-       ldy gm_ctrl_speed_offset,x
+        lda gm_ctrl_form,y
+        and #FOS_SELECTED
+        beq +
+        stx gm_dclick
++       dex
+        bpl -
+        lda gm_dclick
+        jmp ae_dclick
+gm_control_done:
+        rts
+gm_rpt_values: .byte $80,$00,$40                     ; all keys, cursor keys only, none
+gm_ctrl_rpt_offset: .byte 5+2*8+2,5+3*8+2,5+4*8+2   ; state bytes of objects 2..4
+gm_ctrl_speed_offset: .byte 5+6*8+2,5+7*8+2,5+8*8+2,5+9*8+2,5+10*8+2
+gm_ctrl_rpt_state: .fill 3,0
+gm_ctrl_speed_state: .fill 5,0
+gm_ctrl_form: .byte $ff,0,30,11,13
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_control
+        .byte FOT_TEXT,0,0,2,3,12
+        .word gm_t_repeat
+        .byte FOT_RADIO,$10,0,4,4,6
+        .word gm_t_all
+        .byte FOT_RADIO,$10,0,11,4,9
+        .word gm_t_cursor
+        .byte FOT_RADIO,$10,0,21,4,7
+        .word gm_t_none
+        .byte FOT_TEXT,0,0,2,5,26
+        .word gm_t_dclick
+        .byte FOT_RADIO,$20,0,4,6,4
+        .word gm_t_1
+        .byte FOT_RADIO,$20,0,9,6,4
+        .word gm_t_2
+        .byte FOT_RADIO,$20,0,14,6,4
+        .word gm_t_3
+        .byte FOT_RADIO,$20,0,19,6,4
+        .word gm_t_4
+        .byte FOT_RADIO,$20,0,24,6,4
+        .word gm_t_5
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,6,8,8
+        .word gm_t_ok
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,8,8
+        .word gm_t_cancel
+gm_t_control: .byte 67,111,110,116,114,111,108,32,80,97,110,101,108,0   ; Control Panel
+gm_t_repeat: .byte 75,101,121,32,114,101,112,101,97,116,58,0   ; Key repeat:
+gm_t_all: .byte 65,108,108,0   ; All
+gm_t_cursor: .byte 67,117,114,115,111,114,0   ; Cursor
+gm_t_none: .byte 78,111,110,101,0   ; None
+gm_t_dclick: .byte 68,111,117,98,108,101,45,99,108,105,99,107,32,40,115,108,111,119,45,102,97,115,116,41,58,0   ; Double-click (slow-fast):
+gm_t_1: .byte 49,0   ; 1
+gm_t_2: .byte 50,0   ; 2
+gm_t_3: .byte 51,0   ; 3
+gm_t_4: .byte 52,0   ; 4
+gm_t_5: .byte 53,0   ; 5
+
+.include "forms.inc"
+.bend
+gm_set_end:
+.cerror gm_set_end > N_APPBASE+GM_APP_PAGES*256, "GDSET.PRG exceeds the module window: ", gm_set_end
+
+        .here
+gm_end = gm_module
+.cerror gm_module > N_APPLIMIT, "the GEM desktop core exceeds its slot"
