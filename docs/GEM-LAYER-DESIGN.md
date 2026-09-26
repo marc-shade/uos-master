@@ -140,8 +140,10 @@ workflows replace the launcher's oracles.
   Info/rename and New Folder reuse the verified Ultimate command code from
   `src/native/files/new-folder.inc`, extracted into a shared include. Deletes
   are confirmed with an alert. Moves within one filesystem use RENAME_FILE;
-  other moves are a verified copy and a delete. IEC trash/rename waits for a
-  kernel command-channel service.
+  other moves are a verified copy and a delete. *Revised 2026-09-26:* IEC
+  delete uses the app-side [DOS command library](NATIVE-DOS-COMMANDS.md)
+  instead of a kernel service (the kernel has no free bytes); it refuses
+  while the kernel holds the drive's command channel.
 - **Budget:** about 50 core pages plus a 24-page module window for copy,
   info and open, inside the 96-page slot. Frames, menus and alerts live in
   the AES; caches live in the bank-1 heap. Window state is saved in the AES
@@ -166,7 +168,10 @@ clipboard, Files and folder CPU suites and the `native`, `nativedesktop*` and
 5. **Window manager:** randomized comparison with a Python oracle for the
    cell map, redraw rectangles and messages; then a VICE drag workflow.
 6. **Objects:** radio buttons, checkboxes, default/cancel buttons, text
-   fields bridged to `N_FEDIT`.
+   fields bridged to `N_FEDIT`. *Revised 2026-09-26:* built as the app-side
+   [forms library](NATIVE-FORMS.md) instead of AES ops 14–15, because the
+   AES image is full. It polls input itself, so the menu bar is inactive
+   while a form is open.
 7. **GEM desktop profile:** drive windows, launch and return with restored
    windows, trash and info on Ultimate.
 8. **Accessory slot, Desk menu and Control Panel:** key repeat, double-click,

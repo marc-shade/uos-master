@@ -407,7 +407,12 @@ def event_cases(work, report, done):
     jiffy(6000); demo.key(ord('E'))
     pointer(0, 0, 1); resume(); pointer(0, 0, 0); jiffy(6019); resume(); assert waiting()
     jiffy(6020); resume(); assert not waiting() and result()[6] == 1
-    done('double-click inside the 20-jiffy window; the window closing reports one click', demo)
+    pointer(0, 0, 0)
+    jiffy(0x4f1a00-5); demo.key(ord('E'))                  # the clock resets at midnight
+    pointer(0, 0, 1); resume(); pointer(0, 0, 0); resume(); assert waiting()
+    jiffy(3); resume(); assert not waiting() and result()[6] == 1
+    done('double-click inside the 20-jiffy window; the window closing reports one click, '
+         'also across the midnight clock reset', demo)
 
     params(4|8, m1=(0, 10, 10, 5, 5), m2=(1, 0, 0, 4, 4))
     pointer(8, 8, 0); demo.key(ord('E')); assert waiting()           # in rect 2, outside rect 1

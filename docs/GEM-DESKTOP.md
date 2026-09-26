@@ -10,26 +10,42 @@ v1's scope and acceptance. The status section below records what is built.
 
 The build adds `target/native-desktop/gem.d81`, a D81 with GEMDESK as
 `browse`, the card launcher as `cards`, and `aesvc.prg`.
-`tests/ci_native_gemdesk.py` (Py65) passes 8 cases against
-`tests/native_gemdesk_scene.py`:
-- startup: the AES loaded from the boot folder, menu bar and icons;
+`tests/ci_native_gemdesk.py` (Py65) passes 27 cases against
+`tests/native_gemdesk_scene.py` ([first build](validation/2026-09-26-gemdesk/README.md),
+[files and views](validation/2026-09-26-gemdesk-files/README.md)).
+
+Built and tested:
+- startup with the AES loaded from the boot folder;
 - icon selection;
-- a double-click opening the boot drive's listing window (22 entries);
-- arrow scrolling, row selection by click and by cursor keys;
-- File:Close (Ctrl-W);
-- Desk:About (F1, Return) as an exact alert, with the desktop restored;
-- Options:Launcher (Ctrl-L) handing over to `cards`;
-- a double-click on a listed file handing it to the dispatcher, which checks
-  it is a program.
+- drive windows for the boot drive and drive 9, four at once (a fifth is
+  refused), staggered, topped by a click;
+- scrolling by arrow, track (a page) and thumb; row selection by click and by
+  cursor keys;
+- View sorting: name (the default), type, size (largest first) and unsorted,
+  with the current item checked;
+- Show Info for an entry, as a [dialog](NATIVE-FORMS.md) with the name
+  editable (OK renames the file with `R0:NEW=OLD`; the drive's refusal, such
+  as 63 FILE EXISTS, is shown), type, blocks and read-only. For a drive icon,
+  it shows files and blocks used in an alert.
+- Options:Preferences, a dialog: Confirm deletes (a checkbox; off, Delete and
+  Trash skip the question) and the sort order (radio buttons, the same as
+  View). The settings last until GEMDESK is reloaded.
+- Delete (Ctrl-D) and dropping a row on Trash. Both ask first, with Cancel
+  as the default. The file is scratched with
+  [`dos-command.inc`](NATIVE-DOS-COMMANDS.md), the drive's count of scratched
+  files is checked, and every window of that drive is listed again. A locked
+  file the drive skips is reported. Names with DOS pattern characters are
+  refused, and so is a drive whose command channel the kernel holds.
+- File:Close, Desk:About, Options:Launcher, and launching a listed file;
+- the drive and full-window error alerts.
 
-Built but not yet covered by tests:
-- drive 9;
-- paging, the thumb, fulled/moved/sized answers;
-- several windows at once;
-- the error alerts.
+Built but not yet covered by tests: fulled, moved and sized answers.
 
-Not built yet: the rest of v1 — Show Info, Delete, dragging to Trash, View
-sorting, and the Ultimate icon with folders. Trash has an icon but no action.
+Not built yet: the Ultimate icon with folder windows. Other limits:
+- dragging shows no outline;
+- Show Info cannot change read-only;
+- IEC free space is not shown.
+
 Nothing has run in VICE or on hardware.
 
 ## v1 scope
@@ -46,8 +62,8 @@ Desktop icons are redrawn on `WM_REDRAW` for handle 0.
 **Menu.**
 - `Desk: About uOS...`
 - `File: Open^O | Show Info^I | - | Delete^D | - | Close^W`
-- `View: Name | Type`
-- `Options: Launcher^L`
+- `View: Name | Type | Size | Unsorted`
+- `Options: Preferences... | Launcher^L`
 
 Choosing Launcher returns to the card launcher (`N_EXIT`).
 
@@ -68,12 +84,12 @@ vertical-slider gadgets. Up to four folder windows may be open at once.
   - a native app (NAPP manifest) launches through the dispatcher;
   - a folder (Ultimate) opens in place;
   - anything else shows an info alert.
-- Show Info shows an alert with the name, type and size.
-- Delete asks for confirmation in an alert, then deletes through the same
-  verified Ultimate path as Files. On IEC it explains that IEC delete is not
-  available yet.
+- Show Info shows an alert with the name, type and size (and read-only).
+- Delete asks for confirmation in an alert. On IEC it scratches the file
+  through [`dos-command.inc`](NATIVE-DOS-COMMANDS.md) and checks the drive's
+  count; on Ultimate it will use the same verified path as Files.
 - Dragging an entry onto Trash does the same as Delete.
-- View sorts the snapshot by name or type.
+- View sorts the snapshot by name, type or size, or keeps directory order.
 
 **Keyboard.** The menu's shortcuts, plus cursor keys and Return in the top
 folder window.
@@ -99,5 +115,4 @@ folder window.
 - Install Application, and saved desktop configuration.
 - Desk accessories.
 - Keyboard pointer emulation.
-- IEC delete and rename (needs a kernel command-channel service).
 - Printing.

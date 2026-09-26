@@ -155,16 +155,10 @@ ev_button:
         sta ev_counting
         lda #0
         sta ev_press_count
-        clc                     ; deadline = now + window
-        lda ev_now
-        adc #EV_DCLICK
-        sta ev_deadline
+        lda ev_now              ; the window runs from the first press
+        sta ev_click_at
         lda ev_now+1
-        adc #0
-        sta ev_deadline+1
-        lda ev_now+2
-        adc #0
-        sta ev_deadline+2
+        sta ev_click_at+1
 +       inc ev_press_count
         lda ev_press_count
         cmp N_BUFFER+1
@@ -172,12 +166,14 @@ ev_button:
 ev_button_window:
         lda ev_counting
         beq ev_button_done
-        lda ev_now              ; window over when now >= deadline
-        cmp ev_deadline
+        sec                     ; over when the 16-bit jiffies since the first
+        lda ev_now              ; press reach the window; the clock's reset at
+        sbc ev_click_at         ; midnight also closes it
+        tax
         lda ev_now+1
-        sbc ev_deadline+1
-        lda ev_now+2
-        sbc ev_deadline+2
+        sbc ev_click_at+1
+        bne ev_button_fire
+        cpx #EV_DCLICK
         bcc ev_button_done
 ev_button_fire:
         lda ev_press_count
@@ -357,7 +353,7 @@ ev_reset:
 
 ev_now: .fill 3,0
 ev_start: .fill 3,0
-ev_deadline: .fill 3,0
+ev_click_at: .fill 2,0
 ev_math: .word 0
 ev_fired: .byte 0
 ev_clicks: .byte 0

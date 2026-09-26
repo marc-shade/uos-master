@@ -66,7 +66,8 @@ class Pointer(calc.Calculator):
         if dx:self.bus.pots[0]=64+((self.bus.pots[0]-64+dx*2)&127)
         if dy:self.bus.pots[1]=64+((self.bus.pots[1]-64-dy*2)&127)
         if down is not None:self.bus.down=down
-        self.ram[0xa2]=(self.ram[0xa2]+1)&255
+        jiffies=int.from_bytes(self.ram[0xa0:0xa3],'big')+1   # the KERNAL's UDTIM: carry, reset at 24 h
+        self.ram[0xa0:0xa3]=(0 if jiffies>=0x4f1a01 else jiffies).to_bytes(3,'big')
         self.poll()
         line=self.bus.raster
         self.bus.raster=min(255,line+32)

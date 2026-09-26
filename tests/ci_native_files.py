@@ -25,6 +25,32 @@ class StreamIEC(IEC):
         self.reads=0;self.writes=0
         self.formats={};self.blocks={};self.edit_blocks=None;self.fail_block=None
         self.command=bytearray();self.short_eoi_quirk=True
+        self.locked=set();self.status_text={};self.fail_command=None
+
+    def dos_command(self,device,command):
+        """A DOS command sent as the name of an OPEN on secondary 15: CBM DOS
+        scratch (locked files are skipped and the count says so) and rename."""
+        self.events.append(('dos',device,command))
+        if self.fail_command is not None:
+            code,text=self.fail_command
+        elif command.startswith(b'S0:') and len(command)>3:
+            name=command[3:]
+            keys=[k for k in self.files if k[0]==device and k[1]==name and k not in self.locked]
+            for k in keys:del self.files[k]
+            code,text=1,f'01, FILES SCRATCHED,{len(keys):02d},00'
+        elif command.startswith(b'R0:') and b'=' in command[3:]:
+            new,old=command[3:].split(b'=',1)
+            found=[k for k in self.files if k[0]==device and k[1]==old]
+            if any(k[0]==device and k[1]==new for k in self.files):code,text=63,'63,FILE EXISTS,00,00'
+            elif not found:code,text=62,'62,FILE NOT FOUND,00,00'
+            else:
+                key=found[0];renamed=(device,new,key[2])  # keeps its directory slot
+                self.files={renamed if k==key else k:v for k,v in self.files.items()}
+                if key in self.locked:self.locked.discard(key);self.locked.add(renamed)
+                code,text=0,'00, OK,00,00'
+        else:
+            code,text=31,'31,SYNTAX ERROR,00,00'
+        self.codes[device]=code;self.status_text[device]=text.encode()+b'\r'
 
     def disk_blocks(self,device):
         """Construct CBM sectors from files independently of the kernel parser."""
@@ -44,7 +70,7 @@ class StreamIEC(IEC):
             for i,(address,part) in enumerate(zip(chain,parts)):
                 link=chain[i+1] if i+1<len(chain) else (0,len(part)+1)
                 blocks[address]=bytearray(bytes(link)+bytes(part).ljust(254,b'\0'))
-            entry=bytearray(32);entry[2]=0x81+(b'S',b'P',b'U').index(kind)
+            entry=bytearray(32);entry[2]=0x81+(b'S',b'P',b'U').index(kind)+(0x40 if (dev,name,kind) in self.locked else 0)
             entry[3:5]=bytes(chain[0]);entry[5:21]=name.ljust(16,b'\xa0')
             entry[30:32]=len(chain).to_bytes(2,'little');entries.append(entry)
         groups=[entries[i:i+8] for i in range(0,len(entries),8)] or [[]]
@@ -81,7 +107,9 @@ class StreamIEC(IEC):
                 assert self.filename==b'#'
                 self.blocks[self.device]=self.disk_blocks(self.device)
                 self.codes[self.device]=0
-            elif self.sa!=15:
+            elif self.sa==15:
+                if self.filename:self.dos_command(self.device,bytes(self.filename))
+            else:
                 name,kind,mode=self.filename.rsplit(b',',2)
                 assert kind in (b'S',b'P',b'U') and mode in (b'R',b'W')
                 key=(self.device,name,kind);h.update(key=key,mode=mode)
@@ -98,7 +126,8 @@ class StreamIEC(IEC):
             self.ram[0x99]=h['device']
             if h['sa']==15:
                 code=self.codes.get(h['device'],0)
-                h['data']=self.bad_status if self.bad_status is not None else f'{code:02d}, STATUS,00,00\r'.encode()
+                h['data']=(self.bad_status if self.bad_status is not None else
+                           self.status_text.pop(h['device'],None) or f'{code:02d}, STATUS,00,00\r'.encode())
                 h['position']=0
             return self.finish(cpu)
         if pc==0xffc9:

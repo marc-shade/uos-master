@@ -1,7 +1,9 @@
 """Independent expectation of the GEM desktop (docs/GEM-DESKTOP.md)."""
 import native_aes_scene as scene
+import native_forms_scene as forms
 
-MENU = b'Desk:About uOS...;File:Open^O|-|Close^W;Options:Launcher^L'
+MENU = (b'Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|-|Close^W;View:Name|Type|Size|Unsorted;'
+        b'Options:Preferences...|Launcher^L')
 ICONS = [(2, b'Boot', 0), (6, b'Drive 9', 0), (20, b'Trash', 1)]
 DESK, ICON_SELECTED, PAPER, SELECTED = 0x16, 0x61, 0x61, 0x16
 ART = [
@@ -29,6 +31,32 @@ def desktop(selected=None):
     s = scene.Surface(bytes(8192)+bytes([DESK])*1024)
     draw_icons(s, selected)
     return scene.menu_draw(bytes(s.data), MENU)[0]
+
+
+def name_key(entry):
+    """GEMDESK's name order: the $a0 padding sorts below every character."""
+    return bytes(0 if c == 0xa0 else c & 0x7f for c in entry['name'].ljust(16, b'\xa0'))
+
+
+def ordered(entries, view):
+    """entries in directory order -> View order (0 name, 1 type, 2 size, 3 unsorted)."""
+    keys = [lambda i: (name_key(entries[i]), i),
+            lambda i: (entries[i]['type'], name_key(entries[i]), i),
+            lambda i: (-entries[i]['blocks'], name_key(entries[i]), i),
+            lambda i: i]
+    return [entries[i] for i in sorted(range(len(entries)), key=keys[view])]
+
+
+def printable(raw):
+    """GEMDESK's alert text: controls become spaces; [ ] | and DEL become '?'."""
+    out = (32 if (c & 0x7f) < 32 else c & 0x7f for c in raw)
+    return bytes(0x3f if c in b'[]|\x7f' else c for c in out)
+
+
+def info_text(entry):
+    name = printable(entry['name'].split(b'\xa0')[0])
+    return (b'[1][Name: '+name+b'|Type: '+TYPES[entry['type'] if entry['type'] < 5 else 0] +
+            b'  Blocks: '+str(entry['blocks']).encode()+b'][OK]')
 
 
 def row_text(entry):
@@ -72,3 +100,39 @@ def picture(windows, entries_of, selected_icon=None):
         w = next(v for v in windows if v['id'] == win['id'])
         listing(entries_of[w['id']], w)(s, win, g)
     return scene.windows_draw(out, fills, base=base, content=content, markers=False)
+
+
+def info_objects(entry, locked=False, value=None, caret=None):
+    """GEMDESK's Show Info dialog for an entry; value/caret: the name field."""
+    name = entry['name'].split(b'\xa0')[0]
+    value = name if value is None else value
+    line = (b'Type: '+TYPES[entry['type'] if entry['type'] < 5 else 0]+b'  Blocks: ' +
+            str(entry['blocks']).encode())
+    f = forms
+    return [f.obj(f.TEXT, 2, 1, 20, b'Item Information'),
+            f.obj(f.TEXT, 2, 3, 5, b'Name:'),
+            f.obj(f.FIELD, 8, 3, 17, field=dict(value=value, caret=len(value) if caret is None else caret)),
+            f.obj(f.TEXT, 2, 4, 26, line),
+            f.obj(f.CHECK, 2, 5, 12, b'Read-only', state=f.DISABLED | (f.SELECTED if locked else 0)),
+            f.obj(f.BUTTON, 8, 7, 8, b'OK', flags=f.DEFAULT | f.EXIT),
+            f.obj(f.BUTTON, 18, 7, 8, b'Cancel', flags=f.CANCEL | f.EXIT)]
+
+
+def info_dialog(before, entry, focus=2, **kw):
+    return forms.draw(before, 30, 10, info_objects(entry, **kw), focus)
+
+
+def prefs_objects(confirm, view):
+    f = forms
+    radios = [(4, 5, 8, b'Name'), (14, 5, 8, b'Type'), (4, 6, 8, b'Size'), (14, 6, 12, b'Unsorted')]
+    return ([f.obj(f.TEXT, 2, 1, 20, b'Preferences'),
+             f.obj(f.CHECK, 2, 3, 18, b'Confirm deletes', state=f.SELECTED if confirm else 0),
+             f.obj(f.TEXT, 2, 4, 18, b'Sort windows by:')] +
+            [f.obj(f.RADIO, x, y, w, t, flags=0x10, state=f.SELECTED if view == i else 0)
+             for i, (x, y, w, t) in enumerate(radios)] +
+            [f.obj(f.BUTTON, 8, 7, 8, b'OK', flags=f.DEFAULT | f.EXIT),
+             f.obj(f.BUTTON, 18, 7, 8, b'Cancel', flags=f.CANCEL | f.EXIT)])
+
+
+def prefs_dialog(before, confirm, view, focus=1):
+    return forms.draw(before, 30, 10, prefs_objects(confirm, view), focus)

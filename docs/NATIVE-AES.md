@@ -127,7 +127,8 @@ screen manager, the AES keeps such a press until the button is released,
 across waits, so an app never sees a click at an arrow or title it has just
 been told about. Presses into
 the wanted state are counted until the wanted number arrives or a 20-jiffy
-double-click window closes; the count is reported. Rectangle bounds are
+double-click window closes; the count is reported. The window is timed from
+the first press, so it also closes when the jiffy clock resets at midnight. Rectangle bounds are
 half-open cells. Several events can fire together. At most one message is
 delivered per wake.
 

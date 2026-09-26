@@ -4,7 +4,8 @@
 .include "aes-api.inc"
 AE_POINTER = 1
 GM_WINDOWS = 4
-GM_RECORD = 20                 ; name 16, type, flags, blocks (word)
+GM_RECORD = 21                 ; name 16, type, flags, blocks (word), directory ordinal
+GM_CHUNK = 24                  ; records per N_BUFFER transfer (504 bytes)
 GM_MAX_ENTRIES = 255
 GM_PAGES = (GM_MAX_ENTRIES*GM_RECORD+255)/256
 GM_PAPER = $61                 ; window work: blue ink on white
@@ -89,6 +90,7 @@ gm_surface_setup:
 -       lda N_HANDLE,x
         sta gm_surface,x
         sta ae_surface,x
+        sta fo_surface,x
         dex
         bpl -
         lda #0
@@ -170,7 +172,9 @@ gm_aes_ready:
         bcs gm_aes_failed
         lda #<gm_menu
         ldx #>gm_menu
-        jmp ae_menu_install
+        jsr ae_menu_install
+        bcs gm_aes_failed
+        jmp gm_view_checks
 gm_aes_failed:
         rts
 ; Open AESVC.PRG beside this program (IEC name or Ultimate sibling path).
@@ -559,6 +563,11 @@ gm_icon_hit:
 
 ; ---- clicks and keys ---------------------------------------------------------------
 gm_click:
+        lda #0
+        sta gm_drag
+        jsr gm_click_at
+        jmp gm_release
+gm_pointer_cell:
         lda ae_ev_result+3      ; pointer cell
         lsr
         lda ae_ev_result+2
@@ -571,6 +580,9 @@ gm_click:
         lsr
         lsr
         sta gm_cy
+        rts
+gm_click_at:
+        jsr gm_pointer_cell
         lda #WS_FIND
         sta N_BUFFER
         lda gm_cx
@@ -589,8 +601,10 @@ gm_click:
         jsr gm_select_entry
         lda ae_ev_result+6
         cmp #2
-        bcc gm_click_done
-        jmp gm_open_entry
+        bcs +
+        inc gm_drag             ; a single press on a row may drag it
+        rts
++       jmp gm_open_entry
 gm_click_desktop:
         jsr gm_icon_hit
         cpx #$ff
@@ -681,7 +695,13 @@ gm_menu_choice:
         bne gm_menu_options
         lda ae_ev_result+11
         beq gm_open_selection   ; File: Open
-        cmp #2
+        cmp #1
+        bne +
+        jmp gm_show_info
++       cmp #3
+        bne +
+        jmp gm_delete
++       cmp #5
         bne +
         jsr gm_top_slot         ; File: Close
         bcs +
@@ -689,7 +709,13 @@ gm_menu_choice:
         jmp gm_close_slot
 +       rts
 gm_menu_options:
-        lda ae_ev_result+11
+        cmp #2
+        bne +
+        jmp gm_menu_view
++       lda ae_ev_result+11
+        bne +
+        jmp gm_prefs
++       cmp #1
         bne +
         jmp gm_launcher_leave
 +       rts
@@ -714,16 +740,7 @@ gm_open_icon:
         cpx #2                  ; Trash opens nothing yet (no deleted files kept)
         bcc +
         rts
-+       lda gm_icon_dev_lo,x
-        bne +
-        lda N_BOOTDEVICE        ; icon 0: the boot drive in its format
-        sta gm_dev
-        lda N_BOOTFORMAT
-        sta gm_fmt
-        jmp gm_open_drive
-+       sta gm_dev
-        lda #0                  ; icon 1: device 9 as a D64
-        sta gm_fmt
++       jsr gm_icon_drive
 gm_open_drive:
         ldx #0                  ; a free slot
 -       lda gm_win_handle,x
@@ -817,6 +834,19 @@ gm_open_fail:
         ldx gm_slot
         jmp gm_free_slot
 
+; X = drive icon -> gm_dev, gm_fmt
+gm_icon_drive:
+        lda gm_icon_dev_lo,x
+        bne +
+        lda N_BOOTDEVICE        ; icon 0: the boot drive in its format
+        sta gm_dev
+        lda N_BOOTFORMAT
+        sta gm_fmt
+        rts
++       sta gm_dev
+        lda #0                  ; icon 1: device 9 as a D64
+        sta gm_fmt
+        rts
 ; Snapshot the directory of gm_dev/gm_fmt into a new owner-32 allocation.
 gm_scan:
         lda N_CURRENT
@@ -859,70 +889,42 @@ gm_scan_page:
         sta gm_dirpage,x
         inx
         bne -
-        ldy #0                  ; staging in N_BUFFER: live entries only
-        sty gm_staged
         ldx #0
 gm_scan_record:
         lda gm_dirpage,x
         beq gm_scan_skip
-        lda gm_count
-        clc
-        adc gm_staged
-        cmp #GM_MAX_ENTRIES
+        ldy gm_count
+        cpy #GM_MAX_ENTRIES
         bcs gm_scan_skip
+        lda gm_addr_lo,y        ; gm_sortbuf record gm_count
+        sta gm_rec_dst+1
+        lda gm_addr_hi,y
+        sta gm_rec_dst+2
         stx gm_math
-        ldy gm_staged           ; N_BUFFER offset = staged*20
-        lda gm_times20,y
-        tay
-        txa                     ; name: 16 bytes from record offset 2
-        pha
-        clc
-        adc #2
-        tax
-        lda #16
-        sta gm_math2
--       lda gm_dirpage,x
-        sta N_BUFFER,y
+        ldy #0
+-       lda gm_dirpage+2,x      ; name
+        jsr gm_rec_put
         inx
-        iny
-        dec gm_math2
+        cpy #16
         bne -
-        pla
-        tax
-        lda gm_dirpage,x        ; type, flags, blocks
-        sta N_BUFFER,y
-        lda gm_dirpage+1,x
-        sta N_BUFFER+1,y
-        lda gm_dirpage+18,x
-        sta N_BUFFER+2,y
-        lda gm_dirpage+19,x
-        sta N_BUFFER+3,y
-        inc gm_staged
         ldx gm_math
+        lda gm_dirpage,x        ; type, flags, blocks, directory ordinal
+        jsr gm_rec_put
+        lda gm_dirpage+1,x
+        jsr gm_rec_put
+        lda gm_dirpage+18,x
+        jsr gm_rec_put
+        lda gm_dirpage+19,x
+        jsr gm_rec_put
+        lda gm_count
+        jsr gm_rec_put
+        inc gm_count
 gm_scan_skip:
         txa
         clc
         adc #32
         tax
         bne gm_scan_record
-        lda gm_staged
-        beq gm_scan_next
-        jsr gm_select_mem       ; write the staged records
-        lda gm_count
-        jsr gm_mul20
-        sta N_OFFSET
-        stx N_OFFSET+1
-        lda gm_staged
-        jsr gm_mul20
-        sta N_COUNT
-        stx N_COUNT+1
-        jsr N_WRITE
-        bcs gm_scan_fail
-        lda gm_count
-        clc
-        adc gm_staged
-        sta gm_count
-gm_scan_next:
         lda gm_page
         cmp #$ff
         bne gm_scan_page
@@ -930,7 +932,8 @@ gm_scan_end:
         ldx gm_slot
         lda gm_count
         sta gm_win_count,x
-        clc
+        jsr gm_sort_write
+        bcs gm_scan_fail
 gm_scan_done:
         rts
 gm_scan_fail:
@@ -940,6 +943,979 @@ gm_scan_fail:
         pla
         sec
         rts
+
+; ---- View: sorting a snapshot --------------------------------------------------------
+; Order gm_count records of gm_sortbuf by gm_view and write them to the slot's
+; allocation. Carry set on a heap error.
+gm_sort_write:
+        ldx #0
+-       cpx gm_count
+        beq +
+        txa
+        sta gm_order,x
+        inx
+        bne -
++       jsr gm_sort
+        lda #0
+        sta gm_k
+gm_write_chunk:
+        lda gm_count
+        sec
+        sbc gm_k                ; records left
+        bne +
+        clc
+        rts
++       jsr gm_chunk_size
+        lda #<N_BUFFER
+        sta gm_rec_dst+1
+        lda #>N_BUFFER
+        sta gm_rec_dst+2
+        lda #0
+        sta gm_j
+-       lda gm_k
+        clc
+        adc gm_j
+        tax
+        ldy gm_order,x
+        lda gm_addr_lo,y
+        sta gm_rec_src2+1
+        lda gm_addr_hi,y
+        sta gm_rec_src2+2
+        jsr gm_copy_rec
+        inc gm_j
+        lda gm_j
+        cmp gm_m
+        bne -
+        jsr gm_chunk_heap
+        jsr N_WRITE
+        bcs gm_chunk_fail
+        jsr gm_chunk_next
+        jmp gm_write_chunk
+gm_chunk_fail:
+        rts
+; Reload the slot's snapshot into gm_sortbuf, then sort and write it back.
+gm_resort_slot:
+        ldx gm_slot
+        lda gm_win_count,x
+        sta gm_count
+        lda #$ff
+        sta gm_win_sel,x
+        lda #0
+        sta gm_k
+gm_load_chunk:
+        lda gm_count
+        sec
+        sbc gm_k
+        beq gm_sort_write
+        jsr gm_chunk_size
+        jsr gm_chunk_heap
+        jsr N_READ
+        bcs gm_chunk_fail
+        lda #<N_BUFFER
+        sta gm_rec_src2+1
+        lda #>N_BUFFER
+        sta gm_rec_src2+2
+        lda #0
+        sta gm_j
+-       lda gm_k
+        clc
+        adc gm_j
+        tay
+        lda gm_addr_lo,y
+        sta gm_rec_dst+1
+        lda gm_addr_hi,y
+        sta gm_rec_dst+2
+        jsr gm_copy_rec
+        inc gm_j
+        lda gm_j
+        cmp gm_m
+        bne -
+        jsr gm_chunk_next
+        jmp gm_load_chunk
+gm_chunk_size:                  ; A records left -> gm_m, at most GM_CHUNK
+        cmp #GM_CHUNK
+        bcc +
+        lda #GM_CHUNK
++       sta gm_m
+        rts
+gm_chunk_heap:                  ; the slot's records gm_k..gm_k+gm_m-1
+        jsr gm_select_mem
+        lda gm_k
+        jsr gm_mulrec
+        sta N_OFFSET
+        stx N_OFFSET+1
+        lda gm_m
+        jsr gm_mulrec
+        sta N_COUNT
+        stx N_COUNT+1
+        rts
+gm_chunk_next:
+        lda gm_k
+        clc
+        adc gm_m
+        sta gm_k
+        rts
+; Copy one record from gm_rec_src2 to gm_rec_dst; advance both addresses.
+gm_copy_rec:
+        ldy #0
+gm_rec_src2:
+        lda $ffff,y
+        jsr gm_rec_put
+        cpy #GM_RECORD
+        bne gm_rec_src2
+        lda gm_rec_src2+1
+        clc
+        adc #GM_RECORD
+        sta gm_rec_src2+1
+        bcc +
+        inc gm_rec_src2+2
++       lda gm_rec_dst+1
+        clc
+        adc #GM_RECORD
+        sta gm_rec_dst+1
+        bcc +
+        inc gm_rec_dst+2
++       rts
+gm_rec_put:
+gm_rec_dst:
+        sta $ffff,y
+        iny
+        rts
+; Shell sort of gm_order[0..gm_count) with gm_compare.
+gm_sort:
+        ldx #GM_GAP_COUNT-1
+gm_gap_loop:
+        stx gm_gapi
+        lda gm_gaps,x
+        sta gm_gap
+        cmp gm_count
+        bcs gm_next_gap
+        sta gm_i2
+gm_ins_outer:
+        ldx gm_i2
+        lda gm_order,x
+        sta gm_ins_val
+        stx gm_pos
+gm_ins_inner:
+        lda gm_pos
+        sec
+        sbc gm_gap
+        bcc gm_ins_place
+        tax
+        lda gm_order,x
+        sta gm_other
+        jsr gm_compare
+        bcc gm_ins_place
+        ldx gm_pos
+        lda gm_other
+        sta gm_order,x
+        lda gm_pos
+        sec
+        sbc gm_gap
+        sta gm_pos
+        jmp gm_ins_inner
+gm_ins_place:
+        ldx gm_pos
+        lda gm_ins_val
+        sta gm_order,x
+        inc gm_i2
+        lda gm_i2
+        cmp gm_count
+        bcc gm_ins_outer
+gm_next_gap:
+        ldx gm_gapi
+        dex
+        bpl gm_gap_loop
+        rts
+; Carry set when record gm_other sorts after record gm_ins_val. Name order maps
+; the $a0 padding below every character; size puts larger files first; the
+; directory ordinal breaks ties, and alone is "Unsorted".
+gm_compare:
+        ldy gm_other
+        lda gm_addr_lo,y
+        sta gm_fa+1
+        lda gm_addr_hi,y
+        sta gm_fa+2
+        ldy gm_ins_val
+        lda gm_addr_lo,y
+        sta gm_fb+1
+        lda gm_addr_hi,y
+        sta gm_fb+2
+        ldx gm_view
+        cpx #3
+        beq gm_cmp_ordinal
+        cpx #1
+        bne +
+        ldy #16                 ; type
+        jsr gm_cmp_raw
+        bne gm_cmp_out
++       cpx #2
+        bne gm_cmp_name
+        ldy #19                 ; blocks, larger first
+        jsr gm_cmp_rev
+        bne gm_cmp_out
+        ldy #18
+        jsr gm_cmp_rev
+        bne gm_cmp_out
+gm_cmp_name:
+        ldy #0
+-       jsr gm_fb
+        jsr gm_name_key
+        sta gm_cmpb
+        jsr gm_fa
+        jsr gm_name_key
+        cmp gm_cmpb
+        bne gm_cmp_out
+        iny
+        cpy #16
+        bne -
+gm_cmp_ordinal:
+        ldy #20
+        jsr gm_cmp_raw
+gm_cmp_out:
+        bne +
+        clc
++       rts
+gm_cmp_raw:
+        jsr gm_fb
+        sta gm_cmpb
+        jsr gm_fa
+        cmp gm_cmpb
+        rts
+gm_cmp_rev:
+        jsr gm_fa
+        sta gm_cmpb
+        jsr gm_fb
+        cmp gm_cmpb
+        rts
+gm_fa:
+        lda $ffff,y
+        rts
+gm_fb:
+        lda $ffff,y
+        rts
+gm_name_key:
+        cmp #$a0
+        bne +
+        lda #0
+        rts
++       and #$7f
+        rts
+; View menu: sort every open window again.
+gm_menu_view:
+        lda ae_ev_result+11
+gm_set_view:                    ; A = 0 name, 1 type, 2 size, 3 unsorted
+        cmp gm_view
+        beq gm_view_done
+        sta gm_view
+        jsr gm_view_checks
+        lda #GM_WINDOWS-1
+        sta gm_vslot
+-       ldx gm_vslot
+        lda gm_win_handle,x
+        beq +
+        stx gm_slot
+        jsr gm_resort_slot
+        bcs gm_view_fail
+        jsr gm_repaint_all
++       dec gm_vslot
+        bpl -
+gm_view_done:
+        rts
+gm_view_fail:
+        jsr gm_hex_error
+        lda #<gm_drive_alert
+        ldx #>gm_drive_alert
+        ldy #1
+        jmp gm_alert
+; Check the current View item, clear the others.
+gm_view_checks:
+        lda #3
+        sta gm_vslot
+-       ldy #0
+        lda gm_vslot
+        cmp gm_view
+        bne +
+        iny
++       tax
+        lda #2
+        jsr ae_menu_set
+        bcs +
+        dec gm_vslot
+        bpl -
+        clc
++       rts
+
+; ---- Show Info ------------------------------------------------------------------------
+; The selected entry of the top window, else the selected drive icon.
+gm_show_info:
+        lda #0
+        sta gm_alen
+        lda #<gm_s_head
+        ldx #>gm_s_head
+        jsr gm_astr
+        jsr gm_top_slot
+        bcs gm_info_icon
+        stx gm_slot
+        lda gm_win_sel,x
+        cmp #$ff
+        beq gm_info_icon
+        jsr gm_read_record
+        bcs gm_info_fail
+        jmp gm_info_dialog
+; Append gm_rec's name, up to its padding, as printable alert text.
+gm_aname:
+        ldy #0
+gm_info_name:
+        lda gm_rec,y
+        cmp #$a0
+        beq gm_aname_done       ; the padding ends the name
+        jsr gm_printable
+        jsr gm_aput
+        iny
+        cpy #16
+        bne gm_info_name
+gm_aname_done:
+        rts
+; Append "Type: TYP  Blocks: N" for gm_rec.
+gm_atype:
+        lda #<(gm_s_type+1)
+        ldx #>(gm_s_type+1)
+        jsr gm_astr
+        lda gm_rec+16
+        and #7
+        cmp #5
+        bcc +
+        lda #0
++       sta gm_math
+        asl
+        adc gm_math
+        tay
+        ldx #3
+-       lda gm_types,y
+        stx gm_math
+        jsr gm_aput
+        ldx gm_math
+        iny
+        dex
+        bne -
+        lda #<gm_s_blocks
+        ldx #>gm_s_blocks
+        jsr gm_astr
+        lda gm_rec+18
+        sta gm_num
+        lda gm_rec+19
+        sta gm_num+1
+        jmp gm_anum
+gm_info_end:
+        lda #<gm_s_ok
+        ldx #>gm_s_ok
+        jsr gm_astr
+        lda #0
+        jsr gm_aput
+        lda #<gm_abuf
+        ldx #>gm_abuf
+        ldy #1
+        jmp gm_alert
+gm_info_fail:
+        jmp gm_view_fail
+; A drive icon: its file count and blocks used, from the directory pages.
+gm_info_icon:
+        ldx gm_icon_sel
+        cpx #2
+        bcc +
+        rts                     ; nothing selected, or Trash
++       jsr gm_icon_drive
+        lda #<gm_drive_title
+        ldx #>gm_drive_title
+        jsr gm_astr
+        lda gm_dev
+        sta gm_num
+        lda #0
+        sta gm_num+1
+        jsr gm_anum
+        lda #0
+        sta gm_count
+        sta gm_page
+        sta gm_total
+        sta gm_total+1
+gm_info_page:
+        lda N_CURRENT
+        sta N_FOWNER
+        lda gm_dev
+        sta N_FDEVICE
+        lda gm_fmt
+        sta N_FFORMAT
+        lda gm_page
+        sta N_DPAGE
+        jsr N_DIRPAGE
+        bcs gm_info_fail
+        lda N_DNEXT
+        sta gm_page
+        lda N_DCOUNT
+        beq gm_info_sum
+        ldx #0
+-       lda N_BUFFER,x
+        beq +
+        inc gm_count
+        lda gm_total
+        clc
+        adc N_BUFFER+18,x
+        sta gm_total
+        lda gm_total+1
+        adc N_BUFFER+19,x
+        sta gm_total+1
++       txa
+        clc
+        adc #32
+        tax
+        bne -
+        lda gm_page
+        cmp #$ff
+        bne gm_info_page
+gm_info_sum:
+        lda #<gm_s_files
+        ldx #>gm_s_files
+        jsr gm_astr
+        lda gm_count
+        sta gm_num
+        lda #0
+        sta gm_num+1
+        jsr gm_anum
+        lda #<gm_s_used
+        ldx #>gm_s_used
+        jsr gm_astr
+        lda gm_total
+        sta gm_num
+        lda gm_total+1
+        sta gm_num+1
+        jsr gm_anum
+        jmp gm_info_end
+; Alert text builder: gm_abuf/gm_alen.
+gm_astr:                        ; append the zero-terminated string at A/X
+        sta gm_astr_src+1
+        stx gm_astr_src+2
+        ldy #0
+gm_astr_src:
+        lda $ffff,y
+        beq +
+        jsr gm_aput
+        iny
+        bne gm_astr_src
++       rts
+gm_aput:                        ; keeps Y
+        ldx gm_alen
+        sta gm_abuf,x
+        inc gm_alen
+        rts
+gm_anum:                        ; append gm_num (0..9999) in decimal
+        ldy #3
+        jsr gm_decimal4
+        ldy #0
+-       lda gfx_text_buffer,y
+        cmp #32
+        beq +
+        jsr gm_aput
++       iny
+        cpy #4
+        bne -
+        rts
+
+; ---- Delete and Trash --------------------------------------------------------------
+; The selected entry of gm_slot -> gm_rec. Carry set on a heap error.
+gm_read_record:
+        ldx gm_slot
+        lda gm_win_sel,x
+        jsr gm_mulrec
+        sta N_OFFSET
+        stx N_OFFSET+1
+        lda #GM_RECORD
+        sta N_COUNT
+        lda #0
+        sta N_COUNT+1
+        jsr gm_select_mem
+        jsr N_READ
+        bcs +
+        ldx #GM_RECORD-1
+-       lda N_BUFFER,x
+        sta gm_rec,x
+        dex
+        bpl -
+        clc
++       rts
+; File:Delete (Ctrl-D), or an entry dropped on Trash: confirm, scratch it on
+; the drive, check the drive's count, and list the drive's windows again.
+gm_delete:
+        jsr gm_top_slot
+        bcs gm_del_none
+        stx gm_slot
+        lda gm_win_sel,x
+        cmp #$ff
+        beq gm_del_none
+        jsr gm_read_record
+        bcc +
+        jmp gm_view_fail
++       ldx #0                  ; "S0:" and the exact name; no DOS pattern characters
+gm_del_copy:
+        lda gm_rec,x
+        cmp #$a0
+        beq gm_del_named
+        ldy #gm_bad_chars_end-gm_bad_chars-1
+-       cmp gm_bad_chars,y
+        beq gm_del_badname
+        dey
+        bpl -
+        sta dc_text+3,x
+        inx
+        cpx #16
+        bne gm_del_copy
+gm_del_named:
+        txa
+        beq gm_del_badname      ; an empty name
+        clc
+        adc #3
+        sta dc_length
+        lda #$53                ; S0:
+        sta dc_text
+        lda #$30
+        sta dc_text+1
+        lda #$3a
+        sta dc_text+2
+        lda gm_confirm          ; Preferences may turn the question off
+        beq gm_del_go
+        lda #0                  ; "[2][Delete NAME?|This cannot be undone.][Delete|Cancel]"
+        sta gm_alen
+        lda #<gm_s_delete
+        ldx #>gm_s_delete
+        jsr gm_astr
+        jsr gm_aname
+        lda #<gm_s_undone
+        ldx #>gm_s_undone
+        jsr gm_astr
+        lda #0
+        jsr gm_aput
+        lda #<gm_abuf
+        ldx #>gm_abuf
+        ldy #2                  ; Cancel is the default
+        jsr gm_alert
+        bcs gm_del_none
+        lda N_BUFFER
+        cmp #1
+        bne gm_del_none
+gm_del_go:
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta dc_device
+        sta gm_dev
+        lda gm_win_fmt,x
+        sta gm_fmt
+        jsr dc_command
+        bcs gm_del_error
+        cmp #1                  ; 01, FILES SCRATCHED, exactly one file
+        bne gm_del_status
+        lda dc_track
+        cmp #1
+        bne gm_del_status
+        jmp gm_refresh_drive
+gm_del_none:
+        rts
+gm_del_badname:
+        lda #<gm_badname_alert
+        ldx #>gm_badname_alert
+        ldy #1
+        jmp gm_alert
+gm_del_error:                   ; "[3][Could not delete|NAME|error $xx][OK]"
+        pha
+        jsr gm_del_head
+gm_error_hex:                   ; stacked A: "error $xx][OK]"
+        lda #<gm_s_error
+        ldx #>gm_s_error
+        jsr gm_astr
+        pla
+        pha
+        lsr
+        lsr
+        lsr
+        lsr
+        tax
+        lda gm_hex_digits,x
+        jsr gm_aput
+        pla
+        and #15
+        tax
+        lda gm_hex_digits,x
+        jsr gm_aput
+        jmp gm_info_end
+gm_del_status:                  ; "[3][Could not delete|NAME|<drive status>][OK]"
+        jsr gm_del_head
+gm_status_text:
+        ldy #0
+gm_del_text:
+        cpy dc_status_length
+        beq gm_del_text_end
+        cpy #30
+        beq gm_del_text_end
+        lda dc_status,y
+        jsr gm_printable
+        jsr gm_aput
+        iny
+        bne gm_del_text
+gm_del_text_end:
+        jmp gm_info_end
+; A (PETSCII or ASCII) -> printable alert text: controls become spaces, and
+; the alert syntax characters [ ] | and DEL become '?'.
+gm_printable:
+        and #$7f
+        cmp #32
+        bcs +
+        lda #32
++       cmp #$5b
+        beq +
+        cmp #$5d
+        beq +
+        cmp #$7c
+        beq +
+        cmp #$7f
+        bne ++
++       lda #$3f
++       rts
+gm_del_head:
+        lda #<gm_s_nodelete
+        ldx #>gm_s_nodelete
+gm_fail_head:                   ; A/X = "[3][Could not ...|", then the name and '|'
+        pha
+        lda #0
+        sta gm_alen
+        pla
+        jsr gm_astr
+        jsr gm_aname
+        lda #<gm_s_bar
+        ldx #>gm_s_bar
+        jmp gm_astr
+; List every window of gm_dev/gm_fmt again after the drive changed.
+gm_refresh_drive:
+        lda #GM_WINDOWS-1
+        sta gm_vslot
+gm_refresh_loop:
+        ldx gm_vslot
+        lda gm_win_handle,x
+        beq gm_refresh_next
+        lda gm_win_dev,x
+        cmp gm_dev
+        bne gm_refresh_next
+        lda gm_win_fmt,x
+        cmp gm_fmt
+        bne gm_refresh_next
+        stx gm_slot
+        jsr gm_free_mem
+        jsr gm_scan
+        bcc +
+        jsr gm_close_slot       ; the drive cannot be listed now
+        jmp gm_refresh_next
++       ldx gm_slot
+        lda #$ff
+        sta gm_win_sel,x
+        jsr gm_work
+        jsr gm_max_top
+        ldx gm_slot
+        cmp gm_win_top,x
+        bcs +
+        sta gm_win_top,x
++       jsr gm_update_slider
+        jsr gm_repaint_all
+gm_refresh_next:
+        dec gm_vslot
+        bpl gm_refresh_loop
+        rts
+; After a press still held: wait for the release. A listing row dragged from
+; the top window and dropped on Trash is deleted.
+gm_release:
+        lda ae_ev_result+5
+        and #1
+        beq gm_release_done
+        lda #MU_BUTTON
+        sta ae_ev_params
+        lda #1
+        sta ae_ev_params+1
+        sta ae_ev_params+2
+        lda #0
+        sta ae_ev_params+3
+        jsr ae_event
+        bcs gm_release_done
+        lda gm_drag
+        beq gm_release_done
+        jsr gm_pointer_cell
+        lda #WS_FIND
+        sta N_BUFFER
+        lda gm_cx
+        sta N_BUFFER+1
+        lda gm_cy
+        sta N_BUFFER+2
+        jsr gm_wcall
+        bcs gm_release_done
+        lda N_BUFFER
+        bne gm_release_done
+        jsr gm_icon_hit
+        cpx #2
+        bne gm_release_done
+        jmp gm_delete
+gm_release_done:
+        rts
+
+; ---- dialogs (docs/NATIVE-FORMS.md) --------------------------------------------------
+; File:Show Info on an entry: name (editable), type and blocks, read-only.
+; OK with a changed name renames the file on the drive.
+gm_info_dialog:
+        ldx #0                  ; the name into the field
+-       lda gm_rec,x
+        cmp #$a0
+        beq +
+        sta gm_name_buf,x
+        inx
+        cpx #16
+        bne -
++       stx gm_name_field
+        lda #0
+        sta gm_name_buf,x
+        sta gm_alen             ; "Type: SEQ  Blocks: 1"
+        jsr gm_atype
+        ldx gm_alen
+        lda #0
+        sta gm_abuf,x
+        ldx #0
+-       lda gm_abuf,x
+        sta gm_info_line,x
+        beq +
+        inx
+        bne -
++       lda gm_rec+17           ; read-only: shown, not changeable on IEC
+        and #$40
+        beq +
+        lda #FOS_SELECTED
++       ora #FOS_DISABLED
+        sta gm_info_form+5+4*8+2
+        lda #<gm_info_form
+        ldx #>gm_info_form
+        jsr gm_form
+        bcs gm_dialog_fail
+        cmp #5                  ; OK
+        bne gm_dialog_done
+        ldx #0                  ; the same name: nothing to do
+-       cpx gm_name_field
+        beq +
+        lda gm_name_buf,x
+        cmp gm_rec,x
+        bne gm_rename
+        inx
+        bne -
++       cpx #16
+        beq gm_dialog_done
+        lda gm_rec,x
+        cmp #$a0
+        bne gm_rename
+gm_dialog_done:
+        rts
+gm_dialog_fail:
+        jmp gm_view_fail
+; Rename: "R0:NEW=OLD" to the window's drive, then list it again.
+gm_rename:
+        lda gm_name_field
+        beq gm_rename_bad
+        ldy #3
+        ldx #0
+-       lda gm_name_buf,x       ; the new name
+        jsr gm_dos_char
+        bcs gm_rename_bad
+        sta dc_text,y
+        iny
+        inx
+        cpx gm_name_field
+        bne -
+        lda #$3d                ; =
+        sta dc_text,y
+        iny
+        ldx #0
+-       lda gm_rec,x            ; the old name
+        cmp #$a0
+        beq +
+        jsr gm_dos_char
+        bcs gm_rename_bad
+        sta dc_text,y
+        iny
+        inx
+        cpx #16
+        bne -
++       sty dc_length
+        lda #$52                ; R0:
+        sta dc_text
+        lda #$30
+        sta dc_text+1
+        lda #$3a
+        sta dc_text+2
+        ldx gm_slot
+        lda gm_win_dev,x
+        sta dc_device
+        sta gm_dev
+        lda gm_win_fmt,x
+        sta gm_fmt
+        jsr dc_command
+        bcs gm_rename_error
+        cmp #0
+        bne gm_rename_status
+        jmp gm_refresh_drive
+gm_rename_bad:
+        jmp gm_del_badname
+gm_rename_error:
+        pha
+        lda #<gm_s_norename
+        ldx #>gm_s_norename
+        jsr gm_fail_head
+        jmp gm_error_hex
+gm_rename_status:
+        lda #<gm_s_norename
+        ldx #>gm_s_norename
+        jsr gm_fail_head
+        jmp gm_status_text
+; A = name byte: carry set for DOS syntax characters. Keeps X and Y.
+gm_dos_char:
+        stx gm_math4
+        ldx #gm_bad_chars_end-gm_bad_chars-1
+-       cmp gm_bad_chars,x
+        beq +
+        dex
+        bpl -
+        ldx gm_math4
+        clc
+        rts
++       ldx gm_math4
+        sec
+        rts
+; Options:Preferences: confirm deletes, and the sort order.
+gm_prefs:
+        lda gm_confirm
+        beq +
+        lda #FOS_SELECTED
++       sta gm_pref_form+5+1*8+2
+        ldx #0
+        ldy #0
+-       lda #0
+        cpy gm_view
+        bne +
+        lda #FOS_SELECTED
++       sta gm_pref_form+5+3*8+2,x ; objects 3..6, 8 bytes apart
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #4
+        bne -
+        lda #<gm_pref_form
+        ldx #>gm_pref_form
+        jsr gm_form
+        bcs gm_dialog_fail
+        cmp #7                  ; OK
+        bne gm_dialog_done
+        lda gm_pref_form+5+1*8+2
+        and #FOS_SELECTED
+        sta gm_confirm
+        ldx #0
+        ldy #0
+-       lda gm_pref_form+5+3*8+2,x
+        and #FOS_SELECTED
+        bne +
+        txa
+        clc
+        adc #8
+        tax
+        iny
+        cpy #4
+        bne -
+        rts
++       tya
+        jmp gm_set_view
+; A/X = form: open it, run it, close it. A = the exit object.
+gm_form:
+        sta gm_form_ptr
+        stx gm_form_ptr+1
+        jsr gm_bind
+        bcs gm_form_done
+        jsr gfx_clip_defaults
+        lda gm_form_ptr
+        ldx gm_form_ptr+1
+        jsr fo_open
+        bcs gm_form_done
+        jsr fo_do
+        bcs gm_form_close_error
+        sta gm_form_exit
+        jsr fo_close
+        bcs gm_form_done
+        lda gm_form_exit
+gm_form_done:
+        rts
+gm_form_close_error:            ; keep the first error, still restore
+        pha
+        jsr fo_close
+        pla
+        sec
+        rts
+
+gm_confirm: .byte 1
+gm_form_exit: .byte 0
+gm_form_ptr: .word 0
+gm_name_field: .byte 0,0,16     ; N_FEDIT record: length, caret, maximum,
+        .word gm_name_buf       ; buffer, 40/80-column views, IEC filename filter
+        .byte 0,0,3
+gm_name_buf: .fill 17,0
+gm_info_line: .fill 32,0
+; Show Info: x (centred), y, w, h, objects
+gm_info_form: .byte $ff,0,30,10,7
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_info
+        .byte FOT_TEXT,0,0,2,3,5
+        .word gm_t_name
+        .byte FOT_FIELD,0,0,8,3,17
+        .word gm_name_field
+        .byte FOT_TEXT,0,0,2,4,26
+        .word gm_info_line
+        .byte FOT_CHECK,0,FOS_DISABLED,2,5,12
+        .word gm_t_readonly
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,7,8
+        .word gm_t_ok
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,7,8
+        .word gm_t_cancel
+gm_pref_form: .byte $ff,0,30,10,9
+        .byte FOT_TEXT,0,0,2,1,20
+        .word gm_t_prefs
+        .byte FOT_CHECK,0,0,2,3,18
+        .word gm_t_confirm
+        .byte FOT_TEXT,0,0,2,4,18
+        .word gm_t_sortby
+        .byte FOT_RADIO,$10,0,4,5,8
+        .word gm_t_sname
+        .byte FOT_RADIO,$10,0,14,5,8
+        .word gm_t_stype
+        .byte FOT_RADIO,$10,0,4,6,8
+        .word gm_t_ssize
+        .byte FOT_RADIO,$10,0,14,6,12
+        .word gm_t_sunsorted
+        .byte FOT_BUTTON,FOF_DEFAULT|FOF_EXIT,0,8,7,8
+        .word gm_t_ok
+        .byte FOT_BUTTON,FOF_CANCEL|FOF_EXIT,0,18,7,8
+        .word gm_t_cancel
+gm_t_info: .byte 73,116,101,109,32,73,110,102,111,114,109,97,116,105,111,110,0   ; Item Information
+gm_t_name: .byte 78,97,109,101,58,0   ; Name:
+gm_t_readonly: .byte 82,101,97,100,45,111,110,108,121,0   ; Read-only
+gm_t_ok: .byte 79,75,0   ; OK
+gm_t_cancel: .byte 67,97,110,99,101,108,0   ; Cancel
+gm_t_prefs: .byte 80,114,101,102,101,114,101,110,99,101,115,0   ; Preferences
+gm_t_confirm: .byte 67,111,110,102,105,114,109,32,100,101,108,101,116,101,115,0   ; Confirm deletes
+gm_t_sortby: .byte 83,111,114,116,32,119,105,110,100,111,119,115,32,98,121,58,0   ; Sort windows by:
+gm_t_sname: .byte 78,97,109,101,0   ; Name
+gm_t_stype: .byte 84,121,112,101,0   ; Type
+gm_t_ssize: .byte 83,105,122,101,0   ; Size
+gm_t_sunsorted: .byte 85,110,115,111,114,116,101,100,0   ; Unsorted
+gm_s_norename: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,114,101,110,97,109,101,124,0   ; [3][Could not rename|
 
 ; ---- windows: painting ----------------------------------------------------------------
 ; Clear the work area inside gm_clip, then draw the visible rows clipped to
@@ -1057,7 +2033,7 @@ gm_format_row:
         ldx gm_slot
         sec
         sbc gm_win_top,x
-        jsr gm_mul20
+        jsr gm_mulrec
         clc
         adc #<gm_rows
         sta gm_rec_src+1
@@ -1123,13 +2099,13 @@ gm_read_rows:
         cmp gm_wh
         bcc +
         lda gm_wh
-+       jsr gm_mul20
++       jsr gm_mulrec
         sta N_COUNT
         stx N_COUNT+1
         jsr gm_select_mem
         ldx gm_slot
         lda gm_win_top,x
-        jsr gm_mul20
+        jsr gm_mulrec
         sta N_OFFSET
         stx N_OFFSET+1
         jsr N_READ
@@ -1451,7 +2427,7 @@ gm_open_entry:
         jsr gm_work
         ldx gm_slot             ; read the one record
         lda gm_item
-        jsr gm_mul20
+        jsr gm_mulrec
         sta N_OFFSET
         stx N_OFFSET+1
         lda #GM_RECORD
@@ -1575,8 +2551,8 @@ gm_times8:                      ; A*8 -> A lo, X hi
         rol gm_t8
         ldx gm_t8
         rts
-gm_mul20:                       ; A*20 -> A lo, X hi
-        ldx #20
+gm_mulrec:                      ; A*GM_RECORD -> A lo, X hi
+        ldx #GM_RECORD
 gm_mul:                         ; A*X -> gm_prod; also A lo, X hi
         sta gm_mul_a
         stx gm_mul_b
@@ -1683,7 +2659,7 @@ gm_hex_error:                   ; N_BROWSERERROR / A as two hex digits in the al
 gm_hex_digits: .byte 48,49,50,51,52,53,54,55,56,57,65,66,67,68,69,70
 gm_aesvc_name: .text "aesvc.prg"
 gm_cards_name: .text "cards"
-gm_drive_title: .byte 68,114,105,118,101,32      ; "Drive "
+gm_drive_title: .byte 68,114,105,118,101,32,0    ; "Drive "
 gm_types: .byte 68,69,76,83,69,81,80,82,71,85,83,82,82,69,76   ; DEL SEQ PRG USR REL
 gm_icon_y: .byte 2,6,20
 gm_icon_art: .byte 0,0,1
@@ -1703,11 +2679,36 @@ gm_icon_bits:
         .byte $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88
         .byte $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88, $12,$49,$24,$88
         .byte $12,$49,$24,$88, $10,$00,$00,$08, $1f,$ff,$ff,$f8, $00,$00,$00,$00
-gm_times20: .byte 0,20,40,60,80,100,120,140
-; Desk:About uOS...;File:Open^O|-|Close^W;Options:Launcher^L
-gm_menu: .byte 68,101,115,107,58,65,98,111,117,116,32,117,79,83,46,46,46,59
-        .byte 70,105,108,101,58,79,112,101,110,94,79,124,45,124,67,108,111,115,101,94,87,59
-        .byte 79,112,116,105,111,110,115,58,76,97,117,110,99,104,101,114,94,76,0
+; Desk:About uOS...;File:Open^O|Show Info^I|-|Delete^D|-|Close
+; ^W;View:Name|Type|Size|Unsorted;Options:Preferences...|Launcher^L
+gm_menu:
+        .byte 68,101,115,107,58,65,98,111,117,116,32,117,79,83,46,46,46,59,70,105,108,101,58,79
+        .byte 112,101,110,94,79,124,83,104,111,119,32,73,110,102,111,94,73,124,45,124,68,101,108,101
+        .byte 116,101,94,68,124,45,124,67,108,111,115,101,94,87,59,86,105,101,119,58,78,97,109,101
+        .byte 124,84,121,112,101,124,83,105,122,101,124,85,110,115,111,114,116,101,100,59,79,112,116,105
+        .byte 111,110,115,58,80,114,101,102,101,114,101,110,99,101,115,46,46,46,124,76,97,117,110,99
+        .byte 104,101,114,94,76,0
+; Show Info alert pieces
+gm_s_head: .byte 91,49,93,91,0                          ; [1][
+gm_s_type: .byte 124,84,121,112,101,58,32,0             ; |Type:
+gm_s_blocks: .byte 32,32,66,108,111,99,107,115,58,32,0  ;   Blocks:
+gm_s_files: .byte 124,70,105,108,101,115,58,32,0        ; |Files:
+gm_s_used: .byte 124,66,108,111,99,107,115,32,117,115,101,100,58,32,0   ; |Blocks used:
+gm_s_ok: .byte 93,91,79,75,93,0                         ; ][OK]
+gm_gaps: .byte 1,4,10,23,57,132
+; [2][Delete NAME?|This cannot be undone.][Delete|Cancel]
+gm_s_delete: .byte 91,50,93,91,68,101,108,101,116,101,32,0
+gm_s_undone: .byte 63,124,84,104,105,115,32,99,97,110,110,111,116,32,98,101,32,117,110,100,111,110,101,46
+        .byte 93,91,68,101,108,101,116,101,124,67,97,110,99,101,108,93,0
+gm_s_nodelete: .byte 91,51,93,91,67,111,117,108,100,32,110,111,116,32,100,101,108,101,116,101,124,0  ; [3][Could not delete|
+gm_s_bar: .byte 124,0
+gm_s_error: .byte 101,114,114,111,114,32,36,0           ; error $
+; [1][This name cannot be|deleted from here.][OK]
+gm_badname_alert: .byte 91,49,93,91,84,104,105,115,32,110,97,109,101,32,99,97,110,110,111,116,32,98,101,124
+        .byte 100,101,108,101,116,101,100,32,102,114,111,109,32,104,101,114,101,46,93,91,79,75,93,0
+gm_bad_chars: .byte $2a,$3f,$2c,$3d,$3a,$22,$40   ; * ? , = : " @: DOS syntax in a name
+gm_bad_chars_end:
+GM_GAP_COUNT = 6
 ; [1][uOS GEM desktop|AES 1.4 on the C128][OK]
 gm_about: .byte 91,49,93,91,117,79,83,32,71,69,77,32,100,101,115,107,116,111,112,124
         .byte 65,69,83,32,49,46,52,32,111,110,32,116,104,101,32,67,49,50,56,93,91,79,75,93,0
@@ -1733,7 +2734,21 @@ gm_dev: .byte 0
 gm_fmt: .byte 0
 gm_count: .byte 0
 gm_page: .byte 0
-gm_staged: .byte 0
+gm_drag: .byte 0
+gm_view: .byte 0                ; View: 0 name, 1 type, 2 size, 3 unsorted
+gm_vslot: .byte 0
+gm_k: .byte 0
+gm_m: .byte 0
+gm_gap: .byte 0
+gm_gapi: .byte 0
+gm_i2: .byte 0
+gm_ins_val: .byte 0
+gm_pos: .byte 0
+gm_other: .byte 0
+gm_cmpb: .byte 0
+gm_total: .word 0
+gm_alen: .byte 0
+gm_abuf: .fill 96,0
 gm_item: .byte 0
 gm_cx: .byte 0
 gm_cy: .byte 0
@@ -1774,9 +2789,21 @@ gm_mem3: .fill GM_WINDOWS,0
 gm_rec: .fill GM_RECORD,0
 gm_rows: .fill 512,0
 gm_dirpage: .fill 256,0
+gm_order: .fill GM_MAX_ENTRIES,0
+gm_addr_lo:
+        .for i=0, i<GM_MAX_ENTRIES, i+=1
+        .byte <(gm_sortbuf+i*GM_RECORD)
+        .next
+gm_addr_hi:
+        .for i=0, i<GM_MAX_ENTRIES, i+=1
+        .byte >(gm_sortbuf+i*GM_RECORD)
+        .next
+gm_sortbuf: .fill GM_MAX_ENTRIES*GM_RECORD,0
 .include "aes-client.inc"
+.include "dos-command.inc"
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 .include "input/pointer.inc"
+.include "forms.inc"
 gm_end:
 .cerror gm_end > N_APPLIMIT, "the GEM desktop exceeds its slot"
