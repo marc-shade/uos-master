@@ -64,9 +64,24 @@ Two of the planted-bug runs predate the dialogs: no Trash drop, and no
 channel check. They ran against the earlier Delete build; the code they
 changed is the same in this commit.
 
-The regression run of the other CPU suites against the shared test models
-changed here (pointer clock, `StreamIEC`) was still running when this was
-committed. Its results are added below when complete.
+### Regression run of the other CPU suites
+
+This covers the shared test models changed here: the pointer clock and
+`StreamIEC`. 31 CPU suites were run against the unchanged build of this
+change; the target hashes matched before and after.
+- **Passed (23):** `ci_native_gemdesk`, `aes`, `calc_gui`, `claude_gui`,
+  `controls_gui`, `editor_gui`, `folders`, `find`, `paint_gui`,
+  `paint_document`, `pointer`, `vdc_controls_picker`, `vdc_desktop`, `sheet`,
+  `files_gui`, `vdc_controls`, `vdc_files_picker`, `vdc_paint`,
+  `vdc_paint_picker`, `vdc_calc`, `vdc_files`, `reu_calc`, `files`.
+- **Failed (1):** `ci_native_paint_keys`, with
+  `AssertionError: (0, 0, False, False, '0xb00')`. It fails identically in a
+  worktree of `737adad`, before this session's changes, so it is a
+  pre-existing failure, not a regression. It is not fixed here.
+- **Not run (7):** `claude_vdc`, `clipboard_apps`, `clock`, `open_with`,
+  `picker_gui`, `editor_selection` and `editor_history` require `--case` or
+  `--size`, so this run's command line was refused. They are being rerun
+  with every case.
 
 ## Limits
 
