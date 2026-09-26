@@ -49,7 +49,7 @@ def build():
     native.build(out=OUT, desktop_boot=True)
     claude = module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
     sheet = module('sheet_builder', ROOT/'build-native-sheet.py').build(OUT)
-    for name in ('desktop', 'files', 'controls', 'paint'):
+    for name in ('desktop', 'files', 'controls', 'paint', 'gemdesk'):
         subprocess.run(['64tass', '-a', '-B', str(ROOT/f'src/native/{name}.asm'),
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
                         '-L', str(OUT/f'{name}.lst')], check=True)
@@ -77,7 +77,15 @@ def build():
     provider.write_bytes(seal_banked(provider.read_bytes()))
     vdc_component = validate_banked(provider.read_bytes())
     packing = {}
-    for name in ('desktop','calc','editor','files','controls','claude','paint','sheet'):
+    # The persistent AES (docs/NATIVE-AES.md), sealed for bank-1 $8800.
+    subprocess.run(['64tass', '-a', '-B', str(ROOT/'src/native/aesvc.asm'),
+                    '-o', str(OUT/'aesvc.prg'), '-l', str(OUT/'aesvc.sym'),
+                    '-L', str(OUT/'aesvc.lst')], check=True)
+    import native_banked
+    aes_image = native_banked.seal((OUT/'aesvc.prg').read_bytes(), base=0x8800)
+    (OUT/'aesvc.prg').write_bytes(aes_image)
+    aes_component = native_banked.validate(aes_image, base=0x8800)
+    for name in ('desktop','calc','editor','files','controls','claude','paint','sheet','gemdesk'):
         path = OUT/f'{name}.prg'
         runtime_end = {'claude':claude['runtime_end'], 'sheet':sheet['runtime_end']}.get(name)
         packed = pack_app(path.read_bytes(), runtime_end=runtime_end,
@@ -121,6 +129,14 @@ def build():
         shutil.copyfile(workspace, desktop)
         subprocess.run(['c1541', '-attach', str(desktop), '-delete', 'u',
                         '-write', str((OUT if disk_format == 'd64' else OUT/'d81')/'uos128-boot.prg'), 'u'], check=True, capture_output=True)
+    # GEM profile (docs/GEM-DESKTOP.md): the GEM desktop is "browse", so apps
+    # return to it; the card launcher stays available as "cards". D81 only.
+    gem = OUT/'gem.d81'
+    shutil.copyfile(OUT/'uos128.d81', gem)
+    subprocess.run(['c1541', '-attach', str(gem), '-delete', 'browse',
+                    '-write', str(OUT/'gemdesk.prg'), 'browse',
+                    '-write', str(OUT/'desktop.prg'), 'cards',
+                    '-write', str(OUT/'aesvc.prg'), 'aesvc.prg'], check=True, capture_output=True)
     images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
@@ -139,6 +155,9 @@ def build():
                       claude=validate((OUT/'claude.prg').read_bytes()),
                       paint=validate((OUT/'paint.prg').read_bytes()),
                       sheet=validate((OUT/'sheet.prg').read_bytes()),
+                      gem=dict(disk='gem.d81', browse='gemdesk.prg', cards='desktop.prg',
+                               aesvc=aes_component,
+                               gemdesk=validate((OUT/'gemdesk.prg').read_bytes())),
                       surface_pages=36, vdc_component=vdc_component, packed_apps=packing,
                       free_pages_at_desktop={str(kib):426-36-pages-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages']
                                              for kib,pages in ((16,64),(64,72))},

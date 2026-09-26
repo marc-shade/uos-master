@@ -30,10 +30,10 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 
 | TOS feature | Status | uOS evidence / missing piece |
 |---|---|---|
-| Drive icons on the desktop | Missing | Desktop is a 7-card app launcher (`src/native/desktop.asm`) |
-| Trash can (drag to delete) | Missing | No native delete exists yet |
-| Open drive/folder in a window | Partial | Files is a full-screen list with Ultimate folder navigation; not a window |
-| Several directory windows at once | Missing | Needs the window manager (C) |
+| Drive icons on the desktop | Partial | [GEMDESK](GEM-DESKTOP.md) shows boot-drive and drive-9 icons (GEM profile disk); no Ultimate icon yet |
+| Trash can (drag to delete) | Partial | GEMDESK shows a Trash icon; dragging to it is not built yet (Files has Ultimate delete) |
+| Open drive/folder in a window | Partial | GEMDESK opens IEC drives in scrolling listing windows; Ultimate folders not yet |
+| Several directory windows at once | Partial | GEMDESK allows four (only one exercised by tests) |
 | Icon view / text view | Partial | Text list only |
 | Sort by name, date, size, type | Missing | |
 | Drag-and-drop copy and move | Partial | Button copy with verified comparison, progress and cancel (`src/native/files-copy.inc`); no drag, no move |
@@ -50,7 +50,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Save Desktop (DESKTOP.INF) | Missing | Only the selected card survives an app return |
 | Show File (view/print) | Partial | Byte viewer and Editor open; no print |
 | Print Screen | Missing | No printer service |
-| Launch programs, parameter dialog (TTP) | Partial | Checked app loader; no parameter dialog |
+| Launch programs, parameter dialog (TTP) | Partial | GEMDESK double-click/Return launches through the checked dispatcher; no parameter dialog |
 | Menu keyboard shortcuts | Have | Desktop letters, Files/Editor/Sheet control keys |
 | Desktop pattern and colors | Missing | Fixed theme (legacy Settings had a persisted color) |
 
