@@ -40,7 +40,7 @@ Bank-1 map:
 | Range | Use |
 |---|---|
 | `$0400..$4fff` | General heap |
-| `$5000..$5fff` | Accessory slot, owner 29, reserved only while an accessory is open |
+| `$5000..$5fff` | AES RAM-table data segment, owner 30 (planned as the accessory slot; the window manager's cell maps needed it) |
 | `$6000..$87ff` | Per-app banked component window (VDSVC uses 39 pages, one spare) |
 | `$8800..$bfff` | AESVC, owner 30, persistent |
 | `$c000..$feff` | General heap plus the owner-30 save-under/session pages |
@@ -75,9 +75,15 @@ windows, menu and queue and sends `AC_CLOSE` to accessories.
 
 ## Desk accessories
 
+*Revised 2026-09-25:* `$5000..$5fff` now holds the AES data segment, so the
+accessory slot needs another directly addressable home (for example the
+`$4000..$4fff` range, or swapping the accessory image through the REU).
+The rest of this section is the original plan.
+
+
 An accessory is an NBK1 image (`"NACC"`, at most 16 pages) loaded at bank-1
 `$5000`. The AES calls it directly inside bank 1 (init, message, timer
-entries). The accessory reaches the AES through a jump table at `$9000+40`.
+entries). The accessory reaches the AES through a jump table at `AE_BASE+40`.
 One accessory is resident at a time; up to four `DESK*.ACC` entries from the
 boot device are listed in the Desk menu and loaded on demand.
 

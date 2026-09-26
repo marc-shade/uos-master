@@ -145,6 +145,12 @@ input_loop:
         sta demo_error
         jsr demo_draw
         jmp input_loop
++       cmp #$57              ; W: three AES windows over the VIC surface
+        bne +
+        jsr demo_windows
+        sta demo_error
+        jsr demo_draw
+        jmp input_loop
 +       cmp #$4d              ; M: a menu bar over this app's VIC surface
         bne +
         jsr demo_menu_run
@@ -349,6 +355,374 @@ demo_menu_hide:
         rts
 demo_menu_done:
         rts
+; Window mode. Every WM_REDRAW is answered by filling the window's visible
+; work area (pen and colour per window) through the AES fill operation.
+; Keys: 1-3 top, m move, s grow, c close the top window, r record the top
+; window's visible rectangles, Escape closes and deletes all windows.
+demo_windows:
+        jsr demo_surface_open
+        bcc +
+        rts
++       lda #8                ; windows draw on this surface
+        sta N_BUFFER
+        ldx #3
+-       lda ae_surface,x
+        sta N_BUFFER+1,x
+        dex
+        bpl -
+        jsr demo_wcall
+        bcs demo_win_hide
+        lda #0
+        sta demo_i
+demo_win_create:
+        lda demo_i
+        asl
+        asl
+        asl                   ; 8 bytes per table entry
+        tay
+        lda #0                ; create: kind, full rectangle
+        sta N_BUFFER
+        ldx #0
+-       lda demo_win_table,y
+        sta N_BUFFER+2,x
+        iny
+        inx
+        cpx #6
+        bne -
+        jsr demo_wcall
+        bcs demo_win_hide
+        ldx demo_i
+        lda N_BUFFER
+        sta demo_handles,x
+        jsr demo_win_setup    ; name and sliders while still closed
+        bcs demo_win_hide
+        inc demo_i
+        lda demo_i
+        cmp #3
+        bne demo_win_create
+        lda #0
+        sta demo_i
+-       ldx demo_i            ; open each at its full rectangle
+        jsr demo_win_open
+        bcs demo_win_hide
+        inc demo_i
+        lda demo_i
+        cmp #3
+        bne -
+        lda #16|1
+        sta ae_ev_params
+        lda #1
+        sta demo_waiting
+demo_win_loop:
+        jsr ae_event
+        bcs demo_win_end
+        lda ae_ev_result
+        and #16
+        beq demo_win_keys
+        lda ae_ev_result+7
+        cmp #20               ; WM_REDRAW
+        bne demo_win_keys
+        ldx ae_ev_result+10
+        beq demo_win_keys     ; the AES already cleared the desktop
+        inc demo_redraws
+        lda #7                ; fill: handle, pen, colour, clip
+        sta N_BUFFER
+        stx N_BUFFER+1
+        lda demo_pens-1,x
+        sta N_BUFFER+2
+        lda demo_colors-1,x
+        sta N_BUFFER+3
+        ldy #3
+-       lda ae_ev_result+11,y
+        sta N_BUFFER+4,y
+        dey
+        bpl -
+        jsr demo_wcall
+        bcs demo_win_end
+        jsr demo_markers      ; content that moves with the window
+        bcs demo_win_end
+demo_win_keys:
+        lda ae_ev_result
+        and #1
+        beq demo_win_loop
+        lda ae_ev_result+1
+        cmp #27
+        beq demo_win_close_all
+        cmp #$31
+        bcc +
+        cmp #$34
+        bcs +
+        sbc #$30              ; carry clear: 1..3 -> index 0..2
+        tax
+        lda demo_handles,x
+        sta N_BUFFER+1
+        lda #4
+        sta N_BUFFER
+        lda #10               ; WF_TOP
+        sta N_BUFFER+2
+        jsr demo_wcall
+        jmp demo_win_loop
++       pha
+        jsr demo_top          ; X = top window (0: none)
+        pla
+        cpx #0
+        beq demo_win_loop
+        cmp #$43              ; c: close
+        bne +
+        stx N_BUFFER+1
+        lda #2
+        sta N_BUFFER
+        jsr demo_wcall
+        jmp demo_win_loop
++       cmp #$52              ; r: record visible rectangles
+        bne +
+        jsr demo_win_rects
+        jmp demo_win_loop
++       cmp #$4d              ; m: move by one cell right and down
+        beq +
+        cmp #$4c              ; l: move by one cell left and up
+        beq +
+        cmp #$53              ; s: grow by two columns and one row
+        bne demo_win_loop
++       sta demo_math
+        stx demo_math2
+        lda #5
+        sta N_BUFFER
+        stx N_BUFFER+1
+        lda #5                ; WF_CURRXYWH
+        sta N_BUFFER+2
+        jsr demo_wcall
+        bcs demo_win_loop
+        ldx #3                ; set takes x,y,w,h at [3..6]
+-       lda N_BUFFER,x
+        sta N_BUFFER+3,x
+        dex
+        bpl -
+        lda demo_math
+        cmp #$4c
+        bne +
+        dec N_BUFFER+3
+        dec N_BUFFER+4
+        jmp +++
++       cmp #$4d
+        bne +
+        inc N_BUFFER+3
+        inc N_BUFFER+4
+        jmp ++
++       inc N_BUFFER+5
+        inc N_BUFFER+5
+        inc N_BUFFER+6
++       lda #4
+        sta N_BUFFER
+        lda demo_math2
+        sta N_BUFFER+1
+        lda #5
+        sta N_BUFFER+2
+        jsr demo_wcall
+        jmp demo_win_loop
+demo_win_close_all:
+        lda #0
+        sta demo_i
+-       ldx demo_i
+        lda demo_handles,x
+        sta N_BUFFER+1
+        lda #2                ; close (refused when already closed)
+        sta N_BUFFER
+        jsr demo_wcall
+        ldx demo_i
+        lda demo_handles,x
+        sta N_BUFFER+1
+        lda #3                ; delete
+        sta N_BUFFER
+        jsr demo_wcall
+        inc demo_i
+        lda demo_i
+        cmp #3
+        bne -
+        lda #0
+demo_win_end:
+        pha
+        lda #0
+        sta demo_waiting
+        pla
+demo_win_hide:
+        pha
+        jsr N_VCLOSE
+        pla
+        cmp #1
+        rts
+; X = table index: name and slider values of the new window.
+demo_win_setup:
+        lda #4                ; set name
+        sta N_BUFFER
+        lda demo_handles,x
+        sta N_BUFFER+1
+        lda #2                ; WF_NAME
+        sta N_BUFFER+2
+        txa
+        asl
+        asl
+        asl
+        tay
+        ldx #0
+-       lda demo_win_names,y
+        sta N_BUFFER+3,x
+        beq +
+        iny
+        inx
+        bne -
++       jsr demo_wcall
+        bcs demo_setup_done
+        ldx demo_i
+        lda demo_win_table+6,y ; slider position / size per window
+        lda demo_i
+        asl
+        asl
+        asl
+        tay
+        lda demo_win_table+6,y
+        beq demo_setup_ok     ; 0: no slider settings
+        sta demo_math         ; field for the position (8 h / 9 v)
+        lda demo_slides,x
+        jsr demo_set_field
+        bcs demo_setup_done
+        lda demo_math
+        clc
+        adc #7                ; 15 h size / 16 v size
+        sta demo_math
+        ldx demo_i
+        lda demo_sizes,x
+        jsr demo_set_field
+        bcs demo_setup_done
+demo_setup_ok:
+        clc
+demo_setup_done:
+        rts
+demo_set_field:
+        sta N_BUFFER+3
+        lda #4
+        sta N_BUFFER
+        ldx demo_i
+        lda demo_handles,x
+        sta N_BUFFER+1
+        lda demo_math
+        sta N_BUFFER+2
+        jmp demo_wcall
+; X = table index: open at the full rectangle.
+demo_win_open:
+        txa
+        asl
+        asl
+        asl
+        tay
+        lda demo_handles,x
+        sta N_BUFFER+1
+        lda #1
+        sta N_BUFFER
+        ldx #0
+-       lda demo_win_table+2,y
+        sta N_BUFFER+2,x
+        iny
+        inx
+        cpx #4
+        bne -
+        jmp demo_wcall
+; Marker cells at the work area's top-left ($f2) and bottom-right ($2f):
+; content positioned relative to the window, so a missing move or resize
+; redraw would leave a stale marker behind.
+demo_markers:
+        ldx ae_ev_result+10
+        stx demo_math2
+        lda #5                ; get WF_WORKXYWH
+        sta N_BUFFER
+        stx N_BUFFER+1
+        lda #4
+        sta N_BUFFER+2
+        jsr demo_wcall
+        bcs demo_markers_done
+        ldx #3
+-       lda N_BUFFER,x
+        sta demo_work,x
+        dex
+        bpl -
+        lda demo_work
+        ldy demo_work+1
+        ldx #$f2
+        jsr demo_marker
+        bcs demo_markers_done
+        lda demo_work
+        clc
+        adc demo_work+2
+        sec
+        sbc #1
+        pha
+        lda demo_work+1
+        clc
+        adc demo_work+3
+        sec
+        sbc #1
+        tay
+        pla
+        ldx #$2f
+demo_marker:                  ; A = x, Y = y, X = colour: one inked cell
+        sta N_BUFFER+4
+        sty N_BUFFER+5
+        stx N_BUFFER+3
+        lda #1
+        sta N_BUFFER+6
+        sta N_BUFFER+7
+        sta N_BUFFER+2        ; pen 1
+        lda demo_math2
+        sta N_BUFFER+1
+        lda #7
+        sta N_BUFFER
+        jmp demo_wcall
+demo_markers_done:
+        rts
+demo_top:
+        lda #5
+        sta N_BUFFER
+        lda #10               ; WF_TOP
+        sta N_BUFFER+2
+        jsr demo_wcall
+        ldx N_BUFFER
+        rts
+demo_win_rects:
+        stx N_BUFFER+1
+        lda #0
+        sta demo_rect_count
+        lda #5
+        sta N_BUFFER
+        lda #11               ; WF_FIRSTXYWH
+        sta N_BUFFER+2
+-       jsr demo_wcall
+        bcs +
+        lda N_BUFFER+2
+        beq +
+        lda demo_rect_count
+        asl
+        asl
+        tay
+        ldx #0
+-       lda N_BUFFER,x
+        sta demo_rects,y
+        iny
+        inx
+        cpx #4
+        bne -
+        inc demo_rect_count
+        lda demo_rect_count
+        cmp #16
+        bcs +
+        lda #5
+        sta N_BUFFER
+        lda #12               ; WF_NEXTXYWH
+        sta N_BUFFER+2
+        jmp --
++       rts
+demo_wcall:
+        lda #AE_OP_WINDOW
+        jmp ae_call
 demo_reply:
         ldx #12
 -       lda N_BUFFER,x
@@ -491,6 +865,30 @@ demo_error: .byte 0
 demo_screen: .byte 0
 demo_status: .fill 13,0
 demo_choice: .byte 0
+demo_i: .byte 0
+demo_math: .byte 0
+demo_math2: .byte 0
+demo_redraws: .byte 0
+demo_handles: .fill 3,0
+demo_rect_count: .byte 0
+demo_work: .fill 4,0
+demo_rects: .fill 64,0
+; kind (word), x, y, w, h, slider field (0 none, 8 h, 9 v), 0
+demo_win_table:
+        .word $000f
+        .byte 1,2,20,10,0,0
+        .word $01f3
+        .byte 10,6,18,12,9,0
+        .word $0e21
+        .byte 5,14,24,8,8,0
+demo_slides: .byte 0,64,200
+demo_sizes: .byte 0,128,64
+demo_pens: .byte 0,1,0
+demo_colors: .byte $15,$b0,$3e
+demo_win_names:
+        .byte 65,108,112,104,97,0,0,0      ; Alpha
+        .byte 66,101,116,97,0,0,0,0        ; Beta
+        .byte 71,97,109,109,97,0,0,0       ; Gamma
 demo_menu_title: .byte 0
 demo_menu_item: .byte 0
 demo_menu_count: .byte 0
@@ -516,7 +914,8 @@ demo_help: .text 13,13,"return: aes status",13
            .text "u: unload aes and exit",13
            .text "a: aes alert over the vic surface",13
            .text "e: wait for events  p: post a message",13
-           .text "m: menu bar over the vic surface",13,0
+           .text "m: menu bar over the vic surface",13
+           .text "w: three aes windows",13,0
 .include "aes-client.inc"
 app_end:
 .cerror app_end > N_APPLIMIT, "example parent exceeds its slot"

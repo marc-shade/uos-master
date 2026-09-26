@@ -1170,8 +1170,11 @@ mn_msg_title: .byte 0
 mn_msg_item: .byte 0
 mn_switch_to: .byte 0
 mn_tok_len: .byte 0
-mn_tok: .fill MN_TEXT_MAX+2,0
 mn_pool_len: .word 0
+mn_check: .byte $00,$01,$03,$06,$8c,$d8,$70,$20
+; RAM tables in the owner-30 data segment (aesvc.asm AE_DATA)
+        .section aesdata
+mn_tok: .fill MN_TEXT_MAX+2,0
 mn_title_len: .fill MN_MAX_TITLES,0
 mn_title_x: .fill MN_MAX_TITLES,0
 mn_title_first: .fill MN_MAX_TITLES,0
@@ -1183,5 +1186,5 @@ mn_item_key: .fill MN_MAX_ITEMS,0
 mn_item_flags: .fill MN_MAX_ITEMS,0
 mn_item_off_lo: .fill MN_MAX_ITEMS,0
 mn_item_off_hi: .fill MN_MAX_ITEMS,0
-mn_check: .byte $00,$01,$03,$06,$8c,$d8,$70,$20
 mn_pool: .fill MN_POOL_SIZE,0
+        .send aesdata

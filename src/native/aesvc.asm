@@ -22,7 +22,7 @@ aes_image:
 aes_identity:                 ; image offset 32, checked by bk_attach
         .text "naes"
         .byte AE_MAJOR,AE_MINOR
-        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU ; capability bits
+        .byte AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW ; capability bits
         .byte 0
         .cerror aes_identity-aes_image != 32, "AES identity must be at offset 32"
 
@@ -30,6 +30,17 @@ aes_identity:                 ; image offset 32, checked by bk_attach
 aes_entry:
         cmp #AE_OP_COUNT
         bcs aes_badarg
+        cmp #AE_OP_SHUTDOWN
+        bne +
+        jmp aes_shutdown
++       cmp #AE_OP_STATUS
+        beq +
+        pha
+        jsr aes_ensure_data     ; every other op uses the data segment
+        pla
+        bcc +
+        rts
++
         cmp #AE_OP_ALERT
         bne +
         jmp al_open
@@ -48,6 +59,9 @@ aes_entry:
 +       cmp #AE_OP_MENU_SET
         bne +
         jmp mn_set
++       cmp #AE_OP_WINDOW
+        bne +
+        jmp wn_entry
 +       cmp #AE_OP_ATTACH
         bne aes_reply
         ldx #3
@@ -70,6 +84,7 @@ aes_new_app:
 +       jsr al_discard        ; the previous app's surface is gone
         jsr ev_reset          ; and so are its queued messages
         jsr mn_reset          ; and its menu bar
+        jsr wn_reset          ; and its windows
         lda #1
 aes_count:
         sta aes_changed
@@ -93,7 +108,7 @@ aes_badarg:
         rts
 
 aes_state:
-        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU,0
+        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT|AE_CAP_EVENT|AE_CAP_MENU|AE_CAP_WINDOW,0
 aes_attaches: .word 0
 aes_apps: .word 0
 aes_changed: .byte 0
@@ -107,11 +122,85 @@ aes_heap_write:
 aes_heap_fill:
         lda #4
         jmp bk_native
+; Reserve and clear the RAM-table segment once; it outlives apps like the
+; image. Carry set with the heap's error when the pages are taken.
+aes_ensure_data:
+        lda aes_data_ok
+        bne aes_data_ready
+        lda #N_AESOWNER
+        sta N_OWNER
+        lda #1
+        sta N_BANK
+        lda #>AE_DATA
+        sta N_PAGE
+        lda #AE_DATA_PAGES
+        sta N_PAGES
+        lda #7                  ; N_RESERVE
+        jsr bk_native
+        bcs aes_data_done
+        ldx #3
+-       lda N_HANDLE,x
+        sta aes_data_handle,x
+        dex
+        bpl -
+        lda #<AE_DATA           ; bank-1 code addresses it directly
+        sta aes_clear+1
+        lda #>AE_DATA
+        sta aes_clear+2
+        ldy #AE_DATA_PAGES
+        lda #0
+        tax
+aes_clear:
+        sta AE_DATA,x
+        inx
+        bne aes_clear
+        inc aes_clear+2
+        dey
+        bne aes_clear
+        lda #1
+        sta aes_data_ok
+aes_data_ready:
+        clc
+aes_data_done:
+        rts
+; SHUTDOWN: release overlays and the data segment before the image is freed.
+aes_shutdown:
+        lda aes_data_ok
+        beq +
+        jsr mn_close            ; restores an open drop-down on the app surface
+        bcs aes_data_done
+        jsr al_discard
+        lda #N_AESOWNER
+        sta N_OWNER
+        ldx #3
+-       lda aes_data_handle,x
+        sta N_HANDLE,x
+        dex
+        bpl -
+        lda #1                  ; N_FREE
+        jsr bk_native
+        bcs aes_data_done
+        lda #0
+        sta aes_data_ok
+        sta mn_titles
+        sta wn_count
++       lda #0
+        clc
+        rts
+aes_data_ok: .byte 0
+aes_data_handle: .fill 4,0
 .include "banked-client.inc"
 .include "aes-alert.inc"
 .include "aes-event.inc"
 .include "aes-menu.inc"
+.include "aes-window.inc"
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 aes_end:
 .cerror aes_end > AE_LIMIT, "AES exceeds its bank-1 region"
+        .virtual AE_DATA
+aes_data:
+        .dsection aesdata
+aes_data_end:
+        .endv
+.cerror aes_data_end > AE_DATA+AE_DATA_PAGES*256, "AES RAM tables exceed the data segment"

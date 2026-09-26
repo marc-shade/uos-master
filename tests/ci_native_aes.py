@@ -25,19 +25,38 @@ AES_OWNER = 30
 _released = ci_native_calc.released_stats
 
 
-def resident_aes(machine):
-    """The single owner-30 record, or None; checked against the page tags."""
+AE_DATA, AE_DATA_PAGES = 0x5000, 16
+
+
+def owner30(machine):
     ram = machine.ram
-    records = [(i, bytes(ram[0x3c00+i*8:0x3c08+i*8])) for i in range(32)]
-    aes = [(i, r) for i, r in records if r[0] == AES_OWNER]
-    if not aes:
+    return [(i, bytes(ram[0x3c00+i*8:0x3c08+i*8])) for i in range(32)
+            if ram[0x3c00+i*8] == AES_OWNER]
+
+
+def resident_aes(machine):
+    """The AES image record (bank 1 at AE_BASE), or None; page tags checked.
+    Besides it, only the RAM-table segment at AE_DATA may stay resident."""
+    ram = machine.ram
+    image = [(i, r) for i, r in owner30(machine) if r[2] == AE_BASE >> 8]
+    others = [r for i, r in owner30(machine) if r[2] not in (AE_BASE >> 8, AE_DATA >> 8)]
+    assert not others, others
+    if not image:
+        assert not data_segment(machine), 'a data segment without its image'
         return None
-    assert len(aes) == 1, aes
-    slot, record = aes[0]
-    assert record[1] == 1 and record[2] == AE_BASE >> 8, record
+    slot, record = image[0]
+    assert len(image) == 1 and record[1] == 1, image
     pages = record[3]
     assert bytes(ram[0x3900+record[2]:0x3900+record[2]+pages]) == bytes([slot+1])*pages
     return record
+
+
+def data_segment(machine):
+    found = [r for i, r in owner30(machine) if r[2] == AE_DATA >> 8]
+    if found:
+        assert found[0][1] == 1 and found[0][3] == AE_DATA_PAGES, found
+        return found[0]
+    return None
 
 
 def released_with_aes(machine):
@@ -47,7 +66,9 @@ def released_with_aes(machine):
     if record is None:
         return _released(machine)
     assert all(r[0] == AES_OWNER for r in live), live
-    return 175, 251-record[3], 31
+    data = data_segment(machine)
+    pages = record[3]+(data[3] if data else 0)
+    return 175, 251-pages, 32-len(live)
 
 
 ci_native_calc.released_stats = released_with_aes
@@ -106,7 +127,7 @@ class Demo(Calculator):
         at = self.symbol(name)
         return bytes(self.ram[at:at+length])
 
-    def check(self, *, attaches, apps, loaded, error=0, version=0x0103, choice=0):
+    def check(self, *, attaches, apps, loaded, error=0, version=0x0104, choice=0):
         status = self.data('demo_status', 13)
         assert self.value('demo_error') == error, (self.value('demo_error'), error)
         assert self.value('demo_loaded') == loaded
@@ -123,7 +144,7 @@ class Demo(Calculator):
                  f'LAST ERROR (HEX): ${error:02X}', '',
                  'RETURN: AES STATUS', 'ESC: EXIT, AES STAYS RESIDENT', 'U: UNLOAD AES AND EXIT',
                  'A: AES ALERT OVER THE VIC SURFACE', 'E: WAIT FOR EVENTS  P: POST A MESSAGE',
-                 'M: MENU BAR OVER THE VIC SURFACE']
+                 'M: MENU BAR OVER THE VIC SURFACE', 'W: THREE AES WINDOWS']
         for screen, columns in zip(self.screens, (40, 80)):
             expected = bytearray(b' '*(columns*25))
             for row, line in enumerate(lines):
@@ -156,6 +177,7 @@ def main():
         first.check(attaches=1, apps=1, loaded=1)
         record = resident_aes(first.m)
         assert record is not None and record[3] == images['images']['AESVC.PRG']['pages']
+        assert data_segment(first.m) is not None, 'attach reserved the RAM-table segment'
         # The loaded bytes equal the file image after the executor patches the
         # callback import; the counters live inside the resident image.
         resident = first.bank1(0, len(component)-2)
@@ -226,6 +248,7 @@ def main():
         alert_cases(work, report, done)
         event_cases(work, report, done)
         menu_cases(work, report, done)
+        window_cases(work, report, done)
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')
@@ -253,7 +276,7 @@ def alert_cases(work, report, done):
 
     def saved_pages():
         return [bytes(demo.ram[0x3c00+i*8:0x3c08+i*8]) for i in range(32)
-                if demo.ram[0x3c00+i*8] == AES_OWNER and demo.ram[0x3c02+i*8] != AE_BASE >> 8]
+                if demo.ram[0x3c00+i*8] == AES_OWNER and demo.ram[0x3c02+i*8] not in (AE_BASE >> 8, AE_DATA >> 8)]
 
     demo.key(ord('A'))
     assert demo.alert_open()
@@ -448,7 +471,7 @@ def menu_cases(work, report, done):
         return (demo.value('demo_menu_title'), demo.value('demo_menu_item'), demo.value('demo_menu_count'))
 
     def saved_pages():
-        return [1 for i in range(32) if demo.ram[0x3c00+i*8] == AES_OWNER and demo.ram[0x3c02+i*8] != AE_BASE >> 8]
+        return [1 for i in range(32) if demo.ram[0x3c00+i*8] == AES_OWNER and demo.ram[0x3c02+i*8] not in (AE_BASE >> 8, AE_DATA >> 8)]
 
     demo.key(ord('M')); frame()
     demo.key(0x85); frame(open_title=0, hover=0)
@@ -483,6 +506,72 @@ def menu_cases(work, report, done):
     assert not demo.ram[demo.symbol('demo_waiting')] and demo.value('demo_error') == 0
     assert not saved_pages()
     done('Escape closes an open drop-down first, then reaches the app', demo)
+    demo.key(27, exited=True)
+
+
+def window_cases(work, report, done):
+    from native_display_bus import DisplayBus
+    heap.Bus = DisplayBus
+    demo = Demo(work, heap.Machine())
+    K = scene.WK
+    wins = {
+        1: dict(id=1, kind=K['NAME'] | K['CLOSER'] | K['FULLER'] | K['MOVER'],
+                x=1, y=2, w=20, h=10, title=b'Alpha'),
+        2: dict(id=2, kind=K['NAME'] | K['CLOSER'] | K['INFO'] | K['SIZER'] | K['UP'] | K['DN'] | K['VSLIDE'],
+                x=10, y=6, w=18, h=12, title=b'Beta', vpos=64, vsize=128),
+        3: dict(id=3, kind=K['NAME'] | K['SIZER'] | K['LF'] | K['RT'] | K['HSLIDE'],
+                x=5, y=14, w=24, h=8, title=b'Gamma', hpos=200, hsize=64),
+    }
+    fills = {1: (0, 0x15), 2: (1, 0xb0), 3: (0, 0x3e)}
+    order = [1, 2, 3]
+
+    def expect():
+        want = scene.windows_draw([wins[h] for h in order], fills)
+        got = demo.surface()
+        assert got == want, [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]
+
+    def rects_of(h):
+        owner = scene.cell_map([wins[i] for i in order])
+        g = scene.geometry(wins[h])
+        return scene.rectangles(owner, h, (g['wx'], g['wy'], g['ww'], g['wh']))
+
+    def recorded():
+        n = demo.value('demo_rect_count')
+        raw = demo.data('demo_rects', n*4)
+        return [tuple(raw[i:i+4]) for i in range(0, len(raw), 4)]
+
+    demo.key(ord('W')); expect()
+    assert demo.data('demo_handles', 3) == bytes([1, 2, 3])
+    done('three windows open with every gadget kind; frames and fills match the painter', demo,
+         redraws=demo.value('demo_redraws'))
+
+    demo.key(ord('R')); assert recorded() == rects_of(3)
+    for key, h in ((ord('1'), 1), (ord('2'), 2), (ord('3'), 3), (ord('1'), 1)):
+        demo.key(key); order.remove(h); order.append(h); expect()
+    demo.key(ord('R')); assert recorded() == rects_of(1) and len(recorded()) >= 1
+    done('topping windows repaints exactly what changed; visible rectangles match', demo,
+         rects=len(recorded()))
+
+    demo.key(ord('M')); wins[1].update(x=2, y=3); expect()
+    demo.key(ord('S')); wins[1].update(w=22, h=11); expect()
+    demo.key(ord('L')); wins[1].update(x=1, y=2); expect()   # changed cells: new left column only
+    demo.key(ord('M')); wins[1].update(x=2, y=3); expect()
+    demo.key(ord('2')); order.remove(2); order.append(2); expect()
+    demo.key(ord('R')); assert recorded() == rects_of(2)
+    done('move and size uncover desktop and lower windows exactly', demo)
+
+    demo.key(ord('C')); order.remove(2); expect()
+    demo.key(ord('C')); order.remove(order[-1]); expect()
+    demo.key(ord('R')); assert recorded() == rects_of(order[-1])
+    done('closing the top window uncovers the rest and highlights the new top', demo)
+
+    demo.key(27)
+    assert demo.surface() == scene.windows_draw([], fills)
+    assert demo.value('demo_error') == 0
+    demo.key(ord('W')); order[:] = [1, 2, 3]
+    wins[1].update(x=1, y=2, w=20, h=10); expect()      # every slot was deleted and is reusable
+    demo.key(27)
+    done('Escape closes and deletes all windows; slots are reusable', demo)
     demo.key(27, exited=True)
 
 

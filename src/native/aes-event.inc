@@ -271,6 +271,71 @@ ev_push:
         clc
         rts
 
+; ev_msg_in holds a WM_REDRAW (20): union it into a queued WM_REDRAW of the
+; same window, as GEM does. Carry clear when merged, set when none is queued.
+ev_merge_redraw:
+        ldx ev_count
+        beq ev_merge_none
+        ldy ev_head
+ev_merge_scan:
+        lda ev_queue,y
+        cmp #20
+        bne ev_merge_next
+        lda ev_queue+3,y
+        cmp ev_msg_in+3
+        bne ev_merge_next
+        lda ev_queue+4,y        ; right = max(x+w), bottom = max(y+h)
+        clc
+        adc ev_queue+6,y
+        sta ev_merge_x1
+        lda ev_msg_in+4
+        clc
+        adc ev_msg_in+6
+        cmp ev_merge_x1
+        bcc +
+        sta ev_merge_x1
++       lda ev_queue+5,y
+        clc
+        adc ev_queue+7,y
+        sta ev_merge_y1
+        lda ev_msg_in+5
+        clc
+        adc ev_msg_in+7
+        cmp ev_merge_y1
+        bcc +
+        sta ev_merge_y1
++       lda ev_msg_in+4         ; left/top = min
+        cmp ev_queue+4,y
+        bcs +
+        sta ev_queue+4,y
++       lda ev_msg_in+5
+        cmp ev_queue+5,y
+        bcs +
+        sta ev_queue+5,y
++       lda ev_merge_x1
+        sec
+        sbc ev_queue+4,y
+        sta ev_queue+6,y
+        lda ev_merge_y1
+        sec
+        sbc ev_queue+5,y
+        sta ev_queue+7,y
+        clc
+        rts
+ev_merge_next:
+        tya
+        clc
+        adc #8
+        and #EV_QUEUE_SIZE*8-1
+        tay
+        dex
+        bne ev_merge_scan
+ev_merge_none:
+        sec
+        rts
+ev_merge_x1: .byte 0
+ev_merge_y1: .byte 0
+
 ; A new foreground app: its queue and wait state are meaningless now.
 ev_reset:
         lda #0
@@ -298,4 +363,7 @@ ev_out: .fill 7,0
 ev_message: .fill 8,0
 ev_dirty: .fill 4,0              ; contiguous with ev_out/ev_message
 ev_msg_in: .fill 8,0
+; RAM tables in the owner-30 data segment (aesvc.asm AE_DATA)
+        .section aesdata
 ev_queue: .fill EV_QUEUE_SIZE*8,0
+        .send aesdata

@@ -4,8 +4,9 @@ The AES is the shared service behind the [GEM layer](GEM-LAYER-DESIGN.md).
 It now provides a persistent bank-1 component that apps load once and later
 apps attach to (step 1), GEM-style alert boxes (step 2, AES minor 1) and an
 `evnt_multi`-style event wait with an application message queue (step 3,
-minor 2) and a GEM menu bar (step 4, minor 3). Windows and desk accessories
-are later steps.
+minor 2), a GEM menu bar (step 4, minor 3) and GEM windows (step 5, minor 4).
+Clicking and dragging window gadgets, objects and desk accessories are later
+steps.
 
 ## What persists
 
@@ -13,8 +14,15 @@ are later steps.
 by owner 30 (`N_AESOWNER`). App cleanup releases only owner 32, so the image
 and its state stay resident after `N_EXIT`. The next app attaches to the same
 bytes instead of loading them again. `ae_unload` frees the image and returns
-its pages. With alerts, events, menus and the shared graphics library
-the component is 38 pages (9,475 bytes) of its 56-page region (`$8800..$bfff`).
+its pages. With alerts, events, menus, windows and the shared graphics
+library the image is 49 pages (12,450 bytes) of its 56-page region
+(`$8800..$bfff`). Its RAM tables (cell maps, menu text, message queue,
+window records) live in a second owner-30 allocation, the 16-page data
+segment at bank-1 `$5000..$5fff`. The first attach reserves and clears it.
+`ae_unload` first calls `AE_OP_SHUTDOWN`, which closes any open drop-down,
+discards an open alert's buffer and frees the segment; it then frees the
+image. While resident, the AES therefore holds 49 + 16 pages of the bank-1
+heap.
 
 The component's identity block sits at image offset 32: `NAES`, major and
 minor version, capability bits. The AES version is independent of the kernel
@@ -184,6 +192,76 @@ are grey. Every sample reports the cell rows it redrew in result bytes
 15–18, and the client ORs them into `ae_dirty` for apps that mirror their
 surface to the VDC.
 
+## Windows
+
+`AE_OP_WINDOW` (8) takes a sub-operation in `N_BUFFER[0]` and a handle in
+`N_BUFFER[1]`. Every reply ends with four dirty-row bytes at `N_BUFFER[4..7]`.
+
+| Sub-op | Name | Arguments → result |
+|---|---|---|
+| 0 | create | 2–3 kind (word), 4–7 full rectangle → [0] handle 1–7 (`N_NOSLOT` when all 7 exist) |
+| 1 | open | 2–5 rectangle |
+| 2 | close | — |
+| 3 | delete | (must be closed) |
+| 4 | set | 2 field, 3.. value |
+| 5 | get | 2 field → [0..3] |
+| 6 | find | 1 x, 2 y (cells) → [0] handle, 0 = desktop |
+| 7 | fill | 2 pen (0 clear, 1 ink), 3 colour, 4–7 clip rectangle (handle 0 = desktop) |
+| 8 | surface | 1–4 the app surface handle; call once before the others |
+
+Kinds are GEM's: name 1, close 2, full 4, move 8, info 16, size 32, up 64,
+down 128, vertical slider 256, left 512, right 1024, horizontal slider 2048.
+Set fields:
+- `WF_NAME` 2 (NUL-terminated, up to 16 characters);
+- `WF_CURRXYWH` 5 (a new rectangle; moves or resizes an open window);
+- `WF_TOP` 10;
+- `WF_HSLIDE` 8 / `WF_VSLIDE` 9 (position 0–255);
+- `WF_HSLSIZE` 15 / `WF_VSLSIZE` 16 (size 0–255 of the track).
+
+Get fields:
+- `WF_WORKXYWH` 4, `WF_CURRXYWH` 5, `WF_PREVXYWH` 6, `WF_FULLXYWH` 7;
+- `WF_TOP` 10 (the handle, 0 when none);
+- `WF_FIRSTXYWH` 11 / `WF_NEXTXYWH` 12 (see below).
+
+Rectangles are in cells, at least 4×3, inside columns 0–39 and rows 1–24;
+row 0 stays free for the menu bar.
+
+Up to 7 windows are open at once. The frame is made of cells:
+- a title bar (close box, centred title, full box; the top window's bar is
+  in the focus colour);
+- an optional info row;
+- a right column with up/down arrows and a slider track;
+- a bottom row with left/right arrows and a track;
+- a size box in the corner, or in the right column's last cell when there
+  is no bottom row.
+
+There is no pixel outline around the work area, because the app repaints
+work cells. Slider thumbs are `max(1, ⌈track × size / 256⌉)` cells long and
+start at `⌊(position × (track − length) + 128) / 256⌋`.
+
+A 1,000-byte cell map names the top window of every cell. Each open, close,
+top, move or resize compares the new map with the previous one. The AES
+then:
+- clears desktop cells that were uncovered;
+- redraws the frames of windows whose frame cells changed, whose rectangle
+  changed, or whose top status changed, clipped to their visible cells;
+- queues `WM_REDRAW` (20): `[20, 0, 0, handle, x, y, w, h]`. It covers the
+  changed work cells of each window, and of the desktop as handle 0. A
+  redraw already queued for the same handle is merged into one bounding
+  rectangle, as GEM does.
+
+The app answers `WM_REDRAW` by painting its work area clipped to the visible
+rectangles. The fill sub-op does exactly that for solid areas.
+`WF_FIRSTXYWH`/`WF_NEXTXYWH` list the visible rectangles of a window's work
+area (handle 0: the desktop cells of rows 1–24): horizontal runs, extended
+downward while the rows below hold the same run. Width 0 ends the list, and
+any other window operation restarts it.
+
+The test oracle is the painter's algorithm. After any operation and the
+demo's redraw responses, the surface must equal drawing the desktop and then
+every window bottom to top from scratch. Missing or excess damage fails the
+comparison.
+
 ## Validation on attach
 
 Attach finds the single owner-30 allocation at bank 1 page `$88` in the
@@ -214,6 +292,15 @@ surfaces. It covers focus movement with row masks, every choosing key,
 pointer press/release, exact restoration of arbitrary pixels and colours,
 and refusal of malformed or oversized strings. Planted bugs in the paper
 colour, button spacing and restore path each fail it.
+
+The demo's W key opens `Alpha` (title bar, close and full boxes), `Beta`
+(info row, vertical bar with a slider at 64/128, size box) and `Gamma`
+(horizontal bar with a slider at 200/64, size box). It fills each work area
+in its own pen and colour on every `WM_REDRAW`. 1–3 top a window, M moves
+and S grows the top window, C closes it, R records its visible rectangles,
+and Escape closes and deletes everything. The window cases check complete
+surfaces against the painter's-algorithm oracle and the rectangle lists
+against an independent decomposition.
 
 The demo's M key installs
 `Desk:About AES...;File:New^N|Open...^O|-|Quit^Q;Options:Grid|Snap` with

@@ -1113,8 +1113,6 @@ al_button_y: .byte 0
 al_button_x: .fill AL_MAX_BUTTONS,0
 al_line_len: .fill AL_MAX_LINES,0
 al_button_len: .fill AL_MAX_BUTTONS,0
-al_text: .fill AL_MAX_LINES*AL_LINE_MAX,0
-al_button_text: .fill AL_MAX_BUTTONS*AL_BUTTON_MAX,0
 al_line_base: .byte 0,30,60,90,120
 al_button_base: .byte 0,10,20
 al_dirty: .fill 4,0
@@ -1142,3 +1140,8 @@ al_icons:
         .byte $01,$80,$01,$80,$00,$00,$00,$00,$01,$80,$01,$80,$00,$00,$00,$00
         .byte $07,$e0,$0f,$f0,$1f,$f8,$3f,$fc,$7f,$fe,$ff,$ff,$ff,$ff,$c0,$03
         .byte $c0,$03,$ff,$ff,$ff,$ff,$7f,$fe,$3f,$fc,$1f,$f8,$0f,$f0,$07,$e0
+; RAM tables in the owner-30 data segment (aesvc.asm AE_DATA)
+        .section aesdata
+al_text: .fill AL_MAX_LINES*AL_LINE_MAX,0
+al_button_text: .fill AL_MAX_BUTTONS*AL_BUTTON_MAX,0
+        .send aesdata

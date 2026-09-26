@@ -22,7 +22,12 @@ bk_identity: .text "naes"
 .bend
 ae_call = aes.bk_call
 ae_detach = aes.bk_detach
-ae_unload = aes.bk_close
+ae_unload:                      ; free the data segment, then the image
+        lda #AE_OP_SHUTDOWN
+        jsr aes.bk_call
+        bcc +
+        rts
++       jmp aes.bk_close
 ae_callback = aes.bk_callback  ; patched into AE_BASE+22 on attach/load
 ae_state = aes.bk_state
 ae_attach:

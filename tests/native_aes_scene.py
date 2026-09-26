@@ -229,3 +229,145 @@ def menu_draw(before, spec, *, open_title=None, hover=None, flags=None):
             color = GREY if state >= 2 or separator else FOCUS if hover == row else PAPER
             s.colors(dx, row+2, dx+w, row+3, color)
     return bytes(s.data), (xs, drops)
+
+
+# ---- windows -------------------------------------------------------------------
+WK = dict(NAME=1, CLOSER=2, FULLER=4, MOVER=8, INFO=16, SIZER=32, UP=64, DN=128,
+          VSLIDE=256, LF=512, RT=1024, HSLIDE=2048)
+DESKTOP = 0x16
+GADGETS = [
+    [0xff, 0x81, 0xa5, 0x99, 0x99, 0xa5, 0x81, 0xff],   # close
+    [0xff, 0x81, 0xbd, 0xa5, 0xa5, 0xbd, 0x81, 0xff],   # full
+    [0xff, 0x81, 0x99, 0xbd, 0xff, 0x99, 0x81, 0xff],   # up
+    [0xff, 0x81, 0x99, 0xff, 0xbd, 0x99, 0x81, 0xff],   # down
+    [0xff, 0x89, 0x99, 0xbf, 0xbf, 0x99, 0x89, 0xff],   # left
+    [0xff, 0x91, 0x99, 0xfd, 0xfd, 0x99, 0x91, 0xff],   # right
+    [0xff, 0x81, 0xbd, 0xa1, 0xa1, 0xa1, 0x81, 0xff],   # size
+    [0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55],   # track
+    [0xff]*8,                                             # thumb
+]
+
+
+def geometry(win):
+    k = win['kind']
+    title = bool(k & (WK['NAME'] | WK['CLOSER'] | WK['FULLER'] | WK['MOVER']))
+    info = bool(k & WK['INFO'])
+    vbar = bool(k & (WK['UP'] | WK['DN'] | WK['VSLIDE']))
+    hbar = bool(k & (WK['LF'] | WK['RT'] | WK['HSLIDE'])) or (bool(k & WK['SIZER']) and not vbar)
+    wx, wy = win['x'], win['y']+title+info
+    return dict(title=title, info=info, vbar=vbar, hbar=hbar, wx=wx, wy=wy,
+                ww=win['w']-vbar, wh=win['h']-title-info-hbar)
+
+
+def thumb(track, size, pos):
+    if track == 0:
+        return 0, 0
+    prod = track*size
+    length = (prod >> 8)+(1 if prod & 255 else 0)
+    length = min(max(length, 1), track)
+    return (pos*(track-length)+128) >> 8, length
+
+
+def cell_map(windows):
+    """windows bottom->top; returns 25x40 owner map (0 desktop)."""
+    owner = [[0]*40 for _ in range(25)]
+    for win in windows:
+        for r in range(win['y'], win['y']+win['h']):
+            for c in range(win['x'], win['x']+win['w']):
+                owner[r][c] = win['id']
+    return owner
+
+
+def rectangles(owner, h, area):
+    """Row runs merged downward, in the AES's order (docs/NATIVE-AES.md)."""
+    ax, ay, aw, ah = area
+    x1, y1 = ax+aw, ay+ah
+    def run_at(row, start, end):
+        if any(owner[row][c] != h for c in range(start, end)):
+            return False
+        if start > ax and owner[row][start-1] == h:
+            return False
+        if end < x1 and owner[row][end] == h:
+            return False
+        return True
+    out = []
+    for r in range(ay, y1):
+        c = ax
+        while c < x1:
+            if owner[r][c] != h:
+                c += 1; continue
+            s = c
+            while c < x1 and owner[r][c] == h:
+                c += 1
+            if r > ay and run_at(r-1, s, c):
+                continue
+            d = r+1
+            while d < y1 and run_at(d, s, c):
+                d += 1
+            out.append((s, r, c-s, d-r))
+    return out
+
+
+def windows_draw(windows, fills):
+    """Painter's algorithm: desktop, then each window bottom->top, frame and
+    work fill; the last window is on top."""
+    s = Surface(bytes(8192)+bytes([DESKTOP])*1024)
+    s.colors(0, 0, 40, 25, DESKTOP)
+    for n, win in enumerate(windows):
+        top = n == len(windows)-1
+        g = geometry(win)
+        x, y, w, h, k = win['x'], win['y'], win['w'], win['h'], win['kind']
+        def band(row, focus):
+            s.rect(x*8, row*8, (x+w)*8, row*8+8, 0)
+            s.rect(x*8, row*8+7, (x+w)*8, row*8+8, 1)
+            s.colors(x, row, x+w, row+1, FOCUS if focus else PAPER)
+        def gadget(index, cx, cy):
+            s.glyph(cx, cy, GADGETS[index])
+        if g['title']:
+            band(y, top)
+            if k & WK['CLOSER']:
+                gadget(0, x, y)
+            if k & WK['FULLER']:
+                gadget(1, x+w-1, y)
+            title = win.get('title', b'')
+            if title:
+                shown = title[:w-2]
+                s.text((x+(w-len(shown))//2)*8, y*8, shown)
+        if g['info']:
+            band(y+g['title'], False)
+        if g['vbar']:
+            cx = x+w-1
+            track, ty = g['wh'], g['wy']
+            if not g['hbar'] and k & WK['SIZER']:
+                track -= 1
+            if k & WK['UP']:
+                gadget(2, cx, ty); ty += 1; track -= 1
+            if k & WK['DN']:
+                gadget(3, cx, ty+track-1); track -= 1
+            at, length = thumb(track, win.get('vsize', 255), win.get('vpos', 0))
+            for i in range(track):
+                gadget(8 if at <= i < at+length else 7, cx, ty+i)
+            s.colors(cx, g['wy'], cx+1, g['wy']+g['wh'], PAPER)
+        if g['hbar']:
+            cy = y+h-1
+            track, tx = g['ww'], g['wx']
+            if not g['vbar'] and k & WK['SIZER']:
+                track -= 1
+            if k & WK['LF']:
+                gadget(4, tx, cy); tx += 1; track -= 1
+            if k & WK['RT']:
+                gadget(5, tx+track-1, cy); track -= 1
+            at, length = thumb(track, win.get('hsize', 255), win.get('hpos', 0))
+            for i in range(track):
+                gadget(8 if at <= i < at+length else 7, tx+i, cy)
+            s.colors(x, cy, x+w, cy+1, PAPER)
+        if k & WK['SIZER']:
+            gadget(6, x+w-1, y+h-1)
+        pen, color = fills[win['id']]
+        s.rect(g['wx']*8, g['wy']*8, (g['wx']+g['ww'])*8, (g['wy']+g['wh'])*8, pen)
+        s.colors(g['wx'], g['wy'], g['wx']+g['ww'], g['wy']+g['wh'], color)
+        for (cx, cy), marker in (((g['wx'], g['wy']), 0xf2),
+                                 ((g['wx']+g['ww']-1, g['wy']+g['wh']-1), 0x2f)):
+            s.rect(cx*8, cy*8, cx*8+8, cy*8+8, 1)    # the demo's position markers
+            s.colors(cx, cy, cx+1, cy+1, marker)
+    return bytes(s.data)
