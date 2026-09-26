@@ -108,7 +108,10 @@ matching Files program when updating either suite disk.
 **New dir / Ctrl-K** opens [Ultimate folder creation](NATIVE-FOLDERS.md) in the
 current directory. Its modal call keeps the graphics module resident through
 editing and command completion; the listing refresh happens after the module
-returns. Both suite disks include it in `FSVIEW.PRG`.
+returns. Both suite disks include it in `FSVIEW.PRG`. **Ctrl-R** and **Ctrl-D**
+[rename or delete](NATIVE-FOLDERS.md#renaming-and-deleting) the selected Ultimate
+entry through the same dialog. The dialog path and status buffers use idle
+copy scratch at `$5800..$591f`; only the edited name stays in the module.
 
 The [document launch qualification](validation/2026-09-14-native-open-with/README.md)
 checks Files-to-Editor/Paint handoffs, exact identities and returned selections
@@ -120,7 +123,7 @@ The earlier [Files GUI record](validation/2026-09-13-native-files-gui/README.md)
 retains its original copy and serial regression evidence. This build
 has not been installed or qualified on the physical C128. The VDC integration
 extends the [shared graphical picker](NATIVE-PICKER-GUI.md) to both displays.
-Rename/delete, sorting, multi-selection,
+IEC rename/delete, sorting, multi-selection,
 directory copying, media identity, interrupted-copy recovery, REL/VLIR and
 zero-byte IEC creation remain backend or file-manager work.
 

@@ -77,7 +77,8 @@ and returns to the selected file when the app closes. See the
 [document launch workflow](docs/NATIVE-DOCUMENT-LAUNCH.md) for controls, exact
 file identity, module requirements and remaining association work.
 In Ultimate directories, **New dir** or **Ctrl-K** opens the shared blue
-[folder creation dialog](docs/NATIVE-FOLDERS.md).
+[folder creation dialog](docs/NATIVE-FOLDERS.md); **Ctrl-R** renames and
+**Ctrl-D** deletes the selected file or empty folder, each checked afterward.
 **Find / Ctrl-F** [searches filenames](docs/NATIVE-FIND.md) throughout the
 current directory, selects the next match and wraps at the end.
 

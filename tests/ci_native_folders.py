@@ -22,27 +22,65 @@ class FolderDOS(DirectoryDOS):
     def __init__(self):
         super().__init__()
         self.refuse_create = None
+        self.refuse_edit = None
+        self.last_rename = None
         self.last_path = None
 
     def respond(self, command):
         context, op = command[:2]
-        if op not in (8, 0x16):
+        if op not in (8, 9, 0x0a, 0x16):
             return super().respond(command)
         assert context in (1, 2)
         raw = command[2:]
         if op == 8:
             assert raw.endswith(b'\0') and b'\0' not in raw[:-1], command
             raw = raw[:-1]
+        if op == 0x0a:
+            # Firmware dos.cc: "old NUL new"; the handler terminates the body.
+            assert raw.count(b'\0') == 1, command
+            old, raw = raw.split(b'\0')
+            assert old.startswith(b'/') and 1 <= len(old) <= 254
+            self.last_rename = (old, raw)
         assert raw.startswith(b'/') and 1 <= len(raw) <= 255 and b'\0' not in raw
         path = posixpath.normpath(raw)
-        existing = next((p for p in (*self.directories, *self.files)
-                         if p.upper() == path.upper()), None)
+        existing = self.find(path)
         if op == 8:
             if existing is None:
-                return [(b'', b'88,FILE NOT FOUND')]
+                return [(b'', b'82,FILE NOT FOUND')]  # firmware dos.cc:20/189
             attr = 0x10 if existing in self.directories else 0x20
             return [(bytes(11)+bytes([attr])+posixpath.basename(existing)[:63], b'00,OK')]
         self.last_path = raw
+        if op == 9:
+            # FileSystemFAT::file_delete is f_unlink: files and empty folders.
+            if self.refuse_edit:
+                return [(b'', self.refuse_edit)]
+            if existing is None:
+                return [(b'', b'NO FILE')]
+            if self.directories.get(existing):
+                return [(b'', b'DENIED')]
+            self.unlink(existing)
+            return [(b'', b'00,OK')]
+        if op == 0x0a:
+            if self.refuse_edit:
+                return [(b'', self.refuse_edit)]
+            source = self.find(posixpath.normpath(old))
+            if source is None:
+                return [(b'', b'NO FILE')]
+            if existing is not None:
+                return [(b'', b'FILE EXISTS')]  # FileManager::rename_impl
+            parent, leaf = posixpath.split(path)
+            if parent not in self.directories:
+                return [(b'', b'NO PATH')]
+            attr = self.unlink(source, keep=True)
+            if attr & 0x10:
+                for key in [k for k in self.directories if k == source or k.startswith(source+b'/')]:
+                    self.directories[path+key[len(source):]] = self.directories.pop(key)
+                for key in [k for k in self.files if k.startswith(source+b'/')]:
+                    self.files[path+key[len(source):]] = self.files.pop(key)
+            else:
+                self.files[path] = self.files.pop(source, b'')
+            self.add(parent, bytes([attr])+leaf)
+            return [(b'', b'00,OK')]
         if self.refuse_create:
             return [(b'', self.refuse_create)]
         if existing is not None:
@@ -51,9 +89,25 @@ class FolderDOS(DirectoryDOS):
         if parent not in self.directories:
             return [(b'', b'NO PATH')]
         self.directories[path] = []
-        self.directories[parent].append(b'\x10'+leaf)
-        self.directories[parent].sort(key=lambda v: (not v[0] & 16, v[1:].upper()))
+        self.add(parent, b'\x10'+leaf)
         return [(b'', b'00,OK')]
+
+    def find(self, path):
+        return next((p for p in (*self.directories, *self.files)
+                     if p.upper() == path.upper()), None)
+
+    def add(self, parent, entry):
+        self.directories[parent].append(entry)
+        self.directories[parent].sort(key=lambda v: (not v[0] & 16, v[1:].upper()))
+
+    def unlink(self, path, keep=False):
+        parent, leaf = posixpath.split(path)
+        entry = next(e for e in self.directories[parent] if e[1:] == leaf)
+        self.directories[parent].remove(entry)
+        if not keep:
+            self.directories.pop(path, None)
+            self.files.pop(path, None)
+        return entry[0]
 
 
 MESSAGES = (
@@ -65,6 +119,7 @@ MESSAGES = (
     'RESULT UNKNOWN; BACK REFRESHES',
     'CLOSE DIRECTORY FAILED; BACK RETRIES',
 )
+EDIT_MESSAGES = {0: 'EDIT THE NAME; ENTER APPLIES', 3: 'DONE AND CHECKED', 4: 'FAILED; BACK REFRESHES'}
 
 
 def fixture(*, size=None, path=b'/Usb0', entries=(), context=1):
@@ -91,9 +146,10 @@ def fixture(*, size=None, path=b'/Usb0', entries=(), context=1):
     return p
 
 
-def dialog(p, name=b'', *, result=0, sent=False, caret=None, path=b'/Usb0', context=1):
+def dialog(p, name=b'', *, result=0, sent=False, caret=None, path=b'/Usb0', context=1, mode=1):
     global CAPTURE_COUNT
-    assert p.value('fm_active') == 1 and p.value('fm_sent') == sent
+    assert p.value('fm_active') == mode and p.value('fm_sent') == sent
+    assert p.value('fv_view') == mode+6
     assert p.value('fm_result') == result
     assert p.data('fm_name', p.value('fm_length')) == name
     assert p.ram[0x3d1b] == 3, 'modal module must remain resident until it returns'
@@ -102,10 +158,10 @@ def dialog(p, name=b'', *, result=0, sent=False, caret=None, path=b'/Usb0', cont
         caret = len(name)
     assert state[1] == caret
     lines = ['']*25
-    lines[0] = 'FOLDER NAME IN CURRENT DIRECTORY'
+    lines[0] = 'NAME IN CURRENT DIRECTORY'
     lines[1] = path[-37:].decode('ascii').upper()
     lines[2] = 'DOS: '+str(context)
-    lines[9] = MESSAGES[result]
+    lines[9] = EDIT_MESSAGES[result] if mode > 1 and result in EDIT_MESSAGES else MESSAGES[result]
     if p.value('fm_error'):
         lines[10] = f"ERROR: {p.value('fm_error'):02X}  DOS: {p.value('fm_dos'):02X}"
         lines[11] = p.data('fm_status',32).split(b'\0')[0].decode('ascii').upper()
@@ -114,7 +170,7 @@ def dialog(p, name=b'', *, result=0, sent=False, caret=None, path=b'/Usb0', cont
     rows = gui.ascii_rows(body)
     assert p.data('fv_body',1000) == b''.join(rows), ('complete folder text',
         [(i,a,b) for i,(a,b) in enumerate(zip(p.data('fv_body',1000),b''.join(rows))) if a!=b][:25])
-    expected = surface(rows,view=7,focus=p.value('ui_selected'),
+    expected = surface(rows,view=mode+6,focus=p.value('ui_selected'),
                        caret=caret-state[5]+1,folder_sent=sent)
     actual = bytes(p.ram[0xc000:0xe400])
     assert actual == expected, ('complete folder bitmap', [(i,a,b) for i,(a,b)
@@ -139,7 +195,7 @@ def dialog(p, name=b'', *, result=0, sent=False, caret=None, path=b'/Usb0', cont
         prefix=f'{CAPTURE_COUNT:03d}';CAPTURE_COUNT+=1
         (CAPTURES/(prefix+'-actual.vic')).write_bytes(actual)
         (CAPTURES/(prefix+'-expected.vic')).write_bytes(expected)
-        metadata=dict(name_hex=name.hex(),parent_hex=path.hex(),context=context,
+        metadata=dict(mode=mode,name_hex=name.hex(),parent_hex=path.hex(),context=context,
                       result=result,sent=sent,focus=p.value('ui_selected'),caret=caret,
                       viewport=state[5],instructions=p.instructions,keys=p.events,
                       vdc_size=p.bus.size if isinstance(p,VDCFiles) else 0)
@@ -183,7 +239,7 @@ def main():
     global CAPTURES
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--report',type=Path,required=True)
-    parser.add_argument('--group',choices=('all','ui','bounds','faults','safety'),default='all')
+    parser.add_argument('--group',choices=('all','ui','bounds','edit','faults','safety'),default='all')
     args=parser.parse_args()
     CAPTURES=args.report.parent/(args.report.stem+'-captures')
     CAPTURES.mkdir(exist_ok=False)
@@ -247,6 +303,117 @@ def main():
             p=fixture(path=path);p.key(11);seed_name(p,b'X'*127);before=len(p.ultimate.commands);p.key(13)
             dialog(p,b'X'*127,result=2,path=path);assert len(p.ultimate.commands)==before
             leave(p);finish(p);done('256-byte joined path refused before I/O',p)
+        if args.group in ('all','edit'):
+            def select(p,name):
+                for _ in range(16):
+                    if bytes(p.ram[0x3e00:0x3e00+p.ram[0x3d34]])==name:return
+                    p.key(17)
+                raise AssertionError(('selection never reached',name))
+            def edited(p,op):
+                return [c for c in p.ultimate.commands if c[1]==op]
+            for size in (None,16,64):
+                p=fixture(size=size,entries=[b'\x10DIR',b'\x20KEEP',b'\x20OLD'])
+                p.ultimate.directories[b'/Usb0/DIR']=[]
+                p.ultimate.files.update({b'/Usb0/KEEP':b'KEPT',b'/Usb0/OLD':b'DATA'})
+                select(p,b'OLD');p.key(18);dialog(p,b'OLD',mode=3)
+                for _ in range(3):p.key(20)
+                dialog(p,b'',mode=3,caret=0)
+                p.type('NEW');dialog(p,b'NEW',mode=3)
+                p.key(13);dialog(p,b'NEW',result=3,sent=True,mode=3)
+                assert p.ultimate.last_rename==(b'/Usb0/OLD',b'/Usb0/NEW')
+                assert [c[2:] for c in edited(p,0x0a)]==[b'/Usb0/OLD\0/Usb0/NEW']
+                assert edited(p,8)[-1][2:]==b'/Usb0/NEW\0'
+                assert p.ultimate.files[b'/Usb0/NEW']==b'DATA' and b'/Usb0/OLD' not in p.ultimate.files
+                p.type('AGAIN');dialog(p,b'NEW',result=3,sent=True,mode=3)
+                assert len(edited(p,0x0a))==1 and p.value('ui_selected')==27
+                assert p.ultimate.paths=={1:b'/shell',2:b'/browser'}
+                leave(p)
+                select(p,b'NEW');p.key(4);dialog(p,b'NEW',mode=4)
+                p.key(13);dialog(p,b'NEW',result=3,sent=True,mode=4)
+                assert [c[2:] for c in edited(p,9)]==[b'/Usb0/NEW']
+                assert edited(p,8)[-1][2:]==b'/Usb0/NEW\0'
+                assert b'/Usb0/NEW' not in p.ultimate.files and p.ultimate.files[b'/Usb0/KEEP']==b'KEPT'
+                leave(p)
+                assert all(e[1:]!=b'NEW' for e in p.ultimate.directories[b'/Usb0'])
+                select(p,b'DIR');p.key(4);p.key(13);dialog(p,b'DIR',result=3,sent=True,mode=4)
+                assert b'/Usb0/DIR' not in p.ultimate.directories
+                leave(p);finish(p)
+                done(f'keyboard rename, delete file and empty folder with checks; VDC {size or "text"}',p)
+            p=fixture(entries=[b'\x10TREE',b'\x20KEEP'])
+            p.ultimate.directories[b'/Usb0/TREE']=[b'\x20LEAF']
+            p.ultimate.files.update({b'/Usb0/TREE/LEAF':b'INNER',b'/Usb0/KEEP':b'KEPT'})
+            select(p,b'TREE');p.key(4);p.key(13);dialog(p,b'TREE',result=4,sent=True,mode=4)
+            assert p.value('fm_error') and p.ultimate.files[b'/Usb0/TREE/LEAF']==b'INNER'
+            assert not edited(p,8),'a refused delete is not followed by metadata'
+            leave(p)
+            select(p,b'TREE');p.key(18);p.key(21);p.type('MOVED');p.key(13)
+            dialog(p,b'MOVED',result=3,sent=True,mode=3)
+            assert p.ultimate.directories[b'/Usb0/MOVED']==[b'\x20LEAF']
+            assert p.ultimate.files[b'/Usb0/MOVED/LEAF']==b'INNER'
+            leave(p)
+            select(p,b'MOVED');p.key(18);p.key(21);p.type('keep');p.key(13)
+            dialog(p,b'keep',result=4,sent=True,mode=3)
+            assert p.ultimate.files[b'/Usb0/KEEP']==b'KEPT' and b'/Usb0/MOVED' in p.ultimate.directories
+            leave(p);finish(p)
+            done('non-empty folder kept; folder rename moves contents; existing target refused',p)
+            p=fixture(entries=[b'\x20SRC'])
+            p.ultimate.files[b'/Usb0/SRC']=b'X'
+            select(p,b'SRC');p.key(18)
+            for name in (b'',b'A/B',b'A:B',b'END.',b'A*B'):
+                p.key(21);p.type(name.decode());before=len(p.ultimate.commands);p.key(13)
+                dialog(p,name,result=1,mode=3);assert len(p.ultimate.commands)==before
+            leave(p);finish(p);done('invalid rename targets cannot submit a packet',p)
+            for path,old,new,result in ((b'/'+b'P'*126,b'O'*126,b'N'*127,3),
+                                        (b'/'+b'P'*126,b'O'*127,b'N',2)):
+                p=fixture(path=path,entries=[b'\x20'+old]);p.ultimate.files[path+b'/'+old]=b'LONG'
+                select(p,old);p.key(18);p.key(21);seed_name(p,new);before=len(p.ultimate.commands);p.key(13)
+                dialog(p,new,result=result,sent=result==3,mode=3,path=path)
+                if result==3:
+                    body=edited(p,0x0a)[0][2:]
+                    assert body==path+b'/'+old+b'\0'+path+b'/'+new and len(body)==510
+                else:
+                    assert len(p.ultimate.commands)==before
+                leave(p);finish(p)
+                done(f'rename packet of {len(path)+2+len(old)+len(path)+len(new)+1} bytes: result {result}',p)
+            p=fixture(entries=[]);before=len(p.ultimate.commands)
+            for key in (18,4):
+                p.key(key);assert not p.value('fm_active') and p.value('fv_view')==0
+            assert len(p.ultimate.commands)==before
+            finish(p);done('rename/delete need a selected entry',p)
+            p=fixture(entries=[b'\x20GONE',b'\x20STAYS'])
+            p.ultimate.files.update({b'/Usb0/GONE':b'1',b'/Usb0/STAYS':b'2'})
+            for reply,label in (([(bytes(11)+b'\x20GONE',b'00,OK')],'still present'),
+                                ([(b'',b'83,NO SUCH DIRECTORY')],'other DOS status'),
+                                ([(b'EXTRA',b'82,FILE NOT FOUND')],'unexpected data')):
+                p.ultimate.inject[8]=lambda cmd,want,r=reply:r
+                select(p,b'GONE');p.key(4);p.key(13);dialog(p,b'GONE',result=5,sent=True,mode=4)
+                leave(p);p.ultimate.inject.clear()
+                p.ultimate.directories[b'/Usb0']=[b'\x20GONE',b'\x20STAYS']
+                p.ultimate.files[b'/Usb0/GONE']=b'1';p.key(ord('R'))
+                done('delete result unknown: '+label,p)
+            p.ultimate.inject[8]=lambda cmd,want:[(b'',b'82,FILE NOT FOUND')]
+            select(p,b'STAYS');p.key(18);p.key(21);p.type('MOVED');p.key(13)
+            dialog(p,b'MOVED',result=5,sent=True,mode=3)
+            p.ultimate.inject.clear();leave(p)
+            p.ultimate.refuse_edit=b'WRITE PROTECTED'
+            select(p,b'GONE');p.key(4);p.key(13);dialog(p,b'GONE',result=4,sent=True,mode=4)
+            assert p.ultimate.files[b'/Usb0/GONE']==b'1'
+            p.ultimate.refuse_edit=None;leave(p);finish(p)
+            done('unverifiable rename and refused delete keep the listing recoverable',p)
+            p=fixture(entries=[b'\x20LONGNAME',b'\x20AB'])
+            p.ultimate.files.update({b'/Usb0/LONGNAME':b'1',b'/Usb0/AB':b'2'})
+            p.key(6);p.type('LONG');p.key(27)          # Find leaves a caret at 4
+            p.key(11);dialog(p,b'',caret=0)            # New folder starts empty and valid
+            p.key(27);select(p,b'LONGNAME');p.key(18);p.key(27)
+            select(p,b'AB');p.key(4);dialog(p,b'AB',mode=4)   # shorter than the last caret
+            leave(p);finish(p)
+            done('each dialog starts with a valid caret after longer earlier fields',p)
+            p=fixture(entries=[b'\x20'+f'FILE{i:02}'.encode() for i in range(12)])
+            p.ultimate.ignore_abort=True;select(p,b'FILE00');p.key(4);p.key(13)
+            dialog(p,b'FILE00',result=6,sent=True,mode=4)
+            assert p.value('bu_cursor') and not edited(p,9)
+            p.ultimate.ignore_abort=False;leave(p);finish(p)
+            done('uncertain cursor close blocks delete',p)
         if args.group in ('all','faults'):
             p=fixture(entries=[b'\x10EXISTS',b'\x20KEPT'])
             p.ultimate.directories[b'/Usb0/EXISTS']=[b'\x20ORIGINAL']

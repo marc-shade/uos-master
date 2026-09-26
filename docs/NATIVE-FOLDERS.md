@@ -24,6 +24,31 @@ Back returns to the directory. A failed or uncertain request is never replayed
 automatically. Refresh may reveal a newly created folder even if its result
 could not be checked.
 
+## Renaming and deleting
+
+In **ULT**, select a file or folder and press **Ctrl-R** to rename it or
+**Ctrl-D** to delete it. The dialog opens with the selected name. For rename,
+edit it and press Enter. For delete, Enter deletes the named entry in the
+current directory. Back, X or Escape cancels before submission.
+
+Rename sends Ultimate DOS `RENAME_FILE` (`$0a`) with both complete absolute
+paths, `old NUL new`. The firmware refuses an existing target, including a
+change of letter case only, and refuses moves between filesystems, so rename
+never replaces data. A renamed folder keeps its contents. The new name is then
+checked with `FILE_STAT`. The old path, including its trailing slash, may hold
+at most 254 bytes so that the packet fits the 510-byte command body.
+
+Delete sends `DELETE_FILE` (`$09`). The firmware's FAT `f_unlink` removes a
+file or an empty folder; a folder with contents is refused and kept. Success
+is shown only when a following `FILE_STAT` of the same path returns DOS status
+82, FILE NOT FOUND. Any other metadata reply shows **result unknown** and Back
+refreshes the listing. Deletion is permanent: there is no trash yet.
+
+The same name rules, one-request-per-dialog rule, cursor cleanup and display
+recovery apply as for folder creation. Rename and delete need a selected entry
+whose name fits the 127-byte field. Opening a dialog from the keyboard is the
+only entry point; there are no buttons for these actions yet.
+
 ## Storage and lifecycle
 
 `FSVIEW.PRG` contains the dialog and its bounded field/path buffers. Its modal
@@ -49,8 +74,8 @@ Its file manager refuses creation at an existing path. Absolute names reset the
 temporary path to the filesystem root. The `FILE_STAT` request includes an
 explicit NUL because that handler passes its argument directly to `fstat`.
 
-This is Ultimate filesystem folder creation. IEC partitions/directories,
-recursive copy, rename/delete, mounted-media identity and recoverable trash
+This is Ultimate filesystem folder creation, rename and delete. IEC
+partitions/directories, IEC rename/delete, recursive copy, mounted-media identity and recoverable trash
 remain on the [completion roadmap](IMPLEMENTATION-ROADMAP.md).
 
 ## Verification

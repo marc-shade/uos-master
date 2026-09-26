@@ -1,24 +1,51 @@
-; Ultimate folder creation in the Files presentation module, ABI 1.11.
-; The modal call keeps this module resident. It never loads another module or
-; leaves the application before returning through N_MCALL. The browser owns
-; any retained cursor; close it before submitting a serialized absolute path.
+; Ultimate folder creation, rename and delete in the Files presentation
+; module, ABI 1.11. Modes: 1 create, 2 search (find-name.inc), 3 rename,
+; 4 delete. The modal call keeps this module resident. It never loads another
+; module or leaves the application before returning through N_MCALL. The
+; browser owns any retained cursor; close it before submitting a serialized
+; absolute path. Rename and delete start from the selected entry's raw name.
+fr_rename:
+        lda #3
+        .byte $2c               ; BIT abs: skip the next two-byte load
+fr_delete:
+        lda #4
+        .byte $2c
 fm_begin:
-        lda N_BROWSERFMT
-        cmp #3
-        bne fv_no_key
-        lda b_busy
-        bne fv_no_key
         lda #1
-        sta fm_active
-        lda #0
-        sta fm_sent
-        sta fm_result
-        sta fm_error
-        sta fm_dos
-        sta fm_status
-        sta fm_length
-        sta fn_valid
+        ldx N_BROWSERFMT
+        cpx #3
+        bne fv_no_key
+        ldx b_busy
+        bne fv_no_key
+        cmp #3
+        bcc +
+        ldx N_BROWSERNAME_LEN   ; the field holds 1-127 bytes
+        beq fv_no_key
+        bmi fv_no_key
++       sta fm_active
+        ldx #0
+        stx fm_sent
+        stx fm_result
+        stx fm_error
+        stx fm_dos
+        stx fm_status
+        stx fm_length
+        stx fm_state+1          ; caret and viewport from an earlier dialog
+        stx fm_state+5          ; would exceed a shorter or empty new name
+        stx fm_state+6
+        stx fn_valid
+        stx N_UIKEY
+        cmp #3
+        bcc fm_opened
+-       lda N_BROWSERNAME,x
+        sta fm_name,x
+        inx
+        cpx N_BROWSERNAME_LEN
+        bne -
+        stx fm_length
+        lda #5                  ; Ctrl-E: the field service places the caret
         sta N_UIKEY
+fm_opened:
         jsr fm_field
 fm_draw:
         jsr fv_update
@@ -126,15 +153,34 @@ fm_create:
         jsr fm_lock
         jmp fm_draw
 +       jsr fm_lock             ; one submission per dialog, including errors
-        lda #$16
+        ldx fm_active
+        lda fm_opcodes-1,x      ; CREATE_DIR, RENAME_FILE or DELETE_FILE
         jsr fm_command
         bcs fm_command_failed
         lda N_FACTUAL
         ora N_FACTUAL+1
         bne fm_unknown
         lda #8
-        jsr fm_command          ; FILE_STAT of the same complete absolute path
-        bcs fm_unknown
+        jsr fm_command          ; FILE_STAT of the created, renamed or deleted path
+        ror fm_match            ; bit 7: the metadata request failed
+        ldx fm_active
+        cpx #4
+        bne fm_present
+        bit fm_match
+        bpl fm_unknown          ; delete: only DOS 82 FILE NOT FOUND proves removal
+        lda N_FACTUAL           ; ...with an empty reply; data means malformed
+        ora N_FACTUAL+1
+        bne fm_unknown
+        lda N_FSTATUS
+        bne fm_unknown
+        lda N_FDOS
+        cmp #82
+        bne fm_unknown
+        lda #3
+        bne fm_result_ready
+fm_present:
+        bit fm_match
+        bmi fm_unknown
         lda N_FACTUAL+1
         bne fm_unknown
         lda N_FACTUAL
@@ -143,8 +189,12 @@ fm_create:
         cmp #76                 ; reference DOS returns at most 63 name bytes
         bcs fm_unknown
         lda N_BUFFER+11
-        and #$18                ; must be a directory, not a volume label
-        cmp #$10
+        and #$18
+        cpx #1
+        bne +
+        eor #$10                ; create: exactly a directory
+        bne fm_unknown
++       and #$08                ; rename: any file or folder, never a label
         bne fm_unknown
         lda fm_length
         cmp #64
@@ -210,6 +260,8 @@ fm_diagnostics:
 ; No CWD mutation or file-handle commands. CREATE_DIR is exclusive in the
 ; reference FileManager. FILE_STAT needs an explicit NUL: its firmware handler
 ; passes the command body directly to fstat, unlike CREATE_DIR's terminator.
+; RENAME_FILE sends "old NUL new", both absolute; the firmware refuses an
+; existing target and moves between filesystems, so no data is replaced.
 fm_command:
         sta N_BUFFER+1
         lda N_CURRENT
@@ -218,18 +270,52 @@ fm_command:
         sta N_BUFFER
         lda #0
         sta N_FCOUNT+1
-        ldx #0
--       lda fm_path,x
+        tax
+        lda N_BUFFER+1
+        cmp #$0a
+        bne fm_new_path
+-       lda fm_path,x           ; parent prefix, trailing slash included
         sta N_BUFFER+2,x
         inx
-        cpx fm_path_length
+        cpx fm_component
         bne -
+        ldy #0
+-       lda N_BROWSERNAME,y
+        sta N_BUFFER+2,x
+        inx
+        iny
+        cpy N_BROWSERNAME_LEN
+        bne -
+        lda #0
+        sta N_BUFFER+2,x
+        inx                     ; old path is at most 254 bytes: X <= 255
+fm_new_path:
         stx N_FCOUNT
-        lda N_BUFFER+1
+        txa
+        clc
+        adc #<(N_BUFFER+2)
+        sta fm_store+1
+        lda #>(N_BUFFER+2)
+        adc #0
+        sta fm_store+2
+        ldy #0
+-       lda fm_path,y
+fm_store:
+        sta $ffff,y
+        iny
+        cpy fm_path_length
+        bne -
+        tya
+        clc
+        adc N_FCOUNT
+        sta N_FCOUNT
+        bcc +
+        inc N_FCOUNT+1
++       lda N_BUFFER+1
         cmp #8
         bne +
         lda #0
-        sta N_BUFFER+2,x
+        sta N_BUFFER+2,y        ; FILE_STAT always starts at offset zero
         inc N_FCOUNT
         bne +
         inc N_FCOUNT+1
@@ -298,7 +384,8 @@ fm_parent:
         sta fm_path,y
         iny
         beq fm_too_long
-+       tya
++       sty fm_component        ; parent prefix length for RENAME_FILE
+        tya
         clc
         adc fm_length
         bcs fm_too_long
@@ -310,7 +397,16 @@ fm_parent:
         inx
         cpx fm_length
         bne -
-        lda #0
+        lda fm_active
+        cmp #3
+        bne +
+        lda fm_component        ; old path + NUL + new path must fit 510 bytes
+        clc
+        adc N_BROWSERNAME_LEN
+        bcs fm_too_long
+        cmp #255
+        bcs fm_too_long
++       lda #0
         clc
         rts
 fm_invalid:
@@ -327,8 +423,8 @@ fm_collect:
         cmp #2
         bne +
         jmp fn_collect
-+
-        lda #7
++       clc
+        adc #6                  ; views 7 create, 9 rename, 10 delete
         sta fv_view
         lda #<fm_prompt
         ldx #>fm_prompt
@@ -374,6 +470,19 @@ fm_collect_field:
         lda #0
         sta fv_column
         ldx fm_result
+        lda fm_active
+        cmp #3
+        bcc fm_message          ; rename/delete: results 0, 3 and 4 name their action
+        cpx #5
+        bcs fm_message
+        txa
+        beq +
+        cmp #3
+        bcc fm_message
+        sbc #3                  ; 3 -> 0, 4 -> 1; carry stays set (+1 below)
++       adc #13                 ; 0 -> 13 ready, 3 -> 14 checked, 4 -> 15 failed
+        tax
+fm_message:
         lda fm_messages_lo,x
         pha
         lda fm_messages_hi,x
@@ -476,10 +585,9 @@ fm_length: .byte 0,0,127
         .word fm_name
         .byte 0,0,0
 fm_name: .fill 128,0
-fm_path: .fill 256,0
-fm_status: .fill 32,0
 fm_forbidden: .byte $22,$2a,$2f,$3a,$3c,$3e,$3f,$5c,$7c
-fm_prompt: .text "folder name in current directory",0
+fm_prompt: .text "name in current directory",0
+fm_opcodes: .byte $16,0,$0a,$09
 fm_create_text: .byte 67,114,101,97,116,101,0
 fm_back_text: .byte 66,97,99,107,0
 fm_error_text: .text "error: ",0
@@ -497,5 +605,8 @@ fm_message_9: .text "searching; back or esc cancels",0
 fm_message_10: .text "search cancelled; selection kept",0
 fm_message_11: .text "search failed; selection kept",0
 fm_message_12: .text "enter part of a filename",0
-fm_messages_lo: .byte <fm_message_0,<fm_message_1,<fm_message_2,<fm_message_3,<fm_message_4,<fm_message_5,<fm_message_6,<fm_message_7,<fm_message_8,<fm_message_9,<fm_message_10,<fm_message_11,<fm_message_12
-fm_messages_hi: .byte >fm_message_0,>fm_message_1,>fm_message_2,>fm_message_3,>fm_message_4,>fm_message_5,>fm_message_6,>fm_message_7,>fm_message_8,>fm_message_9,>fm_message_10,>fm_message_11,>fm_message_12
+fm_message_13: .text "edit the name; enter applies",0
+fm_message_14: .text "done and checked",0
+fm_message_15: .text "failed; back refreshes",0
+fm_messages_lo: .byte <fm_message_0,<fm_message_1,<fm_message_2,<fm_message_3,<fm_message_4,<fm_message_5,<fm_message_6,<fm_message_7,<fm_message_8,<fm_message_9,<fm_message_10,<fm_message_11,<fm_message_12,<fm_message_13,<fm_message_14,<fm_message_15
+fm_messages_hi: .byte >fm_message_0,>fm_message_1,>fm_message_2,>fm_message_3,>fm_message_4,>fm_message_5,>fm_message_6,>fm_message_7,>fm_message_8,>fm_message_9,>fm_message_10,>fm_message_11,>fm_message_12,>fm_message_13,>fm_message_14,>fm_message_15

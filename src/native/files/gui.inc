@@ -1014,7 +1014,7 @@ fv_enabled_no:
 
 fv_input:
         lda fv_view
-        bne +
+        bne fv_hot_done         ; browser-only shortcuts
         lda fg_key
         cmp #6                  ; Ctrl-F: find a filename
         bne +
@@ -1022,7 +1022,13 @@ fv_input:
 +       cmp #11                 ; Ctrl-K: create an Ultimate folder
         bne +
         jmp fm_begin
-+
++       cmp #18                 ; Ctrl-R: rename the selected Ultimate entry
+        bne +
+        jmp fr_rename
++       cmp #4                  ; Ctrl-D: delete the selected Ultimate entry
+        bne fv_hot_done
+        jmp fr_delete
+fv_hot_done:
         lda fg_key
         beq fv_mouse
         lda #255
@@ -1274,7 +1280,16 @@ fv_label:
 +
         cpx #26
         bne fm_label_back
-        lda #<fm_create_text
+        ldx fv_view
+        cpx #9                  ; Rename and Delete act under their own title
+        bcc +
+        lda fv_title_lo,x
+        pha
+        lda fv_title_hi,x
+        tax
+        pla
+        rts
++       lda #<fm_create_text
         ldx #>fm_create_text
         rts
 fm_label_back:
@@ -1427,6 +1442,10 @@ fv_old_character: .byte 0
 fv_new_character: .byte 0
 fv_body=$5000
 fv_old_body=$5400
+; Modal dialog/search paths and status borrow idle copy scratch. Dialogs open
+; only from the browser, never during a copy; the picker is another module.
+fm_path=FC_DATA_STORAGE
+fm_status=FC_DATA_STORAGE+256
 .include "new-folder.inc"
 .include "find-name.inc"
 .include "buttons.inc"
