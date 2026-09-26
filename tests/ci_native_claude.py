@@ -39,6 +39,7 @@ class TerminalBus(VDC):
         self.serial_present, self.tx = present, tx
         self.input = None
         self.sent, self.serial_writes = bytearray(), []
+        self.sid = bytearray(25)
         self.last_data = 0
         self.port = {0xd020: 6, 0xdd0d: 0}
         self.colors = bytearray(1024)  # Color RAM is separate from bitmap RAM.
@@ -93,6 +94,8 @@ class TerminalBus(VDC):
         if address in self.port: self.port[address] = value; return
         if 0xd800 <= address < 0xdc00:
             self.colors[address-0xd800] = value&15; return
+        if 0xd400 <= address <= 0xd418:        # SID: write-only registers
+            self.sid[address-0xd400] = value; return
         if 0xde00 <= address <= 0xde03:
             self.serial_writes.append((address, value))
             if not self.serial_present: return

@@ -1,9 +1,9 @@
 {
-  "updated": "2026-09-26T07:50-04:00",
+  "updated": "2026-09-26T10:50-04:00",
   "goal": "Finish uOS for the C128 = feature parity with Atari TOS (user directive 2026-09-25). Acceptance matrix: docs/TOS-PARITY.md. GEM layer design of record: docs/GEM-LAYER-DESIGN.md. SDK: docs/NATIVE-AES.md.",
   "task_state": {
     "branch": "main (signed commits, far ahead of origin, NOT pushed; pushing updates upstream PR #2 - ask Marc first)",
-    "last_commit": "737adad Build outputs: aesvc.prg, gemdesk, gem.d81 and regenerated listings",
+    "last_commit": "4dd7bd4 Build outputs: AES 1.6, GEMDESK with GDDLG/GDSET modules, VT52, gem.d81",
     "session_commits": [
       "9267aea/130e508 Sheet clipboard checkpoint (stalled 9/15 work, results regenerated 9/25)",
       "5017683 AES step 1 persistent component",
@@ -17,11 +17,17 @@
       "2f372e1 AES VICE workflow + render_surface.py",
       "8d70a8b AES consumed-press suppression",
       "ab642cf GEM step 7 GEMDESK first build (8 cases)",
-      "737adad build outputs"
+      "737adad build outputs",
+      "9570164 GEMDESK sort/ShowInfo/Delete/Trash/Prefs + forms + dos-command",
+      "08b7476 VT52 terminal",
+      "185cc85 persistence (AES session, DESKTOP.INF), desktop colour, Format; AES 1.5",
+      "1990255 regression record",
+      "c8b58c8 modules GDDLG/GDSET, Control Panel, keyboard mouse, AES 1.6 evnt_dclick, first VICE run",
+      "4dd7bd4 build outputs"
     ],
-    "aes_facts": "AESVC.PRG 13,954 bytes (55 of 56 pages) at bank-1 $8800; minor 4.",
-    "tests_green": "tests/ci_native_aes.py 31/31 (CPU, py65 venv); tests/ci_native_aes_vice.py 5/5 (VICE x128, run unsandboxed: needs localhost socket); folders 40/40; files_gui/find/vdc_files green on final Files build",
-    "in_progress": "GEMDESK increment 2 (uncommitted): View sort, Show Info dialog with IEC rename, Delete/Trash via src/native/dos-command.inc (IEC S0:/R0: on LFN 127 SA15, refuses while kernel NFCMDS holds the device), Preferences dialog, forms library src/native/forms.inc (docs/NATIVE-FORMS.md), AES click window relative to first press (midnight-safe), harness jiffy clock now carries + resets at $4F1A01 (verified in KERNAL 318020-05 UDTIM). GEMDESK 27/27 in dev tree $TMPDIR/uos-dev; 31-suite CPU regression batch running on main target (scratchpad/reg); mutation runs in $TMPDIR/uos-mut{,2}."
+    "aes_facts": "AESVC.PRG 14,079 bytes at bank-1 $8800 (code ends ~$bf1x, ~230 bytes left); minor 6, caps $3f; ops 0-11 (10 session, 11 dclick); WF_DESKCOLOR 17 on handle 0.",
+    "tests_green": "CPU: ci_native_gemdesk 35/35, ci_native_aes 31/31, ci_native_vt52 9/9; VICE: ci_native_gemdesk_vice 4/4, ci_native_aes_vice 5/5. Pre-existing failures (identical at 737adad, not mine): paint_keys, picker_gui large, editor_selection large/capacity/display, editor_history large.",
+    "gemdesk_layout": "core ends $b098; module window to $c000; GDDLG.PRG (info/rename/format) ends $bdcb, GDSET.PRG (prefs/control) ends $bced; gm_sortbuf 5,355 bytes is the core hog"
   },
   "constraints": [
     "Native track only: src/native/**, build-native-desktop.py. CPU tests: ~/.venvs/uos-tests/bin/python -B tests/ci_native_*.py --report X.json",
@@ -39,7 +45,11 @@
     "The planned accessory slot $5000 became the AES data segment: accessories need another home (e.g. $4000..$4fff or REU swap)",
     "IEC delete/rename: app-side dos-command.inc, not a kernel entry (kernel full); reads private NFCMDS ($3de0) to refuse while the kernel holds the command channel",
     "Forms (step 6) are an app-side library polling input itself (menu inert during dialogs), not AES ops 14-15 (AES full)",
-    "GEMDESK View default = sort by name ($a0 padding below all characters); size sorts largest first; ordinal tiebreak"
+    "GEMDESK View default = sort by name ($a0 padding below all characters); size sorts largest first; ordinal tiebreak",
+    "GEMDESK dialogs live in modules GDDLG/GDSET (each with its own forms copy); core loads on demand",
+    "Desktop record v2 (64 bytes): GDS,2; confirm, view, colour, RPTFLG, dclick speed, count, windows from +10",
+    "Keyboard mouse in the AES client: ALT(8)/C=(2) SHFLAG + cursor/Return",
+    "Accessories: technically an accessory executor can call the AES directly in bank 1, but only GEMDESK uses the AES, so accessories wait for app migrations"
   ],
   "discovered_issues": [
     "AES image has 1 page left: step 6 (objects) and accessories need an AES overlay mechanism (bank-1 code may use file services: executor callback table allows N_FOPEN..N_DIRPAGE); overlays would load from the AES's home folder",
@@ -47,15 +57,18 @@
     "Uniform test fills hide missing redraws - keep position-dependent content (markers) in window tests",
     "tests/dbg_* and docs/plans/scroll_feature_state.json are stale Sep 7 leftovers, left untracked intentionally",
     "Subagent handback messages do not reach this session: have agents write reports to scratchpad files",
-    "Pointer harness used to bump only $a2 (no carry): fixed in tests/ci_native_pointer.py frame()"
+    "Pointer harness used to bump only $a2 (no carry): fixed in tests/ci_native_pointer.py frame()",
+    "Test venv lacked pyte (installed 2026-09-26) for Claude host model suites",
+    "Several ci_native_* suites need --case/--size/--vdc-kib/--reu-kib args; run each case"
   ],
   "pending": [
-    "Finish increment 2: wait for regression batch + forms mutations, rebuild main target, final gemdesk run, validation record docs/validation/2026-09-26-gemdesk-files/, commit (src/docs/tests, then target)",
-    "Next GEMDESK: Format disk (N0:), desktop colors, Save Desktop (DESKTOP.INF) + load at boot, windows restored after app return, Ultimate icon/folders, Show File",
-    "VT52 terminal app + VT52 console (research brief: scratchpad/vt52-brief.md)",
-    "Step 8 accessories via a third banked-executor instance (bank-1 $4000..$4fff, owner 29) driven from the AES client",
-    "Remaining TOS system rows: AUTO folder, crash trap, sound, random, palette, keyboard mouse, printer, serial",
-    "VICE runs for GEMDESK; physical C128 qualification"
+    "Dfree for IEC (read \"$\" directory BLOCKS FREE app-side) into drive Show Info",
+    "Ultimate icon + folder windows in GEMDESK (a GDULT module); needs core space (consider moving gm_sortbuf)",
+    "Show File viewer, TTP parameter dialog, icon view, drag copy/move, multi-select",
+    "Sound (SID) library: bell/keyclick/Dosound; random (XBIOS Random); printer service + Print Screen",
+    "AUTO programs at cold start; crash trap (kernel space); warm reset",
+    "Accessories once more apps use the AES (migrate Files/Editor/Paint menus/dialogs)",
+    "Physical C128 qualification of GEMDESK/AES (machine 192.168.1.237 via Ultimate)"
   ],
   "do_not_repeat": [
     "Don't expect the harness key() to resume a wait without a key: use keys.append(0); loop() (N_KEYS is kernel state across launches; seed events from $3d13)",

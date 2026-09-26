@@ -27,6 +27,21 @@ class StreamIEC(IEC):
         self.command=bytearray();self.short_eoi_quirk=True
         self.locked=set();self.status_text={};self.fail_command=None
 
+    def listing(self,device):
+        """The "$" file a CBM drive sends: a BASIC program whose line numbers
+        are block counts, ending with the BLOCKS FREE line."""
+        capacity=(664,1328,3160)[self.formats.get(device,0)]
+        used=0;lines=[(0,b'\x12"MODEL DISK      " 00 2A')]
+        for (dev,name,kind),data in self.files.items():
+            if dev!=device:continue
+            blocks=max(1,(len(data)+253)//254);used+=blocks
+            lines.append((blocks,b'   "'+name+b'"'+b' '*(17-len(name))+{b'S':b'SEQ',b'P':b'PRG',b'U':b'USR'}[kind]))
+        lines.append((capacity-used,b'BLOCKS FREE.             '))
+        out=bytearray(b'\x01\x04')
+        for number,text in lines:
+            out+=b'\x01\x01'+number.to_bytes(2,'little')+text+b'\0'
+        return bytes(out+b'\0\0')
+
     def dos_command(self,device,command):
         """A DOS command sent as the name of an OPEN on secondary 15: CBM DOS
         scratch (locked files are skipped and the count says so), rename and format."""
@@ -113,6 +128,9 @@ class StreamIEC(IEC):
                 self.codes[self.device]=0
             elif self.sa==15:
                 if self.filename:self.dos_command(self.device,bytes(self.filename))
+            elif self.sa==0 and self.filename==b'$':        # a directory listing
+                h.update(data=self.listing(self.device),key=None,mode=b'R',valid=True)
+                self.codes[self.device]=0
             else:
                 name,kind,mode=self.filename.rsplit(b',',2)
                 assert kind in (b'S',b'P',b'U') and mode in (b'R',b'W')
@@ -141,8 +159,8 @@ class StreamIEC(IEC):
         if pc==0xffcf:
             assert self.selected in self.handles
             h=self.handles[self.selected];at=h['position'];self.reads+=1
-            data=h['data'] if h['sa'] in (10,15) else self.files.get(h['key'],b'')
-            if h['sa'] not in (10,15) and self.short_eoi_quirk:
+            data=h['data'] if h['sa'] in (0,10,15) else self.files.get(h['key'],b'')
+            if h['sa'] not in (0,10,15) and self.short_eoi_quirk:
                 if len(data)==0:data=bytes(254)
                 elif len(data)==1:data=bytes(data)+b'\0\2'+bytes(data)
             if h['sa'] not in (10,15) and self.fail_read==at:cpu.a,self.status=0,2

@@ -1441,7 +1441,19 @@ gm_info_sum:
         lda gm_total+1
         sta gm_num+1
         jsr gm_anum
-        jmp gm_info_end
+        lda gm_dev              ; free space, as the drive's listing says it
+        sta dc_device
+        jsr dc_blocks_free
+        bcs +
+        lda #<gm_s_free
+        ldx #>gm_s_free
+        jsr gm_astr
+        lda dc_free
+        sta gm_num
+        lda dc_free+1
+        sta gm_num+1
+        jsr gm_anum
++       jmp gm_info_end
 ; Alert text builder: gm_abuf/gm_alen.
 gm_astr:                        ; append the zero-terminated string at A/X
         sta gm_astr_src+1
@@ -2946,6 +2958,7 @@ gm_full_alert: .byte 91,49,93,91,70,111,117,114,32,102,111,108,100,101,114,32,11
         .byte 111,119,115,124,97,114,101,32,97,108,114,101,97,100,121,32,111,112,101,110,46,93,91,79,75,93,0
 
 gm_confirm: .byte 1
+gm_s_free: .byte 124,66,108,111,99,107,115,32,102,114,101,101,58,32,0   ; |Blocks free: 
 gm_desk_color: .byte $16
 gm_restoring: .byte 0
 gm_orect: .fill 4,0

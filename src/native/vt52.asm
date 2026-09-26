@@ -241,7 +241,10 @@ vt_c_tab:
 +       sta vt_col
         rts
 vt_c_lf:
-        cmp #10                 ; LF, VT and FF move down
+        cmp #7                  ; BEL: the SID bell
+        bne +
+        jmp sd_bell
++       cmp #10                 ; LF, VT and FF move down
         bcc vt_ignore
         cmp #13
         bcs vt_ignore
@@ -1072,6 +1075,7 @@ vt_nmi_other:
         sta vt_quit_request
         jmp NMI_EXIT
 
+.include "sound.inc"
 vt_font: .binary "graphics/font8.bin"
 
 vt_state: .byte 0

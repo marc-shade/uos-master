@@ -36,7 +36,8 @@ and bits 3–0 are the colour.
 |---|---|
 | 32–126 | Printed at the cursor; the cursor advances |
 | CR, LF (also VT, FF), BS, Tab | Column 0; down (scrolling at the bottom); left; next multiple of 8 |
-| BEL and other controls | Ignored (no sound service yet) |
+| BEL | The SID bell ([`sound.inc`](NATIVE-SERVICES.md)) |
+| Other controls | Ignored |
 | ESC A / B / C / D | Cursor up / down / right / left, stopping at the edges |
 | ESC E / H | Clear the screen and home / home |
 | ESC I | Up; at the top the screen moves down one line |

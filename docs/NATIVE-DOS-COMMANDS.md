@@ -33,6 +33,15 @@ The code 01 is not an error. A scratch that finds nothing, or finds only
 locked files, reports `01, FILES SCRATCHED,00,00`. Callers check `dc_track`
 to learn whether anything was deleted.
 
+## Free blocks
+
+`jsr dc_blocks_free` (with `dc_device` set) opens the drive's `$` listing on
+secondary address 0 and reads it to its end. The listing is a BASIC program
+whose line numbers are block counts. The number of its last line, the
+"BLOCKS FREE." line, goes to `dc_free` (word). The checks, the errors and
+the channel rule are the same as for `dc_command`. GEMDESK's Show Info on a
+drive icon shows it.
+
 ## How it works, and the rule it keeps
 
 The command is the name of an `OPEN` on secondary address 15 with logical

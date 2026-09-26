@@ -222,10 +222,10 @@ def main():
         r.expect(both, 'drive 9 window')
         done('the Drive 9 icon opens a second, staggered window over the first', r)
 
-        text = b'[1][Drive 9|Files: 20|Blocks used: 40][OK]'
+        text = b'[1][Drive 9|Files: 20|Blocks used: 40|Blocks free: 624][OK]'   # 664 on a D64
         r.key(9); r.expect(scene.scene.draw(both, text, 1, 1)[0], 'drive info')
         r.key(13); r.expect(both, 'drive info closed')
-        done('Show Info on a drive icon counts its files and blocks', r, text=text.decode())
+        done('Show Info on a drive icon: files, blocks used, and blocks free from the drive\'s listing', r, text=text.decode())
 
         g9 = scene.scene.geometry(dict(kind=scene.KIND, x=2, y=3, w=28, h=16))
         bar = 2+28-1

@@ -158,9 +158,11 @@ def main():
         show(b'\x1bY' + bytes([32+20, 32+75]) + b'wrapping text', 'wrap on')
         show(b'\x1bw\x1bY' + bytes([32+21, 32+75]) + b'no wrap here', 'wrap off')
         show(b'\x1bv\x1bf', 'cursor off')
-        show(b'\x1be\x1bZ\x07\x01ok', 'cursor on; unknown escapes and controls ignored')
+        show(b'\x1be\x1bZ\x07\x01ok', 'cursor on; unknown escapes and controls ignored; BEL rings')
+        sid = [c.sid[a-0xd400] for a in (0xd400, 0xd401, 0xd404, 0xd405, 0xd406)]
+        assert (sid[0] | sid[1] << 8) == 14985 and sid[2:] == [0x11, 0x09, 0x00], sid   # the SID bell
         show(b'\x1bY\x10\x7f', 'ESC Y out of range clamps')
-        done('wrap on and off, cursor on and off, unknown sequences ignored, positions clamped', t)
+        done('wrap on and off, cursor on and off, BEL rings the SID bell, unknown sequences ignored, positions clamped', t)
 
         sent = len(c.sent)
         keys = [0x41, 0x5a, 0xc1, 0x31, 0x2e, 0x0d, 0x14, 0x1b, 0x91, 0x11, 0x1d, 0x9d, 0x09, 0x03, 0x5e, 0x85, 0xa0]

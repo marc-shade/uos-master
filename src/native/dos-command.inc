@@ -8,6 +8,8 @@
 ; In: dc_device (8..30), dc_text[dc_length] (1..DC_MAX bytes).
 ; Out: carry clear: A = dc_code, the status's DOS code; dc_status holds the
 ; line (dc_status_length bytes, without the CR) and dc_track its third field.
+; dc_blocks_free reads the drive's "$" listing the same way: dc_free = the
+; number of its last line, the drive's blocks free.
 ; Carry set: A = N_BADARG, N_REENTRANT, N_CHANNELS (the kernel has a channel
 ; to the device, or output is redirected) or N_IOERROR (dc_iostatus = the
 ; KERNAL status; the command may or may not have run).
@@ -18,6 +20,28 @@ dc_command:
         beq dc_bad
         cmp #DC_MAX+1
         bcs dc_bad
+        lda #15
+        jsr dc_begin
+        bcc +
+        rts
++       lda dc_length
+        ldx #<dc_text
+        ldy #>dc_text
+        jsr $ffbd               ; SETNAM
+        jsr $ffc0               ; OPEN: the drive receives the command
+        bcs dc_open_failed
+        jsr $ffb7
+        sta dc_iostatus
+        and #$80                ; device not present
+        bne dc_close_failed
+        ldx #DC_LFN
+        jsr $ffc6               ; CHKIN
+        bcs dc_close_failed
+        jmp dc_status_read
+; A = secondary address. The argument and channel checks, the saved KERNAL
+; parameters, SETBNK and SETLFS shared by every call. Carry set: A = error.
+dc_begin:
+        sta dc_sa
         lda dc_device
         cmp #8
         bcc dc_bad
@@ -55,25 +79,16 @@ dc_command:
         sta $9d                 ; no KERNAL messages
         sta dc_iostatus
         sta dc_status_length
+        sta dc_eoi
         tax
         jsr $ff68               ; SETBNK: file name in bank 0
         lda #DC_LFN
         ldx dc_device
-        ldy #15
+        ldy dc_sa
         jsr $ffba               ; SETLFS
-        lda dc_length
-        ldx #<dc_text
-        ldy #>dc_text
-        jsr $ffbd               ; SETNAM
-        jsr $ffc0               ; OPEN: the drive receives the command
-        bcs dc_open_failed
-        jsr $ffb7
-        sta dc_iostatus
-        and #$80                ; device not present
-        bne dc_close_failed
-        ldx #DC_LFN
-        jsr $ffc6               ; CHKIN
-        bcs dc_close_failed
+        clc
+        rts
+dc_status_read:
 -       jsr $ffcf               ; CHRIN: the status line
         sta dc_byte
         jsr $ffb7
@@ -132,6 +147,81 @@ dc_bad:
         rts
 dc_channels:
         lda #N_CHANNELS
+        sec
+        rts
+; Free blocks: the drive's "$" listing, read to its end; the number of its
+; last line ("BLOCKS FREE.") -> dc_free (word). Same checks and errors as
+; dc_command, which the drive may be asked for afterwards to explain a failure.
+dc_blocks_free:
+        lda #0
+        jsr dc_begin
+        bcc +
+        rts
++       lda #1
+        ldx #<dc_dollar
+        ldy #>dc_dollar
+        jsr $ffbd               ; SETNAM "$"
+        jsr $ffc0
+        bcs dc_open_failed
+        jsr $ffb7
+        sta dc_iostatus
+        and #$80
+        bne dc_close_failed
+        ldx #DC_LFN
+        jsr $ffc6
+        bcs dc_close_failed
+        lda #0
+        sta dc_free
+        sta dc_free+1
+        jsr dc_get              ; the load address
+        bcs dc_close_failed
+        jsr dc_get
+        bcs dc_close_failed
+dc_line:
+        jsr dc_get              ; link: zero at the end of the listing
+        bcs dc_close_failed
+        sta dc_byte
+        jsr dc_get
+        bcs dc_close_failed
+        ora dc_byte
+        beq dc_listed
+        jsr dc_get              ; line number: blocks
+        bcs dc_close_failed
+        sta dc_free
+        jsr dc_get
+        bcs dc_close_failed
+        sta dc_free+1
+-       jsr dc_get              ; the text, up to its zero
+        bcs dc_close_failed
+        cmp #0
+        bne -
+        jmp dc_line
+dc_listed:
+        jsr dc_close
+        bcs +
+        lda #0
+        rts
++       jmp dc_io
+; CHRIN with the status check; carry set on a transport error or on EOI
+; before the byte the caller expects (the last byte itself is fine).
+dc_get:
+        lda dc_eoi
+        bne dc_get_end
+        jsr $ffcf
+        pha
+        jsr $ffb7
+        sta dc_iostatus
+        and #$83
+        bne dc_get_bad
+        lda dc_iostatus
+        and #$40
+        sta dc_eoi
+        pla
+        clc
+        rts
+dc_get_bad:
+        pla
+dc_get_end:
         sec
         rts
 ; Close the channel, then restore the parameters. Carry set if CLOSE failed.
@@ -207,3 +297,7 @@ dc_byte: .byte 0
 dc_status_length: .byte 0
 dc_status: .fill DC_MAX,0
 dc_saved: .fill 9,0
+dc_sa: .byte 0
+dc_eoi: .byte 0
+dc_free: .word 0
+dc_dollar: .byte $24

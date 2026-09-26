@@ -91,7 +91,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Attributes, date/time stamps | Missing | |
 | Directory search (`Fsfirst/Fsnext`, wildcards) | Partial | Directory pages and substring search; no wildcards |
 | Folders: create, delete, current path | Partial | Ultimate create and paths; no delete |
-| Free space (`Dfree`) | Missing | |
+| Free space (`Dfree`) | Partial | IEC: `dc_blocks_free` in [dos-command.inc](NATIVE-DOS-COMMANDS.md) reads the drive's `$` listing; GEMDESK's drive Show Info shows it ([record](validation/2026-09-26-services/README.md)); no Ultimate free space |
 | Program execution and exit codes (`Pexec/Pterm`) | Partial | Checked launch and exit codes; no command tail or nesting |
 | Memory (`Malloc/Mfree/Mshrink`) | Have | Owned heap and REU arena; no shrink |
 | Date and time | Partial | Ultimate RTC get/set; no system clock service |
@@ -108,8 +108,8 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | Real-time clock | Have | Ultimate RTC |
 | Screen base and resolution | Partial | Owned VIC surface and banked VDC service; no live mode switching |
 | Palette / color registers | Missing | |
-| Sound (`Dosound`), bell and key click | Missing | No SID service |
-| Random numbers | Missing | |
+| Sound (`Dosound`), bell and key click | Partial | SID bell library ([NATIVE-SERVICES](NATIVE-SERVICES.md)), rung by the VT52 terminal on BEL ([record](validation/2026-09-26-services/README.md)); no `Dosound` sequencer or key click |
+| Random numbers | Have | `random.inc`: the XBIOS `Random` formula, self-seeding ([NATIVE-SERVICES](NATIVE-SERVICES.md), [record](validation/2026-09-26-services/README.md)) |
 | Timer tick callbacks | Partial | Jiffy clock readable; no callback |
 | Exception vectors / crash handling | Partial | Load/cleanup errors reported; no BRK trap |
 | Floppy/sector read, write, format, verify | Partial | File-level IEC only |
