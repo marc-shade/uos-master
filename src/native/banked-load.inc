@@ -115,7 +115,7 @@ bk_load:
         sta bk_expected
         lda N_BUFFER+17
         sta bk_expected+1
-        lda #N_APPOWNER
+        lda #BK_OWNER
         sta N_OWNER
         lda #1
         sta N_BANK
@@ -300,7 +300,7 @@ bk_io_return:
         sec
         rts
 bk_select_code:
-        lda #N_APPOWNER
+        lda #BK_OWNER
         sta N_OWNER
         ldx #3
 -       lda bk_handle,x
@@ -329,6 +329,155 @@ bk_write_chunk:
         sta bk_offset+1
         clc
         rts
+
+.if BK_OWNER != N_APPOWNER
+; Persistent instance: adopt the image an earlier app loaded and left owned by
+; BK_OWNER instead of loading it again. The header must satisfy the same rules
+; bk_load enforces, plus the includer's bk_identity at image offset 32. The
+; image cannot be CRC-checked here: its callback import is live code state.
+; Carry clear: attached (state 2). Carry set: A=N_BADHANDLE when no image is
+; resident (load one), N_BADIMAGE on a mismatch; state stays 0.
+bk_attach:
+        php
+        pha
+        jsr bk_enter
+        bcs bk_attach_gate
+        pla
+        lda bk_state
+        bne bk_load_badarg
+        ldx #0
+bk_attach_scan:
+        lda NHANDLES,x
+        cmp #BK_OWNER
+        bne bk_attach_next
+        lda NHANDLES+1,x
+        cmp #1
+        bne bk_attach_next
+        lda NHANDLES+2,x
+        cmp #>BK_BASE
+        beq bk_attach_found
+bk_attach_next:
+        txa
+        clc
+        adc #8
+        tax
+        bne bk_attach_scan
+        lda #N_BADHANDLE
+        jmp bk_finish
+bk_attach_gate:
+        jmp bk_enter_failed
+bk_attach_found:
+        lda NHANDLES+3,x
+        sta bk_pages
+        lda NHANDLES+4,x
+        sta bk_handle+1
+        lda NHANDLES+5,x
+        sta bk_handle+2
+        lda NHANDLES+6,x
+        sta bk_handle+3
+        txa
+        lsr
+        lsr
+        lsr
+        clc
+        adc #1
+        sta bk_handle
+        jsr bk_select_code
+        lda #0
+        sta N_OFFSET
+        sta N_OFFSET+1
+        sta N_COUNT+1
+        lda #40
+        sta N_COUNT
+        jsr N_READ
+        bcs bk_attach_fail
+        ldx #5
+-       lda N_BUFFER,x          ; NBK1, format and ABI major
+        cmp bk_prefix+2,x
+        bne bk_attach_bad
+        lda N_BUFFER+16,x       ; exit stub and reserved byte
+        cmp bk_stub,x
+        bne bk_attach_bad
+        dex
+        bpl -
+        lda N_BUFFER+22         ; bk_load patches the callback import only
+        ora N_BUFFER+23         ; after CRC and source close: zero = partial
+        beq bk_attach_bad
+        ldx #7
+-       lda N_BUFFER+24,x       ; reserved header tail
+        bne bk_attach_bad
+        dex
+        bpl -
+        ldx #4
+-       lda N_BUFFER+32,x       ; component identity and major version
+        cmp bk_identity,x
+        bne bk_attach_bad
+        dex
+        bpl -
+        lda N_BUFFER+6          ; required native ABI minor
+        cmp #N_ABI_MINOR+1
+        bcs bk_attach_bad
+        lda N_BUFFER+7          ; flags
+        bne bk_attach_bad
+        lda N_BUFFER+11
+        cmp #1
+        bne bk_attach_bad
+        lda N_BUFFER+10
+        cmp bk_pages
+        bne bk_attach_bad
+        lda N_BUFFER+8
+        sta bk_length
+        lda N_BUFFER+9
+        sta bk_length+1
+        lda N_BUFFER+12
+        sta bk_entry
+        lda N_BUFFER+13
+        clc
+        adc #>BK_BASE
+        sta bk_entry+1
+        jsr bk_check_code       ; extent, entry range, owner and page tags
+        bcs bk_attach_fail
+        lda #<bk_callback
+        sta N_BUFFER
+        lda #>bk_callback
+        sta N_BUFFER+1
+        lda #22
+        sta bk_offset
+        lda #0
+        sta bk_offset+1
+        sta bk_count+1
+        lda #2
+        sta bk_count
+        jsr bk_write_chunk
+        bcs bk_attach_fail
+        lda #2
+        sta bk_state
+        lda #0
+        jmp bk_finish
+bk_attach_bad:
+        lda #N_BADIMAGE
+bk_attach_fail:
+        ldx #0
+        stx bk_handle
+        stx bk_pages
+        jmp bk_finish
+
+; Forget the attachment without freeing the image, before N_EXIT/N_REPLACE.
+; bk_close instead unloads the component and frees its allocation.
+bk_detach:
+        php
+        pha
+        jsr bk_enter
+        bcs bk_attach_gate
+        pla
+        lda bk_state
+        cmp #2
+        bne bk_load_badarg
+        lda #0
+        sta bk_state
+        sta bk_handle
+        jmp bk_finish
+.fi
 
 ; CRC16-CCITT, no borrowed zero-page pointer. The buffer cursor and count
 ; are private and consumed here; native argument mailboxes remain intact.
@@ -368,7 +517,7 @@ bk_crc_get:
         ora bk_crc_left+1
         bne bk_crc_get
         rts
-bk_prefix: .byte 0,$60,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
+bk_prefix: .byte <BK_BASE,>BK_BASE,$4e,$42,$4b,$31,1,1 ; PRG address, NBK1, format, ABI major
 bk_stub: .byte $a2,$0e,$4c,$ab,$02,0,0,0,0,0
 bk_count: .word 0
 bk_offset: .word 0

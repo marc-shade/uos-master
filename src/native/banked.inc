@@ -1,8 +1,14 @@
 ; Retained bank-0 executor for one owned, fixed-address bank-1 image.
 ; Include banked-load.inc after this file for the checked stream loader.
 ; See docs/NATIVE-BANKED.md. No resident bytes or unassigned common scratch.
+; A second instance may be included inside a .block with its own base, limit
+; and code owner (docs/GEM-LAYER-DESIGN.md); the defaults keep the per-app
+; executor byte-identical.
+        .weak
 BK_BASE = $6000
 BK_LIMIT = $c000
+BK_OWNER = N_APPOWNER         ; owner of the bank-1 code allocation
+        .endweak
 
 ; A = provider operation; arguments/results use N_BUFFER. bk_load must have
 ; completed, including source close. Callee returns A/carry; D/I are preserved.
@@ -91,6 +97,11 @@ bk_callback:
         beq bk_service_call
         lda N_OWNER
         cmp #N_APPOWNER
+.if BK_OWNER != N_APPOWNER
+        beq +
+        cmp #BK_OWNER         ; a persistent component also owns its data
++
+.fi
         bne bk_service_bad
         cpx #1                ; FREE, WRITE and FILL cannot alter active code
         beq bk_protect_code
@@ -307,7 +318,7 @@ bk_check_code:
         asl
         tax
         lda NHANDLES,x
-        cmp #N_APPOWNER
+        cmp #BK_OWNER
         bne bk_invalid
         lda NHANDLES+1,x
         cmp #1
