@@ -1,9 +1,9 @@
 {
-  "updated": "2026-09-26T14:40-04:00",
+  "updated": "2026-09-26T16:05-04:00",
   "goal": "Finish uOS for the C128 = feature parity with Atari TOS (user directive 2026-09-25). Acceptance matrix: docs/TOS-PARITY.md. GEM layer design of record: docs/GEM-LAYER-DESIGN.md. SDK: docs/NATIVE-AES.md.",
   "task_state": {
     "branch": "main (signed commits, far ahead of origin, NOT pushed; pushing updates upstream PR #2 - ask Marc first)",
-    "last_commit": "bd8c84b Build outputs: GEMDESK with USB storage and documents, gem.d81",
+    "last_commit": "c3b86a6 Build outputs: GEMDESK opens pictures in Paint, gem.d81",
     "session_commits": [
       "9267aea/130e508 Sheet clipboard checkpoint (stalled 9/15 work, results regenerated 9/25)",
       "5017683 AES step 1 persistent component",
@@ -26,12 +26,13 @@
       "4dd7bd4 build outputs",
       "e2c8849 free space ($ listing), XBIOS Random, SID bell; a94a906 build outputs",
       "99d4554 GEMDESK USB storage/delete, documents to the Editor, $5000 workspace (195 entries)",
-      "bd8c84b build outputs (byte-identical to tested dev build)"
+      "bd8c84b build outputs (byte-identical to tested dev build)",
+      "d50a3da GEMDESK UPNT -> Paint (4-byte peek, signature first as Files); c3b86a6 build outputs"
     ],
     "aes_facts": "AESVC.PRG 14,079 bytes at bank-1 $8800 (code ends ~$bf1x, ~230 bytes left); minor 6, caps $3f; ops 0-11 (10 session, 11 dclick); WF_DESKCOLOR 17 on handle 0.",
-    "tests_green": "CPU: ci_native_gemdesk 40/40 (99d4554); VICE: ci_native_gemdesk_vice 6/6 incl. SEQ document in the real Editor. Earlier: ci_native_aes 31/31, ci_native_vt52, ci_native_services. Planted bugs for USB + documents all fail (docs/validation/2026-09-26-gemdesk-usb).",
+    "tests_green": "CPU: ci_native_gemdesk 42/42 (d50a3da); VICE: ci_native_gemdesk_vice 7/7 incl. SEQ -> real Editor and UPNT SEQ -> real Paint (document bytes + surface). Earlier: ci_native_aes 31/31, ci_native_vt52, ci_native_services. Records: docs/validation/2026-09-26-gemdesk-usb, -gemdesk-paint.",
     "gemdesk_layout": "core ends $b098; module window to $c000; GDDLG.PRG (info/rename/format) ends $bdcb, GDSET.PRG (prefs/control) ends $bced; gm_sortbuf 5,355 bytes is the core hog",
-    "gemdesk_facts": "core ends $a769 (module window); sort workspace bank-0 $5000 16 pages via N_RESERVE; GM_MAX_ENTRIES 195; documents: IEC SEQ / USB .TXT/.SEQ -> editor via N_DOCREQUEST $80 kind 1 return 0; kernel dispatch fallback clears N_DOCREQUEST before loading the desktop"
+    "gemdesk_facts": "core ends $a869 (module window); sort workspace bank-0 $5000 16 pages via N_RESERVE; GM_MAX_ENTRIES 195; documents: IEC SEQ / USB .TXT/.SEQ -> editor via N_DOCREQUEST $80 kind 1 return 0; kernel dispatch fallback clears N_DOCREQUEST before loading the desktop; gm_peek reads 4 bytes (IEC SEQ, all USB): UPNT -> paint kind 2"
   },
   "constraints": [
     "Native track only: src/native/**, build-native-desktop.py. CPU tests: ~/.venvs/uos-tests/bin/python -B tests/ci_native_*.py --report X.json",
@@ -64,11 +65,11 @@
     "Pointer harness used to bump only $a2 (no carry): fixed in tests/ci_native_pointer.py frame()",
     "Test venv lacked pyte (installed 2026-09-26) for Claude host model suites",
     "Several ci_native_* suites need --case/--size/--vdc-kib/--reu-kib args; run each case",
-    "UltimateBus wrapper forwards attribute reads but not writes: harnesses using Pointer.frame must use m.bus.native"
+    "UltimateBus wrapper forwards attribute reads but not writes: harnesses using Pointer.frame must use m.bus.native",
+    "UPNT files hold 1000 attribute bytes; Paint's 1024-byte attribute page pads the last 24 with $10 (test fixtures must too)"
   ],
   "pending": [
     "USB rename + Show Info in GEMDESK; USB windows in the session record/DESKTOP.INF",
-    "UPNT -> Paint from GEMDESK (document kind 2?) - check NATIVE-DOCUMENT-LAUNCH kinds first",
     "Show File viewer, TTP parameter dialog, icon view, drag copy/move, multi-select",
     "Printer service + Print Screen; Dosound/keyclick need a shared timer",
     "AUTO programs at cold start; crash trap (kernel space); warm reset",
