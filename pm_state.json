@@ -1,9 +1,9 @@
 {
-  "updated": "2026-09-26T16:05-04:00",
+  "updated": "2026-09-26T18:10-04:00",
   "goal": "Finish uOS for the C128 = feature parity with Atari TOS (user directive 2026-09-25). Acceptance matrix: docs/TOS-PARITY.md. GEM layer design of record: docs/GEM-LAYER-DESIGN.md. SDK: docs/NATIVE-AES.md.",
   "task_state": {
     "branch": "main (signed commits, far ahead of origin, NOT pushed; pushing updates upstream PR #2 - ask Marc first)",
-    "last_commit": "c3b86a6 Build outputs: GEMDESK opens pictures in Paint, gem.d81",
+    "last_commit": "702c6d7 Hardware check for the GEM profile; held IRQ capture for AES apps",
     "session_commits": [
       "9267aea/130e508 Sheet clipboard checkpoint (stalled 9/15 work, results regenerated 9/25)",
       "5017683 AES step 1 persistent component",
@@ -27,12 +27,14 @@
       "e2c8849 free space ($ listing), XBIOS Random, SID bell; a94a906 build outputs",
       "99d4554 GEMDESK USB storage/delete, documents to the Editor, $5000 workspace (195 entries)",
       "bd8c84b build outputs (byte-identical to tested dev build)",
-      "d50a3da GEMDESK UPNT -> Paint (4-byte peek, signature first as Files); c3b86a6 build outputs"
+      "d50a3da GEMDESK UPNT -> Paint (4-byte peek, signature first as Files); c3b86a6 build outputs",
+      "a74dd95/0009351 drive-9 geometry via UI (CPU 43/43, VICE 8/8); 702c6d7 hw_native_gem_check.py + held probe (ci_native_held_capture 3/3)"
     ],
     "aes_facts": "AESVC.PRG 14,079 bytes at bank-1 $8800 (code ends ~$bf1x, ~230 bytes left); minor 6, caps $3f; ops 0-11 (10 session, 11 dclick); WF_DESKCOLOR 17 on handle 0.",
     "tests_green": "CPU: ci_native_gemdesk 42/42 (d50a3da); VICE: ci_native_gemdesk_vice 7/7 incl. SEQ -> real Editor and UPNT SEQ -> real Paint (document bytes + surface). Earlier: ci_native_aes 31/31, ci_native_vt52, ci_native_services. Records: docs/validation/2026-09-26-gemdesk-usb, -gemdesk-paint.",
     "gemdesk_layout": "core ends $b098; module window to $c000; GDDLG.PRG (info/rename/format) ends $bdcb, GDSET.PRG (prefs/control) ends $bced; gm_sortbuf 5,355 bytes is the core hog",
-    "gemdesk_facts": "core ends $a869 (module window); sort workspace bank-0 $5000 16 pages via N_RESERVE; GM_MAX_ENTRIES 195; documents: IEC SEQ / USB .TXT/.SEQ -> editor via N_DOCREQUEST $80 kind 1 return 0; kernel dispatch fallback clears N_DOCREQUEST before loading the desktop; gm_peek reads 4 bytes (IEC SEQ, all USB): UPNT -> paint kind 2"
+    "gemdesk_facts": "core ends $a869 (module window); sort workspace bank-0 $5000 16 pages via N_RESERVE; GM_MAX_ENTRIES 195; documents: IEC SEQ / USB .TXT/.SEQ -> editor via N_DOCREQUEST $80 kind 1 return 0; kernel dispatch fallback clears N_DOCREQUEST before loading the desktop; gm_peek reads 4 bytes (IEC SEQ, all USB): UPNT -> paint kind 2",
+    "hardware_status": "2026-09-26 physical C128 (Marc said free): run 1 booted gem.d81 on Ultimate 1581 mode, GEMDESK running (header check), restore verified (drive A 1541/empty, /Temp upload deleted via FTP, reset). Old NativeCapture refused (AES idle loop writes N_BUFFER each pass) -> held probe written. Run 2: full surface captured, differed only by the USB icon (real Ultimate answers identify) -> oracles fixed (usb=True). Run 3 NOT made: auto-mode classifier denied reading run-2 results / further hardware actions; waiting for Marc's permission. Run-2 restore status unconfirmed."
   },
   "constraints": [
     "Native track only: src/native/**, build-native-desktop.py. CPU tests: ~/.venvs/uos-tests/bin/python -B tests/ci_native_*.py --report X.json",
@@ -66,9 +68,11 @@
     "Test venv lacked pyte (installed 2026-09-26) for Claude host model suites",
     "Several ci_native_* suites need --case/--size/--vdc-kib/--reu-kib args; run each case",
     "UltimateBus wrapper forwards attribute reads but not writes: harnesses using Pointer.frame must use m.bus.native",
-    "UPNT files hold 1000 attribute bytes; Paint's 1024-byte attribute page pads the last 24 with $10 (test fixtures must too)"
+    "UPNT files hold 1000 attribute bytes; Paint's 1024-byte attribute page pads the last 24 with $10 (test fixtures must too)",
+    "NativeCapture cannot run under AES apps: ae_event writes N_BUFFER every idle pass and toggles N_READY; use HeldCapture (probes/native-read-held.asm)"
   ],
   "pending": [
+    "Rerun hw_native_gem_check.py (needs Marc's permission: classifier blocked); confirm run-2 restore (drive A 1541 empty, no /Temp/temp0000)",
     "USB rename + Show Info in GEMDESK; USB windows in the session record/DESKTOP.INF",
     "Show File viewer, TTP parameter dialog, icon view, drag copy/move, multi-select",
     "Printer service + Print Screen; Dosound/keyclick need a shared timer",
