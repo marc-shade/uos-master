@@ -151,4 +151,4 @@ independent executor; the default instance assembles byte-identically. When
 `BK_OWNER` is not the app owner, the instance also accepts heap callbacks for
 that owner and adds `bk_attach` (adopt a resident image instead of loading)
 and `bk_detach` (forget it without freeing). The [AES](NATIVE-AES.md) is the
-first such instance: owner 30 at `$9000`.
+first such instance: owner 30 at `$8800`.

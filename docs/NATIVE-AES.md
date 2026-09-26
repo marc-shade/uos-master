@@ -9,12 +9,12 @@ are later steps.
 
 ## What persists
 
-`AESVC.PRG` is an NBK1 image loaded at bank-1 `$9000` (`AE_BASE`) and owned
+`AESVC.PRG` is an NBK1 image loaded at bank-1 `$8800` (`AE_BASE`) and owned
 by owner 30 (`N_AESOWNER`). App cleanup releases only owner 32, so the image
 and its state stay resident after `N_EXIT`. The next app attaches to the same
 bytes instead of loading them again. `ae_unload` frees the image and returns
 its pages. With alerts, events, menus and the shared graphics library
-the component is 38 pages (9,475 bytes) of its 48-page region.
+the component is 38 pages (9,475 bytes) of its 56-page region (`$8800..$bfff`).
 
 The component's identity block sits at image offset 32: `NAES`, major and
 minor version, capability bits. The AES version is independent of the kernel
@@ -24,7 +24,7 @@ ABI (`src/native/aes-api.inc`).
 
 Include `api.inc`, `aes-api.inc` and `aes-client.inc` in the retained app
 core. The client is a second, block-scoped instance of the
-[banked executor](NATIVE-BANKED.md) configured for owner 30 at `$9000`, so
+[banked executor](NATIVE-BANKED.md) configured for owner 30 at `$8800`, so
 it coexists with an app's own `$6000` component.
 
 | Entry | Contract |
@@ -186,7 +186,7 @@ surface to the VDC.
 
 ## Validation on attach
 
-Attach finds the single owner-30 allocation at bank 1 page `$90` in the
+Attach finds the single owner-30 allocation at bank 1 page `$88` in the
 handle table and reads its first 40 bytes through the heap service. It
 requires the NBK1 header rules the loader enforces (format, ABI, flags, bank,
 page count, entry range, exit stub, zero reserved bytes), the `NAES` identity
@@ -247,7 +247,7 @@ The test runs several apps in one machine and checks:
 - a second app attaches without loading and sees the persisted counters;
 - unload returns every page;
 - a wrong identity and a zero callback import are refused with `N_BADIMAGE`;
-- an occupied `$9000` range is refused cleanly;
+- an occupied `$8800` range is refused cleanly;
 - corrupt and missing `AESVC.PRG` files leave nothing resident.
 
 Not yet verified: the AES alongside VDSVC in one app, and physical hardware.

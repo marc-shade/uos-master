@@ -14,7 +14,7 @@ sys.path.insert(0,str(ROOT))
 import native_image
 import native_banked
 
-AE_BASE = 0x9000
+AE_BASE = 0x8800
 
 
 def build(output):

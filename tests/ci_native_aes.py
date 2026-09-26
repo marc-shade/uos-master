@@ -19,7 +19,7 @@ import native_aes_scene as scene
 ROOT = Path(__file__).resolve().parents[1]
 APP = b'AESDEMO.PRG'
 AESVC = b'AESVC.PRG'
-AE_BASE = 0x9000
+AE_BASE = 0x8800
 AES_OWNER = 30
 
 _released = ci_native_calc.released_stats
@@ -166,7 +166,7 @@ def main():
         first.key(13); first.check(attaches=1, apps=1, loaded=1)
         first.key(27, exited=True)
         assert resident_aes(first.m) is not None, 'AES must survive the app exit'
-        done('first app loads AESVC at bank-1 $9000 as owner 30; it survives exit', first,
+        done('first app loads AESVC at bank-1 $8800 as owner 30; it survives exit', first,
              pages=record[3])
 
         second = Demo(work, first.m)
@@ -209,7 +209,7 @@ def main():
         assert occupied.value('demo_error') not in (0, 4), occupied.value('demo_error')
         assert resident_aes(blocked_machine) is None
         assert blocked_machine.ram[0x3900+(AE_BASE >> 8)] != 0, 'the other owner keeps its page'
-        done('occupied $9000 by another owner: clean allocation refusal, nothing adopted', occupied,
+        done('occupied $8800 by another owner: clean allocation refusal, nothing adopted', occupied,
              error=occupied.value('demo_error'))
 
         for kind, error in (('corrupt', 0x14), ('missing', None)):

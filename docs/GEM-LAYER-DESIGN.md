@@ -25,8 +25,10 @@ Each delivery step below lands with its own validation record.
 
 ## Where the AES lives
 
-`AESVC.PRG` is a persistent NBK1 component at bank-1 `$9000..$bfff`
-(48 pages) owned by owner 30. Like the clipboard's owner 31, owner 30 survives
+`AESVC.PRG` is a persistent NBK1 component at bank-1 `$8800..$bfff`
+(56 pages) owned by owner 30. It was planned at `$9000` (48 pages); after
+alerts, events and menus it filled 38 pages, so the base moved down into the
+unused space above VDSVC, which ends at `$86ff`. Like the clipboard's owner 31, owner 30 survives
 foreground cleanup. A 10-page owner-30 allocation above `$c000` holds
 menu/alert save-under (9 pages) and the session record (1 page). Idle cost is
 58 pages, 74 with an accessory open. That cost cannot coexist with the
@@ -39,12 +41,12 @@ Bank-1 map:
 |---|---|
 | `$0400..$4fff` | General heap |
 | `$5000..$5fff` | Accessory slot, owner 29, reserved only while an accessory is open |
-| `$6000..$8fff` | Per-app banked component window (VDSVC uses 39 pages) |
-| `$9000..$bfff` | AESVC, owner 30, persistent |
+| `$6000..$87ff` | Per-app banked component window (VDSVC uses 39 pages, one spare) |
+| `$8800..$bfff` | AESVC, owner 30, persistent |
 | `$c000..$feff` | General heap plus the owner-30 save-under/session pages |
 
 Clients find the AES without new mailbox bytes by checking the private handle
-tables for owner 30 / bank 1 / page `$90` / 48 pages, then the NBK1 header and
+tables for owner 30 / bank 1 / page `$88`, then the NBK1 header and
 an identity block (`"NAES"`, major, minor, capabilities) at image offset 32.
 The executor's base, limit and owner become `.weak` parameters so a second
 instance can serve the AES while existing banked clients stay byte-identical.
@@ -172,7 +174,8 @@ clipboard, Files and folder CPU suites and the `native`, `nativedesktop*` and
 - Redraw speed through the per-byte heap gateway at 1 MHz is unmeasured;
   instruction counts are recorded from step 2.
 - The 12 KiB AES code estimate is unproven; a build-time guard enforces it.
-- VDSVC has 9 pages of growth before `$9000`.
+- VDSVC has one page of growth before `$8800`; beyond that its fixed load
+  fails cleanly while the AES is resident.
 - Reading the private handle tables to find the AES is not a formal ABI.
 - An attached AES image cannot be CRC-checked because it is self-modifying;
   only the identity/header check detects stray writes.

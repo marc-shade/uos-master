@@ -2,7 +2,7 @@
 ; independent of the kernel ABI; apps check AE_MAJOR and their required minor.
 N_AESOWNER = 30                ; persistent AES code and data; survives app exit
 N_ACCOWNER = 29                ; desk accessory slot (reserved for a later step)
-AE_BASE = $9000
+AE_BASE = $8800                ; 56 pages to $bfff; VDSVC ($6000, 39 pages) ends at $86ff
 AE_LIMIT = $c000
 AE_MAJOR = 1
 AE_MINOR = 3
