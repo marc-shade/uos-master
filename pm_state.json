@@ -1,0 +1,57 @@
+{
+  "updated": "2026-09-26T05:55-04:00",
+  "goal": "Finish uOS for the C128 = feature parity with Atari TOS (user directive 2026-09-25). Acceptance matrix: docs/TOS-PARITY.md. GEM layer design of record: docs/GEM-LAYER-DESIGN.md. SDK: docs/NATIVE-AES.md.",
+  "task_state": {
+    "branch": "main (signed commits, far ahead of origin, NOT pushed; pushing updates upstream PR #2 - ask Marc first)",
+    "last_commit": "2f372e1 Run the AES demo in VICE x128 against the CPU-test oracles",
+    "session_commits": [
+      "9267aea/130e508 Sheet clipboard checkpoint (stalled 9/15 work, results regenerated 9/25)",
+      "5017683 AES step 1 persistent component",
+      "f6c665d AES step 2 alerts",
+      "4ee3d64 AES step 3 events + messages",
+      "8fd495b AES step 4 menu bar",
+      "63484b0 AES base moved to bank-1 $8800 (56 pages)",
+      "503662f AES step 5a windows (data segment at bank-1 $5000)",
+      "ae27497/43c2947 Files Ultimate rename (Ctrl-R) / delete (Ctrl-D) + TOS-PARITY.md",
+      "16db6e3 AES step 5b window gadgets",
+      "2f372e1 AES VICE workflow + render_surface.py"
+    ],
+    "aes_facts": "AESVC.PRG 13,933 bytes = 55 of 56 pages at bank-1 $8800..$bfff (owner 30); RAM tables in owner-30 16-page data segment bank-1 $5000 (reserved on first attach, freed by AE_OP_SHUTDOWN via ae_unload). AES minor 4, caps $0f. Ops: 0 attach,1 status,2 alert,3 alert step,4 event,5 post,6 menu,7 menu set,8 window (subops 0-8),9 shutdown.",
+    "tests_green": "tests/ci_native_aes.py 31/31 (CPU, py65 venv); tests/ci_native_aes_vice.py 5/5 (VICE x128, run unsandboxed: needs localhost socket); folders 40/40; files_gui/find/vdc_files green on final Files build"
+  },
+  "constraints": [
+    "Native track only: src/native/**, build-native-desktop.py. CPU tests: ~/.venvs/uos-tests/bin/python -B tests/ci_native_*.py --report X.json",
+    "Graphical CPU cases need native_display_bus.DisplayBus (N_VSHOW refuses without its VIC state)",
+    "Never rebuild target/ while a CI job runs; record FSVIEW sha before/after long runs",
+    "Signed commits only: git -c gpg.format=ssh -c user.signingkey=/home/marc/.ssh/phoenix_agent_ed25519.pub -c user.email=phoenix-agent@2acrestudios.com -c 'user.name=Phoenix Agent (fedora)' commit -S ; <=50 files per commit (split src vs target/)",
+    "Every step lands with docs/validation/<date>-<topic>/README.md + reports; mutation-check new oracles (plant bugs, confirm failures, restore)",
+    "64tass is case-insensitive (AL_LINES collides with al_lines); .text changes letter case - use .byte for ASCII strings",
+    "No theater: report CPU-level vs VICE vs physical evidence explicitly"
+  ],
+  "decisions": [
+    "AES is a persistent bank-1 NBK1 component (owner 30) found via handle tables; client = block-scoped 2nd banked executor with weak BK_BASE/BK_LIMIT/BK_OWNER (default images byte-identical)",
+    "Window manager on the 40x25 cell grid, row 0 reserved for the menu bar, no pixel outline around work areas, painter's-algorithm test oracle",
+    "Frame gadgets report GEM messages; the app acts via wind_set (AES never moves windows itself); drags use XOR outline",
+    "The planned accessory slot $5000 became the AES data segment: accessories need another home (e.g. $4000..$4fff or REU swap)"
+  ],
+  "discovered_issues": [
+    "AES image has 1 page left: step 6 (objects) and accessories need an AES overlay mechanism (bank-1 code may use file services: executor callback table allows N_FOPEN..N_DIRPAGE); overlays would load from the AES's home folder",
+    "FSVIEW (Files graphics module) has 137 bytes free; IEC rename/delete needs a kernel command-channel service (resident kernel full)",
+    "Uniform test fills hide missing redraws - keep position-dependent content (markers) in window tests",
+    "tests/dbg_* and docs/plans/scroll_feature_state.json are stale Sep 7 leftovers, left untracked intentionally"
+  ],
+  "pending": [
+    "GEM step 7: GEM desktop app (GEMDESK, D81 profile): drive icons + trash, folder windows (directory listing on WM_REDRAW), select/open/launch, Show Info, delete via alert, drag to trash, menu Desk/File/View/Options",
+    "AES overlay mechanism (before step 6 objects/forms and step 8 accessories)",
+    "Step 6 objects: radio/checkbox/buttons/fields (form_do)",
+    "Step 8 accessories + Control Panel; step 9 VT52 terminal (foreground app first)",
+    "Physical C128 qualification of the AES (machine at 192.168.1.237 via Ultimate REST)",
+    "Remaining TOS matrix rows (GEMDOS seek/attributes/Dfree, printer, sound, AUTO folder, saved desktop, crash trap, keyboard mouse)"
+  ],
+  "do_not_repeat": [
+    "Don't expect the harness key() to resume a wait without a key: use keys.append(0); loop() (N_KEYS is kernel state across launches; seed events from $3d13)",
+    "Don't read labels of 64tass .block scopes from the labels file (export global aliases like ae_callback)",
+    "Don't put `&` background jobs inside one Bash call (per-call PID namespace kills them); use run_in_background",
+    "Pipes into tail hide test exit codes: read the JSON report's passed flag"
+  ]
+}
