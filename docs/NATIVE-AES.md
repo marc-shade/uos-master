@@ -2,8 +2,9 @@
 
 The AES is the shared service behind the [GEM layer](GEM-LAYER-DESIGN.md).
 It now provides a persistent bank-1 component that apps load once and later
-apps attach to (step 1) and GEM-style alert boxes (step 2, AES minor 1).
-Events, menus, windows and desk accessories are later steps.
+apps attach to (step 1), GEM-style alert boxes (step 2, AES minor 1) and an
+`evnt_multi`-style event wait with an application message queue (step 3,
+minor 2). Menus, windows and desk accessories are later steps.
 
 ## What persists
 
@@ -11,8 +12,8 @@ Events, menus, windows and desk accessories are later steps.
 by owner 30 (`N_AESOWNER`). App cleanup releases only owner 32, so the image
 and its state stay resident after `N_EXIT`. The next app attaches to the same
 bytes instead of loading them again. `ae_unload` frees the image and returns
-its pages. With alerts and the shared graphics library the component is
-22 pages (5,566 bytes).
+its pages. With alerts, events and the shared graphics library the
+component is 25 pages (6,268 bytes).
 
 The component's identity block sits at image offset 32: `NAES`, major and
 minor version, capability bits. The AES version is independent of the kernel
@@ -83,6 +84,52 @@ time. When a different app attaches, an open alert's buffer is freed without
 restoring, because the old surface no longer exists. The input loop stays in
 the app because bank-1 code cannot call `N_KEYIN`.
 
+## Events
+
+`ae_event` waits like GEM `evnt_multi`. Fill `ae_ev_params` (16 bytes) and
+call it; the result is in `ae_ev_result` (15 bytes).
+
+Parameter bytes:
+
+| Bytes | Meaning |
+|---|---|
+| 0 | Event mask: keyboard 1, button 2, rectangle 1 4, rectangle 2 8, message 16, timer 32 |
+| 1 | Clicks wanted (1–3) |
+| 2, 3 | Button mask and wanted state (bit 0 = left) |
+| 4–8 | Rectangle 1: flag (0 = fire inside, 1 = fire outside), then x, y, w, h in cells |
+| 9–13 | Rectangle 2, same layout |
+| 14–15 | Timer, in jiffies |
+
+Result bytes:
+
+| Bytes | Meaning |
+|---|---|
+| 0 | Mask of the events that fired |
+| 1 | Key |
+| 2–3 | Pointer x |
+| 4 | Pointer y |
+| 5 | Buttons |
+| 6 | Click count |
+| 7–14 | Message |
+
+The first sample is taken at the call, so the timer runs from the call.
+A button already in the wanted state fires at once, as in GEM. Presses into
+the wanted state are counted until the wanted number arrives or a 20-jiffy
+double-click window closes; the count is reported. Rectangle bounds are
+half-open cells. Several events can fire together. At most one message is
+delivered per wake.
+
+`ae_post` queues an 8-byte message (`appl_write`). The queue holds 16; a
+17th is refused with `N_NOMEM`. When a different app attaches, its queue and
+wait state are cleared.
+
+Between samples the client calls `N_KEYIN` with `N_READY` published, so the
+app stays responsive to the kernel's idle contract. The pointer comes from
+the app's `pm_poll` when it sets `AE_POINTER=1` and includes the 1351 module,
+otherwise from `ae_pointer_*`. Time comes from the ROM jiffy clock
+(`$a0..$a2`). Each sample is one banked call, so waiting is not free: the
+cost per sample has not been measured.
+
 ## Validation on attach
 
 Attach finds the single owner-30 allocation at bank 1 page `$90` in the
@@ -113,6 +160,19 @@ surfaces. It covers focus movement with row masks, every choosing key,
 pointer press/release, exact restoration of arbitrary pixels and colours,
 and refusal of malformed or oversized strings. Planted bugs in the paper
 colour, button spacing and restore path each fail it.
+
+The demo's E key waits with the parameters in `ae_ev_params` (default:
+keyboard or 60 jiffies) and P posts a message. The event cases cover:
+- the key;
+- the timer at exactly 60 jiffies across a 16-bit carry, not at 59;
+- single clicks and the already-in-state rule;
+- a double-click inside the window, and a single click when it closes;
+- rectangle enter/leave at the half-open bound;
+- ordered messages and the 17th refused;
+- the queue cleared for a new app.
+
+Planted bugs in the click window, the rectangle bound and the timer
+comparison each fail the test.
 
 The test runs several apps in one machine and checks:
 - the first app loads the component, which survives its exit;

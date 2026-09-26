@@ -96,6 +96,91 @@ ae_alert_step:
         sta N_BUFFER+4
         lda #AE_OP_STEP
         jmp ae_call
+
+; Events (AES minor 2). Fill ae_ev_params with packet bytes 0..15 (mask,
+; clicks, button mask/state, two rectangles, timer), then ae_event waits
+; until something fires, polling N_KEYIN, the pointer and the jiffy clock.
+; The pointer comes from pm_poll when the app sets AE_POINTER=1 and includes
+; the pointer module, otherwise from ae_pointer_*. Result: ae_ev_result.
+; ae_post: N_BUFFER 0..7 = message; carry set with N_NOMEM when the queue
+; (16 messages) is full.
+        .weak
+AE_POINTER = 0
+        .endweak
+ae_event:
+        lda #1                  ; the first sample is taken at the call itself:
+        sta ae_ev_first         ; the timer and button state start from now
+        lda #0
+        sta ae_ev_key
+        beq ae_event_sample
+ae_event_wait:
+        lda #1
+        sta N_READY
+        jsr N_KEYIN
+        ldx #0
+        stx N_READY
+        sta ae_ev_key
+ae_event_sample:
+.if AE_POINTER
+        jsr pm_poll
+        lda pm_x
+        sta ae_pointer_x
+        lda pm_x+1
+        sta ae_pointer_x+1
+        lda pm_y
+        sta ae_pointer_y
+        lda pm_buttons
+        sta ae_pointer_buttons
+.fi
+        ldx #15
+-       lda ae_ev_params,x
+        sta N_BUFFER,x
+        dex
+        bpl -
+        lda ae_ev_key
+        sta N_BUFFER+16
+        lda ae_pointer_x
+        sta N_BUFFER+17
+        lda ae_pointer_x+1
+        sta N_BUFFER+18
+        lda ae_pointer_y
+        sta N_BUFFER+19
+        lda ae_pointer_buttons
+        sta N_BUFFER+20
+        php
+        sei                     ; one consistent reading of the jiffy clock
+        lda $a0
+        sta N_BUFFER+21
+        lda $a1
+        sta N_BUFFER+22
+        lda $a2
+        sta N_BUFFER+23
+        plp
+        lda ae_ev_first
+        sta N_BUFFER+24
+        lda #0
+        sta ae_ev_first
+        lda #AE_OP_EVENT
+        jsr ae_call
+        bcs ae_event_done
+        lda N_BUFFER
+        beq ae_event_wait
+        ldx #14
+-       lda N_BUFFER,x
+        sta ae_ev_result,x
+        dex
+        bpl -
+        lda #0                  ; A = 0 on success, like every client entry
+        clc
+ae_event_done:
+        rts
+ae_post:
+        lda #AE_OP_POST
+        jmp ae_call
+ae_ev_params: .fill 16,0
+ae_ev_result: .fill 15,0
+ae_ev_key: .byte 0
+ae_ev_first: .byte 0
 ae_surface: .fill 4,0
 ae_pointer_x: .word 0
 ae_pointer_y: .byte 0

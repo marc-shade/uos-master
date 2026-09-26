@@ -95,6 +95,11 @@ demo_open:
         inc demo_loaded
 demo_attached:
         jsr demo_reply
+        ldx #15
+-       lda demo_ev_defaults,x
+        sta ae_ev_params,x
+        dex
+        bpl -
         lda #1
         sta demo_active
         lda #0
@@ -115,7 +120,32 @@ input_loop:
         beq demo_exit
         cmp #$55              ; U: unload the AES, then exit
         beq demo_unload
-        cmp #$41              ; A: an AES alert over this app's VIC surface
+        cmp #$45              ; E: wait for the events in ae_ev_params
+        bne +
+        lda demo_active
+        beq input_loop
+        lda #1
+        sta demo_waiting
+        jsr ae_event
+        ldx #0
+        stx demo_waiting
+        sta demo_error
+        jsr demo_draw
+        jmp input_loop
++       cmp #$50              ; P: post one message to the AES queue
+        bne +
+        lda demo_active
+        beq input_loop
+        ldx #7
+-       lda demo_message,x
+        sta N_BUFFER,x
+        dex
+        bpl -
+        jsr ae_post
+        sta demo_error
+        jsr demo_draw
+        jmp input_loop
++       cmp #$41              ; A: an AES alert over this app's VIC surface
         bne +
         jsr demo_alert_run
         sta demo_error
@@ -308,6 +338,24 @@ demo_draw_screen:
         jsr demo_puts
         lda demo_choice
         jsr demo_hex
+        lda #<demo_event_text
+        ldx #>demo_event_text
+        jsr demo_puts
+        ldy #0
+-       lda ae_ev_result,y
+        jsr demo_hex_y
+        iny
+        cpy #7
+        bne -
+        lda #<demo_message_text
+        ldx #>demo_message_text
+        jsr demo_puts
+        ldy #7
+-       lda ae_ev_result,y
+        jsr demo_hex_y
+        iny
+        cpy #15
+        bne -
         lda #<demo_error_text
         ldx #>demo_error_text
         jsr demo_puts
@@ -333,6 +381,16 @@ demo_put:
         inc demo_put+2
         bne demo_put
 +       rts
+demo_hex_y:                    ; demo_hex, preserving Y
+        sta demo_hex_save
+        tya
+        pha
+        lda demo_hex_save
+        jsr demo_hex
+        pla
+        tay
+        rts
+demo_hex_save: .byte 0
 demo_hex:
         pha
         lsr
@@ -354,6 +412,11 @@ demo_error: .byte 0
 demo_screen: .byte 0
 demo_status: .fill 13,0
 demo_choice: .byte 0
+demo_waiting: .byte 0
+demo_ev_defaults: .byte 1|32,1,1,1, 0,0,0,0,0, 0,0,0,0,0, 60,0 ; keyboard or 60 jiffies
+demo_message: .byte 41,0,7,0,1,2,3,4    ; AC_OPEN-style: type, 0, sender 7, data
+demo_event_text: .text 13,"event (hex): ",0
+demo_message_text: .text 13,"message (hex): ",0
 demo_choice_text: .text 13,"alert choice (hex): $",0
 demo_alert: .byte 91,51,93,91,68,101,108,101,116,101,32,78,79,84,69,83,46,84,88,84,63,124,84,104,105,115,32,99,97,110,110,111,116,32,98,101,32,117,110,100,111,110,101,46,93,91,68,101,108,101,116,101,124,67,97,110,99,101,108,93,0
 demo_name: .text "aesvc.prg"
@@ -366,7 +429,8 @@ demo_error_text: .text 13,"last error (hex): $",0
 demo_help: .text 13,13,"return: aes status",13
            .text "esc: exit, aes stays resident",13
            .text "u: unload aes and exit",13
-           .text "a: aes alert over the vic surface",13,0
+           .text "a: aes alert over the vic surface",13
+           .text "e: wait for events  p: post a message",13,0
 .include "aes-client.inc"
 app_end:
 .cerror app_end > N_APPLIMIT, "example parent exceeds its slot"

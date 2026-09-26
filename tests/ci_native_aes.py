@@ -91,8 +91,9 @@ class Demo(Calculator):
         self.loop()
 
     def symbol(self, name):
-        if name == 'cloop':  # the next wait point: the alert loop while one is open
-            name = 'demo_alert_loop' if self.alert_open() else 'input_loop'
+        if name == 'cloop':  # the next wait point: alert or event loop, else input
+            name = ('demo_alert_loop' if self.alert_open() else
+                    'ae_event_wait' if self.ram[self.symbols['demo_waiting']] else 'input_loop')
         return self.symbols[name]
 
     def alert_open(self):
@@ -105,7 +106,7 @@ class Demo(Calculator):
         at = self.symbol(name)
         return bytes(self.ram[at:at+length])
 
-    def check(self, *, attaches, apps, loaded, error=0, version=0x0101, choice=0):
+    def check(self, *, attaches, apps, loaded, error=0, version=0x0102, choice=0):
         status = self.data('demo_status', 13)
         assert self.value('demo_error') == error, (self.value('demo_error'), error)
         assert self.value('demo_loaded') == loaded
@@ -117,9 +118,11 @@ class Demo(Calculator):
                  f'ATTACHES (HEX): ${status[5]:02X}{status[4]:02X}',
                  f'APPS (HEX): ${status[7]:02X}{status[6]:02X}',
                  f'LOADED HERE (HEX): ${loaded:02X}', f'ALERT CHOICE (HEX): ${choice:02X}',
+                 'EVENT (HEX): '+self.data('ae_ev_result', 7).hex().upper(),
+                 'MESSAGE (HEX): '+self.data('ae_ev_result', 15)[7:].hex().upper(),
                  f'LAST ERROR (HEX): ${error:02X}', '',
                  'RETURN: AES STATUS', 'ESC: EXIT, AES STAYS RESIDENT', 'U: UNLOAD AES AND EXIT',
-                 'A: AES ALERT OVER THE VIC SURFACE']
+                 'A: AES ALERT OVER THE VIC SURFACE', 'E: WAIT FOR EVENTS  P: POST A MESSAGE']
         for screen, columns in zip(self.screens, (40, 80)):
             expected = bytearray(b' '*(columns*25))
             for row, line in enumerate(lines):
@@ -220,6 +223,7 @@ def main():
             demo.key(27, exited=True)
             done(f'{kind} AESVC.PRG refused; no resident image', demo, error=code)
         alert_cases(work, report, done)
+        event_cases(work, report, done)
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')
@@ -314,6 +318,102 @@ def alert_cases(work, report, done):
     demo.ram[at:at+len(original)] = original
     done('malformed strings and alerts over 250 cells are refused before any surface change', demo)
     demo.key(27, exited=True)
+
+
+def event_cases(work, report, done):
+    heap.Bus = BankedBus
+    demo = Demo(work, heap.Machine())
+    demo.check(attaches=1, apps=1, loaded=1)
+
+    def waiting():
+        return demo.ram[demo.symbol('demo_waiting')] == 1
+
+    def resume():
+        """Run one more pass of the wait loop without a key (time/pointer moved)."""
+        demo.observation_target = None
+        demo.keys.append(0)
+        demo.loop()
+
+    def jiffy(value):
+        demo.ram[0xa0:0xa3] = value.to_bytes(3, 'big')
+
+    def pointer(x, y, buttons):
+        at = demo.symbol('ae_pointer_x')
+        demo.ram[at:at+2] = x.to_bytes(2, 'little')
+        demo.ram[demo.symbol('ae_pointer_y')] = y
+        demo.ram[demo.symbol('ae_pointer_buttons')] = buttons
+
+    def params(mask, clicks=1, bmask=1, bstate=1, m1=(0, 0, 0, 0, 0), m2=(0, 0, 0, 0, 0), timer=0):
+        at = demo.symbol('ae_ev_params')
+        demo.ram[at:at+16] = bytes([mask, clicks, bmask, bstate, *m1, *m2]) + timer.to_bytes(2, 'little')
+
+    def result():
+        return demo.data('ae_ev_result', 15)
+
+    jiffy(1000); pointer(0, 0, 0)
+    demo.key(ord('E')); assert waiting()
+    demo.key(ord('Z')); assert not waiting()
+    assert result()[:2] == bytes([1, 0x5a]) and result()[6] == 0
+    demo.check(attaches=1, apps=1, loaded=1)
+    done('keyboard event returns the key', demo)
+
+    jiffy(0x01fff0)                         # crosses a 16-bit carry during the wait
+    demo.key(ord('E')); assert waiting()
+    jiffy(0x01fff0+59); resume(); assert waiting()
+    jiffy(0x01fff0+60); resume(); assert not waiting() and result()[0] == 32
+    done('timer fires at exactly 60 jiffies, not 59, across a carry', demo)
+
+    params(2)
+    demo.key(ord('E')); assert waiting()
+    pointer(40, 30, 1); resume(); assert not waiting()
+    assert result()[0] == 2 and result()[6] == 1 and result()[2:6] == bytes([40, 0, 30, 1])
+    demo.key(ord('E')); assert not waiting() and result()[0] == 2, 'GEM: state already matches'
+    pointer(40, 30, 0)
+    done('button press fires one click; an already-matching state fires at once', demo)
+
+    params(2, clicks=2)
+    jiffy(5000); demo.key(ord('E'))
+    pointer(0, 0, 1); resume(); assert waiting()
+    pointer(0, 0, 0); jiffy(5010); resume(); assert waiting()
+    pointer(0, 0, 1); jiffy(5019); resume(); assert not waiting()
+    assert result()[0] == 2 and result()[6] == 2
+    pointer(0, 0, 0)
+    jiffy(6000); demo.key(ord('E'))
+    pointer(0, 0, 1); resume(); pointer(0, 0, 0); jiffy(6019); resume(); assert waiting()
+    jiffy(6020); resume(); assert not waiting() and result()[6] == 1
+    done('double-click inside the 20-jiffy window; the window closing reports one click', demo)
+
+    params(4|8, m1=(0, 10, 10, 5, 5), m2=(1, 0, 0, 4, 4))
+    pointer(8, 8, 0); demo.key(ord('E')); assert waiting()           # in rect 2, outside rect 1
+    pointer(12*8, 14*8+7, 0); resume(); assert not waiting()          # enters 1 and leaves 2
+    assert result()[0] == 4|8
+    params(4, m1=(0, 10, 10, 5, 5))
+    pointer(15*8, 12*8, 0); demo.key(ord('E')); assert waiting()      # x == 10+5 is outside
+    pointer(14*8+7, 10*8, 0); resume(); assert not waiting() and result()[0] == 4
+    done('rectangle enter/leave with half-open cell bounds', demo)
+
+    params(16|32, timer=1000)
+    jiffy(0); demo.key(ord('P')); demo.key(ord('E'))
+    assert not waiting() and result()[0] == 16 and result()[7:] == bytes([41, 0, 7, 0, 1, 2, 3, 4])
+    demo.key(ord('E')); assert waiting()
+    jiffy(1000); resume(); assert not waiting() and result()[0] == 32
+    for n in range(16):
+        demo.key(ord('P')); assert demo.value('demo_error') == 0, n
+    demo.key(ord('P')); assert demo.value('demo_error') == 2, 'N_NOMEM when 16 are queued'
+    done('messages queue in order, deliver once, and refuse a 17th', demo)
+
+    demo.key(27, exited=True)
+    other = Demo(work, demo.m)
+    other.check(attaches=2, apps=2, loaded=0)
+    at = other.symbol('ae_ev_params')
+    other.ram[at:at+16] = bytes([16|32, 1, 1, 1]+[0]*10) + (5).to_bytes(2, 'little')
+    other.ram[0xa0:0xa3] = bytes(3)
+    other.key(ord('E'))
+    other.ram[0xa0:0xa3] = (5).to_bytes(3, 'big')
+    other.observation_target = None; other.keys.append(0); other.loop()
+    assert other.data('ae_ev_result', 1)[0] == 32, 'the previous app\'s messages were discarded'
+    other.key(ord('U'), exited=True)
+    done('a new app attaching finds an empty queue', other)
 
 
 if __name__ == '__main__':
