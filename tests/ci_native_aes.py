@@ -14,6 +14,7 @@ import ci_native_calc
 from ci_native_calc import Calculator
 from ci_native_files import StreamIEC
 from native_banked_bus import BankedBus
+import native_aes_scene as scene
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = b'AESDEMO.PRG'
@@ -68,6 +69,8 @@ class Demo(Calculator):
             component[-1] ^= 1
         self.symbols = {n: int(v, 16) for n, v in re.findall(
             r'^([\w.]+)\s*=\s*\$([\da-fA-F]+)', (output/'parent.sym').read_text(), re.M)}
+        self.aes_symbols = {n: int(v, 16) for n, v in re.findall(
+            r'^([\w.]+)\s*=\s*\$([\da-fA-F]+)', (output/'aesvc.sym').read_text(), re.M)}
         files = {(8, APP, b'P'): self.image, (8, AESVC, b'P'): bytes(component)}
         if missing:
             del files[8, AESVC, b'P']
@@ -88,13 +91,21 @@ class Demo(Calculator):
         self.loop()
 
     def symbol(self, name):
-        return self.symbols['input_loop' if name == 'cloop' else name]
+        if name == 'cloop':  # the next wait point: the alert loop while one is open
+            name = 'demo_alert_loop' if self.alert_open() else 'input_loop'
+        return self.symbols[name]
+
+    def alert_open(self):
+        return self.m.bus.ram[1][self.aes_symbols['al_active']] == 1
+
+    def surface(self):
+        return bytes(self.ram[0xc000:0xe400])
 
     def data(self, name, length):
         at = self.symbol(name)
         return bytes(self.ram[at:at+length])
 
-    def check(self, *, attaches, apps, loaded, error=0, version=0x0100):
+    def check(self, *, attaches, apps, loaded, error=0, version=0x0101, choice=0):
         status = self.data('demo_status', 13)
         assert self.value('demo_error') == error, (self.value('demo_error'), error)
         assert self.value('demo_loaded') == loaded
@@ -105,8 +116,10 @@ class Demo(Calculator):
         lines = ['AES DEMO', f'VERSION (HEX): ${status[0]:02X}{status[1]:02X}',
                  f'ATTACHES (HEX): ${status[5]:02X}{status[4]:02X}',
                  f'APPS (HEX): ${status[7]:02X}{status[6]:02X}',
-                 f'LOADED HERE (HEX): ${loaded:02X}', f'LAST ERROR (HEX): ${error:02X}', '',
-                 'RETURN: AES STATUS', 'ESC: EXIT, AES STAYS RESIDENT', 'U: UNLOAD AES AND EXIT']
+                 f'LOADED HERE (HEX): ${loaded:02X}', f'ALERT CHOICE (HEX): ${choice:02X}',
+                 f'LAST ERROR (HEX): ${error:02X}', '',
+                 'RETURN: AES STATUS', 'ESC: EXIT, AES STAYS RESIDENT', 'U: UNLOAD AES AND EXIT',
+                 'A: AES ALERT OVER THE VIC SURFACE']
         for screen, columns in zip(self.screens, (40, 80)):
             expected = bytearray(b' '*(columns*25))
             for row, line in enumerate(lines):
@@ -206,9 +219,101 @@ def main():
             assert resident_aes(demo.m) is None
             demo.key(27, exited=True)
             done(f'{kind} AESVC.PRG refused; no resident image', demo, error=code)
+        alert_cases(work, report, done)
         report['passed'] = True
     finally:
         args.report.write_text(json.dumps(report, indent=2)+'\n')
+
+
+ALERT = b'[3][Delete NOTES.TXT?|This cannot be undone.][Delete|Cancel]'
+BLANK = bytes(8192)+b'\x16'*1024
+
+
+def alert_cases(work, report, done):
+    from native_display_bus import DisplayBus  # VIC/CIA state N_VSHOW requires
+    heap.Bus = DisplayBus
+    demo = Demo(work, heap.Machine())
+    demo.check(attaches=1, apps=1, loaded=1)
+    aes = demo.aes_symbols
+
+    def reply():
+        return bytes(demo.ram[0x3a00:0x3a06])
+
+    def expect(focus, before=BLANK):
+        want, geo = scene.draw(before, ALERT, 2, focus)
+        got = demo.surface()
+        assert got == want, [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b][:12]
+        return geo
+
+    def saved_pages():
+        return [bytes(demo.ram[0x3c00+i*8:0x3c08+i*8]) for i in range(32)
+                if demo.ram[0x3c00+i*8] == AES_OWNER and demo.ram[0x3c02+i*8] != AE_BASE >> 8]
+
+    demo.key(ord('A'))
+    assert demo.alert_open()
+    geo = expect(2)
+    assert reply()[:2] == bytes([0, 2]) and reply()[2:] == scene.dirty_rows(geo['y'], geo['h'])
+    assert len(saved_pages()) == 1, 'one owner-30 save-under allocation while open'
+    for key, focus in ((9, 1), (9, 2), (0x9d, 1), (0x9d, 2), (0x1d, 1), (ord('x'), 1)):
+        demo.key(key); expect(focus)
+        rows = scene.dirty_rows(geo['button_y'], 2) if key != ord('x') else bytes(4)
+        assert reply() == bytes([0, focus])+rows, (key, reply())
+    demo.key(13)
+    assert not demo.alert_open() and demo.surface() == BLANK, 'exact restoration'
+    assert reply()[:2] == bytes([1, 1]) and not saved_pages()
+    demo.check(attaches=1, apps=1, loaded=1, choice=1)
+    done('keyboard alert: exact frame, Tab/cursor focus with row masks, Return, exact restore', demo,
+         alert=dict(x=geo['x'], y=geo['y'], w=geo['w'], h=geo['h']))
+
+    for keys, choice in (([ord('2')], 2), ([ord('1')], 1), ([27], 2), ([13], 2)):
+        demo.key(ord('A')); expect(2)
+        for key in keys:
+            demo.key(key)
+        assert not demo.alert_open() and demo.surface() == BLANK
+        demo.check(attaches=1, apps=1, loaded=1, choice=choice)
+    done('digits choose directly, Escape chooses Cancel, Return takes the default', demo)
+
+    def point(x, y, down):
+        at = demo.symbol('ae_pointer_x')
+        demo.ram[at:at+2] = x.to_bytes(2, 'little')
+        demo.ram[demo.symbol('ae_pointer_y')] = y
+        demo.ram[demo.symbol('ae_pointer_buttons')] = down
+        demo.key(0xff)
+
+    demo.key(ord('A')); expect(2)
+    delete_x = geo['button_x'][0]*8+12; bar_y = geo['button_y']*8+8
+    point(delete_x, bar_y, 1); expect(1)            # press arms and focuses Delete
+    point(20, 20, 0); expect(1)                     # release elsewhere: nothing chosen
+    assert demo.alert_open()
+    point(delete_x, bar_y, 1); point(delete_x+8, bar_y+4, 0)
+    assert not demo.alert_open() and demo.surface() == BLANK
+    demo.check(attaches=1, apps=1, loaded=1, choice=1)
+    done('1351-style press/release on the same button chooses it; release elsewhere does not', demo)
+
+    # A drawn surface underneath must come back byte for byte.
+    pattern = bytes((i*37+11) & 255 for i in range(8192))+bytes((i*7) & 255 for i in range(1024))
+    demo.ram[0xc000:0xe400] = pattern
+    demo.key(ord('A')); expect(2, pattern)
+    demo.key(27)
+    assert demo.surface() == pattern
+    done('arbitrary pixels and colours under the alert are restored exactly', demo)
+
+    at = demo.symbol('demo_alert')
+    original = bytes(demo.ram[at:at+len(ALERT)+1])
+    for bad in (b'[3][a|b|c|d|e|f][OK]', b'[4][x][OK]', b'[1][x][]', b'[1][x][A|B|C|D]',
+                b'[1]['+b'W'*31+b'][OK]', b'[1][x][OK]junk', b'[1][x][ELEVENCHARS]'):
+        assert scene.parse(bad) is None
+        demo.ram[at:at+len(bad)+1] = bad+b'\0'
+        demo.key(ord('A'))
+        assert not demo.alert_open() and not saved_pages() and demo.surface() == pattern
+        demo.check(attaches=1, apps=1, loaded=1, choice=2, error=1)
+    too_big = b'[1][' + b'|'.join([b'W'*30]*5) + b'][OK]'
+    assert scene.parse(too_big) is not None and scene.layout(*scene.parse(too_big)) is None
+    demo.ram[at:at+len(too_big)+1] = too_big+b'\0'
+    demo.key(ord('A')); assert not demo.alert_open() and not saved_pages()
+    demo.ram[at:at+len(original)] = original
+    done('malformed strings and alerts over 250 cells are refused before any surface change', demo)
+    demo.key(27, exited=True)
 
 
 if __name__ == '__main__':

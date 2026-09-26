@@ -8,6 +8,11 @@
 ; A/carry are the result; D/I preserved. BUFFER and heap arguments clobbered.
 .weak
 gfx_track_dirty=0
+; Heap transfer entries. Bank-1 users (the AES) route them through the
+; executor callback bridge; everyone else calls the kernel directly.
+gfx_heap_read=N_READ
+gfx_heap_write=N_WRITE
+gfx_heap_fill=N_FILL
 .endweak
 gfx_bind:
         php
@@ -32,7 +37,7 @@ gfx_bind_handle:
         sta N_COUNT
         lda #0
         sta N_COUNT+1
-        jsr N_READ
+        jsr gfx_heap_read
         bcs gfx_finish
         lda #1
         sta gfx_bound
@@ -341,7 +346,7 @@ gfx_color_x:
         jsr gfx_select
         lda gfx_color
         sta N_VALUE
-        jsr N_FILL
+        jsr gfx_heap_fill
         bcs gfx_failed
         inc gfx_y
         lda gfx_y
@@ -433,7 +438,7 @@ gfx_bitmap_row:
         jmp gfx_band
 gfx_read_row:
         jsr gfx_select
-        jsr N_READ
+        jsr gfx_heap_read
         bcs gfx_failed
         lda gfx_operation
         cmp #2
@@ -514,7 +519,7 @@ gfx_store:
         bne gfx_column
 gfx_write_row:
         jsr gfx_select
-        jsr N_WRITE
+        jsr gfx_heap_write
         bcs gfx_failed
         inc gfx_y
         lda gfx_y
@@ -539,11 +544,11 @@ gfx_band:
         beq +
         lda #$ff
 +       sta N_VALUE
-        jsr N_FILL
+        jsr gfx_heap_fill
         bcs gfx_band_failed
         bcc gfx_band_next
 gfx_band_xor:
-        jsr N_READ
+        jsr gfx_heap_read
         bcs gfx_band_failed
         lda #>N_BUFFER
         sta gfx_xor_load+2
@@ -568,7 +573,7 @@ gfx_xor_store:
         bne gfx_xor_load
 gfx_band_write:
         jsr gfx_band_select
-        jsr N_WRITE
+        jsr gfx_heap_write
         bcs gfx_band_failed
 gfx_band_next:
         clc
@@ -599,7 +604,7 @@ gfx_band_select:
 ; the edge pixels with masks over the first/last eight-byte cell, instead
 ; of transferring a strided row eight separate times.
 gfx_band_masked:
-        jsr N_READ
+        jsr gfx_heap_read
         bcs gfx_band_failed
         lda #>N_BUFFER
         sta gfx_band_load+2
@@ -676,7 +681,7 @@ gfx_aligned_glyph:
         lda gfx_pen
         cmp #3
         beq gfx_aligned_copy
-        jsr N_READ
+        jsr gfx_heap_read
         bcs gfx_band_failed
         ldx #7
 gfx_aligned_ink:
@@ -709,7 +714,7 @@ gfx_aligned_copy_next:
         bpl gfx_aligned_copy_next
 gfx_aligned_write:
         jsr gfx_select
-        jsr N_WRITE
+        jsr gfx_heap_write
         jmp gfx_finish
 
 gfx_glyph_row:

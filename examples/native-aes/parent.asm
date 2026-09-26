@@ -115,6 +115,13 @@ input_loop:
         beq demo_exit
         cmp #$55              ; U: unload the AES, then exit
         beq demo_unload
+        cmp #$41              ; A: an AES alert over this app's VIC surface
+        bne +
+        jsr demo_alert_run
+        sta demo_error
+        jsr demo_draw
+        jmp input_loop
++
         cmp #13
         bne input_loop
         lda demo_active
@@ -146,6 +153,93 @@ demo_leave:
         bcs demo_failed
         lda #0
         jmp N_EXIT
+; Reserve and initialize the 36-page VIC surface once (as the desktop does),
+; present it, run one alert to completion, then return to the text screens.
+; Key $ff stands for "pointer moved/clicked": this example has no pointer
+; driver, so the host sets ae_pointer_* and sends $ff (example-only input).
+demo_alert_run:
+        lda demo_active
+        bne +
+        lda #N_BADHANDLE
+        sec
+        rts
++       lda ae_surface
+        bne demo_alert_show
+        lda N_CURRENT
+        sta N_OWNER
+        lda #0
+        sta N_BANK
+        lda #$c0
+        sta N_PAGE
+        lda #36
+        sta N_PAGES
+        jsr N_RESERVE
+        bcs demo_alert_done
+        ldx #3
+-       lda N_HANDLE,x
+        sta ae_surface,x
+        dex
+        bpl -
+        lda #0
+        sta N_OFFSET
+        sta N_OFFSET+1
+        sta N_COUNT
+        lda #2
+        sta N_COUNT+1
+-       lda #0
+        ldx N_OFFSET+1
+        cpx #$20
+        bcc +
+        lda #$16
++       sta N_VALUE
+        jsr N_FILL
+        bcs demo_alert_done
+        inc N_OFFSET+1
+        inc N_OFFSET+1
+        lda N_OFFSET+1
+        cmp #$24
+        bne -
+demo_alert_show:
+        lda N_CURRENT
+        sta N_OWNER
+        ldx #3
+-       lda ae_surface,x
+        sta N_HANDLE,x
+        dex
+        bpl -
+        jsr N_VSHOW
+        bcs demo_alert_done
+        lda #<demo_alert
+        ldx #>demo_alert
+        ldy #2                ; Cancel is the default
+        jsr ae_alert_open
+        bcs demo_alert_hide
+demo_alert_loop:
+        lda #1
+        sta N_READY
+        jsr N_KEYIN
+        beq demo_alert_loop
+        ldx #0
+        stx N_READY
+        cmp #$ff
+        bne +
+        lda #0
++       jsr ae_alert_step
+        bcs demo_alert_hide
+        lda N_BUFFER
+        beq demo_alert_loop
+        sta demo_choice
+        jsr N_VCLOSE
+        lda #0
+        clc
+demo_alert_done:
+        rts
+demo_alert_hide:
+        pha
+        jsr N_VCLOSE
+        pla
+        sec
+        rts
 demo_reply:
         ldx #12
 -       lda N_BUFFER,x
@@ -209,6 +303,11 @@ demo_draw_screen:
         jsr demo_puts
         lda demo_loaded
         jsr demo_hex
+        lda #<demo_choice_text
+        ldx #>demo_choice_text
+        jsr demo_puts
+        lda demo_choice
+        jsr demo_hex
         lda #<demo_error_text
         ldx #>demo_error_text
         jsr demo_puts
@@ -254,6 +353,9 @@ demo_loaded: .byte 0
 demo_error: .byte 0
 demo_screen: .byte 0
 demo_status: .fill 13,0
+demo_choice: .byte 0
+demo_choice_text: .text 13,"alert choice (hex): $",0
+demo_alert: .byte 91,51,93,91,68,101,108,101,116,101,32,78,79,84,69,83,46,84,88,84,63,124,84,104,105,115,32,99,97,110,110,111,116,32,98,101,32,117,110,100,111,110,101,46,93,91,68,101,108,101,116,101,124,67,97,110,99,101,108,93,0
 demo_name: .text "aesvc.prg"
 demo_digits: .text "0123456789abcdef"
 demo_title: .text "aes demo",13,"version (hex): $",0
@@ -263,7 +365,8 @@ demo_loaded_text: .text 13,"loaded here (hex): $",0
 demo_error_text: .text 13,"last error (hex): $",0
 demo_help: .text 13,13,"return: aes status",13
            .text "esc: exit, aes stays resident",13
-           .text "u: unload aes and exit",13,0
+           .text "u: unload aes and exit",13
+           .text "a: aes alert over the vic surface",13,0
 .include "aes-client.inc"
 app_end:
 .cerror app_end > N_APPLIMIT, "example parent exceeds its slot"

@@ -4,6 +4,9 @@
 .include "api.inc"
 .include "aes-api.inc"
 BK_BASE = AE_BASE
+gfx_heap_read = aes_heap_read  ; the graphics library calls back to bank 0
+gfx_heap_write = aes_heap_write
+gfx_heap_fill = aes_heap_fill
 * = BK_BASE
 aes_image:
         .text "nbk1"
@@ -19,7 +22,7 @@ aes_image:
 aes_identity:                 ; image offset 32, checked by bk_attach
         .text "naes"
         .byte AE_MAJOR,AE_MINOR
-        .byte 0               ; capability bits: none yet
+        .byte AE_CAP_ALERT    ; capability bits
         .byte 0
         .cerror aes_identity-aes_image != 32, "AES identity must be at offset 32"
 
@@ -27,7 +30,13 @@ aes_identity:                 ; image offset 32, checked by bk_attach
 aes_entry:
         cmp #AE_OP_COUNT
         bcs aes_badarg
-        cmp #AE_OP_ATTACH
+        cmp #AE_OP_ALERT
+        bne +
+        jmp al_open
++       cmp #AE_OP_STEP
+        bne +
+        jmp al_step
++       cmp #AE_OP_ATTACH
         bne aes_reply
         ldx #3
 -       lda N_BUFFER,x        ; a different cookie means a different app
@@ -46,7 +55,8 @@ aes_new_app:
         inc aes_apps
         bne +
         inc aes_apps+1
-+       lda #1                ; later steps discard per-app windows/menus here
++       jsr al_discard        ; the previous app's surface is gone
+        lda #1
 aes_count:
         sta aes_changed
         inc aes_attaches
@@ -69,11 +79,23 @@ aes_badarg:
         rts
 
 aes_state:
-        .byte AE_MAJOR,AE_MINOR,0,0
+        .byte AE_MAJOR,AE_MINOR,AE_CAP_ALERT,0
 aes_attaches: .word 0
 aes_apps: .word 0
 aes_changed: .byte 0
 aes_app: .fill 4,0
+aes_heap_read:
+        lda #2
+        jmp bk_native
+aes_heap_write:
+        lda #3
+        jmp bk_native
+aes_heap_fill:
+        lda #4
+        jmp bk_native
 .include "banked-client.inc"
+.include "aes-alert.inc"
+.include "graphics/graphics-core.inc"
+.include "graphics/text-core.inc"
 aes_end:
 .cerror aes_end > AE_LIMIT, "AES exceeds its bank-1 region"

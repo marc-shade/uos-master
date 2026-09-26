@@ -1,9 +1,9 @@
 # Native AES component
 
-The AES is the shared service behind the [GEM layer](GEM-LAYER-DESIGN.md):
-alerts, events, menus, windows and desk accessories will be added to it in
-later steps. This page covers what exists now (step 1): a persistent bank-1
-component that apps load once and later apps attach to.
+The AES is the shared service behind the [GEM layer](GEM-LAYER-DESIGN.md).
+It now provides a persistent bank-1 component that apps load once and later
+apps attach to (step 1) and GEM-style alert boxes (step 2, AES minor 1).
+Events, menus, windows and desk accessories are later steps.
 
 ## What persists
 
@@ -11,7 +11,8 @@ component that apps load once and later apps attach to.
 by owner 30 (`N_AESOWNER`). App cleanup releases only owner 32, so the image
 and its state stay resident after `N_EXIT`. The next app attaches to the same
 bytes instead of loading them again. `ae_unload` frees the image and returns
-its pages. The current component is one page.
+its pages. With alerts and the shared graphics library the component is
+22 pages (5,566 bytes).
 
 The component's identity block sits at image offset 32: `NAES`, major and
 minor version, capability bits. The AES version is independent of the kernel
@@ -38,6 +39,50 @@ capabilities, 0, attach count (word), distinct app count (word), a byte that
 is 1 when this attach changed the foreground app, and the current cookie.
 `AE_OP_STATUS` (1) returns the same reply without registering.
 
+## Alerts
+
+`ae_alert_open` shows a GEM `form_alert` over the app's VIC surface: set
+`ae_surface` to the surface handle, pass the string address in A/X and the
+default button (0–3) in Y. The string is ASCII:
+`[icon][line|line][button|button]`. Icon 0 is none, 1 note (!), 2 question,
+3 stop. Up to 5 lines of 30 characters and 1–3 buttons of 1–10 characters are
+accepted, and the alert must fit 250 cells (38 columns wide at most).
+Anything else is refused with `N_BADARG` before the surface changes.
+
+The alert is centred on the 40×25 cell grid:
+- one-cell margin, the icon in a 2×2-cell area plus a gap column;
+- the text lines, a blank row, and a two-row button bar;
+- buttons are label+2 cells wide, one cell apart and centred;
+- blue ink on white paper with a double frame;
+- the default button has a second frame line, and the focused button uses
+  the suite's yellow focus colour.
+
+Call `ae_alert_step` for each input: A is the key (0 for none), and the
+pointer is in `ae_pointer_x` (word), `ae_pointer_y` and `ae_pointer_buttons`
+(bit 0). Keys:
+
+| Key | Effect |
+|---|---|
+| Tab, cursor right | Move focus right, wrapping |
+| Cursor left | Move focus left, wrapping |
+| Return | Choose the focused button |
+| Escape | Choose the last button |
+| 1–3 | Choose that button |
+
+A press over a button focuses it. Releasing over the same button chooses it;
+releasing elsewhere does nothing.
+
+Both calls reply in `N_BUFFER`: the chosen button (0 while open), the focused
+button, and four bytes of dirty cell rows (bit `r&7` of byte `r>>3`) for an
+app that mirrors the surface to the VDC.
+
+Opening saves the covered bitmap and colour bytes into an owner-30
+allocation. Choosing a button writes them back exactly and frees it; a failed
+restore keeps the alert open for another step. One alert may be open at a
+time. When a different app attaches, an open alert's buffer is freed without
+restoring, because the old surface no longer exists. The input loop stays in
+the app because bank-1 code cannot call `N_KEYIN`.
+
 ## Validation on attach
 
 Attach finds the single owner-30 allocation at bank 1 page `$90` in the
@@ -60,6 +105,14 @@ exit leaving the AES resident (Esc) and unload (U).
 ```sh
 ~/.venvs/uos-tests/bin/python -B tests/ci_native_aes.py --report /tmp/aes.json
 ```
+
+The demo's A key shows `[3][Delete NOTES.TXT?|This cannot be undone.]
+[Delete|Cancel]` over a fresh surface. The test renders every expected alert
+frame independently (`tests/native_aes_scene.py`) and compares complete
+surfaces. It covers focus movement with row masks, every choosing key,
+pointer press/release, exact restoration of arbitrary pixels and colours,
+and refusal of malformed or oversized strings. Planted bugs in the paper
+colour, button spacing and restore path each fail it.
 
 The test runs several apps in one machine and checks:
 - the first app loads the component, which survives its exit;

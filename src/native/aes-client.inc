@@ -57,3 +57,46 @@ ae_register:
         lda #AE_OP_ATTACH
         jmp aes.bk_call
 ae_stream_taken: .byte 0
+
+; Alerts (AES minor 1). Set ae_surface to the app's VIC surface handle.
+; ae_alert_open: A/X = NUL-terminated ASCII "[icon][l1|l2][b1|b2]", Y = default
+; button (0..3). ae_alert_step: A = key (0 none); pointer in ae_pointer_x/y and
+; ae_pointer_buttons. Both reply in N_BUFFER: chosen (0 while open), focus,
+; four dirty-row bytes to merge into a VDC mirror.
+ae_alert_open:
+        sta ae_alert_read+1
+        stx ae_alert_read+2
+        sty N_BUFFER+4
+        ldx #3
+-       lda ae_surface,x
+        sta N_BUFFER,x
+        dex
+        bpl -
+        ldy #0
+ae_alert_read:
+        lda $ffff,y
+        sta N_BUFFER+5,y
+        beq +
+        iny
+        bne ae_alert_read
+        lda #N_BADARG           ; no terminator within 255 bytes
+        sec
+        rts
++       lda #AE_OP_ALERT
+        jmp ae_call
+ae_alert_step:
+        sta N_BUFFER
+        lda ae_pointer_x
+        sta N_BUFFER+1
+        lda ae_pointer_x+1
+        sta N_BUFFER+2
+        lda ae_pointer_y
+        sta N_BUFFER+3
+        lda ae_pointer_buttons
+        sta N_BUFFER+4
+        lda #AE_OP_STEP
+        jmp ae_call
+ae_surface: .fill 4,0
+ae_pointer_x: .word 0
+ae_pointer_y: .byte 0
+ae_pointer_buttons: .byte 0
