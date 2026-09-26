@@ -49,7 +49,7 @@ def build():
     native.build(out=OUT, desktop_boot=True)
     claude = module('claude_builder', ROOT/'build-native-claude.py').build(OUT)
     sheet = module('sheet_builder', ROOT/'build-native-sheet.py').build(OUT)
-    for name in ('desktop', 'files', 'controls', 'paint', 'gemdesk'):
+    for name in ('desktop', 'files', 'controls', 'paint', 'gemdesk', 'vt52'):
         subprocess.run(['64tass', '-a', '-B', str(ROOT/f'src/native/{name}.asm'),
                         '-o', str(OUT/f'{name}.prg'), '-l', str(OUT/f'{name}.sym'),
                         '-L', str(OUT/f'{name}.lst')], check=True)
@@ -85,7 +85,7 @@ def build():
     aes_image = native_banked.seal((OUT/'aesvc.prg').read_bytes(), base=0x8800)
     (OUT/'aesvc.prg').write_bytes(aes_image)
     aes_component = native_banked.validate(aes_image, base=0x8800)
-    for name in ('desktop','calc','editor','files','controls','claude','paint','sheet','gemdesk'):
+    for name in ('desktop','calc','editor','files','controls','claude','paint','sheet','gemdesk','vt52'):
         path = OUT/f'{name}.prg'
         runtime_end = {'claude':claude['runtime_end'], 'sheet':sheet['runtime_end']}.get(name)
         packed = pack_app(path.read_bytes(), runtime_end=runtime_end,
@@ -136,7 +136,8 @@ def build():
     subprocess.run(['c1541', '-attach', str(gem), '-delete', 'browse',
                     '-write', str(OUT/'gemdesk.prg'), 'browse',
                     '-write', str(OUT/'desktop.prg'), 'cards',
-                    '-write', str(OUT/'aesvc.prg'), 'aesvc.prg'], check=True, capture_output=True)
+                    '-write', str(OUT/'aesvc.prg'), 'aesvc.prg',
+                    '-write', str(OUT/'vt52.prg'), 'vt52'], check=True, capture_output=True)
     images = {p.relative_to(OUT).as_posix(): dict(bytes=p.stat().st_size, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
               for p in sorted(OUT.rglob('*')) if p.suffix in ('.prg', '.d64', '.d81')}
     (OUT/'images.json').write_text(json.dumps(images, indent=2)+'\n')
@@ -157,7 +158,8 @@ def build():
                       sheet=validate((OUT/'sheet.prg').read_bytes()),
                       gem=dict(disk='gem.d81', browse='gemdesk.prg', cards='desktop.prg',
                                aesvc=aes_component,
-                               gemdesk=validate((OUT/'gemdesk.prg').read_bytes())),
+                               gemdesk=validate((OUT/'gemdesk.prg').read_bytes()),
+                               vt52=validate((OUT/'vt52.prg').read_bytes())),
                       surface_pages=36, vdc_component=vdc_component, packed_apps=packing,
                       free_pages_at_desktop={str(kib):426-36-pages-vdc_component['pages']-validate((OUT/'desktop.prg').read_bytes())['pages']
                                              for kib,pages in ((16,64),(64,72))},

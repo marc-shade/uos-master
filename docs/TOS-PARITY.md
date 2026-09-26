@@ -31,22 +31,22 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | TOS feature | Status | uOS evidence / missing piece |
 |---|---|---|
 | Drive icons on the desktop | Partial | [GEMDESK](GEM-DESKTOP.md) shows boot-drive and drive-9 icons (GEM profile disk); no Ultimate icon yet |
-| Trash can (drag to delete) | Partial | GEMDESK shows a Trash icon; dragging to it is not built yet (Files has Ultimate delete) |
+| Trash can (drag to delete) | Partial | GEMDESK: drop an IEC listing row on Trash, confirm, scratch ([record](validation/2026-09-26-gemdesk-files/README.md)); no drag outline, no Ultimate windows yet |
 | Open drive/folder in a window | Partial | GEMDESK opens IEC drives in scrolling listing windows; Ultimate folders not yet |
-| Several directory windows at once | Partial | GEMDESK allows four (only one exercised by tests) |
+| Several directory windows at once | Have | GEMDESK: four windows on drives 8 and 9, topping, a fifth refused ([record](validation/2026-09-26-gemdesk-files/README.md)) |
 | Icon view / text view | Partial | Text list only |
-| Sort by name, date, size, type | Missing | |
+| Sort by name, date, size, type | Partial | GEMDESK View: name, type, size (largest first), unsorted ([record](validation/2026-09-26-gemdesk-files/README.md)); IEC has no dates |
 | Drag-and-drop copy and move | Partial | Button copy with verified comparison, progress and cancel (`src/native/files-copy.inc`); no drag, no move |
 | Rubber-band and multiple selection | Missing | |
-| Show Info (size, date, rename, read-only) | Partial | Name/type/blocks and a byte viewer; no rename, date or attribute |
+| Show Info (size, date, rename, read-only) | Partial | GEMDESK Show Info dialog: editable name (renames on IEC), type, blocks, read-only; drive icons: files and blocks used ([record](validation/2026-09-26-gemdesk-files/README.md)); no date, free space, or changing read-only |
 | New Folder | Partial | Ultimate paths ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); IEC has no directories |
-| Delete file / folder | Partial | Ultimate Ctrl-D with a checked result ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); IEC scratch, trash and delete confirmation open |
-| Rename file | Partial | Ultimate Ctrl-R, also folders, checked with `FILE_STAT`; IEC rename open |
+| Delete file / folder | Partial | IEC: GEMDESK Delete/Trash with confirmation and the drive's scratch count checked ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-D ([NATIVE-FOLDERS](NATIVE-FOLDERS.md)); GEMDESK has no Ultimate windows yet |
+| Rename file | Partial | IEC: GEMDESK Show Info sends `R0:NEW=OLD` and reports the drive's refusal ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate: Files Ctrl-R, also folders, checked with `FILE_STAT` |
 | Format disk | Missing | |
 | Disk copy (drive onto drive) | Missing | |
 | Install Application (document type → app) | Partial | Fixed `.TXT/.SEQ` → Editor and UPNT → Paint (`src/native/files/open-with.inc`) |
 | Install Icon | Missing | |
-| Set Preferences (confirm delete/copy/overwrite) | Missing | Overwrite is always refused |
+| Set Preferences (confirm delete/copy/overwrite) | Partial | GEMDESK Preferences: confirm deletes, sort order ([record](validation/2026-09-26-gemdesk-files/README.md)); not saved across restarts; no copy in GEMDESK; overwrite is always refused |
 | Save Desktop (DESKTOP.INF) | Missing | Only the selected card survives an app return |
 | Show File (view/print) | Partial | Byte viewer and Editor open; no print |
 | Print Screen | Missing | No printer service |
@@ -61,8 +61,8 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 | File selector (`fsel_input`) | Have | Shared IEC/Ultimate picker ([NATIVE-PICKER-GUI](NATIVE-PICKER-GUI.md)) |
 | Clipboard / scrap (`scrp_*`) | Partial | Session text clipboard ([NATIVE-CLIPBOARD](NATIVE-CLIPBOARD.md)); no image scraps |
 | Alert boxes (`form_alert`) | Partial | Shared [AES alert](NATIVE-AES.md#alerts) with icons, 1–3 buttons, keyboard/pointer and exact restoration, CPU-qualified; suite apps still use their own confirm scenes |
-| Dialogs (`form_do`) | Partial | Shared editable fields ([NATIVE-FIELDS](NATIVE-FIELDS.md)); no radio buttons or checkboxes |
-| Object trees / resource files | Missing | Controls are coded per app |
+| Dialogs (`form_do`) | Partial | [Forms](NATIVE-FORMS.md): text, default/cancel/exit buttons, checkboxes, radio groups, `N_FEDIT` fields, keyboard and pointer, exact save-under ([record](validation/2026-09-26-gemdesk-files/README.md)); used by GEMDESK only; no VDC mirror |
+| Object trees / resource files | Partial | Forms are flat object lists in app memory ([NATIVE-FORMS](NATIVE-FORMS.md)); no nesting, no resource files or editor |
 | Menu bar with drop-downs, checks, disabled items | Partial | [AES menu bar](NATIVE-AES.md#menus) with shortcuts, keyboard and pointer, CPU-qualified; no suite app uses it yet |
 | Event library (`evnt_multi`: key, button, rectangle, message, timer) | Partial | [AES event wait](NATIVE-AES.md#events) with all five sources, click counting and GEM state rules, CPU-qualified; suite apps still poll directly |
 | Application messages (`appl_write/read`) | Partial | AES 16-message queue; one foreground app, so messages come from itself or future accessories |
@@ -76,7 +76,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 |---|---|---|
 | Accessories usable while another app runs | Missing | Single foreground app; the persistent [AES component](NATIVE-AES.md) that will host them now survives app changes |
 | Control Panel (key repeat, double-click, colors, clock, click/bell) | Partial | Ultimate app sets the clock and drives; no input/sound/color settings |
-| VT52 terminal | Missing | Claude client uses its own protocol |
+| VT52 terminal | Partial | [VT52 app](NATIVE-VT52.md): Atari VT52 sequences on the 80-column VDC over the SwiftLink ACIA ([record](validation/2026-09-26-vt52/README.md)); a foreground app, not yet an accessory; CPU-level only |
 | Install Printer | Missing | |
 | RS-232 configuration | Missing | SwiftLink used only inside Claude |
 | XControl / CPX modules | Missing | |
@@ -87,7 +87,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 |---|---|---|
 | Open/create/read/write/close | Have | `N_FOPEN`..`N_FCLOSE` ([NATIVE-FILES](NATIVE-FILES.md)) |
 | Seek, append, replace | Missing | |
-| Delete, rename | Partial | Ultimate `DELETE_FILE`/`RENAME_FILE` in Files; no app-level service or IEC path |
+| Delete, rename | Partial | IEC: app library [dos-command.inc](NATIVE-DOS-COMMANDS.md), scratch and rename used by GEMDESK and tested ([record](validation/2026-09-26-gemdesk-files/README.md)); Ultimate `DELETE_FILE`/`RENAME_FILE` in Files; no kernel entry point |
 | Attributes, date/time stamps | Missing | |
 | Directory search (`Fsfirst/Fsnext`, wildcards) | Partial | Directory pages and substring search; no wildcards |
 | Folders: create, delete, current path | Partial | Ultimate create and paths; no delete |
@@ -124,7 +124,7 @@ Status: **Have**, **Partial** (named piece missing), **Missing**, or
 
 | TOS feature | Status | uOS evidence / missing piece |
 |---|---|---|
-| Text console for text programs (VT52) | Missing | |
+| Text console for text programs (VT52) | Missing | The [VT52 app](NATIVE-VT52.md) interprets VT52 from a serial host; local programs have no VT52 console service yet |
 | System fonts in several sizes | Partial | 8×8 and 5-pixel fonts; no font service |
 | AUTO folder programs at boot | Missing | |
 | Accessories loaded at boot | Missing | |
