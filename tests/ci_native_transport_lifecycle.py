@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """A failed focused capture must restore and clean up before its error returns."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -81,6 +82,10 @@ def raw_read(probe,path,wanted,work,label):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--report',type=Path,required=True)
     args=parser.parse_args();result=dict(passed=False,physical_hardware_io=False,cases=[])
+    # The hardware script pins the images it was qualified with; this offline
+    # lifecycle check exercises the current build's images instead.
+    images={name:hashlib.sha256((ROOT/'target/native-desktop'/f).read_bytes()).hexdigest()
+            for name,f in (('disk','uos128.d64'),('kernel','uos128.prg'))}
     for fault in (None,'workflow','restore','readback'):
         with tempfile.TemporaryDirectory(prefix='uos-transport-lifecycle-') as temporary:
             work=Path(temporary);ult=Device(fault)
@@ -96,7 +101,7 @@ def main():
                  patch.object(lifecycle,'raw_read',raw_read), \
                  patch.object(lifecycle,'quiet_boot',lambda _:None), \
                  patch.object(lifecycle.ci,'wait_desktop_live',lambda *args:True):
-                try:lifecycle.run(ult,workflow=workflow,cleanup_after_failure=True)
+                try:lifecycle.run(ult,workflow=workflow,cleanup_after_failure=True,expected_images=images)
                 except (RuntimeError,AssertionError) as error:
                     assert fault is not None
                     message=str(error)
