@@ -66,6 +66,12 @@ PRIMARY = ('case', 'group', 'app')
 # address decoding can never exceed the chip's RAM (64 KiB addressing on a
 # 16 KiB 8563 is not a real configuration and is not qualified anywhere).
 PAIRED = {'addressing': lambda value: {'size': value}}
+# Case preconditions the suites assert (configurations the project qualified).
+REQUIRES = {
+    ('ci_native_editor_history', 'case', 'large'): {'vdc_kib': '64', 'reu_kib': '512'},
+    ('ci_native_editor_selection', 'case', 'display'): {'vdc_kib': '64'},
+    ('ci_native_open_with', 'reu_kib', '512'): {'vdc_kib': '64'},
+}
 SHRINKING = {'quick', 'host_only', 'recovery_only', 'boot_frame_only', 'cpu_observation'}
 
 
@@ -149,7 +155,7 @@ def cpu_jobs(name, parser):
         if 'all' in values and len(values) > 1:
             values = [v for v in values if v != 'all']          # split for parallelism
         for value in values:
-            jobs.append(args_for({primary.dest: value}))
+            jobs.append(args_for({primary.dest: value, **REQUIRES.get((name, primary.dest, value), {})}))
     else:
         jobs.append(args_for({}))
     first = {primary.dest: jobs[0][jobs[0].index(option(primary))+1]} if primary else {}
@@ -157,7 +163,8 @@ def cpu_jobs(name, parser):
         base = base_value(action)
         for value in (str(c) for c in action.choices):
             if value != base and value != 'all':
-                jobs.append(args_for({**first, action.dest: value, **PAIRED.get(action.dest, lambda v: {})(value)}))
+                jobs.append(args_for({**first, action.dest: value, **PAIRED.get(action.dest, lambda v: {})(value),
+                                      **REQUIRES.get((name, action.dest, value), {})}))
     for action in flags:
         jobs.append(args_for(first) + [option(action)])
     return [(name, job, report) for job in jobs]
