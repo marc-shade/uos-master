@@ -111,6 +111,7 @@ ae_alert_step:
 ; (16 messages) is full.
         .weak
 AE_POINTER = 0
+AE_MIRROR = 0                   ; 1: the app supplies ae_present (a VDC mirror)
         .endweak
 ae_event:
         lda #1                  ; the first sample is taken at the call itself:
@@ -118,34 +119,27 @@ ae_event:
         lda #0
         sta ae_ev_key
         beq ae_event_sample
-ae_event_wait:
-        lda #1
-        sta N_READY
-        jsr N_KEYIN
-        ldx #0
-        stx N_READY
-        sta ae_ev_key
+ae_event_next:
+        jsr ae_event_wait
 .if AE_POINTER
         jsr ae_key_mouse
 .fi
 ae_event_sample:
 .if AE_POINTER
-        jsr pm_poll
-        lda pm_x
-        sta ae_pointer_x
-        lda pm_x+1
-        sta ae_pointer_x+1
-        lda pm_y
-        sta ae_pointer_y
-        lda pm_buttons          ; the 1351 module reports the left button
-        beq +                   ; as $10; the AES expects bit 0
-        lda #1
-+       ldx ae_km_click         ; a keyboard click: pressed for one sample
+        jsr ae_read_pointer
+        ldx ae_km_click         ; a keyboard click: pressed for one sample
         beq +
         dec ae_km_click
         beq +
         lda #1
-+       sta ae_pointer_buttons
+        sta ae_pointer_buttons
++
+.else
+        ldx #3                  ; what the idle wait compares against
+-       lda ae_pointer_x,x
+        sta ae_ev_seen,x
+        dex
+        bpl -
 .fi
         ldx #15
 -       lda ae_ev_params,x
@@ -185,7 +179,19 @@ ae_event_sample:
         dex
         bpl -
         lda N_BUFFER
-        beq ae_event_wait
+.if AE_MIRROR
+        bne ae_event_fired
+        lda N_BUFFER+15         ; nothing fired, but a menu redrew rows: the app
+        ora N_BUFFER+16         ; presents them (N_BUFFER is free again here)
+        ora N_BUFFER+17
+        ora N_BUFFER+18
+        beq +
+        jsr ae_present
++       jmp ae_event_next
+ae_event_fired:
+.else
+        beq ae_event_next
+.fi
         ldx #18
 -       lda N_BUFFER,x
         sta ae_ev_result,x
@@ -195,6 +201,64 @@ ae_event_sample:
         clc
 ae_event_done:
         rts
+; The input wait between samples, also for an app's own alert loop: N_READY
+; stays published until something can have changed, a key, a jiffy tick, a
+; keyboard click still counting, a completed 1351 read (AE_POINTER=1) or the
+; app's ae_pointer_* fields (AE_POINTER=0). A = ae_ev_key = the key or 0.
+; Each sample is a banked call; a loop that sampled on every pass was at its
+; input wait 2% of the time on the C128 (hw_native_gem_check --sample-ready).
+ae_event_wait:
+        lda #1
+        sta N_READY
+        jsr N_KEYIN
+        ldx #0
+        stx N_READY
+        sta ae_ev_key
+        tax
+        bne ae_wait_done
+.if AE_POINTER
+        lda ae_km_click
+        bne ae_wait_done
+        lda pm_pending          ; the 1351 read starts in raster lines 80..159
+        pha                     ; and completes 32 lines later: drive it here,
+        jsr pm_poll             ; return when a read has just completed
+        pla
+        beq +
+        lda pm_pending
+        beq ae_wait_done
++
+.else
+        ldx #3
+-       lda ae_pointer_x,x
+        cmp ae_ev_seen,x
+        bne ae_wait_done
+        dex
+        bpl -
+.fi
+        lda $a2                 ; the jiffy clock's low byte
+        cmp ae_ev_tick
+        beq ae_event_wait
+ae_wait_done:
+        lda $a2
+        sta ae_ev_tick
+        lda ae_ev_key
+        rts
+.if AE_POINTER
+; ae_pointer_* from the 1351 module (also for an app's own alert loop).
+ae_read_pointer:
+        jsr pm_poll
+        lda pm_x
+        sta ae_pointer_x
+        lda pm_x+1
+        sta ae_pointer_x+1
+        lda pm_y
+        sta ae_pointer_y
+        lda pm_buttons          ; the 1351 module reports the left button
+        beq +                   ; as $10; the AES expects bit 0
+        lda #1
++       sta ae_pointer_buttons
+        rts
+.fi
 .if AE_POINTER
 ; Keyboard mouse (TOS: Alt+cursor): with ALT or C= held, the cursor keys move
 ; the pointer 8 pixels and Return clicks; the key itself is not delivered.
@@ -347,6 +411,10 @@ ae_ev_params: .fill 16,0
 ae_ev_result: .fill 19,0
 ae_ev_key: .byte 0
 ae_ev_first: .byte 0
+ae_ev_tick: .byte 0             ; the jiffy low byte when the wait last returned
+.if !AE_POINTER
+ae_ev_seen: .fill 4,0           ; ae_pointer_x/y/buttons of the last sample
+.fi
 ae_surface: .fill 4,0
 ae_pointer_x: .word 0
 ae_pointer_y: .byte 0

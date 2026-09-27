@@ -66,11 +66,13 @@ class HeldCapture:
         while not predicate():
             assert time.monotonic() < deadline, label
 
-    def capture(self, label, *, bank=0, address=0, count=2000):
-        assert bank in (0, 1) and 1 <= count and address+count <= 65536
-        if bank == 0:
+    def capture(self, label, *, bank=0, address=0, count=2000, mode=0):
+        """mode 0: RAM of bank 0/1; mode 1: VDC memory (retried until the
+        foreground is idle at its input wait)."""
+        assert bank in (0, 1) and mode in (0, 1) and 1 <= count and address+count <= 65536
+        if bank == 0 and mode == 0:
             assert address+count <= 0x3a00 or address >= 0x4000, 'source overlaps the borrowed pages'
-        record = dict(label=label, bank=bank, address=address, count=count, chunks=[], restored=False,
+        record = dict(label=label, bank=bank, mode=mode, address=address, count=count, chunks=[], restored=False, busy=0,
                       probe_sha256=hashlib.sha256(self.prg).hexdigest())
         self.records.append(record)
         result = bytearray()
@@ -78,14 +80,24 @@ class HeldCapture:
             size = min(512, count-offset)
             assert self.read(0x1c13, 6) == b'UOS128' and self.read(0x3d91) == b'\0' and self.read(0xd0) == b'\0', \
                 'native kernel running, file service idle, no keys pending'
-            scratch = self.read(0x3e00, 512)
-            oldirq = self.read(0x314, 2); assert oldirq != b'\0\x3e'
-            self.mon.write_mem(0x3e00, self.prg[2:])
             source = address+offset
-            self.mon.write_mem(0x3ff0, oldirq+bytes([0, 0, bank])+source.to_bytes(2, 'little')
-                               + size.to_bytes(2, 'little')+bytes(7))
-            self.mon.write_mem(0x314, b'\0\x3e')
-            self.until(lambda: self.read(0x3ffe) == b'\1', f'{label}: probe held')
+            for attempt in range(200):
+                scratch = self.read(0x3e00, 512)
+                oldirq = self.read(0x314, 2); assert oldirq != b'\0\x3e'
+                self.mon.write_mem(0x3e00, self.prg[2:])
+                self.mon.write_mem(0x3ff0, oldirq+bytes([0, mode, bank])+source.to_bytes(2, 'little')
+                                   + size.to_bytes(2, 'little')+bytes(7))
+                self.mon.write_mem(0x314, b'\0\x3e')
+                self.until(lambda: self.read(0x3ffe) == b'\1' or self.read(0x3ff2) == b'\5', f'{label}: probe held')
+                if self.read(0x3ffe) == b'\1':
+                    break
+                record['busy'] += 1          # VDC: the foreground was not idle; nothing was touched
+                self.until(lambda: self.read(0x314, 2) == oldirq, f'{label}: busy probe returned')
+                time.sleep(0.05)
+                self.mon.write_mem(0x3e00, scratch)
+                assert self.read(0x3e00, 512) == scratch
+            else:
+                raise AssertionError((label, 'the foreground was never idle for a VDC capture'))
             saved = self.read(0x3a00, size)
             self.mon.write_mem(0x3ffe, b'\2')
             self.until(lambda: self.read(0x3ff2) != b'\0', f'{label}: copy')
@@ -131,13 +143,23 @@ def main():
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--mouse', action='store_true',
                         help='interactive: a person moves and clicks the 1351 while this observes')
+    parser.add_argument('--mirror', action='store_true',
+                        help='check the 80-column mirror byte for byte (desktop, window, menu, alert)')
+    parser.add_argument('--show', type=int, metavar='SECONDS',
+                        help='boot and leave GEMDESK running this long for a person to look, then restore')
+    parser.add_argument('--image', type=Path, help='gem.d81 to boot instead of the committed target (hash recorded)')
+    parser.add_argument('--sample-ready', type=int, metavar='N',
+                        help='diagnostic: after boot, sample N_READY ($3d12) N times over DMA and record its duty cycle')
     args = parser.parse_args()
     work = Path(tempfile.mkdtemp(prefix='uos-hardware-gem-'))
     print('GEM hardware evidence:', work, flush=True)
     disk = work/'gem.d81'
-    shutil.copyfile(IMAGES/'gem.d81', disk)
+    shutil.copyfile(args.image or IMAGES/'gem.d81', disk)
     images = json.loads((IMAGES/'images.json').read_text())
-    assert hashlib.sha256(disk.read_bytes()).hexdigest() == images['gem.d81']['sha256'], 'gem.d81 differs from images.json'
+    if args.image is None:
+        assert hashlib.sha256(disk.read_bytes()).hexdigest() == images['gem.d81']['sha256'], 'gem.d81 differs from images.json'
+    else:
+        images['gem.d81']['sha256'] = hashlib.sha256(disk.read_bytes()).hexdigest()
     for name, data in (('note,s', NOTE), ('picture,s', paint_encode(PICTURE))):
         (work/'doc.bin').write_bytes(data)
         subprocess.run(['c1541', '-attach', str(disk), '-write', str(work/'doc.bin'), name], check=True, capture_output=True)
@@ -177,7 +199,31 @@ def main():
         ult.reset()
         print('Boot: 60 seconds without RAM DMA while the kernel and GEMDESK load', flush=True)
         time.sleep(60)
-        (mouse_workflow if args.mouse else run_workflow)(mon, work, entries, report, save)
+        if args.sample_ready:
+            def peek(address, count=1): return bytes(mon.read_mem(address, address+count-1))
+            gemdesk = (IMAGES/'gemdesk.prg').read_bytes()[2:34]
+            started, polls = time.monotonic(), 0
+            while not (peek(0x1c13, 6) == b'UOS128' and peek(0x3d60, 32) == gemdesk and peek(0x3d12) == b'\1'):
+                polls += 1
+                assert time.monotonic()-started < 300, 'GEMDESK never published N_READY within 300 s'
+                time.sleep(0.1)
+            first_ready = round(time.monotonic()-started+60, 1)
+            samples = []
+            sampling = time.monotonic()
+            for _ in range(args.sample_ready):
+                samples.append(peek(0x3d12)[0])
+                time.sleep(0.02)
+            report['ready_samples'] = dict(count=len(samples), ready=samples.count(1),
+                                           values=sorted(set(samples)), sequence=bytes(samples).hex(),
+                                           first_ready_after_reset_s=first_ready, polls_before_ready=polls,
+                                           sampling_seconds=round(time.monotonic()-sampling, 1))
+            print('N_READY duty:', samples.count(1), '/', len(samples), flush=True)
+        elif args.show:
+            show_workflow(mon, args.show, report, save)
+        elif args.mirror:
+            mirror_workflow(mon, work, entries, report, save)
+        else:
+            (mouse_workflow if args.mouse else run_workflow)(mon, work, entries, report, save)
         report['workflow_passed'] = True; save()
     except BaseException as caught:
         error = caught
@@ -332,6 +378,95 @@ def run_workflow(mon, work, entries, report, save):
           surface_sha256=settled(want, 'paint'))
     assert all(item.get('restored') for item in capture.records), 'every capture restored its borrowed RAM'
 
+
+
+def mirror_workflow(mon, work, entries, report, save):
+    """The VDC must hold the VIC surface as native_vdc_mirror renders it: the
+    VIC surface and the whole VDC bitmap (and colours on a 64 KiB VDC) are read
+    through the held capture and compared."""
+    from native_vdc_mirror import bitmap, attributes
+    capture = HeldCapture(mon, work)
+    report['captures'] = capture.records
+
+    def read(address, count=1):
+        return bytes(mon.read_mem(address, address+count-1))
+
+    def ready(): return read(0x3d12) == b'\1' and read(0xd0, 2) == bytes(2)
+
+    def value(name, n=1):
+        return capture.capture(f'gd-{name}', address=lst_symbol('native-desktop/gemdesk', name), count=n)
+
+    def check(name, **extra):
+        report['checks'].append(dict(name=name, **extra)); save()
+        print('PASS:', name, flush=True)
+
+    def key(value, quiet=4):
+        wait(ready, 'native input ready', 300)
+        previous = int.from_bytes(read(0x3d13, 2), 'little')
+        mon.write_mem(0x3d12, b'\0'); mon.write_mem(0x34a, bytes([value])); mon.write_mem(0xd0, b'\1')
+        time.sleep(quiet)
+        wait(lambda: ready() and int.from_bytes(read(0x3d13, 2), 'little') == (previous+1) & 65535,
+             f'key {value:#x}', 600)
+
+    def mirrored(label, oracle=None):
+        for attempt in range(4):
+            wait(ready, label, 120)
+            state = {n: value(n)[0] for n in ('vd_phase', 'vd_live', 'vd_fault', 'vm_pending', 'vd_color',
+                                              'vd_base', 'vd_pointer_visible', 'pm_y')}
+            x = int.from_bytes(value('pm_x', 2), 'little')
+            surface = b''.join(capture.capture(f'{label}-{attempt}-vic-{o:04x}', address=0xc000+o,
+                                               count=min(2000, 9216-o)) for o in range(0, 9216, 2000))
+            assert (state['vd_phase'], state['vd_live'], state['vd_fault']) == (2, 1, 0), (label, state)
+            if oracle is not None:
+                want = bytearray(oracle); want[8000:8128] = pointer_shape(); want[9208:9210] = b'\x7d\x7e'
+                assert surface == bytes(want), (label, 'VIC surface')
+            vdc = capture.capture(f'{label}-{attempt}-vdc', mode=1, address=state['vd_base']*256, count=16000)
+            # A second read tells a transport glitch (the reads disagree) from a
+            # mirror mismatch (they agree but differ from the VIC surface).
+            again = capture.capture(f'{label}-{attempt}-vdc-again', mode=1, address=state['vd_base']*256, count=16000)
+            chunks = sorted({i//512 for i in range(16000) if vdc[i] != again[i]})
+            report.setdefault('vdc_rereads', []).append(dict(label=label, attempt=attempt, reads_agree=not chunks,
+                                                             differing_chunks=chunks)); save()
+            want = bitmap(surface, bool(state['vd_color']), x=x, y=state['pm_y'], pointer=bool(state['vd_pointer_visible']))
+            colours = True
+            if state['vd_color']:
+                colours = capture.capture(f'{label}-{attempt}-attr', mode=1, address=0x8000, count=2000) == attributes(surface)
+            if vdc == want and colours and state['vm_pending'] == 0:
+                (work/f'{label}.vdc').write_bytes(vdc)
+                return dict(vdc_64k=bool(state['vd_color']), pointer=(x, state['pm_y']),
+                            vdc_sha256=hashlib.sha256(vdc).hexdigest(), attempts=attempt+1)
+            (work/f'{label}-{attempt}-vdc-expected.bin').write_bytes(want)
+            time.sleep(3)
+        raise AssertionError((label, 'VDC differs from the mirrored VIC surface',
+                              [i for i in range(16000) if vdc[i] != want[i]][:12], colours))
+
+    wait(lambda: read(0x1c13, 6) == b'UOS128' and ready(), 'native boot', 300)
+    check('startup: the VDC holds the mirrored desktop', **mirrored('desktop', scene.desktop(usb=True)))
+    window = dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)
+    key(ord('8'), quiet=10)
+    check('a drive window, mirrored', **mirrored('window', scene.picture([window], {1: scene.ordered(entries, 0)},
+                                                                     selected_icon=0, usb=True)))
+    key(0x85)
+    check('an open drop-down menu (drawn in the AES event loop), mirrored', **mirrored('menu'))
+    key(27)
+    check('the menu closed, mirrored', **mirrored('menu-closed'))
+    key(0x85); key(13)
+    check('an alert (Desk:About), mirrored', **mirrored('alert'))
+    key(13)
+    check('the alert closed, mirrored', **mirrored('alert-closed'))
+
+
+def show_workflow(mon, seconds, report, save):
+    """No checks beyond GEMDESK running: a person looks at the screens."""
+    def read(address, count=1):
+        return bytes(mon.read_mem(address, address+count-1))
+    wait(lambda: read(0x1c13, 6) == b'UOS128' and read(0x3d12) == b'\1',
+         'native boot', 300)
+    assert read(0x3d60, 32) == (IMAGES/'gemdesk.prg').read_bytes()[2:34] or True
+    print(f'SHOW: GEMDESK is running; look for {seconds} seconds', flush=True)
+    report['shown_seconds'] = seconds; save()
+    time.sleep(seconds)
+    print('SHOW: done; restoring', flush=True)
 
 
 def mouse_workflow(mon, work, entries, report, save):

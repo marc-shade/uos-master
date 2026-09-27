@@ -149,6 +149,56 @@ workflows replace the launcher's oracles.
   the AES; caches live in the bank-1 heap. Window state is saved in the AES
   session record before handoff and restored by rescanning on return.
 
+## Dual monitors (decided 2026-09-26)
+
+Marc asked for both modes, chosen in the Control Panel as "Displays: 40 only /
+Mirror / Extend" and kept in `DESKTOP.INF`.
+
+**Mirror** shows the VIC desktop on the 80-column screen through the shared
+[VDC service](NATIVE-VDC-SERVICE.md) (`VDSVC.PRG`, `BP_MODE` 0: 320×200
+doubled to 640×200). Rows are presented only when changed:
+- GEMDESK's own drawing marks rows through the graphics library;
+- the AES reports the rows it draws in window, alert and event replies, and
+  the client ORs them into `ae_dirty`;
+- the client calls the app's `ae_present` while menus redraw inside the event
+  loop, and the forms library calls it from its own input loop.
+
+Leaving GEMDESK closes the mirror before the pointer (`gm_leave`), which
+restores the 80-column screen. Without the component, or with a display
+fault, GEMDESK runs on the VIC alone.
+
+**Extend** puts the 80-column screen to the right of the 40-column one, as a
+second area of the same desktop. Chosen implementation: a RAM surface.
+- A 640×200 hires surface plus 80×25 RGBI attributes (18,000 bytes, 71
+  pages) is allocated in bank 1. If it cannot be allocated, GEMDESK falls
+  back to Mirror and says so.
+- The AES window manager gains a screen per window: 0 VIC (40×25 cells, row
+  stride 320), 1 VDC (80×25 cells, row stride 640). Windows open, move and
+  close within one screen. Dragging a window's title past the seam moves it
+  to the other screen, where it is redrawn; windows never straddle the seam.
+- Icons, the menu bar, alerts and dialogs stay on the VIC screen.
+- The pointer range becomes 0..959 across both screens. Below 320 the VIC
+  sprite shows it; from 320 the VDC service draws its pointer and the sprite
+  is hidden.
+- The VDC service presents the extended surface 1:1 (a new presenter mode)
+  instead of doubling the VIC surface.
+
+**Where the code goes.** All three components involved are nearly full, so
+this is part of the design, not an afterthought:
+- AESVC has about 230 bytes left. The two-screen window code needs more, so
+  the AES first moves rarely used code (for example window creation and
+  deletion) into a banked AES overlay.
+- VDSVC has 78 bytes left in its 39-page reservation, plus one page before
+  `$8800`. The 1:1 presenter must fit in that page or replace doubled-mode
+  code when the mode is Extend.
+- GEMDESK has 64 to 98 bytes left after the mirror. Extend's GEMDESK code (the
+  Control Panel choice, window screens in the desktop record) goes into the
+  dialog modules where possible.
+
+Memory with an REU: roughly 100 main-RAM pages stay free after the extended
+surface. Without an REU the VDC screen backup takes 64 pages as well, which
+leaves about 40.
+
 ## Delivery sequence
 
 Every step keeps the heap, apps, banked, VDC, desktop, pointer, graphics,
@@ -192,3 +242,6 @@ clipboard, Files and folder CPU suites and the `native`, `nativedesktop*` and
   only the identity/header check detects stray writes.
 - To be confirmed: key-repeat control, PAL/NTSC jiffy rate, ACIA RTS flow
   control on the Ultimate, VDSVC pointer handling with AES-dirtied rows.
+- Extend mode's AES overlay, VDSVC 1:1 presenter and 71-page surface are
+  unbuilt; the memory figures above are estimates from the published page
+  tables, not measurements.

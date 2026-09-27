@@ -26,9 +26,9 @@ class Machine:
     """A 6502 whose foreground is INC $3A05 / JMP, with a 60 Hz IRQ that
     stacks the MMU byte as the native kernel's IRQ entry does."""
 
-    def __init__(self):
-        self.m = MPU(); mem = self.m.memory
-        mem[0x2000:0x2006] = [0xee, 0x05, 0x3a, 0x4c, 0x00, 0x20]
+    def __init__(self, memory=None, foreground=(0xee, 0x05, 0x3a, 0x4c, 0x00, 0x20)):
+        self.m = MPU() if memory is None else MPU(memory=memory); mem = self.m.memory
+        mem[0x2000:0x2000+len(foreground)] = list(foreground)
         mem[0x1234:0x1236] = [0x68, 0x40]          # the old IRQ tail: PLA (MMU byte), RTI
         mem[0xff74:0xff77] = [0xb1, 0xfb, 0x60]     # INDFET for bank 0: LDA ($FB),Y
         mem[0x314] = 0x34; mem[0x315] = 0x12
@@ -49,8 +49,55 @@ class Machine:
     def run(self, n):
         for _ in range(n):
             self.m.step(); self.steps += 1
-            if self.steps % 17000 == 0:
+            if self.steps % 17011 == 0:                 # not a multiple of any loop length
                 self.irq()
+
+
+class VDCMemory:
+    """64 KiB of RAM with the VDC's two I/O registers: $D600 selects, $D601
+    reads/writes the selected register; register 31 moves data at the update
+    address (18/19) and increments it. Always ready."""
+
+    def __init__(self):
+        self.ram = bytearray(65536)
+        self.vram = bytearray((i*11+(i >> 8)*5) & 255 for i in range(65536))
+        self.regs = [0]*38
+        self.select = 0
+        self.selects = []             # every value written to $D600
+
+    def address(self):
+        return self.regs[18] << 8 | self.regs[19]
+
+    def advance(self):
+        a = (self.address()+1) & 0xffff
+        self.regs[18], self.regs[19] = a >> 8, a & 255
+
+    def __len__(self):
+        return 65536
+
+    def __getitem__(self, a):
+        if isinstance(a, slice):
+            return list(self.ram[a])
+        if a == 0xd600:
+            return 0x80
+        if a == 0xd601:
+            if self.select == 31:
+                v = self.vram[self.address()]; self.advance(); return v
+            return self.regs[self.select]
+        return self.ram[a]
+
+    def __setitem__(self, a, v):
+        if isinstance(a, slice):
+            self.ram[a] = bytes(v); return
+        if a == 0xd600:
+            self.select = v & 63; self.selects.append(v); return
+        if a == 0xd601:
+            if self.select == 31:
+                self.vram[self.address()] = v; self.advance()
+            else:
+                self.regs[self.select] = v
+            return
+        self.ram[a] = v
 
 
 class Monitor:
@@ -85,7 +132,12 @@ def main():
     assert got == source, 'payload'
     after = bytes(mem[N_BUFFER:N_BUFFER+512])
     assert [i for i in range(512) if after[i] != buffer[i]] == [5], 'only the foreground\'s counter moved'
-    assert bytes(mem[0x3e00:0x4000]) == scratch and mem[0x314] | mem[0x315] << 8 == 0x1234 and box.m.sp == 0xff
+    assert bytes(mem[0x3e00:0x4000]) == scratch, [i for i in range(512) if mem[0x3e00+i] != scratch[i]][:8]
+    for _ in range(2000):                            # stop in the foreground, not inside an IRQ
+        if 0x2000 <= box.m.pc < 0x2006 and not box.m.p & 0x04:
+            break
+        box.run(1)
+    assert mem[0x314] | mem[0x315] << 8 == 0x1234 and box.m.sp == 0xff, (hex(mem[0x314] | mem[0x315] << 8), box.m.sp)
     assert all(c['n_buffer_restored'] and c['scratch_restored'] and c['code'] == 1 for c in capture.records[0]['chunks'])
     counter = mem[0x3a05]; box.run(50000); assert mem[0x3a05] != counter, 'the foreground runs on'
     done('9,216 bytes in 18 held chunks; N_BUFFER, $3e00 scratch, IRQ vector and stack restored; foreground runs on')
@@ -115,6 +167,22 @@ def main():
             break
     assert mem[0x3ff2] == 2 and mem[0x314] | mem[0x315] << 8 == 0x1234, 'an unanswered probe gives up'
     done(f'an unanswered probe returns with code 2 after {lost.steps} instructions')
+    # VDC memory: a foreground that is idle at its input wait only half the time
+    # (N_READY toggles), so some attempts must come back busy and be retried.
+    vdc = VDCMemory()
+    toggling = (0xa9, 1, 0x8d, 0x12, 0x3d, 0xee, 0x05, 0x3a, 0xa9, 0, 0x8d, 0x12, 0x3d,
+                0xea, 0xea, 0xea, 0xea, 0xea, 0xea, 0xea, 0xea, 0x4c, 0x00, 0x20)   # busy most of the loop
+    screen = Machine(vdc, toggling); mem = screen.m.memory
+    vdc.regs[18], vdc.regs[19], vdc.select = 0x12, 0x34, 31
+    capture = hw.HeldCapture(Monitor(screen), Path(tempfile.mkdtemp()))
+    got = capture.capture('vdc', mode=1, address=0x0100, count=700)
+    assert got == bytes(vdc.vram[0x100:0x100+700]), 'VDC payload'
+    assert vdc.address() == 0x1234 and vdc.select == 31, ('update address and selection restored', hex(vdc.address()))
+    record = capture.records[0]
+    assert record['busy'] > 0, 'some attempts found the foreground busy and were retried'
+    assert all(c['code'] == 1 and c['n_buffer_restored'] for c in record['chunks'])
+    done(f"VDC memory: 700 bytes in {len(record['chunks'])} chunks, {record['busy']} busy retries, "
+         f"update address and register selection restored")
     report['passed'] = True; args.report.write_text(json.dumps(report, indent=2)+'\n')
 
 

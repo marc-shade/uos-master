@@ -1,7 +1,9 @@
 ; Native forms (docs/NATIVE-FORMS.md), GPL v3: GEM-style dialogs drawn on the
 ; app's VIC surface with the graphics core. Needs graphics-core.inc,
 ; text-core.inc and input/pointer.inc; the app binds the graphics core and
-; sets fo_surface before fo_open.
+; sets fo_surface before fo_open. The app defines FO_PRESENT: 1 when it mirrors
+; its surface to the VDC with graphics/vdc-mirror.inc and supplies ae_present
+; (called once per dialog-loop pass), else 0.
 FOT_TEXT = 1
 FOT_BUTTON = 2
 FOT_CHECK = 3
@@ -115,11 +117,30 @@ fo_close:
         jsr fo_transfer
         php
         pha
+.if FO_PRESENT
+        jsr fo_mark_rows        ; a raw copy, unseen by the graphics core's tracking
+.fi
         jsr fo_select_save
         jsr N_FREE
         pla
         plp
         rts
+.if FO_PRESENT
+; Mark the form's cell rows for the app's VDC mirror (vm_rows/vm_pending of
+; graphics/vdc-mirror.inc, as its vm_dirty marks gfx drawing); the app's next
+; ae_present sends them.
+fo_mark_rows:
+        ldx fo_y
+        ldy fo_h
+        beq +
+        lda #1
+        sta vm_pending
+-       sta vm_rows,x
+        inx
+        dey
+        bne -
++       rts
+.fi
 
 ; X = object: draw it again (after the app changed its state or text).
 fo_redraw:
@@ -135,6 +156,9 @@ fo_redraw:
 ; Until an exit object is pressed: A = its index, carry clear. Carry set: A =
 ; error from drawing, the heap or N_FEDIT.
 fo_do:
+.if FO_PRESENT
+        jsr ae_present          ; the app's VDC mirror: rows the dialog redrew
+.fi
         lda #1
         sta N_READY
         jsr N_KEYIN

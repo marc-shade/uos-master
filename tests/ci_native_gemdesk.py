@@ -59,7 +59,7 @@ class Gem(calc.Calculator):
     poll = Pointer.poll
     move = Pointer.move
 
-    def __init__(self, files, usb=None, fmt=0):
+    def __init__(self, files, usb=None, fmt=0, vdc=False):
         files = {**files, (8, b'GDDLG.PRG', b'P'): (ROOT/'target/native-desktop/gddlg.prg').read_bytes(),
                  (8, b'GDSET.PRG', b'P'): (ROOT/'target/native-desktop/gdset.prg').read_bytes()}
         extra = {}
@@ -70,7 +70,7 @@ class Gem(calc.Calculator):
             extra = dict(ultimate_files=usb['files'])
         try:
             super().__init__('gemdesk', files, loader_name=b'GEMDESK', fmt=fmt,
-                             image_prefix='native-desktop', vdc_component=False, **extra)
+                             image_prefix='native-desktop', vdc_component=vdc, **extra)
         finally:
             if usb is not None:
                 ci_native_ultimate.DOSFiles = saved
@@ -673,6 +673,41 @@ def main():
         assert (up.ram[0x3d29], up.ram[0x3d2a], up.ram[0x3d2e], up.ram[0x3d34]) == (1, 3, 5, 8)
         assert bytes(up.ram[0x4a00:0x4a05]) == b'/Usb0' and bytes(up.ram[0x3e00:0x3e08]) == b'draw.txt'
         done('a USB file starting with UPNT opens in Paint, even when named .txt (the signature first, as Files)', up)
+
+        # The 80-column mirror (VDSVC.PRG on a 64 KiB VDC): after every change the
+        # VDC holds the VIC surface doubled, exactly as native_vdc_mirror renders it.
+        from ci_native_vdc_desktop import VDCBus
+        from native_vdc_mirror import bitmap, attributes
+        prior = heap.Bus
+        heap.Bus = VDCBus
+        try:
+            mv = Gem({(8, b'AESVC.PRG', b'P'): AESVC}, vdc=True)
+        finally:
+            heap.Bus = prior
+
+        def mirrored(label):
+            assert mv.value('vd_phase') == 2 and mv.value('vd_live') == 1, (label, 'mirror live')
+            assert mv.value('vd_fault') == 0 and mv.value('vm_pending') == 0, (label, 'nothing left to present')
+            x, y = mv.position
+            want = bitmap(bytes(mv.ram[0xc000:0xe400]), True, x=x, y=y, pointer=bool(mv.value('vd_pointer_visible')))
+            assert mv.bus.bytes(mv.value('vd_base')*256, 16000) == want, (label, 'complete VDC bitmap')
+            assert mv.bus.bytes(0x8000, 2000) == attributes(bytes(mv.ram[0xc000:0xe400])), (label, 'colour cells')
+        mv.expect(scene.desktop(), 'mirror startup'); mirrored('startup')
+        mv.key(ord('8'))
+        disk = scene.ordered(entries_for(mv.io.files), 0)
+        mv.expect(scene.picture([dict(id=1, x=1, y=2, w=28, h=16, title=b'Drive 8', top=0)], {1: disk}, selected_icon=0),
+                  'mirror window'); mirrored('window')
+        mv.key(0x11); mv.key(9); mirrored('dialog')                  # Show Info: the forms library's own loop
+        mv.key(27); mirrored('dialog closed')
+        mv.key(0x85); mirrored('menu open')                          # drawn inside the AES's event loop
+        mv.key(27); mirrored('menu closed')
+        mv.key(0x85); mv.key(13); mirrored('alert')                  # Desk:About
+        mv.key(13); mirrored('alert closed')
+        mv.key(12, exited=True)                                      # Options:Launcher
+        assert mv.value('vd_phase') == 0 and mv.value('vd_live') == 0, 'the mirror closed before the launch'
+        assert mv.bus.video_ram[:0x4000] == mv.bus.original[0][:0x4000], 'the 80-column screen restored'
+        done('the 80-column mirror: startup, a window, a dialog, a menu and an alert match the VIC surface on the '
+             'VDC; launching restores the VDC', mv)
 
         # Keyboard mouse and the Control Panel.
         kc = Gem(files4)

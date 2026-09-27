@@ -3,6 +3,8 @@
 .include "api.inc"
 .include "aes-api.inc"
 AE_POINTER = 1
+AE_MIRROR = 1
+FO_PRESENT = 1                  ; forms.inc calls ae_present from its dialog loop
 GM_WINDOWS = 4
 GM_RECORD = 21                 ; name 16, type, flags, blocks (word), directory ordinal
 GM_CHUNK = 24                  ; records per N_BUFFER transfer (504 bytes)
@@ -20,6 +22,7 @@ GM_MOP_INFO = 1                ; module operations
 GM_MOP_PREFS = 2
 GM_MOP_FORMAT = 3
 GM_MOP_CONTROL = 4
+GM_MOP_USBINFO = 5              ; GDSET: Show Info on a USB entry
 GM_REC_COUNT = 9               ; desktop record: window count, then windows
 GM_REC_WINDOWS = 10
 * = N_APPBASE
@@ -45,7 +48,10 @@ gm_start:
         bcs gm_fatal_text
         jsr gm_aes_setup
         bcs gm_fatal
-        lda gm_start_error
+        jsr vd_open             ; the 80-column mirror; without it, 40 columns only
+        bcc +
+        jsr vd_close
++       lda gm_start_error
         beq gm_loop
         jsr gm_hex_error        ; "[3][Could not start that|program: error $xx][OK]"
         lda #<gm_start_alert
@@ -74,11 +80,12 @@ gm_loop:
         and #MU_KEYBD
         beq +
         jsr gm_key
-+       jmp gm_loop
++       jsr ae_present
+        jmp gm_loop
 ; The AES is unusable: back to the card launcher, which reports the code.
 gm_fatal:
         sta N_BROWSERERROR
-        jsr pm_close
+        jsr gm_leave
         jsr N_VCLOSE
 gm_fatal_text:
         jmp gm_launcher
@@ -275,36 +282,118 @@ gm_close_file:
         jmp N_FCLOSE
 gm_wcall:
         lda #AE_OP_WINDOW
-        jmp ae_call
+        jsr ae_call
+        bcs +
+        ldx #4                  ; the rows it drew (reply bytes 4..7), for the mirror
+        jsr gm_dirty_from
+        lda #0
+        clc
++       rts
+; Append gm_q (LE32, destroyed) in decimal: divide by 10 until zero.
+gm_anum32:
+        lda #0
+        sta gm_ndig
+gm_n32_digit:
+        lda #0                  ; gm_q /= 10, A = the remainder
+        ldx #32
+gm_n32_bit:
+        asl gm_q
+        rol gm_q+1
+        rol gm_q+2
+        rol gm_q+3
+        rol a
+        cmp #10
+        bcc +
+        sbc #10
+        inc gm_q
++       dex
+        bne gm_n32_bit
+        ldx gm_ndig
+        ora #$30
+        sta gm_digits,x
+        inc gm_ndig
+        lda gm_q
+        ora gm_q+1
+        ora gm_q+2
+        ora gm_q+3
+        bne gm_n32_digit
+-       dec gm_ndig             ; most significant first
+        ldx gm_ndig
+        lda gm_digits,x
+        jsr gm_aput
+        lda gm_ndig
+        bne -
+        rts
+; OR the four dirty-row bytes at N_BUFFER+X..X+3 into ae_dirty. Keeps N_BUFFER.
+gm_dirty_from:
+        ldy #0
+-       lda N_BUFFER,x
+        ora ae_dirty,y
+        sta ae_dirty,y
+        inx
+        iny
+        cpy #4
+        bne -
+        rts
+; Present what changed on the VDC: the AES's rows (bit row&7 of byte row>>3),
+; then the rows the gfx library marked itself.
+ae_present:
+        ldx #24
+gm_am_row:
+        txa
+        lsr
+        lsr
+        lsr
+        tay
+        lda ae_dirty,y
+        sta gm_mbit
+        txa
+        and #7
+        tay
+        lda gm_mbit
+-       dey
+        bmi +
+        lsr
+        jmp -
++       and #1
+        beq +
+        sta vm_rows,x
+        sta vm_pending
++       dex
+        bpl gm_am_row
+        lda #0
+        ldx #3
+-       sta ae_dirty,x
+        dex
+        bpl -
+        jmp vm_present
+; Leave for another app: restore the 80-column screen, then the pointer.
+gm_leave:
+        jsr vd_close
+        jmp pm_close
 ; A/X = alert string, Y = default button. Keyboard and pointer until chosen.
 gm_alert:
         jsr ae_alert_open
         bcs gm_alert_done
--       lda #1
-        sta N_READY
-        jsr N_KEYIN
-        ldx #0
-        stx N_READY
+        jsr gm_alert_rows
+-       jsr ae_event_wait       ; idle until a key, the pointer or a tick
         pha
-        jsr pm_poll
-        lda pm_x
-        sta ae_pointer_x
-        lda pm_x+1
-        sta ae_pointer_x+1
-        lda pm_y
-        sta ae_pointer_y
-        lda pm_buttons
-        beq +
-        lda #1
-+       sta ae_pointer_buttons
+        jsr ae_read_pointer
         pla
         jsr ae_alert_step
         bcs gm_alert_done
         lda N_BUFFER
+        pha
+        jsr gm_alert_rows
+        pla
         beq -
         clc
 gm_alert_done:
         rts
+gm_alert_rows:                  ; an alert reply: dirty rows in bytes 2..5
+        ldx #2
+        jsr gm_dirty_from
+        jmp ae_present
 
 ; ---- messages --------------------------------------------------------------------
 gm_message:
@@ -1373,7 +1462,8 @@ gm_show_info:
         lda gm_win_fmt,x        ; USB: FILE_STAT in an alert; rename is IEC only
         cmp #3
         bne +
-        jmp gm_ult_info
+        lda #GM_MOP_USBINFO
+        jmp gm_module_run
 +       jsr gm_read_record
         bcs gm_info_fail
         lda #GM_MOP_INFO
@@ -2480,7 +2570,7 @@ gm_ult_document:
         lda #3
         sta N_APPFORMAT
         jsr gm_session_save
-        jsr pm_close
+        jsr gm_leave
         lda #0
         jmp N_REPLACE
 gm_ult_enter:
@@ -2661,136 +2751,6 @@ gm_ult_del_unknown:
         jmp gm_ult_rescan
 gm_ult_del_error:
         jmp gm_del_error
-; Show Info on a USB entry: FILE_STAT's reply is size (LE32), date, time,
-; extension, attribute, name (up to 63). The alert, without an icon to stay
-; within the AES's 250 cells, shows the name on up to two lines of 29 ("..."
-; past 58), then "Folder" or "File, N bytes".
-gm_ult_info:
-        jsr gm_read_record
-        bcc +
-        jmp gm_info_fail
-+        lda gm_rec+20
-        jsr gm_ult_fullname
-        bcs gm_ult_info_error
-        lda #$08                ; FILE_STAT
-        jsr gm_ucmd
-        bcs gm_ult_info_error
-        lda N_FACTUAL+1
-        bne +
-        lda N_FACTUAL
-        cmp #13                 ; the fields and at least one name byte
-        bcc gm_ult_info_short
-+       ldx #3                  ; copy out of N_BUFFER before the alert uses it
--       lda N_BUFFER,x
-        sta gm_q,x
-        dex
-        bpl -
-        lda N_BUFFER+11
-        sta gm_uattr
-        lda #0                  ; "[0][": no icon
-        sta gm_alen
-        lda #<gm_s_head0
-        ldx #>gm_s_head0
-        jsr gm_astr
-        lda N_FACTUAL+1         ; the name: the rest of the reply, at most 63
-        bne +
-        lda N_FACTUAL
-        sec
-        sbc #12
-        cmp #64
-        bcc ++
-+       lda #63
-+       sta gm_ulen
-        ldy #0
-gm_ui_name:
-        cpy gm_ulen
-        beq gm_ui_named
-        lda N_BUFFER+12,y
-        beq gm_ui_named         ; the firmware NUL-terminates it
-        cpy #29
-        bne +
-        lda #$7c                ; the second line
-        jsr gm_aput
-        lda N_BUFFER+12,y
-+       cpy #55
-        bcc +
-        ldx gm_ulen             ; past 58 characters: "..." ends the line
-        cpx #59
-        bcc +
-        lda #$2e
-        jsr gm_aput
-        jsr gm_aput
-        jsr gm_aput
-        jmp gm_ui_named
-+       jsr gm_printable
-        jsr gm_aput
-        iny
-        bne gm_ui_name
-gm_ui_named:
-        lda gm_uattr
-        and #$10
-        beq +
-        lda #<gm_s_folder
-        ldx #>gm_s_folder
-        jsr gm_astr
-        jmp gm_info_end
-+       lda #<gm_s_usbfile
-        ldx #>gm_s_usbfile
-        jsr gm_astr
-        lda gm_q+1              ; exactly one: "1 byte"
-        ora gm_q+2
-        ora gm_q+3
-        bne +
-        lda gm_q
-        cmp #1
-+       php
-        jsr gm_anum32
-        lda #<gm_s_bytes
-        ldx #>gm_s_bytes
-        jsr gm_astr
-        plp
-        bne +
-        dec gm_alen             ; drop the "s"
-+       jmp gm_info_end
-gm_ult_info_short:
-        lda #N_IOERROR
-gm_ult_info_error:
-        jmp gm_usb_error
-; Append gm_q (LE32, destroyed) in decimal: divide by 10 until zero.
-gm_anum32:
-        lda #0
-        sta gm_ndig
-gm_n32_digit:
-        lda #0                  ; gm_q /= 10, A = the remainder
-        ldx #32
-gm_n32_bit:
-        asl gm_q
-        rol gm_q+1
-        rol gm_q+2
-        rol gm_q+3
-        rol a
-        cmp #10
-        bcc +
-        sbc #10
-        inc gm_q
-+       dex
-        bne gm_n32_bit
-        ldx gm_ndig
-        ora #$30
-        sta gm_digits,x
-        inc gm_ndig
-        lda gm_q
-        ora gm_q+1
-        ora gm_q+2
-        ora gm_q+3
-        bne gm_n32_digit
--       dec gm_ndig             ; most significant first
-        ldx gm_ndig
-        lda gm_digits,x
-        jsr gm_aput
-        lda gm_ndig
-        bne -
-        rts
 ; A = Ultimate DOS opcode: N_BUFFER = context, opcode, the path in N_UPATH
 ; (FILE_STAT adds a NUL: its firmware handler takes the body as a C string).
 gm_ucmd:
@@ -2910,7 +2870,7 @@ gm_document_launch:
         lda N_BOOTFORMAT
         sta N_APPFORMAT
         jsr gm_session_save
-        jsr pm_close
+        jsr gm_leave
         lda #0
         jmp N_REPLACE
 ; The USB file in N_UPATH/N_FNAMELEN (from gm_ult_fullname): gm_peek on it.
@@ -3570,14 +3530,14 @@ gm_open_entry:
         lda gm_win_fmt,x
         sta N_APPFORMAT
         jsr gm_session_save     ; the windows come back when the desktop does
-        jsr pm_close
+        jsr gm_leave
         lda #0
         jmp N_REPLACE
 gm_launch_fail:
         rts
 gm_launcher_leave:
         jsr gm_session_save
-        jsr pm_close
+        jsr gm_leave
 gm_launcher:
         lda N_BOOTFORMAT        ; the card launcher is "cards" on the boot disk
         sta N_APPFORMAT
@@ -3817,10 +3777,6 @@ gm_s_blocks: .byte 32,32,66,108,111,99,107,115,58,32,0  ;   Blocks:
 gm_s_files: .byte 124,70,105,108,101,115,58,32,0        ; |Files:
 gm_s_used: .byte 124,66,108,111,99,107,115,32,117,115,101,100,58,32,0   ; |Blocks used:
 gm_s_ok: .byte 93,91,79,75,93,0                         ; ][OK]
-gm_s_folder: .byte 124,70,111,108,100,101,114,0          ; |Folder
-gm_s_usbfile: .byte 124,70,105,108,101,44,32,0          ; |File,
-gm_s_head0: .byte 91,48,93,91,0                         ; [0][
-gm_s_bytes: .byte 32,98,121,116,101,115,0                ;  bytes
 gm_gaps: .byte 1,4,10,23,57,132
 ; [2][Delete NAME?|This cannot be undone.][Delete|Cancel]
 gm_s_delete: .byte 91,50,93,91,68,101,108,101,116,101,32,0
@@ -3893,12 +3849,11 @@ gm_new_icon: .byte 0
 gm_slot: .byte 0
 gm_dev: .byte 0
 gm_fmt: .byte 0
-gm_dev_format: .byte $ff       ; device 9's detected geometry, $ff unknown
-gm_q: .fill 4,0                 ; USB Show Info: the size, then the division
-gm_uattr: .byte 0
-gm_ulen: .byte 0
+gm_mbit: .byte 0
+gm_q: .fill 4,0                 ; gm_anum32's number, then the division
 gm_ndig: .byte 0
 gm_digits: .fill 10,0
+gm_dev_format: .byte $ff       ; device 9's detected geometry, $ff unknown
 gm_count: .byte 0
 gm_page: .byte 0
 gm_drag: .byte 0
@@ -3957,6 +3912,8 @@ gm_rec: .fill GM_RECORD,0
 gm_dirpage: .fill 256,0
 gm_win_plen: .fill GM_WINDOWS,0
 gm_name: .fill 256,0             ; a full USB name
+; The AES client sits here, in the slack before the page-aligned path table.
+.include "aes-client.inc"
         .align 256
 gm_win_path: .fill GM_WINDOWS*256,0   ; each USB window's absolute path
 gm_addr_lo:
@@ -3975,11 +3932,13 @@ gm_sortbuf = GM_WORKSPACE
 gm_rows = gm_sortbuf
 gm_order = gm_dirpage
 .cerror GM_MAX_ENTRIES > 256 || 24*GM_RECORD > GM_MAX_ENTRIES*GM_RECORD, "shared buffers too small"
-.include "aes-client.inc"
 .include "dos-command.inc"
 .include "graphics/graphics-core.inc"
 .include "graphics/text-core.inc"
 .include "input/pointer.inc"
+BP_MODE=0                       ; the VDC shows this VIC surface (docs/NATIVE-VDC-SERVICE.md)
+bp_select_surface=gm_select_surface
+.include "graphics/vdc-client.inc"
 ; ---- module window (docs/NATIVE-MODULES.md) ------------------------------------------
 ; Two modules share the window; each has its own copy of the forms library
 ; (docs/NATIVE-FORMS.md). GDDLG.PRG: Show Info with rename, Format.
@@ -4351,7 +4310,112 @@ entry:
         cmp #GM_MOP_PREFS
         bne +
         jmp gm_prefs
++       cmp #GM_MOP_USBINFO
+        bne +
+        jmp gm_ult_info
 +       jmp gm_control
+; Show Info on a USB entry: FILE_STAT's reply is size (LE32), date, time,
+; extension, attribute, name (up to 63). The alert, without an icon to stay
+; within the AES's 250 cells, shows the name on up to two lines of 29 ("..."
+; past 58), then "Folder" or "File, N bytes".
+gm_ult_info:
+        jsr gm_read_record
+        bcc +
+        jmp gm_info_fail
++        lda gm_rec+20
+        jsr gm_ult_fullname
+        bcs gm_ult_info_error
+        lda #$08                ; FILE_STAT
+        jsr gm_ucmd
+        bcs gm_ult_info_error
+        lda N_FACTUAL+1
+        bne +
+        lda N_FACTUAL
+        cmp #13                 ; the fields and at least one name byte
+        bcc gm_ult_info_short
++       ldx #3                  ; copy out of N_BUFFER before the alert uses it
+-       lda N_BUFFER,x
+        sta gm_q,x
+        dex
+        bpl -
+        lda N_BUFFER+11
+        sta gm_uattr
+        lda #0                  ; "[0][": no icon
+        sta gm_alen
+        lda #<gm_s_head0
+        ldx #>gm_s_head0
+        jsr gm_astr
+        lda N_FACTUAL+1         ; the name: the rest of the reply, at most 63
+        bne +
+        lda N_FACTUAL
+        sec
+        sbc #12
+        cmp #64
+        bcc ++
++       lda #63
++       sta gm_ulen
+        ldy #0
+gm_ui_name:
+        cpy gm_ulen
+        beq gm_ui_named
+        lda N_BUFFER+12,y
+        beq gm_ui_named         ; the firmware NUL-terminates it
+        cpy #29
+        bne +
+        lda #$7c                ; the second line
+        jsr gm_aput
+        lda N_BUFFER+12,y
++       cpy #55
+        bcc +
+        ldx gm_ulen             ; past 58 characters: "..." ends the line
+        cpx #59
+        bcc +
+        lda #$2e
+        jsr gm_aput
+        jsr gm_aput
+        jsr gm_aput
+        jmp gm_ui_named
++       jsr gm_printable
+        jsr gm_aput
+        iny
+        bne gm_ui_name
+gm_ui_named:
+        lda gm_uattr
+        and #$10
+        beq +
+        lda #<gm_s_folder
+        ldx #>gm_s_folder
+        jsr gm_astr
+        jmp gm_info_end
++       lda #<gm_s_usbfile
+        ldx #>gm_s_usbfile
+        jsr gm_astr
+        lda gm_q+1              ; exactly one: "1 byte"
+        ora gm_q+2
+        ora gm_q+3
+        bne +
+        lda gm_q
+        cmp #1
++       php
+        jsr gm_anum32
+        lda #<gm_s_bytes
+        ldx #>gm_s_bytes
+        jsr gm_astr
+        plp
+        bne +
+        dec gm_alen             ; drop the "s"
++       jmp gm_info_end
+gm_ult_info_short:
+        lda #N_IOERROR
+gm_ult_info_error:
+        jmp gm_usb_error
+gm_s_folder: .byte 124,70,111,108,100,101,114,0          ; |Folder
+gm_s_usbfile: .byte 124,70,105,108,101,44,32,0          ; |File,
+gm_s_head0: .byte 91,48,93,91,0                         ; [0][
+gm_s_bytes: .byte 32,98,121,116,101,115,0                ;  bytes
+gm_uattr: .byte 0
+gm_ulen: .byte 0
+
 ; Options:Preferences: confirm deletes, and the sort order.
 gm_prefs:
         lda gm_confirm
