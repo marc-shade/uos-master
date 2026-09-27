@@ -1370,10 +1370,10 @@ gm_show_info:
         lda gm_win_sel,x
         cmp #$ff
         beq gm_info_icon
-        lda gm_win_fmt,x        ; Show Info and rename are IEC for now
+        lda gm_win_fmt,x        ; USB: FILE_STAT in an alert; rename is IEC only
         cmp #3
         bne +
-        jmp gm_not_usb
+        jmp gm_ult_info
 +       jsr gm_read_record
         bcs gm_info_fail
         lda #GM_MOP_INFO
@@ -2661,6 +2661,136 @@ gm_ult_del_unknown:
         jmp gm_ult_rescan
 gm_ult_del_error:
         jmp gm_del_error
+; Show Info on a USB entry: FILE_STAT's reply is size (LE32), date, time,
+; extension, attribute, name (up to 63). The alert, without an icon to stay
+; within the AES's 250 cells, shows the name on up to two lines of 29 ("..."
+; past 58), then "Folder" or "File, N bytes".
+gm_ult_info:
+        jsr gm_read_record
+        bcc +
+        jmp gm_info_fail
++        lda gm_rec+20
+        jsr gm_ult_fullname
+        bcs gm_ult_info_error
+        lda #$08                ; FILE_STAT
+        jsr gm_ucmd
+        bcs gm_ult_info_error
+        lda N_FACTUAL+1
+        bne +
+        lda N_FACTUAL
+        cmp #13                 ; the fields and at least one name byte
+        bcc gm_ult_info_short
++       ldx #3                  ; copy out of N_BUFFER before the alert uses it
+-       lda N_BUFFER,x
+        sta gm_q,x
+        dex
+        bpl -
+        lda N_BUFFER+11
+        sta gm_uattr
+        lda #0                  ; "[0][": no icon
+        sta gm_alen
+        lda #<gm_s_head0
+        ldx #>gm_s_head0
+        jsr gm_astr
+        lda N_FACTUAL+1         ; the name: the rest of the reply, at most 63
+        bne +
+        lda N_FACTUAL
+        sec
+        sbc #12
+        cmp #64
+        bcc ++
++       lda #63
++       sta gm_ulen
+        ldy #0
+gm_ui_name:
+        cpy gm_ulen
+        beq gm_ui_named
+        lda N_BUFFER+12,y
+        beq gm_ui_named         ; the firmware NUL-terminates it
+        cpy #29
+        bne +
+        lda #$7c                ; the second line
+        jsr gm_aput
+        lda N_BUFFER+12,y
++       cpy #55
+        bcc +
+        ldx gm_ulen             ; past 58 characters: "..." ends the line
+        cpx #59
+        bcc +
+        lda #$2e
+        jsr gm_aput
+        jsr gm_aput
+        jsr gm_aput
+        jmp gm_ui_named
++       jsr gm_printable
+        jsr gm_aput
+        iny
+        bne gm_ui_name
+gm_ui_named:
+        lda gm_uattr
+        and #$10
+        beq +
+        lda #<gm_s_folder
+        ldx #>gm_s_folder
+        jsr gm_astr
+        jmp gm_info_end
++       lda #<gm_s_usbfile
+        ldx #>gm_s_usbfile
+        jsr gm_astr
+        lda gm_q+1              ; exactly one: "1 byte"
+        ora gm_q+2
+        ora gm_q+3
+        bne +
+        lda gm_q
+        cmp #1
++       php
+        jsr gm_anum32
+        lda #<gm_s_bytes
+        ldx #>gm_s_bytes
+        jsr gm_astr
+        plp
+        bne +
+        dec gm_alen             ; drop the "s"
++       jmp gm_info_end
+gm_ult_info_short:
+        lda #N_IOERROR
+gm_ult_info_error:
+        jmp gm_usb_error
+; Append gm_q (LE32, destroyed) in decimal: divide by 10 until zero.
+gm_anum32:
+        lda #0
+        sta gm_ndig
+gm_n32_digit:
+        lda #0                  ; gm_q /= 10, A = the remainder
+        ldx #32
+gm_n32_bit:
+        asl gm_q
+        rol gm_q+1
+        rol gm_q+2
+        rol gm_q+3
+        rol a
+        cmp #10
+        bcc +
+        sbc #10
+        inc gm_q
++       dex
+        bne gm_n32_bit
+        ldx gm_ndig
+        ora #$30
+        sta gm_digits,x
+        inc gm_ndig
+        lda gm_q
+        ora gm_q+1
+        ora gm_q+2
+        ora gm_q+3
+        bne gm_n32_digit
+-       dec gm_ndig             ; most significant first
+        ldx gm_ndig
+        lda gm_digits,x
+        jsr gm_aput
+        lda gm_ndig
+        bne -
+        rts
 ; A = Ultimate DOS opcode: N_BUFFER = context, opcode, the path in N_UPATH
 ; (FILE_STAT adds a NUL: its firmware handler takes the body as a C string).
 gm_ucmd:
@@ -3687,6 +3817,10 @@ gm_s_blocks: .byte 32,32,66,108,111,99,107,115,58,32,0  ;   Blocks:
 gm_s_files: .byte 124,70,105,108,101,115,58,32,0        ; |Files:
 gm_s_used: .byte 124,66,108,111,99,107,115,32,117,115,101,100,58,32,0   ; |Blocks used:
 gm_s_ok: .byte 93,91,79,75,93,0                         ; ][OK]
+gm_s_folder: .byte 124,70,111,108,100,101,114,0          ; |Folder
+gm_s_usbfile: .byte 124,70,105,108,101,44,32,0          ; |File,
+gm_s_head0: .byte 91,48,93,91,0                         ; [0][
+gm_s_bytes: .byte 32,98,121,116,101,115,0                ;  bytes
 gm_gaps: .byte 1,4,10,23,57,132
 ; [2][Delete NAME?|This cannot be undone.][Delete|Cancel]
 gm_s_delete: .byte 91,50,93,91,68,101,108,101,116,101,32,0
@@ -3760,6 +3894,11 @@ gm_slot: .byte 0
 gm_dev: .byte 0
 gm_fmt: .byte 0
 gm_dev_format: .byte $ff       ; device 9's detected geometry, $ff unknown
+gm_q: .fill 4,0                 ; USB Show Info: the size, then the division
+gm_uattr: .byte 0
+gm_ulen: .byte 0
+gm_ndig: .byte 0
+gm_digits: .fill 10,0
 gm_count: .byte 0
 gm_page: .byte 0
 gm_drag: .byte 0

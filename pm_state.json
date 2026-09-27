@@ -1,9 +1,9 @@
 {
-  "updated": "2026-09-26T18:10-04:00",
+  "updated": "2026-09-26T20:00-04:00",
   "goal": "Finish uOS for the C128 = feature parity with Atari TOS (user directive 2026-09-25). Acceptance matrix: docs/TOS-PARITY.md. GEM layer design of record: docs/GEM-LAYER-DESIGN.md. SDK: docs/NATIVE-AES.md.",
   "task_state": {
     "branch": "main (signed commits, far ahead of origin, NOT pushed; pushing updates upstream PR #2 - ask Marc first)",
-    "last_commit": "702c6d7 Hardware check for the GEM profile; held IRQ capture for AES apps",
+    "last_commit": "dccb85f GEM profile on the physical C128: keyboard run 6/7, 1351 mouse run 5/5",
     "session_commits": [
       "9267aea/130e508 Sheet clipboard checkpoint (stalled 9/15 work, results regenerated 9/25)",
       "5017683 AES step 1 persistent component",
@@ -28,13 +28,16 @@
       "99d4554 GEMDESK USB storage/delete, documents to the Editor, $5000 workspace (195 entries)",
       "bd8c84b build outputs (byte-identical to tested dev build)",
       "d50a3da GEMDESK UPNT -> Paint (4-byte peek, signature first as Files); c3b86a6 build outputs",
-      "a74dd95/0009351 drive-9 geometry via UI (CPU 43/43, VICE 8/8); 702c6d7 hw_native_gem_check.py + held probe (ci_native_held_capture 3/3)"
+      "a74dd95/0009351 drive-9 geometry via UI (CPU 43/43, VICE 8/8); 702c6d7 hw_native_gem_check.py + held probe (ci_native_held_capture 3/3)",
+      "10c6441 paint_keys test aligned to 11d64e2 matrix recheck; dccb85f hardware record docs/validation/2026-09-26-gem-hardware"
     ],
     "aes_facts": "AESVC.PRG 14,079 bytes at bank-1 $8800 (code ends ~$bf1x, ~230 bytes left); minor 6, caps $3f; ops 0-11 (10 session, 11 dclick); WF_DESKCOLOR 17 on handle 0.",
     "tests_green": "CPU: ci_native_gemdesk 42/42 (d50a3da); VICE: ci_native_gemdesk_vice 7/7 incl. SEQ -> real Editor and UPNT SEQ -> real Paint (document bytes + surface). Earlier: ci_native_aes 31/31, ci_native_vt52, ci_native_services. Records: docs/validation/2026-09-26-gemdesk-usb, -gemdesk-paint.",
     "gemdesk_layout": "core ends $b098; module window to $c000; GDDLG.PRG (info/rename/format) ends $bdcb, GDSET.PRG (prefs/control) ends $bced; gm_sortbuf 5,355 bytes is the core hog",
     "gemdesk_facts": "core ends $a869 (module window); sort workspace bank-0 $5000 16 pages via N_RESERVE; GM_MAX_ENTRIES 195; documents: IEC SEQ / USB .TXT/.SEQ -> editor via N_DOCREQUEST $80 kind 1 return 0; kernel dispatch fallback clears N_DOCREQUEST before loading the desktop; gm_peek reads 4 bytes (IEC SEQ, all USB): UPNT -> paint kind 2",
-    "hardware_status": "2026-09-26 physical C128 (Marc said free): run 1 booted gem.d81 on Ultimate 1581 mode, GEMDESK running (header check), restore verified (drive A 1541/empty, /Temp upload deleted via FTP, reset). Old NativeCapture refused (AES idle loop writes N_BUFFER each pass) -> held probe written. Run 2: full surface captured, differed only by the USB icon (real Ultimate answers identify) -> oracles fixed (usb=True). Run 3 NOT made: auto-mode classifier denied reading run-2 results / further hardware actions; waiting for Marc's permission. Run-2 restore status unconfirmed."
+    "hardware_status": "2026-09-26 physical C128: keyboard run 6/7 exact (boot, drive 8, Calculator+return, Editor doc+return); Paint document exact but surface differs in one readout (oracle inputs came from DMA reads, which glitch while bank 1 is mapped) -> script now reads Paint state via HeldCapture, Paint step NOT rerun. 1351 mouse run 5/5 (port 1; pointer to (8,3)/(316,194), double-click opens drive 8, drag to (3,4), close box). Restore verified after every run.",
+    "uncommitted": "USB Show Info in GEMDESK (FILE_STAT alert, no icon, 29-char lines, 32-bit size): CPU 44/44, VICE 8/8, planted size_16bit fails; no_ellipsis pending. Record drafted docs/validation/2026-09-26-gemdesk-usb-info (PLANTED_UINFO placeholder).",
+    "performance_profile": "CPU model, one GEMDESK selection move = 8.87M cycles (8.7 s @1.02MHz); window open 6.9M; menu 3.6M. ~70% in kernel heap transfer: heap_record_page walks EVERY page of the record per transfer call (36-page surface, per 8-byte cell) ~24%; heap_far_store/fetch per byte php/sei/zp save/INDSTA via KERNAL ~30%+. Kernel headroom: main region 5 bytes ($37fb/$3800), low 8, service 7 -> optimization must save bytes first. Plan: walk only touched pages; per-transfer (not per-byte) bank setup; later REU DMA for fills/save-restore."
   },
   "constraints": [
     "Native track only: src/native/**, build-native-desktop.py. CPU tests: ~/.venvs/uos-tests/bin/python -B tests/ci_native_*.py --report X.json",
@@ -72,14 +75,13 @@
     "NativeCapture cannot run under AES apps: ae_event writes N_BUFFER every idle pass and toggles N_READY; use HeldCapture (probes/native-read-held.asm)"
   ],
   "pending": [
-    "Rerun hw_native_gem_check.py (needs Marc's permission: classifier blocked); confirm run-2 restore (drive A 1541 empty, no /Temp/temp0000)",
-    "USB rename + Show Info in GEMDESK; USB windows in the session record/DESKTOP.INF",
-    "Show File viewer, TTP parameter dialog, icon view, drag copy/move, multi-select",
-    "Printer service + Print Screen; Dosound/keyclick need a shared timer",
-    "AUTO programs at cold start; crash trap (kernel space); warm reset",
-    "Accessories once more apps use the AES (migrate Files/Editor/Paint menus/dialogs)",
-    "Drive 9 format detection (still assumed D64)",
-    "Physical C128 qualification of GEMDESK/AES (machine 192.168.1.237 via Ultimate) - ASK Marc first"
+    "Commit USB Show Info after no_ellipsis planted bug",
+    "Kernel heap transfer speedup (see performance_profile) + full suite regression + VICE + hardware",
+    "Rerun hardware Paint step with HeldCapture-read oracle inputs",
+    "Large-document Editor failures (picker_gui large, editor_selection large/capacity/display, editor_history large): subagent investigating in scratch worktrees",
+    "GEMDESK 80-column (VDC) mirror for dual monitor",
+    "Show File viewer, TTP parameter dialog, icon view, drag copy/move, multi-select, USB rename",
+    "Printer service + Print Screen; AUTO programs; crash trap; warm reset; accessories"
   ],
   "do_not_repeat": [
     "Don't expect the harness key() to resume a wait without a key: use keys.append(0); loop() (N_KEYS is kernel state across launches; seed events from $3d13)",

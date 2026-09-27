@@ -83,7 +83,9 @@ Built but not yet covered by tests: fulled, moved and sized answers.
   their first 195.
 
 Not built yet, or limited:
-- USB rename and Show Info say "not available"; Files has them.
+- USB rename is not in GEMDESK (Files has it); USB Show Info shows the name,
+  Folder or File and the exact size from `FILE_STAT`, but not the date: the
+  firmware sources checked do not settle how that date is encoded.
 - USB windows are not kept in the desktop record or session.
 - Drive 9 is identified by drive model, not by the mounted image: a drive
   that does not name 1571 or 1581 (an SD2IEC, for example) is read as a D64

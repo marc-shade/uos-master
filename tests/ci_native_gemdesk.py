@@ -30,7 +30,13 @@ class IdentifiedFolderDOS(FolderDOS):
     def respond(self, command):
         if command == bytes([1, 1]):
             return [(b'ULTIMATE DOS', b'00,OK')]
-        return super().respond(command)
+        reply = super().respond(command)
+        if command[1] == 8 and reply[0][1] == b'00,OK':      # FILE_STAT: the file's real size
+            import posixpath
+            found = self.find(posixpath.normpath(command[2:-1]))
+            size = len(self.files.get(found, b'')) if found in self.files else 0
+            reply = [(size.to_bytes(4, 'little')+reply[0][0][4:], reply[0][1])]
+        return reply
 
 
 class GemDOS:
@@ -585,11 +591,11 @@ def main():
         done('the USB icon appears when the Ultimate answers; folders open in the window, the close box goes up', us)
 
         at = [e['name'] for e in usb0].index(long[:16])
-        us.cell(3, 3+at); us.click(); us.key(9)                     # Show Info is IEC-only here
+        us.cell(3, 3+at); us.click(); us.key(9)                     # Show Info: FILE_STAT
         wu['selected'] = at
         shown = scene.picture([wu], {1: usb0}, selected_icon=3, usb=True)
-        notusb = b'[1][Not available on USB|storage in the desktop yet.][OK]'
-        us.expect(scene.scene.draw(shown, notusb, 1, 1)[0], 'not on usb')
+        info = b'[0][A VERY LONG PROGRAM NAME.PRG|File, 10 bytes][OK]'
+        us.expect(scene.scene.draw(shown, info, 1, 1)[0], 'usb info')
         us.key(13)
         us.cell(3, 3+at)
         us.frame(down=True); us.frame(down=False)
@@ -597,7 +603,30 @@ def main():
         assert us.ram[0x3d28] == 1 and us.ram[0x3d2c] == 3 and us.ram[0x3d21] == 1
         full = b'/Usb0/'+long
         assert us.ram[0x3d22] == len(full) and bytes(us.ram[0x4e00:0x4e00+len(full)]) == full
-        done('a USB file launches with its full path (past 16 characters); Show Info says it is not available on USB', us)
+        done('a USB file launches with its full path (past 16 characters); Show Info shows its name and size from FILE_STAT', us)
+
+        name = b'An illustrated history of the Commodore 128 computer.txt'   # 56 characters
+        huge = b'The complete and unabridged works, volume one of seven.seq'  # 58 characters
+        longer = b'x'*70
+        infos = {b'/': [b'\x10Usb0'], b'/Usb0': [b'\x10Pictures', b'\x20'+name, b'\x20'+huge, b'\x20'+longer],
+                 b'/Usb0/Pictures': [], b'/shell': [], b'/browser': []}
+        ui = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
+                 usb=dict(dirs=infos, files={b'/Usb0/'+name: bytes(70000), b'/Usb0/'+huge: bytes(123456789 % 99991),
+                                             b'/Usb0/'+longer: bytes(1)}))
+        ui.cell(35, 11); ui.click(double=True); ui.cell(3, 3); ui.click(double=True)
+        wi = dict(id=1, x=1, y=2, w=28, h=16, title=b'USB /Usb0', top=0)
+        listed = scene.ordered(scene.usb_entries(infos[b'/Usb0']), 0)
+        for leaf, text in ((b'Pictures', b'Pictures|Folder'),
+                           (name, name[:29]+b'|'+name[29:]+b'|File, 70000 bytes'),
+                           (huge, huge[:29]+b'|'+huge[29:]+b'|File, '+str(123456789 % 99991).encode()+b' bytes'),
+                           (longer[:63], b'x'*29+b'|'+b'x'*26+b'...|File, 1 byte')):
+            row = [e['name'] for e in listed].index(leaf[:16])
+            ui.cell(3, 3+row); ui.click(); ui.key(9)
+            wi['selected'] = row
+            shown = scene.picture([wi], {1: listed}, selected_icon=3, usb=True)
+            ui.expect(scene.scene.draw(shown, b'[0]['+text+b'][OK]', 1, 1)[0], 'usb info '+leaf[:8].decode())
+            ui.key(13); ui.expect(shown, 'usb info closed')
+        done('USB Show Info: a folder, names over 29 characters on two lines, "..." past 58, 32-bit sizes, "1 byte"', ui)
 
         ud = Gem({(8, b'AESVC.PRG', b'P'): AESVC},
                  usb=dict(dirs=tree, files={b'/Usb0/CALC.PRG': bytes(10), b'/Usb0/notes.txt': b'Notes\r'}))
