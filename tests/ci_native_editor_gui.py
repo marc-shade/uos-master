@@ -51,7 +51,11 @@ class GraphicalEditor(Editor):
         self.frame(down=True);self.frame(down=False,exited=exited)
 
     def check(self,want,cursor=None,dirty=None,status=None,name=None,mode=None,released=True,selection=None):
-        assert self.contents()==want
+        got=self.contents()
+        if got!=want:
+            at=next((i for i,(a,b) in enumerate(zip(got,want)) if a!=b),min(len(got),len(want)))
+            raise AssertionError(f'document differs at byte {at} (length {len(got)}, want {len(want)}): '
+                                 f'got {bytes(got[max(0,at-8):at+8])!r} want {bytes(want[max(0,at-8):at+8])!r}')
         at=self.number('ed_cursor')
         if cursor is not None:assert at==cursor,(at,cursor)
         if dirty is not None:assert self.state()['dirty']==int(dirty)

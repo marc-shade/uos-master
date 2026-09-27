@@ -172,10 +172,24 @@ def main():
             e.ram[0x100:0x200]=stack
             assert sum(e.m.stats()[:2])==0
             e.key(2);e.key(0x1d);e.check(raw,1,False,selection=(0,1))
+            # Growth at zero free pages with nothing reclaimable is refused and
+            # changes nothing. History memory is optional (NATIVE-HISTORY: the
+            # allocator reclaims it before refusing), so mark it unavailable:
+            # the state eh_relieve checks before it returns N_NOMEM.
+            available=e.symbol('eh_available');saved_available=e.ram[available];e.ram[available]=0
             old=e.state();e.key(13)
             e.check(raw,1,False,status=3,selection=(0,1));assert e.state()==old
+            e.ram[available]=saved_available
             # Same-capacity replacement must still work at zero free pages.
             e.type('Q');want=b'Q'+raw[1:];e.check(want,1,True)
+            # With history present, growth reclaims it instead of refusing: the
+            # document takes a second chunk, the user is told undo is gone
+            # (status 30) and no page held by anyone else is touched.
+            e.key(13);want=b'Q\r\n'+raw[1:];e.check(want,3,True,status=30)
+            state=e.state()
+            assert (state['capacity'],state['chunks'],e.ram[available])==(8192,2,0),(state,e.ram[available])
+            for token,bank,start,end,content in held:
+                assert bytes(e.bus.ram[bank][start*256:end*256])==content
             e.key(1);e.key(20);e.check(b'',0,True)
             for token,bank,start,end,content in held:
                 assert bytes(e.bus.ram[bank][start*256:end*256])==content
