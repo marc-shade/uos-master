@@ -17,6 +17,7 @@ DOC_TRANSIENT_STORAGE=0
 DOC_EXTERNAL_MEMORY=0
 DOC_COMPACT=0
 DOC_HISTORY=0
+DOC_PARTIAL=0                ; 1: a short final chunk may use a run below 4 KiB
 doc_storage_read=N_READ
 doc_storage_write=N_WRITE
 .endweak
@@ -30,6 +31,8 @@ D_FAULT = 14
 D_BACKING = 15               ; 0 main RAM; 1 shared REU extent (opt-in)
 D_HANDLES = 16
 D_MAXCHUNKS = 24
+D_TAILBANK = 112             ; DOC_PARTIAL: bank/page of the last chunk
+D_TAILPAGE = 113
 
 doc_copy3 .macro source,dest
  .if DOC_COMPACT
@@ -236,6 +239,15 @@ doc_handle_index:
 doc_get_handle:
         lda d_owner
         sta N_OWNER
+.if DOC_COMPACT
+        ldy #0
+-       lda d_states+D_HANDLES,x
+        sta N_HANDLE,y
+        inx
+        iny
+        cpy #4
+        bne -
+.else
         lda d_states+D_HANDLES,x
         sta N_HANDLE
         lda d_states+D_HANDLES+1,x
@@ -244,6 +256,7 @@ doc_get_handle:
         sta N_HANDLE+2
         lda d_states+D_HANDLES+3,x
         sta N_HANDLE+3
+.endif
         rts
 
 ; Select a physical range already bounded by the caller to one 4 KiB chunk.
@@ -423,6 +436,13 @@ doc_grow:
         beq dm_grow
 +
 .endif
+.if DOC_PARTIAL
+        ; A final chunk below 4 KiB grows in place of appending: positions map
+        ; to chunks by P >> 12, so no chunk may follow an unaligned capacity.
+        lda d_states+D_CAP+1,x
+        and #15
+        bne doc_regrow
+.endif
         lda d_states+D_CHUNKS,x
         cmp #D_MAXCHUNKS
         bcc doc_allocate
@@ -431,33 +451,110 @@ doc_nomem:
         sec
         rts
 doc_allocate:
+        lda #16
+        jsr doc_alloc_run
+.if DOC_PARTIAL
+        bcc doc_allocated
+        ; No complete 4 KiB run is left: start a one-page final chunk. It grows
+        ; a page at a time, so it holds exactly what the document needs and
+        ; leaves the rest of RAM to the picker and other services.
+        lda #1
+        jsr doc_alloc_run
+.endif
+        bcc doc_allocated
+doc_alloc_failed:
+        rts
+; A = pages. C clear with N_HANDLE, or C set with the kernel error in A.
+doc_alloc_run:
+        sta d_pages
+doc_alloc_again:
         lda d_owner
         sta N_OWNER
-        lda #16
+        lda d_pages
         sta N_PAGES
         lda #$ff
         sta N_BANK
         jsr N_ALLOC
 .if DOC_HISTORY
-        bcc doc_allocated
+        bcc +
         pha
         jsr eh_relieve
-        bcc doc_retry_allocate
         pla
-        sec
+        bcc doc_alloc_again
++
+.endif
         rts
-doc_retry_allocate:
-        pla
-        jmp doc_allocate
-.else
-        bcs doc_return
+.if DOC_PARTIAL
+; Grow the short final chunk (A = its p pages) in place: free it and reserve
+; the same start one page longer. The kernel keeps RAM contents across free and
+; reserve, and nothing allocates in between (foreground only, no IRQ calls),
+; so the bytes never move and the chunk never fragments RAM. If the next page
+; is taken, the original range (just freed) is reserved again and growth is
+; refused. A failed free or restore poisons the context.
+doc_regrow:
+        sta d_bound
+        ldy d_states+D_CHUNKS,x
+        dey
+        sty d_index
+        jsr doc_handle_index
+        jsr doc_get_handle
+        jsr N_FREE
+        bcs doc_regrow_fault
+        lda #1
+        sta d_pages                   ; one page longer, then the old length
+doc_regrow_reserve:
+        ldx d_slot
+        lda d_owner
+        sta N_OWNER
+        lda d_states+D_TAILBANK,x
+        sta N_BANK
+        lda d_states+D_TAILPAGE,x
+        sta N_PAGE
+        lda d_bound
+        clc
+        adc d_pages
+        sta N_PAGES
+        jsr N_RESERVE
+        bcc doc_regrow_kept
+        dec d_pages
+        beq doc_regrow_reserve        ; restore the range just freed
+doc_regrow_fault:
+        jmp doc_fault
+doc_regrow_kept:
+        ldx d_slot
+        dec d_states+D_CHUNKS,x
+        lda d_pages
+        bne doc_allocated             ; one page longer: record it, shift the tail
+        jsr doc_keep_handle           ; restored: new generation, same bytes
+        jmp doc_nomem
 .endif
 doc_allocated:
+.if DOC_PARTIAL
+        jsr doc_keep_handle
+        jmp doc_grown
+; Append N_HANDLE (N_BANK/N_PAGE from N_ALLOC or N_RESERVE) as the last chunk.
+doc_keep_handle:
         ldx d_slot
+        lda N_BANK
+        sta d_states+D_TAILBANK,x
+        lda N_PAGE
+        sta d_states+D_TAILPAGE,x
+.else
+        ldx d_slot
+.endif
         lda d_states+D_CHUNKS,x
         sta d_index
         inc d_states+D_CHUNKS,x
         jsr doc_handle_index
+.if DOC_COMPACT
+        ldy #0
+-       lda N_HANDLE,y
+        sta d_states+D_HANDLES,x
+        inx
+        iny
+        cpy #4
+        bne -
+.else
         lda N_HANDLE
         sta d_states+D_HANDLES,x
         lda N_HANDLE+1
@@ -466,12 +563,20 @@ doc_allocated:
         sta d_states+D_HANDLES+2,x
         lda N_HANDLE+3
         sta d_states+D_HANDLES+3,x
+.endif
+.if DOC_PARTIAL
+        rts
+.endif
 doc_grown:
         #doc_load3 D_CAP,d_src
         #doc_copy3 d_src,d_dst
         clc
         lda d_dst+1
+.if DOC_PARTIAL
+        adc d_pages
+.else
         adc #16
+.endif
         sta d_dst+1
         bcc +
         inc d_dst+2
@@ -488,13 +593,19 @@ doc_grown:
 doc_insert:
         jsr doc_prepare
         bcs doc_return
+doc_insert_check:
         #doc_load3 D_END,d_limit
         #doc_load3 D_GAP,d_at
         #doc_sub3 d_at,d_limit
         #doc_cmp3 d_limit,d_count
         bcs doc_insert_room
         jsr doc_grow
+.if DOC_PARTIAL
+        bcc doc_insert_check          ; a partial final chunk grows one page per call
+        rts
+.else
         bcs doc_return
+.endif
 doc_insert_room:
         jsr doc_seek_gap
         bcs doc_return
@@ -682,6 +793,7 @@ d_bound3=d_slot+31
 d_bound=d_slot+34
 d_bytes=d_slot+36
 d_index=d_slot+38
+d_pages=d_slot+39
 .else
 d_slot: .byte 0
 d_owner: .byte 0
@@ -699,6 +811,7 @@ d_bound3: .fill 3,0
 d_bound: .word 0
 d_bytes: .word 0
 d_index: .byte 0
+d_pages: .byte 0
 .endif
 .if DOC_STATE_STORAGE
 d_states=DOC_STATE_STORAGE

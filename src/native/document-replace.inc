@@ -28,6 +28,7 @@ doc_replace:
         #doc_sub3 d_pos,d_limit
         #doc_cmp3 d_limit,d_count
         bcc doc_range
+doc_replace_check:
         #doc_load3 D_END,d_limit
         #doc_load3 D_GAP,d_at
         #doc_sub3 d_at,d_limit
@@ -35,7 +36,12 @@ doc_replace:
         #doc_cmp3 d_limit,d_replace_count
         bcs doc_replace_room
         jsr doc_grow
+.if DOC_PARTIAL
+        bcc doc_replace_check         ; a partial final chunk grows one page per call
+        rts
+.else
         bcs doc_return
+.endif
 doc_replace_room:
         jsr doc_seek_gap
         bcs doc_return

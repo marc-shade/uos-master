@@ -111,6 +111,13 @@ older kernels reject this image before executing it.
 
 [`document.inc`](../src/native/document.inc) implements a gap buffer with two
 independent document contexts. RAM contexts own up to 24 allocations of 4 KiB.
+In the graphical Editor (`DOC_PARTIAL`), when no complete 4 KiB run is left the
+last allocation may be shorter: it starts at one page and grows in place a page
+at a time (freed and reserved again one page longer at the same start; the
+kernel keeps RAM contents), so it holds exactly what the document uses and never
+moves. When the next page is taken, growth is refused and the document is
+unchanged. Only the last allocation can be short, because positions map to
+allocations by their 4 KiB index.
 Logical length, cursor and gap boundaries are 24-bit values; local transfers
 use at most 512 bytes. The RAM format can address 96 KiB per context, but actual
 capacity is lower when the application, workspace allocations, a second
@@ -199,8 +206,11 @@ The kernel reserves 4 KiB for Ultimate services and manages 426 heap pages.
 The existing public file entries dispatch both backends; ABI 1.3 adds the
 Ultimate path/status mailboxes. The preceding loader and directory checkpoints
 kept the editor image unchanged; the search build changes the core and binds
-both modules to it. The bank-0 workspace occupies `$df00..$feff`; its placement
-keeps enough complete 4 KiB extents free for documents beyond 64 KiB.
+both modules to it. The graphical Editor's bank-0 workspace occupies `$5000..$5fff`
+([workspace.inc](../src/native/editor/workspace.inc)). Beside it and the 36-page
+surface, bank 0 keeps one complete 4 KiB run, so a RAM document beyond 64 KiB
+relies on the short final allocation described above; that also leaves the
+picker's 19 cache pages for a full D81 directory beside a 66,057-byte document.
 
 ## ROM integration
 

@@ -111,10 +111,12 @@ def main():
             physical=bytearray();handles=[]
             for index in range(state[13]):
                 handle=state[16+index*4:20+index*4];record=records[(handle[0]-1)*8:handle[0]*8]
-                assert record[0]==32 and record[3]==16 and record[4:7]==handle[1:]
+                # Complete 4 KiB chunks, except that the last may be 1..15 pages (DOC_PARTIAL).
+                last=index==state[13]-1;size=record[3]*256
+                assert record[0]==32 and (record[3]==16 or (last and 1<=record[3]<16)) and record[4:7]==handle[1:]
                 prefix=label+f'-chunk-{index:02}'
                 raw=b''.join(capture.capture(prefix+f'-part-{offset:04x}',bank=record[1],address=record[2]*256+offset,
-                    count=min(2000,4096-offset)) for offset in range(0,4096,2000))
+                    count=min(2000,size-offset)) for offset in range(0,size,2000))
                 (work/(prefix+'.bin')).write_bytes(raw);physical.extend(raw)
                 handles.append(dict(handle_hex=handle.hex(),bank=record[1],page=record[2],sha256=hashlib.sha256(raw).hexdigest()))
             length=int.from_bytes(state[:3],'little');gap=int.from_bytes(state[3:6],'little');end=int.from_bytes(state[6:9],'little');capacity=int.from_bytes(state[9:12],'little')

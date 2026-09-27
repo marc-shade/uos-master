@@ -124,7 +124,9 @@ try:
     done('unsupported display releases surface and retains usable text consoles',d)
     calc.Machine=original_machine
     class SuiteFiles(calc.Calculator):
-        instruction_limit=12000000
+        # Graphical Files with its VDC mirror needs ~14.8M instructions to reach
+        # input on the display bus (measured 2026-09-27); 12M predated the mirror.
+        instruction_limit=30000000
     files=SuiteFiles('files',loader_name=b'FILES',image_prefix='native-desktop')
     files.key(27,exited=True)
     assert files.ram[0x3d28] == 0

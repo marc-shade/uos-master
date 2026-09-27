@@ -62,6 +62,10 @@ VICE_MATRIX = {
 }
 
 PRIMARY = ('case', 'group', 'app')
+# Choice values that only exist together with another option's value. VDC
+# address decoding can never exceed the chip's RAM (64 KiB addressing on a
+# 16 KiB 8563 is not a real configuration and is not qualified anywhere).
+PAIRED = {'addressing': lambda value: {'size': value}}
 SHRINKING = {'quick', 'host_only', 'recovery_only', 'boot_frame_only', 'cpu_observation'}
 
 
@@ -153,7 +157,7 @@ def cpu_jobs(name, parser):
         base = base_value(action)
         for value in (str(c) for c in action.choices):
             if value != base and value != 'all':
-                jobs.append(args_for({**first, action.dest: value}))
+                jobs.append(args_for({**first, action.dest: value, **PAIRED.get(action.dest, lambda v: {})(value)}))
     for action in flags:
         jobs.append(args_for(first) + [option(action)])
     return [(name, job, report) for job in jobs]
@@ -169,7 +173,7 @@ def label(name, args):
     return name + ('__'+tail if tail else '')
 
 
-def run(job, out, timeout):
+def run(job, out, timeout, port):
     name, args, report_opt = job
     tag = label(name, args)
     report = out/f'{tag}.json'
@@ -179,8 +183,9 @@ def run(job, out, timeout):
     started = time.time()
     with (out/f'{tag}.log').open('w') as log:
         try:
+            env = dict(os.environ, UOS_VICE_PORT=str(port))     # distinct VICE monitor per job
             code = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
-                                  timeout=timeout).returncode
+                                  timeout=timeout, env=env).returncode
         except subprocess.TimeoutExpired:
             code = 'timeout'
     seconds = round(time.time()-started, 1)
@@ -232,7 +237,8 @@ def main():
     results = []
     print(f'{len(jobs)} jobs, {args.jobs} at a time -> {args.out}', flush=True)
     with futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        pending = {pool.submit(run, job, args.out, args.timeout): job for job in jobs}
+        pending = {pool.submit(run, job, args.out, args.timeout, 62900+index): job
+                   for index, job in enumerate(jobs)}
         for done in futures.as_completed(pending):
             result = done.result()
             results.append(result)

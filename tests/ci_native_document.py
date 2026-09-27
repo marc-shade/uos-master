@@ -84,15 +84,19 @@ class Document:
             data=physical_bytes(self,state)
             self.banks={'reu'}
             return bytes(data[:state['gap']]+data[state['end']:])
-        assert state['capacity']==state['chunks']*4096
-        data=bytearray();banks=set()
+        # Every chunk is a complete 4 KiB run except, with DOC_PARTIAL, the
+        # last one, which may be 1..15 pages; capacity is exactly the owned pages.
+        data=bytearray();banks=set();pages_total=0
         for index in range(state['chunks']):
             handle=state['handles'][index*4:index*4+4]
             assert handle[0]
             at=0x3c00+(handle[0]-1)*8;record=self.ram[at:at+8]
-            assert record[0]==32 and record[3]==16 and record[4:7]==handle[1:]
-            bank,page=record[1:3];banks.add(bank)
-            data+=self.m.bus.ram[bank][page*256:page*256+4096]
+            last=index==state['chunks']-1
+            assert record[0]==32 and record[4:7]==handle[1:],(index,bytes(record))
+            assert record[3]==16 or (last and 1<=record[3]<16),(index,record[3])
+            bank,page,pages=record[1],record[2],record[3];banks.add(bank);pages_total+=pages
+            data+=self.m.bus.ram[bank][page*256:page*256+pages*256]
+        assert state['capacity']==pages_total*256,(state['capacity'],pages_total)
         self.banks=banks
         return bytes(data[:state['gap']]+data[state['end']:])
 
@@ -121,6 +125,12 @@ def main():
             folder=Path(directory);output=folder/'document.prg';labels=folder/'document.sym'
             subprocess.run(['64tass','-a','-B',str(ROOT/'probes/native-document.asm'),'-o',str(output),'-l',str(labels)],check=True,capture_output=True)
             image=output.read_bytes();symbols={name:int(value,16) for name,value in re.findall(r'^(\w+)\s*=\s*\$([0-9a-f]+)$',labels.read_text(),re.M)}
+            # The graphical Editor's configuration: short final chunk, compact code.
+            partial_out=folder/'partial.prg';partial_labels=folder/'partial.sym'
+            subprocess.run(['64tass','-a','-B','-D','DOC_PARTIAL=1','-D','DOC_COMPACT=1',str(ROOT/'probes/native-document.asm'),
+                            '-o',str(partial_out),'-l',str(partial_labels)],check=True,capture_output=True)
+            partial_image=partial_out.read_bytes()
+            partial_symbols={name:int(value,16) for name,value in re.findall(r'^(\w+)\s*=\s*\$([0-9a-f]+)$',partial_labels.read_text(),re.M)}
         report['document_sha256']=hashlib.sha256(image).hexdigest();report['document_bytes']=len(image)
         def done(name,d):
             report['cases'][name]=dict(calls=d.calls,instructions=d.instructions,irq_attempts=d.irq_attempts)
@@ -227,6 +237,63 @@ def main():
         d.call('read',pos=0,count=1,expected=9)
         d.call('replace',pos=0,count=1,data=b'X',expected=9)
         d.dispose();done('replace-transfer-failure-poisons-context',d)
+        # DOC_PARTIAL: when no complete 4 KiB run is left, the final chunk starts
+        # at one page and grows in place a page at a time, so the capacity is
+        # always the exact page fit of the document and the chunk never moves.
+        def free_runs(d):
+            runs=[]
+            for bank in (0,1):
+                table=d.ram[0x3800+bank*256:0x3900+bank*256];start=None
+                for page in range(256):
+                    if not table[page] and start is None:start=page
+                    if (table[page] or page==255) and start is not None:
+                        end=page if table[page] else 256;runs.append((bank,start,end));start=None
+            return runs
+        def exact(d,length):
+            state=d.state();tail=max(0,length-4096)
+            assert state['capacity']==4096+256*((tail+255)//256),(state['capacity'],length)
+        d=Document(partial_image,partial_symbols);want=bytearray((i*37+5)&255 for i in range(4096));d.append(want)
+        # Pin all free RAM except the first 11 pages of one bank-1 run: no
+        # complete 4 KiB run remains, as beside the Editor's workspace.
+        pins=[];kept=None
+        for bank,start,end in free_runs(d):
+            if kept is None and bank==1 and end-start>=11:
+                kept=(bank,start,start+11);start+=11
+            if end>start:pins.append(d.m.alloc(end-start,bank,owner=16,page=start))
+        assert kept and not any(end-start>=16 for _,start,end in free_runs(d))
+        reached=0
+        while reached<5:                                   # exact fit through five regrows
+            data=bytes((len(want)*11+i)&255 for i in range(100))
+            d.call('insert',pos=len(want),data=data);want+=data
+            assert d.bytes()==want;exact(d,len(want))
+            reached=(d.state()['capacity']-4096)//256
+        assert d.state()['chunks']==2
+        # Refusal: take the pages after it; growth restores the old range and
+        # changes nothing (the chunk is reserved again, bytes in place).
+        for bank,start,end in free_runs(d):
+            pins.append(d.m.alloc(end-start,bank,owner=16,page=start))
+        state=d.state();data=b'R'*(state['capacity']-state['length']+1);before=d.bytes(),d.state()
+        d.call('insert',pos=len(want),data=data,expected=2)
+        after=d.state();last=(after['chunks']-1)*4
+        assert d.bytes()==before[0]
+        assert {k:v for k,v in after.items() if k!='handles'}=={k:v for k,v in before[1].items() if k!='handles'}
+        # Only the re-reserved last chunk's generation may change; same slot.
+        assert after['handles'][:last+1]==before[1]['handles'][:last+1]
+        assert after['handles'][last+4:]==before[1]['handles'][last+4:]
+        # Edits across the boundary into the short chunk keep exact bytes.
+        for at,count,payload in ((4090,20,b'ACROSS THE PARTIAL!!'),(4096,3,b''),(10,5,b'head')):
+            d.call('replace',pos=at,count=count,data=payload);want[at:at+count]=payload;d.check(want)
+        # With RAM back, the final chunk grows to 4 KiB, then a new chunk follows.
+        for handle in pins:d.m.select(handle,16);d.m.invoke('free')
+        while d.state()['capacity']<8192:
+            data=b'G'*200;d.call('insert',pos=len(want),data=data);want+=data
+            assert d.bytes()==want;exact(d,len(want))
+        assert d.state()['chunks']==2
+        while len(want)<=8192:
+            data=b'H'*300;d.call('insert',pos=len(want),data=data);want+=data
+        state=d.state();assert state['chunks']==3 and state['capacity']==12288,state
+        d.check(want);d.dispose();done('partial-final-chunk-exact-fit-refusal-and-regrowth-to-full-chunks',d)
+
         report['passed']=True
         print('PASS: native banked document model, exact logical bytes and complete ownership cleanup',flush=True)
     except BaseException as error:report['error']=str(error);raise
