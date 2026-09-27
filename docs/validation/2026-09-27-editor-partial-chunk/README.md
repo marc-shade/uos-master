@@ -67,6 +67,46 @@ Planted bugs, each caught by the intended check:
 | refusal skips re-reserving the freed range | chunk walk finds a freed record behind a stale handle |
 | `doc_grow` ignores the partial check | insert fails with a range error after appending past an unaligned capacity |
 
+## Regression found by the full sweep: REU documents
+
+The first version made `doc_grown` add `d_pages` instead of 16. REU documents
+also reach `doc_grown`, from `dm_grow` (`src/native/editor/memory.inc`), which
+did not set `d_pages`. The stale 0 meant capacity never grew, and the new
+re-check loop in `doc_insert` spun: `ci_native_editor_reu_documents.py --case
+large` and `--case capacity` stopped at the first typed key ("calculator did
+not reach input"). `dm_grow` now sets `d_pages` to 16 (5 bytes; `EDPICK.PRG`
+ends at `$bff6`, 10 bytes spare). The document suite's model build does not
+enable `DOC_EXTERNAL_MEMORY`, so it could not see this path; the REU document
+suite is the oracle that caught it.
+
+With the hang fixed, the same two cases still failed, as they did on the
+unchanged `ef57914` build. Their oracles predate the span history (`34bc252`),
+whose REU records share owner 33 with the document:
+
+- `capacity` counted exactly one owner-33 record after the failed Open; the
+  four history spans of the typed `KEEP` are also there, as
+  `docs/NATIVE-HISTORY.md` specifies (a failed Open retains history).
+- `large` required every REU byte outside the document extents to be
+  unchanged; the history journal writes its spans there, and released records
+  keep their contents.
+
+The test now reads the history service's own table (`bh_records`, kind 2),
+checks each token against the arena record (owner 33, generation, cookie), and
+requires exactly the document plus those spans (`capacity`), and that every REU
+byte outside the display snapshot, the document extents and the observed
+history spans is unchanged, with the `KEEP` spans actually written (`large`).
+
+On the fixed build (`editor.prg` `dd05c31b…`, `edpick.prg` `2fe5a65b…`) all six
+REU document cases pass: [capacity](reu-documents-capacity.json),
+[large](reu-documents-large.json), transfer, file_close, no_vdc, probe.
+Negative controls, each rejected by the updated oracle:
+
+| Plant | Caught by |
+|---|---|
+| owner-33 record left behind after the failed Open | record set ≠ document + history spans |
+| one REU byte flipped above every extent (`$7ffff`) | `REU changed` from `$2f000` |
+| one REU byte flipped between the display snapshot and the first extent | `REU changed` `$4800..$5000` |
+
 ## Limits
 
 - CPU-level only. Not run in VICE or on the C128 yet.

@@ -158,6 +158,10 @@ dm_grow:
         iny
         cpy #8
         bne -
+.if DOC_PARTIAL
+        lda #16              ; one 4 KiB unit (doc_grown adds d_pages)
+        sta d_pages
+.endif
         jmp doc_grown
 dm_mode: .byte 0              ; 0 undecided, 1 RAM, 2 shared REU
 dm_lease: .byte 0

@@ -70,6 +70,7 @@ PAIRED = {'addressing': lambda value: {'size': value}}
 REQUIRES = {
     ('ci_native_editor_history', 'case', 'large'): {'vdc_kib': '64', 'reu_kib': '512'},
     ('ci_native_editor_selection', 'case', 'display'): {'vdc_kib': '64'},
+    ('ci_native_editor_selection', 'case', 'large'): {'vdc_kib': '64', 'reu_kib': '512'},
     ('ci_native_open_with', 'reu_kib', '512'): {'vdc_kib': '64'},
 }
 SHRINKING = {'quick', 'host_only', 'recovery_only', 'boot_frame_only', 'cpu_observation'}

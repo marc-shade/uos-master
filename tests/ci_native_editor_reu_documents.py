@@ -11,6 +11,8 @@ from native_document_reu import extent
 from native_picker_fixture import Picker
 from ci_native_browser import expected
 
+H_STEPS = 16                  # src/native/history-api.inc
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -33,6 +35,24 @@ def main():
             assert p.state()['backing'] == 1 and p.banks == {'reu'}
             assert sum(p.m.stats()[:2]) == 426-96-16-36-COMPONENT_PAGES
 
+    def history_extents(p):
+        """REU span-history records (docs/NATIVE-HISTORY.md: owner 33, like the
+        document), from the history service's table checked against the arena."""
+        table = component(p, 'bh_records', (H_STEPS+1)*9)
+        records = component(p, 'ru_records', 256)
+        found = {}
+        for at in range(0, len(table), 9):
+            if table[at] != 2:
+                continue
+            token = table[at+1:at+9]
+            assert 1 <= token[0] <= 32 and token[4:] == component(p, 'ru_cookie', 4)
+            record = records[(token[0]-1)*8:token[0]*8]
+            assert record[0] == 33 and record[5:8] == token[1:4]
+            start, units = int.from_bytes(record[1:3], 'little'), int.from_bytes(record[3:5], 'little')
+            assert units > 0
+            found[token[0]] = (start*4096, units*4096)
+        return found
+
     try:
         gui.PointerBus = type('DocumentREU', (CalculatorBus,), options)
         p = RecoveryEditor(files, device=9, fmt=2)
@@ -40,6 +60,9 @@ def main():
         if args.case == 'large':
             checked(p, b'')
             p.type('KEEP')
+            kept = history_extents(p)
+            assert len(kept) == 4                               # one span per typed key
+            history = list(kept.values())
             old_start, old_count = extent(p, p.state())
             snapshot_bytes = p.value('vd_pages')*256
             tokens = p.data('vs_token', 8)+p.data('bk_handle', 4)
@@ -53,6 +76,7 @@ def main():
                 at = offset+(want[offset-1:offset+1] == b'\r\n')
                 checked(p, want, cursor=at)
                 p.type(inserted.decode())
+                history += history_extents(p).values()
                 want = want[:at]+inserted+want[at:]
                 checked(p, want, cursor=at+len(inserted), dirty=True)
             p.key(0x86)
@@ -80,8 +104,16 @@ def main():
             p.restored()
             low = min(old_start, first_start, last_start)
             high = max(old_start+old_count, first_start+first_count, last_start+last_count)
-            assert p.bus.reu_ram[snapshot_bytes:low] == p.bus.reu_original[snapshot_bytes:low]
-            assert p.bus.reu_ram[high:] == p.bus.reu_original[high:]
+            # Outside the display snapshot, the documents and the history spans
+            # (released at exit, contents retained), every REU byte is unchanged.
+            ram, original = p.bus.reu_ram, p.bus.reu_original
+            assert any(ram[s:s+c] != original[s:s+c] for s, c in kept.values()), 'history spans reached the REU'
+            edge = 0
+            for start, end in sorted((s, s+c) for s, c in [(0, snapshot_bytes), (low, high-low)]+history):
+                if start > edge:
+                    assert ram[edge:start] == original[edge:start], ('REU changed', hex(edge), hex(start))
+                edge = max(edge, end)
+            assert ram[edge:] == original[edge:], ('REU changed', hex(edge))
             records = component(p, 'ru_records', 256, released=True)
             assert all(records[at] == 0 for at in range(0, 256, 8))
             description = '128 KiB file: edits across 64/96 KiB, retained picker, exact verified Save As and reopen'
@@ -95,7 +127,11 @@ def main():
             pending = p.state(p.value('ed_active') ^ 128)
             assert pending['capacity'] == pending['chunks'] == pending['backing'] == 0
             records = component(p, 'ru_records', 256)
-            assert sum(records[at] == 33 for at in range(0, 256, 8)) == 1
+            # The staged document was returned: owner 33 is the kept document and
+            # its four history spans (a failed Open retains history, NATIVE-HISTORY.md).
+            spans = history_extents(p)
+            assert len(spans) == 4 and token[0] not in spans
+            assert {at//8+1 for at in range(0, 256, 8) if records[at] == 33} == {token[0], *spans}
             p.prompt(0x86, 'KEPT')
             assert bytes(p.io.files[9, b'KEPT', b'S']) == b'KEEP'
             p.key(0x87)
