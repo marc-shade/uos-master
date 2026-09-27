@@ -27,7 +27,11 @@ def main():
                 if case=='corrupt':
                     provider=bytearray((ROOT/'target/native-desktop/vdsvc.prg').read_bytes());provider[-1]^=1
                 p=RecoveryEditor(device=9,vdc_component=provider);p.check(b'',0,False)
-                assert not p.value('vd_phase') and not p.value('bk_state')
+                assert not p.value('vd_phase')
+                # Without the chip the component still hosts the span history
+                # (docs/NATIVE-HISTORY.md); a missing or corrupt one is unloaded.
+                hosted=case=='hardware'
+                assert p.value('bk_state')==(2 if hosted else 0) and p.value('eh_available')==hosted
                 p.type('KEPT');p.check(b'KEPT',4,True)
                 p.prompt(0x86,'COPY');p.check(b'KEPT',4,False,status=1,name='COPY')
                 assert bytes(p.io.files[9,b'COPY',b'S'])==b'KEPT'

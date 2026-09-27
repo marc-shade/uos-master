@@ -14,10 +14,18 @@ vd_open:
         sta N_READY
         sta vd_fault
         lda bk_state
-.if BP_SHARED_MEMORY
+.if BP_SHARED_MEMORY || BP_HISTORY
+        ; A loaded component is reused for exactly what vd_close keeps it for.
         cmp #2
         bne +
+ .if BP_SHARED_MEMORY
         lda dm_lease
+  .if BP_HISTORY
+        ora eh_available
+  .endif
+ .else
+        lda eh_available
+ .endif
         bne bp_loaded
         beq bp_open_bad
 +       lda bk_state
