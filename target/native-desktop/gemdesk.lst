@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -o /home/marc/.cache/claude/tmp/claude-1000/uos-goal/target/native-desktop/gemdesk.prg -l /home/marc/.cache/claude/tmp/claude-1000/uos-goal/target/native-desktop/gemdesk.sym -L /home/marc/.cache/claude/tmp/claude-1000/uos-goal/target/native-desktop/gemdesk.lst /home/marc/.cache/claude/tmp/claude-1000/uos-goal/src/native/gemdesk.asm
-; Mon Sep 28 08:06:52 2026
+; Mon Sep 28 12:27:38 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -5147,48 +5147,48 @@
 .8f10						ae_event_done:
 .8f10		60		rts		        rts
 .8f11						ae_event_wait:
-.8f11		a9 01		lda #$01	        lda #1
-.8f13		8d 12 3d	sta $3d12	        sta N_READY
+.8f11		a9 01		lda #$01	        lda #1                  ; published for the whole wait (N_KEYIN clears
+.8f13		8d 12 3d	sta $3d12	        sta N_READY             ; it for a key; pm_poll while it reads the port)
 .8f16		20 3b 1c	jsr $1c3b	        jsr N_KEYIN
-.8f19		a2 00		ldx #$00	        ldx #0
-.8f1b		8e 12 3d	stx $3d12	        stx N_READY
-.8f1e		8d d3 90	sta $90d3	        sta ae_ev_key
-.8f21		aa		tax		        tax
-.8f22		d0 48		bne $8f6c	        bne ae_wait_done
-.8f24		ad 2f 90	lda $902f	        lda ae_km_click
-.8f27		d0 43		bne $8f6c	        bne ae_wait_done
-.8f29		ad 70 a6	lda $a670	        lda pm_pending          ; the 1351 read starts in raster lines 80..159
-.8f2c		48		pha		        pha                     ; and completes 32 lines later: drive it here
-.8f2d		20 79 a4	jsr $a479	        jsr pm_poll
-.8f30		68		pla		        pla
-.8f31		f0 1e		beq $8f51	        beq ae_wait_time
-.8f33		ad 70 a6	lda $a670	        lda pm_pending
-.8f36		d0 19		bne $8f51	        bne ae_wait_time
-.8f38		a2 02		ldx #$02	        ldx #2                  ; a read completed: did the pointer move?
-.8f3a						ae_wait_moved:
-.8f3a		bd 72 a6	lda $a672,x	        lda pm_x,x
-.8f3d		dd db 90	cmp $90db,x	        cmp ae_pointer_x,x
-.8f40		d0 2a		bne $8f6c	        bne ae_wait_done
-.8f42		ca		dex		        dex
-.8f43		10 f5		bpl $8f3a	        bpl ae_wait_moved
-.8f45		ad 79 a6	lda $a679	        lda pm_buttons
-.8f48		f0 02		beq $8f4c	        beq +
-.8f4a		a9 01		lda #$01	        lda #1
-.8f4c		cd de 90	cmp $90de	+       cmp ae_pointer_buttons
-.8f4f		d0 1b		bne $8f6c	        bne ae_wait_done
-.8f51						ae_wait_time:
-.8f51		ad b0 90	lda $90b0	        lda ae_ev_params
-.8f54		29 20		and #$20	        and #MU_TIMER
-.8f56		d0 05		bne $8f5d	        bne +
-.8f58		ad d6 90	lda $90d6	        lda ae_ev_window
-.8f5b		f0 b4		beq $8f11	        beq ae_event_wait
-.8f5d		a5 a2		lda $a2		+       lda $a2                 ; the jiffy clock's low byte
-.8f5f		cd d5 90	cmp $90d5	        cmp ae_ev_tick
-.8f62		f0 ad		beq $8f11	        beq ae_event_wait
-.8f64		ad d6 90	lda $90d6	        lda ae_ev_window
-.8f67		f0 03		beq $8f6c	        beq ae_wait_done
-.8f69		ce d6 90	dec $90d6	        dec ae_ev_window
-.8f6c						ae_wait_done:
+.8f19		8d d3 90	sta $90d3	        sta ae_ev_key
+.8f1c		aa		tax		        tax
+.8f1d		d0 48		bne $8f67	        bne ae_wait_done
+.8f1f		ad 2f 90	lda $902f	        lda ae_km_click
+.8f22		d0 43		bne $8f67	        bne ae_wait_done
+.8f24		ad 70 a6	lda $a670	        lda pm_pending          ; the 1351 read starts in raster lines 80..159
+.8f27		48		pha		        pha                     ; and completes 32 lines later: drive it here
+.8f28		20 79 a4	jsr $a479	        jsr pm_poll
+.8f2b		68		pla		        pla
+.8f2c		f0 1e		beq $8f4c	        beq ae_wait_time
+.8f2e		ad 70 a6	lda $a670	        lda pm_pending
+.8f31		d0 19		bne $8f4c	        bne ae_wait_time
+.8f33		a2 02		ldx #$02	        ldx #2                  ; a read completed: did the pointer move?
+.8f35						ae_wait_moved:
+.8f35		bd 72 a6	lda $a672,x	        lda pm_x,x
+.8f38		dd db 90	cmp $90db,x	        cmp ae_pointer_x,x
+.8f3b		d0 2a		bne $8f67	        bne ae_wait_done
+.8f3d		ca		dex		        dex
+.8f3e		10 f5		bpl $8f35	        bpl ae_wait_moved
+.8f40		ad 79 a6	lda $a679	        lda pm_buttons
+.8f43		f0 02		beq $8f47	        beq +
+.8f45		a9 01		lda #$01	        lda #1
+.8f47		cd de 90	cmp $90de	+       cmp ae_pointer_buttons
+.8f4a		d0 1b		bne $8f67	        bne ae_wait_done
+.8f4c						ae_wait_time:
+.8f4c		ad b0 90	lda $90b0	        lda ae_ev_params
+.8f4f		29 20		and #$20	        and #MU_TIMER
+.8f51		d0 05		bne $8f58	        bne +
+.8f53		ad d6 90	lda $90d6	        lda ae_ev_window
+.8f56		f0 b9		beq $8f11	        beq ae_event_wait
+.8f58		a5 a2		lda $a2		+       lda $a2                 ; the jiffy clock's low byte
+.8f5a		cd d5 90	cmp $90d5	        cmp ae_ev_tick
+.8f5d		f0 b2		beq $8f11	        beq ae_event_wait
+.8f5f		ad d6 90	lda $90d6	        lda ae_ev_window
+.8f62		f0 03		beq $8f67	        beq ae_wait_done
+.8f64		ce d6 90	dec $90d6	        dec ae_ev_window
+.8f67						ae_wait_done:
+.8f67		a2 00		ldx #$00	        ldx #0                  ; leaving the wait: a sample follows
+.8f69		8e 12 3d	stx $3d12	        stx N_READY
 .8f6c		a5 a2		lda $a2		        lda $a2
 .8f6e		8d d5 90	sta $90d5	        sta ae_ev_tick
 .8f71		ad d3 90	lda $90d3	        lda ae_ev_key
