@@ -66,29 +66,33 @@ includes:
 - 12 of the 15 `pointer_iec` variants, including the qualified
   large-document configuration.
 
-## Not passing
+## The four jobs that failed in that sweep, now passing
 
-- **`editor_gui_iec`: the scenario does not fit this configuration.** Its
-  66,053-byte document is a RAM document beside the full-D81 picker. VICE's
-  C128 has a VDC, whose Editor mirror keeps a RAM snapshot without an REU. That
-  leaves 175 or 167 pages (NATIVE-EDITOR-GUI.md), and the Open is refused with
-  the document kept, as designed.
-  - The RAM path over 64 KiB is covered by `ci_native_document` and
-    `ci_native_picker_gui --case large`.
-  - The REU path is covered by `ci_native_editor_reu_documents` and the C128
-    runs.
-  - The test needs a new scenario: an REU, or a document that fits.
-- **`pointer_iec --80col` and `--editor-only --editor-selection`:** the harness
-  timed out waiting for a typed key in the Editor to finish ("i/g reaches
-  editor"). The Editor clears `N_READY` for its per-frame 1351 sampling.
-  - VICE answers the monitor at a fixed point of the frame, so the polls can
-    keep landing in that window.
-  - The same class of problem, caused by the AES wait, was measured and fixed
-    for GEMDESK.
-  - The runs are being repeated with sampling at a random point of the frame.
-- **`pointer_iec --claude-only`:** "panel backing" differed at
-  `claude-port-unavailable`. It passed in the agent's earlier run. It is being
-  repeated.
+- **`editor_gui_iec`: reworked around the documented memory limit.** VICE's
+  C128 has a VDC and no REU, so the Editor's 80-column mirror keeps its
+  snapshot in RAM (175 or 167 free pages, NATIVE-EDITOR-GUI.md).
+  - The test now asserts that opening the 66,053-byte file is refused with
+    status 3 and the empty document kept (`large-refused`).
+  - It then runs the whole workflow with a 32,000-byte document that fits
+    beside the full-D81 picker: open, go to `$4001` across a chunk boundary,
+    edit, picker with 296 entries and 19 cache pages, Save As to drive 10, the
+    refusal to overwrite, reopen.
+  - 14 checks pass ([report](editor-gui-iec.json)). The RAM path over 64 KiB
+    stays covered by `ci_native_document` and `ci_native_picker_gui --case
+    large`; the REU path by `ci_native_editor_reu_documents` and the C128 runs.
+- **`pointer_iec` (`--80col`, `--editor-only --editor-selection`,
+  `--claude-only`): sampling at a random point of the frame.**
+  - The harness waited for a typed key, or for an idle capture, until it saw
+    `N_READY` set. VICE answers the monitor at a fixed point of its frame,
+    and apps that sample the 1351 each frame clear `N_READY` near the same
+    point.
+  - Before each such sample, the suite now steps a random number of
+    instructions (1..6000, about one frame) with the binary monitor's
+    ADVANCE_INSTRUCTIONS command. What is checked is unchanged.
+  - The full 15-variant matrix passes ([summary](pointer-matrix-summary.json)).
+
+With these, every job of the VICE sweep has passed on the final build: 47 in
+the sweep plus the four reruns above.
 
 ## Not verified
 

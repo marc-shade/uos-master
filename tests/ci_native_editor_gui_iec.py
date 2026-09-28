@@ -35,12 +35,13 @@ def main():
     disks={d:work/f'data-{d}.d81' for d in (9,10)}
     for device,path in disks.items():subprocess.run(['c1541','-format',f'editor{device},02','d81',str(path)],check=True,capture_output=True)
     fixtures=dict(note=b'ONE "QUOTED"\r\nTWO\nTHREE\r'+bytes([0,255])+b' END',
-                  large=(b'0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n'*1800)[:66053])
+                  large=(b'0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n'*1800)[:66053],
+                  fits=(b'0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n'*900)[:32000])
     for name,data in fixtures.items():
         p=work/(name+'.bin');p.write_bytes(data)
         subprocess.run(['c1541','-attach',str(disks[9]),'-write',str(p),name+',s'],check=True,capture_output=True)
     filler=work/'entry.bin';filler.write_bytes(b'F')
-    for index in range(294):
+    for index in range(293):
         subprocess.run(['c1541','-attach',str(disks[9]),'-write',str(filler),f'entry{index:03},s'],check=True,capture_output=True)
     originals={d:p.read_bytes() for d,p in disks.items()}
     for d,raw in originals.items():(work/f'initial-{d}.d81').write_bytes(raw)
@@ -184,15 +185,20 @@ def main():
             prompt(0x8c,'9');function_key(0x8b);function_key(0x8b)
             prompt(0x85,'NOTE');check('mixed-newlines',fixtures['note'],0,name='NOTE');document('mixed-document',fixtures['note'])
             function_key(0x87);check('new-document',b'',0)
-            prompt(0x85,'LARGE');data=fixtures['large'];check('large-opened',data,0,name='LARGE');document('large-input',data)
-            prompt(0x88,'010001');at=65537
+            # This machine has a VDC and no REU: the Editor's 80-column mirror keeps
+            # its snapshot in RAM (175/167 free pages, NATIVE-EDITOR-GUI.md), so a
+            # 66,053-byte RAM document is refused and the current one kept. The
+            # rest of the workflow uses a document that fits beside the picker.
+            prompt(0x85,'LARGE');check('large-refused',b'',0,status=3);document('large-refused-kept',b'')
+            prompt(0x85,'FITS');data=fixtures['fits'];check('large-opened',data,0,name='FITS');document('large-input',data)
+            prompt(0x88,'004001');at=16385
             if data[at-1:at+1]==b'\r\n':at+=1
-            check('large-position',data,at,name='LARGE')
+            check('large-position',data,at,name='FITS')
             for char in b'C128':key(char)
-            wanted=data[:at]+b'C128'+data[at:];check('large-edited',wanted,at+4,name='LARGE',dirty=True);document('large-edit',wanted)
+            wanted=data[:at]+b'C128'+data[at:];check('large-edited',wanted,at+4,name='FITS',dirty=True);document('large-edit',wanted)
             function_key(0x86)
             for char in b'COPY':key(char)
-            check('save-field',wanted,at+4,name='LARGE',dirty=True,mode=2,field='COPY',field_caret=4,focus=11)
+            check('save-field',wanted,at+4,name='FITS',dirty=True,mode=2,field='COPY',field_caret=4,focus=11)
             function_key(0x88);assert app_read('ed_module_kind')==b'\1' and app_read('eg_bitmap')==b'\0'
             entries=disk_records(originals[9],2)
             assert len(entries)==296
@@ -224,7 +230,7 @@ def main():
             picker_check('large-picker-last',288)
             document('large-document-during-picker',wanted)
             for char in b'D10\rS':key(char)
-            check('save-destination',wanted,at+4,name='LARGE',dirty=True,device=10,mode=2,field='COPY',field_caret=4,focus=11)
+            check('save-destination',wanted,at+4,name='FITS',dirty=True,device=10,mode=2,field='COPY',field_caret=4,focus=11)
             key(13);check('large-saved',wanted,at+4,name='COPY',device=10,status=1);document('large-after-save',wanted)
             prompt(0x86,'COPY');check('existing-refused',wanted,at+4,name='COPY',device=10,status=6)
             function_key(0x87);prompt(0x85,'COPY');check('copy-reopened',wanted,0,name='COPY',device=10);document('large-reopened',wanted)
@@ -239,7 +245,7 @@ def main():
         assert exported.read_bytes()==(work/'expected-copy.bin').read_bytes()
         records=disk_records(disks[10].read_bytes(),2);assert [(r['name'],r['type']) for r in records]==[(b'COPY',1)]
         report.update(passed=True,source_disk_unchanged=True,system_disk_unchanged=True,independent_export_matches=True);save()
-        print('PASS: graphical editor above 64 KiB, picker retention, reopened save and independent export',flush=True)
+        print('PASS: 66 KiB RAM document refused beside the RAM VDC snapshot; 32 KB document edited across chunks, picker retention, reopened save and independent export',flush=True)
     except BaseException as error:
         report['error']=dict(type=type(error).__name__,message=str(error));raise
     finally:

@@ -13,6 +13,8 @@ import socket
 import subprocess
 import sys
 import tempfile
+import random
+import struct
 import time
 
 sys.dont_write_bytecode=True
@@ -25,7 +27,7 @@ from native_capture import NativeCapture,wait,expected_screen,calculator_screen
 from native_capture_transport import PausedViceMonitor
 from native_mode_capture import NativeModeCapture
 from native_running_layout import verify_running_layout
-from launcher_scene import surface,console
+from launcher_scene import surface,console,CARDS
 from native_pointer_check import pixels,surface_pixels,check_canvas
 from native_calc_scene import surface as calc_surface, BUTTONS
 from native_files_check import exact_d64_files,exact_disk_files
@@ -187,6 +189,12 @@ def main():
             # The checked app allocation lives in physical bank 0 throughout.
             return read(at,n,bank=banks['ram00'])
         def ready():return read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2)
+        def unphase():
+            # VICE answers the monitor at a fixed point of its frame. Apps that
+            # sample the 1351 each frame clear N_READY around the same point, so
+            # a poll there never sees them idle; step a random part of a frame
+            # (binary monitor ADVANCE_INSTRUCTIONS) before sampling.
+            error,_=mon._recv(mon._send(0x71,struct.pack('<BH',0,random.randint(1,6000))));assert not error
         def value(name):return app_read(symbol(name))[0]
         def position():
             assert symbol('pm_y')==symbol('pm_x')+2
@@ -233,6 +241,7 @@ def main():
             deadline=time.monotonic()+30;deferred=0
             while True:
                 with paused.paused(label):
+                    unphase()
                     idle=bytes(paused.read_mem(0x3d11,0x3d12,bank=banks['ram00']))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0,bank=banks['ram00']))==b'\0'
                     if idle:
                         report.setdefault('capture_admissions',[]).append(dict(label=label,deferred=deferred))
@@ -331,6 +340,7 @@ def main():
             if reload:wait_loaded_app(target)
             def key_finished():
                 with paused.paused('key-progress'):
+                    unphase()
                     after=int.from_bytes(read(0x3d13,2),'little')
                     if after not in (before,(before+1)&65535):
                         raw=bytes(mon.read_mem(0,0x10ff,bank=banks['ram00']))
@@ -420,9 +430,16 @@ def main():
                 assert actual==oracle(columns),(label,columns)
             report['screens'].append(label);save()
         def claude_view(label,*,top=0,focus=0,error=0):
+            # Since 331a881 the VDC mirrors the graphical launch page; the
+            # 80-column landing text is the retained terminal model.
             actual,record=claude_capture(capture,app_read,claude_labels,work,label,
-                panel=landing_screen(40,error),top=top,focus=focus)
-            assert capture.capture(label+'-vdc',mode=1,count=2000)==landing_screen(80,error)
+                panel=landing_screen(40,error),top=top,focus=focus,terminal_chars=landing_screen(80,error))
+            assert value('cg_vdc_owned')==1
+            def vdc_canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            record['vdc']=vdc_capture(capture,app_read,vdc_canvas,work,label,focus,color=args.vdc64,
+                                      surface_data=actual,image_prefix='native-desktop/claude-gui')
             xy=position();mode=modes.snapshot(label+'-mode');assert mode['vic_sprites']==3
             error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
             (work/(label+'-canvas.bin')).write_bytes(raw)
@@ -741,11 +758,12 @@ def main():
             subprocess.run(['magick','import','-display',xv.display,'-window','root',str(work/'vdc-desktop.png')],check=True,capture_output=True)
             report['passed']=True;save()
             return
-        move_to(100,40);desktop('calculator-hover',0)
+        # Seven 16-pixel cards since Sheet (f99fa51); aim at each card's centre row.
+        move_to(100,CARDS[0]+8);desktop('calculator-hover',0)
         key('Down','desktop');desktop('keyboard-selection',1)
         time.sleep(.3);assert value('gd_selected')==1
         mouse.move(4,0);desktop('mouse-resumes',0)
-        mouse.button(True);move_to(100,64);mouse.button(False);desktop('cancelled-drag',1)
+        mouse.button(True);move_to(100,CARDS[1]+8);mouse.button(False);desktop('cancelled-drag',1)
         paint_document=bytearray(bytes(8192)+b'\x10'*1024)
         ran_apps=set()
         for index,name in enumerate(('calc','editor','files','controls','claude','paint')):
@@ -756,7 +774,7 @@ def main():
             if args.editor_only and name!='editor':continue
             if args.claude_only and name!='claude':continue
             ran_apps.add(name)
-            move_to(100,40+24*index);desktop(name+'-hover',index)
+            move_to(100,CARDS[index]+8);desktop(name+'-hover',index)
             snapshot,restore=vdc_snapshot(capture,app_read,work,name+'-close',
                 reu_snapshot=reu_snapshot if args.reu_kib else None)
             entry,checkpoint_id=restore_checkpoint()
@@ -1101,7 +1119,9 @@ def main():
                 pointer_app='claude'
                 assert app_read(symbol('pm_saved'),12)==saved_registers and app_read(symbol('pm_init_saved'))==saved_init
                 wait(lambda:value('pm_seen')==1,'Claude 1351 attached',15)
-                move_to(160,170);claude_view('claude-open')
+                # 331a881 put the view selector between Prev and Next; rest the
+                # pointer outside every Claude button, as ci_native_claude_iec does.
+                move_to(160,100);claude_view('claude-open')
                 claude_click(4);claude_view('claude-next-page',top=9,focus=3)
                 claude_click(3);claude_view('claude-previous-page',focus=4)
                 claude_click(0);claude_view('claude-port-unavailable',top=9,focus=0,error=2)
