@@ -1,7 +1,7 @@
 
 ; 64tass Turbo Assembler Macro V1.60.3243 listing file
 ; 64tass -a -B -o /home/marc/.cache/claude/tmp/claude-1000/uos-goal/target/native-desktop/gemdesk.prg -l /home/marc/.cache/claude/tmp/claude-1000/uos-goal/target/native-desktop/gemdesk.sym -L /home/marc/.cache/claude/tmp/claude-1000/uos-goal/target/native-desktop/gemdesk.lst /home/marc/.cache/claude/tmp/claude-1000/uos-goal/src/native/gemdesk.asm
-; Sun Sep 27 18:26:11 2026
+; Mon Sep 28 08:06:52 2026
 
 ;Offset	;PC	;Hex		;Monitor	;Source
 
@@ -319,23 +319,23 @@
 .6051		20 cf 62	jsr $62cf	        jsr gm_alert
 .6054						gm_loop:
 .6054		a9 13		lda #$13	        lda #MU_MESAG|MU_BUTTON|MU_KEYBD
-.6056		8d 79 90	sta $9079	        sta ae_ev_params
+.6056		8d b0 90	sta $90b0	        sta ae_ev_params
 .6059		a9 02		lda #$02	        lda #2                  ; up to a double click
-.605b		8d 7a 90	sta $907a	        sta ae_ev_params+1
+.605b		8d b1 90	sta $90b1	        sta ae_ev_params+1
 .605e		a9 01		lda #$01	        lda #1
-.6060		8d 7b 90	sta $907b	        sta ae_ev_params+2
-.6063		8d 7c 90	sta $907c	        sta ae_ev_params+3
+.6060		8d b2 90	sta $90b2	        sta ae_ev_params+2
+.6063		8d b3 90	sta $90b3	        sta ae_ev_params+3
 .6066		20 60 8e	jsr $8e60	        jsr ae_event
 .6069		b0 24		bcs $608f	        bcs gm_fatal
-.606b		ad 89 90	lda $9089	        lda ae_ev_result
+.606b		ad c0 90	lda $90c0	        lda ae_ev_result
 .606e		29 10		and #$10	        and #MU_MESAG
 .6070		f0 03		beq $6075	        beq +
 .6072		20 f8 62	jsr $62f8	        jsr gm_message
-.6075		ad 89 90	lda $9089	+       lda ae_ev_result
+.6075		ad c0 90	lda $90c0	+       lda ae_ev_result
 .6078		29 02		and #$02	        and #MU_BUTTON
 .607a		f0 03		beq $607f	        beq +
 .607c		20 3b 65	jsr $653b	        jsr gm_click
-.607f		ad 89 90	lda $9089	+       lda ae_ev_result
+.607f		ad c0 90	lda $90c0	+       lda ae_ev_result
 .6082		29 01		and #$01	        and #MU_KEYBD
 .6084		f0 03		beq $6089	        beq +
 .6086		20 ed 65	jsr $65ed	        jsr gm_key
@@ -371,7 +371,7 @@
 .60cf		a2 03		ldx #$03	        ldx #3
 .60d1		bd 04 3d	lda $3d04,x	-       lda N_HANDLE,x
 .60d4		9d 58 83	sta $8358,x	        sta gm_surface,x
-.60d7		9d 9f 90	sta $909f,x	        sta ae_surface,x
+.60d7		9d d7 90	sta $90d7,x	        sta ae_surface,x
 .60da		ca		dex		        dex
 .60db		10 f4		bpl $60d1	        bpl -
 .60dd		a9 00		lda #$00	        lda #0
@@ -452,7 +452,7 @@
 .6179		b0 0f		bcs $618a	        bcs gm_aes_failed
 .617b		a9 a6		lda #$a6	        lda #<gm_menu
 .617d		a2 7f		ldx #$7f	        ldx #>gm_menu
-.617f		20 fe 8f	jsr $8ffe	        jsr ae_menu_install
+.617f		20 35 90	jsr $9035	        jsr ae_menu_install
 .6182		b0 06		bcs $618a	        bcs gm_aes_failed
 .6184		20 2b 70	jsr $702b	        jsr gm_restore          ; the desktop as it was left, or as saved
 .6187		4c 7b 6b	jmp $6b7b	        jmp gm_view_checks
@@ -579,8 +579,8 @@
 .6282						gm_dirty_from:
 .6282		a0 00		ldy #$00	        ldy #0
 .6284		bd 00 3a	lda $3a00,x	-       lda N_BUFFER,x
-.6287		19 75 90	ora $9075,y	        ora ae_dirty,y
-.628a		99 75 90	sta $9075,y	        sta ae_dirty,y
+.6287		19 ac 90	ora $90ac,y	        ora ae_dirty,y
+.628a		99 ac 90	sta $90ac,y	        sta ae_dirty,y
 .628d		e8		inx		        inx
 .628e		c8		iny		        iny
 .628f		c0 04		cpy #$04	        cpy #4
@@ -594,7 +594,7 @@
 .6298		4a		lsr a		        lsr
 .6299		4a		lsr a		        lsr
 .629a		a8		tay		        tay
-.629b		b9 75 90	lda $9075,y	        lda ae_dirty,y
+.629b		b9 ac 90	lda $90ac,y	        lda ae_dirty,y
 .629e		8d 66 83	sta $8366	        sta gm_mbit
 .62a1		8a		txa		        txa
 .62a2		29 07		and #$07	        and #7
@@ -612,7 +612,7 @@
 .62ba		10 da		bpl $6296	        bpl gm_am_row
 .62bc		a9 00		lda #$00	        lda #0
 .62be		a2 03		ldx #$03	        ldx #3
-.62c0		9d 75 90	sta $9075,x	-       sta ae_dirty,x
+.62c0		9d ac 90	sta $90ac,x	-       sta ae_dirty,x
 .62c3		ca		dex		        dex
 .62c4		10 fa		bpl $62c0	        bpl -
 .62c6		4c ee a9	jmp $a9ee	        jmp vm_present
@@ -623,9 +623,9 @@
 .62cf		20 16 8e	jsr $8e16	        jsr ae_alert_open
 .62d2		b0 1b		bcs $62ef	        bcs gm_alert_done
 .62d4		20 f0 62	jsr $62f0	        jsr gm_alert_rows
-.62d7		20 07 8f	jsr $8f07	-       jsr ae_event_wait       ; idle until a key, the pointer or a tick
+.62d7		20 11 8f	jsr $8f11	-       jsr ae_event_wait       ; idle until a key, the pointer or a tick
 .62da		48		pha		        pha
-.62db		20 3e 8f	jsr $8f3e	        jsr ae_read_pointer
+.62db		20 75 8f	jsr $8f75	        jsr ae_read_pointer
 .62de		68		pla		        pla
 .62df		20 40 8e	jsr $8e40	        jsr ae_alert_step
 .62e2		b0 0b		bcs $62ef	        bcs gm_alert_done
@@ -642,21 +642,21 @@
 .62f2		20 82 62	jsr $6282	        jsr gm_dirty_from
 .62f5		4c 94 62	jmp $6294	        jmp ae_present
 .62f8						gm_message:
-.62f8		ad 90 90	lda $9090	        lda ae_ev_result+7
+.62f8		ad c7 90	lda $90c7	        lda ae_ev_result+7
 .62fb		c9 0a		cmp #$0a	        cmp #MN_SELECTED
 .62fd		d0 03		bne $6302	        bne +
 .62ff		4c 52 66	jmp $6652	        jmp gm_menu_choice
 .6302		c9 14		cmp #$14	+       cmp #WM_REDRAW
 .6304		d0 08		bne $630e	        bne +
-.6306		ae 93 90	ldx $9093	        ldx ae_ev_result+10
+.6306		ae ca 90	ldx $90ca	        ldx ae_ev_result+10
 .6309		d0 51		bne $635c	        bne gm_redraw_window
 .630b		4c 72 63	jmp $6372	        jmp gm_redraw_desktop
-.630e		ae 93 90	ldx $9093	+       ldx ae_ev_result+10     ; window messages: find our slot
+.630e		ae ca 90	ldx $90ca	+       ldx ae_ev_result+10     ; window messages: find our slot
 .6311		20 5f 7d	jsr $7d5f	        jsr gm_slot_of
 .6314		90 01		bcc $6317	        bcc +
 .6316		60		rts		        rts
 .6317		8e 63 83	stx $8363	+       stx gm_slot
-.631a		ad 90 90	lda $9090	        lda ae_ev_result+7
+.631a		ad c7 90	lda $90c7	        lda ae_ev_result+7
 .631d		c9 15		cmp #$15	        cmp #WM_TOPPED
 .631f		d0 05		bne $6326	        bne +
 .6321		a9 0a		lda #$0a	        lda #WF_TOP
@@ -678,7 +678,7 @@
 .6346		c9 1b		cmp #$1b	        cmp #WM_SIZED
 .6348		d0 11		bne $635b	        bne gm_message_done
 .634a		a2 03		ldx #$03	+       ldx #3
-.634c		bd 94 90	lda $9094,x	-       lda ae_ev_result+11,x
+.634c		bd cb 90	lda $90cb,x	-       lda ae_ev_result+11,x
 .634f		9d 07 84	sta $8407,x	        sta gm_rect,x
 .6352		ca		dex		        dex
 .6353		10 f7		bpl $634c	        bpl -
@@ -691,14 +691,14 @@
 .635f		b0 fa		bcs $635b	        bcs gm_message_done
 .6361		8e 63 83	stx $8363	        stx gm_slot
 .6364		a2 03		ldx #$03	        ldx #3
-.6366		bd 94 90	lda $9094,x	-       lda ae_ev_result+11,x
+.6366		bd cb 90	lda $90cb,x	-       lda ae_ev_result+11,x
 .6369		9d 03 84	sta $8403,x	        sta gm_clip,x
 .636c		ca		dex		        dex
 .636d		10 f7		bpl $6366	        bpl -
 .636f		4c 40 78	jmp $7840	        jmp gm_paint_window
 .6372						gm_redraw_desktop:
 .6372		a2 03		ldx #$03	        ldx #3
-.6374		bd 94 90	lda $9094,x	-       lda ae_ev_result+11,x
+.6374		bd cb 90	lda $90cb,x	-       lda ae_ev_result+11,x
 .6377		9d 03 84	sta $8403,x	        sta gm_clip,x
 .637a		ca		dex		        dex
 .637b		10 f7		bpl $6374	        bpl -
@@ -917,14 +917,14 @@
 .6540		20 5d 65	jsr $655d	        jsr gm_click_at
 .6543		4c 04 6f	jmp $6f04	        jmp gm_release
 .6546						gm_pointer_cell:
-.6546		ad 8c 90	lda $908c	        lda ae_ev_result+3      ; pointer cell
+.6546		ad c3 90	lda $90c3	        lda ae_ev_result+3      ; pointer cell
 .6549		4a		lsr a		        lsr
-.654a		ad 8b 90	lda $908b	        lda ae_ev_result+2
+.654a		ad c2 90	lda $90c2	        lda ae_ev_result+2
 .654d		6a		ror a		        ror
 .654e		4a		lsr a		        lsr
 .654f		4a		lsr a		        lsr
 .6550		8d e9 83	sta $83e9	        sta gm_cx
-.6553		ad 8d 90	lda $908d	        lda ae_ev_result+4
+.6553		ad c4 90	lda $90c4	        lda ae_ev_result+4
 .6556		4a		lsr a		        lsr
 .6557		4a		lsr a		        lsr
 .6558		4a		lsr a		        lsr
@@ -948,7 +948,7 @@
 .6583		20 97 7c	jsr $7c97	        jsr gm_row_under
 .6586		b0 35		bcs $65bd	        bcs gm_click_done
 .6588		20 b3 7c	jsr $7cb3	        jsr gm_select_entry
-.658b		ad 8f 90	lda $908f	        lda ae_ev_result+6
+.658b		ad c6 90	lda $90c6	        lda ae_ev_result+6
 .658e		c9 02		cmp #$02	        cmp #2
 .6590		b0 04		bcs $6596	        bcs +
 .6592		ee 79 83	inc $8379	        inc gm_drag             ; a single press on a row may drag it
@@ -962,7 +962,7 @@
 .65a3		f0 06		beq $65ab	        beq +
 .65a5		8e 62 83	stx $8362	        stx gm_new_icon
 .65a8		20 be 65	jsr $65be	        jsr gm_repaint_icon_sel
-.65ab		ad 8f 90	lda $908f	+       lda ae_ev_result+6
+.65ab		ad c6 90	lda $90c6	+       lda ae_ev_result+6
 .65ae		c9 02		cmp #$02	        cmp #2
 .65b0		90 0b		bcc $65bd	        bcc gm_click_done
 .65b2		4c d7 66	jmp $66d7	        jmp gm_open_icon
@@ -985,17 +985,17 @@
 .65d1		f0 19		beq $65ec	        beq +
 .65d3		aa		tax		        tax
 .65d4		a9 1f		lda #$1f	        lda #31
-.65d6		8d 94 90	sta $9094	        sta ae_ev_result+11
+.65d6		8d cb 90	sta $90cb	        sta ae_ev_result+11
 .65d9		bd fb 7e	lda $7efb,x	        lda gm_icon_y,x
-.65dc		8d 95 90	sta $9095	        sta ae_ev_result+12
+.65dc		8d cc 90	sta $90cc	        sta ae_ev_result+12
 .65df		a9 09		lda #$09	        lda #9
-.65e1		8d 96 90	sta $9096	        sta ae_ev_result+13
+.65e1		8d cd 90	sta $90cd	        sta ae_ev_result+13
 .65e4		a9 03		lda #$03	        lda #3
-.65e6		8d 97 90	sta $9097	        sta ae_ev_result+14
+.65e6		8d ce 90	sta $90ce	        sta ae_ev_result+14
 .65e9		4c 72 63	jmp $6372	        jmp gm_redraw_desktop
 .65ec		60		rts		+       rts
 .65ed						gm_key:
-.65ed		ad 8a 90	lda $908a	        lda ae_ev_result+1
+.65ed		ad c1 90	lda $90c1	        lda ae_ev_result+1
 .65f0		c9 0d		cmp #$0d	        cmp #13
 .65f2		d0 03		bne $65f7	        bne +
 .65f4		4c ba 66	jmp $66ba	        jmp gm_open_selection
@@ -1046,9 +1046,9 @@
 .664c		20 be 65	jsr $65be	        jsr gm_repaint_icon_sel
 .664f		4c d7 66	jmp $66d7	+       jmp gm_open_icon
 .6652						gm_menu_choice:
-.6652		ad 93 90	lda $9093	        lda ae_ev_result+10     ; title
+.6652		ad ca 90	lda $90ca	        lda ae_ev_result+10     ; title
 .6655		d0 13		bne $666a	        bne +
-.6657		ad 94 90	lda $9094	        lda ae_ev_result+11     ; Desk: About, or the Control Panel
+.6657		ad cb 90	lda $90cb	        lda ae_ev_result+11     ; Desk: About, or the Control Panel
 .665a		d0 09		bne $6665	        bne gm_menu_control
 .665c		a9 16		lda #$16	        lda #<gm_about
 .665e		a2 81		ldx #$81	        ldx #>gm_about
@@ -1059,7 +1059,7 @@
 .6667		4c 33 72	jmp $7233	        jmp gm_module_run
 .666a		c9 01		cmp #$01	+       cmp #1
 .666c		d0 2c		bne $669a	        bne gm_menu_options
-.666e		ad 94 90	lda $9094	        lda ae_ev_result+11
+.666e		ad cb 90	lda $90cb	        lda ae_ev_result+11
 .6671		f0 47		beq $66ba	        beq gm_open_selection   ; File: Open
 .6673		c9 01		cmp #$01	        cmp #1
 .6675		d0 03		bne $667a	        bne +
@@ -1082,7 +1082,7 @@
 .669a		c9 02		cmp #$02	        cmp #2
 .669c		d0 03		bne $66a1	        bne +
 .669e		4c 43 6b	jmp $6b43	        jmp gm_menu_view
-.66a1		ad 94 90	lda $9094	+       lda ae_ev_result+11
+.66a1		ad cb 90	lda $90cb	+       lda ae_ev_result+11
 .66a4		d0 05		bne $66ab	        bne +
 .66a6		a9 02		lda #$02	        lda #GM_MOP_PREFS
 .66a8		4c 33 72	jmp $7233	        jmp gm_module_run
@@ -1618,7 +1618,7 @@
 .6b40		29 7f		and #$7f	+       and #$7f
 .6b42		60		rts		        rts
 .6b43						gm_menu_view:
-.6b43		ad 94 90	lda $9094	        lda ae_ev_result+11
+.6b43		ad cb 90	lda $90cb	        lda ae_ev_result+11
 .6b46						gm_set_view:
 .6b46		cd 7a 83	cmp $837a	        cmp gm_view
 .6b49		f0 23		beq $6b6e	        beq gm_view_done
@@ -1653,7 +1653,7 @@
 .6b8a		c8		iny		        iny
 .6b8b		aa		tax		+       tax
 .6b8c		a9 02		lda #$02	        lda #2
-.6b8e		20 41 90	jsr $9041	        jsr ae_menu_set
+.6b8e		20 78 90	jsr $9078	        jsr ae_menu_set
 .6b91		b0 06		bcs $6b99	        bcs +
 .6b93		ce 7b 83	dec $837b	        dec gm_vslot
 .6b96		10 e8		bpl $6b80	        bpl -
@@ -2060,16 +2060,16 @@
 .6f01		10 b3		bpl $6eb6	        bpl gm_refresh_loop
 .6f03		60		rts		        rts
 .6f04						gm_release:
-.6f04		ad 8e 90	lda $908e	        lda ae_ev_result+5
+.6f04		ad c5 90	lda $90c5	        lda ae_ev_result+5
 .6f07		29 01		and #$01	        and #1
 .6f09		f0 44		beq $6f4f	        beq gm_release_done
 .6f0b		a9 02		lda #$02	        lda #MU_BUTTON
-.6f0d		8d 79 90	sta $9079	        sta ae_ev_params
+.6f0d		8d b0 90	sta $90b0	        sta ae_ev_params
 .6f10		a9 01		lda #$01	        lda #1
-.6f12		8d 7a 90	sta $907a	        sta ae_ev_params+1
-.6f15		8d 7b 90	sta $907b	        sta ae_ev_params+2
+.6f12		8d b1 90	sta $90b1	        sta ae_ev_params+1
+.6f15		8d b2 90	sta $90b2	        sta ae_ev_params+2
 .6f18		a9 00		lda #$00	        lda #0
-.6f1a		8d 7c 90	sta $907c	        sta ae_ev_params+3
+.6f1a		8d b3 90	sta $90b3	        sta ae_ev_params+3
 .6f1d		20 60 8e	jsr $8e60	        jsr ae_event
 .6f20		b0 2d		bcs $6f4f	        bcs gm_release_done
 .6f22		ad 79 83	lda $8379	        lda gm_drag
@@ -2181,13 +2181,13 @@
 .7022		9d 00 3a	sta $3a00,x	+       sta N_BUFFER,x
 .7025		e8		inx		        inx
 .7026		d0 f1		bne $7019	        bne -
-.7028		4c 53 90	jmp $9053	        jmp ae_session_write
+.7028		4c 8a 90	jmp $908a	        jmp ae_session_write
 .702b						gm_restore:
 .702b		a9 ff		lda #$ff	        lda #$ff                ; the AES's current double-click speed
-.702d		20 5d 90	jsr $905d	        jsr ae_dclick
+.702d		20 94 90	jsr $9094	        jsr ae_dclick
 .7030		b0 03		bcs $7035	        bcs +
 .7032		8d ee 82	sta $82ee	        sta gm_dclick
-.7035		20 4f 90	jsr $904f	+       jsr ae_session_read
+.7035		20 86 90	jsr $9086	+       jsr ae_session_read
 .7038		b0 10		bcs $704a	        bcs gm_restore_file
 .703a		a2 3f		ldx #$3f	        ldx #GM_RECORD_SIZE-1
 .703c		bd 00 3a	lda $3a00,x	-       lda N_BUFFER,x
@@ -2212,7 +2212,7 @@
 .7069		8d 22 0a	sta $0a22	        sta $0a22               ; key repeat
 .706c		ad b2 82	lda $82b2	        lda gm_session+8
 .706f		8d ee 82	sta $82ee	        sta gm_dclick
-.7072		20 5d 90	jsr $905d	        jsr ae_dclick
+.7072		20 94 90	jsr $9094	        jsr ae_dclick
 .7075		a9 01		lda #$01	        lda #1
 .7077		8d a2 82	sta $82a2	        sta gm_restoring
 .707a		a9 00		lda #$00	        lda #0
@@ -3413,7 +3413,7 @@
 .7adf						gm_arrowed:
 .7adf		20 1a 7a	jsr $7a1a	        jsr gm_work
 .7ae2		ae 63 83	ldx $8363	        ldx gm_slot
-.7ae5		ad 94 90	lda $9094	        lda ae_ev_result+11
+.7ae5		ad cb 90	lda $90cb	        lda ae_ev_result+11
 .7ae8		c9 02		cmp #$02	        cmp #2                  ; 2 line up, 3 line down, 0/1 page up/down
 .7aea		d0 0b		bne $7af7	        bne +
 .7aec		bd 1b 84	lda $841b,x	        lda gm_win_top,x
@@ -3460,7 +3460,7 @@
 .7b43						gm_vslid:
 .7b43		20 1a 7a	jsr $7a1a	        jsr gm_work
 .7b46		20 34 7b	jsr $7b34	        jsr gm_max_top
-.7b49		ae 94 90	ldx $9094	        ldx ae_ev_result+11     ; top = pos * max / 255 (rounded)
+.7b49		ae cb 90	ldx $90cb	        ldx ae_ev_result+11     ; top = pos * max / 255 (rounded)
 .7b4c		20 fc 7d	jsr $7dfc	        jsr gm_mul
 .7b4f		ad f8 83	lda $83f8	        lda gm_prod
 .7b52		18		clc		        clc
@@ -5037,7 +5037,7 @@
 .8e19		8e 2e 8e	stx $8e2e	        stx ae_alert_read+2
 .8e1c		8c 04 3a	sty $3a04	        sty N_BUFFER+4
 .8e1f		a2 03		ldx #$03	        ldx #3
-.8e21		bd 9f 90	lda $909f,x	-       lda ae_surface,x
+.8e21		bd d7 90	lda $90d7,x	-       lda ae_surface,x
 .8e24		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
 .8e27		ca		dex		        dex
 .8e28		10 f7		bpl $8e21	        bpl -
@@ -5055,284 +5055,310 @@
 .8e3d		4c 4c 86	jmp $864c	        jmp ae_call
 .8e40						ae_alert_step:
 .8e40		8d 00 3a	sta $3a00	        sta N_BUFFER
-.8e43		ad a3 90	lda $90a3	        lda ae_pointer_x
+.8e43		ad db 90	lda $90db	        lda ae_pointer_x
 .8e46		8d 01 3a	sta $3a01	        sta N_BUFFER+1
-.8e49		ad a4 90	lda $90a4	        lda ae_pointer_x+1
+.8e49		ad dc 90	lda $90dc	        lda ae_pointer_x+1
 .8e4c		8d 02 3a	sta $3a02	        sta N_BUFFER+2
-.8e4f		ad a5 90	lda $90a5	        lda ae_pointer_y
+.8e4f		ad dd 90	lda $90dd	        lda ae_pointer_y
 .8e52		8d 03 3a	sta $3a03	        sta N_BUFFER+3
-.8e55		ad a6 90	lda $90a6	        lda ae_pointer_buttons
+.8e55		ad de 90	lda $90de	        lda ae_pointer_buttons
 .8e58		8d 04 3a	sta $3a04	        sta N_BUFFER+4
 .8e5b		a9 03		lda #$03	        lda #AE_OP_STEP
 .8e5d		4c 4c 86	jmp $864c	        jmp ae_call
 =0						AE_POINTER = 0
 =0						AE_MIRROR = 0                   ; 1: the app supplies ae_present (a VDC mirror)
+=48						AE_CLICK_TICKS = 48             ; > the AES's longest double-click window (40)
 .8e60						ae_event:
 .8e60		a9 01		lda #$01	        lda #1                  ; the first sample is taken at the call itself:
-.8e62		8d 9d 90	sta $909d	        sta ae_ev_first         ; the timer and button state start from now
+.8e62		8d d4 90	sta $90d4	        sta ae_ev_first         ; the timer and button state start from now
 .8e65		a9 00		lda #$00	        lda #0
-.8e67		8d 9c 90	sta $909c	        sta ae_ev_key
+.8e67		8d d3 90	sta $90d3	        sta ae_ev_key
 .8e6a		f0 06		beq $8e72	        beq ae_event_sample
 .8e6c						ae_event_next:
-.8e6c		20 07 8f	jsr $8f07	        jsr ae_event_wait
-.8e6f		20 5e 8f	jsr $8f5e	        jsr ae_key_mouse
+.8e6c		20 11 8f	jsr $8f11	        jsr ae_event_wait
+.8e6f		20 95 8f	jsr $8f95	        jsr ae_key_mouse
 .8e72						ae_event_sample:
-.8e72		20 3e 8f	jsr $8f3e	        jsr ae_read_pointer
-.8e75		ae f8 8f	ldx $8ff8	        ldx ae_km_click         ; a keyboard click: pressed for one sample
+.8e72		20 75 8f	jsr $8f75	        jsr ae_read_pointer
+.8e75		ae 2f 90	ldx $902f	        ldx ae_km_click         ; a keyboard click: pressed for one sample
 .8e78		f0 0a		beq $8e84	        beq +
-.8e7a		ce f8 8f	dec $8ff8	        dec ae_km_click
+.8e7a		ce 2f 90	dec $902f	        dec ae_km_click
 .8e7d		f0 05		beq $8e84	        beq +
 .8e7f		a9 01		lda #$01	        lda #1
-.8e81		8d a6 90	sta $90a6	        sta ae_pointer_buttons
+.8e81		8d de 90	sta $90de	        sta ae_pointer_buttons
 .8e84						+
-.8e84		a2 0f		ldx #$0f	        ldx #15
-.8e86		bd 79 90	lda $9079,x	-       lda ae_ev_params,x
-.8e89		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
-.8e8c		ca		dex		        dex
-.8e8d		10 f7		bpl $8e86	        bpl -
-.8e8f		ad 9c 90	lda $909c	        lda ae_ev_key
-.8e92		8d 10 3a	sta $3a10	        sta N_BUFFER+16
-.8e95		ad a3 90	lda $90a3	        lda ae_pointer_x
-.8e98		8d 11 3a	sta $3a11	        sta N_BUFFER+17
-.8e9b		ad a4 90	lda $90a4	        lda ae_pointer_x+1
-.8e9e		8d 12 3a	sta $3a12	        sta N_BUFFER+18
-.8ea1		ad a5 90	lda $90a5	        lda ae_pointer_y
-.8ea4		8d 13 3a	sta $3a13	        sta N_BUFFER+19
-.8ea7		ad a6 90	lda $90a6	        lda ae_pointer_buttons
-.8eaa		8d 14 3a	sta $3a14	        sta N_BUFFER+20
-.8ead		08		php		        php
-.8eae		78		sei		        sei                     ; one consistent reading of the jiffy clock
-.8eaf		a5 a0		lda $a0		        lda $a0
-.8eb1		8d 15 3a	sta $3a15	        sta N_BUFFER+21
-.8eb4		a5 a1		lda $a1		        lda $a1
-.8eb6		8d 16 3a	sta $3a16	        sta N_BUFFER+22
-.8eb9		a5 a2		lda $a2		        lda $a2
-.8ebb		8d 17 3a	sta $3a17	        sta N_BUFFER+23
-.8ebe		28		plp		        plp
-.8ebf		ad 9d 90	lda $909d	        lda ae_ev_first
-.8ec2		8d 18 3a	sta $3a18	        sta N_BUFFER+24
-.8ec5		a9 00		lda #$00	        lda #0
-.8ec7		8d 9d 90	sta $909d	        sta ae_ev_first
-.8eca		a9 04		lda #$04	        lda #AE_OP_EVENT
-.8ecc		20 4c 86	jsr $864c	        jsr ae_call
-.8ecf		b0 35		bcs $8f06	        bcs ae_event_done
-.8ed1		a2 03		ldx #$03	        ldx #3
-.8ed3		bd 0f 3a	lda $3a0f,x	-       lda N_BUFFER+15,x       ; rows the menu redrew, kept for a VDC mirror
-.8ed6		1d 75 90	ora $9075,x	        ora ae_dirty,x
-.8ed9		9d 75 90	sta $9075,x	        sta ae_dirty,x
-.8edc		ca		dex		        dex
-.8edd		10 f4		bpl $8ed3	        bpl -
-.8edf		ad 00 3a	lda $3a00	        lda N_BUFFER
-.8ee2		d0 14		bne $8ef8	        bne ae_event_fired
-.8ee4		ad 0f 3a	lda $3a0f	        lda N_BUFFER+15         ; nothing fired, but a menu redrew rows: the app
-.8ee7		0d 10 3a	ora $3a10	        ora N_BUFFER+16         ; presents them (N_BUFFER is free again here)
-.8eea		0d 11 3a	ora $3a11	        ora N_BUFFER+17
-.8eed		0d 12 3a	ora $3a12	        ora N_BUFFER+18
-.8ef0		f0 03		beq $8ef5	        beq +
-.8ef2		20 94 62	jsr $6294	        jsr ae_present
-.8ef5		4c 6c 8e	jmp $8e6c	+       jmp ae_event_next
-.8ef8						ae_event_fired:
-.8ef8		a2 12		ldx #$12	        ldx #18
-.8efa		bd 00 3a	lda $3a00,x	-       lda N_BUFFER,x
-.8efd		9d 89 90	sta $9089,x	        sta ae_ev_result,x
-.8f00		ca		dex		        dex
-.8f01		10 f7		bpl $8efa	        bpl -
-.8f03		a9 00		lda #$00	        lda #0                  ; A = 0 on success, like every client entry
-.8f05		18		clc		        clc
-.8f06						ae_event_done:
-.8f06		60		rts		        rts
-.8f07						ae_event_wait:
-.8f07		a9 01		lda #$01	        lda #1
-.8f09		8d 12 3d	sta $3d12	        sta N_READY
-.8f0c		20 3b 1c	jsr $1c3b	        jsr N_KEYIN
-.8f0f		a2 00		ldx #$00	        ldx #0
-.8f11		8e 12 3d	stx $3d12	        stx N_READY
-.8f14		8d 9c 90	sta $909c	        sta ae_ev_key
-.8f17		aa		tax		        tax
-.8f18		d0 1b		bne $8f35	        bne ae_wait_done
-.8f1a		ad f8 8f	lda $8ff8	        lda ae_km_click
-.8f1d		d0 16		bne $8f35	        bne ae_wait_done
-.8f1f		ad 70 a6	lda $a670	        lda pm_pending          ; the 1351 read starts in raster lines 80..159
-.8f22		48		pha		        pha                     ; and completes 32 lines later: drive it here,
-.8f23		20 79 a4	jsr $a479	        jsr pm_poll             ; return when a read has just completed
-.8f26		68		pla		        pla
-.8f27		f0 05		beq $8f2e	        beq +
-.8f29		ad 70 a6	lda $a670	        lda pm_pending
-.8f2c		f0 07		beq $8f35	        beq ae_wait_done
-.8f2e						+
-.8f2e		a5 a2		lda $a2		        lda $a2                 ; the jiffy clock's low byte
-.8f30		cd 9e 90	cmp $909e	        cmp ae_ev_tick
-.8f33		f0 d2		beq $8f07	        beq ae_event_wait
-.8f35						ae_wait_done:
-.8f35		a5 a2		lda $a2		        lda $a2
-.8f37		8d 9e 90	sta $909e	        sta ae_ev_tick
-.8f3a		ad 9c 90	lda $909c	        lda ae_ev_key
-.8f3d		60		rts		        rts
-.8f3e						ae_read_pointer:
-.8f3e		20 79 a4	jsr $a479	        jsr pm_poll
-.8f41		ad 72 a6	lda $a672	        lda pm_x
-.8f44		8d a3 90	sta $90a3	        sta ae_pointer_x
-.8f47		ad 73 a6	lda $a673	        lda pm_x+1
-.8f4a		8d a4 90	sta $90a4	        sta ae_pointer_x+1
-.8f4d		ad 74 a6	lda $a674	        lda pm_y
-.8f50		8d a5 90	sta $90a5	        sta ae_pointer_y
-.8f53		ad 79 a6	lda $a679	        lda pm_buttons          ; the 1351 module reports the left button
-.8f56		f0 02		beq $8f5a	        beq +                   ; as $10; the AES expects bit 0
-.8f58		a9 01		lda #$01	        lda #1
-.8f5a		8d a6 90	sta $90a6	+       sta ae_pointer_buttons
-.8f5d		60		rts		        rts
-.8f5e						ae_key_mouse:
-.8f5e		ad 9c 90	lda $909c	        lda ae_ev_key
-.8f61		d0 03		bne $8f66	        beq ae_km_done
-.8f63		4c eb 8f	jmp $8feb
-.8f66		a5 d3		lda $d3		        lda $d3                 ; KERNAL SHFLAG: 2 C=, 8 ALT
-.8f68		29 0a		and #$0a	        and #$0a
-.8f6a		f0 7f		beq $8feb	        beq ae_km_done
-.8f6c		ad 9c 90	lda $909c	        lda ae_ev_key
-.8f6f		a2 03		ldx #$03	        ldx #3
-.8f71		dd ec 8f	cmp $8fec,x	-       cmp ae_km_keys,x
-.8f74		f0 0e		beq $8f84	        beq ae_km_move
-.8f76		ca		dex		        dex
-.8f77		10 f8		bpl $8f71	        bpl -
-.8f79		c9 0d		cmp #$0d	        cmp #13
-.8f7b		d0 6e		bne $8feb	        bne ae_km_done
-.8f7d		a9 02		lda #$02	        lda #2                  ; pressed on the next sample, released after it
-.8f7f		8d f8 8f	sta $8ff8	        sta ae_km_click
-.8f82		d0 62		bne $8fe6	        bne ae_km_eaten
-.8f84						ae_km_move:
-.8f84		bd f0 8f	lda $8ff0,x	        lda ae_km_dx,x
-.8f87		f0 3b		beq $8fc4	        beq ae_km_y
-.8f89		30 21		bmi $8fac	        bmi ae_km_left
-.8f8b		ad 72 a6	lda $a672	        lda pm_x                ; right, at most 319
-.8f8e		18		clc		        clc
-.8f8f		69 08		adc #$08	        adc #8
-.8f91		8d 72 a6	sta $a672	        sta pm_x
-.8f94		90 03		bcc $8f99	        bcc +
-.8f96		ee 73 a6	inc $a673	        inc pm_x+1
-.8f99		ad 73 a6	lda $a673	+       lda pm_x+1
-.8f9c		f0 26		beq $8fc4	        beq ae_km_y
-.8f9e		ad 72 a6	lda $a672	        lda pm_x
-.8fa1		c9 40		cmp #$40	        cmp #<320
-.8fa3		90 1f		bcc $8fc4	        bcc ae_km_y
-.8fa5		a9 3f		lda #$3f	        lda #<319
-.8fa7		8d 72 a6	sta $a672	        sta pm_x
-.8faa		d0 18		bne $8fc4	        bne ae_km_y
-.8fac						ae_km_left:
-.8fac		ad 72 a6	lda $a672	        lda pm_x                ; left, at least 0
-.8faf		38		sec		        sec
-.8fb0		e9 08		sbc #$08	        sbc #8
-.8fb2		8d 72 a6	sta $a672	        sta pm_x
-.8fb5		b0 0d		bcs $8fc4	        bcs ae_km_y
-.8fb7		ce 73 a6	dec $a673	        dec pm_x+1
-.8fba		10 08		bpl $8fc4	        bpl ae_km_y
-.8fbc		a9 00		lda #$00	        lda #0
-.8fbe		8d 72 a6	sta $a672	        sta pm_x
-.8fc1		8d 73 a6	sta $a673	        sta pm_x+1
-.8fc4						ae_km_y:
-.8fc4		bd f4 8f	lda $8ff4,x	        lda ae_km_dy,x
-.8fc7		f0 1d		beq $8fe6	        beq ae_km_eaten
-.8fc9		30 0e		bmi $8fd9	        bmi ae_km_up
-.8fcb		ad 74 a6	lda $a674	        lda pm_y                ; down, at most 199
-.8fce		18		clc		        clc
-.8fcf		69 08		adc #$08	        adc #8
-.8fd1		c9 c8		cmp #$c8	        cmp #200
-.8fd3		90 0e		bcc $8fe3	        bcc ae_km_set_y
-.8fd5		a9 c7		lda #$c7	        lda #199
-.8fd7		d0 0a		bne $8fe3	        bne ae_km_set_y
-.8fd9						ae_km_up:
-.8fd9		ad 74 a6	lda $a674	        lda pm_y                ; up, at least 0
-.8fdc		38		sec		        sec
-.8fdd		e9 08		sbc #$08	        sbc #8
-.8fdf		b0 02		bcs $8fe3	        bcs ae_km_set_y
-.8fe1		a9 00		lda #$00	        lda #0
-.8fe3						ae_km_set_y:
-.8fe3		8d 74 a6	sta $a674	        sta pm_y
-.8fe6						ae_km_eaten:
-.8fe6		a9 00		lda #$00	        lda #0
-.8fe8		8d 9c 90	sta $909c	        sta ae_ev_key
-.8feb						ae_km_done:
-.8feb		60		rts		        rts
->8fec		91 11 9d 1d			ae_km_keys: .byte $91,$11,$9d,$1d ; up, down, left, right
->8ff0		00 00 f8 08			ae_km_dx: .byte 0,0,$f8,8
->8ff4		f8 08 00 00			ae_km_dy: .byte $f8,8,0,0
->8ff8		00				ae_km_click: .byte 0
-.8ff9						ae_post:
-.8ff9		a9 05		lda #$05	        lda #AE_OP_POST
-.8ffb		4c 4c 86	jmp $864c	        jmp ae_call
-.8ffe						ae_menu_install:
-.8ffe		8d 1a 90	sta $901a	        sta ae_menu_read+1
-.9001		8e 1b 90	stx $901b	        stx ae_menu_read+2
-.9004		a2 03		ldx #$03	        ldx #3
-.9006		bd 9f 90	lda $909f,x	-       lda ae_surface,x
-.9009		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
-.900c		ca		dex		        dex
-.900d		10 f7		bpl $9006	        bpl -
-.900f		a9 04		lda #$04	        lda #<(N_BUFFER+4)
-.9011		8d 1d 90	sta $901d	        sta ae_menu_write+1
-.9014		a9 3a		lda #$3a	        lda #>(N_BUFFER+4)
-.9016		8d 1e 90	sta $901e	        sta ae_menu_write+2
-.9019						ae_menu_read:
-.9019		ad ff ff	lda $ffff	        lda $ffff
-.901c						ae_menu_write:
-.901c		8d 04 3a	sta $3a04	        sta N_BUFFER+4
-.901f		f0 1b		beq $903c	        beq ae_menu_copied
-.9021		ee 1a 90	inc $901a	        inc ae_menu_read+1
-.9024		d0 03		bne $9029	        bne +
-.9026		ee 1b 90	inc $901b	        inc ae_menu_read+2
-.9029		ee 1d 90	inc $901d	+       inc ae_menu_write+1
-.902c		d0 03		bne $9031	        bne +
-.902e		ee 1e 90	inc $901e	        inc ae_menu_write+2
-.9031		ad 1e 90	lda $901e	+       lda ae_menu_write+2
-.9034		c9 3c		cmp #$3c	        cmp #>(N_BUFFER+512)
-.9036		90 e1		bcc $9019	        bcc ae_menu_read
-.9038		a9 01		lda #$01	        lda #N_BADARG           ; no terminator inside the packet
-.903a		38		sec		        sec
-.903b		60		rts		        rts
-.903c						ae_menu_copied:
-.903c		a9 06		lda #$06	        lda #AE_OP_MENU
-.903e		4c 4c 86	jmp $864c	        jmp ae_call
-.9041						ae_menu_set:
-.9041		8d 00 3a	sta $3a00	        sta N_BUFFER
-.9044		8e 01 3a	stx $3a01	        stx N_BUFFER+1
-.9047		8c 02 3a	sty $3a02	        sty N_BUFFER+2
-.904a		a9 07		lda #$07	        lda #AE_OP_MENU_SET
-.904c		4c 4c 86	jmp $864c	        jmp ae_call
-.904f						ae_session_read:
-.904f		a9 00		lda #$00	        lda #0
-.9051		f0 02		beq $9055	        beq +
-.9053						ae_session_write:
-.9053		a9 01		lda #$01	        lda #1
-.9055		8d 00 3b	sta $3b00	+       sta N_BUFFER+256
-.9058		a9 0a		lda #$0a	        lda #AE_OP_SESSION
-.905a		4c 4c 86	jmp $864c	        jmp ae_call
-.905d						ae_dclick:
-.905d		a2 00		ldx #$00	        ldx #0
-.905f		c9 ff		cmp #$ff	        cmp #$ff
-.9061		f0 04		beq $9067	        beq +
-.9063		8d 01 3a	sta $3a01	        sta N_BUFFER+1
-.9066		e8		inx		        inx
-.9067		8e 00 3a	stx $3a00	+       stx N_BUFFER
-.906a		a9 0b		lda #$0b	        lda #AE_OP_DCLICK
-.906c		20 4c 86	jsr $864c	        jsr ae_call
-.906f		b0 03		bcs $9074	        bcs +
-.9071		ad 00 3a	lda $3a00	        lda N_BUFFER
-.9074		60		rts		+       rts
->9075		00 00 00 00			ae_dirty: .fill 4,0             ; OR of redrawn cell rows; the app clears it
->9079		00 00 00 00 00 00 00 00		ae_ev_params: .fill 16,0
->9081		00 00 00 00 00 00 00 00
->9089		00 00 00 00 00 00 00 00		ae_ev_result: .fill 19,0
->9091		00 00 00 00 00 00 00 00 00 00 00
->909c		00				ae_ev_key: .byte 0
->909d		00				ae_ev_first: .byte 0
->909e		00				ae_ev_tick: .byte 0             ; the jiffy low byte when the wait last returned
->909f		00 00 00 00			ae_surface: .fill 4,0
->90a3		00 00				ae_pointer_x: .word 0
->90a5		00				ae_pointer_y: .byte 0
->90a6		00				ae_pointer_buttons: .byte 0
+.8e84		ad de 90	lda $90de	        lda ae_pointer_buttons  ; a press: clicks may count for the longest
+.8e87		f0 05		beq $8e8e	        beq +                   ; double-click window, which needs ticks
+.8e89		a9 30		lda #$30	        lda #AE_CLICK_TICKS
+.8e8b		8d d6 90	sta $90d6	        sta ae_ev_window
+.8e8e		a2 0f		ldx #$0f	+       ldx #15
+.8e90		bd b0 90	lda $90b0,x	-       lda ae_ev_params,x
+.8e93		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.8e96		ca		dex		        dex
+.8e97		10 f7		bpl $8e90	        bpl -
+.8e99		ad d3 90	lda $90d3	        lda ae_ev_key
+.8e9c		8d 10 3a	sta $3a10	        sta N_BUFFER+16
+.8e9f		ad db 90	lda $90db	        lda ae_pointer_x
+.8ea2		8d 11 3a	sta $3a11	        sta N_BUFFER+17
+.8ea5		ad dc 90	lda $90dc	        lda ae_pointer_x+1
+.8ea8		8d 12 3a	sta $3a12	        sta N_BUFFER+18
+.8eab		ad dd 90	lda $90dd	        lda ae_pointer_y
+.8eae		8d 13 3a	sta $3a13	        sta N_BUFFER+19
+.8eb1		ad de 90	lda $90de	        lda ae_pointer_buttons
+.8eb4		8d 14 3a	sta $3a14	        sta N_BUFFER+20
+.8eb7		08		php		        php
+.8eb8		78		sei		        sei                     ; one consistent reading of the jiffy clock
+.8eb9		a5 a0		lda $a0		        lda $a0
+.8ebb		8d 15 3a	sta $3a15	        sta N_BUFFER+21
+.8ebe		a5 a1		lda $a1		        lda $a1
+.8ec0		8d 16 3a	sta $3a16	        sta N_BUFFER+22
+.8ec3		a5 a2		lda $a2		        lda $a2
+.8ec5		8d 17 3a	sta $3a17	        sta N_BUFFER+23
+.8ec8		28		plp		        plp
+.8ec9		ad d4 90	lda $90d4	        lda ae_ev_first
+.8ecc		8d 18 3a	sta $3a18	        sta N_BUFFER+24
+.8ecf		a9 00		lda #$00	        lda #0
+.8ed1		8d d4 90	sta $90d4	        sta ae_ev_first
+.8ed4		a9 04		lda #$04	        lda #AE_OP_EVENT
+.8ed6		20 4c 86	jsr $864c	        jsr ae_call
+.8ed9		b0 35		bcs $8f10	        bcs ae_event_done
+.8edb		a2 03		ldx #$03	        ldx #3
+.8edd		bd 0f 3a	lda $3a0f,x	-       lda N_BUFFER+15,x       ; rows the menu redrew, kept for a VDC mirror
+.8ee0		1d ac 90	ora $90ac,x	        ora ae_dirty,x
+.8ee3		9d ac 90	sta $90ac,x	        sta ae_dirty,x
+.8ee6		ca		dex		        dex
+.8ee7		10 f4		bpl $8edd	        bpl -
+.8ee9		ad 00 3a	lda $3a00	        lda N_BUFFER
+.8eec		d0 14		bne $8f02	        bne ae_event_fired
+.8eee		ad 0f 3a	lda $3a0f	        lda N_BUFFER+15         ; nothing fired, but a menu redrew rows: the app
+.8ef1		0d 10 3a	ora $3a10	        ora N_BUFFER+16         ; presents them (N_BUFFER is free again here)
+.8ef4		0d 11 3a	ora $3a11	        ora N_BUFFER+17
+.8ef7		0d 12 3a	ora $3a12	        ora N_BUFFER+18
+.8efa		f0 03		beq $8eff	        beq +
+.8efc		20 94 62	jsr $6294	        jsr ae_present
+.8eff		4c 6c 8e	jmp $8e6c	+       jmp ae_event_next
+.8f02						ae_event_fired:
+.8f02		a2 12		ldx #$12	        ldx #18
+.8f04		bd 00 3a	lda $3a00,x	-       lda N_BUFFER,x
+.8f07		9d c0 90	sta $90c0,x	        sta ae_ev_result,x
+.8f0a		ca		dex		        dex
+.8f0b		10 f7		bpl $8f04	        bpl -
+.8f0d		a9 00		lda #$00	        lda #0                  ; A = 0 on success, like every client entry
+.8f0f		18		clc		        clc
+.8f10						ae_event_done:
+.8f10		60		rts		        rts
+.8f11						ae_event_wait:
+.8f11		a9 01		lda #$01	        lda #1
+.8f13		8d 12 3d	sta $3d12	        sta N_READY
+.8f16		20 3b 1c	jsr $1c3b	        jsr N_KEYIN
+.8f19		a2 00		ldx #$00	        ldx #0
+.8f1b		8e 12 3d	stx $3d12	        stx N_READY
+.8f1e		8d d3 90	sta $90d3	        sta ae_ev_key
+.8f21		aa		tax		        tax
+.8f22		d0 48		bne $8f6c	        bne ae_wait_done
+.8f24		ad 2f 90	lda $902f	        lda ae_km_click
+.8f27		d0 43		bne $8f6c	        bne ae_wait_done
+.8f29		ad 70 a6	lda $a670	        lda pm_pending          ; the 1351 read starts in raster lines 80..159
+.8f2c		48		pha		        pha                     ; and completes 32 lines later: drive it here
+.8f2d		20 79 a4	jsr $a479	        jsr pm_poll
+.8f30		68		pla		        pla
+.8f31		f0 1e		beq $8f51	        beq ae_wait_time
+.8f33		ad 70 a6	lda $a670	        lda pm_pending
+.8f36		d0 19		bne $8f51	        bne ae_wait_time
+.8f38		a2 02		ldx #$02	        ldx #2                  ; a read completed: did the pointer move?
+.8f3a						ae_wait_moved:
+.8f3a		bd 72 a6	lda $a672,x	        lda pm_x,x
+.8f3d		dd db 90	cmp $90db,x	        cmp ae_pointer_x,x
+.8f40		d0 2a		bne $8f6c	        bne ae_wait_done
+.8f42		ca		dex		        dex
+.8f43		10 f5		bpl $8f3a	        bpl ae_wait_moved
+.8f45		ad 79 a6	lda $a679	        lda pm_buttons
+.8f48		f0 02		beq $8f4c	        beq +
+.8f4a		a9 01		lda #$01	        lda #1
+.8f4c		cd de 90	cmp $90de	+       cmp ae_pointer_buttons
+.8f4f		d0 1b		bne $8f6c	        bne ae_wait_done
+.8f51						ae_wait_time:
+.8f51		ad b0 90	lda $90b0	        lda ae_ev_params
+.8f54		29 20		and #$20	        and #MU_TIMER
+.8f56		d0 05		bne $8f5d	        bne +
+.8f58		ad d6 90	lda $90d6	        lda ae_ev_window
+.8f5b		f0 b4		beq $8f11	        beq ae_event_wait
+.8f5d		a5 a2		lda $a2		+       lda $a2                 ; the jiffy clock's low byte
+.8f5f		cd d5 90	cmp $90d5	        cmp ae_ev_tick
+.8f62		f0 ad		beq $8f11	        beq ae_event_wait
+.8f64		ad d6 90	lda $90d6	        lda ae_ev_window
+.8f67		f0 03		beq $8f6c	        beq ae_wait_done
+.8f69		ce d6 90	dec $90d6	        dec ae_ev_window
+.8f6c						ae_wait_done:
+.8f6c		a5 a2		lda $a2		        lda $a2
+.8f6e		8d d5 90	sta $90d5	        sta ae_ev_tick
+.8f71		ad d3 90	lda $90d3	        lda ae_ev_key
+.8f74		60		rts		        rts
+.8f75						ae_read_pointer:
+.8f75		20 79 a4	jsr $a479	        jsr pm_poll
+.8f78		ad 72 a6	lda $a672	        lda pm_x
+.8f7b		8d db 90	sta $90db	        sta ae_pointer_x
+.8f7e		ad 73 a6	lda $a673	        lda pm_x+1
+.8f81		8d dc 90	sta $90dc	        sta ae_pointer_x+1
+.8f84		ad 74 a6	lda $a674	        lda pm_y
+.8f87		8d dd 90	sta $90dd	        sta ae_pointer_y
+.8f8a		ad 79 a6	lda $a679	        lda pm_buttons          ; the 1351 module reports the left button
+.8f8d		f0 02		beq $8f91	        beq +                   ; as $10; the AES expects bit 0
+.8f8f		a9 01		lda #$01	        lda #1
+.8f91		8d de 90	sta $90de	+       sta ae_pointer_buttons
+.8f94		60		rts		        rts
+.8f95						ae_key_mouse:
+.8f95		ad d3 90	lda $90d3	        lda ae_ev_key
+.8f98		d0 03		bne $8f9d	        beq ae_km_done
+.8f9a		4c 22 90	jmp $9022
+.8f9d		a5 d3		lda $d3		        lda $d3                 ; KERNAL SHFLAG: 2 C=, 8 ALT
+.8f9f		29 0a		and #$0a	        and #$0a
+.8fa1		f0 7f		beq $9022	        beq ae_km_done
+.8fa3		ad d3 90	lda $90d3	        lda ae_ev_key
+.8fa6		a2 03		ldx #$03	        ldx #3
+.8fa8		dd 23 90	cmp $9023,x	-       cmp ae_km_keys,x
+.8fab		f0 0e		beq $8fbb	        beq ae_km_move
+.8fad		ca		dex		        dex
+.8fae		10 f8		bpl $8fa8	        bpl -
+.8fb0		c9 0d		cmp #$0d	        cmp #13
+.8fb2		d0 6e		bne $9022	        bne ae_km_done
+.8fb4		a9 02		lda #$02	        lda #2                  ; pressed on the next sample, released after it
+.8fb6		8d 2f 90	sta $902f	        sta ae_km_click
+.8fb9		d0 62		bne $901d	        bne ae_km_eaten
+.8fbb						ae_km_move:
+.8fbb		bd 27 90	lda $9027,x	        lda ae_km_dx,x
+.8fbe		f0 3b		beq $8ffb	        beq ae_km_y
+.8fc0		30 21		bmi $8fe3	        bmi ae_km_left
+.8fc2		ad 72 a6	lda $a672	        lda pm_x                ; right, at most 319
+.8fc5		18		clc		        clc
+.8fc6		69 08		adc #$08	        adc #8
+.8fc8		8d 72 a6	sta $a672	        sta pm_x
+.8fcb		90 03		bcc $8fd0	        bcc +
+.8fcd		ee 73 a6	inc $a673	        inc pm_x+1
+.8fd0		ad 73 a6	lda $a673	+       lda pm_x+1
+.8fd3		f0 26		beq $8ffb	        beq ae_km_y
+.8fd5		ad 72 a6	lda $a672	        lda pm_x
+.8fd8		c9 40		cmp #$40	        cmp #<320
+.8fda		90 1f		bcc $8ffb	        bcc ae_km_y
+.8fdc		a9 3f		lda #$3f	        lda #<319
+.8fde		8d 72 a6	sta $a672	        sta pm_x
+.8fe1		d0 18		bne $8ffb	        bne ae_km_y
+.8fe3						ae_km_left:
+.8fe3		ad 72 a6	lda $a672	        lda pm_x                ; left, at least 0
+.8fe6		38		sec		        sec
+.8fe7		e9 08		sbc #$08	        sbc #8
+.8fe9		8d 72 a6	sta $a672	        sta pm_x
+.8fec		b0 0d		bcs $8ffb	        bcs ae_km_y
+.8fee		ce 73 a6	dec $a673	        dec pm_x+1
+.8ff1		10 08		bpl $8ffb	        bpl ae_km_y
+.8ff3		a9 00		lda #$00	        lda #0
+.8ff5		8d 72 a6	sta $a672	        sta pm_x
+.8ff8		8d 73 a6	sta $a673	        sta pm_x+1
+.8ffb						ae_km_y:
+.8ffb		bd 2b 90	lda $902b,x	        lda ae_km_dy,x
+.8ffe		f0 1d		beq $901d	        beq ae_km_eaten
+.9000		30 0e		bmi $9010	        bmi ae_km_up
+.9002		ad 74 a6	lda $a674	        lda pm_y                ; down, at most 199
+.9005		18		clc		        clc
+.9006		69 08		adc #$08	        adc #8
+.9008		c9 c8		cmp #$c8	        cmp #200
+.900a		90 0e		bcc $901a	        bcc ae_km_set_y
+.900c		a9 c7		lda #$c7	        lda #199
+.900e		d0 0a		bne $901a	        bne ae_km_set_y
+.9010						ae_km_up:
+.9010		ad 74 a6	lda $a674	        lda pm_y                ; up, at least 0
+.9013		38		sec		        sec
+.9014		e9 08		sbc #$08	        sbc #8
+.9016		b0 02		bcs $901a	        bcs ae_km_set_y
+.9018		a9 00		lda #$00	        lda #0
+.901a						ae_km_set_y:
+.901a		8d 74 a6	sta $a674	        sta pm_y
+.901d						ae_km_eaten:
+.901d		a9 00		lda #$00	        lda #0
+.901f		8d d3 90	sta $90d3	        sta ae_ev_key
+.9022						ae_km_done:
+.9022		60		rts		        rts
+>9023		91 11 9d 1d			ae_km_keys: .byte $91,$11,$9d,$1d ; up, down, left, right
+>9027		00 00 f8 08			ae_km_dx: .byte 0,0,$f8,8
+>902b		f8 08 00 00			ae_km_dy: .byte $f8,8,0,0
+>902f		00				ae_km_click: .byte 0
+.9030						ae_post:
+.9030		a9 05		lda #$05	        lda #AE_OP_POST
+.9032		4c 4c 86	jmp $864c	        jmp ae_call
+.9035						ae_menu_install:
+.9035		8d 51 90	sta $9051	        sta ae_menu_read+1
+.9038		8e 52 90	stx $9052	        stx ae_menu_read+2
+.903b		a2 03		ldx #$03	        ldx #3
+.903d		bd d7 90	lda $90d7,x	-       lda ae_surface,x
+.9040		9d 00 3a	sta $3a00,x	        sta N_BUFFER,x
+.9043		ca		dex		        dex
+.9044		10 f7		bpl $903d	        bpl -
+.9046		a9 04		lda #$04	        lda #<(N_BUFFER+4)
+.9048		8d 54 90	sta $9054	        sta ae_menu_write+1
+.904b		a9 3a		lda #$3a	        lda #>(N_BUFFER+4)
+.904d		8d 55 90	sta $9055	        sta ae_menu_write+2
+.9050						ae_menu_read:
+.9050		ad ff ff	lda $ffff	        lda $ffff
+.9053						ae_menu_write:
+.9053		8d 04 3a	sta $3a04	        sta N_BUFFER+4
+.9056		f0 1b		beq $9073	        beq ae_menu_copied
+.9058		ee 51 90	inc $9051	        inc ae_menu_read+1
+.905b		d0 03		bne $9060	        bne +
+.905d		ee 52 90	inc $9052	        inc ae_menu_read+2
+.9060		ee 54 90	inc $9054	+       inc ae_menu_write+1
+.9063		d0 03		bne $9068	        bne +
+.9065		ee 55 90	inc $9055	        inc ae_menu_write+2
+.9068		ad 55 90	lda $9055	+       lda ae_menu_write+2
+.906b		c9 3c		cmp #$3c	        cmp #>(N_BUFFER+512)
+.906d		90 e1		bcc $9050	        bcc ae_menu_read
+.906f		a9 01		lda #$01	        lda #N_BADARG           ; no terminator inside the packet
+.9071		38		sec		        sec
+.9072		60		rts		        rts
+.9073						ae_menu_copied:
+.9073		a9 06		lda #$06	        lda #AE_OP_MENU
+.9075		4c 4c 86	jmp $864c	        jmp ae_call
+.9078						ae_menu_set:
+.9078		8d 00 3a	sta $3a00	        sta N_BUFFER
+.907b		8e 01 3a	stx $3a01	        stx N_BUFFER+1
+.907e		8c 02 3a	sty $3a02	        sty N_BUFFER+2
+.9081		a9 07		lda #$07	        lda #AE_OP_MENU_SET
+.9083		4c 4c 86	jmp $864c	        jmp ae_call
+.9086						ae_session_read:
+.9086		a9 00		lda #$00	        lda #0
+.9088		f0 02		beq $908c	        beq +
+.908a						ae_session_write:
+.908a		a9 01		lda #$01	        lda #1
+.908c		8d 00 3b	sta $3b00	+       sta N_BUFFER+256
+.908f		a9 0a		lda #$0a	        lda #AE_OP_SESSION
+.9091		4c 4c 86	jmp $864c	        jmp ae_call
+.9094						ae_dclick:
+.9094		a2 00		ldx #$00	        ldx #0
+.9096		c9 ff		cmp #$ff	        cmp #$ff
+.9098		f0 04		beq $909e	        beq +
+.909a		8d 01 3a	sta $3a01	        sta N_BUFFER+1
+.909d		e8		inx		        inx
+.909e		8e 00 3a	stx $3a00	+       stx N_BUFFER
+.90a1		a9 0b		lda #$0b	        lda #AE_OP_DCLICK
+.90a3		20 4c 86	jsr $864c	        jsr ae_call
+.90a6		b0 03		bcs $90ab	        bcs +
+.90a8		ad 00 3a	lda $3a00	        lda N_BUFFER
+.90ab		60		rts		+       rts
+>90ac		00 00 00 00			ae_dirty: .fill 4,0             ; OR of redrawn cell rows; the app clears it
+>90b0		00 00 00 00 00 00 00 00		ae_ev_params: .fill 16,0
+>90b8		00 00 00 00 00 00 00 00
+>90c0		00 00 00 00 00 00 00 00		ae_ev_result: .fill 19,0
+>90c8		00 00 00 00 00 00 00 00 00 00 00
+>90d3		00				ae_ev_key: .byte 0
+>90d4		00				ae_ev_first: .byte 0
+>90d5		00				ae_ev_tick: .byte 0             ; the jiffy low byte when the wait last returned
+>90d6		00				ae_ev_window: .byte 0           ; ticks a click may still be counting
+>90d7		00 00 00 00			ae_surface: .fill 4,0
+>90db		00 00				ae_pointer_x: .word 0
+>90dd		00				ae_pointer_y: .byte 0
+>90de		00				ae_pointer_buttons: .byte 0
 
 ;******  Return to file: /home/marc/.cache/claude/tmp/claude-1000/uos-goal/src/native/gemdesk.asm
 
->90a7						        .align 256
+>90df						        .align 256
 >9100		00 00 00 00 00 00 00 00		gm_win_path: .fill GM_WINDOWS*256,0   ; each USB window's absolute path
 >9108		00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 ;		...repeated 62 times (992 bytes)...
@@ -10400,7 +10426,7 @@
 .c2ec	b59e	ca		dex		+       dex
 .c2ed	b59f	10 f0		bpl $b591	        bpl -
 .c2ef	b5a1	ad ee 82	lda $82ee	        lda gm_dclick
-.c2f2	b5a4	4c 5d 90	jmp $905d	        jmp ae_dclick
+.c2f2	b5a4	4c 94 90	jmp $9094	        jmp ae_dclick
 .c2f5	b5a7					gm_control_done:
 .c2f5	b5a7	60		rts		        rts
 >c2f6	b5a8	80 00 40			gm_rpt_values: .byte $80,$00,$40                     ; all keys, cursor keys only, none
