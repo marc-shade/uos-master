@@ -209,8 +209,12 @@ kept the editor image unchanged; the search build changes the core and binds
 both modules to it. The graphical Editor's bank-0 workspace occupies `$5000..$5fff`
 ([workspace.inc](../src/native/editor/workspace.inc)). Beside it and the 36-page
 surface, bank 0 keeps one complete 4 KiB run, so a RAM document beyond 64 KiB
-relies on the short final allocation described above; that also leaves the
+relies on the short final allocation described above. Without a RAM-backed VDC
+snapshot (no 80-column display, or the snapshot in an REU) that also leaves the
 picker's 19 cache pages for a full D81 directory beside a 66,057-byte document.
+With the 80-column display snapshotted in RAM, 175 or 167 pages remain
+([NATIVE-EDITOR-GUI](NATIVE-EDITOR-GUI.md)), so an Open of that size is refused
+and the current document kept; with an REU, documents move to the REU instead.
 
 ## ROM integration
 

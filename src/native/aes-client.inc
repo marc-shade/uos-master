@@ -215,11 +215,9 @@ ae_event_done:
 ; call: a loop sampling on every pass was at its input wait 2% of the time on
 ; the C128, and one sampling on every tick stays in phase with VICE's monitor.
 ae_event_wait:
-        lda #1
-        sta N_READY
+        lda #1                  ; published for the whole wait (N_KEYIN clears
+        sta N_READY             ; it for a key; pm_poll while it reads the port)
         jsr N_KEYIN
-        ldx #0
-        stx N_READY
         sta ae_ev_key
         tax
         bne ae_wait_done
@@ -266,6 +264,8 @@ ae_wait_time:
         beq ae_wait_done
         dec ae_ev_window
 ae_wait_done:
+        ldx #0                  ; leaving the wait: a sample follows
+        stx N_READY
         lda $a2
         sta ae_ev_tick
         lda ae_ev_key

@@ -35,10 +35,21 @@ change the result:
 An idle GEMDESK makes no AES calls. The code fits in the slack before
 GEMDESK's page-aligned table; GDDLG and GDSET are unchanged in size.
 
+`N_READY` is published for the whole wait and cleared only when the wait
+returns for a sample. `N_KEYIN` still clears it for a consumed key, and
+`pm_poll` clears it while it reads the port.
+
+A first version cleared `N_READY` right after `N_KEYIN`. Idle passes then spent
+most of their time unpublished. On the C128 the held probe needed 400–500 busy
+retries per VDC capture with it (20–60 with the tick-sampling build), and a
+`--mirror` run with that build passed three checks before my one-hour timeout
+killed it ([partial report](hw-mirror-partial-ready.json); the machine was
+restored by hand: drive A 1541 and empty, upload deleted, reset).
+
 ## Evidence
 
-Build: `gemdesk.prg` `1a4251c5538e…`. Every other app is byte-identical to
-`7564321`.
+Build: `gemdesk.prg` `9f760745f394…`, `gem.d81` `06bfe2f8…`. Every other app is
+byte-identical to `7564321`.
 
 | Suite | Result |
 |---|---|
@@ -46,8 +57,12 @@ Build: `gemdesk.prg` `1a4251c5538e…`. Every other app is byte-identical to
 | `ci_native_gemdesk.py` (including the 80-column mirror) | 45/45 ([report](gemdesk.json)) |
 | `ci_native_aes_vice.py` | 5/5 ([report](aes-vice.json)) |
 | `ci_native_gemdesk_vice.py` | 8/8 ([report](gemdesk-vice.json)) |
+| C128, keyboard workflow | 7/7: boot, listing, Calculator and back, the Editor graphical with the 80-column mirror live and an exact surface, back, Paint ([report](hw-keyboard.json)) |
+| C128, `--mirror` | 6/6, colours included: desktop, drive window, open menu, closed menu, alert, closed alert. 0 probe busy retries at every capture ([report](hw-mirror.json)) |
 
-## 80-column mirror on the C128 with the committed GEMDESK
+On the C128 both runs restored drive A, deleted the upload and reset.
+
+## Earlier: the 80-column mirror on the C128 with the committed GEMDESK `72578322`
 
 `hw_native_gem_check.py --mirror` with the committed image (`gem.d81`
 `4743563d…`) passed all six checks, colours included
@@ -63,5 +78,8 @@ earlier runs did not appear.
 
 ## Limits
 
-- The new GEMDESK (`1a4251c5538e…`) has not yet been run on the C128.
-- Why the held capture still reads some chunks one address late is not known.
+- The intermediate GEMDESK `1a4251c5…` passed the keyboard workflow on the
+  C128 (7/7) but was superseded before a complete mirror run.
+- The held capture still reads some chunks one address late: 3 of 7 double
+  reads disagreed in the final run. The cause is not known, and retries absorb
+  it.
