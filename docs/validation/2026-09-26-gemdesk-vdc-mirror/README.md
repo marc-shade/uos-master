@@ -94,9 +94,16 @@ upload and a reset restored after every run):
   described above. Two distinct problems were observed:
   - the held VDC capture intermittently returns 512-byte chunks one address
     late, i.e. the instrument's reads are unreliable;
-  - two single VDC attribute bytes read wrong in every attempt of run 2.
-    Whether GEMDESK, the VDC service or the capture probe's register writes
-    put them there is not yet known.
+  - attribute cells read wrong in every attempt: 2 cells in row 15 (run 2,
+    window) and 4 in row 2 (run 1, alert closed). Run 1's "alert closed"
+    bitmap differences are all the capture shift too.
+    - Each wrong cell sits where the colour value changes along its row, and
+      the row reads like the expected row moved by one cell. That fits one
+      attribute byte lost or doubled while the row was written.
+    - Captures taken between steps show the wrong values persisting from an
+      earlier present.
+    - Whether the mirror's own VDC writes or the probe's register accesses
+      caused it is not known.
 - Whether the pointer appears on the 80-column monitor has not been
   byte-checked (it was hidden during the captures).
 - Extend mode (a second desktop area on the 80-column screen) is designed,
