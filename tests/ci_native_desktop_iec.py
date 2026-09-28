@@ -33,7 +33,7 @@ from native_pointer_check import check_canvas, surface_pixels
 from hwlib import lst_symbol
 from native_controls_check import panel_screen,absent_body
 from native_controls_scene import surface as controls_surface
-from native_claude_check import landing_screen
+from native_claude_check import landing_screen,capture_frame as claude_capture
 from paint_scene import surface as paint_surface,console as paint_console
 
 parser = argparse.ArgumentParser()
@@ -116,13 +116,32 @@ try:
             assert data==oracle(columns),(label,columns,'complete screen mismatch')
         record['screens'].append(label)
         print('PASS: both text screens:',label,flush=True)
+    def mirror(label,wanted,app):
+        # Since c4647f7 the suite apps present their VIC surface on the VDC
+        # (shared vdc-mirror); the whole 80-column mirror is checked against it.
+        def vdc_canvas():
+            err,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not err
+            return raw
+        return vdc_capture(capture,lambda at,n:read(at,n,banks['ram00']),vdc_canvas,work,label,0,
+                           color=args.vdc64,surface_data=wanted,image_prefix='native-desktop/'+app)
+    claude_labels={m[2]:int(m[1],16) for m in re.finditer(r'^al ([0-9A-Fa-f]+) \.(\S+)',(ROOT/'target/native-desktop/claude.lbl').read_text(),re.M)}
+    def claude(label):
+        # Since 331a881 the launch page is the graphical companion on both
+        # displays: 40-column panel + VIC bitmap, the landing text retained in
+        # the 80-column terminal model, and the VDC mirroring the VIC bitmap.
+        app_read=lambda at,n=1:read(at,n,banks['ram00'])
+        actual,row=claude_capture(capture,app_read,claude_labels,work,label,panel=landing_screen(40),
+                                  terminal_chars=landing_screen(80))
+        assert app_read(claude_labels['cg_vdc_owned'])==b'\1'
+        row['vdc']=mirror(label,actual,'claude-gui')
+        record.setdefault('claude_frames',[]).append(row)
+        print('PASS: Claude launch page, 80-column terminal model, VIC bitmap and VDC mirror:',label,flush=True)
     def calculator(label,result,history):
         assert read(lst_symbol('native-desktop/calc','cg_bitmap'))==b'\1'
         expected=calc_surface(result,history)
         actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
         assert actual==expected,(label,'calculator surface')
-        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
-        assert vdc==calculator_screen(80,result,history),(label,'calculator VDC')
+        mirror(label,expected,'calc')
         assert read(ksyms['v_tag'])!=b'\0'
         handle=read(lst_symbol('native-desktop/calc','cg_handle'),4)
         assert read(0x38c0,36)==handle[:1]*36
@@ -140,8 +159,7 @@ try:
         wanted=editor_surface(data,cursor,focus=focus,**expected)
         actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
         assert actual==wanted,(label,'editor surface')
-        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
-        assert vdc==editor_console(data,cursor,focus=focus,**expected),(label,'editor VDC')
+        mirror(label,wanted,'editor')
         assert read(ksyms['v_tag'])!=b'\0'
         handle=read(lst_symbol('native-desktop/editor','eg_handle'),4,banks['ram00'])
         assert read(0x38c0,36)==handle[:1]*36
@@ -157,8 +175,7 @@ try:
         wanted=files_surface(records)
         actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
         assert actual==wanted,(label,'Files surface')
-        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
-        assert vdc==files_console(records),(label,'Files VDC')
+        mirror(label,wanted,'files')
         assert read(ksyms['v_tag'])!=b'\0'
         handle=read(lst_symbol('native-desktop/files','fg_surface'),4)
         assert read(0x38c0,36)==handle[:1]*36
@@ -227,8 +244,7 @@ try:
         expected=controls_surface(body[2:] if page==1 else body,page=page,focus=page)
         actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
         assert actual==expected,(label,'Ultimate bitmap')
-        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
-        assert vdc==panel_screen(80,body,page=page,focus=page),(label,'Ultimate VDC')
+        mirror(label,expected,'controls')
         time.sleep(.15)
         error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
         (work/f'{label}-display-get.bin').write_bytes(raw)
@@ -243,8 +259,7 @@ try:
         expected=paint_surface(document,x=x,dirty=dirty,mode=mode,action=1,focus=selected)
         actual=read(0xc000,9216,banks['ram00']);(work/f'{label}-surface.bin').write_bytes(actual)
         assert actual==expected,(label,'Paint bitmap')
-        vdc=read(0,2000,banks['vdc']);(work/f'{label}-80.bin').write_bytes(vdc)
-        assert vdc==paint_console(80,x=x,dirty=dirty,mode=mode,action=1,focus=selected),(label,'Paint VDC')
+        mirror(label,expected,'paint')
         tag=paint_value('pd_handles');allocation=read(0x3c00+(tag-1)*8,8)
         assert allocation[:2]==bytes([32,1]) and allocation[3]==36
         actual_document=read(allocation[2]*256,9216,banks['ram01'])
@@ -257,19 +272,22 @@ try:
         print('PASS: Paint without a mouse, visible keyboard brush, complete document, bitmap and VDC:',label,flush=True)
     wait(lambda:read(0x1c13,6)==b'UOS128' and ready(),'native workspace boot',60)
     paused=PausedViceMonitor(mon)
-    @contextmanager
-    def stable_batch(label):
-        if not label.endswith(('-before','-restore')):
-            with paused.paused(label):yield
-            return
-        deadline=time.monotonic()+30
-        while True:
-            with paused.paused(label):
-                if bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0':
-                    yield
-                    return
-            assert time.monotonic()<deadline,('idle capture admission',label)
-            time.sleep(.01)
+    def idle_batch(paused):
+        @contextmanager
+        def stable_batch(label):
+            if not label.endswith(('-before','-restore')):
+                with paused.paused(label):yield
+                return
+            deadline=time.monotonic()+30
+            while True:
+                with paused.paused(label):
+                    if bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0':
+                        yield
+                        return
+                assert time.monotonic()<deadline,('idle capture admission',label)
+                time.sleep(.01)
+        return stable_batch
+    stable_batch=idle_batch(paused)
     capture=NativeCapture(paused,work,quiet=.05,kernel_prefix=kernel_prefix,batch=stable_batch)
     record.update(captures=capture.records,paused_capture_batches=paused.batches)
     if args.input_during_capture:
@@ -295,8 +313,11 @@ try:
         sequence_mon=PausedViceMonitor(mon)
         if args.transport_sequence:
             from native_transport_workflow import run_transport_workflow as run_native_workflow
+        # Pointer clients (Editor since e632b33) clear N_READY during each
+        # pointer sample; admit the shared sequence's captures at an idle
+        # instant, as the default workflow above does. Readbacks never retry.
         capture=NativeCapture(sequence_mon,work,quiet=.1,kernel_prefix=kernel_prefix,
-                              batch=sequence_mon.paused)
+                              batch=idle_batch(sequence_mon) if args.hardware_sequence else sequence_mon.paused)
         sub=dict(physical_hardware_io=False,events=[],desktops=[],screens=[],captures=capture.records,
                  paused_capture_batches=sequence_mon.batches)
         record['hardware_sequence']=sub
@@ -357,7 +378,8 @@ try:
         key(ord('F'));files('files-after-missing')
         key(27);desktop('desktop-after-files',2)
     else:
-        for index,(value,selected) in enumerate([(0x11,1),(9,2),(0x1d,3),(9,4),(9,5),(9,0),(0x9d,5),(0x13,0)]):
+        # Seven apps since Sheet (f99fa51): Tab wraps from 6, Left from 0 wraps to 6.
+        for index,(value,selected) in enumerate([(0x11,1),(9,2),(0x1d,3),(9,4),(9,5),(9,6),(9,0),(0x9d,6),(0x13,0)]):
             key(value);desktop(f'selection-{index}',selected)
         key(13)
         calculator('calculator-new','0',[])
@@ -384,7 +406,7 @@ try:
         key(27);desktop('desktop-after-ultimate',3)
         original_font,original_state=saved_vdc_region(capture,lambda at,n:read(at,n,banks['ram00']),work,'before-claude-font')
         record['original_vdc_snapshot']=original_state
-        key(ord('A'));screens('claude-launch-page',landing_screen)
+        key(ord('A'));claude('claude-launch-page')
         key(0x8c);desktop('desktop-after-claude',4)
         restored_font,restored_state=saved_vdc_region(capture,lambda at,n:read(at,n,banks['ram00']),work,'after-claude-font')
         record['restored_vdc_snapshot']=restored_state
@@ -406,7 +428,9 @@ try:
         occupied=read(0xc000,9216,banks['ram00'])
         key(ord('B'));desktop('occupied-surface-fallback',5,fallback=True)
         assert read(0xc000,9216,banks['ram00'])==occupied
-        key(9);desktop('fallback-selection',0,fallback=True)
+        # Seven apps since Sheet (f99fa51): Tab from 5 reaches 6, then wraps to 0.
+        key(9);desktop('fallback-selection',6,fallback=True)
+        key(9);desktop('fallback-selection-wrap',0,fallback=True)
         key(27);screens('workspace-owner-retained',lambda columns:expected_screen(columns,0,(143,251),31,handle))
         key(ord('F'));screens('workspace-all-free',lambda columns:expected_screen(columns,0))
         key(ord('B'));desktop('desktop-after-obstacle-release');key(27)

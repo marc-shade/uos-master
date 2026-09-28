@@ -1,7 +1,8 @@
 """Focused native capture experiment shared by VICE and the physical lifecycle."""
 import hashlib
 
-from launcher_scene import surface, console
+from launcher_scene import surface
+from native_vdc_check import capture_frame as vdc_frame
 from native_capture import ROOT, wait
 from native_mode_capture import NativeModeCapture
 from native_running_layout import verify_running_layout
@@ -50,7 +51,9 @@ def run_transport_workflow(mon, capture, work, disk, report, save, *,
     check_mode(report['mode_before'])
     for offset in range(0,9216,2000):
         observed(f'boot-surface-{offset:04x}',surface()[offset:offset+2000],address=0xc000+offset)
-    observed('boot-vdc',console(80),mode=1)
+    # Since 5d04173 the launcher's VDC is a bitmap scene, not 80-column text:
+    # compare VDC state and the complete bitmap with native_vdc_scene.
+    report['boot_vdc']=vdc_frame(capture,read,None,work,'boot-vdc',0);save()
     with mon.paused('select-editor'):
         assert ready()
         previous=int.from_bytes(read(0x3d13,2),'little')
@@ -65,7 +68,7 @@ def run_transport_workflow(mon, capture, work, disk, report, save, *,
             offset=address-0xc000
             observed(f'trial-{trial}-{address:04x}-{count}',selected[offset:offset+count],address=address)
         print(f'Capture transport: three strict selected-surface samples pass in trial {trial+1}/3',flush=True)
-    observed('selected-vdc',console(80,1),mode=1)
+    report['selected_vdc']=vdc_frame(capture,read,None,work,'selected-vdc',1);save()
     report['mode_after']=modes.snapshot('desktop-mode-after');save()
     # Retain every raw field, but compare display control bits: D011 bit 7
     # is the live raster counter, and CIA2 input pins are not display state.

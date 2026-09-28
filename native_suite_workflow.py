@@ -12,7 +12,8 @@ from urllib.parse import quote
 
 from hw_native_desktop_check import run_native_workflow
 from native_capture import ROOT, wait
-from native_claude_check import landing_screen
+from native_claude_check import landing_screen,capture_frame as claude_frame
+from native_vdc_check import capture_frame as vdc_frame
 from native_controls_check import panel_screen
 from native_controls_scene import surface as controls_surface,drive_body as graphical_drives
 from hwlib import lst_symbol
@@ -196,8 +197,9 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
                     count=min(2000,9216-offset)) for offset in range(0,9216,2000))
                 (work/(label+'-surface.bin')).write_bytes(actual)
                 assert actual==expected,(label,'Ultimate complete bitmap')
-                assert capture.capture(label+'-vdc',mode=1,count=2000)==oracle(80),(label,'Ultimate VDC')
-                row.update(graphical_body=graphical,drive_count=count,surface_sha256=hashlib.sha256(actual).hexdigest())
+                # Since c4647f7 the VDC mirrors this verified VIC surface (no emulator canvas here).
+                vdc=vdc_frame(capture,read,None,work,label,page,surface_data=actual,image_prefix='native-desktop/controls')
+                row.update(graphical_body=graphical,drive_count=count,surface_sha256=hashlib.sha256(actual).hexdigest(),vdc=vdc)
             else:screens(label,oracle)
             suite['ultimate'].append(row); save()
         key(ord('U')); panel('ultimate-info', info_body(reference))
@@ -246,7 +248,15 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
             suite['claude'].append(row); save()
             if hasattr(bridge_factory, 'prepare'):
                 bridge_factory.prepare(label, work, row)
-            key(ord('A')); screens(label+'-landing', landing_screen)
+            key(ord('A'))
+            # Since 331a881 the launch page is graphical on both displays: the
+            # 40-column panel and VIC bitmap, the landing text in the retained
+            # 80-column terminal model, and the VDC mirroring the VIC bitmap.
+            actual, row['landing'] = claude_frame(capture, read, labels, work, label+'-landing',
+                panel=landing_screen(40), terminal_chars=landing_screen(80))
+            assert read(labels['cg_vdc_owned']) == b'\1'
+            row['landing']['vdc'] = vdc_frame(capture, read, None, work, label+'-landing', 0,
+                surface_data=actual, image_prefix='native-desktop/claude-gui')
             key(13)
             assert read(labels['serialOwned']) == b'\1'
             assert read(0x318,2) == bytes.fromhex('f01b')

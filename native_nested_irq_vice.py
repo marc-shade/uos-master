@@ -5,7 +5,9 @@ import json
 import struct
 import time
 
-from launcher_scene import surface,console
+from hwlib import lst_symbol
+from launcher_scene import surface
+from native_vdc_scene import bitmap as vdc_bitmap,pointer_bitmap
 from native_capture import NativeCapture
 from native_capture_transport import PausedViceMonitor
 
@@ -114,9 +116,16 @@ def run_nested_irq(mon,work,report,desktop_loop):
     report['register_names']=monitor.register_names
     capture=NativeCapture(monitor,work,quiet=.1,kernel_prefix='native-desktop',batch=monitor.paused)
     report['captures']=capture.records
+    # Since 5d04173 the desktop's VDC holds its bitmap scene at the owned base,
+    # not 80-column text; derive base and pointer from the desktop's VDC state.
+    symbol=lambda name:lst_symbol('native-desktop/desktop',name)
+    state=bytes(mon.read_mem(symbol('vd_phase'),symbol('vd_phase')+6))
+    point=bytes(mon.read_mem(symbol('vd_pointer_visible'),symbol('vd_pointer_visible')+3));mon.resume()
+    assert state[:2]==b'\2\1' and state[3]==0,state.hex()
+    scene=pointer_bitmap(vdc_bitmap(0),int.from_bytes(point[1:3],'little')*2,point[3],bool(point[0]))
     for label,mode,address,expected in (
         ('nested-ram',0,0xc7d0,surface()[0x7d0:0x9d0]),
-        ('nested-vdc',1,0,console(80)[:512]),
+        ('nested-vdc',1,state[5]*256,scene[:512]),
     ):
         before=monitor.reach(desktop_loop)
         assert mon.read_mem(0xff00,0xff00)==b'\x0e';mon.resume()

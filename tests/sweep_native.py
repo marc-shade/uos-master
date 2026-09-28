@@ -57,11 +57,12 @@ VICE_MATRIX = {
     # --files-open-with needs --files-only; --files-find also --files-open-with;
     # --editor-selection/--editor-clipboard need --editor-only; --editor-history
     # also --editor-clipboard; --editor-large needs --editor-only --d81 and an
-    # REU of 512 KiB or more (qualified 2026-09-14 with --80col --vdc64).
+    # REU of 512 KiB or more (qualified 2026-09-14 with --80col --vdc64). The open-with
+    # fixtures need 36 free blocks; the shipped D64 now has 16, so they run on the D81.
     'ci_native_pointer_iec': [(), ('--80col',), ('--calc-only',), ('--paint-only',), ('--controls-only',),
                               ('--controls-only', '--controls-clock'), ('--files-only',),
-                              ('--files-only', '--files-open-with'),
-                              ('--files-only', '--files-open-with', '--files-find'), ('--editor-only',),
+                              ('--files-only', '--files-open-with', '--d81'),
+                              ('--files-only', '--files-open-with', '--files-find', '--d81'), ('--editor-only',),
                               ('--editor-only', '--editor-clipboard'),
                               ('--editor-only', '--editor-clipboard', '--editor-history'),
                               ('--editor-only', '--editor-selection'),

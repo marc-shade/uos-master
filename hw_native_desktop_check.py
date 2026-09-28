@@ -22,6 +22,7 @@ from launcher_scene import surface,console
 from native_calc_scene import surface as calc_surface
 from native_files_scene import browser_surface as files_surface,browser_console as files_console
 from hwlib import lst_symbol
+from native_vdc_check import capture_frame as vdc_frame
 
 
 def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll=2,kernel_prefix='native-desktop',additional_apps=None):
@@ -33,11 +34,17 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
     def ready():return read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2)
     def key(value):
         wait(ready,'native desktop/app idle',180)
-        start=time.monotonic();notice=start
-        with capture.batch(f'key-{value:02x}'):
-            assert ready(),'native input changed before key injection'
-            previous=int.from_bytes(read(0x3d13,2),'little')
-            mon.write_mem(0x3d12,b'\0');mon.write_mem(0x34a,bytes([value]));mon.write_mem(0xd0,b'\1');mon.resume()
+        start=time.monotonic();notice=start;previous=None
+        # Pointer clients clear N_READY during each pointer sample; inject
+        # only at a paused idle instant, retrying admission within a bound.
+        while previous is None:
+            with capture.batch(f'key-{value:02x}'):
+                if ready():
+                    previous=int.from_bytes(read(0x3d13,2),'little')
+                    mon.write_mem(0x3d12,b'\0');mon.write_mem(0x34a,bytes([value]));mon.write_mem(0xd0,b'\1');mon.resume()
+            if previous is None:
+                assert time.monotonic()-start<180,'native input never idle for key injection'
+                time.sleep(.01)
         time.sleep(key_quiet)
         while not (ready() and int.from_bytes(read(0x3d13,2),'little')==(previous+1)&65535):
             elapsed=time.monotonic()-start;assert elapsed<900,('native desktop key timeout',value,elapsed)
@@ -50,18 +57,22 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
             actual=capture.capture(label+('-vic' if mode==0 else '-vdc'),mode=mode,address=address,count=columns*25)
             assert actual==oracle(columns),(label,columns)
         report['screens'].append(label);save();print('Verified native screens:',label,flush=True)
+    # Since 5d04173 (launcher) and c4647f7 (apps) the VDC shows a bitmap:
+    # the launcher's own VDC scene, or a doubled mirror of the verified VIC
+    # surface. No emulator canvas here, so only VDC state and RAM are compared.
+    def vdc(label,selected,wanted=None,app='desktop'):
+        return vdc_frame(capture,read,None,work,label,selected,surface_data=wanted,image_prefix='native-desktop/'+app)
     def calculator(label,result,history):
         assert read(lst_symbol('native-desktop/calc','cg_bitmap'))==b'\1'
         actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
                        count=min(2000,9216-offset)) for offset in range(0,9216,2000))
         (work/(label+'-surface.bin')).write_bytes(actual)
         assert actual==calc_surface(result,history),(label,'calculator bitmap')
-        vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000)
-        assert vdc==calculator_screen(80,result,history),(label,'calculator VDC')
+        mirror=vdc(label,0,actual,'calc')
         registers=modes.snapshot(label+'-mode')
         assert registers['vic_d011']&0x7f==0x3b
         assert registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/calc','pm_seen'))==b'\1' else 0)
-        report.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,registers=registers))
+        report.setdefault('calculator_frames',[]).append(dict(label=label,result=result,history=history,registers=registers,vdc=mirror))
         save();print('Verified graphical calculator RAM and VDC:',label,flush=True)
     def editor(label,data,cursor,**expected):
         assert capture.capture(label+'-bitmap-active',address=lst_symbol('native-desktop/editor','eg_bitmap'),count=1)==b'\1'
@@ -69,12 +80,12 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
         actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
             count=min(2000,9216-offset)) for offset in range(0,9216,2000))
         (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
-        assert capture.capture(label+'-vdc',mode=1,address=0,count=2000)==editor_console(data,cursor,**expected),(label,'editor VDC')
+        mirror=vdc(label,0,actual,'editor')
         registers=modes.snapshot(label+'-mode');assert registers['vic_d011']&0x7f==0x3b
         seen=capture.capture(label+'-pointer-seen',address=lst_symbol('native-desktop/editor','pm_seen'),count=1)
         assert registers['vic_sprites']==(3 if seen==b'\1' else 0)
         report.setdefault('editor_frames',[]).append(dict(label=label,data_hex=data.hex(),cursor=cursor,expected=expected,registers=registers,
-            surface_sha256=hashlib.sha256(actual).hexdigest()))
+            surface_sha256=hashlib.sha256(actual).hexdigest(),vdc=mirror))
         save();print('Verified graphical editor RAM and VDC:',label,flush=True)
     def files(label):
         assert read(lst_symbol('native-desktop/files','fg_bitmap'))==b'\1'
@@ -83,12 +94,12 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
             count=min(2000,9216-offset)) for offset in range(0,9216,2000))
         (work/(label+'-surface.bin')).write_bytes(actual)
         assert actual==files_surface(entries),(label,'Files bitmap')
-        assert capture.capture(label+'-vdc',mode=1,address=0,count=2000)==files_console(entries),(label,'Files VDC')
+        mirror=vdc(label,0,actual,'files')
         registers=modes.snapshot(label+'-mode')
         assert registers['vic_d011']&0x7f==0x3b
         assert registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/files','pm_seen'))==b'\1' else 0)
         report.setdefault('files_frames',[]).append(dict(label=label,selected=0,focus=11,registers=registers,
-            surface_sha256=hashlib.sha256(actual).hexdigest()))
+            surface_sha256=hashlib.sha256(actual).hexdigest(),vdc=mirror))
         save();print('Verified graphical Files RAM and VDC:',label,flush=True)
     def desktop(label,selected=0):
         assert read(0x3d2f)==bytes([selected]),'saved native desktop selection differs'
@@ -98,7 +109,7 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
         actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
                          count=min(2000,9216-offset)) for offset in range(0,9216,2000))
         (work/(label+'-surface.bin')).write_bytes(actual);assert actual==surface(selected)
-        vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000);assert vdc==console(80,selected)
+        scene=vdc(label,selected)
         registers=modes.snapshot(label+'-mode')
         assert registers['vic_d011']&0x7f==0x3b and registers['vic_d016']&0x1f==8 and registers['vic_d018']&0xfe==0x80
         assert registers['vic_irq_mask']&15==1 and registers['vic_sprites']==(3 if read(lst_symbol('native-desktop/desktop','pm_seen'))==b'\1' else 0)
@@ -109,9 +120,13 @@ def run_native_workflow(mon,capture,work,disk,report,save,*,key_quiet=4,key_poll
         assert read(0xa0,3)!=before_jiffy
         heap=read(0x3800,0x600);(work/(label+'-heap.bin')).write_bytes(heap)
         app_pages=(ROOT/'target/native-desktop/desktop.prg').read_bytes()[12]
-        assert heap[0x50:0xff].count(0)+heap[0x104:0x1ff].count(0)==426-36-app_pages
+        # Since c4647f7 the desktop also owns the VDSVC component and, unless
+        # the REU backs it, the main-RAM VDC snapshot (64 mono / 72 colour pages).
+        service_pages=(ROOT/'target/native-desktop/vdsvc.prg').read_bytes()[12]
+        snapshot_pages=0 if read(lst_symbol('native-desktop/desktop','vs_reu'))==b'\1' else scene['snapshot_pages']
+        assert heap[0x50:0xff].count(0)+heap[0x104:0x1ff].count(0)==426-36-app_pages-service_pages-snapshot_pages
         report['desktops'].append(dict(label=label,selected=selected,surface_bytes=9216,
-            surface_sha256=hashlib.sha256(actual).hexdigest(),vdc_bytes=2000,irq_advanced=True,registers=registers,
+            surface_sha256=hashlib.sha256(actual).hexdigest(),vdc=scene,irq_advanced=True,registers=registers,
             qualification='CPU-captured display RAM and mode registers; no physical video pixel capture'))
         save();print('Verified native desktop RAM, VDC and display mode:',label,flush=True)
     wait(lambda:read(0x1c13,6)==b'UOS128' and ready(),'native graphical desktop boot',300)

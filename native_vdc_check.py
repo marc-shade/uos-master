@@ -113,14 +113,18 @@ def capture_frame(capture, read_app, canvas, folder, label, selected, *, color=N
     assert actual == expected, ('VDC bitmap',label,[(i,a,b) for i,(a,b) in enumerate(zip(actual,expected)) if a!=b][:16])
     if actual_color:
         assert region('vdc-attributes',0x8000,2000) == (attributes(selected) if surface_data is None else mirror_attributes(surface_data))
-    raw = canvas()
-    (folder/(label+'-vdc-canvas.bin')).write_bytes(raw)
-    if surface_data is None:
-        expected_pixels = pixels(selected,color=actual_color,x=x,y=y,visible=visible,error=error)
-        rows = [expected_pixels[at:at+640] for at in range(0,128000,640)]
-    else:
-        rows = mirror_pixels(surface_data,actual_color,x=x//2,y=y,pointer=visible)
-    rectangle = check_canvas(raw,rows)
+    # canvas=None: physical-hardware workflows have no emulator frame; the
+    # VDC phase, complete bitmap and attributes above are still checked.
+    rectangle = None
+    if canvas is not None:
+        raw = canvas()
+        (folder/(label+'-vdc-canvas.bin')).write_bytes(raw)
+        if surface_data is None:
+            expected_pixels = pixels(selected,color=actual_color,x=x,y=y,visible=visible,error=error)
+            rows = [expected_pixels[at:at+640] for at in range(0,128000,640)]
+        else:
+            rows = mirror_pixels(surface_data,actual_color,x=x//2,y=y,pointer=visible)
+        rectangle = check_canvas(raw,rows)
     return dict(label=label,selected=selected,error=error,color=actual_color,position=[x,y],
                 pointer_visible=visible,rectangle=rectangle,bitmap_sha256=hashlib.sha256(expected).hexdigest(),
-                pixels=128000,snapshot_pages=pages)
+                pixels=128000 if canvas is not None else 0,snapshot_pages=pages)

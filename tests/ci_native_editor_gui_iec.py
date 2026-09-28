@@ -24,6 +24,7 @@ from native_picker_scene import surface as picker_surface,console as picker_cons
 from native_picker_check import picker_symbol
 from native_browser_check import browser_screen,disk_records
 from native_pointer_check import surface_pixels,check_canvas
+from native_vdc_check import capture_frame as vdc_capture
 
 
 def main():
@@ -126,15 +127,31 @@ def main():
             if len(wanted)>65536:assert {h['bank'] for h in handles}=={0,1}
             report['editor_documents'].append(dict(label=label,bytes=length,sha256=hashlib.sha256(actual).hexdigest(),gap=gap,gap_end=end,capacity=capacity,handles=handles));save()
 
+        def mirror(label,wanted,focus):
+            # Since c4647f7/d334b47 Editor and its picker mirror the VIC surface
+            # on the VDC; compare the whole VDC bitmap and frame with that surface.
+            def vread(at,count):
+                raw=bytes(paused.read_mem(at,at+count-1,bank=banks['ram00']));paused.resume();return raw
+            def canvas():
+                error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                return raw
+            return vdc_capture(capture,vread,canvas,work,label,focus,surface_data=wanted,image_prefix='native-desktop/editor')
         def workflow(*,key,screens,desktop,read):
             table=capture.capture('editor-key-table-before',address=0x1000,count=256)
             key(ord('E'))
             def function_key(value):
                 codes=bytes.fromhex('8589868a878b888c8384');assert read(0x1000,20)==bytes([1]*10)+codes
-                before=int.from_bytes(read(0x3d13,2),'little')
-                with paused.paused('editor-rom-function-key'):
-                    assert read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2)
-                    paused.write_mem(0x3d12,b'\0');paused.write_mem(0xd1,bytes([1,codes.index(value)]));paused.resume()
+                before=None;deadline=time.monotonic()+120
+                # Editor clears N_READY during each pointer sample (e632b33);
+                # inject only at a paused idle instant, within a bound.
+                while before is None:
+                    with paused.paused('editor-rom-function-key'):
+                        if read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2):
+                            before=int.from_bytes(read(0x3d13,2),'little')
+                            paused.write_mem(0x3d12,b'\0');paused.write_mem(0xd1,bytes([1,codes.index(value)]));paused.resume()
+                    if before is None:
+                        assert time.monotonic()<deadline,'editor never idle for function-key injection'
+                        time.sleep(.01)
                 wait(lambda:read(0x3d12)==b'\1' and int.from_bytes(read(0x3d13,2),'little')==(before+1)&65535,'editor function-key expansion',60)
                 assert read(0xd0,2)==bytes(2);paused.write_mem(0xd2,b'\0');paused.resume()
                 report['events'].append(dict(key=value,rom_expansion=True));save()
@@ -159,10 +176,10 @@ def main():
                 wanted=surface(data,cursor,field_view=views[0],**expected)
                 actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
                 (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'editor bitmap')
-                vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000);assert vdc==console(data,cursor,field_view=views[1],**expected)
+                vdc=mirror(label,wanted,focus)
                 error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
                 (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,0,0,visible=False))
-                report['editor_io_frames'].append(dict(label=label,data_sha256=hashlib.sha256(data).hexdigest(),cursor=cursor,expected=expected,field_views=views,rectangle=rectangle));save()
+                report['editor_io_frames'].append(dict(label=label,data_sha256=hashlib.sha256(data).hexdigest(),cursor=cursor,expected=expected,field_views=views,rectangle=rectangle,vdc=vdc));save()
                 print('PASS: graphical editor state, complete bitmap/VDC and VIC pixels:',label,flush=True)
             prompt(0x8c,'9');function_key(0x8b);function_key(0x8b)
             prompt(0x85,'NOTE');check('mixed-newlines',fixtures['note'],0,name='NOTE');document('mixed-document',fixtures['note'])
@@ -187,7 +204,7 @@ def main():
                 wanted=picker_surface(entries,**expected)
                 actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,count=min(2000,9216-offset)) for offset in range(0,9216,2000))
                 (work/(label+'-surface.bin')).write_bytes(actual);assert actual==wanted,(label,'picker bitmap')
-                vdc=capture.capture(label+'-vdc',mode=1,address=0,count=2000);assert vdc==picker_console(entries,selected=selected,device=9,fmt=2)
+                vdc=mirror(label,wanted,expected['focus'])
                 cache=capture.capture(label+'-cache',address=pg['b_cache'],count=40)
                 descriptors=capture.capture(label+'-descriptors',address=0x3c00,count=256)
                 pages=0
@@ -200,7 +217,7 @@ def main():
                 assert pages==19
                 error,raw=mon._recv(mon._send(0x84,bytes([1,0])));mon.resume();assert not error
                 (work/(label+'-canvas.bin')).write_bytes(raw);rectangle=check_canvas(raw,surface_pixels(wanted,0,0,visible=False))
-                report.setdefault('picker_io_frames',[]).append(dict(label=label,expected=expected,entries=296,banked_cache_pages=pages,rectangle=rectangle));save()
+                report.setdefault('picker_io_frames',[]).append(dict(label=label,expected=expected,entries=296,banked_cache_pages=pages,rectangle=rectangle,vdc=vdc));save()
                 print('PASS: full D81 graphical picker beside banked document:',label,flush=True)
             picker_check('large-picker-first',0)
             for _ in range(36):key(ord('N'))

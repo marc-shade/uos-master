@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native suite copy through real C128 ROM, two IEC data drives and CPU capture."""
 import hashlib
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -21,6 +22,7 @@ from native_capture_transport import PausedViceMonitor
 from native_browser_check import disk_records,browser_screen
 from native_files_copy_check import copy_screen
 from native_files_scene import browser_surface,browser_console,copy_surface,copy_console
+from native_vdc_check import capture_frame as vdc_capture
 
 
 def main():
@@ -64,32 +66,59 @@ def main():
                 if time.monotonic()>deadline:raise
                 time.sleep(.1)
         mon.resume();paused=PausedViceMonitor(mon)
-        capture=NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=paused.paused)
+        @contextmanager
+        def stable_batch(label):
+            # Pointer clients (desktop, Files, Editor) clear N_READY during each
+            # pointer sample; admit a capture at an idle instant, as
+            # ci_native_editor_gui_iec does. First readbacks are never retried.
+            if not label.endswith(('-before','-restore')):
+                with paused.paused(label):yield
+                return
+            deadline=time.monotonic()+30
+            while True:
+                with paused.paused(label):
+                    if bytes(paused.read_mem(0x3d11,0x3d12))==b'\0\1' and bytes(paused.read_mem(0xd0,0xd0))==b'\0':
+                        report.setdefault('capture_admissions',[]).append(label)
+                        yield
+                        return
+                assert time.monotonic()<deadline,('idle capture admission',label)
+                time.sleep(.01)
+        capture=NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=stable_batch)
         report['captures']=capture.records;report['paused_capture_batches']=paused.batches
 
         def workflow(*,key,screens,desktop,read):
             key(ord('F'))
             table=capture.capture('files-key-table-before',address=0x1000,count=256)
-            def frame(label,wanted,console_wanted,**expected):
+            def frame(label,wanted,**expected):
                 assert read(addresses['fg_kind'])==b'\1' and read(addresses['fg_bitmap'])==b'\1'
                 actual=b''.join(capture.capture(label+f'-surface-{offset:04x}',address=0xc000+offset,
                     count=min(2000,9216-offset)) for offset in range(0,9216,2000))
                 (work/(label+'-surface.bin')).write_bytes(actual)
                 assert actual==wanted,(label,'Files complete bitmap')
-                assert capture.capture(label+'-vdc',mode=1,address=0,count=2000)==console_wanted,(label,'Files VDC')
+                # Since c4647f7/0e1704f Files mirrors its VIC surface on the VDC.
+                def canvas():
+                    error,raw=mon._recv(mon._send(0x84,bytes([0,0])));mon.resume();assert not error
+                    return raw
+                vdc=vdc_capture(capture,read,canvas,work,label,expected['focus'],surface_data=wanted,image_prefix='native-desktop/files')
                 report.setdefault('files_copy_frames',[]).append(dict(label=label,expected=expected,
-                    surface_sha256=hashlib.sha256(actual).hexdigest()));save()
+                    surface_sha256=hashlib.sha256(actual).hexdigest(),vdc=vdc));save()
             for value in b'D9\rFF':key(value)
             entries=disk_records(originals[9],2)
-            frame('source-d81',browser_surface(entries,device=9,fmt=2),browser_console(entries,device=9,fmt=2),
-                selected=0,focus=11,device=9,fmt=2)
+            frame('source-d81',browser_surface(entries,device=9,fmt=2),selected=0,focus=11,device=9,fmt=2)
             def function_key(value):
                 codes=bytes.fromhex('8589868a878b888c8384')
                 assert read(0x1000,20)==bytes([1]*10)+codes
-                previous=int.from_bytes(read(0x3d13,2),'little')
-                with paused.paused('copy-rom-function-key'):
-                    assert read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2)
-                    paused.write_mem(0x3d12,b'\0');paused.write_mem(0xd1,bytes([1,codes.index(value)]));paused.resume()
+                previous=None;deadline=time.monotonic()+120
+                # Files clears N_READY during each pointer sample (8d2086c);
+                # inject only at a paused idle instant, within a bound.
+                while previous is None:
+                    with paused.paused('copy-rom-function-key'):
+                        if read(0x3d12)==b'\1' and read(0xd0,2)==bytes(2):
+                            previous=int.from_bytes(read(0x3d13,2),'little')
+                            paused.write_mem(0x3d12,b'\0');paused.write_mem(0xd1,bytes([1,codes.index(value)]));paused.resume()
+                    if previous is None:
+                        assert time.monotonic()<deadline,'Files never idle for function-key injection'
+                        time.sleep(.01)
                 wait(lambda:read(0x3d12)==b'\1' and int.from_bytes(read(0x3d13,2),'little')==(previous+1)&65535,
                      'copy function-key expansion',30)
                 assert read(0xd0,2)==bytes(2)
@@ -108,8 +137,7 @@ def main():
                 assert focus==25 and data('fc_caret')[0]==len(name)
                 expected=dict(source_format=2,fmt=2,kind=kind,device=device,copied=copied,verified=verified,
                     status=status,error=error,dos=dos,caret=len(name),focus=25)
-                frame(label,copy_surface(source,name,field_view=views[0],**expected),
-                    copy_console(source,name,field_view=views[1],**expected),source=source.hex(),name=name.hex(),**expected)
+                frame(label,copy_surface(source,name,field_view=views[0],**expected),source=source.hex(),name=name.hex(),**expected)
             for index,(name,(kind,data)) in enumerate(fixtures.items()):
                 if index:key(0x11)
                 key(ord('C'));source=name.upper().encode();target=b'COPIED '+source

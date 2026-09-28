@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,7 +118,23 @@ def main():
                 time.sleep(.1)
         mon.resume()
         paused = PausedViceMonitor(mon)
-        capture = NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=paused.paused)
+        @contextmanager
+        def stable_batch(label):
+            # Pointer clients (desktop, Editor, Files, Ultimate, Claude) clear
+            # N_READY during each pointer sample; admit a capture at an idle
+            # instant, as ci_native_editor_gui_iec does. Readbacks never retry.
+            if not label.endswith(('-before','-restore')):
+                with paused.paused(label): yield
+                return
+            deadline = time.monotonic()+30
+            while True:
+                with paused.paused(label):
+                    if bytes(paused.read_mem(0x3d11,0x3d12)) == b'\0\1' and bytes(paused.read_mem(0xd0,0xd0)) == b'\0':
+                        yield
+                        return
+                assert time.monotonic() < deadline, ('idle capture admission', label)
+                time.sleep(.01)
+        capture = NativeCapture(paused,work,quiet=.05,kernel_prefix='native-desktop',batch=stable_batch)
         report['captures'] = capture.records
         report['paused_capture_batches'] = paused.batches
         run_suite_workflow(paused,capture,work,disk,report,save,bridge_factory=factory,key_quiet=.1,key_poll=.1)
