@@ -140,12 +140,10 @@ vdc:
         lda #19
         jsr vget
         sta oldaddr
-        lda #18
-        ldx $3ff6
-        jsr vput
-        lda #19
-        ldx $3ff5
-        jsr vput
+        jsr vdc_seek            ; the 8563 prefetches on reads: address, one
+        lda #31                 ; read to settle the latch, then address again
+        jsr vget                ; (as vd_read_seek in graphics/vdc-lifetime.inc)
+        jsr vdc_seek
         lda #31
         sta $d600
         ldy #0
@@ -179,6 +177,13 @@ vdc_timeout:
         sta $d600
         pla
         jmp copied
+vdc_seek:                       ; update address = the requested source
+        lda #18
+        ldx $3ff6
+        jsr vput
+        lda #19
+        ldx $3ff5
+        jmp vput
 vget:
         sta $d600
         jsr vready

@@ -53,10 +53,20 @@ VICE_MATRIX = {
                              ('--format', 'd81', '--search')],
     'ci_native_files_iec': [('--format', 'd64'), ('--format', 'd71'), ('--format', 'd81')],
     'ci_native_browser_iec': [('--format', 'd64'), ('--format', 'd71'), ('--format', 'd81')],
+    # Prerequisites asserted by the suite: --controls-clock needs --controls-only;
+    # --files-open-with needs --files-only; --files-find also --files-open-with;
+    # --editor-selection/--editor-clipboard need --editor-only; --editor-history
+    # also --editor-clipboard; --editor-large needs --editor-only --d81 and an
+    # REU of 512 KiB or more (qualified 2026-09-14 with --80col --vdc64).
     'ci_native_pointer_iec': [(), ('--80col',), ('--calc-only',), ('--paint-only',), ('--controls-only',),
-                              ('--controls-clock',), ('--files-only',), ('--files-open-with',),
-                              ('--files-find',), ('--editor-only',), ('--editor-clipboard',),
-                              ('--editor-history',), ('--editor-selection',), ('--editor-large',),
+                              ('--controls-only', '--controls-clock'), ('--files-only',),
+                              ('--files-only', '--files-open-with'),
+                              ('--files-only', '--files-open-with', '--files-find'), ('--editor-only',),
+                              ('--editor-only', '--editor-clipboard'),
+                              ('--editor-only', '--editor-clipboard', '--editor-history'),
+                              ('--editor-only', '--editor-selection'),
+                              ('--editor-only', '--editor-selection', '--editor-large', '--80col', '--vdc64',
+                               '--d81', '--reu-kib', '512'),
                               ('--claude-only',)],
     'ci_native_sheet_iec': [(), ('--80col',), ('--clipboard',)],
 }
@@ -83,6 +93,8 @@ class Captured(Exception):
 
 def capture(path):
     """Return the suite's argparse parser without running the suite."""
+    if 'parse_args' not in path.read_text():
+        return None                                     # no options: running it would run the suite
     original = argparse.ArgumentParser.parse_args
 
     def grab(self, *args, **kwargs):

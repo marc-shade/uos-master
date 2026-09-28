@@ -112,6 +112,7 @@ ae_alert_step:
         .weak
 AE_POINTER = 0
 AE_MIRROR = 0                   ; 1: the app supplies ae_present (a VDC mirror)
+AE_CLICK_TICKS = 48             ; > the AES's longest double-click window (40)
         .endweak
 ae_event:
         lda #1                  ; the first sample is taken at the call itself:
@@ -141,7 +142,11 @@ ae_event_sample:
         dex
         bpl -
 .fi
-        ldx #15
+        lda ae_pointer_buttons  ; a press: clicks may count for the longest
+        beq +                   ; double-click window, which needs ticks
+        lda #AE_CLICK_TICKS
+        sta ae_ev_window
++       ldx #15
 -       lda ae_ev_params,x
         sta N_BUFFER,x
         dex
@@ -201,12 +206,14 @@ ae_event_fired:
         clc
 ae_event_done:
         rts
-; The input wait between samples, also for an app's own alert loop: N_READY
-; stays published until something can have changed, a key, a jiffy tick, a
-; keyboard click still counting, a completed 1351 read (AE_POINTER=1) or the
-; app's ae_pointer_* fields (AE_POINTER=0). A = ae_ev_key = the key or 0.
-; Each sample is a banked call; a loop that sampled on every pass was at its
-; input wait 2% of the time on the C128 (hw_native_gem_check --sample-ready).
+; The input wait between samples, also for an app's own alert loop. N_READY
+; stays published and no AES call is made until something can change the
+; result: a key, a keyboard click still counting, a 1351 read that moved the
+; pointer or changed the button (AE_POINTER=1) or changed ae_pointer_*
+; (AE_POINTER=0), or a jiffy tick while MU_TIMER is requested or a click may
+; still be counting. A = ae_ev_key = the key or 0. Each sample is a banked
+; call: a loop sampling on every pass was at its input wait 2% of the time on
+; the C128, and one sampling on every tick stays in phase with VICE's monitor.
 ae_event_wait:
         lda #1
         sta N_READY
@@ -220,13 +227,24 @@ ae_event_wait:
         lda ae_km_click
         bne ae_wait_done
         lda pm_pending          ; the 1351 read starts in raster lines 80..159
-        pha                     ; and completes 32 lines later: drive it here,
-        jsr pm_poll             ; return when a read has just completed
+        pha                     ; and completes 32 lines later: drive it here
+        jsr pm_poll
         pla
-        beq +
+        beq ae_wait_time
         lda pm_pending
-        beq ae_wait_done
-+
+        bne ae_wait_time
+        ldx #2                  ; a read completed: did the pointer move?
+ae_wait_moved:
+        lda pm_x,x
+        cmp ae_pointer_x,x
+        bne ae_wait_done
+        dex
+        bpl ae_wait_moved
+        lda pm_buttons
+        beq +
+        lda #1
++       cmp ae_pointer_buttons
+        bne ae_wait_done
 .else
         ldx #3
 -       lda ae_pointer_x,x
@@ -235,9 +253,18 @@ ae_event_wait:
         dex
         bpl -
 .fi
-        lda $a2                 ; the jiffy clock's low byte
+ae_wait_time:
+        lda ae_ev_params
+        and #MU_TIMER
+        bne +
+        lda ae_ev_window
+        beq ae_event_wait
++       lda $a2                 ; the jiffy clock's low byte
         cmp ae_ev_tick
         beq ae_event_wait
+        lda ae_ev_window
+        beq ae_wait_done
+        dec ae_ev_window
 ae_wait_done:
         lda $a2
         sta ae_ev_tick
@@ -412,6 +439,7 @@ ae_ev_result: .fill 19,0
 ae_ev_key: .byte 0
 ae_ev_first: .byte 0
 ae_ev_tick: .byte 0             ; the jiffy low byte when the wait last returned
+ae_ev_window: .byte 0           ; ticks a click may still be counting
 .if !AE_POINTER
 ae_ev_seen: .fill 4,0           ; ae_pointer_x/y/buttons of the last sample
 .fi
