@@ -1,6 +1,6 @@
 {
   "goal": "Build the complete UltimateOS (uOS) for the C128: every app builds, every app feature works (Marc, /goal 2026-09-27).",
-  "updated": "2026-09-27T18:45-04:00",
+  "updated": "2026-09-28T (after 91dcde9)",
   "where": {
     "worktree": "$TMPDIR/uos-goal = /home/marc/.cache/claude/tmp/claude-1000/uos-goal, branch goal/complete-uos from ef57914 (main); NOT pushed",
     "scratch_copies": "$TMPDIR/uos-mut (Editor fixes), $TMPDIR/uos-mirror (GEMDESK mirror + hw script), $TMPDIR/uos-mirror-old (peer AES loop, for duty comparison), $TMPDIR/uos-old (ef57914 target for pre-existing checks), $TMPDIR/bis-* (bisect builds)",
@@ -8,34 +8,46 @@
     "complete_system_medium": "target/native-desktop/gem.d81 (all suite apps + GEMDESK as 'browse', AESVC, GDDLG/GDSET, VT52, cards)"
   },
   "commits_on_branch": [
-    "272718e capacity case + sweep runner",
-    "1e1c0cf DOC_PARTIAL in-place short final chunk (picker large fixed), desktop Files budget, per-job VICE port",
-    "fb6584b sweep preconditions",
-    "0021c4b REU documents grow by 4 KiB again (my DOC_PARTIAL regression) + history-aware REU document oracle",
-    "8d4b476 Editor: Ctrl-L reopens the VDC while history is live (34bc252 regression; 12 sweep jobs)",
-    "55ebe4b GEMDESK 80-column mirror (peer's work) + fo_close row marking + idle AES input wait + hw script diagnostics",
-    "08a94fb transport lifecycle test uses current image hashes",
-    "7564321 build outputs (Editor + GEMDESK images/listings, media, manifests; unchanged apps' path-only listing churn NOT committed)"
+    "272718e Editor capacity case: assert refusal and history reclaim; full-suite sweep",
+    "1e1c0cf Editor: documents beyond 64 KiB without an REU (short final chunk grows in place)",
+    "fb6584b sweep_native: encode asserted case preconditions (history large, selection display, open_with REU)",
+    "0021c4b Editor: REU documents grow by 4 KiB again; history-aware REU document oracle",
+    "8d4b476 Editor: Ctrl-L reopens the 80-column display while history is live",
+    "55ebe4b GEMDESK: 80-column mirror; idle AES input wait; forms close marks its rows",
+    "08a94fb transport lifecycle: check the current build's images, not the hardware pin",
+    "7564321 Build outputs: Editor partial chunks, REU growth, display reopen; GEMDESK mirror",
+    "8e7acc5 goal state: display reopen, GEMDESK mirror, final sweep and hardware runs",
+    "e5aa809 GEM hardware check: no DMA during loads; complete system 7/7 on the C128",
+    "d41ece0 GEMDESK mirror record: classify run 1's alert-closed differences",
+    "3cf0e52 AES client: no AES call while nothing can change; probe primes VDC reads",
+    "6c51336 Build outputs: GEMDESK with the no-idle-sample AES wait (gemdesk.prg 1a4251c5)",
+    "5cf27e8 AES wait: N_READY published for the whole wait; complete GEM system on the C128",
+    "2f0f110 Build outputs: GEMDESK 9f760745 (gem.d81 06bfe2f8)",
+    "20bb969 VICE suites: oracles for mirrored app screens, 7-app launcher, key filter",
+    "91dcde9 VICE: sample pointer apps at a random frame phase; editor_gui_iec within the documented memory limit"
   ],
   "uncommitted_in_worktree": [
-    "target/: listings of unchanged apps differ only by build path strings; restore from HEAD after the sweep (git checkout -- <those files>)",
-    "target/native-graphics/*-report.json untracked (not committed at HEAD either)"
+    "target/native-graphics/*report.json (untracked test outputs, not deliverables)"
   ],
   "verified": {
     "cpu_sweep_2": "0021c4b build: 296/310; the 14 failures are 2 root causes, both fixed and individually re-verified on the fixed build (display reopen: 12 jobs; transport lifecycle: 1; fallback open contract: part of the 12)",
     "editor": "document 8/8 (+3 mutants), picker large, REU documents 6/6 (+3 negative controls), selection display 16/64, recovery/fallback/search-recovery all groups",
     "gemdesk_cpu": "ci_native_gemdesk 45/45 (mirror byte-exact incl. dialog/alert closed), ci_native_aes 31/31, ci_native_held_capture 4/4 on gemdesk.prg 72578322 (= committed)",
-    "gemdesk_hw": "C128: N_READY duty 7/300 (old loop) -> 98/300 (idle wait). --mirror run1: desktop, window, menu, menu closed, alert byte-exact; run2: desktop exact; 'alert closed' and 'window' NOT verified (capture chunk shifts proven by double reads; 2 stable attribute cells $2f vs $f2 of unknown origin)"
+    "gemdesk_hw": "C128: N_READY duty 7/300 (old loop) -> 98/300 (idle wait). --mirror run1: desktop, window, menu, menu closed, alert byte-exact; run2: desktop exact; 'alert closed' and 'window' NOT verified (capture chunk shifts proven by double reads; 2 stable attribute cells $2f vs $f2 of unknown origin)",
+    "cpu_final": "sweep-cpu3 on 7564321: 310/310 (docs/validation/2026-09-28-gem-hardware-final/cpu-sweep-summary.json)",
+    "hardware_keyboard": "C128 7/7 twice: gem.d81 4743563d (7564321) and 84d4752a (6c51336, new AES wait); needs DMA-quiet 150 s boot / 90 s Return / 60 s Escape",
+    "hardware_mirror": "C128 --mirror 6/6 on gem.d81 06bfe2f8 (GEMDESK 9f760745), 0 probe busy retries; keyboard 7/7 on the same image",
+    "vice": "sweep-vice on 2f0f110 after oracle modernization (20bb969): 47/51; the remaining 4 fixed in 91dcde9: pointer_iec matrix 15/15 (unphase before N_READY samples), editor_gui_iec 14 checks (66 KiB RAM doc refused beside RAM VDC snapshot by design; 32 KB doc workflow). Full confirming sweep: $TMPDIR/sweep-vice-final"
   },
   "sweeps": {
     "cpu_final": "RUNNING since ~18:30 on the committed build (7564321): $TMPDIR/sweep-cpu3 (summary.json), stdout $TMPDIR/sweep-cpu3.out, 310 jobs x 5 workers (~6-7 h)",
     "cpu_2": "done: $TMPDIR/sweep-cpu2 (296/310, all failures explained above)",
     "cpu_old": "ef57914 build, stopped at 172/310; $TMPDIR/sweep-cpu-ef57914-summary.json; old target $TMPDIR/target-ef57914",
-    "vice": "not started; run after the CPU sweep: tests/sweep_native.py --group vice --jobs 2 (unsandboxed, localhost sockets)"
+    "vice": "done 2026-09-28: $TMPDIR/sweep-vice (23/51); old-build classification $TMPDIR/sweep-vice-old (28 jobs, all fail at ef57914 except pointer calc-only/editor-only)",
+    "vice_final": "RUNNING: $TMPDIR/sweep-vice-final (summary.json), stdout $TMPDIR/sweep-vice-final.out, on 91dcde9"
   },
   "hardware_runs": {
-    "keyboard_final": "RUNNING: hw_native_gem_check.py (keyboard workflow) on the committed gem.d81 -> $TMPDIR/hw-keyboard-final.json (earlier record: 6/7, Paint surface open)",
-    "mirror": "see verified.gemdesk_hw; reports in docs/validation/2026-09-26-gemdesk-vdc-mirror/"
+    "final": "docs/validation/2026-09-28-aes-idle-wait/ hw-keyboard.json + hw-mirror.json (gem.d81 06bfe2f8)"
   },
   "constraints": [
     "Signed commits: git -c gpg.format=ssh -c user.signingkey=/home/marc/.ssh/phoenix_agent_ed25519.pub -c user.email=phoenix-agent@2acrestudios.com -c 'user.name=Phoenix Agent (fedora)' commit -S",
@@ -55,14 +67,21 @@
     "Sampling N_READY on hardware a fixed 60 s after reset: GEMDESK first publishes ready ~111 s after reset (the 0/300 readings were my error)",
     "Raw-stepping a pointer app's CPU model outside the harness: without simulated raster the code busy-waits; measure through the harness (frame())",
     "Tick-only AES idle wait: the 1351 read is two-phase (start in raster 80..159, finish 32 lines later); the wait must drive pm_poll",
-    "Bytes saved before GEMDESK's .align 256 become padding; place code before the align to use the slack"
+    "Bytes saved before GEMDESK's .align 256 become padding; place code before the align to use the slack",
+    "An AES wait that samples on every jiffy tick stays in phase with VICE monitor pauses -> VICE never sees N_READY; idle must mean no AES calls",
+    "Starting a background process with & inside a Bash call: the per-call PID namespace kills it (use run_in_background)",
+    "Never wrap a hardware run in `timeout` shorter than its worst case: the script's restore (drive A, upload, reset) must run; 2026-09-28 a killed --mirror run left drive A as 1581 + /Temp/temp0019 (restored by hand, verified)",
+    "Waiting for N_READY at VICE monitor pauses in pointer apps: phase-locked; step a random 1..6000 instructions (monitor 0x71) first",
+    "66 KiB RAM document beside the VDC mirror's RAM snapshot: does not fit by design; test the refusal, use REU or no-mirror cases for >64 KiB"
   ],
   "pending": [
-    "Final CPU sweep: triage any failure",
-    "VICE sweep (group vice)",
-    "Hardware keyboard workflow result; mirror 'alert closed'/'window' (capture reliability, 2 attribute cells)",
+    "Confirm sweep-vice-final 51/51",
+    "Held-capture read glitches (chunks one address late even with primed reads): unexplained; retries absorb",
+    "native_suite_workflow hardware RTC path reads VDC row 6 text (stale since the Ultimate app is graphical)",
+    "hw_native_desktop_check.py blue-desktop hardware sequence not re-run on the C128 after the mirror-oracle change",
     "Kernel transfer performance (see performance_analysis)",
-    "TOS-PARITY Missing/Partial rows"
+    "TOS-PARITY Missing/Partial rows (new features; beyond the existing apps)",
+    "Push / PR #2 update: only with Marc"
   ],
   "performance_analysis": {
     "cost": "~65 instructions per transferred byte (transfer loop + heap_far_store php/sei/zp save + KERNAL INDSTA gateway) plus heap_check_record walking EVERY page of the allocation per transfer.",
