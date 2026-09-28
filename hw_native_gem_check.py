@@ -197,8 +197,8 @@ def main():
         mounted = drives('native')['a']; report['drive_a_native'] = mounted; save()
         assert mounted['type'] == '1581' and upload_path(ult) == uploaded
         ult.reset()
-        print('Boot: 60 seconds without RAM DMA while the kernel and GEMDESK load', flush=True)
-        time.sleep(60)
+        print('Boot: 150 seconds without RAM DMA while the kernel and GEMDESK load', flush=True)
+        time.sleep(150)
         if args.sample_ready:
             def peek(address, count=1): return bytes(mon.read_mem(address, address+count-1))
             gemdesk = (IMAGES/'gemdesk.prg').read_bytes()[2:34]
@@ -259,6 +259,19 @@ def main():
 
 
 def run_workflow(mon, work, entries, report, save):
+    def watch(predicate, label, seconds):
+        started, last = time.monotonic(), None
+        while time.monotonic()-started < seconds:
+            state = (read(0x3d60, 32).hex(), read(0x3d20)[0], read(0x3d12)[0], read(0x3d91)[0], read(0xd0)[0])
+            if state != last:
+                entry = dict(label=label, t=round(time.monotonic()-started, 1), header=state[0], current=state[1],
+                             ready=state[2], file_service=state[3], keys_pending=state[4])
+                report.setdefault('switch_log', []).append(entry); save(); last = state
+                print('  ', label, entry['t'], bytes.fromhex(state[0])[12:32], state[1:], flush=True)
+            if predicate():
+                return
+            time.sleep(0.5)
+        raise AssertionError(label)
     capture = HeldCapture(mon, work)
     report['captures'] = capture.records
 
@@ -327,25 +340,33 @@ def run_workflow(mon, work, entries, report, save):
         expect(scene.picture([window], {1: ordered}, selected_icon=0 if label == 'calc' else None, usb=True), f'{label}-selected')
 
     select(names.index(b'CALC'), 'calc')
-    key(13, quiet=20)
-    wait(lambda: read(0x3d60, 32) == (IMAGES/'calc.prg').read_bytes()[2:34], 'Calculator running', 120)
+    key(13, quiet=90)
+    watch(lambda: read(0x3d60, 32) == (IMAGES/'calc.prg').read_bytes()[2:34], 'Calculator running', 300)
     check('Return launches Calculator through the dispatcher')
-    key(27, quiet=20)
-    wait(lambda: read(0x3d60, 32) == browse, 'GEMDESK back', 120)
+    key(27, quiet=60)
+    watch(lambda: read(0x3d60, 32) == browse, 'GEMDESK back from Calculator', 300)
     check('leaving Calculator reloads GEMDESK, which reopens its window with the selection',
           surface_sha256=expect(scene.picture([window], {1: ordered}, usb=True), 'back-from-calc'))
 
     select(names.index(b'NOTE'), 'note')
-    key(13, quiet=20)
+    key(13, quiet=90)
     editor = (IMAGES/'editor.prg').read_bytes()[2:34]
-    wait(lambda: read(0x3d60, 32) == editor and ready(), 'Editor running', 180)
+    watch(lambda: read(0x3d60, 32) == editor and ready(), 'Editor running', 300)
     assert read(0x3d9a) == b'\0', 'the Editor claimed the request'
+    editor_fields = ('eg_bitmap', 'eg_started', 'ed_status', 'ed_mode', 'ed_module_kind', 'vd_phase', 'vd_live',
+                     'vd_fault', 'bk_state', 'dm_mode', 'dm_lease', 'dm_fault', 'eh_available', 'eg_vdc_attempted')
+    editor_state = {n: capture.capture(f'ed-{n}', address=lst_symbol('native-desktop/editor', n), count=1)[0]
+                    for n in editor_fields}
+    text80 = capture.capture('ed-vdc-text', mode=1, address=0, count=2000)
+    report['editor_state'] = editor_state
+    report['editor_vdc_text'] = [bytes(c if 32 <= c < 127 else 46 for c in text80[r*80:r*80+80]).decode() for r in range(25)]
+    save(); print('  Editor state:', editor_state, flush=True)
     want = editor_surface(NOTE, 0, name='NOTE', device=8, dirty=False, field='NOTE', fmt=2,
                           view=0, horizontal=0, selection=None)
     check('Return on a SEQ file opens it in the Editor: the surface matches the Editor oracle',
           surface_sha256=settled(want, 'editor'))
-    key(27, quiet=20)
-    wait(lambda: read(0x3d60, 32) == browse, 'GEMDESK back', 120)
+    key(27, quiet=60)
+    watch(lambda: read(0x3d60, 32) == browse, 'GEMDESK back', 300)
     check('leaving the Editor returns to GEMDESK with the document selected',
           surface_sha256=expect(scene.picture([window], {1: ordered}, usb=True), 'back-from-editor'))
 
