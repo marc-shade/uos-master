@@ -220,8 +220,15 @@ def run_suite_workflow(mon, capture, work, disk, report, save, *, bridge_factory
                     key(ord('R'))
                 label = f'ultimate-clock-{index}'
                 start = time.monotonic()
-                vdc = capture.capture(label+'-clock-reference',mode=1,count=2000)
-                text = vdc[6*80:6*80+19].decode('ascii')
+                # The clock page is a bitmap since c4647f7: read the RTC reply
+                # the app holds (uc_data, uc_length bytes). panel() then checks
+                # the whole bitmap draws exactly this text.
+                symbol = lambda name: lst_symbol('native-desktop/controls', name)
+                length = int.from_bytes(capture.capture(label+'-clock-length',
+                    address=symbol('uc_length'),count=2),'little')
+                assert length == 19, (label, 'RTC reply length', length)
+                text = capture.capture(label+'-clock-text',address=symbol('uc_data'),
+                    count=19).decode('ascii')
                 finish = time.monotonic()
                 # Native query occurs before its screen capture. Include the
                 # key quiet interval and command/REST observation latency.
