@@ -1,6 +1,6 @@
 {
   "goal": "Build the complete UltimateOS (uOS) for the C128: every app builds, every app feature works (Marc, /goal 2026-09-27).",
-  "updated": "2026-09-28T (capture control bank)",
+  "updated": "2026-09-28T (VICE 51/51 on a8e121b)",
   "where": {
     "worktree": "$TMPDIR/uos-goal = /home/marc/.cache/claude/tmp/claude-1000/uos-goal, branch goal/complete-uos from ef57914 (main); NOT pushed",
     "scratch_copies": "$TMPDIR/uos-mut (Editor fixes), $TMPDIR/uos-mirror (GEMDESK mirror + hw script), $TMPDIR/uos-mirror-old (peer AES loop, for duty comparison), $TMPDIR/uos-old (ef57914 target for pre-existing checks), $TMPDIR/bis-* (bisect builds)",
@@ -26,7 +26,8 @@
     "20bb969 VICE suites: oracles for mirrored app screens, 7-app launcher, key filter",
     "91dcde9 VICE: sample pointer apps at a random frame phase; editor_gui_iec within the documented memory limit",
     "d792c89 goal state: VICE oracle fixes, hardware mirror 6/6, final sweep running",
-    "(next) NativeCapture: control traffic in RAM bank 0 (VICE INDFET false completion)"
+    "a8e121b NativeCapture: control traffic in RAM bank 0 (VICE INDFET false completion)",
+    "(next) VICE sweep record: 51/51 on a8e121b"
   ],
   "uncommitted_in_worktree": [
     "target/native-graphics/*report.json (untracked test outputs, not deliverables)"
@@ -39,7 +40,7 @@
     "cpu_final": "sweep-cpu3 on 7564321: 310/310 (docs/validation/2026-09-28-gem-hardware-final/cpu-sweep-summary.json)",
     "hardware_keyboard": "C128 7/7 twice: gem.d81 4743563d (7564321) and 84d4752a (6c51336, new AES wait); needs DMA-quiet 150 s boot / 90 s Return / 60 s Escape",
     "hardware_mirror": "C128 --mirror 6/6 on gem.d81 06bfe2f8 (GEMDESK 9f760745), 0 probe busy retries; keyboard 7/7 on the same image",
-    "vice": "sweep-vice on 2f0f110 after oracle modernization (20bb969): 47/51; the remaining 4 fixed in 91dcde9: pointer_iec matrix 15/15 (unphase before N_READY samples), editor_gui_iec 14 checks (66 KiB RAM doc refused beside RAM VDC snapshot by design; 32 KB doc workflow). Full confirming sweep: $TMPDIR/sweep-vice-final",
+    "vice": "ALL 51 VICE jobs pass on a8e121b (docs/validation/2026-09-28-capture-control-bank/sweep/summary.json; three partial runs of one commit; 4 editor jobs first failed connecting to VICE under a host load spike, all passed on rerun)",
     "capture_control_bank": "sweep-vice-final on 91dcde9 stopped at 30 PASS + 1 FAIL/31: claude_iec host-exit 80col, false chunk completion from a CPU-view poll inside the probe's bank-1 INDFET (VICE: 12/60 runs, all at CR $7f; idle desktop 400/400 bank 0). Fix: PausedViceMonitor.control_bank=ram00, NativeCapture pins all its traffic; transport 35/35 incl. INDFET model + CPU-view negative control + mutation; capture CPU suites 6/6; failing job 4/4. docs/validation/2026-09-28-capture-control-bank"
   },
   "sweeps": {
@@ -48,7 +49,7 @@
     "cpu_old": "ef57914 build, stopped at 172/310; $TMPDIR/sweep-cpu-ef57914-summary.json; old target $TMPDIR/target-ef57914",
     "vice": "done 2026-09-28: $TMPDIR/sweep-vice (23/51); old-build classification $TMPDIR/sweep-vice-old (28 jobs, all fail at ef57914 except pointer calc-only/editor-only)",
     "vice_final": "STOPPED at 31/51 (30 pass, 1 fail explained+fixed): $TMPDIR/sweep-vice-final.out; superseded by vice_final2",
-    "vice_final2": "RUNNING: $TMPDIR/sweep-vice-final2 (summary.json), stdout $TMPDIR/sweep-vice-final2.out, on the control-bank commit"
+    "vice_final2": "DONE: 51/51 on a8e121b ($TMPDIR/sweep-vice-final2{,b,c}.out)"
   },
   "hardware_runs": {
     "final": "docs/validation/2026-09-28-aes-idle-wait/ hw-keyboard.json + hw-mirror.json (gem.d81 06bfe2f8)"
@@ -80,7 +81,6 @@
     "NativeCapture control reads through the CPU view (VICE bank 0): a pause inside the probe INDFET reads bank 1 ($3ff2=$f9) as a finished chunk; use PausedViceMonitor.control_bank"
   ],
   "pending": [
-    "Confirm sweep-vice-final2 51/51 (on the control-bank commit)",
     "Held-capture read glitches (chunks one address late even with primed reads): unexplained; retries absorb",
     "Hypothesis only: held-capture one-address-late chunks on the C128 may be the same INDFET window (DMA cannot select a bank); untested",
     "native_suite_workflow hardware RTC path reads VDC row 6 text (stale since the Ultimate app is graphical)",

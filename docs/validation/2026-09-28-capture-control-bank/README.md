@@ -63,8 +63,20 @@ test with a sampling block after the boot desktop.
   - Runs 1–3 ran the same pin before the record field existed.
 - **The stopped sweep:** 30 passes and this one failure in its first 31 jobs
   ([output](vice-sweep-stopped.out)). It was stopped because the change
-  affects every VICE suite that captures. A full VICE sweep on this commit
-  follows.
+  affects every VICE suite that captures.
+- **The full VICE sweep on this commit (`a8e121b`): all 51 jobs pass**
+  ([summary](sweep/summary.json)). It ran in three parts on the same commit:
+  - [`final2`](sweep/final2.out): 19/19 before the Claude Code session
+    exited and took the sweep with it.
+  - [`final2b`](sweep/final2b.out): the 11 untouched suites. Its first 4 jobs
+    (`editor_iec` d64/d71/d81-search, `editor_gui_iec`) failed before any test
+    step: VICE's monitor refused the connection or timed out
+    ([d64](sweep/ci_native_editor_iec__format_d64-load-failure.txt),
+    [gui](sweep/ci_native_editor_gui_iec-load-failure.txt)). This was during
+    a host load spike at session start (load average 10–13 on 6 cores).
+    `editor_iec` d81 passed a minute later, and the next 7 jobs passed.
+  - [`final2c`](sweep/final2c.out): 25/25, the four editor jobs included,
+    with the remaining suites.
 
 ## Not verified
 
