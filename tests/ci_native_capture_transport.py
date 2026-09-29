@@ -90,15 +90,69 @@ class CpuExchange:
         self.resumes += 1
         self.stopped = False
         if self.pending:
-            command = self.ram[0x3ff0:0x4000]
-            address = int.from_bytes(command[5:7],'little')
-            count = int.from_bytes(command[7:9],'little')
-            self.ram[0x3a00:0x3a00+count] = self.ram[address:address+count]
-            self.ram[0x3ff2] = 1
-            self.ram[0x3ffb:0x3ffe] = bytes([0x37,4,0x0e])
-            self.ram[0x314:0x316] = command[:2]
-            self.pending = False
-            self.starts += 1
+            self.complete()
+
+    def complete(self):
+        command = self.ram[0x3ff0:0x4000]
+        address = int.from_bytes(command[5:7],'little')
+        count = int.from_bytes(command[7:9],'little')
+        self.ram[0x3a00:0x3a00+count] = self.ram[address:address+count]
+        self.ram[0x3ff2] = 1
+        self.ram[0x3ffb:0x3ffe] = bytes([0x37,4,0x0e])
+        self.ram[0x314:0x316] = command[:2]
+        self.pending = False
+        self.starts += 1
+
+
+class BankedCpuExchange(CpuExchange):
+    """VICE banks: 0 is the CPU view, RAM00 is physical bank 0.
+
+    The probe reads bank 1 through the ROM's INDFET, so it runs for STEPS
+    monitor pauses. A single-byte CPU-view poll of $3ff2 during them lands in
+    INDFET, where bank 1 holds $f9 (measured in VICE, 2026-09-28)."""
+    RAM00, STEPS = 7, 2
+
+    def __init__(self):
+        super().__init__()
+        self.running = self.bank1_polls = 0
+        self.active = False
+
+    def banks(self):
+        self.stopped = True
+        return {'cpu': 0, 'ram00': self.RAM00}
+
+    def read_mem(self, start, end, bank=0):
+        assert bank in (0, self.RAM00)
+        if not self.running:
+            return super().read_mem(start, end)
+        self.running -= 1
+        self.stopped = True
+        if bank == 0 and start == end == 0x3ff2:
+            self.polls += 1
+            self.bank1_polls += 1
+            return b'\xf9'
+        return super().read_mem(start, end)
+
+    def write_mem(self, start, data, bank=0):
+        assert bank in (0, self.RAM00)
+        super().write_mem(start, data)
+
+    def resume(self):
+        self.resumes += 1
+        self.stopped = False
+        if self.pending:
+            self.pending, self.running, self.active = False, self.STEPS, True
+        elif self.active and not self.running:
+            self.active = False
+            self.complete()
+
+
+class CpuViewOnly:
+    """A monitor without banks: every read is the CPU view."""
+    def __init__(self, cpu):self.cpu = cpu
+    def read_mem(self, start, end):return self.cpu.read_mem(start, end)
+    def write_mem(self, start, data):return self.cpu.write_mem(start, data)
+    def resume(self):self.cpu.resume()
 
 
 def main():
@@ -204,6 +258,27 @@ def main():
                     assert len(mon.batches) == 11
                     assert all(r['resume_acknowledged'] for r in mon.batches)
                 report['cases'].append(f'paused={paused}, fault={fault}: four chunks complete; strict borrower result retained')
+    for pinned in (True,False):
+        with tempfile.TemporaryDirectory(prefix='uos-banked-capture-') as temporary:
+            work = Path(temporary);cpu = BankedCpuExchange();initial = bytes(cpu.ram)
+            mon = PausedViceMonitor(cpu if pinned else CpuViewOnly(cpu))
+            capture = NativeCapture(mon,work,quiet=0,batch=mon.paused)
+            try:actual = capture.capture('banked',bank=1,address=0x13a0,count=2000)
+            except AssertionError:
+                # Without bank 0, the INDFET poll reads as a finished chunk
+                # and the status read then finds the chunk still running.
+                assert not pinned and mon.control_bank is None
+                assert cpu.bank1_polls == 1 and capture.records[0]['chunks'][0]['code'] == 0
+            else:
+                assert pinned and mon.control_bank == BankedCpuExchange.RAM00
+                assert actual == initial[0x13a0:0x13a0+2000] and cpu.bank1_polls == 0
+                assert capture.records[0]['restored']
+            assert capture.records[0]['control_bank'] == (BankedCpuExchange.RAM00 if pinned else None)
+            assert not cpu.stopped and not mon.in_batch and cpu.ram[0x314:0x316] == initial[0x314:0x316]
+            for name,(address,count,offset) in REGIONS.items():
+                assert cpu.ram[address:address+count] == initial[address:address+count]
+            report['cases'].append('bank-1 probe read: ' + ('control traffic in RAM bank 0 completes four chunks'
+                if pinned else 'CPU-view polling accepts a running chunk (negative control)'))
     report['passed'] = True
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(f'PASS: {len(report["cases"])} transport/borrower controls; no hardware I/O or probe CPU execution')

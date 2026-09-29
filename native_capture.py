@@ -80,8 +80,17 @@ class NativeCapture:
         assert self.prg[:2]==b'\0\x3e' and len(self.prg)-2<=0x1f0
         self.records=[]
 
+    def control(self):
+        # Every address this class touches is bank-0 RAM. A VICE pause inside
+        # the probe's bank-1 INDFET would otherwise read bank 1 there.
+        bank=getattr(self.mon,'control_bank',None)
+        return {} if bank is None else dict(bank=bank)
+
     def read(self,address,count=1):
-        data=bytes(self.mon.read_mem(address,address+count-1));self.mon.resume();return data
+        data=bytes(self.mon.read_mem(address,address+count-1,**self.control()));self.mon.resume();return data
+
+    def write(self,address,data):
+        self.mon.write_mem(address,data,**self.control())
 
     def capture(self,label,*,mode=0,bank=0,address=0,count=2000):
         assert mode in (0,1) and bank in (0,1) and 1<=count<=2000 and address+count<=65536
@@ -97,7 +106,8 @@ class NativeCapture:
             resident=self.read(0x1300,0x900)
         record=dict(label=label,mode=mode,bank=bank,address=address,count=count,
                     probe_sha256=hashlib.sha256(self.prg).hexdigest(),restored=False,
-                    output_address=0x3a00,chunk_limit=512,chunks=[],address_resyncs=0)
+                    output_address=0x3a00,chunk_limit=512,chunks=[],address_resyncs=0,
+                    control_bank=self.control().get('bank'))
         self.records.append(record)
         observed_before={'output':(0x3a00,output),'scratch':(0x3e00,scratch),
                          'metadata':(0x3800,metadata),'resident':(0x1300,resident)}
@@ -111,13 +121,13 @@ class NativeCapture:
         result=bytearray()
         try:
             with self.batch(label+'-install'):
-                self.mon.write_mem(0x3e00,self.prg[2:])
+                self.write(0x3e00,self.prg[2:])
             for offset in range(0,count,512):
                 size=min(512,count-offset)
                 command=oldirq+b'\0'+bytes([mode,bank])+(address+offset).to_bytes(2,'little')+size.to_bytes(2,'little')+bytes(7)
                 with self.batch(label+f'-command-{offset:04x}'):
-                    self.mon.write_mem(0x3ff0,command)
-                    self.mon.write_mem(0x314,b'\0\x3e');self.mon.resume()
+                    self.write(0x3ff0,command)
+                    self.write(0x314,b'\0\x3e');self.mon.resume()
                 time.sleep(self.quiet)
                 wait(lambda:self.read(0x3ff2)!=b'\0','native capture chunk complete',20)
                 with self.batch(label+f'-result-{offset:04x}'):
@@ -159,7 +169,7 @@ class NativeCapture:
             time.sleep(.1)
             failures=[]
             with self.batch(label+'-restore'):
-                self.mon.write_mem(0x3a00,output);self.mon.write_mem(0x3e00,scratch);self.mon.resume()
+                self.write(0x3a00,output);self.write(0x3e00,scratch);self.mon.resume()
                 for name,(start,before) in observed_before.items():
                     after=self.read(start,len(before))
                     filename=f'{label}-borrower-{name}-after.bin'

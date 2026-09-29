@@ -81,6 +81,9 @@ class PausedHardwareMonitor(HardwareMonitor):
                 self.ultimate.record_event()
 
 
+_UNRESOLVED = object()
+
+
 class PausedViceMonitor:
     """VICE monitor reads stop the CPU; suppress inner resumes until batch exit."""
     def __init__(self, monitor, *, signature_bank=None):
@@ -88,6 +91,23 @@ class PausedViceMonitor:
         self.signature_bank = signature_bank
         self.batches = []
         self.in_batch = False
+        self._control_bank = _UNRESOLVED
+
+    @property
+    def control_bank(self):
+        """VICE bank id of physical RAM bank 0, or None for a monitor without banks.
+
+        A monitor pause can land inside the ROM's INDFET while the IRQ probe
+        reads bank 1. The CPU view then shows bank 1 at $3a00..$3fff, where a
+        nonzero byte at $3ff2 looks like a finished chunk. The capture's own
+        control traffic lives in bank 0 and is read there."""
+        if self._control_bank is _UNRESOLVED:
+            banks = getattr(self.monitor, 'banks', None)
+            self._control_bank = None
+            if banks is not None:
+                self._control_bank = banks()['ram00']
+                self.resume()
+        return self._control_bank
 
     def read_mem(self, *args, **kwargs):
         return self.monitor.read_mem(*args, **kwargs)
