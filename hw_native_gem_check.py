@@ -148,6 +148,8 @@ def main():
     parser.add_argument('--show', type=int, metavar='SECONDS',
                         help='boot and leave GEMDESK running this long for a person to look, then restore')
     parser.add_argument('--image', type=Path, help='gem.d81 to boot instead of the committed target (hash recorded)')
+    parser.add_argument('--screens', type=Path, metavar='DIR',
+                        help='README screenshots of GEMDESK and the Ultimate app into DIR, then restore')
     parser.add_argument('--sample-ready', type=int, metavar='N',
                         help='diagnostic: after boot, sample N_READY ($3d12) N times over DMA and record its duty cycle')
     args = parser.parse_args()
@@ -220,6 +222,9 @@ def main():
             print('N_READY duty:', samples.count(1), '/', len(samples), flush=True)
         elif args.show:
             show_workflow(mon, args.show, report, save)
+        elif args.screens:
+            args.screens.mkdir(parents=True, exist_ok=True)
+            screens_workflow(mon, work, entries, report, save, args.screens)
         elif args.mirror:
             mirror_workflow(mon, work, entries, report, save)
         else:
@@ -399,6 +404,69 @@ def run_workflow(mon, work, entries, report, save):
           surface_sha256=settled(want, 'paint'))
     assert all(item.get('restored') for item in capture.records), 'every capture restored its borrowed RAM'
 
+
+
+def screens_workflow(mon, work, entries, report, save, out):
+    """README screenshots on the real machine: GEMDESK, a drive window and the
+    Ultimate app's Info and Drives pages, each rendered from its VIC surface
+    captured through the held IRQ observer (bitmap + colour cells; no sprites)."""
+    sys.path.insert(0, str(ROOT/'tools'))
+    from readme_screenshots import surface_png
+    capture = HeldCapture(mon, work)
+    report['captures'] = capture.records
+    shots = report.setdefault('screenshots', [])
+
+    def read(address, count=1):
+        return bytes(mon.read_mem(address, address+count-1))
+
+    def ready(): return read(0x3d12) == b'\1' and read(0xd0, 2) == bytes(2)
+
+    def key(value, quiet=4):
+        wait(ready, 'native input ready', 300)
+        previous = int.from_bytes(read(0x3d13, 2), 'little')
+        mon.write_mem(0x3d12, b'\0'); mon.write_mem(0x34a, bytes([value])); mon.write_mem(0xd0, b'\1')
+        time.sleep(quiet)                     # no DMA while a key may start a load
+        wait(lambda: ready() and int.from_bytes(read(0x3d13, 2), 'little') == (previous+1) & 65535,
+             f'key {value:#x}', 600)
+        report['events'].append(dict(key=value)); save()
+
+    def running(image, label):
+        header = (IMAGES/image).read_bytes()[2:34]
+        wait(lambda: read(0x3d60, 32) == header and ready(), label, 300)
+
+    def shot(name, label):
+        """Capture until two consecutive surfaces agree, then render it."""
+        previous = None
+        for attempt in range(6):
+            got = b''.join(capture.capture(f'{label}-{attempt}-{offset:04x}', address=0xc000+offset,
+                                           count=min(2000, 9216-offset)) for offset in range(0, 9216, 2000))
+            if got == previous:
+                (work/f'{label}.surface').write_bytes(got)
+                surface_png(got, out/f'{name}.png', work)
+                shots.append(dict(name=name, sha256=hashlib.sha256(got).hexdigest(), attempts=attempt+1)); save()
+                print('saved', out/f'{name}.png', flush=True)
+                return
+            previous = got
+            time.sleep(5)
+        raise AssertionError((label, 'surface did not settle'))
+
+    wait(lambda: read(0x1c13, 6) == b'UOS128' and ready(), 'native boot', 300)
+    running('gemdesk.prg', 'GEMDESK running')
+    shot('gemdesk-c128', 'desktop')
+    key(ord('8'), quiet=10)
+    shot('gemdesk-window-c128', 'drive-8')
+    names = [e['name'] for e in scene.ordered(entries, 0)]
+    for _ in range(names.index(b'ULTIMATE')+1):
+        key(0x11)
+    key(13, quiet=90)
+    running('controls.prg', 'Ultimate running')
+    time.sleep(10)
+    shot('ultimate-c128', 'ultimate-info')
+    key(ord('D'), quiet=20)
+    shot('ultimate-drives-c128', 'ultimate-drives')
+    key(27, quiet=60)
+    running('gemdesk.prg', 'GEMDESK back from Ultimate')
+    assert all(item.get('restored') for item in capture.records), 'every capture restored its borrowed RAM'
 
 
 def mirror_workflow(mon, work, entries, report, save):
